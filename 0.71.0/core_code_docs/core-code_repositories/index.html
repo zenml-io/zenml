@@ -2577,7 +2577,7 @@ download files from the repository when a pipeline is run remotely.</p>
 
         <details class="quote">
           <summary>Source code in <code>zenml/code_repositories/base_code_repository.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseCodeRepository</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">BaseCodeRepository</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for code repositories.</span>
 
 <span class="sd">    Code repositories are used to connect to a remote code repository and</span>
@@ -2586,7 +2586,7 @@ download files from the repository when a pipeline is run remotely.</p>
 <span class="sd">    download files from the repository when a pipeline is run remotely.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="nb">id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span>
         <span class="n">config</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
@@ -2602,7 +2602,7 @@ download files from the repository when a pipeline is run remotely.</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">login</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseCodeRepositoryConfig&quot;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseCodeRepositoryConfig&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Config class for Code Repository.</span>
 
 <span class="sd">        Returns:</span>
@@ -2611,7 +2611,7 @@ download files from the repository when a pipeline is run remotely.</p>
         <span class="k">return</span> <span class="n">BaseCodeRepositoryConfig</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="p">)</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">from_model</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">CodeRepositoryResponse</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseCodeRepository&quot;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_model</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">CodeRepositoryResponse</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseCodeRepository&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Loads a code repository from a model.</span>
 
 <span class="sd">        Args:</span>
@@ -2628,7 +2628,7 @@ download files from the repository when a pipeline is run remotely.</p>
         <span class="k">return</span> <span class="n">class_</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">config</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UUID</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UUID</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;ID of the code repository.</span>
 
 <span class="sd">        Returns:</span>
@@ -2637,18 +2637,18 @@ download files from the repository when a pipeline is run remotely.</p>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_id</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">requirements</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">requirements</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Set of PyPI requirements for the repository.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            A set of PyPI requirements for the repository.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.utils</span> <span class="kn">import</span> <span class="n">get_requirements_for_module</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_requirements_for_module</span>
 
         <span class="k">return</span> <span class="nb">set</span><span class="p">(</span><span class="n">get_requirements_for_module</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__module__</span><span class="p">))</span>
 
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">login</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">login</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Logs into the code repository.</span>
 
 <span class="sd">        This method is called when the code repository is initialized.</span>
@@ -2660,7 +2660,7 @@ download files from the repository when a pipeline is run remotely.</p>
         <span class="k">pass</span>
 
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">download_files</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">download_files</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">commit</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">directory</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">repo_sub_directory</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Downloads files from the code repository to a local directory.</span>
@@ -2677,7 +2677,7 @@ download files from the repository when a pipeline is run remotely.</p>
         <span class="k">pass</span>
 
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">get_local_context</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_local_context</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;LocalRepositoryContext&quot;</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets a local repository context from a path.</span>
@@ -2862,7 +2862,7 @@ download files from the repository when a pipeline is run remotely.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/code_repositories/base_code_repository.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span>
     <span class="n">config</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
@@ -2948,7 +2948,7 @@ download files from.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/code_repositories/base_code_repository.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
-<span class="k">def</span> <span class="nf">download_files</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">download_files</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">commit</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">directory</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">repo_sub_directory</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Downloads files from the code repository to a local directory.</span>
@@ -3025,7 +3025,7 @@ download files from.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/code_repositories/base_code_repository.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">from_model</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">CodeRepositoryResponse</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseCodeRepository&quot;</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">from_model</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">CodeRepositoryResponse</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseCodeRepository&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Loads a code repository from a model.</span>
 
 <span class="sd">    Args:</span>
@@ -3099,7 +3099,7 @@ download files from.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/code_repositories/base_code_repository.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
-<span class="k">def</span> <span class="nf">get_local_context</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_local_context</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;LocalRepositoryContext&quot;</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets a local repository context from a path.</span>
@@ -3153,7 +3153,7 @@ It should be used to authenticate with the code repository.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/code_repositories/base_code_repository.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
-<span class="k">def</span> <span class="nf">login</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">login</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Logs into the code repository.</span>
 
 <span class="sd">    This method is called when the code repository is initialized.</span>
@@ -3200,7 +3200,7 @@ BaseCodeRepositoryConfig            (<a class="autorefs autorefs-internal" title
 
         <details class="quote">
           <summary>Source code in <code>zenml/code_repositories/base_code_repository.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseCodeRepositoryConfig</span><span class="p">(</span><span class="n">SecretReferenceMixin</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">BaseCodeRepositoryConfig</span><span class="p">(</span><span class="n">SecretReferenceMixin</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Base config for code repositories.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
@@ -3331,10 +3331,10 @@ LocalGitRepositoryContext            (<a class="autorefs autorefs-internal" titl
 
         <details class="quote">
           <summary>Source code in <code>zenml/code_repositories/git/local_git_repository_context.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">LocalGitRepositoryContext</span><span class="p">(</span><span class="n">LocalRepositoryContext</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">LocalGitRepositoryContext</span><span class="p">(</span><span class="n">LocalRepositoryContext</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Local git repository context.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">code_repository_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span> <span class="n">git_repo</span><span class="p">:</span> <span class="s2">&quot;Repo&quot;</span><span class="p">,</span> <span class="n">remote_name</span><span class="p">:</span> <span class="nb">str</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes a local git repository context.</span>
@@ -3349,7 +3349,7 @@ LocalGitRepositoryContext            (<a class="autorefs autorefs-internal" titl
         <span class="bp">self</span><span class="o">.</span><span class="n">_remote</span> <span class="o">=</span> <span class="n">git_repo</span><span class="o">.</span><span class="n">remote</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">remote_name</span><span class="p">)</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">at</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">at</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span>
         <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">code_repository_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span>
@@ -3369,8 +3369,8 @@ LocalGitRepositoryContext            (<a class="autorefs autorefs-internal" titl
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="c1"># These imports fail when git is not installed on the machine</span>
-            <span class="kn">from</span> <span class="nn">git.exc</span> <span class="kn">import</span> <span class="n">InvalidGitRepositoryError</span>
-            <span class="kn">from</span> <span class="nn">git.repo.base</span> <span class="kn">import</span> <span class="n">Repo</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">git.exc</span><span class="w"> </span><span class="kn">import</span> <span class="n">InvalidGitRepositoryError</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">git.repo.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">Repo</span>
         <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">None</span>
 
@@ -3395,7 +3395,7 @@ LocalGitRepositoryContext            (<a class="autorefs autorefs-internal" titl
         <span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">git_repo</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Repo&quot;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">git_repo</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Repo&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The git repo.</span>
 
 <span class="sd">        Returns:</span>
@@ -3404,7 +3404,7 @@ LocalGitRepositoryContext            (<a class="autorefs autorefs-internal" titl
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_git_repo</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">remote</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Remote&quot;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">remote</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Remote&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The git remote.</span>
 
 <span class="sd">        Returns:</span>
@@ -3413,7 +3413,7 @@ LocalGitRepositoryContext            (<a class="autorefs autorefs-internal" titl
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_remote</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">root</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">root</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The root of the git repo.</span>
 
 <span class="sd">        Returns:</span>
@@ -3423,7 +3423,7 @@ LocalGitRepositoryContext            (<a class="autorefs autorefs-internal" titl
         <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">git_repo</span><span class="o">.</span><span class="n">working_dir</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">is_dirty</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_dirty</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Whether the git repo is dirty.</span>
 
 <span class="sd">        A repository counts as dirty if it has any untracked or uncommitted</span>
@@ -3435,7 +3435,7 @@ LocalGitRepositoryContext            (<a class="autorefs autorefs-internal" titl
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">git_repo</span><span class="o">.</span><span class="n">is_dirty</span><span class="p">(</span><span class="n">untracked_files</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">has_local_changes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">has_local_changes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Whether the git repo has local changes.</span>
 
 <span class="sd">        A repository has local changes if it is dirty or there are some commits</span>
@@ -3469,7 +3469,7 @@ LocalGitRepositoryContext            (<a class="autorefs autorefs-internal" titl
         <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="s2">&quot;Commit&quot;</span><span class="p">,</span> <span class="n">remote_commit_object</span><span class="p">)</span> <span class="o">!=</span> <span class="n">local_commit_object</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">current_commit</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">current_commit</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The current commit.</span>
 
 <span class="sd">        Returns:</span>
@@ -3788,7 +3788,7 @@ changes.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/code_repositories/git/local_git_repository_context.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">code_repository_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span> <span class="n">git_repo</span><span class="p">:</span> <span class="s2">&quot;Repo&quot;</span><span class="p">,</span> <span class="n">remote_name</span><span class="p">:</span> <span class="nb">str</span>
 <span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes a local git repository context.</span>
@@ -3877,7 +3877,7 @@ and the remote URL is valid, otherwise None.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/code_repositories/git/local_git_repository_context.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">at</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">at</span><span class="p">(</span>
     <span class="bp">cls</span><span class="p">,</span>
     <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">code_repository_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span>
@@ -3897,8 +3897,8 @@ and the remote URL is valid, otherwise None.</p></td>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">try</span><span class="p">:</span>
         <span class="c1"># These imports fail when git is not installed on the machine</span>
-        <span class="kn">from</span> <span class="nn">git.exc</span> <span class="kn">import</span> <span class="n">InvalidGitRepositoryError</span>
-        <span class="kn">from</span> <span class="nn">git.repo.base</span> <span class="kn">import</span> <span class="n">Repo</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">git.exc</span><span class="w"> </span><span class="kn">import</span> <span class="n">InvalidGitRepositoryError</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">git.repo.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">Repo</span>
     <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">None</span>
 
@@ -4009,7 +4009,7 @@ commit, and whether the repository is dirty.</p>
 
         <details class="quote">
           <summary>Source code in <code>zenml/code_repositories/local_repository_context.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">LocalRepositoryContext</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">LocalRepositoryContext</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for local repository contexts.</span>
 
 <span class="sd">    This class is used to represent a local repository. It is used</span>
@@ -4018,7 +4018,7 @@ commit, and whether the repository is dirty.</p>
 <span class="sd">    commit, and whether the repository is dirty.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">code_repository_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">code_repository_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes a local repository context.</span>
 
 <span class="sd">        Args:</span>
@@ -4027,7 +4027,7 @@ commit, and whether the repository is dirty.</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">_code_repository_id</span> <span class="o">=</span> <span class="n">code_repository_id</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">code_repository_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UUID</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">code_repository_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UUID</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the ID of the code repository.</span>
 
 <span class="sd">        Returns:</span>
@@ -4037,7 +4037,7 @@ commit, and whether the repository is dirty.</p>
 
     <span class="nd">@property</span>
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">root</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">root</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the root path of the local repository.</span>
 
 <span class="sd">        Returns:</span>
@@ -4047,7 +4047,7 @@ commit, and whether the repository is dirty.</p>
 
     <span class="nd">@property</span>
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">is_dirty</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_dirty</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns whether the local repository is dirty.</span>
 
 <span class="sd">        A repository counts as dirty if it has any untracked or uncommitted</span>
@@ -4060,7 +4060,7 @@ commit, and whether the repository is dirty.</p>
 
     <span class="nd">@property</span>
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">has_local_changes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">has_local_changes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns whether the local repository has local changes.</span>
 
 <span class="sd">        A repository has local changes if it is dirty or there are some commits</span>
@@ -4073,7 +4073,7 @@ commit, and whether the repository is dirty.</p>
 
     <span class="nd">@property</span>
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">current_commit</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">current_commit</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the current commit of the local repository.</span>
 
 <span class="sd">        Returns:</span>
@@ -4327,7 +4327,7 @@ changes.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/code_repositories/local_repository_context.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">code_repository_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">code_repository_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes a local repository context.</span>
 
 <span class="sd">    Args:</span>

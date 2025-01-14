@@ -2392,20 +2392,20 @@ BitbucketIntegration            (<a class="autorefs autorefs-internal" title="ze
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/bitbucket/__init__.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BitbucketIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">BitbucketIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Definition of bitbucket integration for ZenML.&quot;&quot;&quot;</span>
 
     <span class="n">NAME</span> <span class="o">=</span> <span class="n">BITBUCKET</span>
     <span class="n">REQUIREMENTS</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">plugin_flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">BasePluginFlavor</span><span class="p">]]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">plugin_flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">BasePluginFlavor</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Declare the event flavors for the bitbucket integration.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            List of stack component flavors for this integration.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.bitbucket.plugins</span> <span class="kn">import</span> <span class="n">BitbucketWebhookEventSourceFlavor</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.bitbucket.plugins</span><span class="w"> </span><span class="kn">import</span> <span class="n">BitbucketWebhookEventSourceFlavor</span>
 
         <span class="k">return</span> <span class="p">[</span><span class="n">BitbucketWebhookEventSourceFlavor</span><span class="p">]</span>
 </code></pre></div>
@@ -2460,13 +2460,13 @@ BitbucketIntegration            (<a class="autorefs autorefs-internal" title="ze
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/bitbucket/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">plugin_flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">BasePluginFlavor</span><span class="p">]]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">plugin_flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">BasePluginFlavor</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Declare the event flavors for the bitbucket integration.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        List of stack component flavors for this integration.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.integrations.bitbucket.plugins</span> <span class="kn">import</span> <span class="n">BitbucketWebhookEventSourceFlavor</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.bitbucket.plugins</span><span class="w"> </span><span class="kn">import</span> <span class="n">BitbucketWebhookEventSourceFlavor</span>
 
     <span class="k">return</span> <span class="p">[</span><span class="n">BitbucketWebhookEventSourceFlavor</span><span class="p">]</span>
 </code></pre></div>
@@ -2566,7 +2566,7 @@ BitbucketWebhookEventSourceFlavor            (<a class="autorefs autorefs-intern
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/bitbucket/plugins/bitbucket_webhook_event_source_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BitbucketWebhookEventSourceFlavor</span><span class="p">(</span><span class="n">BaseWebhookEventSourceFlavor</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">BitbucketWebhookEventSourceFlavor</span><span class="p">(</span><span class="n">BaseWebhookEventSourceFlavor</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Enables users to configure Bitbucket event sources.&quot;&quot;&quot;</span>
 
     <span class="n">FLAVOR</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">BITBUCKET_EVENT_FLAVOR</span>
@@ -2614,14 +2614,14 @@ EVENT_FILTER_CONFIG_CLASS            (<a class="autorefs autorefs-internal" titl
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/bitbucket/plugins/bitbucket_webhook_event_source_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BitbucketWebhookEventFilterConfiguration</span><span class="p">(</span><span class="n">WebhookEventFilterConfig</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">BitbucketWebhookEventFilterConfiguration</span><span class="p">(</span><span class="n">WebhookEventFilterConfig</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Configuration for Bitbucket event filters.&quot;&quot;&quot;</span>
 
     <span class="n">repo</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">branch</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">event_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BitbucketEventType</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="nf">event_matches_filter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">BaseEvent</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">event_matches_filter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">BaseEvent</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks the filter against the inbound event.</span>
 
 <span class="sd">        Args:</span>
@@ -2722,7 +2722,7 @@ EVENT_FILTER_CONFIG_CLASS            (<a class="autorefs autorefs-internal" titl
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/bitbucket/plugins/bitbucket_webhook_event_source_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">event_matches_filter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">BaseEvent</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">event_matches_filter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">BaseEvent</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks the filter against the inbound event.</span>
 
 <span class="sd">    Args:</span>
@@ -2780,7 +2780,7 @@ EVENT_SOURCE_CONFIG_CLASS            (<a class="autorefs autorefs-internal" titl
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/bitbucket/plugins/bitbucket_webhook_event_source_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BitbucketWebhookEventSourceConfiguration</span><span class="p">(</span><span class="n">WebhookEventSourceConfig</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">BitbucketWebhookEventSourceConfiguration</span><span class="p">(</span><span class="n">WebhookEventSourceConfig</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Configuration for Bitbucket source filters.&quot;&quot;&quot;</span>
 
     <span class="n">webhook_secret</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
@@ -2853,11 +2853,11 @@ PLUGIN_CLASS            (<a class="autorefs autorefs-internal" title="zenml.even
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/bitbucket/plugins/bitbucket_webhook_event_source_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BitbucketWebhookEventSourceHandler</span><span class="p">(</span><span class="n">BaseWebhookEventSourceHandler</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">BitbucketWebhookEventSourceHandler</span><span class="p">(</span><span class="n">BaseWebhookEventSourceHandler</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Handler for all Bitbucket events.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BitbucketWebhookEventSourceConfiguration</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BitbucketWebhookEventSourceConfiguration</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the webhook event source configuration class.</span>
 
 <span class="sd">        Returns:</span>
@@ -2866,7 +2866,7 @@ PLUGIN_CLASS            (<a class="autorefs autorefs-internal" title="zenml.even
         <span class="k">return</span> <span class="n">BitbucketWebhookEventSourceConfiguration</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">filter_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BitbucketWebhookEventFilterConfiguration</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">filter_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BitbucketWebhookEventFilterConfiguration</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the webhook event filter configuration class.</span>
 
 <span class="sd">        Returns:</span>
@@ -2875,19 +2875,19 @@ PLUGIN_CLASS            (<a class="autorefs autorefs-internal" title="zenml.even
         <span class="k">return</span> <span class="n">BitbucketWebhookEventFilterConfiguration</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">flavor_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseWebhookEventSourceFlavor</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">flavor_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseWebhookEventSourceFlavor</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the flavor class of the plugin.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The flavor class of the plugin.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.bitbucket.plugins.bitbucket_webhook_event_source_flavor</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.bitbucket.plugins.bitbucket_webhook_event_source_flavor</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">BitbucketWebhookEventSourceFlavor</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="k">return</span> <span class="n">BitbucketWebhookEventSourceFlavor</span>
 
-    <span class="k">def</span> <span class="nf">_interpret_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">BitbucketEvent</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_interpret_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">BitbucketEvent</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Converts the generic event body into a event-source specific pydantic model.</span>
 
 <span class="sd">        Args:</span>
@@ -2906,7 +2906,7 @@ PLUGIN_CLASS            (<a class="autorefs autorefs-internal" title="zenml.even
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">Bitbucket_event</span>
 
-    <span class="k">def</span> <span class="nf">_get_webhook_secret</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_webhook_secret</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">event_source</span><span class="p">:</span> <span class="n">EventSourceResponse</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the webhook secret for the event source.</span>
@@ -2945,7 +2945,7 @@ PLUGIN_CLASS            (<a class="autorefs autorefs-internal" title="zenml.even
                 <span class="s2">&quot;Could not retrieve webhook signature.&quot;</span>
             <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_validate_event_source_request</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_event_source_request</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">event_source</span><span class="p">:</span> <span class="n">EventSourceRequest</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">EventSourceConfig</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate an event source request before it is created in the database.</span>
@@ -2969,7 +2969,7 @@ PLUGIN_CLASS            (<a class="autorefs autorefs-internal" title="zenml.even
                     <span class="s2">&quot;request.&quot;</span>
                 <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_process_event_source_request</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_process_event_source_request</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">event_source</span><span class="p">:</span> <span class="n">EventSourceResponse</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">EventSourceConfig</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Process an event source request after it is created in the database.</span>
@@ -3012,7 +3012,7 @@ PLUGIN_CLASS            (<a class="autorefs autorefs-internal" title="zenml.even
         <span class="n">config</span><span class="o">.</span><span class="n">rotate_secret</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="n">config</span><span class="o">.</span><span class="n">webhook_secret_id</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="nf">_validate_event_source_update</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_event_source_update</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">event_source</span><span class="p">:</span> <span class="n">EventSourceResponse</span><span class="p">,</span>
         <span class="n">config</span><span class="p">:</span> <span class="n">EventSourceConfig</span><span class="p">,</span>
@@ -3039,7 +3039,7 @@ PLUGIN_CLASS            (<a class="autorefs autorefs-internal" title="zenml.even
 
         <span class="n">config_update</span><span class="o">.</span><span class="n">webhook_secret_id</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">webhook_secret_id</span>
 
-    <span class="k">def</span> <span class="nf">_process_event_source_update</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_process_event_source_update</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">event_source</span><span class="p">:</span> <span class="n">EventSourceResponse</span><span class="p">,</span>
         <span class="n">config</span><span class="p">:</span> <span class="n">EventSourceConfig</span><span class="p">,</span>
@@ -3094,7 +3094,7 @@ PLUGIN_CLASS            (<a class="autorefs autorefs-internal" title="zenml.even
         <span class="n">config</span><span class="o">.</span><span class="n">rotate_secret</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="n">config</span><span class="o">.</span><span class="n">webhook_secret_id</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="nf">_process_event_source_delete</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_process_event_source_delete</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">event_source</span><span class="p">:</span> <span class="n">EventSourceResponse</span><span class="p">,</span>
         <span class="n">config</span><span class="p">:</span> <span class="n">EventSourceConfig</span><span class="p">,</span>
@@ -3123,7 +3123,7 @@ PLUGIN_CLASS            (<a class="autorefs autorefs-internal" title="zenml.even
         <span class="n">config</span><span class="o">.</span><span class="n">rotate_secret</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="n">config</span><span class="o">.</span><span class="n">webhook_secret_id</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="nf">_process_event_source_response</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_process_event_source_response</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">event_source</span><span class="p">:</span> <span class="n">EventSourceResponse</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">EventSourceConfig</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Process an event source response before it is returned to the user.</span>
@@ -3377,7 +3377,7 @@ BitbucketEvent            (<a class="autorefs autorefs-internal" title="zenml.ev
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/bitbucket/plugins/event_sources/bitbucket_webhook_event_source.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BitbucketEvent</span><span class="p">(</span><span class="n">BaseEvent</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">BitbucketEvent</span><span class="p">(</span><span class="n">BaseEvent</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Bitbucket Event.&quot;&quot;&quot;</span>
 
     <span class="n">actor</span><span class="p">:</span> <span class="n">User</span>
@@ -3386,7 +3386,7 @@ BitbucketEvent            (<a class="autorefs autorefs-internal" title="zenml.ev
     <span class="n">model_config</span> <span class="o">=</span> <span class="n">ConfigDict</span><span class="p">(</span><span class="n">extra</span><span class="o">=</span><span class="s2">&quot;allow&quot;</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">branch</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">branch</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The branch the event happened on.</span>
 
 <span class="sd">        Returns:</span>
@@ -3399,7 +3399,7 @@ BitbucketEvent            (<a class="autorefs autorefs-internal" title="zenml.ev
         <span class="k">return</span> <span class="kc">None</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">event_type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">BitbucketEventType</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">event_type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">BitbucketEventType</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The type of Bitbucket event.</span>
 
 <span class="sd">        Args:</span>
@@ -3560,7 +3560,7 @@ BitbucketEventType            (<a class="autorefs autorefs-internal" title="zenm
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/bitbucket/plugins/event_sources/bitbucket_webhook_event_source.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BitbucketEventType</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">BitbucketEventType</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Collection of all possible Bitbucket Events.&quot;&quot;&quot;</span>
 
     <span class="n">PUSH_EVENT</span> <span class="o">=</span> <span class="s2">&quot;push_event&quot;</span>
@@ -3612,14 +3612,14 @@ BitbucketWebhookEventFilterConfiguration            (<a class="autorefs autorefs
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/bitbucket/plugins/event_sources/bitbucket_webhook_event_source.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BitbucketWebhookEventFilterConfiguration</span><span class="p">(</span><span class="n">WebhookEventFilterConfig</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">BitbucketWebhookEventFilterConfiguration</span><span class="p">(</span><span class="n">WebhookEventFilterConfig</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Configuration for Bitbucket event filters.&quot;&quot;&quot;</span>
 
     <span class="n">repo</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">branch</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">event_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BitbucketEventType</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="nf">event_matches_filter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">BaseEvent</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">event_matches_filter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">BaseEvent</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks the filter against the inbound event.</span>
 
 <span class="sd">        Args:</span>
@@ -3720,7 +3720,7 @@ BitbucketWebhookEventFilterConfiguration            (<a class="autorefs autorefs
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/bitbucket/plugins/event_sources/bitbucket_webhook_event_source.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">event_matches_filter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">BaseEvent</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">event_matches_filter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">BaseEvent</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks the filter against the inbound event.</span>
 
 <span class="sd">    Args:</span>
@@ -3778,7 +3778,7 @@ BitbucketWebhookEventSourceConfiguration            (<a class="autorefs autorefs
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/bitbucket/plugins/event_sources/bitbucket_webhook_event_source.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BitbucketWebhookEventSourceConfiguration</span><span class="p">(</span><span class="n">WebhookEventSourceConfig</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">BitbucketWebhookEventSourceConfiguration</span><span class="p">(</span><span class="n">WebhookEventSourceConfig</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Configuration for Bitbucket source filters.&quot;&quot;&quot;</span>
 
     <span class="n">webhook_secret</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
@@ -3851,11 +3851,11 @@ BitbucketWebhookEventSourceHandler            (<a class="autorefs autorefs-inter
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/bitbucket/plugins/event_sources/bitbucket_webhook_event_source.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BitbucketWebhookEventSourceHandler</span><span class="p">(</span><span class="n">BaseWebhookEventSourceHandler</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">BitbucketWebhookEventSourceHandler</span><span class="p">(</span><span class="n">BaseWebhookEventSourceHandler</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Handler for all Bitbucket events.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BitbucketWebhookEventSourceConfiguration</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BitbucketWebhookEventSourceConfiguration</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the webhook event source configuration class.</span>
 
 <span class="sd">        Returns:</span>
@@ -3864,7 +3864,7 @@ BitbucketWebhookEventSourceHandler            (<a class="autorefs autorefs-inter
         <span class="k">return</span> <span class="n">BitbucketWebhookEventSourceConfiguration</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">filter_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BitbucketWebhookEventFilterConfiguration</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">filter_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BitbucketWebhookEventFilterConfiguration</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the webhook event filter configuration class.</span>
 
 <span class="sd">        Returns:</span>
@@ -3873,19 +3873,19 @@ BitbucketWebhookEventSourceHandler            (<a class="autorefs autorefs-inter
         <span class="k">return</span> <span class="n">BitbucketWebhookEventFilterConfiguration</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">flavor_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseWebhookEventSourceFlavor</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">flavor_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseWebhookEventSourceFlavor</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the flavor class of the plugin.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The flavor class of the plugin.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.bitbucket.plugins.bitbucket_webhook_event_source_flavor</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.bitbucket.plugins.bitbucket_webhook_event_source_flavor</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">BitbucketWebhookEventSourceFlavor</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="k">return</span> <span class="n">BitbucketWebhookEventSourceFlavor</span>
 
-    <span class="k">def</span> <span class="nf">_interpret_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">BitbucketEvent</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_interpret_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">BitbucketEvent</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Converts the generic event body into a event-source specific pydantic model.</span>
 
 <span class="sd">        Args:</span>
@@ -3904,7 +3904,7 @@ BitbucketWebhookEventSourceHandler            (<a class="autorefs autorefs-inter
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">Bitbucket_event</span>
 
-    <span class="k">def</span> <span class="nf">_get_webhook_secret</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_webhook_secret</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">event_source</span><span class="p">:</span> <span class="n">EventSourceResponse</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the webhook secret for the event source.</span>
@@ -3943,7 +3943,7 @@ BitbucketWebhookEventSourceHandler            (<a class="autorefs autorefs-inter
                 <span class="s2">&quot;Could not retrieve webhook signature.&quot;</span>
             <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_validate_event_source_request</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_event_source_request</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">event_source</span><span class="p">:</span> <span class="n">EventSourceRequest</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">EventSourceConfig</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate an event source request before it is created in the database.</span>
@@ -3967,7 +3967,7 @@ BitbucketWebhookEventSourceHandler            (<a class="autorefs autorefs-inter
                     <span class="s2">&quot;request.&quot;</span>
                 <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_process_event_source_request</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_process_event_source_request</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">event_source</span><span class="p">:</span> <span class="n">EventSourceResponse</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">EventSourceConfig</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Process an event source request after it is created in the database.</span>
@@ -4010,7 +4010,7 @@ BitbucketWebhookEventSourceHandler            (<a class="autorefs autorefs-inter
         <span class="n">config</span><span class="o">.</span><span class="n">rotate_secret</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="n">config</span><span class="o">.</span><span class="n">webhook_secret_id</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="nf">_validate_event_source_update</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_event_source_update</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">event_source</span><span class="p">:</span> <span class="n">EventSourceResponse</span><span class="p">,</span>
         <span class="n">config</span><span class="p">:</span> <span class="n">EventSourceConfig</span><span class="p">,</span>
@@ -4037,7 +4037,7 @@ BitbucketWebhookEventSourceHandler            (<a class="autorefs autorefs-inter
 
         <span class="n">config_update</span><span class="o">.</span><span class="n">webhook_secret_id</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">webhook_secret_id</span>
 
-    <span class="k">def</span> <span class="nf">_process_event_source_update</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_process_event_source_update</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">event_source</span><span class="p">:</span> <span class="n">EventSourceResponse</span><span class="p">,</span>
         <span class="n">config</span><span class="p">:</span> <span class="n">EventSourceConfig</span><span class="p">,</span>
@@ -4092,7 +4092,7 @@ BitbucketWebhookEventSourceHandler            (<a class="autorefs autorefs-inter
         <span class="n">config</span><span class="o">.</span><span class="n">rotate_secret</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="n">config</span><span class="o">.</span><span class="n">webhook_secret_id</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="nf">_process_event_source_delete</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_process_event_source_delete</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">event_source</span><span class="p">:</span> <span class="n">EventSourceResponse</span><span class="p">,</span>
         <span class="n">config</span><span class="p">:</span> <span class="n">EventSourceConfig</span><span class="p">,</span>
@@ -4121,7 +4121,7 @@ BitbucketWebhookEventSourceHandler            (<a class="autorefs autorefs-inter
         <span class="n">config</span><span class="o">.</span><span class="n">rotate_secret</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="n">config</span><span class="o">.</span><span class="n">webhook_secret_id</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="nf">_process_event_source_response</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_process_event_source_response</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">event_source</span><span class="p">:</span> <span class="n">EventSourceResponse</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">EventSourceConfig</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Process an event source response before it is returned to the user.</span>
@@ -4295,7 +4295,7 @@ Commit            (<span title="pydantic.main.BaseModel">BaseModel</span>)
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/bitbucket/plugins/event_sources/bitbucket_webhook_event_source.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">Commit</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Commit</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Bitbucket Commit.&quot;&quot;&quot;</span>
 
     <span class="nb">hash</span><span class="p">:</span> <span class="nb">str</span>
@@ -4361,7 +4361,7 @@ Push            (<span title="pydantic.main.BaseModel">BaseModel</span>)
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/bitbucket/plugins/event_sources/bitbucket_webhook_event_source.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">Push</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Push</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Bitbucket Push.&quot;&quot;&quot;</span>
 
     <span class="n">changes</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">PushChange</span><span class="p">]</span>
@@ -4424,7 +4424,7 @@ PushChange            (<span title="pydantic.main.BaseModel">BaseModel</span>)
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/bitbucket/plugins/event_sources/bitbucket_webhook_event_source.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">PushChange</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">PushChange</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Bitbucket Push Change.&quot;&quot;&quot;</span>
 
     <span class="n">new</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
@@ -4489,7 +4489,7 @@ Repository            (<span title="pydantic.main.BaseModel">BaseModel</span>)
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/bitbucket/plugins/event_sources/bitbucket_webhook_event_source.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">Repository</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Repository</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Bitbucket Repository.&quot;&quot;&quot;</span>
 
     <span class="n">uuid</span><span class="p">:</span> <span class="nb">str</span>
@@ -4555,7 +4555,7 @@ User            (<span title="pydantic.main.BaseModel">BaseModel</span>)
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/bitbucket/plugins/event_sources/bitbucket_webhook_event_source.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">User</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Bitbucket User.&quot;&quot;&quot;</span>
 
     <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>

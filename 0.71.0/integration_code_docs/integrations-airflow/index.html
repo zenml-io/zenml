@@ -2679,20 +2679,20 @@ AirflowIntegration            (<a class="autorefs autorefs-internal" title="zenm
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/airflow/__init__.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AirflowIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AirflowIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Definition of Airflow Integration for ZenML.&quot;&quot;&quot;</span>
 
     <span class="n">NAME</span> <span class="o">=</span> <span class="n">AIRFLOW</span>
     <span class="n">REQUIREMENTS</span> <span class="o">=</span> <span class="p">[]</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Airflow integration.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            List of stack component flavors for this integration.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.airflow.flavors</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.airflow.flavors</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">AirflowOrchestratorFlavor</span><span class="p">,</span>
         <span class="p">)</span>
 
@@ -2749,13 +2749,13 @@ AirflowIntegration            (<a class="autorefs autorefs-internal" title="zenm
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/airflow/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Airflow integration.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        List of stack component flavors for this integration.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.integrations.airflow.flavors</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.airflow.flavors</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
         <span class="n">AirflowOrchestratorFlavor</span><span class="p">,</span>
     <span class="p">)</span>
 
@@ -2875,7 +2875,7 @@ up a local Airflow server to run pipelines.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/airflow/flavors/airflow_orchestrator_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AirflowOrchestratorConfig</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AirflowOrchestratorConfig</span><span class="p">(</span>
     <span class="n">BaseOrchestratorConfig</span><span class="p">,</span> <span class="n">AirflowOrchestratorSettings</span>
 <span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Configuration for the Airflow orchestrator.</span>
@@ -2888,7 +2888,7 @@ up a local Airflow server to run pipelines.</p></td>
     <span class="n">local</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">is_schedulable</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_schedulable</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Whether the orchestrator is schedulable or not.</span>
 
 <span class="sd">        Returns:</span>
@@ -2993,11 +2993,11 @@ AirflowOrchestratorFlavor            (<a class="autorefs autorefs-internal" titl
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/airflow/flavors/airflow_orchestrator_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AirflowOrchestratorFlavor</span><span class="p">(</span><span class="n">BaseOrchestratorFlavor</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AirflowOrchestratorFlavor</span><span class="p">(</span><span class="n">BaseOrchestratorFlavor</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Flavor for the Airflow orchestrator.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -3006,7 +3006,7 @@ AirflowOrchestratorFlavor            (<a class="autorefs autorefs-internal" titl
         <span class="k">return</span> <span class="n">AIRFLOW_ORCHESTRATOR_FLAVOR</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -3015,7 +3015,7 @@ AirflowOrchestratorFlavor            (<a class="autorefs autorefs-internal" titl
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at SDK docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -3024,7 +3024,7 @@ AirflowOrchestratorFlavor            (<a class="autorefs autorefs-internal" titl
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_sdk_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to represent the flavor in the dashboard.</span>
 
 <span class="sd">        Returns:</span>
@@ -3033,7 +3033,7 @@ AirflowOrchestratorFlavor            (<a class="autorefs autorefs-internal" titl
         <span class="k">return</span> <span class="s2">&quot;https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/airflow.png&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">AirflowOrchestratorConfig</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">AirflowOrchestratorConfig</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns `AirflowOrchestratorConfig` config class.</span>
 
 <span class="sd">        Returns:</span>
@@ -3042,13 +3042,13 @@ AirflowOrchestratorFlavor            (<a class="autorefs autorefs-internal" titl
         <span class="k">return</span> <span class="n">AirflowOrchestratorConfig</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;AirflowOrchestrator&quot;</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;AirflowOrchestrator&quot;</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The implementation class.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.airflow.orchestrators</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.airflow.orchestrators</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">AirflowOrchestrator</span><span class="p">,</span>
         <span class="p">)</span>
 
@@ -3387,7 +3387,7 @@ pipeline and ignored if defined on a step.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/airflow/flavors/airflow_orchestrator_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AirflowOrchestratorSettings</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AirflowOrchestratorSettings</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Settings for the Airflow orchestrator.</span>
 
 <span class="sd">    Attributes:</span>
@@ -3428,7 +3428,7 @@ pipeline and ignored if defined on a step.</p></td>
 
     <span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;operator&quot;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;before&quot;</span><span class="p">)</span>
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">_convert_operator</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_convert_operator</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Converts operator types to source strings.</span>
 
 <span class="sd">        Args:</span>
@@ -3504,7 +3504,7 @@ OperatorType            (<span title="enum.Enum">Enum</span>)
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/airflow/flavors/airflow_orchestrator_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">OperatorType</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">OperatorType</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Airflow operator types.&quot;&quot;&quot;</span>
 
     <span class="n">DOCKER</span> <span class="o">=</span> <span class="s2">&quot;docker&quot;</span>
@@ -3512,7 +3512,7 @@ OperatorType            (<span title="enum.Enum">Enum</span>)
     <span class="n">GKE_START_POD</span> <span class="o">=</span> <span class="s2">&quot;gke_start_pod&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">source</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">source</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Operator source.</span>
 
 <span class="sd">        Returns:</span>
@@ -3649,10 +3649,10 @@ AirflowOrchestrator            (<a class="autorefs autorefs-internal" title="zen
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/airflow/orchestrators/airflow_orchestrator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AirflowOrchestrator</span><span class="p">(</span><span class="n">ContainerizedOrchestrator</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AirflowOrchestrator</span><span class="p">(</span><span class="n">ContainerizedOrchestrator</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Orchestrator responsible for running pipelines using Airflow.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">values</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">values</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the orchestrator.</span>
 
 <span class="sd">        Args:</span>
@@ -3667,7 +3667,7 @@ AirflowOrchestrator            (<a class="autorefs autorefs-internal" title="zen
         <span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AirflowOrchestratorConfig</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AirflowOrchestratorConfig</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the orchestrator config.</span>
 
 <span class="sd">        Returns:</span>
@@ -3676,7 +3676,7 @@ AirflowOrchestrator            (<a class="autorefs autorefs-internal" title="zen
         <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">AirflowOrchestratorConfig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">settings_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseSettings&quot;</span><span class="p">]]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">settings_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseSettings&quot;</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Settings class for the Kubeflow orchestrator.</span>
 
 <span class="sd">        Returns:</span>
@@ -3685,7 +3685,7 @@ AirflowOrchestrator            (<a class="autorefs autorefs-internal" title="zen
         <span class="k">return</span> <span class="n">AirflowOrchestratorSettings</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">validator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;StackValidator&quot;</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">validator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;StackValidator&quot;</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Validates the stack.</span>
 
 <span class="sd">        In the remote case, checks that the stack contains a container registry</span>
@@ -3699,7 +3699,7 @@ AirflowOrchestrator            (<a class="autorefs autorefs-internal" title="zen
             <span class="k">return</span> <span class="kc">None</span>
         <span class="k">else</span><span class="p">:</span>
 
-            <span class="k">def</span> <span class="nf">_validate_remote_components</span><span class="p">(</span>
+            <span class="k">def</span><span class="w"> </span><span class="nf">_validate_remote_components</span><span class="p">(</span>
                 <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
             <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
                 <span class="k">for</span> <span class="n">component</span> <span class="ow">in</span> <span class="n">stack</span><span class="o">.</span><span class="n">components</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
@@ -3727,7 +3727,7 @@ AirflowOrchestrator            (<a class="autorefs autorefs-internal" title="zen
                 <span class="n">custom_validation_function</span><span class="o">=</span><span class="n">_validate_remote_components</span><span class="p">,</span>
             <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">prepare_pipeline_deployment</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">prepare_pipeline_deployment</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeploymentResponse&quot;</span><span class="p">,</span>
         <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
@@ -3741,7 +3741,7 @@ AirflowOrchestrator            (<a class="autorefs autorefs-internal" title="zen
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">local</span><span class="p">:</span>
             <span class="n">stack</span><span class="o">.</span><span class="n">check_local_paths</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">prepare_or_run_pipeline</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">prepare_or_run_pipeline</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeploymentResponse&quot;</span><span class="p">,</span>
         <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
@@ -3827,7 +3827,7 @@ AirflowOrchestrator            (<a class="autorefs autorefs-internal" title="zen
             <span class="n">output_dir</span><span class="o">=</span><span class="n">pipeline_settings</span><span class="o">.</span><span class="n">dag_output_dir</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">dags_directory</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_apply_resource_settings</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_apply_resource_settings</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">resource_settings</span><span class="p">:</span> <span class="s2">&quot;ResourceSettings&quot;</span><span class="p">,</span>
         <span class="n">operator_args</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
@@ -3864,7 +3864,7 @@ AirflowOrchestrator            (<a class="autorefs autorefs-internal" title="zen
 
             <span class="n">operator_args</span><span class="p">[</span><span class="s2">&quot;container_resources&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;limits&quot;</span><span class="p">:</span> <span class="n">limits</span><span class="p">}</span>
 
-    <span class="k">def</span> <span class="nf">_write_dag</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_write_dag</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">dag_config</span><span class="p">:</span> <span class="s2">&quot;DagConfiguration&quot;</span><span class="p">,</span>
         <span class="n">dag_generator_values</span><span class="p">:</span> <span class="n">DagGeneratorValues</span><span class="p">,</span>
@@ -3889,7 +3889,7 @@ AirflowOrchestrator            (<a class="autorefs autorefs-internal" title="zen
                 <span class="n">output_dir</span><span class="p">,</span>
             <span class="p">)</span>
 
-        <span class="k">def</span> <span class="nf">_write_zip</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">_write_zip</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">with</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">z</span><span class="p">:</span>
                 <span class="n">z</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">dag_generator_values</span><span class="o">.</span><span class="n">file</span><span class="p">,</span> <span class="n">arcname</span><span class="o">=</span><span class="s2">&quot;dag.py&quot;</span><span class="p">)</span>
                 <span class="n">z</span><span class="o">.</span><span class="n">writestr</span><span class="p">(</span>
@@ -3921,7 +3921,7 @@ AirflowOrchestrator            (<a class="autorefs autorefs-internal" title="zen
             <span class="n">zip_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">output_dir</span><span class="p">,</span> <span class="n">dag_filename</span><span class="p">)</span>
             <span class="n">_write_zip</span><span class="p">(</span><span class="n">zip_path</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_orchestrator_run_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_orchestrator_run_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the active orchestrator run id.</span>
 
 <span class="sd">        Raises:</span>
@@ -3931,7 +3931,7 @@ AirflowOrchestrator            (<a class="autorefs autorefs-internal" title="zen
 <span class="sd">        Returns:</span>
 <span class="sd">            The orchestrator run id.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.airflow.orchestrators.dag_generator</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.airflow.orchestrators.dag_generator</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">ENV_ZENML_AIRFLOW_RUN_ID</span><span class="p">,</span>
         <span class="p">)</span>
 
@@ -3944,7 +3944,7 @@ AirflowOrchestrator            (<a class="autorefs autorefs-internal" title="zen
             <span class="p">)</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">_translate_schedule</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_translate_schedule</span><span class="p">(</span>
         <span class="n">schedule</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;ScheduleResponse&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert ZenML schedule into Airflow schedule.</span>
@@ -4155,7 +4155,7 @@ and only remote components.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/airflow/orchestrators/airflow_orchestrator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">values</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">values</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize the orchestrator.</span>
 
 <span class="sd">    Args:</span>
@@ -4223,7 +4223,7 @@ is not set.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/airflow/orchestrators/airflow_orchestrator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_orchestrator_run_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_orchestrator_run_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the active orchestrator run id.</span>
 
 <span class="sd">    Raises:</span>
@@ -4233,7 +4233,7 @@ is not set.</p></td>
 <span class="sd">    Returns:</span>
 <span class="sd">        The orchestrator run id.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.integrations.airflow.orchestrators.dag_generator</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.airflow.orchestrators.dag_generator</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
         <span class="n">ENV_ZENML_AIRFLOW_RUN_ID</span><span class="p">,</span>
     <span class="p">)</span>
 
@@ -4300,7 +4300,7 @@ environment.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/airflow/orchestrators/airflow_orchestrator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">prepare_or_run_pipeline</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">prepare_or_run_pipeline</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeploymentResponse&quot;</span><span class="p">,</span>
     <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
@@ -4434,7 +4434,7 @@ environment.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/airflow/orchestrators/airflow_orchestrator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">prepare_pipeline_deployment</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">prepare_pipeline_deployment</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeploymentResponse&quot;</span><span class="p">,</span>
     <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
@@ -4484,7 +4484,7 @@ DagGeneratorValues            (<span title="tuple">tuple</span>)
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/airflow/orchestrators/airflow_orchestrator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DagGeneratorValues</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">DagGeneratorValues</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Values from the DAG generator module.&quot;&quot;&quot;</span>
 
     <span class="n">file</span><span class="p">:</span> <span class="nb">str</span>
@@ -4531,7 +4531,7 @@ DagGeneratorValues            (<span title="tuple">tuple</span>)
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/airflow/orchestrators/airflow_orchestrator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">__getnewargs__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">__getnewargs__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
     <span class="s1">&#39;Return self as a plain tuple.  Used by copy and pickle.&#39;</span>
     <span class="k">return</span> <span class="n">_tuple</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 </code></pre></div>
@@ -4585,7 +4585,7 @@ DagGeneratorValues            (<span title="tuple">tuple</span>)
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/airflow/orchestrators/airflow_orchestrator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
     <span class="s1">&#39;Return a nicely formatted representation string&#39;</span>
     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">+</span> <span class="n">repr_fmt</span> <span class="o">%</span> <span class="bp">self</span>
 </code></pre></div>
@@ -4657,7 +4657,7 @@ DagGeneratorValues            (<span title="tuple">tuple</span>)
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/airflow/orchestrators/airflow_orchestrator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_dag_generator_values</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_dag_generator_values</span><span class="p">(</span>
     <span class="n">custom_dag_generator_source</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DagGeneratorValues</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets values from the DAG generator module.</span>
@@ -4671,7 +4671,7 @@ DagGeneratorValues            (<span title="tuple">tuple</span>)
     <span class="k">if</span> <span class="n">custom_dag_generator_source</span><span class="p">:</span>
         <span class="n">module</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">import_module</span><span class="p">(</span><span class="n">custom_dag_generator_source</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.airflow.orchestrators</span> <span class="kn">import</span> <span class="n">dag_generator</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.airflow.orchestrators</span><span class="w"> </span><span class="kn">import</span> <span class="n">dag_generator</span>
 
         <span class="n">module</span> <span class="o">=</span> <span class="n">dag_generator</span>
 
@@ -4749,7 +4749,7 @@ DagConfiguration            (<span title="pydantic.main.BaseModel">BaseModel</sp
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/airflow/orchestrators/dag_generator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DagConfiguration</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">DagConfiguration</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Airflow DAG configuration.&quot;&quot;&quot;</span>
 
     <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span>
@@ -4825,7 +4825,7 @@ TaskConfiguration            (<span title="pydantic.main.BaseModel">BaseModel</s
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/airflow/orchestrators/dag_generator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">TaskConfiguration</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">TaskConfiguration</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Airflow task configuration.&quot;&quot;&quot;</span>
 
     <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span>
@@ -4937,7 +4937,7 @@ TaskConfiguration            (<span title="pydantic.main.BaseModel">BaseModel</s
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/airflow/orchestrators/dag_generator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_docker_operator_init_kwargs</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_docker_operator_init_kwargs</span><span class="p">(</span>
     <span class="n">dag_config</span><span class="p">:</span> <span class="n">DagConfiguration</span><span class="p">,</span> <span class="n">task_config</span><span class="p">:</span> <span class="n">TaskConfiguration</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets keyword arguments to pass to the DockerOperator.</span>
@@ -4955,7 +4955,7 @@ TaskConfiguration            (<span title="pydantic.main.BaseModel">BaseModel</s
     <span class="n">environment</span><span class="p">[</span><span class="n">ENV_ZENML_AIRFLOW_RUN_ID</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;{{run_id}}&quot;</span>
 
     <span class="k">if</span> <span class="n">dag_config</span><span class="o">.</span><span class="n">local_stores_path</span><span class="p">:</span>
-        <span class="kn">from</span> <span class="nn">docker.types</span> <span class="kn">import</span> <span class="n">Mount</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">docker.types</span><span class="w"> </span><span class="kn">import</span> <span class="n">Mount</span>
 
         <span class="n">environment</span><span class="p">[</span><span class="n">ENV_ZENML_LOCAL_STORES_PATH</span><span class="p">]</span> <span class="o">=</span> <span class="n">dag_config</span><span class="o">.</span><span class="n">local_stores_path</span>
         <span class="n">mounts</span> <span class="o">=</span> <span class="p">[</span>
@@ -5037,7 +5037,7 @@ TaskConfiguration            (<span title="pydantic.main.BaseModel">BaseModel</s
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/airflow/orchestrators/dag_generator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_kubernetes_pod_operator_init_kwargs</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_kubernetes_pod_operator_init_kwargs</span><span class="p">(</span>
     <span class="n">dag_config</span><span class="p">:</span> <span class="n">DagConfiguration</span><span class="p">,</span> <span class="n">task_config</span><span class="p">:</span> <span class="n">TaskConfiguration</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets keyword arguments to pass to the KubernetesPodOperator.</span>
@@ -5049,7 +5049,7 @@ TaskConfiguration            (<span title="pydantic.main.BaseModel">BaseModel</s
 <span class="sd">    Returns:</span>
 <span class="sd">        The init keyword arguments.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">kubernetes.client.models</span> <span class="kn">import</span> <span class="n">V1EnvVar</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">kubernetes.client.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">V1EnvVar</span>
 
     <span class="n">environment</span> <span class="o">=</span> <span class="n">task_config</span><span class="o">.</span><span class="n">environment</span>
     <span class="n">environment</span><span class="p">[</span><span class="n">ENV_ZENML_AIRFLOW_RUN_ID</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;{{run_id}}&quot;</span>
@@ -5135,7 +5135,7 @@ TaskConfiguration            (<span title="pydantic.main.BaseModel">BaseModel</s
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/airflow/orchestrators/dag_generator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_operator_init_kwargs</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_operator_init_kwargs</span><span class="p">(</span>
     <span class="n">operator_class</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span>
     <span class="n">dag_config</span><span class="p">:</span> <span class="n">DagConfiguration</span><span class="p">,</span>
     <span class="n">task_config</span><span class="p">:</span> <span class="n">TaskConfiguration</span><span class="p">,</span>
@@ -5153,7 +5153,7 @@ TaskConfiguration            (<span title="pydantic.main.BaseModel">BaseModel</s
     <span class="n">init_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;task_id&quot;</span><span class="p">:</span> <span class="n">task_config</span><span class="o">.</span><span class="n">id</span><span class="p">}</span>
 
     <span class="k">try</span><span class="p">:</span>
-        <span class="kn">from</span> <span class="nn">airflow.providers.docker.operators.docker</span> <span class="kn">import</span> <span class="n">DockerOperator</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">airflow.providers.docker.operators.docker</span><span class="w"> </span><span class="kn">import</span> <span class="n">DockerOperator</span>
 
         <span class="k">if</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">operator_class</span><span class="p">,</span> <span class="n">DockerOperator</span><span class="p">):</span>
             <span class="n">init_kwargs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
@@ -5165,7 +5165,7 @@ TaskConfiguration            (<span title="pydantic.main.BaseModel">BaseModel</s
         <span class="k">pass</span>
 
     <span class="k">try</span><span class="p">:</span>
-        <span class="kn">from</span> <span class="nn">airflow.providers.cncf.kubernetes.operators.kubernetes_pod</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">airflow.providers.cncf.kubernetes.operators.kubernetes_pod</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">KubernetesPodOperator</span><span class="p">,</span>
         <span class="p">)</span>
 
@@ -5238,7 +5238,7 @@ TaskConfiguration            (<span title="pydantic.main.BaseModel">BaseModel</s
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/airflow/orchestrators/dag_generator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">import_class_by_path</span><span class="p">(</span><span class="n">class_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">import_class_by_path</span><span class="p">(</span><span class="n">class_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Imports a class based on a given path.</span>
 
 <span class="sd">    Args:</span>

@@ -2898,7 +2898,7 @@ LabelStudioIntegration            (<a class="autorefs autorefs-internal" title="
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/label_studio/__init__.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">LabelStudioIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">LabelStudioIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Definition of Label Studio integration for ZenML.&quot;&quot;&quot;</span>
 
     <span class="n">NAME</span> <span class="o">=</span> <span class="n">LABEL_STUDIO</span>
@@ -2907,13 +2907,13 @@ LabelStudioIntegration            (<a class="autorefs autorefs-internal" title="
     <span class="p">]</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Label Studio integration.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            List of stack component flavors for this integration.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.label_studio.flavors</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.label_studio.flavors</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">LabelStudioAnnotatorFlavor</span><span class="p">,</span>
         <span class="p">)</span>
 
@@ -2970,13 +2970,13 @@ LabelStudioIntegration            (<a class="autorefs autorefs-internal" title="
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/label_studio/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Label Studio integration.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        List of stack component flavors for this integration.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.integrations.label_studio.flavors</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.label_studio.flavors</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
         <span class="n">LabelStudioAnnotatorFlavor</span><span class="p">,</span>
     <span class="p">)</span>
 
@@ -3079,11 +3079,11 @@ LabelStudioAnnotator            (<a class="autorefs autorefs-internal" title="ze
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/label_studio/annotators/label_studio_annotator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">LabelStudioAnnotator</span><span class="p">(</span><span class="n">BaseAnnotator</span><span class="p">,</span> <span class="n">AuthenticationMixin</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">LabelStudioAnnotator</span><span class="p">(</span><span class="n">BaseAnnotator</span><span class="p">,</span> <span class="n">AuthenticationMixin</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Class to interact with the Label Studio annotation interface.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LabelStudioAnnotatorConfig</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LabelStudioAnnotatorConfig</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the `LabelStudioAnnotatorConfig` config.</span>
 
 <span class="sd">        Returns:</span>
@@ -3092,7 +3092,7 @@ LabelStudioAnnotator            (<a class="autorefs autorefs-internal" title="ze
         <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">LabelStudioAnnotatorConfig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">settings_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">LabelStudioAnnotatorSettings</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">settings_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">LabelStudioAnnotatorSettings</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Settings class for the Label Studio annotator.</span>
 
 <span class="sd">        Returns:</span>
@@ -3100,7 +3100,7 @@ LabelStudioAnnotator            (<a class="autorefs autorefs-internal" title="ze
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">LabelStudioAnnotatorSettings</span>
 
-    <span class="k">def</span> <span class="nf">get_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets the top-level URL of the annotation interface.</span>
 
 <span class="sd">        Returns:</span>
@@ -3112,7 +3112,7 @@ LabelStudioAnnotator            (<a class="autorefs autorefs-internal" title="ze
             <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">instance_url</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_url_for_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_url_for_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets the URL of the annotation interface for the given dataset.</span>
 
 <span class="sd">        Args:</span>
@@ -3124,7 +3124,7 @@ LabelStudioAnnotator            (<a class="autorefs autorefs-internal" title="ze
         <span class="n">project_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_id_from_name</span><span class="p">(</span><span class="n">dataset_name</span><span class="p">)</span>
         <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">get_url</span><span class="p">()</span><span class="si">}</span><span class="s2">/projects/</span><span class="si">{</span><span class="n">project_id</span><span class="si">}</span><span class="s2">/&quot;</span>
 
-    <span class="k">def</span> <span class="nf">get_id_from_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_id_from_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets the ID of the given dataset.</span>
 
 <span class="sd">        Args:</span>
@@ -3139,7 +3139,7 @@ LabelStudioAnnotator            (<a class="autorefs autorefs-internal" title="ze
                 <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">project</span><span class="o">.</span><span class="n">get_params</span><span class="p">()[</span><span class="s2">&quot;id&quot;</span><span class="p">])</span>
         <span class="k">return</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="nf">get_datasets</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_datasets</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets the datasets currently available for annotation.</span>
 
 <span class="sd">        Returns:</span>
@@ -3148,7 +3148,7 @@ LabelStudioAnnotator            (<a class="autorefs autorefs-internal" title="ze
         <span class="n">datasets</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_client</span><span class="p">()</span><span class="o">.</span><span class="n">get_projects</span><span class="p">()</span>
         <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span> <span class="n">datasets</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_dataset_names</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_dataset_names</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets the names of the datasets.</span>
 
 <span class="sd">        Returns:</span>
@@ -3158,7 +3158,7 @@ LabelStudioAnnotator            (<a class="autorefs autorefs-internal" title="ze
             <span class="n">dataset</span><span class="o">.</span><span class="n">get_params</span><span class="p">()[</span><span class="s2">&quot;title&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">dataset</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_datasets</span><span class="p">()</span>
         <span class="p">]</span>
 
-    <span class="k">def</span> <span class="nf">get_dataset_stats</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_dataset_stats</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets the statistics of the given dataset.</span>
 
 <span class="sd">        Args:</span>
@@ -3181,7 +3181,7 @@ LabelStudioAnnotator            (<a class="autorefs autorefs-internal" title="ze
             <span class="sa">f</span><span class="s2">&quot;`zenml annotator dataset list` to list all available datasets.&quot;</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">launch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">launch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Launches the annotation interface.</span>
 
 <span class="sd">        Args:</span>
@@ -3197,7 +3197,7 @@ LabelStudioAnnotator            (<a class="autorefs autorefs-internal" title="ze
                 <span class="s2">&quot;because the connection could not be established.&quot;</span>
             <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_get_client</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Client</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_client</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Client</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets Label Studio client.</span>
 
 <span class="sd">        Returns:</span>
@@ -3228,7 +3228,7 @@ LabelStudioAnnotator            (<a class="autorefs autorefs-internal" title="ze
             <span class="p">)</span>
         <span class="k">return</span> <span class="n">Client</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">get_url</span><span class="p">(),</span> <span class="n">api_key</span><span class="o">=</span><span class="n">api_key</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_connection_available</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_connection_available</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if the connection to the annotation server is available.</span>
 
 <span class="sd">        Returns:</span>
@@ -3244,7 +3244,7 @@ LabelStudioAnnotator            (<a class="autorefs autorefs-internal" title="ze
             <span class="p">)</span>
             <span class="k">return</span> <span class="kc">False</span>
 
-    <span class="k">def</span> <span class="nf">add_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Registers a dataset for annotation.</span>
 
 <span class="sd">        Args:</span>
@@ -3268,7 +3268,7 @@ LabelStudioAnnotator            (<a class="autorefs autorefs-internal" title="ze
             <span class="n">label_config</span><span class="o">=</span><span class="n">label_config</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">delete_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">delete_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Deletes a dataset from the annotation interface.</span>
 
 <span class="sd">        Args:</span>
@@ -3291,7 +3291,7 @@ LabelStudioAnnotator            (<a class="autorefs autorefs-internal" title="ze
             <span class="p">)</span>
         <span class="n">ls</span><span class="o">.</span><span class="n">delete_project</span><span class="p">(</span><span class="n">dataset_id</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets the dataset with the given name.</span>
 
 <span class="sd">        Args:</span>
@@ -3316,7 +3316,7 @@ LabelStudioAnnotator            (<a class="autorefs autorefs-internal" title="ze
             <span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_client</span><span class="p">()</span><span class="o">.</span><span class="n">get_project</span><span class="p">(</span><span class="n">dataset_id</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_converted_dataset</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_converted_dataset</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">dataset_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">output_format</span><span class="p">:</span> <span class="nb">str</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Extract annotated tasks in a specific converted format.</span>
@@ -3331,7 +3331,7 @@ LabelStudioAnnotator            (<a class="autorefs autorefs-internal" title="ze
         <span class="n">project</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_dataset</span><span class="p">(</span><span class="n">dataset_name</span><span class="o">=</span><span class="n">dataset_name</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">project</span><span class="o">.</span><span class="n">export_tasks</span><span class="p">(</span><span class="n">export_type</span><span class="o">=</span><span class="n">output_format</span><span class="p">)</span>  <span class="c1"># type: ignore[no-any-return]</span>
 
-    <span class="k">def</span> <span class="nf">get_labeled_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_labeled_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets the labeled data for the given dataset.</span>
 
 <span class="sd">        Args:</span>
@@ -3355,7 +3355,7 @@ LabelStudioAnnotator            (<a class="autorefs autorefs-internal" title="ze
             <span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_client</span><span class="p">()</span><span class="o">.</span><span class="n">get_project</span><span class="p">(</span><span class="n">dataset_id</span><span class="p">)</span><span class="o">.</span><span class="n">get_labeled_tasks</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">get_unlabeled_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_unlabeled_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets the unlabeled data for the given dataset.</span>
 
 <span class="sd">        Args:</span>
@@ -3378,7 +3378,7 @@ LabelStudioAnnotator            (<a class="autorefs autorefs-internal" title="ze
             <span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_client</span><span class="p">()</span><span class="o">.</span><span class="n">get_project</span><span class="p">(</span><span class="n">dataset_id</span><span class="p">)</span><span class="o">.</span><span class="n">get_unlabeled_tasks</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">register_dataset_for_annotation</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">register_dataset_for_annotation</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">label_config</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">dataset_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -3403,7 +3403,7 @@ LabelStudioAnnotator            (<a class="autorefs autorefs-internal" title="ze
 
         <span class="k">return</span> <span class="n">dataset</span>
 
-    <span class="k">def</span> <span class="nf">_get_azure_import_storage_sources</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_azure_import_storage_sources</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">dataset_id</span><span class="p">:</span> <span class="nb">int</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets a list of all Azure import storage sources.</span>
@@ -3427,7 +3427,7 @@ LabelStudioAnnotator            (<a class="autorefs autorefs-internal" title="ze
                 <span class="sa">f</span><span class="s2">&quot;Unable to get list of import storage sources. Client raised HTTP error </span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span><span class="si">}</span><span class="s2">.&quot;</span>
             <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_get_gcs_import_storage_sources</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_gcs_import_storage_sources</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">dataset_id</span><span class="p">:</span> <span class="nb">int</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets a list of all Google Cloud Storage import storage sources.</span>
@@ -3451,7 +3451,7 @@ LabelStudioAnnotator            (<a class="autorefs autorefs-internal" title="ze
                 <span class="sa">f</span><span class="s2">&quot;Unable to get list of import storage sources. Client raised HTTP error </span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span><span class="si">}</span><span class="s2">.&quot;</span>
             <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_get_s3_import_storage_sources</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_s3_import_storage_sources</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">dataset_id</span><span class="p">:</span> <span class="nb">int</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets a list of all AWS S3 import storage sources.</span>
@@ -3475,7 +3475,7 @@ LabelStudioAnnotator            (<a class="autorefs autorefs-internal" title="ze
                 <span class="sa">f</span><span class="s2">&quot;Unable to get list of import storage sources. Client raised HTTP error </span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span><span class="si">}</span><span class="s2">.&quot;</span>
             <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_storage_source_already_exists</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_storage_source_already_exists</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">uri</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">params</span><span class="p">:</span> <span class="n">LabelStudioDatasetSyncParameters</span><span class="p">,</span>
@@ -3522,7 +3522,7 @@ LabelStudioAnnotator            (<a class="autorefs autorefs-internal" title="ze
             <span class="k">for</span> <span class="n">source</span> <span class="ow">in</span> <span class="n">storage_sources</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_parsed_label_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_parsed_label_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the parsed Label Studio label config for a dataset.</span>
 
 <span class="sd">        Args:</span>
@@ -3540,7 +3540,7 @@ LabelStudioAnnotator            (<a class="autorefs autorefs-internal" title="ze
             <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">dataset</span><span class="o">.</span><span class="n">parsed_label_config</span><span class="p">)</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;No dataset found for the given id.&quot;</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">populate_artifact_store_parameters</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">populate_artifact_store_parameters</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">params</span><span class="p">:</span> <span class="n">LabelStudioDatasetSyncParameters</span><span class="p">,</span>
         <span class="n">artifact_store</span><span class="p">:</span> <span class="n">BaseArtifactStore</span><span class="p">,</span>
@@ -3555,7 +3555,7 @@ LabelStudioAnnotator            (<a class="autorefs autorefs-internal" title="ze
 <span class="sd">            RuntimeError: if the artifact store credentials cannot be fetched.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">artifact_store</span><span class="o">.</span><span class="n">flavor</span> <span class="o">==</span> <span class="s2">&quot;s3&quot;</span><span class="p">:</span>
-            <span class="kn">from</span> <span class="nn">zenml.integrations.s3.artifact_stores</span> <span class="kn">import</span> <span class="n">S3ArtifactStore</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.s3.artifact_stores</span><span class="w"> </span><span class="kn">import</span> <span class="n">S3ArtifactStore</span>
 
             <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">artifact_store</span><span class="p">,</span> <span class="n">S3ArtifactStore</span><span class="p">)</span>
 
@@ -3595,7 +3595,7 @@ LabelStudioAnnotator            (<a class="autorefs autorefs-internal" title="ze
             <span class="p">)</span>
 
         <span class="k">elif</span> <span class="n">artifact_store</span><span class="o">.</span><span class="n">flavor</span> <span class="o">==</span> <span class="s2">&quot;gcp&quot;</span><span class="p">:</span>
-            <span class="kn">from</span> <span class="nn">zenml.integrations.gcp.artifact_stores</span> <span class="kn">import</span> <span class="n">GCPArtifactStore</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.gcp.artifact_stores</span><span class="w"> </span><span class="kn">import</span> <span class="n">GCPArtifactStore</span>
 
             <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">artifact_store</span><span class="p">,</span> <span class="n">GCPArtifactStore</span><span class="p">)</span>
 
@@ -3635,7 +3635,7 @@ LabelStudioAnnotator            (<a class="autorefs autorefs-internal" title="ze
             <span class="p">)</span>
 
         <span class="k">elif</span> <span class="n">artifact_store</span><span class="o">.</span><span class="n">flavor</span> <span class="o">==</span> <span class="s2">&quot;azure&quot;</span><span class="p">:</span>
-            <span class="kn">from</span> <span class="nn">zenml.integrations.azure.artifact_stores</span> <span class="kn">import</span> <span class="p">(</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.azure.artifact_stores</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
                 <span class="n">AzureArtifactStore</span><span class="p">,</span>
             <span class="p">)</span>
 
@@ -3662,7 +3662,7 @@ LabelStudioAnnotator            (<a class="autorefs autorefs-internal" title="ze
                         <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
                             <span class="s2">&quot;The Azure connection string configured for the &quot;</span>
                             <span class="s2">&quot;artifact store expected format.&quot;</span>
-                        <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+                        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
                     <span class="k">return</span>
 
@@ -3692,7 +3692,7 @@ LabelStudioAnnotator            (<a class="autorefs autorefs-internal" title="ze
             <span class="p">)</span>
 
         <span class="k">elif</span> <span class="n">artifact_store</span><span class="o">.</span><span class="n">flavor</span> <span class="o">==</span> <span class="s2">&quot;local&quot;</span><span class="p">:</span>
-            <span class="kn">from</span> <span class="nn">zenml.artifact_stores.local_artifact_store</span> <span class="kn">import</span> <span class="p">(</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.artifact_stores.local_artifact_store</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
                 <span class="n">LocalArtifactStore</span><span class="p">,</span>
             <span class="p">)</span>
 
@@ -3715,7 +3715,7 @@ LabelStudioAnnotator            (<a class="autorefs autorefs-internal" title="ze
             <span class="s2">&quot;Azure or local).&quot;</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">connect_and_sync_external_storage</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">connect_and_sync_external_storage</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">uri</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">params</span><span class="p">:</span> <span class="n">LabelStudioDatasetSyncParameters</span><span class="p">,</span>
@@ -4008,7 +4008,7 @@ LabelStudioAnnotator            (<a class="autorefs autorefs-internal" title="ze
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/label_studio/annotators/label_studio_annotator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">add_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">add_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Registers a dataset for annotation.</span>
 
 <span class="sd">    Args:</span>
@@ -4116,7 +4116,7 @@ LabelStudioAnnotator            (<a class="autorefs autorefs-internal" title="ze
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/label_studio/annotators/label_studio_annotator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">connect_and_sync_external_storage</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">connect_and_sync_external_storage</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">uri</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">params</span><span class="p">:</span> <span class="n">LabelStudioDatasetSyncParameters</span><span class="p">,</span>
@@ -4313,7 +4313,7 @@ does not exist.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/label_studio/annotators/label_studio_annotator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">delete_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">delete_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Deletes a dataset from the annotation interface.</span>
 
 <span class="sd">    Args:</span>
@@ -4399,7 +4399,7 @@ does not exist.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/label_studio/annotators/label_studio_annotator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_converted_dataset</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_converted_dataset</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">dataset_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">output_format</span><span class="p">:</span> <span class="nb">str</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Extract annotated tasks in a specific converted format.</span>
@@ -4487,7 +4487,7 @@ does not exist.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/label_studio/annotators/label_studio_annotator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets the dataset with the given name.</span>
 
 <span class="sd">    Args:</span>
@@ -4550,7 +4550,7 @@ does not exist.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/label_studio/annotators/label_studio_annotator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_dataset_names</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_dataset_names</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets the names of the datasets.</span>
 
 <span class="sd">    Returns:</span>
@@ -4633,7 +4633,7 @@ does not exist.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/label_studio/annotators/label_studio_annotator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_dataset_stats</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_dataset_stats</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets the statistics of the given dataset.</span>
 
 <span class="sd">    Args:</span>
@@ -4694,7 +4694,7 @@ does not exist.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/label_studio/annotators/label_studio_annotator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_datasets</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_datasets</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets the datasets currently available for annotation.</span>
 
 <span class="sd">    Returns:</span>
@@ -4760,7 +4760,7 @@ does not exist.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/label_studio/annotators/label_studio_annotator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_id_from_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_id_from_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets the ID of the given dataset.</span>
 
 <span class="sd">    Args:</span>
@@ -4848,7 +4848,7 @@ does not exist.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/label_studio/annotators/label_studio_annotator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_labeled_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_labeled_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets the labeled data for the given dataset.</span>
 
 <span class="sd">    Args:</span>
@@ -4944,7 +4944,7 @@ does not exist.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/label_studio/annotators/label_studio_annotator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_parsed_label_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_parsed_label_config</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the parsed Label Studio label config for a dataset.</span>
 
 <span class="sd">    Args:</span>
@@ -5034,7 +5034,7 @@ does not exist.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/label_studio/annotators/label_studio_annotator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_unlabeled_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_unlabeled_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets the unlabeled data for the given dataset.</span>
 
 <span class="sd">    Args:</span>
@@ -5095,7 +5095,7 @@ does not exist.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/label_studio/annotators/label_studio_annotator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets the top-level URL of the annotation interface.</span>
 
 <span class="sd">    Returns:</span>
@@ -5164,7 +5164,7 @@ does not exist.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/label_studio/annotators/label_studio_annotator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_url_for_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_url_for_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets the URL of the annotation interface for the given dataset.</span>
 
 <span class="sd">    Args:</span>
@@ -5219,7 +5219,7 @@ annotation client.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/label_studio/annotators/label_studio_annotator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">launch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">launch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Launches the annotation interface.</span>
 
 <span class="sd">    Args:</span>
@@ -5298,7 +5298,7 @@ annotation client.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/label_studio/annotators/label_studio_annotator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">populate_artifact_store_parameters</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">populate_artifact_store_parameters</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">params</span><span class="p">:</span> <span class="n">LabelStudioDatasetSyncParameters</span><span class="p">,</span>
     <span class="n">artifact_store</span><span class="p">:</span> <span class="n">BaseArtifactStore</span><span class="p">,</span>
@@ -5313,7 +5313,7 @@ annotation client.</p></td>
 <span class="sd">        RuntimeError: if the artifact store credentials cannot be fetched.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">artifact_store</span><span class="o">.</span><span class="n">flavor</span> <span class="o">==</span> <span class="s2">&quot;s3&quot;</span><span class="p">:</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.s3.artifact_stores</span> <span class="kn">import</span> <span class="n">S3ArtifactStore</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.s3.artifact_stores</span><span class="w"> </span><span class="kn">import</span> <span class="n">S3ArtifactStore</span>
 
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">artifact_store</span><span class="p">,</span> <span class="n">S3ArtifactStore</span><span class="p">)</span>
 
@@ -5353,7 +5353,7 @@ annotation client.</p></td>
         <span class="p">)</span>
 
     <span class="k">elif</span> <span class="n">artifact_store</span><span class="o">.</span><span class="n">flavor</span> <span class="o">==</span> <span class="s2">&quot;gcp&quot;</span><span class="p">:</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.gcp.artifact_stores</span> <span class="kn">import</span> <span class="n">GCPArtifactStore</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.gcp.artifact_stores</span><span class="w"> </span><span class="kn">import</span> <span class="n">GCPArtifactStore</span>
 
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">artifact_store</span><span class="p">,</span> <span class="n">GCPArtifactStore</span><span class="p">)</span>
 
@@ -5393,7 +5393,7 @@ annotation client.</p></td>
         <span class="p">)</span>
 
     <span class="k">elif</span> <span class="n">artifact_store</span><span class="o">.</span><span class="n">flavor</span> <span class="o">==</span> <span class="s2">&quot;azure&quot;</span><span class="p">:</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.azure.artifact_stores</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.azure.artifact_stores</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">AzureArtifactStore</span><span class="p">,</span>
         <span class="p">)</span>
 
@@ -5420,7 +5420,7 @@ annotation client.</p></td>
                     <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
                         <span class="s2">&quot;The Azure connection string configured for the &quot;</span>
                         <span class="s2">&quot;artifact store expected format.&quot;</span>
-                    <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+                    <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
                 <span class="k">return</span>
 
@@ -5450,7 +5450,7 @@ annotation client.</p></td>
         <span class="p">)</span>
 
     <span class="k">elif</span> <span class="n">artifact_store</span><span class="o">.</span><span class="n">flavor</span> <span class="o">==</span> <span class="s2">&quot;local&quot;</span><span class="p">:</span>
-        <span class="kn">from</span> <span class="nn">zenml.artifact_stores.local_artifact_store</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.artifact_stores.local_artifact_store</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">LocalArtifactStore</span><span class="p">,</span>
         <span class="p">)</span>
 
@@ -5536,7 +5536,7 @@ annotation client.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/label_studio/annotators/label_studio_annotator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">register_dataset_for_annotation</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">register_dataset_for_annotation</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">label_config</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">dataset_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -5680,7 +5680,7 @@ additional functionality.</p>
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/label_studio/flavors/label_studio_annotator_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">LabelStudioAnnotatorConfig</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">LabelStudioAnnotatorConfig</span><span class="p">(</span>
     <span class="n">BaseAnnotatorConfig</span><span class="p">,</span>
     <span class="n">LabelStudioAnnotatorSettings</span><span class="p">,</span>
     <span class="n">AuthenticationConfigMixin</span><span class="p">,</span>
@@ -5751,11 +5751,11 @@ LabelStudioAnnotatorFlavor            (<a class="autorefs autorefs-internal" tit
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/label_studio/flavors/label_studio_annotator_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">LabelStudioAnnotatorFlavor</span><span class="p">(</span><span class="n">BaseAnnotatorFlavor</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">LabelStudioAnnotatorFlavor</span><span class="p">(</span><span class="n">BaseAnnotatorFlavor</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Label Studio annotator flavor.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -5764,7 +5764,7 @@ LabelStudioAnnotatorFlavor            (<a class="autorefs autorefs-internal" tit
         <span class="k">return</span> <span class="n">LABEL_STUDIO_ANNOTATOR_FLAVOR</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -5773,7 +5773,7 @@ LabelStudioAnnotatorFlavor            (<a class="autorefs autorefs-internal" tit
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at SDK docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -5782,7 +5782,7 @@ LabelStudioAnnotatorFlavor            (<a class="autorefs autorefs-internal" tit
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_sdk_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to represent the flavor in the dashboard.</span>
 
 <span class="sd">        Returns:</span>
@@ -5791,7 +5791,7 @@ LabelStudioAnnotatorFlavor            (<a class="autorefs autorefs-internal" tit
         <span class="k">return</span> <span class="s2">&quot;https://public-flavor-logos.s3.eu-central-1.amazonaws.com/annotator/label_studio.png&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">LabelStudioAnnotatorConfig</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">LabelStudioAnnotatorConfig</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns `LabelStudioAnnotatorConfig` config class.</span>
 
 <span class="sd">        Returns:</span>
@@ -5800,13 +5800,13 @@ LabelStudioAnnotatorFlavor            (<a class="autorefs autorefs-internal" tit
         <span class="k">return</span> <span class="n">LabelStudioAnnotatorConfig</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;LabelStudioAnnotator&quot;</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;LabelStudioAnnotator&quot;</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The implementation class.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.label_studio.annotators</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.label_studio.annotators</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">LabelStudioAnnotator</span><span class="p">,</span>
         <span class="p">)</span>
 
@@ -6110,7 +6110,7 @@ LabelStudioAnnotatorSettings            (<a class="autorefs autorefs-internal" t
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/label_studio/flavors/label_studio_annotator_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">LabelStudioAnnotatorSettings</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">LabelStudioAnnotatorSettings</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Label studio annotator settings.</span>
 
 <span class="sd">    Attributes:</span>
@@ -6311,7 +6311,7 @@ https://labelstud.io/templates/image_bbox.html.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/label_studio/label_config_generators/label_config_generators.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">generate_basic_object_detection_bounding_boxes_label_config</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">generate_basic_object_detection_bounding_boxes_label_config</span><span class="p">(</span>
     <span class="n">labels</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Generates a Label Studio config for object detection with bounding boxes.</span>
@@ -6422,7 +6422,7 @@ https://labelstud.io/templates/optical_character_recognition.html</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/label_studio/label_config_generators/label_config_generators.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">generate_basic_ocr_label_config</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">generate_basic_ocr_label_config</span><span class="p">(</span>
     <span class="n">labels</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Generates a Label Studio config for optical character recognition (OCR) labeling task.</span>
@@ -6544,7 +6544,7 @@ https://labelstud.io/templates/image_classification.html.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/label_studio/label_config_generators/label_config_generators.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">generate_image_classification_label_config</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">generate_image_classification_label_config</span><span class="p">(</span>
     <span class="n">labels</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Generates a Label Studio label config for image classification.</span>
@@ -6655,7 +6655,7 @@ https://labelstud.io/templates/sentiment_analysis.html.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/label_studio/label_config_generators/label_config_generators.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">generate_text_classification_label_config</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">generate_text_classification_label_config</span><span class="p">(</span>
     <span class="n">labels</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Generates a Label Studio label config for text classification.</span>
@@ -6801,7 +6801,7 @@ would become
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/label_studio/label_studio_utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">clean_url</span><span class="p">(</span><span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">clean_url</span><span class="p">(</span><span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Remove extraneous parts of the URL prior to mapping.</span>
 
 <span class="sd">    Removes the query and netloc parts of the URL, and strips the leading slash</span>
@@ -6883,7 +6883,7 @@ would become
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/label_studio/label_studio_utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">convert_pred_filenames_to_task_ids</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">convert_pred_filenames_to_task_ids</span><span class="p">(</span>
     <span class="n">preds</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span>
     <span class="n">tasks</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
@@ -6973,7 +6973,7 @@ would become
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/label_studio/label_studio_utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_file_extension</span><span class="p">(</span><span class="n">path_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_file_extension</span><span class="p">(</span><span class="n">path_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the file extension of the given filename.</span>
 
 <span class="sd">    Args:</span>
@@ -7041,7 +7041,7 @@ would become
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/label_studio/label_studio_utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">is_azure_url</span><span class="p">(</span><span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">is_azure_url</span><span class="p">(</span><span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Return whether the given URL is an Azure URL.</span>
 
 <span class="sd">    Args:</span>
@@ -7109,7 +7109,7 @@ would become
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/label_studio/label_studio_utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">is_gcs_url</span><span class="p">(</span><span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">is_gcs_url</span><span class="p">(</span><span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Return whether the given URL is an GCS URL.</span>
 
 <span class="sd">    Args:</span>
@@ -7177,7 +7177,7 @@ would become
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/label_studio/label_studio_utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">is_s3_url</span><span class="p">(</span><span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">is_s3_url</span><span class="p">(</span><span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Return whether the given URL is an S3 URL.</span>
 
 <span class="sd">    Args:</span>
@@ -7384,7 +7384,7 @@ storage.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/label_studio/steps/label_studio_standard_steps.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">LabelStudioDatasetSyncParameters</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">LabelStudioDatasetSyncParameters</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Step parameters when syncing data to Label Studio.</span>
 
 <span class="sd">    Attributes:</span>

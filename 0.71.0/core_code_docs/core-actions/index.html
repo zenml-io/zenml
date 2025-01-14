@@ -2572,7 +2572,7 @@ ActionConfig            (<a class="autorefs autorefs-internal" title="zenml.plug
 
         <details class="quote">
           <summary>Source code in <code>zenml/actions/base_action.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ActionConfig</span><span class="p">(</span><span class="n">BasePluginConfig</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ActionConfig</span><span class="p">(</span><span class="n">BasePluginConfig</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Allows configuring the action configuration.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
@@ -2633,7 +2633,7 @@ BaseActionFlavor            (<a class="autorefs autorefs-internal" title="zenml.
 
         <details class="quote">
           <summary>Source code in <code>zenml/actions/base_action.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseActionFlavor</span><span class="p">(</span><span class="n">BasePluginFlavor</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">BaseActionFlavor</span><span class="p">(</span><span class="n">BasePluginFlavor</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Base Action Flavor to register Action Configurations.&quot;&quot;&quot;</span>
 
     <span class="n">TYPE</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">PluginType</span><span class="p">]</span> <span class="o">=</span> <span class="n">PluginType</span><span class="o">.</span><span class="n">ACTION</span>
@@ -2642,7 +2642,7 @@ BaseActionFlavor            (<a class="autorefs autorefs-internal" title="zenml.
     <span class="n">ACTION_CONFIG_CLASS</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">ActionConfig</span><span class="p">]]</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">get_action_config_schema</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_action_config_schema</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The config schema for a flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -2651,7 +2651,7 @@ BaseActionFlavor            (<a class="autorefs autorefs-internal" title="zenml.
         <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">ACTION_CONFIG_CLASS</span><span class="o">.</span><span class="n">model_json_schema</span><span class="p">()</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">get_flavor_response_model</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">hydrate</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ActionFlavorResponse</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_flavor_response_model</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">hydrate</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ActionFlavorResponse</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert the Flavor into a Response Model.</span>
 
 <span class="sd">        Args:</span>
@@ -2723,7 +2723,7 @@ BaseActionFlavor            (<a class="autorefs autorefs-internal" title="zenml.
         <details class="quote">
           <summary>Source code in <code>zenml/actions/base_action.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">get_action_config_schema</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_action_config_schema</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;The config schema for a flavor.</span>
 
 <span class="sd">    Returns:</span>
@@ -2792,7 +2792,7 @@ BaseActionFlavor            (<a class="autorefs autorefs-internal" title="zenml.
         <details class="quote">
           <summary>Source code in <code>zenml/actions/base_action.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">get_flavor_response_model</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">hydrate</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ActionFlavorResponse</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_flavor_response_model</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">hydrate</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ActionFlavorResponse</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert the Flavor into a Response Model.</span>
 
 <span class="sd">    Args:</span>
@@ -2850,12 +2850,12 @@ BaseActionHandler            (<a class="autorefs autorefs-internal" title="zenml
 
         <details class="quote">
           <summary>Source code in <code>zenml/actions/base_action.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseActionHandler</span><span class="p">(</span><span class="n">BasePlugin</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">BaseActionHandler</span><span class="p">(</span><span class="n">BasePlugin</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Implementation for an action handler.&quot;&quot;&quot;</span>
 
     <span class="n">_event_hub</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseEventHub</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event_hub</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseEventHub</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event_hub</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseEventHub</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Event source handler initialization.</span>
 
 <span class="sd">        Args:</span>
@@ -2866,7 +2866,7 @@ BaseActionHandler            (<a class="autorefs autorefs-internal" title="zenml
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">event_hub</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="kn">from</span> <span class="nn">zenml.event_hub.event_hub</span> <span class="kn">import</span> <span class="p">(</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.event_hub.event_hub</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
                 <span class="n">event_hub</span> <span class="k">as</span> <span class="n">default_event_hub</span><span class="p">,</span>
             <span class="p">)</span>
 
@@ -2878,7 +2878,7 @@ BaseActionHandler            (<a class="autorefs autorefs-internal" title="zenml
 
     <span class="nd">@property</span>
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">ActionConfig</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">ActionConfig</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the `BasePluginConfig` config.</span>
 
 <span class="sd">        Returns:</span>
@@ -2887,7 +2887,7 @@ BaseActionHandler            (<a class="autorefs autorefs-internal" title="zenml
 
     <span class="nd">@property</span>
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">flavor_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseActionFlavor</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">flavor_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseActionFlavor</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the flavor class of the plugin.</span>
 
 <span class="sd">        Returns:</span>
@@ -2895,7 +2895,7 @@ BaseActionHandler            (<a class="autorefs autorefs-internal" title="zenml
 <span class="sd">        &quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">event_hub</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseEventHub</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">event_hub</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseEventHub</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the event hub used to dispatch events.</span>
 
 <span class="sd">        Returns:</span>
@@ -2913,7 +2913,7 @@ BaseActionHandler            (<a class="autorefs autorefs-internal" title="zenml
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_event_hub</span>
 
-    <span class="k">def</span> <span class="nf">set_event_hub</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event_hub</span><span class="p">:</span> <span class="n">BaseEventHub</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_event_hub</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event_hub</span><span class="p">:</span> <span class="n">BaseEventHub</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Configure an event hub for this event source plugin.</span>
 
 <span class="sd">        Args:</span>
@@ -2927,7 +2927,7 @@ BaseActionHandler            (<a class="autorefs autorefs-internal" title="zenml
             <span class="n">callback</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">event_hub_callback</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">event_hub_callback</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">event_hub_callback</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">config</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
         <span class="n">trigger_execution</span><span class="p">:</span> <span class="n">TriggerExecutionResponse</span><span class="p">,</span>
@@ -2976,7 +2976,7 @@ BaseActionHandler            (<a class="autorefs autorefs-internal" title="zenml
             <span class="p">)</span>
 
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">config</span><span class="p">:</span> <span class="n">ActionConfig</span><span class="p">,</span>
         <span class="n">trigger_execution</span><span class="p">:</span> <span class="n">TriggerExecutionResponse</span><span class="p">,</span>
@@ -2995,7 +2995,7 @@ BaseActionHandler            (<a class="autorefs autorefs-internal" title="zenml
 <span class="sd">                trigger&#39;s authentication window.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">create_action</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="n">ActionRequest</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ActionResponse</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">create_action</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="n">ActionRequest</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ActionResponse</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Process a action request and create the action in the database.</span>
 
 <span class="sd">        Args:</span>
@@ -3044,7 +3044,7 @@ BaseActionHandler            (<a class="autorefs autorefs-internal" title="zenml
         <span class="c1"># Return the response to the user</span>
         <span class="k">return</span> <span class="n">action_response</span>
 
-    <span class="k">def</span> <span class="nf">update_action</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update_action</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">action</span><span class="p">:</span> <span class="n">ActionResponse</span><span class="p">,</span>
         <span class="n">action_update</span><span class="p">:</span> <span class="n">ActionUpdate</span><span class="p">,</span>
@@ -3129,7 +3129,7 @@ BaseActionHandler            (<a class="autorefs autorefs-internal" title="zenml
         <span class="c1"># Return the response to the user</span>
         <span class="k">return</span> <span class="n">action_response</span>
 
-    <span class="k">def</span> <span class="nf">delete_action</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">delete_action</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">action</span><span class="p">:</span> <span class="n">ActionResponse</span><span class="p">,</span>
         <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -3169,7 +3169,7 @@ BaseActionHandler            (<a class="autorefs autorefs-internal" title="zenml
             <span class="n">action_id</span><span class="o">=</span><span class="n">action</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_action</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_action</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="n">ActionResponse</span><span class="p">,</span> <span class="n">hydrate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ActionResponse</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Process a action response before it is returned to the user.</span>
@@ -3197,7 +3197,7 @@ BaseActionHandler            (<a class="autorefs autorefs-internal" title="zenml
         <span class="c1"># Return the response to the user</span>
         <span class="k">return</span> <span class="n">action</span>
 
-    <span class="k">def</span> <span class="nf">validate_action_configuration</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">validate_action_configuration</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">action_config</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ActionConfig</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate and return the action configuration.</span>
@@ -3214,9 +3214,9 @@ BaseActionHandler            (<a class="autorefs autorefs-internal" title="zenml
         <span class="k">try</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">config_class</span><span class="p">(</span><span class="o">**</span><span class="n">action_config</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid configuration for action: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid configuration for action: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
-    <span class="k">def</span> <span class="nf">extract_resources</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">extract_resources</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">action_config</span><span class="p">:</span> <span class="n">ActionConfig</span><span class="p">,</span>
         <span class="n">hydrate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -3233,7 +3233,7 @@ BaseActionHandler            (<a class="autorefs autorefs-internal" title="zenml
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="p">{}</span>
 
-    <span class="k">def</span> <span class="nf">_validate_action_request</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_action_request</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="n">ActionRequest</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">ActionConfig</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate an action request before it is created in the database.</span>
@@ -3262,7 +3262,7 @@ BaseActionHandler            (<a class="autorefs autorefs-internal" title="zenml
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">pass</span>
 
-    <span class="k">def</span> <span class="nf">_process_action_request</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_process_action_request</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="n">ActionResponse</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">ActionConfig</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Process an action request after it is created in the database.</span>
@@ -3287,7 +3287,7 @@ BaseActionHandler            (<a class="autorefs autorefs-internal" title="zenml
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">pass</span>
 
-    <span class="k">def</span> <span class="nf">_validate_action_update</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_action_update</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">action</span><span class="p">:</span> <span class="n">ActionResponse</span><span class="p">,</span>
         <span class="n">config</span><span class="p">:</span> <span class="n">ActionConfig</span><span class="p">,</span>
@@ -3324,7 +3324,7 @@ BaseActionHandler            (<a class="autorefs autorefs-internal" title="zenml
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">pass</span>
 
-    <span class="k">def</span> <span class="nf">_process_action_update</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_process_action_update</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">action</span><span class="p">:</span> <span class="n">ActionResponse</span><span class="p">,</span>
         <span class="n">config</span><span class="p">:</span> <span class="n">ActionConfig</span><span class="p">,</span>
@@ -3357,7 +3357,7 @@ BaseActionHandler            (<a class="autorefs autorefs-internal" title="zenml
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">pass</span>
 
-    <span class="k">def</span> <span class="nf">_process_action_delete</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_process_action_delete</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">action</span><span class="p">:</span> <span class="n">ActionResponse</span><span class="p">,</span>
         <span class="n">config</span><span class="p">:</span> <span class="n">ActionConfig</span><span class="p">,</span>
@@ -3383,7 +3383,7 @@ BaseActionHandler            (<a class="autorefs autorefs-internal" title="zenml
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">pass</span>
 
-    <span class="k">def</span> <span class="nf">_process_action_response</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_process_action_response</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="n">ActionResponse</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">ActionConfig</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Process an action response before it is returned to the user.</span>
@@ -3408,7 +3408,7 @@ BaseActionHandler            (<a class="autorefs autorefs-internal" title="zenml
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">pass</span>
 
-    <span class="k">def</span> <span class="nf">_populate_action_response_resources</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_populate_action_response_resources</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">action</span><span class="p">:</span> <span class="n">ActionResponse</span><span class="p">,</span>
         <span class="n">config</span><span class="p">:</span> <span class="n">ActionConfig</span><span class="p">,</span>
@@ -3621,7 +3621,7 @@ be configured before the event handler needs to dispatch events.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/actions/base_action.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event_hub</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseEventHub</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event_hub</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseEventHub</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Event source handler initialization.</span>
 
 <span class="sd">    Args:</span>
@@ -3632,7 +3632,7 @@ be configured before the event handler needs to dispatch events.</p></td>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
     <span class="k">if</span> <span class="n">event_hub</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="kn">from</span> <span class="nn">zenml.event_hub.event_hub</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.event_hub.event_hub</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">event_hub</span> <span class="k">as</span> <span class="n">default_event_hub</span><span class="p">,</span>
         <span class="p">)</span>
 
@@ -3715,7 +3715,7 @@ the action fails.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/actions/base_action.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">create_action</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="n">ActionRequest</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ActionResponse</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">create_action</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="n">ActionRequest</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ActionResponse</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Process a action request and create the action in the database.</span>
 
 <span class="sd">    Args:</span>
@@ -3830,7 +3830,7 @@ the action fails.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/actions/base_action.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">delete_action</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">delete_action</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">action</span><span class="p">:</span> <span class="n">ActionResponse</span><span class="p">,</span>
     <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -3929,7 +3929,7 @@ trigger's authentication window.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/actions/base_action.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">event_hub_callback</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">event_hub_callback</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">config</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
     <span class="n">trigger_execution</span><span class="p">:</span> <span class="n">TriggerExecutionResponse</span><span class="p">,</span>
@@ -4041,7 +4041,7 @@ resources.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/actions/base_action.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">extract_resources</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">extract_resources</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">action_config</span><span class="p">:</span> <span class="n">ActionConfig</span><span class="p">,</span>
     <span class="n">hydrate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -4121,7 +4121,7 @@ resources.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/actions/base_action.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_action</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_action</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="n">ActionResponse</span><span class="p">,</span> <span class="n">hydrate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ActionResponse</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Process a action response before it is returned to the user.</span>
@@ -4209,7 +4209,7 @@ trigger's authentication window.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/actions/base_action.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
-<span class="k">def</span> <span class="nf">run</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">config</span><span class="p">:</span> <span class="n">ActionConfig</span><span class="p">,</span>
     <span class="n">trigger_execution</span><span class="p">:</span> <span class="n">TriggerExecutionResponse</span><span class="p">,</span>
@@ -4271,7 +4271,7 @@ events.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/actions/base_action.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">set_event_hub</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event_hub</span><span class="p">:</span> <span class="n">BaseEventHub</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">set_event_hub</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event_hub</span><span class="p">:</span> <span class="n">BaseEventHub</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Configure an event hub for this event source plugin.</span>
 
 <span class="sd">    Args:</span>
@@ -4364,7 +4364,7 @@ the action fails.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/actions/base_action.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">update_action</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">update_action</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">action</span><span class="p">:</span> <span class="n">ActionResponse</span><span class="p">,</span>
     <span class="n">action_update</span><span class="p">:</span> <span class="n">ActionUpdate</span><span class="p">,</span>
@@ -4521,7 +4521,7 @@ the action fails.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/actions/base_action.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">validate_action_configuration</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">validate_action_configuration</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">action_config</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ActionConfig</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate and return the action configuration.</span>
@@ -4538,7 +4538,7 @@ the action fails.</p></td>
     <span class="k">try</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">config_class</span><span class="p">(</span><span class="o">**</span><span class="n">action_config</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid configuration for action: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid configuration for action: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 </code></pre></div>
         </details>
     </div>
@@ -4644,7 +4644,7 @@ PipelineRunActionConfiguration            (<a class="autorefs autorefs-internal"
 
         <details class="quote">
           <summary>Source code in <code>zenml/actions/pipeline_run/pipeline_run_action.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">PipelineRunActionConfiguration</span><span class="p">(</span><span class="n">ActionConfig</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">PipelineRunActionConfiguration</span><span class="p">(</span><span class="n">ActionConfig</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Configuration class to configure a pipeline run action.&quot;&quot;&quot;</span>
 
     <span class="n">template_id</span><span class="p">:</span> <span class="n">UUID</span>
@@ -4708,7 +4708,7 @@ PipelineRunActionFlavor            (<a class="autorefs autorefs-internal" title=
 
         <details class="quote">
           <summary>Source code in <code>zenml/actions/pipeline_run/pipeline_run_action.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">PipelineRunActionFlavor</span><span class="p">(</span><span class="n">BaseActionFlavor</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">PipelineRunActionFlavor</span><span class="p">(</span><span class="n">BaseActionFlavor</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Enables users to configure pipeline run action.&quot;&quot;&quot;</span>
 
     <span class="n">FLAVOR</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;builtin&quot;</span>
@@ -4755,7 +4755,7 @@ ACTION_CONFIG_CLASS            (<a class="autorefs autorefs-internal" title="zen
 
         <details class="quote">
           <summary>Source code in <code>zenml/actions/pipeline_run/pipeline_run_action.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">PipelineRunActionConfiguration</span><span class="p">(</span><span class="n">ActionConfig</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">PipelineRunActionConfiguration</span><span class="p">(</span><span class="n">ActionConfig</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Configuration class to configure a pipeline run action.&quot;&quot;&quot;</span>
 
     <span class="n">template_id</span><span class="p">:</span> <span class="n">UUID</span>
@@ -4819,11 +4819,11 @@ PLUGIN_CLASS            (<a class="autorefs autorefs-internal" title="zenml.acti
 
         <details class="quote">
           <summary>Source code in <code>zenml/actions/pipeline_run/pipeline_run_action.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">PipelineRunActionHandler</span><span class="p">(</span><span class="n">BaseActionHandler</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">PipelineRunActionHandler</span><span class="p">(</span><span class="n">BaseActionHandler</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Action handler for running pipelines.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">PipelineRunActionConfiguration</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">PipelineRunActionConfiguration</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the `BasePluginConfig` config.</span>
 
 <span class="sd">        Returns:</span>
@@ -4832,7 +4832,7 @@ PLUGIN_CLASS            (<a class="autorefs autorefs-internal" title="zenml.acti
         <span class="k">return</span> <span class="n">PipelineRunActionConfiguration</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">flavor_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseActionFlavor</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">flavor_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseActionFlavor</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the flavor class of the plugin.</span>
 
 <span class="sd">        Returns:</span>
@@ -4840,7 +4840,7 @@ PLUGIN_CLASS            (<a class="autorefs autorefs-internal" title="zenml.acti
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">PipelineRunActionFlavor</span>
 
-    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">config</span><span class="p">:</span> <span class="n">ActionConfig</span><span class="p">,</span>
         <span class="n">trigger_execution</span><span class="p">:</span> <span class="n">TriggerExecutionResponse</span><span class="p">,</span>
@@ -4858,7 +4858,7 @@ PLUGIN_CLASS            (<a class="autorefs autorefs-internal" title="zenml.acti
 <span class="sd">                that activated the action and has a validity defined by the</span>
 <span class="sd">                trigger&#39;s authentication window.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.zen_server.utils</span> <span class="kn">import</span> <span class="n">zen_store</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.zen_server.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">zen_store</span>
 
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">PipelineRunActionConfiguration</span><span class="p">)</span>
 
@@ -4870,7 +4870,7 @@ PLUGIN_CLASS            (<a class="autorefs autorefs-internal" title="zenml.acti
             <span class="n">auth_context</span><span class="o">=</span><span class="n">auth_context</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_validate_configuration</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_configuration</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">PipelineRunActionConfiguration</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate a pipeline run action configuration.</span>
@@ -4890,7 +4890,7 @@ PLUGIN_CLASS            (<a class="autorefs autorefs-internal" title="zenml.acti
                 <span class="sa">f</span><span class="s2">&quot;No template found with id </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">template_id</span><span class="si">}</span><span class="s2">.&quot;</span>
             <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_validate_action_request</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_action_request</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="n">ActionRequest</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">ActionConfig</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate an action request before it is created in the database.</span>
@@ -4907,7 +4907,7 @@ PLUGIN_CLASS            (<a class="autorefs autorefs-internal" title="zenml.acti
         <span class="k">if</span> <span class="n">action</span><span class="o">.</span><span class="n">auth_window</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">action</span><span class="o">.</span><span class="n">auth_window</span> <span class="o">=</span> <span class="n">server_config</span><span class="p">()</span><span class="o">.</span><span class="n">pipeline_run_auth_window</span>
 
-    <span class="k">def</span> <span class="nf">_validate_action_update</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_action_update</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">action</span><span class="p">:</span> <span class="n">ActionResponse</span><span class="p">,</span>
         <span class="n">config</span><span class="p">:</span> <span class="n">ActionConfig</span><span class="p">,</span>
@@ -4928,7 +4928,7 @@ PLUGIN_CLASS            (<a class="autorefs autorefs-internal" title="zenml.acti
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_validate_configuration</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">extract_resources</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">extract_resources</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">action_config</span><span class="p">:</span> <span class="n">ActionConfig</span><span class="p">,</span>
         <span class="n">hydrate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -5133,7 +5133,7 @@ resources.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/actions/pipeline_run/pipeline_run_action.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">extract_resources</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">extract_resources</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">action_config</span><span class="p">:</span> <span class="n">ActionConfig</span><span class="p">,</span>
     <span class="n">hydrate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -5235,7 +5235,7 @@ trigger's authentication window.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/actions/pipeline_run/pipeline_run_action.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">run</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">config</span><span class="p">:</span> <span class="n">ActionConfig</span><span class="p">,</span>
     <span class="n">trigger_execution</span><span class="p">:</span> <span class="n">TriggerExecutionResponse</span><span class="p">,</span>
@@ -5253,7 +5253,7 @@ trigger's authentication window.</p></td>
 <span class="sd">            that activated the action and has a validity defined by the</span>
 <span class="sd">            trigger&#39;s authentication window.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.zen_server.utils</span> <span class="kn">import</span> <span class="n">zen_store</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.zen_server.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">zen_store</span>
 
     <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">PipelineRunActionConfiguration</span><span class="p">)</span>
 
@@ -5313,11 +5313,11 @@ PipelineRunActionHandler            (<a class="autorefs autorefs-internal" title
 
         <details class="quote">
           <summary>Source code in <code>zenml/actions/pipeline_run/pipeline_run_action.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">PipelineRunActionHandler</span><span class="p">(</span><span class="n">BaseActionHandler</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">PipelineRunActionHandler</span><span class="p">(</span><span class="n">BaseActionHandler</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Action handler for running pipelines.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">PipelineRunActionConfiguration</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">PipelineRunActionConfiguration</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the `BasePluginConfig` config.</span>
 
 <span class="sd">        Returns:</span>
@@ -5326,7 +5326,7 @@ PipelineRunActionHandler            (<a class="autorefs autorefs-internal" title
         <span class="k">return</span> <span class="n">PipelineRunActionConfiguration</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">flavor_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseActionFlavor</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">flavor_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseActionFlavor</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the flavor class of the plugin.</span>
 
 <span class="sd">        Returns:</span>
@@ -5334,7 +5334,7 @@ PipelineRunActionHandler            (<a class="autorefs autorefs-internal" title
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">PipelineRunActionFlavor</span>
 
-    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">config</span><span class="p">:</span> <span class="n">ActionConfig</span><span class="p">,</span>
         <span class="n">trigger_execution</span><span class="p">:</span> <span class="n">TriggerExecutionResponse</span><span class="p">,</span>
@@ -5352,7 +5352,7 @@ PipelineRunActionHandler            (<a class="autorefs autorefs-internal" title
 <span class="sd">                that activated the action and has a validity defined by the</span>
 <span class="sd">                trigger&#39;s authentication window.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.zen_server.utils</span> <span class="kn">import</span> <span class="n">zen_store</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.zen_server.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">zen_store</span>
 
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">PipelineRunActionConfiguration</span><span class="p">)</span>
 
@@ -5364,7 +5364,7 @@ PipelineRunActionHandler            (<a class="autorefs autorefs-internal" title
             <span class="n">auth_context</span><span class="o">=</span><span class="n">auth_context</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_validate_configuration</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_configuration</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">PipelineRunActionConfiguration</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate a pipeline run action configuration.</span>
@@ -5384,7 +5384,7 @@ PipelineRunActionHandler            (<a class="autorefs autorefs-internal" title
                 <span class="sa">f</span><span class="s2">&quot;No template found with id </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">template_id</span><span class="si">}</span><span class="s2">.&quot;</span>
             <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_validate_action_request</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_action_request</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">action</span><span class="p">:</span> <span class="n">ActionRequest</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">ActionConfig</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate an action request before it is created in the database.</span>
@@ -5401,7 +5401,7 @@ PipelineRunActionHandler            (<a class="autorefs autorefs-internal" title
         <span class="k">if</span> <span class="n">action</span><span class="o">.</span><span class="n">auth_window</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">action</span><span class="o">.</span><span class="n">auth_window</span> <span class="o">=</span> <span class="n">server_config</span><span class="p">()</span><span class="o">.</span><span class="n">pipeline_run_auth_window</span>
 
-    <span class="k">def</span> <span class="nf">_validate_action_update</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_action_update</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">action</span><span class="p">:</span> <span class="n">ActionResponse</span><span class="p">,</span>
         <span class="n">config</span><span class="p">:</span> <span class="n">ActionConfig</span><span class="p">,</span>
@@ -5422,7 +5422,7 @@ PipelineRunActionHandler            (<a class="autorefs autorefs-internal" title
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_validate_configuration</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">extract_resources</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">extract_resources</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">action_config</span><span class="p">:</span> <span class="n">ActionConfig</span><span class="p">,</span>
         <span class="n">hydrate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -5627,7 +5627,7 @@ resources.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/actions/pipeline_run/pipeline_run_action.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">extract_resources</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">extract_resources</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">action_config</span><span class="p">:</span> <span class="n">ActionConfig</span><span class="p">,</span>
     <span class="n">hydrate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -5729,7 +5729,7 @@ trigger's authentication window.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/actions/pipeline_run/pipeline_run_action.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">run</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">config</span><span class="p">:</span> <span class="n">ActionConfig</span><span class="p">,</span>
     <span class="n">trigger_execution</span><span class="p">:</span> <span class="n">TriggerExecutionResponse</span><span class="p">,</span>
@@ -5747,7 +5747,7 @@ trigger's authentication window.</p></td>
 <span class="sd">            that activated the action and has a validity defined by the</span>
 <span class="sd">            trigger&#39;s authentication window.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.zen_server.utils</span> <span class="kn">import</span> <span class="n">zen_store</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.zen_server.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">zen_store</span>
 
     <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">PipelineRunActionConfiguration</span><span class="p">)</span>
 

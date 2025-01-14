@@ -2736,7 +2736,7 @@ S3Integration            (<a class="autorefs autorefs-internal" title="zenml.int
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/s3/__init__.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">S3Integration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">S3Integration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Definition of S3 integration for ZenML.&quot;&quot;&quot;</span>
 
     <span class="n">NAME</span> <span class="o">=</span> <span class="n">S3</span>
@@ -2759,13 +2759,13 @@ S3Integration            (<a class="autorefs autorefs-internal" title="zenml.int
     <span class="p">]</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the s3 integration.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            List of stack component flavors for this integration.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.s3.flavors</span> <span class="kn">import</span> <span class="n">S3ArtifactStoreFlavor</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.s3.flavors</span><span class="w"> </span><span class="kn">import</span> <span class="n">S3ArtifactStoreFlavor</span>
 
         <span class="k">return</span> <span class="p">[</span><span class="n">S3ArtifactStoreFlavor</span><span class="p">]</span>
 </code></pre></div>
@@ -2820,13 +2820,13 @@ S3Integration            (<a class="autorefs autorefs-internal" title="zenml.int
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/s3/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the s3 integration.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        List of stack component flavors for this integration.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.integrations.s3.flavors</span> <span class="kn">import</span> <span class="n">S3ArtifactStoreFlavor</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.s3.flavors</span><span class="w"> </span><span class="kn">import</span> <span class="n">S3ArtifactStoreFlavor</span>
 
     <span class="k">return</span> <span class="p">[</span><span class="n">S3ArtifactStoreFlavor</span><span class="p">]</span>
 </code></pre></div>
@@ -2928,14 +2928,14 @@ S3ArtifactStore            (<a class="autorefs autorefs-internal" title="zenml.a
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/s3/artifact_stores/s3_artifact_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">S3ArtifactStore</span><span class="p">(</span><span class="n">BaseArtifactStore</span><span class="p">,</span> <span class="n">AuthenticationMixin</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">S3ArtifactStore</span><span class="p">(</span><span class="n">BaseArtifactStore</span><span class="p">,</span> <span class="n">AuthenticationMixin</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Artifact Store for S3 based artifacts.&quot;&quot;&quot;</span>
 
     <span class="n">_filesystem</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ZenMLS3Filesystem</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="n">is_versioned</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
@@ -2962,7 +2962,7 @@ S3ArtifactStore            (<a class="autorefs autorefs-internal" title="zenml.a
                 <span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">S3ArtifactStoreConfig</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">S3ArtifactStoreConfig</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the config of this artifact store.</span>
 
 <span class="sd">        Returns:</span>
@@ -2970,7 +2970,7 @@ S3ArtifactStore            (<a class="autorefs autorefs-internal" title="zenml.a
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">S3ArtifactStoreConfig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_credentials</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_credentials</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets authentication credentials.</span>
@@ -2988,7 +2988,7 @@ S3ArtifactStore            (<a class="autorefs autorefs-internal" title="zenml.a
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">connector</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_connector</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">connector</span><span class="p">:</span>
-            <span class="kn">from</span> <span class="nn">botocore.client</span> <span class="kn">import</span> <span class="n">BaseClient</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">botocore.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseClient</span>
 
             <span class="n">client</span> <span class="o">=</span> <span class="n">connector</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">client</span><span class="p">,</span> <span class="n">BaseClient</span><span class="p">):</span>
@@ -3018,7 +3018,7 @@ S3ArtifactStore            (<a class="autorefs autorefs-internal" title="zenml.a
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">secret</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">token</span><span class="p">,</span> <span class="kc">None</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">filesystem</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ZenMLS3Filesystem</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">filesystem</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ZenMLS3Filesystem</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The s3 filesystem to access this artifact store.</span>
 
 <span class="sd">        Returns:</span>
@@ -3049,12 +3049,12 @@ S3ArtifactStore            (<a class="autorefs autorefs-internal" title="zenml.a
         <span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filesystem</span>
 
-    <span class="k">def</span> <span class="nf">cleanup</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">cleanup</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Close the filesystem.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filesystem</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_filesystem</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">open</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">open</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Open a file at the given path.</span>
 
 <span class="sd">        Args:</span>
@@ -3067,7 +3067,7 @@ S3ArtifactStore            (<a class="autorefs autorefs-internal" title="zenml.a
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">filesystem</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">copyfile</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">copyfile</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">src</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">dst</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Copy a file.</span>
@@ -3093,7 +3093,7 @@ S3ArtifactStore            (<a class="autorefs autorefs-internal" title="zenml.a
         <span class="c1">#  manually remove it first</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">filesystem</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">path1</span><span class="o">=</span><span class="n">src</span><span class="p">,</span> <span class="n">path2</span><span class="o">=</span><span class="n">dst</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">exists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">exists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Check whether a path exists.</span>
 
 <span class="sd">        Args:</span>
@@ -3104,7 +3104,7 @@ S3ArtifactStore            (<a class="autorefs autorefs-internal" title="zenml.a
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">filesystem</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">)</span>  <span class="c1"># type: ignore[no-any-return]</span>
 
-    <span class="k">def</span> <span class="nf">glob</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pattern</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">glob</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pattern</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return all paths that match the given glob pattern.</span>
 
 <span class="sd">        The glob pattern may include:</span>
@@ -3122,7 +3122,7 @@ S3ArtifactStore            (<a class="autorefs autorefs-internal" title="zenml.a
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;s3://</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">filesystem</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">pattern</span><span class="p">)]</span>
 
-    <span class="k">def</span> <span class="nf">isdir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">isdir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Check whether a path is a directory.</span>
 
 <span class="sd">        Args:</span>
@@ -3133,7 +3133,7 @@ S3ArtifactStore            (<a class="autorefs autorefs-internal" title="zenml.a
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">filesystem</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">)</span>  <span class="c1"># type: ignore[no-any-return]</span>
 
-    <span class="k">def</span> <span class="nf">listdir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">listdir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a list of files in a directory.</span>
 
 <span class="sd">        Args:</span>
@@ -3148,7 +3148,7 @@ S3ArtifactStore            (<a class="autorefs autorefs-internal" title="zenml.a
         <span class="k">if</span> <span class="n">path</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;s3://&quot;</span><span class="p">):</span>
             <span class="n">path</span> <span class="o">=</span> <span class="n">path</span><span class="p">[</span><span class="mi">5</span><span class="p">:]</span>
 
-        <span class="k">def</span> <span class="nf">_extract_basename</span><span class="p">(</span><span class="n">file_dict</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">_extract_basename</span><span class="p">(</span><span class="n">file_dict</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">            </span><span class="sd">&quot;&quot;&quot;Extracts the basename from a file info dict returned by the S3 filesystem.</span>
 
 <span class="sd">            Args:</span>
@@ -3169,7 +3169,7 @@ S3ArtifactStore            (<a class="autorefs autorefs-internal" title="zenml.a
             <span class="k">if</span> <span class="n">_extract_basename</span><span class="p">(</span><span class="n">dict_</span><span class="p">)</span>
         <span class="p">]</span>
 
-    <span class="k">def</span> <span class="nf">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a directory at the given path.</span>
 
 <span class="sd">        If needed also create missing parent directories.</span>
@@ -3179,7 +3179,7 @@ S3ArtifactStore            (<a class="autorefs autorefs-internal" title="zenml.a
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">filesystem</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">mkdir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">mkdir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a directory at the given path.</span>
 
 <span class="sd">        Args:</span>
@@ -3187,7 +3187,7 @@ S3ArtifactStore            (<a class="autorefs autorefs-internal" title="zenml.a
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">filesystem</span><span class="o">.</span><span class="n">makedir</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove the file at the given path.</span>
 
 <span class="sd">        Args:</span>
@@ -3195,7 +3195,7 @@ S3ArtifactStore            (<a class="autorefs autorefs-internal" title="zenml.a
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">filesystem</span><span class="o">.</span><span class="n">rm_file</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">rename</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">rename</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">src</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">dst</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Rename source file to destination file.</span>
@@ -3221,7 +3221,7 @@ S3ArtifactStore            (<a class="autorefs autorefs-internal" title="zenml.a
         <span class="c1">#  to manually remove it first</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">filesystem</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">path1</span><span class="o">=</span><span class="n">src</span><span class="p">,</span> <span class="n">path2</span><span class="o">=</span><span class="n">dst</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">rmtree</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">rmtree</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove the given directory.</span>
 
 <span class="sd">        Args:</span>
@@ -3229,7 +3229,7 @@ S3ArtifactStore            (<a class="autorefs autorefs-internal" title="zenml.a
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">filesystem</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">stat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return stat info for the given path.</span>
 
 <span class="sd">        Args:</span>
@@ -3240,7 +3240,7 @@ S3ArtifactStore            (<a class="autorefs autorefs-internal" title="zenml.a
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">filesystem</span><span class="o">.</span><span class="n">stat</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">)</span>  <span class="c1"># type: ignore[no-any-return]</span>
 
-    <span class="k">def</span> <span class="nf">size</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">size</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the size of a file in bytes.</span>
 
 <span class="sd">        Args:</span>
@@ -3251,7 +3251,7 @@ S3ArtifactStore            (<a class="autorefs autorefs-internal" title="zenml.a
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">filesystem</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">)</span>  <span class="c1"># type: ignore[no-any-return]</span>
 
-    <span class="k">def</span> <span class="nf">walk</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">walk</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">top</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span>
         <span class="n">topdown</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -3273,7 +3273,7 @@ S3ArtifactStore            (<a class="autorefs autorefs-internal" title="zenml.a
         <span class="k">for</span> <span class="n">directory</span><span class="p">,</span> <span class="n">subdirectories</span><span class="p">,</span> <span class="n">files</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">filesystem</span><span class="o">.</span><span class="n">walk</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">top</span><span class="p">):</span>
             <span class="k">yield</span> <span class="sa">f</span><span class="s2">&quot;s3://</span><span class="si">{</span><span class="n">directory</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">subdirectories</span><span class="p">,</span> <span class="n">files</span>
 
-    <span class="k">def</span> <span class="nf">_remove_previous_file_versions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_remove_previous_file_versions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Keep only the latest file version in the given path.</span>
 
 <span class="sd">        Method is useful for logs stored in versioned file systems</span>
@@ -3299,7 +3299,7 @@ S3ArtifactStore            (<a class="autorefs autorefs-internal" title="zenml.a
                             <span class="n">version</span><span class="o">.</span><span class="n">delete</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">_boto3_bucket</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_boto3_bucket</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the boto3 bucket object.</span>
 
 <span class="sd">        Returns:</span>
@@ -3320,7 +3320,7 @@ S3ArtifactStore            (<a class="autorefs autorefs-internal" title="zenml.a
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_boto3_bucket_holder</span>
 
     <span class="nd">@contextmanager</span>
-    <span class="k">def</span> <span class="nf">_shield_lack_of_versioning_permissions</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_shield_lack_of_versioning_permissions</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">auth_missing</span><span class="p">:</span> <span class="nb">str</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
         <span class="k">try</span><span class="p">:</span>
@@ -3470,7 +3470,7 @@ S3ArtifactStore            (<a class="autorefs autorefs-internal" title="zenml.a
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/s3/artifact_stores/s3_artifact_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
@@ -3519,7 +3519,7 @@ S3ArtifactStore            (<a class="autorefs autorefs-internal" title="zenml.a
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/s3/artifact_stores/s3_artifact_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">cleanup</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">cleanup</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Close the filesystem.&quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filesystem</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_filesystem</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
@@ -3596,7 +3596,7 @@ and overwrite is not set to <code>True</code>.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/s3/artifact_stores/s3_artifact_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">copyfile</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">copyfile</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">src</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">dst</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Copy a file.</span>
@@ -3679,7 +3679,7 @@ and overwrite is not set to <code>True</code>.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/s3/artifact_stores/s3_artifact_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">exists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">exists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Check whether a path exists.</span>
 
 <span class="sd">    Args:</span>
@@ -3747,7 +3747,7 @@ authenticate with the S3 filesystem.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/s3/artifact_stores/s3_artifact_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_credentials</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_credentials</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets authentication credentials.</span>
@@ -3765,7 +3765,7 @@ authenticate with the S3 filesystem.</p></td>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">connector</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_connector</span><span class="p">()</span>
     <span class="k">if</span> <span class="n">connector</span><span class="p">:</span>
-        <span class="kn">from</span> <span class="nn">botocore.client</span> <span class="kn">import</span> <span class="n">BaseClient</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">botocore.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseClient</span>
 
         <span class="n">client</span> <span class="o">=</span> <span class="n">connector</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">client</span><span class="p">,</span> <span class="n">BaseClient</span><span class="p">):</span>
@@ -3857,7 +3857,7 @@ authenticate with the S3 filesystem.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/s3/artifact_stores/s3_artifact_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">glob</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pattern</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">glob</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pattern</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Return all paths that match the given glob pattern.</span>
 
 <span class="sd">    The glob pattern may include:</span>
@@ -3932,7 +3932,7 @@ authenticate with the S3 filesystem.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/s3/artifact_stores/s3_artifact_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">isdir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">isdir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Check whether a path is a directory.</span>
 
 <span class="sd">    Args:</span>
@@ -4000,7 +4000,7 @@ authenticate with the S3 filesystem.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/s3/artifact_stores/s3_artifact_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">listdir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">listdir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a list of files in a directory.</span>
 
 <span class="sd">    Args:</span>
@@ -4015,7 +4015,7 @@ authenticate with the S3 filesystem.</p></td>
     <span class="k">if</span> <span class="n">path</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;s3://&quot;</span><span class="p">):</span>
         <span class="n">path</span> <span class="o">=</span> <span class="n">path</span><span class="p">[</span><span class="mi">5</span><span class="p">:]</span>
 
-    <span class="k">def</span> <span class="nf">_extract_basename</span><span class="p">(</span><span class="n">file_dict</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_extract_basename</span><span class="p">(</span><span class="n">file_dict</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Extracts the basename from a file info dict returned by the S3 filesystem.</span>
 
 <span class="sd">        Args:</span>
@@ -4079,7 +4079,7 @@ authenticate with the S3 filesystem.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/s3/artifact_stores/s3_artifact_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a directory at the given path.</span>
 
 <span class="sd">    If needed also create missing parent directories.</span>
@@ -4131,7 +4131,7 @@ authenticate with the S3 filesystem.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/s3/artifact_stores/s3_artifact_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">mkdir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">mkdir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a directory at the given path.</span>
 
 <span class="sd">    Args:</span>
@@ -4203,7 +4203,7 @@ authenticate with the S3 filesystem.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/s3/artifact_stores/s3_artifact_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">open</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">open</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Open a file at the given path.</span>
 
 <span class="sd">    Args:</span>
@@ -4258,7 +4258,7 @@ authenticate with the S3 filesystem.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/s3/artifact_stores/s3_artifact_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Remove the file at the given path.</span>
 
 <span class="sd">    Args:</span>
@@ -4338,7 +4338,7 @@ and overwrite is not set to <code>True</code>.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/s3/artifact_stores/s3_artifact_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">rename</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">rename</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">src</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">dst</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Rename source file to destination file.</span>
@@ -4406,7 +4406,7 @@ and overwrite is not set to <code>True</code>.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/s3/artifact_stores/s3_artifact_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">rmtree</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">rmtree</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Remove the given directory.</span>
 
 <span class="sd">    Args:</span>
@@ -4471,7 +4471,7 @@ and overwrite is not set to <code>True</code>.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/s3/artifact_stores/s3_artifact_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">size</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">size</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the size of a file in bytes.</span>
 
 <span class="sd">    Args:</span>
@@ -4539,7 +4539,7 @@ and overwrite is not set to <code>True</code>.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/s3/artifact_stores/s3_artifact_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">stat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">stat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Return stat info for the given path.</span>
 
 <span class="sd">    Args:</span>
@@ -4621,7 +4621,7 @@ and overwrite is not set to <code>True</code>.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/s3/artifact_stores/s3_artifact_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">walk</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">walk</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">top</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span>
     <span class="n">topdown</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -4694,7 +4694,7 @@ of the S3 client.</p>
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/s3/artifact_stores/s3_artifact_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ZenMLS3Filesystem</span><span class="p">(</span><span class="n">s3fs</span><span class="o">.</span><span class="n">S3FileSystem</span><span class="p">):</span>  <span class="c1"># type: ignore[misc]</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ZenMLS3Filesystem</span><span class="p">(</span><span class="n">s3fs</span><span class="o">.</span><span class="n">S3FileSystem</span><span class="p">):</span>  <span class="c1"># type: ignore[misc]</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Modified s3fs.S3FileSystem to disable caching.</span>
 
 <span class="sd">    The original s3fs.S3FileSystem caches all class instances based on the</span>
@@ -4719,7 +4719,7 @@ of the S3 client.</p>
 
     <span class="n">cachable</span> <span class="o">=</span> <span class="kc">False</span>
 
-    <span class="k">async</span> <span class="k">def</span> <span class="nf">_close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Close the S3 client.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_s3creator</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># type: ignore[has-type]</span>
             <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_s3creator</span><span class="o">.</span><span class="fm">__aexit__</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>  <span class="c1"># type: ignore[has-type]</span>
@@ -4729,7 +4729,7 @@ of the S3 client.</p>
     <span class="n">close</span> <span class="o">=</span> <span class="n">sync_wrapper</span><span class="p">(</span><span class="n">_close</span><span class="p">)</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">close_session</span><span class="p">(</span><span class="n">loop</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">s3</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">close_session</span><span class="p">(</span><span class="n">loop</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">s3</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Close the S3 client session.</span>
 
 <span class="sd">        Args:</span>
@@ -4821,7 +4821,7 @@ of the S3 client.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/s3/artifact_stores/s3_artifact_store.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
-<span class="k">def</span> <span class="nf">close_session</span><span class="p">(</span><span class="n">loop</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">s3</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">close_session</span><span class="p">(</span><span class="n">loop</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">s3</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Close the S3 client session.</span>
 
 <span class="sd">    Args:</span>
@@ -4975,7 +4975,7 @@ them as a json string:</p>
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/s3/flavors/s3_artifact_store_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">S3ArtifactStoreConfig</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">S3ArtifactStoreConfig</span><span class="p">(</span>
     <span class="n">BaseArtifactStoreConfig</span><span class="p">,</span> <span class="n">AuthenticationConfigMixin</span>
 <span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Configuration for the S3 Artifact Store.</span>
@@ -5007,7 +5007,7 @@ them as a json string:</p>
 
     <span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;client_kwargs&quot;</span><span class="p">)</span>
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">_validate_client_kwargs</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_client_kwargs</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Validates the `client_kwargs` attribute.</span>
@@ -5042,7 +5042,7 @@ them as a json string:</p>
         <span class="k">return</span> <span class="n">value</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">bucket</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">bucket</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The bucket name of the artifact store.</span>
 
 <span class="sd">        Returns:</span>
@@ -5163,7 +5163,7 @@ them as a json string:</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/s3/flavors/s3_artifact_store_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">init_private_attributes</span><span class="p">(</span><span class="bp">self</span><span class="p">:</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">/</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">init_private_attributes</span><span class="p">(</span><span class="bp">self</span><span class="p">:</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">/</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;This function is meant to behave like a BaseModel method to initialise private attributes.</span>
 
 <span class="sd">    It takes context as an argument since that&#39;s what pydantic-core passes when calling it.</span>
@@ -5216,11 +5216,11 @@ S3ArtifactStoreFlavor            (<a class="autorefs autorefs-internal" title="z
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/s3/flavors/s3_artifact_store_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">S3ArtifactStoreFlavor</span><span class="p">(</span><span class="n">BaseArtifactStoreFlavor</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">S3ArtifactStoreFlavor</span><span class="p">(</span><span class="n">BaseArtifactStoreFlavor</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Flavor of the S3 artifact store.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -5229,7 +5229,7 @@ S3ArtifactStoreFlavor            (<a class="autorefs autorefs-internal" title="z
         <span class="k">return</span> <span class="n">S3_ARTIFACT_STORE_FLAVOR</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">service_connector_requirements</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">service_connector_requirements</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ServiceConnectorRequirements</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Service connector resource requirements for service connectors.</span>
@@ -5247,7 +5247,7 @@ S3ArtifactStoreFlavor            (<a class="autorefs autorefs-internal" title="z
         <span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A URL to point at docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -5256,7 +5256,7 @@ S3ArtifactStoreFlavor            (<a class="autorefs autorefs-internal" title="z
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A URL to point at SDK docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -5265,7 +5265,7 @@ S3ArtifactStoreFlavor            (<a class="autorefs autorefs-internal" title="z
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_sdk_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A URL to represent the flavor in the dashboard.</span>
 
 <span class="sd">        Returns:</span>
@@ -5274,7 +5274,7 @@ S3ArtifactStoreFlavor            (<a class="autorefs autorefs-internal" title="z
         <span class="k">return</span> <span class="s2">&quot;https://public-flavor-logos.s3.eu-central-1.amazonaws.com/artifact_store/aws.png&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">S3ArtifactStoreConfig</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">S3ArtifactStoreConfig</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The config class of the flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -5283,13 +5283,13 @@ S3ArtifactStoreFlavor            (<a class="autorefs autorefs-internal" title="z
         <span class="k">return</span> <span class="n">S3ArtifactStoreConfig</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;S3ArtifactStore&quot;</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;S3ArtifactStore&quot;</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The implementation class for this flavor.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.s3.artifact_stores</span> <span class="kn">import</span> <span class="n">S3ArtifactStore</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.s3.artifact_stores</span><span class="w"> </span><span class="kn">import</span> <span class="n">S3ArtifactStore</span>
 
         <span class="k">return</span> <span class="n">S3ArtifactStore</span>
 </code></pre></div>
@@ -5699,7 +5699,7 @@ connector is required for this flavor.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/s3/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">split_s3_path</span><span class="p">(</span><span class="n">s3_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">split_s3_path</span><span class="p">(</span><span class="n">s3_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Split S3 URI into bucket and key.</span>
 
 <span class="sd">    Args:</span>

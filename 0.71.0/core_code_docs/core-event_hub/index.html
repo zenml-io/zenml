@@ -2335,7 +2335,7 @@ unaware of each other.</p>
 
         <details class="quote">
           <summary>Source code in <code>zenml/event_hub/base_event_hub.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseEventHub</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">BaseEventHub</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for event hub implementations.</span>
 
 <span class="sd">    The event hub is responsible for relaying events from event sources to</span>
@@ -2350,7 +2350,7 @@ unaware of each other.</p>
     <span class="n">action_handlers</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">ActionHandlerCallback</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">zen_store</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;SqlZenStore&quot;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">zen_store</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;SqlZenStore&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the active zen store.</span>
 
 <span class="sd">        Returns:</span>
@@ -2359,7 +2359,7 @@ unaware of each other.</p>
 <span class="sd">        Raises:</span>
 <span class="sd">            ValueError: If the active zen store is not a SQL zen store.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.zen_stores.sql_zen_store</span> <span class="kn">import</span> <span class="n">SqlZenStore</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.zen_stores.sql_zen_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">SqlZenStore</span>
 
         <span class="n">zen_store</span> <span class="o">=</span> <span class="n">GlobalConfiguration</span><span class="p">()</span><span class="o">.</span><span class="n">zen_store</span>
 
@@ -2368,7 +2368,7 @@ unaware of each other.</p>
 
         <span class="k">return</span> <span class="n">zen_store</span>
 
-    <span class="k">def</span> <span class="nf">subscribe_action_handler</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">subscribe_action_handler</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">action_flavor</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">action_subtype</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -2383,7 +2383,7 @@ unaware of each other.</p>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">action_handlers</span><span class="p">[(</span><span class="n">action_flavor</span><span class="p">,</span> <span class="n">action_subtype</span><span class="p">)]</span> <span class="o">=</span> <span class="n">callback</span>
 
-    <span class="k">def</span> <span class="nf">unsubscribe_action_handler</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">unsubscribe_action_handler</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">action_flavor</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">action_subtype</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -2396,7 +2396,7 @@ unaware of each other.</p>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">action_handlers</span><span class="o">.</span><span class="n">pop</span><span class="p">((</span><span class="n">action_flavor</span><span class="p">,</span> <span class="n">action_subtype</span><span class="p">),</span> <span class="kc">None</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">trigger_action</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">trigger_action</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">event</span><span class="p">:</span> <span class="n">BaseEvent</span><span class="p">,</span>
         <span class="n">event_source</span><span class="p">:</span> <span class="n">EventSourceResponse</span><span class="p">,</span>
@@ -2456,7 +2456,7 @@ unaware of each other.</p>
             <span class="p">)</span>
 
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">activate_trigger</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trigger</span><span class="p">:</span> <span class="n">TriggerResponse</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">activate_trigger</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trigger</span><span class="p">:</span> <span class="n">TriggerResponse</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a trigger to the event hub.</span>
 
 <span class="sd">        Configure the event hub to trigger an action when an event is received.</span>
@@ -2466,7 +2466,7 @@ unaware of each other.</p>
 <span class="sd">        &quot;&quot;&quot;</span>
 
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">deactivate_trigger</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trigger</span><span class="p">:</span> <span class="n">TriggerResponse</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">deactivate_trigger</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trigger</span><span class="p">:</span> <span class="n">TriggerResponse</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove a trigger from the event hub.</span>
 
 <span class="sd">        Configure the event hub to stop triggering an action when an event is</span>
@@ -2477,7 +2477,7 @@ unaware of each other.</p>
 <span class="sd">        &quot;&quot;&quot;</span>
 
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">publish_event</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">publish_event</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">event</span><span class="p">:</span> <span class="n">BaseEvent</span><span class="p">,</span>
         <span class="n">event_source</span><span class="p">:</span> <span class="n">EventSourceResponse</span><span class="p">,</span>
@@ -2594,7 +2594,7 @@ unaware of each other.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/event_hub/base_event_hub.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
-<span class="k">def</span> <span class="nf">activate_trigger</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trigger</span><span class="p">:</span> <span class="n">TriggerResponse</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">activate_trigger</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trigger</span><span class="p">:</span> <span class="n">TriggerResponse</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Add a trigger to the event hub.</span>
 
 <span class="sd">    Configure the event hub to trigger an action when an event is received.</span>
@@ -2648,7 +2648,7 @@ received.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/event_hub/base_event_hub.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
-<span class="k">def</span> <span class="nf">deactivate_trigger</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trigger</span><span class="p">:</span> <span class="n">TriggerResponse</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">deactivate_trigger</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trigger</span><span class="p">:</span> <span class="n">TriggerResponse</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Remove a trigger from the event hub.</span>
 
 <span class="sd">    Configure the event hub to stop triggering an action when an event is</span>
@@ -2707,7 +2707,7 @@ received.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/event_hub/base_event_hub.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
-<span class="k">def</span> <span class="nf">publish_event</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">publish_event</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">event</span><span class="p">:</span> <span class="n">BaseEvent</span><span class="p">,</span>
     <span class="n">event_source</span><span class="p">:</span> <span class="n">EventSourceResponse</span><span class="p">,</span>
@@ -2773,7 +2773,7 @@ received.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/event_hub/base_event_hub.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">subscribe_action_handler</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">subscribe_action_handler</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">action_flavor</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">action_subtype</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -2848,7 +2848,7 @@ received.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/event_hub/base_event_hub.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">trigger_action</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">trigger_action</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">event</span><span class="p">:</span> <span class="n">BaseEvent</span><span class="p">,</span>
     <span class="n">event_source</span><span class="p">:</span> <span class="n">EventSourceResponse</span><span class="p">,</span>
@@ -2955,7 +2955,7 @@ received.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/event_hub/base_event_hub.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">unsubscribe_action_handler</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">unsubscribe_action_handler</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">action_flavor</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">action_subtype</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -3046,7 +3046,7 @@ directly.</p>
 
         <details class="quote">
           <summary>Source code in <code>zenml/event_hub/event_hub.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">InternalEventHub</span><span class="p">(</span><span class="n">BaseEventHub</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">InternalEventHub</span><span class="p">(</span><span class="n">BaseEventHub</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Internal in-server event hub implementation.</span>
 
 <span class="sd">    The internal in-server event hub uses the database as a source of truth for</span>
@@ -3054,7 +3054,7 @@ directly.</p>
 <span class="sd">    directly.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">activate_trigger</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trigger</span><span class="p">:</span> <span class="n">TriggerResponse</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">activate_trigger</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trigger</span><span class="p">:</span> <span class="n">TriggerResponse</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Add a trigger to the event hub.</span>
 
 <span class="sd">        Configure the event hub to trigger an action when an event is received.</span>
@@ -3066,7 +3066,7 @@ directly.</p>
         <span class="c1"># configuration. The in-server event hub already uses the database</span>
         <span class="c1"># as the source of truth regarding configured active triggers.</span>
 
-    <span class="k">def</span> <span class="nf">deactivate_trigger</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trigger</span><span class="p">:</span> <span class="n">TriggerResponse</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">deactivate_trigger</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trigger</span><span class="p">:</span> <span class="n">TriggerResponse</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove a trigger from the event hub.</span>
 
 <span class="sd">        Configure the event hub to stop triggering an action when an event is</span>
@@ -3079,7 +3079,7 @@ directly.</p>
         <span class="c1"># configuration. The in-server event hub already uses the database</span>
         <span class="c1"># as the source of truth regarding configured active triggers.</span>
 
-    <span class="k">def</span> <span class="nf">publish_event</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">publish_event</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">event</span><span class="p">:</span> <span class="n">BaseEvent</span><span class="p">,</span>
         <span class="n">event_source</span><span class="p">:</span> <span class="n">EventSourceResponse</span><span class="p">,</span>
@@ -3117,7 +3117,7 @@ directly.</p>
                 <span class="n">action_callback</span><span class="o">=</span><span class="n">action_callback</span><span class="p">,</span>
             <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_matching_active_triggers_for_event</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_matching_active_triggers_for_event</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">event</span><span class="p">:</span> <span class="n">BaseEvent</span><span class="p">,</span>
         <span class="n">event_source</span><span class="p">:</span> <span class="n">EventSourceResponse</span><span class="p">,</span>
@@ -3236,7 +3236,7 @@ directly.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/event_hub/event_hub.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">activate_trigger</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trigger</span><span class="p">:</span> <span class="n">TriggerResponse</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">activate_trigger</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trigger</span><span class="p">:</span> <span class="n">TriggerResponse</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Add a trigger to the event hub.</span>
 
 <span class="sd">    Configure the event hub to trigger an action when an event is received.</span>
@@ -3292,7 +3292,7 @@ received.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/event_hub/event_hub.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">deactivate_trigger</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trigger</span><span class="p">:</span> <span class="n">TriggerResponse</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">deactivate_trigger</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trigger</span><span class="p">:</span> <span class="n">TriggerResponse</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Remove a trigger from the event hub.</span>
 
 <span class="sd">    Configure the event hub to stop triggering an action when an event is</span>
@@ -3368,7 +3368,7 @@ received.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/event_hub/event_hub.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_matching_active_triggers_for_event</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_matching_active_triggers_for_event</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">event</span><span class="p">:</span> <span class="n">BaseEvent</span><span class="p">,</span>
     <span class="n">event_source</span><span class="p">:</span> <span class="n">EventSourceResponse</span><span class="p">,</span>
@@ -3488,7 +3488,7 @@ configured action(s).</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/event_hub/event_hub.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">publish_event</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">publish_event</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">event</span><span class="p">:</span> <span class="n">BaseEvent</span><span class="p">,</span>
     <span class="n">event_source</span><span class="p">:</span> <span class="n">EventSourceResponse</span><span class="p">,</span>

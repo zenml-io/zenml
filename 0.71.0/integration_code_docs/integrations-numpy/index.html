@@ -2213,16 +2213,16 @@ NumpyIntegration            (<a class="autorefs autorefs-internal" title="zenml.
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/numpy/__init__.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">NumpyIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">NumpyIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Definition of Numpy integration for ZenML.&quot;&quot;&quot;</span>
 
     <span class="n">NAME</span> <span class="o">=</span> <span class="n">NUMPY</span>
     <span class="n">REQUIREMENTS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;numpy&lt;2.0.0&quot;</span><span class="p">]</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Activates the integration.&quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.numpy</span> <span class="kn">import</span> <span class="n">materializers</span>  <span class="c1"># noqa</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.numpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">materializers</span>  <span class="c1"># noqa</span>
 </code></pre></div>
         </details>
 
@@ -2260,9 +2260,9 @@ NumpyIntegration            (<a class="autorefs autorefs-internal" title="zenml.
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/numpy/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Activates the integration.&quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.integrations.numpy</span> <span class="kn">import</span> <span class="n">materializers</span>  <span class="c1"># noqa</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.numpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">materializers</span>  <span class="c1"># noqa</span>
 </code></pre></div>
         </details>
     </div>
@@ -2364,13 +2364,13 @@ NumpyMaterializer            (<a class="autorefs autorefs-internal" title="zenml
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/numpy/materializers/numpy_materializer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">NumpyMaterializer</span><span class="p">(</span><span class="n">BaseMaterializer</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">NumpyMaterializer</span><span class="p">(</span><span class="n">BaseMaterializer</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Materializer to read data to and from pandas.&quot;&quot;&quot;</span>
 
     <span class="n">ASSOCIATED_TYPES</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span> <span class="o">...</span><span class="p">]]</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,)</span>
     <span class="n">ASSOCIATED_ARTIFACT_TYPE</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">ArtifactType</span><span class="p">]</span> <span class="o">=</span> <span class="n">ArtifactType</span><span class="o">.</span><span class="n">DATA</span>
 
-    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="s2">&quot;Any&quot;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="s2">&quot;Any&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Reads a numpy array from a `.npy` file.</span>
 
 <span class="sd">        Args:</span>
@@ -2397,10 +2397,10 @@ NumpyMaterializer            (<a class="autorefs autorefs-internal" title="zenml
             <span class="p">)</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="c1"># Import old materializer dependencies</span>
-                <span class="kn">import</span> <span class="nn">pyarrow</span> <span class="k">as</span> <span class="nn">pa</span>  <span class="c1"># type: ignore</span>
-                <span class="kn">import</span> <span class="nn">pyarrow.parquet</span> <span class="k">as</span> <span class="nn">pq</span>  <span class="c1"># type: ignore</span>
+                <span class="kn">import</span><span class="w"> </span><span class="nn">pyarrow</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pa</span>  <span class="c1"># type: ignore</span>
+                <span class="kn">import</span><span class="w"> </span><span class="nn">pyarrow.parquet</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pq</span>  <span class="c1"># type: ignore</span>
 
-                <span class="kn">from</span> <span class="nn">zenml.utils</span> <span class="kn">import</span> <span class="n">yaml_utils</span>
+                <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">yaml_utils</span>
 
                 <span class="c1"># Read numpy array from parquet file</span>
                 <span class="n">shape_dict</span> <span class="o">=</span> <span class="n">yaml_utils</span><span class="o">.</span><span class="n">read_json</span><span class="p">(</span>
@@ -2422,7 +2422,7 @@ NumpyMaterializer            (<a class="autorefs autorefs-internal" title="zenml
                     <span class="s2">&quot;You can install `pyarrow` by running `pip install pyarrow`.&quot;</span><span class="p">,</span>
                 <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arr</span><span class="p">:</span> <span class="s2">&quot;NDArray[Any]&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arr</span><span class="p">:</span> <span class="s2">&quot;NDArray[Any]&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Writes a np.ndarray to the artifact store as a `.npy` file.</span>
 
 <span class="sd">        Args:</span>
@@ -2433,7 +2433,7 @@ NumpyMaterializer            (<a class="autorefs autorefs-internal" title="zenml
         <span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
             <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">arr</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">save_visualizations</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">save_visualizations</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">arr</span><span class="p">:</span> <span class="s2">&quot;NDArray[Any]&quot;</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">VisualizationType</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Saves visualizations for a numpy array.</span>
@@ -2474,33 +2474,33 @@ NumpyMaterializer            (<a class="autorefs autorefs-internal" title="zenml
 
         <span class="k">return</span> <span class="p">{}</span>
 
-    <span class="k">def</span> <span class="nf">_save_histogram</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">arr</span><span class="p">:</span> <span class="s2">&quot;NDArray[Any]&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_save_histogram</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">arr</span><span class="p">:</span> <span class="s2">&quot;NDArray[Any]&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Saves a histogram of a numpy array.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            output_path: The path to save the histogram to.</span>
 <span class="sd">            arr: The numpy array of which to save the histogram.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
 
         <span class="n">plt</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">arr</span><span class="p">)</span>
         <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">artifact_store</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
             <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">_save_image</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">arr</span><span class="p">:</span> <span class="s2">&quot;NDArray[Any]&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_save_image</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">arr</span><span class="p">:</span> <span class="s2">&quot;NDArray[Any]&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Saves a numpy array as an image.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            output_path: The path to save the image to.</span>
 <span class="sd">            arr: The numpy array to save.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">matplotlib.image</span> <span class="kn">import</span> <span class="n">imsave</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib.image</span><span class="w"> </span><span class="kn">import</span> <span class="n">imsave</span>
 
         <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">artifact_store</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
             <span class="n">imsave</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">arr</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">extract_metadata</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">extract_metadata</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">arr</span><span class="p">:</span> <span class="s2">&quot;NDArray[Any]&quot;</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;MetadataType&quot;</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Extract metadata from the given numpy array.</span>
@@ -2520,7 +2520,7 @@ NumpyMaterializer            (<a class="autorefs autorefs-internal" title="zenml
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="p">{}</span>
 
-    <span class="k">def</span> <span class="nf">_extract_numeric_metadata</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_extract_numeric_metadata</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">arr</span><span class="p">:</span> <span class="s2">&quot;NDArray[Any]&quot;</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;MetadataType&quot;</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Extracts numeric metadata from a numpy array.</span>
@@ -2544,7 +2544,7 @@ NumpyMaterializer            (<a class="autorefs autorefs-internal" title="zenml
         <span class="p">}</span>
         <span class="k">return</span> <span class="n">numpy_metadata</span>
 
-    <span class="k">def</span> <span class="nf">_extract_text_metadata</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_extract_text_metadata</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">arr</span><span class="p">:</span> <span class="s2">&quot;NDArray[Any]&quot;</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;MetadataType&quot;</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Extracts text metadata from a numpy array.</span>
@@ -2638,7 +2638,7 @@ NumpyMaterializer            (<a class="autorefs autorefs-internal" title="zenml
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/numpy/materializers/numpy_materializer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">extract_metadata</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">extract_metadata</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">arr</span><span class="p">:</span> <span class="s2">&quot;NDArray[Any]&quot;</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;MetadataType&quot;</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Extract metadata from the given numpy array.</span>
@@ -2730,7 +2730,7 @@ NumpyMaterializer            (<a class="autorefs autorefs-internal" title="zenml
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/numpy/materializers/numpy_materializer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="s2">&quot;Any&quot;</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="s2">&quot;Any&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Reads a numpy array from a `.npy` file.</span>
 
 <span class="sd">    Args:</span>
@@ -2757,10 +2757,10 @@ NumpyMaterializer            (<a class="autorefs autorefs-internal" title="zenml
         <span class="p">)</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="c1"># Import old materializer dependencies</span>
-            <span class="kn">import</span> <span class="nn">pyarrow</span> <span class="k">as</span> <span class="nn">pa</span>  <span class="c1"># type: ignore</span>
-            <span class="kn">import</span> <span class="nn">pyarrow.parquet</span> <span class="k">as</span> <span class="nn">pq</span>  <span class="c1"># type: ignore</span>
+            <span class="kn">import</span><span class="w"> </span><span class="nn">pyarrow</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pa</span>  <span class="c1"># type: ignore</span>
+            <span class="kn">import</span><span class="w"> </span><span class="nn">pyarrow.parquet</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pq</span>  <span class="c1"># type: ignore</span>
 
-            <span class="kn">from</span> <span class="nn">zenml.utils</span> <span class="kn">import</span> <span class="n">yaml_utils</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">yaml_utils</span>
 
             <span class="c1"># Read numpy array from parquet file</span>
             <span class="n">shape_dict</span> <span class="o">=</span> <span class="n">yaml_utils</span><span class="o">.</span><span class="n">read_json</span><span class="p">(</span>
@@ -2824,7 +2824,7 @@ NumpyMaterializer            (<a class="autorefs autorefs-internal" title="zenml
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/numpy/materializers/numpy_materializer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arr</span><span class="p">:</span> <span class="s2">&quot;NDArray[Any]&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arr</span><span class="p">:</span> <span class="s2">&quot;NDArray[Any]&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Writes a np.ndarray to the artifact store as a `.npy` file.</span>
 
 <span class="sd">    Args:</span>
@@ -2894,7 +2894,7 @@ NumpyMaterializer            (<a class="autorefs autorefs-internal" title="zenml
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/numpy/materializers/numpy_materializer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">save_visualizations</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">save_visualizations</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">arr</span><span class="p">:</span> <span class="s2">&quot;NDArray[Any]&quot;</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">VisualizationType</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Saves visualizations for a numpy array.</span>

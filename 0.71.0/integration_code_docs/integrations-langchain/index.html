@@ -2320,7 +2320,7 @@ LangchainIntegration            (<a class="autorefs autorefs-internal" title="ze
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/langchain/__init__.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">LangchainIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">LangchainIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Definition of langchain integration for ZenML.&quot;&quot;&quot;</span>
 
     <span class="n">NAME</span> <span class="o">=</span> <span class="n">LANGCHAIN</span>
@@ -2333,9 +2333,9 @@ LangchainIntegration            (<a class="autorefs autorefs-internal" title="ze
     <span class="n">REQUIREMENTS_IGNORED_ON_UNINSTALL</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;pyyaml&quot;</span><span class="p">,</span><span class="s2">&quot;tenacity&quot;</span><span class="p">]</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Activates the integration.&quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.langchain</span> <span class="kn">import</span> <span class="n">materializers</span>  <span class="c1"># noqa</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.langchain</span><span class="w"> </span><span class="kn">import</span> <span class="n">materializers</span>  <span class="c1"># noqa</span>
 </code></pre></div>
         </details>
 
@@ -2374,9 +2374,9 @@ LangchainIntegration            (<a class="autorefs autorefs-internal" title="ze
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/langchain/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Activates the integration.&quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.integrations.langchain</span> <span class="kn">import</span> <span class="n">materializers</span>  <span class="c1"># noqa</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.langchain</span><span class="w"> </span><span class="kn">import</span> <span class="n">materializers</span>  <span class="c1"># noqa</span>
 </code></pre></div>
         </details>
     </div>
@@ -2474,13 +2474,13 @@ LangchainDocumentMaterializer            (<a class="autorefs autorefs-internal" 
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/langchain/materializers/document_materializer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">LangchainDocumentMaterializer</span><span class="p">(</span><span class="n">BaseMaterializer</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">LangchainDocumentMaterializer</span><span class="p">(</span><span class="n">BaseMaterializer</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Handle Langchain Document objects.&quot;&quot;&quot;</span>
 
     <span class="n">ASSOCIATED_ARTIFACT_TYPE</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">ArtifactType</span><span class="p">]</span> <span class="o">=</span> <span class="n">ArtifactType</span><span class="o">.</span><span class="n">DATA</span>
     <span class="n">ASSOCIATED_TYPES</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span> <span class="o">...</span><span class="p">]]</span> <span class="o">=</span> <span class="p">(</span><span class="n">Document</span><span class="p">,)</span>
 
-    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;Document&quot;</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;Document&quot;</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Reads BaseModel from JSON.</span>
 
 <span class="sd">        Args:</span>
@@ -2493,7 +2493,7 @@ LangchainDocumentMaterializer            (<a class="autorefs autorefs-internal" 
         <span class="n">contents</span> <span class="o">=</span> <span class="n">yaml_utils</span><span class="o">.</span><span class="n">read_json</span><span class="p">(</span><span class="n">data_path</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">data_type</span><span class="o">.</span><span class="n">parse_raw</span><span class="p">(</span><span class="n">contents</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="s2">&quot;Document&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="s2">&quot;Document&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Serialize a BaseModel to JSON.</span>
 
 <span class="sd">        Args:</span>
@@ -2502,7 +2502,7 @@ LangchainDocumentMaterializer            (<a class="autorefs autorefs-internal" 
         <span class="n">data_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">uri</span><span class="p">,</span> <span class="n">DEFAULT_FILENAME</span><span class="p">)</span>
         <span class="n">yaml_utils</span><span class="o">.</span><span class="n">write_json</span><span class="p">(</span><span class="n">data_path</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">json</span><span class="p">())</span>
 
-    <span class="k">def</span> <span class="nf">extract_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Document</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;MetadataType&quot;</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">extract_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Document</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;MetadataType&quot;</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Extract metadata from the given BaseModel object.</span>
 
 <span class="sd">        Args:</span>
@@ -2579,7 +2579,7 @@ LangchainDocumentMaterializer            (<a class="autorefs autorefs-internal" 
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/langchain/materializers/document_materializer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">extract_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Document</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;MetadataType&quot;</span><span class="p">]:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">extract_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Document</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;MetadataType&quot;</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Extract metadata from the given BaseModel object.</span>
 
 <span class="sd">    Args:</span>
@@ -2647,7 +2647,7 @@ LangchainDocumentMaterializer            (<a class="autorefs autorefs-internal" 
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/langchain/materializers/document_materializer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;Document&quot;</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;Document&quot;</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Reads BaseModel from JSON.</span>
 
 <span class="sd">    Args:</span>
@@ -2702,7 +2702,7 @@ LangchainDocumentMaterializer            (<a class="autorefs autorefs-internal" 
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/langchain/materializers/document_materializer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="s2">&quot;Document&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="s2">&quot;Document&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Serialize a BaseModel to JSON.</span>
 
 <span class="sd">    Args:</span>
@@ -2784,13 +2784,13 @@ LangchainOpenaiEmbeddingMaterializer            (<a class="autorefs autorefs-int
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/langchain/materializers/openai_embedding_materializer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">LangchainOpenaiEmbeddingMaterializer</span><span class="p">(</span><span class="n">CloudpickleMaterializer</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">LangchainOpenaiEmbeddingMaterializer</span><span class="p">(</span><span class="n">CloudpickleMaterializer</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Materializer for Langchain OpenAI Embeddings.&quot;&quot;&quot;</span>
 
     <span class="n">ASSOCIATED_ARTIFACT_TYPE</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">ArtifactType</span><span class="p">]</span> <span class="o">=</span> <span class="n">ArtifactType</span><span class="o">.</span><span class="n">MODEL</span>
     <span class="n">ASSOCIATED_TYPES</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span> <span class="o">...</span><span class="p">]]</span> <span class="o">=</span> <span class="p">(</span><span class="n">OpenAIEmbeddings</span><span class="p">,)</span>
 
-    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">embeddings</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">embeddings</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Saves the embeddings model after clearing non-picklable clients.</span>
 
 <span class="sd">        Args:</span>
@@ -2803,7 +2803,7 @@ LangchainOpenaiEmbeddingMaterializer            (<a class="autorefs autorefs-int
         <span class="c1"># Use the parent class&#39;s save implementation which uses cloudpickle</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">embeddings</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Loads the embeddings model and lets it recreate clients when needed.</span>
 
 <span class="sd">        Args:</span>
@@ -2880,7 +2880,7 @@ LangchainOpenaiEmbeddingMaterializer            (<a class="autorefs autorefs-int
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/langchain/materializers/openai_embedding_materializer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Loads the embeddings model and lets it recreate clients when needed.</span>
 
 <span class="sd">    Args:</span>
@@ -2933,7 +2933,7 @@ LangchainOpenaiEmbeddingMaterializer            (<a class="autorefs autorefs-int
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/langchain/materializers/openai_embedding_materializer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">embeddings</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">embeddings</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Saves the embeddings model after clearing non-picklable clients.</span>
 
 <span class="sd">    Args:</span>
@@ -3019,7 +3019,7 @@ LangchainVectorStoreMaterializer            (<a class="autorefs autorefs-interna
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/langchain/materializers/vector_store_materializer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">LangchainVectorStoreMaterializer</span><span class="p">(</span><span class="n">CloudpickleMaterializer</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">LangchainVectorStoreMaterializer</span><span class="p">(</span><span class="n">CloudpickleMaterializer</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Handle langchain vector store objects.&quot;&quot;&quot;</span>
 
     <span class="n">ASSOCIATED_ARTIFACT_TYPE</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">ArtifactType</span><span class="p">]</span> <span class="o">=</span> <span class="n">ArtifactType</span><span class="o">.</span><span class="n">DATA</span>

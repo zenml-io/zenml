@@ -2595,7 +2595,7 @@ HyperAIIntegration            (<a class="autorefs autorefs-internal" title="zenm
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/hyperai/__init__.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">HyperAIIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">HyperAIIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Definition of HyperAI integration for ZenML.&quot;&quot;&quot;</span>
 
     <span class="n">NAME</span> <span class="o">=</span> <span class="n">HYPERAI</span>
@@ -2604,18 +2604,18 @@ HyperAIIntegration            (<a class="autorefs autorefs-internal" title="zenm
     <span class="p">]</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Activates the integration.&quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.hyperai</span> <span class="kn">import</span> <span class="n">service_connectors</span>  <span class="c1"># noqa</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.hyperai</span><span class="w"> </span><span class="kn">import</span> <span class="n">service_connectors</span>  <span class="c1"># noqa</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the HyperAI integration.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            List of stack component flavors for this integration.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.hyperai.flavors</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.hyperai.flavors</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">HyperAIOrchestratorFlavor</span>
         <span class="p">)</span>
 
@@ -2657,9 +2657,9 @@ HyperAIIntegration            (<a class="autorefs autorefs-internal" title="zenm
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/hyperai/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Activates the integration.&quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.integrations.hyperai</span> <span class="kn">import</span> <span class="n">service_connectors</span>  <span class="c1"># noqa</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.hyperai</span><span class="w"> </span><span class="kn">import</span> <span class="n">service_connectors</span>  <span class="c1"># noqa</span>
 </code></pre></div>
         </details>
     </div>
@@ -2703,13 +2703,13 @@ HyperAIIntegration            (<a class="autorefs autorefs-internal" title="zenm
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/hyperai/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the HyperAI integration.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        List of stack component flavors for this integration.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.integrations.hyperai.flavors</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.hyperai.flavors</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
         <span class="n">HyperAIOrchestratorFlavor</span>
     <span class="p">)</span>
 
@@ -2848,7 +2848,7 @@ Defaults to <code>True</code>.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/hyperai/flavors/hyperai_orchestrator_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">HyperAIOrchestratorConfig</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">HyperAIOrchestratorConfig</span><span class="p">(</span>
     <span class="n">BaseOrchestratorConfig</span><span class="p">,</span> <span class="n">HyperAIOrchestratorSettings</span>
 <span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Configuration for the HyperAI orchestrator.</span>
@@ -2874,7 +2874,7 @@ Defaults to <code>True</code>.</p></td>
     <span class="n">gpu_enabled_in_container</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">is_remote</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_remote</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if this stack component is running remotely.</span>
 
 <span class="sd">        This designation is used to determine if the stack component can be</span>
@@ -2887,7 +2887,7 @@ Defaults to <code>True</code>.</p></td>
         <span class="k">return</span> <span class="kc">True</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">is_schedulable</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_schedulable</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Whether the orchestrator is schedulable or not.</span>
 
 <span class="sd">        Returns:</span>
@@ -3033,11 +3033,11 @@ HyperAIOrchestratorFlavor            (<a class="autorefs autorefs-internal" titl
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/hyperai/flavors/hyperai_orchestrator_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">HyperAIOrchestratorFlavor</span><span class="p">(</span><span class="n">BaseOrchestratorFlavor</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">HyperAIOrchestratorFlavor</span><span class="p">(</span><span class="n">BaseOrchestratorFlavor</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Flavor for the HyperAI orchestrator.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the orchestrator flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -3046,7 +3046,7 @@ HyperAIOrchestratorFlavor            (<a class="autorefs autorefs-internal" titl
         <span class="k">return</span> <span class="s2">&quot;hyperai&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">service_connector_requirements</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">service_connector_requirements</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ServiceConnectorRequirements</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Service connector resource requirements for service connectors.</span>
@@ -3063,7 +3063,7 @@ HyperAIOrchestratorFlavor            (<a class="autorefs autorefs-internal" titl
         <span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -3072,7 +3072,7 @@ HyperAIOrchestratorFlavor            (<a class="autorefs autorefs-internal" titl
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at SDK docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -3081,7 +3081,7 @@ HyperAIOrchestratorFlavor            (<a class="autorefs autorefs-internal" titl
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_sdk_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to represent the flavor in the dashboard.</span>
 
 <span class="sd">        Returns:</span>
@@ -3090,7 +3090,7 @@ HyperAIOrchestratorFlavor            (<a class="autorefs autorefs-internal" titl
         <span class="k">return</span> <span class="s2">&quot;https://public-flavor-logos.s3.eu-central-1.amazonaws.com/connectors/hyperai/hyperai.png&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseOrchestratorConfig</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseOrchestratorConfig</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Config class for the base orchestrator flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -3099,13 +3099,13 @@ HyperAIOrchestratorFlavor            (<a class="autorefs autorefs-internal" titl
         <span class="k">return</span> <span class="n">HyperAIOrchestratorConfig</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;HyperAIOrchestrator&quot;</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;HyperAIOrchestrator&quot;</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Implementation class for this flavor.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.hyperai.orchestrators</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.hyperai.orchestrators</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">HyperAIOrchestrator</span><span class="p">,</span>
         <span class="p">)</span>
 
@@ -3443,7 +3443,7 @@ on it.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/hyperai/flavors/hyperai_orchestrator_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">HyperAIOrchestratorSettings</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">HyperAIOrchestratorSettings</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;HyperAI orchestrator settings.</span>
 
 <span class="sd">    Attributes:</span>
@@ -3594,11 +3594,11 @@ HyperAIOrchestrator            (<a class="autorefs autorefs-internal" title="zen
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/hyperai/orchestrators/hyperai_orchestrator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">HyperAIOrchestrator</span><span class="p">(</span><span class="n">ContainerizedOrchestrator</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">HyperAIOrchestrator</span><span class="p">(</span><span class="n">ContainerizedOrchestrator</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Orchestrator responsible for running pipelines on HyperAI instances.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">HyperAIOrchestratorConfig</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">HyperAIOrchestratorConfig</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the `HyperAIOrchestratorConfig` config.</span>
 
 <span class="sd">        Returns:</span>
@@ -3607,7 +3607,7 @@ HyperAIOrchestrator            (<a class="autorefs autorefs-internal" title="zen
         <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">HyperAIOrchestratorConfig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">settings_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseSettings&quot;</span><span class="p">]]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">settings_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseSettings&quot;</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Settings class for the HyperAI orchestrator.</span>
 
 <span class="sd">        Returns:</span>
@@ -3616,7 +3616,7 @@ HyperAIOrchestrator            (<a class="autorefs autorefs-internal" title="zen
         <span class="k">return</span> <span class="n">HyperAIOrchestratorSettings</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">validator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">StackValidator</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">validator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">StackValidator</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Ensures there is an image builder in the stack.</span>
 
 <span class="sd">        Returns:</span>
@@ -3629,7 +3629,7 @@ HyperAIOrchestrator            (<a class="autorefs autorefs-internal" title="zen
             <span class="p">}</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_orchestrator_run_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_orchestrator_run_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the active orchestrator run id.</span>
 
 <span class="sd">        Raises:</span>
@@ -3647,7 +3647,7 @@ HyperAIOrchestrator            (<a class="autorefs autorefs-internal" title="zen
                 <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">ENV_ZENML_HYPERAI_RUN_ID</span><span class="si">}</span><span class="s2">.&quot;</span>
             <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_validate_mount_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_mount_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Validates if a given string is in a valid path format.</span>
 
 <span class="sd">        Args:</span>
@@ -3669,7 +3669,7 @@ HyperAIOrchestrator            (<a class="autorefs autorefs-internal" title="zen
                 <span class="sa">f</span><span class="s2">&quot;Path &#39;</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&#39; is not in a valid format, so a mount cannot be established.&quot;</span>
             <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_escape_shell_command</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">command</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_escape_shell_command</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">command</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Escapes a shell command.</span>
 
 <span class="sd">        Args:</span>
@@ -3680,7 +3680,7 @@ HyperAIOrchestrator            (<a class="autorefs autorefs-internal" title="zen
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">quote</span><span class="p">(</span><span class="n">command</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_scp_to_hyperai_instance</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_scp_to_hyperai_instance</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">paramiko_client</span><span class="p">:</span> <span class="n">paramiko</span><span class="o">.</span><span class="n">SSHClient</span><span class="p">,</span>
         <span class="n">f</span><span class="p">:</span> <span class="n">IO</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
@@ -3710,7 +3710,7 @@ HyperAIOrchestrator            (<a class="autorefs autorefs-internal" title="zen
                 <span class="sa">f</span><span class="s2">&quot;Failed to write </span><span class="si">{</span><span class="n">description</span><span class="si">}</span><span class="s2"> to HyperAI instance. Does the user have permissions to write?&quot;</span>
             <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">prepare_or_run_pipeline</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">prepare_or_run_pipeline</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeploymentResponse&quot;</span><span class="p">,</span>
         <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
@@ -3737,7 +3737,7 @@ HyperAIOrchestrator            (<a class="autorefs autorefs-internal" title="zen
 <span class="sd">        Raises:</span>
 <span class="sd">            RuntimeError: If a step fails.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.hyperai.service_connectors.hyperai_service_connector</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.hyperai.service_connectors.hyperai_service_connector</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">HyperAIServiceConnector</span><span class="p">,</span>
         <span class="p">)</span>
 
@@ -4235,7 +4235,7 @@ is not set.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/hyperai/orchestrators/hyperai_orchestrator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_orchestrator_run_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_orchestrator_run_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the active orchestrator run id.</span>
 
 <span class="sd">    Raises:</span>
@@ -4332,7 +4332,7 @@ environment.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/hyperai/orchestrators/hyperai_orchestrator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">prepare_or_run_pipeline</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">prepare_or_run_pipeline</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeploymentResponse&quot;</span><span class="p">,</span>
     <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
@@ -4359,7 +4359,7 @@ environment.</p></td>
 <span class="sd">    Raises:</span>
 <span class="sd">        RuntimeError: If a step fails.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.integrations.hyperai.service_connectors.hyperai_service_connector</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.hyperai.service_connectors.hyperai_service_connector</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
         <span class="n">HyperAIServiceConnector</span><span class="p">,</span>
     <span class="p">)</span>
 
@@ -4800,7 +4800,7 @@ HyperAIAuthenticationMethods            (<a class="autorefs autorefs-internal" t
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/hyperai/service_connectors/hyperai_service_connector.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">HyperAIAuthenticationMethods</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">HyperAIAuthenticationMethods</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;HyperAI Authentication methods.&quot;&quot;&quot;</span>
 
     <span class="n">RSA_KEY_OPTIONAL_PASSPHRASE</span> <span class="o">=</span> <span class="s2">&quot;rsa-key&quot;</span>
@@ -4856,7 +4856,7 @@ HyperAIConfiguration            (<a class="autorefs autorefs-internal" title="ze
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/hyperai/service_connectors/hyperai_service_connector.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">HyperAIConfiguration</span><span class="p">(</span><span class="n">HyperAICredentials</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">HyperAIConfiguration</span><span class="p">(</span><span class="n">HyperAICredentials</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;HyperAI client configuration.&quot;&quot;&quot;</span>
 
     <span class="n">hostnames</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
@@ -4925,7 +4925,7 @@ HyperAICredentials            (<a class="autorefs autorefs-internal" title="zenm
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/hyperai/service_connectors/hyperai_service_connector.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">HyperAICredentials</span><span class="p">(</span><span class="n">AuthenticationConfig</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">HyperAICredentials</span><span class="p">(</span><span class="n">AuthenticationConfig</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;HyperAI client authentication credentials.&quot;&quot;&quot;</span>
 
     <span class="n">base64_ssh_key</span><span class="p">:</span> <span class="n">PlainSerializedSecretStr</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
@@ -4994,13 +4994,13 @@ HyperAIServiceConnector            (<a class="autorefs autorefs-internal" title=
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/hyperai/service_connectors/hyperai_service_connector.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">HyperAIServiceConnector</span><span class="p">(</span><span class="n">ServiceConnector</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">HyperAIServiceConnector</span><span class="p">(</span><span class="n">ServiceConnector</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;HyperAI service connector.&quot;&quot;&quot;</span>
 
     <span class="n">config</span><span class="p">:</span> <span class="n">HyperAIConfiguration</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">_get_connector_type</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ServiceConnectorTypeModel</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_connector_type</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ServiceConnectorTypeModel</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the service connector specification.</span>
 
 <span class="sd">        Returns:</span>
@@ -5008,7 +5008,7 @@ HyperAIServiceConnector            (<a class="autorefs autorefs-internal" title=
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">HYPERAI_SERVICE_CONNECTOR_TYPE_SPEC</span>
 
-    <span class="k">def</span> <span class="nf">_paramiko_key_type_given_auth_method</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">paramiko</span><span class="o">.</span><span class="n">PKey</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_paramiko_key_type_given_auth_method</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">paramiko</span><span class="o">.</span><span class="n">PKey</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the Paramiko key type given the authentication method.</span>
 
 <span class="sd">        Returns:</span>
@@ -5031,7 +5031,7 @@ HyperAIServiceConnector            (<a class="autorefs autorefs-internal" title=
                 <span class="sa">f</span><span class="s2">&quot;Invalid authentication method: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">auth_method</span><span class="si">}</span><span class="s2">&quot;</span>
             <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_create_paramiko_client</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_create_paramiko_client</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">hostname</span><span class="p">:</span> <span class="nb">str</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">paramiko</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">SSHClient</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a Paramiko SSH client based on the configuration.</span>
@@ -5097,7 +5097,7 @@ HyperAIServiceConnector            (<a class="autorefs autorefs-internal" title=
             <span class="s2">&quot;Could not create SSH client for HyperAI instance.&quot;</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_authorize_client</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hostname</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_authorize_client</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hostname</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Verify that the client can authenticate with the HyperAI instance.</span>
 
 <span class="sd">        Args:</span>
@@ -5108,7 +5108,7 @@ HyperAIServiceConnector            (<a class="autorefs autorefs-internal" title=
         <span class="n">paramiko_client</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_paramiko_client</span><span class="p">(</span><span class="n">hostname</span><span class="p">)</span>
         <span class="n">paramiko_client</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">_connect_to_resource</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_connect_to_resource</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
@@ -5127,7 +5127,7 @@ HyperAIServiceConnector            (<a class="autorefs autorefs-internal" title=
         <span class="n">paramiko_client</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_paramiko_client</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">resource_id</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">paramiko_client</span>
 
-    <span class="k">def</span> <span class="nf">_configure_local_client</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_configure_local_client</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -5146,7 +5146,7 @@ HyperAIServiceConnector            (<a class="autorefs autorefs-internal" title=
         <span class="p">)</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">_auto_configure</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_auto_configure</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span>
         <span class="n">auth_method</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">resource_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -5176,7 +5176,7 @@ HyperAIServiceConnector            (<a class="autorefs autorefs-internal" title=
             <span class="s2">&quot;Auto-configuration is not supported by the HyperAI connector.&quot;</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_verify</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_verify</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">resource_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">resource_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>

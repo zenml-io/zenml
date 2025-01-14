@@ -2575,7 +2575,7 @@ each step with its own settings in separate VMs if provided.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/skypilot/flavors/skypilot_orchestrator_base_vm_config.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SkypilotBaseOrchestratorConfig</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SkypilotBaseOrchestratorConfig</span><span class="p">(</span>
     <span class="n">BaseOrchestratorConfig</span><span class="p">,</span> <span class="n">SkypilotBaseOrchestratorSettings</span>
 <span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Skypilot orchestrator base config.</span>
@@ -2590,7 +2590,7 @@ each step with its own settings in separate VMs if provided.</p></td>
     <span class="n">disable_step_based_settings</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">is_local</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_local</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if this stack component is running locally.</span>
 
 <span class="sd">        Returns:</span>
@@ -2599,7 +2599,7 @@ each step with its own settings in separate VMs if provided.</p></td>
         <span class="k">return</span> <span class="kc">False</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">supports_client_side_caching</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">supports_client_side_caching</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Whether the orchestrator supports client side caching.</span>
 
 <span class="sd">        Returns:</span>
@@ -2886,7 +2886,7 @@ running inside the VM.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/skypilot/flavors/skypilot_orchestrator_base_vm_config.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SkypilotBaseOrchestratorSettings</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SkypilotBaseOrchestratorSettings</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Skypilot orchestrator base settings.</span>
 
 <span class="sd">    Attributes:</span>
@@ -3123,7 +3123,7 @@ SkypilotBaseOrchestrator            (<a class="autorefs autorefs-internal" title
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/skypilot/orchestrators/skypilot_base_vm_orchestrator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SkypilotBaseOrchestrator</span><span class="p">(</span><span class="n">ContainerizedOrchestrator</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SkypilotBaseOrchestrator</span><span class="p">(</span><span class="n">ContainerizedOrchestrator</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for Orchestrator responsible for running pipelines remotely in a VM.</span>
 
 <span class="sd">    This orchestrator does not support running on a schedule.</span>
@@ -3133,7 +3133,7 @@ SkypilotBaseOrchestrator            (<a class="autorefs autorefs-internal" title
     <span class="n">DEFAULT_INSTANCE_TYPE</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">validator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">StackValidator</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">validator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">StackValidator</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Validates the stack.</span>
 
 <span class="sd">        In the remote case, checks that the stack contains a container registry,</span>
@@ -3143,7 +3143,7 @@ SkypilotBaseOrchestrator            (<a class="autorefs autorefs-internal" title
 <span class="sd">            A `StackValidator` instance.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="k">def</span> <span class="nf">_validate_remote_components</span><span class="p">(</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">_validate_remote_components</span><span class="p">(</span>
             <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
         <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
             <span class="k">for</span> <span class="n">component</span> <span class="ow">in</span> <span class="n">stack</span><span class="o">.</span><span class="n">components</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
@@ -3169,7 +3169,7 @@ SkypilotBaseOrchestrator            (<a class="autorefs autorefs-internal" title
             <span class="n">custom_validation_function</span><span class="o">=</span><span class="n">_validate_remote_components</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_orchestrator_run_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_orchestrator_run_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the active orchestrator run id.</span>
 
 <span class="sd">        Raises:</span>
@@ -3188,7 +3188,7 @@ SkypilotBaseOrchestrator            (<a class="autorefs autorefs-internal" title
             <span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SkypilotBaseOrchestratorConfig</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SkypilotBaseOrchestratorConfig</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the `SkypilotBaseOrchestratorConfig` config.</span>
 
 <span class="sd">        Returns:</span>
@@ -3198,28 +3198,28 @@ SkypilotBaseOrchestrator            (<a class="autorefs autorefs-internal" title
 
     <span class="nd">@property</span>
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">cloud</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">sky</span><span class="o">.</span><span class="n">clouds</span><span class="o">.</span><span class="n">Cloud</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">cloud</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">sky</span><span class="o">.</span><span class="n">clouds</span><span class="o">.</span><span class="n">Cloud</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The type of sky cloud to use.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            A `sky.clouds.Cloud` instance.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">setup_credentials</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">setup_credentials</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Set up credentials for the orchestrator.&quot;&quot;&quot;</span>
         <span class="n">connector</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_connector</span><span class="p">()</span>
         <span class="k">assert</span> <span class="n">connector</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
         <span class="n">connector</span><span class="o">.</span><span class="n">configure_local_client</span><span class="p">()</span>
 
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">prepare_environment_variable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">set</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">prepare_environment_variable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">set</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Set up Environment variables that are required for the orchestrator.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            set: Whether to set the environment variables or not.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">prepare_or_run_pipeline</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">prepare_or_run_pipeline</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeploymentResponse&quot;</span><span class="p">,</span>
         <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
@@ -3435,7 +3435,7 @@ SkypilotBaseOrchestrator            (<a class="autorefs autorefs-internal" title
             <span class="c1"># Unset the service connector AWS profile ENV variable</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">prepare_environment_variable</span><span class="p">(</span><span class="nb">set</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">sanitize_cluster_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sanitize_cluster_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Sanitize the value to be used in a cluster name.</span>
 
 <span class="sd">        Args:</span>
@@ -3629,7 +3629,7 @@ is not set.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/skypilot/orchestrators/skypilot_base_vm_orchestrator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_orchestrator_run_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_orchestrator_run_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the active orchestrator run id.</span>
 
 <span class="sd">    Raises:</span>
@@ -3690,7 +3690,7 @@ is not set.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/skypilot/orchestrators/skypilot_base_vm_orchestrator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
-<span class="k">def</span> <span class="nf">prepare_environment_variable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">set</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">prepare_environment_variable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">set</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Set up Environment variables that are required for the orchestrator.</span>
 
 <span class="sd">    Args:</span>
@@ -3771,7 +3771,7 @@ environment.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/skypilot/orchestrators/skypilot_base_vm_orchestrator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">prepare_or_run_pipeline</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">prepare_or_run_pipeline</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeploymentResponse&quot;</span><span class="p">,</span>
     <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
@@ -4044,7 +4044,7 @@ environment.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/skypilot/orchestrators/skypilot_base_vm_orchestrator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">sanitize_cluster_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">sanitize_cluster_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Sanitize the value to be used in a cluster name.</span>
 
 <span class="sd">    Args:</span>
@@ -4083,7 +4083,7 @@ environment.</p></td>
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/skypilot/orchestrators/skypilot_base_vm_orchestrator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">setup_credentials</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">setup_credentials</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Set up credentials for the orchestrator.&quot;&quot;&quot;</span>
     <span class="n">connector</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_connector</span><span class="p">()</span>
     <span class="k">assert</span> <span class="n">connector</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
@@ -4186,7 +4186,7 @@ SkypilotBaseOrchestrator.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/skypilot/orchestrators/skypilot_orchestrator_entrypoint.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">main</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Entrypoint of the Skypilot master/orchestrator VM.</span>
 
 <span class="sd">    This is the entrypoint of the Skypilot master/orchestrator VM. It is</span>
@@ -4295,7 +4295,7 @@ SkypilotBaseOrchestrator.</p></td>
 
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Fetching pipeline run: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">run</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">run_step_on_skypilot_vm</span><span class="p">(</span><span class="n">step_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run_step_on_skypilot_vm</span><span class="p">(</span><span class="n">step_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Run a pipeline step in a separate Skypilot VM.</span>
 
 <span class="sd">        Args:</span>
@@ -4445,7 +4445,7 @@ SkypilotBaseOrchestrator.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/skypilot/orchestrators/skypilot_orchestrator_entrypoint.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">parse_args</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">argparse</span><span class="o">.</span><span class="n">Namespace</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">parse_args</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">argparse</span><span class="o">.</span><span class="n">Namespace</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Parse entrypoint arguments.</span>
 
 <span class="sd">    Returns:</span>
@@ -4519,11 +4519,11 @@ SkypilotOrchestratorEntrypointConfiguration        </code>
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/skypilot/orchestrators/skypilot_orchestrator_entrypoint_configuration.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SkypilotOrchestratorEntrypointConfiguration</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SkypilotOrchestratorEntrypointConfiguration</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Entrypoint configuration for the Skypilot master/orchestrator VM.&quot;&quot;&quot;</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">get_entrypoint_options</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_entrypoint_options</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets all the options required for running this entrypoint.</span>
 
 <span class="sd">        Returns:</span>
@@ -4536,7 +4536,7 @@ SkypilotOrchestratorEntrypointConfiguration        </code>
         <span class="k">return</span> <span class="n">options</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">get_entrypoint_command</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_entrypoint_command</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns a command that runs the entrypoint module.</span>
 
 <span class="sd">        Returns:</span>
@@ -4550,7 +4550,7 @@ SkypilotOrchestratorEntrypointConfiguration        </code>
         <span class="k">return</span> <span class="n">command</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">get_entrypoint_arguments</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_entrypoint_arguments</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span>
         <span class="n">run_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">deployment_id</span><span class="p">:</span> <span class="s2">&quot;UUID&quot;</span><span class="p">,</span>
@@ -4647,7 +4647,7 @@ SkypilotOrchestratorEntrypointConfiguration        </code>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/skypilot/orchestrators/skypilot_orchestrator_entrypoint_configuration.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">get_entrypoint_arguments</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_entrypoint_arguments</span><span class="p">(</span>
     <span class="bp">cls</span><span class="p">,</span>
     <span class="n">run_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">deployment_id</span><span class="p">:</span> <span class="s2">&quot;UUID&quot;</span><span class="p">,</span>
@@ -4712,7 +4712,7 @@ SkypilotOrchestratorEntrypointConfiguration        </code>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/skypilot/orchestrators/skypilot_orchestrator_entrypoint_configuration.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">get_entrypoint_command</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_entrypoint_command</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns a command that runs the entrypoint module.</span>
 
 <span class="sd">    Returns:</span>
@@ -4767,7 +4767,7 @@ SkypilotOrchestratorEntrypointConfiguration        </code>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/skypilot/orchestrators/skypilot_orchestrator_entrypoint_configuration.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">get_entrypoint_options</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_entrypoint_options</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets all the options required for running this entrypoint.</span>
 
 <span class="sd">    Returns:</span>

@@ -2420,7 +2420,7 @@ WandbIntegration            (<a class="autorefs autorefs-internal" title="zenml.
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/wandb/__init__.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">WandbIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">WandbIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Definition of Plotly integration for ZenML.&quot;&quot;&quot;</span>
 
     <span class="n">NAME</span> <span class="o">=</span> <span class="n">WANDB</span>
@@ -2428,13 +2428,13 @@ WandbIntegration            (<a class="autorefs autorefs-internal" title="zenml.
     <span class="n">REQUIREMENTS_IGNORED_ON_UNINSTALL</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Pillow&quot;</span><span class="p">]</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Weights and Biases integration.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            List of stack component flavors for this integration.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.wandb.flavors</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.wandb.flavors</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">WandbExperimentTrackerFlavor</span><span class="p">,</span>
         <span class="p">)</span>
 
@@ -2492,13 +2492,13 @@ WandbIntegration            (<a class="autorefs autorefs-internal" title="zenml.
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/wandb/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Weights and Biases integration.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        List of stack component flavors for this integration.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.integrations.wandb.flavors</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.wandb.flavors</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
         <span class="n">WandbExperimentTrackerFlavor</span><span class="p">,</span>
     <span class="p">)</span>
 
@@ -2602,11 +2602,11 @@ WandbExperimentTracker            (<a class="autorefs autorefs-internal" title="
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/wandb/experiment_trackers/wandb_experiment_tracker.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">WandbExperimentTracker</span><span class="p">(</span><span class="n">BaseExperimentTracker</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">WandbExperimentTracker</span><span class="p">(</span><span class="n">BaseExperimentTracker</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Track experiment using Wandb.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">WandbExperimentTrackerConfig</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">WandbExperimentTrackerConfig</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the `WandbExperimentTrackerConfig` config.</span>
 
 <span class="sd">        Returns:</span>
@@ -2615,7 +2615,7 @@ WandbExperimentTracker            (<a class="autorefs autorefs-internal" title="
         <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">WandbExperimentTrackerConfig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">settings_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">WandbExperimentTrackerSettings</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">settings_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">WandbExperimentTrackerSettings</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Settings class for the Wandb experiment tracker.</span>
 
 <span class="sd">        Returns:</span>
@@ -2623,7 +2623,7 @@ WandbExperimentTracker            (<a class="autorefs autorefs-internal" title="
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">WandbExperimentTrackerSettings</span>
 
-    <span class="k">def</span> <span class="nf">prepare_step_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="s2">&quot;StepRunInfo&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">prepare_step_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="s2">&quot;StepRunInfo&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Configures a Wandb run.</span>
 
 <span class="sd">        Args:</span>
@@ -2641,7 +2641,7 @@ WandbExperimentTracker            (<a class="autorefs autorefs-internal" title="
             <span class="n">run_name</span><span class="o">=</span><span class="n">wandb_run_name</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="n">tags</span><span class="p">,</span> <span class="n">settings</span><span class="o">=</span><span class="n">settings</span><span class="o">.</span><span class="n">settings</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_step_run_metadata</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_step_run_metadata</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="s2">&quot;StepRunInfo&quot;</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;MetadataType&quot;</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get component- and step-specific metadata after a step ran.</span>
@@ -2680,7 +2680,7 @@ WandbExperimentTracker            (<a class="autorefs autorefs-internal" title="
             <span class="s2">&quot;wandb_run_name&quot;</span><span class="p">:</span> <span class="n">run_name</span><span class="p">,</span>
         <span class="p">}</span>
 
-    <span class="k">def</span> <span class="nf">cleanup_step_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="s2">&quot;StepRunInfo&quot;</span><span class="p">,</span> <span class="n">step_failed</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">cleanup_step_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="s2">&quot;StepRunInfo&quot;</span><span class="p">,</span> <span class="n">step_failed</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Stops the Wandb run.</span>
 
 <span class="sd">        Args:</span>
@@ -2690,7 +2690,7 @@ WandbExperimentTracker            (<a class="autorefs autorefs-internal" title="
         <span class="n">wandb</span><span class="o">.</span><span class="n">finish</span><span class="p">(</span><span class="n">exit_code</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="k">if</span> <span class="n">step_failed</span> <span class="k">else</span> <span class="n">wandb</span><span class="o">.</span><span class="n">finish</span><span class="p">()</span>
         <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">WANDB_API_KEY</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_initialize_wandb</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_initialize_wandb</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">run_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">tags</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
@@ -2846,7 +2846,7 @@ WandbExperimentTracker            (<a class="autorefs autorefs-internal" title="
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/wandb/experiment_trackers/wandb_experiment_tracker.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">cleanup_step_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="s2">&quot;StepRunInfo&quot;</span><span class="p">,</span> <span class="n">step_failed</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">cleanup_step_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="s2">&quot;StepRunInfo&quot;</span><span class="p">,</span> <span class="n">step_failed</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Stops the Wandb run.</span>
 
 <span class="sd">    Args:</span>
@@ -2913,7 +2913,7 @@ WandbExperimentTracker            (<a class="autorefs autorefs-internal" title="
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/wandb/experiment_trackers/wandb_experiment_tracker.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_step_run_metadata</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_step_run_metadata</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="s2">&quot;StepRunInfo&quot;</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;MetadataType&quot;</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get component- and step-specific metadata after a step ran.</span>
@@ -2994,7 +2994,7 @@ WandbExperimentTracker            (<a class="autorefs autorefs-internal" title="
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/wandb/experiment_trackers/wandb_experiment_tracker.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">prepare_step_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="s2">&quot;StepRunInfo&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">prepare_step_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="p">:</span> <span class="s2">&quot;StepRunInfo&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Configures a Wandb run.</span>
 
 <span class="sd">    Args:</span>
@@ -3154,7 +3154,7 @@ entity and project.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/wandb/flavors/wandb_experiment_tracker_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">WandbExperimentTrackerConfig</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">WandbExperimentTrackerConfig</span><span class="p">(</span>
     <span class="n">BaseExperimentTrackerConfig</span><span class="p">,</span> <span class="n">WandbExperimentTrackerSettings</span>
 <span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Config for the Wandb experiment tracker.</span>
@@ -3229,11 +3229,11 @@ WandbExperimentTrackerFlavor            (<a class="autorefs autorefs-internal" t
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/wandb/flavors/wandb_experiment_tracker_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">WandbExperimentTrackerFlavor</span><span class="p">(</span><span class="n">BaseExperimentTrackerFlavor</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">WandbExperimentTrackerFlavor</span><span class="p">(</span><span class="n">BaseExperimentTrackerFlavor</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Flavor for the Wandb experiment tracker.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -3242,7 +3242,7 @@ WandbExperimentTrackerFlavor            (<a class="autorefs autorefs-internal" t
         <span class="k">return</span> <span class="n">WANDB_EXPERIMENT_TRACKER_FLAVOR</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A URL to point at docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -3251,7 +3251,7 @@ WandbExperimentTrackerFlavor            (<a class="autorefs autorefs-internal" t
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A URL to point at SDK docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -3260,7 +3260,7 @@ WandbExperimentTrackerFlavor            (<a class="autorefs autorefs-internal" t
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_sdk_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A URL to represent the flavor in the dashboard.</span>
 
 <span class="sd">        Returns:</span>
@@ -3269,7 +3269,7 @@ WandbExperimentTrackerFlavor            (<a class="autorefs autorefs-internal" t
         <span class="k">return</span> <span class="s2">&quot;https://public-flavor-logos.s3.eu-central-1.amazonaws.com/experiment_tracker/wandb.png&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">WandbExperimentTrackerConfig</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">WandbExperimentTrackerConfig</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns `WandbExperimentTrackerConfig` config class.</span>
 
 <span class="sd">        Returns:</span>
@@ -3278,13 +3278,13 @@ WandbExperimentTrackerFlavor            (<a class="autorefs autorefs-internal" t
         <span class="k">return</span> <span class="n">WandbExperimentTrackerConfig</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;WandbExperimentTracker&quot;</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;WandbExperimentTracker&quot;</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The implementation class.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.wandb.experiment_trackers</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.wandb.experiment_trackers</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">WandbExperimentTracker</span><span class="p">,</span>
         <span class="p">)</span>
 
@@ -3588,7 +3588,7 @@ WandbExperimentTrackerSettings            (<a class="autorefs autorefs-internal"
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/wandb/flavors/wandb_experiment_tracker_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">WandbExperimentTrackerSettings</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">WandbExperimentTrackerSettings</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Settings for the Wandb experiment tracker.</span>
 
 <span class="sd">    Attributes:</span>
@@ -3603,7 +3603,7 @@ WandbExperimentTrackerSettings            (<a class="autorefs autorefs-internal"
 
     <span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;settings&quot;</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;before&quot;</span><span class="p">)</span>
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">_convert_settings</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_convert_settings</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Converts settings to a dictionary.</span>
 
 <span class="sd">        Args:</span>
@@ -3612,7 +3612,7 @@ WandbExperimentTrackerSettings            (<a class="autorefs autorefs-internal"
 <span class="sd">        Returns:</span>
 <span class="sd">            Dict representation of the settings.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">import</span> <span class="nn">wandb</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">wandb</span>
 
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">wandb</span><span class="o">.</span><span class="n">Settings</span><span class="p">):</span>
             <span class="c1"># Depending on the wandb version, either `make_static` or `to_dict`</span>

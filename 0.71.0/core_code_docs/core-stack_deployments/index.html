@@ -2792,14 +2792,14 @@ AWSZenMLCloudStackDeployment            (<a class="autorefs autorefs-internal" t
 
         <details class="quote">
           <summary>Source code in <code>zenml/stack_deployments/aws_stack_deployment.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AWSZenMLCloudStackDeployment</span><span class="p">(</span><span class="n">ZenMLCloudStackDeployment</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AWSZenMLCloudStackDeployment</span><span class="p">(</span><span class="n">ZenMLCloudStackDeployment</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;AWS ZenML Cloud Stack Deployment.&quot;&quot;&quot;</span>
 
     <span class="n">provider</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">StackDeploymentProvider</span><span class="p">]</span> <span class="o">=</span> <span class="n">StackDeploymentProvider</span><span class="o">.</span><span class="n">AWS</span>
     <span class="n">deployment</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">AWS_DEPLOYMENT_TYPE</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">description</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">description</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a description of the ZenML Cloud Stack Deployment.</span>
 
 <span class="sd">        This will be displayed when the user is prompted to deploy</span>
@@ -2815,7 +2815,7 @@ AWSZenMLCloudStackDeployment            (<a class="autorefs autorefs-internal" t
 <span class="s2">&quot;&quot;&quot;</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">instructions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">instructions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return instructions on how to deploy the ZenML stack to the specified cloud provider.</span>
 
 <span class="sd">        This will be displayed before the user is prompted to deploy the ZenML</span>
@@ -2864,7 +2864,7 @@ AWSZenMLCloudStackDeployment            (<a class="autorefs autorefs-internal" t
 <span class="s2">&quot;&quot;&quot;</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">post_deploy_instructions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">post_deploy_instructions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return instructions on what to do after the deployment is complete.</span>
 
 <span class="sd">        This will be displayed after the deployment is complete.</span>
@@ -2881,7 +2881,7 @@ AWSZenMLCloudStackDeployment            (<a class="autorefs autorefs-internal" t
 <span class="s2">&quot;&quot;&quot;</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">integrations</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">integrations</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the ZenML integrations required for the stack.</span>
 
 <span class="sd">        Returns:</span>
@@ -2894,7 +2894,7 @@ AWSZenMLCloudStackDeployment            (<a class="autorefs autorefs-internal" t
         <span class="p">]</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">permissions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">permissions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the permissions granted to ZenML to access the cloud resources.</span>
 
 <span class="sd">        Returns:</span>
@@ -2957,7 +2957,7 @@ AWSZenMLCloudStackDeployment            (<a class="autorefs autorefs-internal" t
         <span class="p">}</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">locations</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">locations</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the locations where the ZenML stack can be deployed.</span>
 
 <span class="sd">        Returns:</span>
@@ -3000,7 +3000,7 @@ AWSZenMLCloudStackDeployment            (<a class="autorefs autorefs-internal" t
             <span class="s2">&quot;South America (São Paulo)&quot;</span><span class="p">:</span> <span class="s2">&quot;sa-east-1&quot;</span><span class="p">,</span>
         <span class="p">}</span>
 
-    <span class="k">def</span> <span class="nf">get_deployment_config</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_deployment_config</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StackDeploymentConfig</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the configuration to deploy the ZenML stack to the specified cloud provider.</span>
@@ -3153,7 +3153,7 @@ the ZenML stack.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/stack_deployments/aws_stack_deployment.py</code></summary>
           <div class="highlight"><pre><span></span><code>    <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">description</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">description</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a description of the ZenML Cloud Stack Deployment.</span>
 
 <span class="sd">        This will be displayed when the user is prompted to deploy</span>
@@ -3222,7 +3222,7 @@ specified cloud provider.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/stack_deployments/aws_stack_deployment.py</code></summary>
-          <div class="highlight"><pre><span></span><code>    <span class="k">def</span> <span class="nf">get_deployment_config</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code>    <span class="k">def</span><span class="w"> </span><span class="nf">get_deployment_config</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StackDeploymentConfig</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the configuration to deploy the ZenML stack to the specified cloud provider.</span>
@@ -3352,7 +3352,7 @@ specified cloud provider.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/stack_deployments/aws_stack_deployment.py</code></summary>
           <div class="highlight"><pre><span></span><code>    <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">instructions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">instructions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return instructions on how to deploy the ZenML stack to the specified cloud provider.</span>
 
 <span class="sd">        This will be displayed before the user is prompted to deploy the ZenML</span>
@@ -3443,7 +3443,7 @@ stack to be usable.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/stack_deployments/aws_stack_deployment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">integrations</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">integrations</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the ZenML integrations required for the stack.</span>
 
 <span class="sd">    Returns:</span>
@@ -3498,7 +3498,7 @@ names to region descriptions.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/stack_deployments/aws_stack_deployment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">locations</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">locations</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the locations where the ZenML stack can be deployed.</span>
 
 <span class="sd">    Returns:</span>
@@ -3584,7 +3584,7 @@ a dictionary grouping permissions by resource.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/stack_deployments/aws_stack_deployment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">permissions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">permissions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the permissions granted to ZenML to access the cloud resources.</span>
 
 <span class="sd">    Returns:</span>
@@ -3690,7 +3690,7 @@ complete.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/stack_deployments/aws_stack_deployment.py</code></summary>
           <div class="highlight"><pre><span></span><code>    <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">post_deploy_instructions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">post_deploy_instructions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return instructions on what to do after the deployment is complete.</span>
 
 <span class="sd">        This will be displayed after the deployment is complete.</span>
@@ -3780,14 +3780,14 @@ AZUREZenMLCloudStackDeployment            (<a class="autorefs autorefs-internal"
 
         <details class="quote">
           <summary>Source code in <code>zenml/stack_deployments/azure_stack_deployment.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AZUREZenMLCloudStackDeployment</span><span class="p">(</span><span class="n">ZenMLCloudStackDeployment</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AZUREZenMLCloudStackDeployment</span><span class="p">(</span><span class="n">ZenMLCloudStackDeployment</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Azure ZenML Cloud Stack Deployment.&quot;&quot;&quot;</span>
 
     <span class="n">provider</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">StackDeploymentProvider</span><span class="p">]</span> <span class="o">=</span> <span class="n">StackDeploymentProvider</span><span class="o">.</span><span class="n">AZURE</span>
     <span class="n">deployment</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">AZURE_DEPLOYMENT_TYPE</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">description</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">description</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a description of the ZenML Cloud Stack Deployment.</span>
 
 <span class="sd">        This will be displayed when the user is prompted to deploy</span>
@@ -3803,7 +3803,7 @@ AZUREZenMLCloudStackDeployment            (<a class="autorefs autorefs-internal"
 <span class="s2">&quot;&quot;&quot;</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">instructions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">instructions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return instructions on how to deploy the ZenML stack to the specified cloud provider.</span>
 
 <span class="sd">        This will be displayed before the user is prompted to deploy the ZenML</span>
@@ -3855,7 +3855,7 @@ AZUREZenMLCloudStackDeployment            (<a class="autorefs autorefs-internal"
 <span class="s2">&quot;&quot;&quot;</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">post_deploy_instructions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">post_deploy_instructions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return instructions on what to do after the deployment is complete.</span>
 
 <span class="sd">        This will be displayed after the deployment is complete.</span>
@@ -3871,7 +3871,7 @@ AZUREZenMLCloudStackDeployment            (<a class="autorefs autorefs-internal"
 <span class="s2">&quot;&quot;&quot;</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">integrations</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">integrations</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the ZenML integrations required for the stack.</span>
 
 <span class="sd">        Returns:</span>
@@ -3881,7 +3881,7 @@ AZUREZenMLCloudStackDeployment            (<a class="autorefs autorefs-internal"
         <span class="k">return</span> <span class="p">[</span><span class="s2">&quot;azure&quot;</span><span class="p">]</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">permissions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">permissions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the permissions granted to ZenML to access the cloud resources.</span>
 
 <span class="sd">        Returns:</span>
@@ -3904,7 +3904,7 @@ AZUREZenMLCloudStackDeployment            (<a class="autorefs autorefs-internal"
         <span class="p">}</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">locations</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">locations</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the locations where the ZenML stack can be deployed.</span>
 
 <span class="sd">        Returns:</span>
@@ -3980,7 +3980,7 @@ AZUREZenMLCloudStackDeployment            (<a class="autorefs autorefs-internal"
         <span class="p">}</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">skypilot_default_regions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">skypilot_default_regions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the regions supported by default for the Skypilot.</span>
 
 <span class="sd">        Returns:</span>
@@ -3993,7 +3993,7 @@ AZUREZenMLCloudStackDeployment            (<a class="autorefs autorefs-internal"
             <span class="k">if</span> <span class="s2">&quot;(US)&quot;</span> <span class="ow">in</span> <span class="n">k</span> <span class="ow">and</span> <span class="n">matcher</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
         <span class="p">}</span>
 
-    <span class="k">def</span> <span class="nf">get_deployment_config</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_deployment_config</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StackDeploymentConfig</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the configuration to deploy the ZenML stack to the specified cloud provider.</span>
@@ -4139,7 +4139,7 @@ the ZenML stack.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/stack_deployments/azure_stack_deployment.py</code></summary>
           <div class="highlight"><pre><span></span><code>    <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">description</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">description</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a description of the ZenML Cloud Stack Deployment.</span>
 
 <span class="sd">        This will be displayed when the user is prompted to deploy</span>
@@ -4207,7 +4207,7 @@ specified cloud provider.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/stack_deployments/azure_stack_deployment.py</code></summary>
-          <div class="highlight"><pre><span></span><code>    <span class="k">def</span> <span class="nf">get_deployment_config</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code>    <span class="k">def</span><span class="w"> </span><span class="nf">get_deployment_config</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StackDeploymentConfig</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the configuration to deploy the ZenML stack to the specified cloud provider.</span>
@@ -4330,7 +4330,7 @@ specified cloud provider.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/stack_deployments/azure_stack_deployment.py</code></summary>
           <div class="highlight"><pre><span></span><code>    <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">instructions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">instructions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return instructions on how to deploy the ZenML stack to the specified cloud provider.</span>
 
 <span class="sd">        This will be displayed before the user is prompted to deploy the ZenML</span>
@@ -4424,7 +4424,7 @@ stack to be usable.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/stack_deployments/azure_stack_deployment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">integrations</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">integrations</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the ZenML integrations required for the stack.</span>
 
 <span class="sd">    Returns:</span>
@@ -4476,7 +4476,7 @@ names to region descriptions.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/stack_deployments/azure_stack_deployment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">locations</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">locations</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the locations where the ZenML stack can be deployed.</span>
 
 <span class="sd">    Returns:</span>
@@ -4594,7 +4594,7 @@ a dictionary grouping permissions by resource.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/stack_deployments/azure_stack_deployment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">permissions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">permissions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the permissions granted to ZenML to access the cloud resources.</span>
 
 <span class="sd">    Returns:</span>
@@ -4660,7 +4660,7 @@ complete.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/stack_deployments/azure_stack_deployment.py</code></summary>
           <div class="highlight"><pre><span></span><code>    <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">post_deploy_instructions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">post_deploy_instructions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return instructions on what to do after the deployment is complete.</span>
 
 <span class="sd">        This will be displayed after the deployment is complete.</span>
@@ -4717,7 +4717,7 @@ complete.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/stack_deployments/azure_stack_deployment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">skypilot_default_regions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">skypilot_default_regions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the regions supported by default for the Skypilot.</span>
 
 <span class="sd">    Returns:</span>
@@ -4804,14 +4804,14 @@ GCPZenMLCloudStackDeployment            (<a class="autorefs autorefs-internal" t
 
         <details class="quote">
           <summary>Source code in <code>zenml/stack_deployments/gcp_stack_deployment.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">GCPZenMLCloudStackDeployment</span><span class="p">(</span><span class="n">ZenMLCloudStackDeployment</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">GCPZenMLCloudStackDeployment</span><span class="p">(</span><span class="n">ZenMLCloudStackDeployment</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;GCP ZenML Cloud Stack Deployment.&quot;&quot;&quot;</span>
 
     <span class="n">provider</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">StackDeploymentProvider</span><span class="p">]</span> <span class="o">=</span> <span class="n">StackDeploymentProvider</span><span class="o">.</span><span class="n">GCP</span>
     <span class="n">deployment</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">GCP_DEPLOYMENT_TYPE</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">description</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">description</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a description of the ZenML Cloud Stack Deployment.</span>
 
 <span class="sd">        This will be displayed when the user is prompted to deploy</span>
@@ -4827,7 +4827,7 @@ GCPZenMLCloudStackDeployment            (<a class="autorefs autorefs-internal" t
 <span class="s2">&quot;&quot;&quot;</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">instructions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">instructions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return instructions on how to deploy the ZenML stack to the specified cloud provider.</span>
 
 <span class="sd">        This will be displayed before the user is prompted to deploy the ZenML</span>
@@ -4882,7 +4882,7 @@ GCPZenMLCloudStackDeployment            (<a class="autorefs autorefs-internal" t
 <span class="s2">&quot;&quot;&quot;</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">post_deploy_instructions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">post_deploy_instructions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return instructions on what to do after the deployment is complete.</span>
 
 <span class="sd">        This will be displayed after the deployment is complete.</span>
@@ -4899,7 +4899,7 @@ GCPZenMLCloudStackDeployment            (<a class="autorefs autorefs-internal" t
 <span class="s2">&quot;&quot;&quot;</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">integrations</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">integrations</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the ZenML integrations required for the stack.</span>
 
 <span class="sd">        Returns:</span>
@@ -4911,7 +4911,7 @@ GCPZenMLCloudStackDeployment            (<a class="autorefs autorefs-internal" t
         <span class="p">]</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">permissions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">permissions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the permissions granted to ZenML to access the cloud resources.</span>
 
 <span class="sd">        Returns:</span>
@@ -4937,7 +4937,7 @@ GCPZenMLCloudStackDeployment            (<a class="autorefs autorefs-internal" t
         <span class="p">}</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">locations</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">locations</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the locations where the ZenML stack can be deployed.</span>
 
 <span class="sd">        Returns:</span>
@@ -4992,7 +4992,7 @@ GCPZenMLCloudStackDeployment            (<a class="autorefs autorefs-internal" t
         <span class="p">}</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">skypilot_default_regions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">skypilot_default_regions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the regions supported by default for the Skypilot.</span>
 
 <span class="sd">        Returns:</span>
@@ -5001,7 +5001,7 @@ GCPZenMLCloudStackDeployment            (<a class="autorefs autorefs-internal" t
         <span class="n">matcher</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;us-.*&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">locations</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">matcher</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">v</span><span class="p">)}</span>
 
-    <span class="k">def</span> <span class="nf">get_deployment_config</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_deployment_config</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StackDeploymentConfig</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the configuration to deploy the ZenML stack to the specified cloud provider.</span>
@@ -5160,7 +5160,7 @@ the ZenML stack.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/stack_deployments/gcp_stack_deployment.py</code></summary>
           <div class="highlight"><pre><span></span><code>    <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">description</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">description</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a description of the ZenML Cloud Stack Deployment.</span>
 
 <span class="sd">        This will be displayed when the user is prompted to deploy</span>
@@ -5228,7 +5228,7 @@ specified cloud provider.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/stack_deployments/gcp_stack_deployment.py</code></summary>
-          <div class="highlight"><pre><span></span><code>    <span class="k">def</span> <span class="nf">get_deployment_config</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code>    <span class="k">def</span><span class="w"> </span><span class="nf">get_deployment_config</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StackDeploymentConfig</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the configuration to deploy the ZenML stack to the specified cloud provider.</span>
@@ -5364,7 +5364,7 @@ specified cloud provider.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/stack_deployments/gcp_stack_deployment.py</code></summary>
           <div class="highlight"><pre><span></span><code>    <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">instructions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">instructions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return instructions on how to deploy the ZenML stack to the specified cloud provider.</span>
 
 <span class="sd">        This will be displayed before the user is prompted to deploy the ZenML</span>
@@ -5461,7 +5461,7 @@ stack to be usable.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/stack_deployments/gcp_stack_deployment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">integrations</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">integrations</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the ZenML integrations required for the stack.</span>
 
 <span class="sd">    Returns:</span>
@@ -5515,7 +5515,7 @@ names to region descriptions.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/stack_deployments/gcp_stack_deployment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">locations</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">locations</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the locations where the ZenML stack can be deployed.</span>
 
 <span class="sd">    Returns:</span>
@@ -5612,7 +5612,7 @@ a dictionary grouping permissions by resource.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/stack_deployments/gcp_stack_deployment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">permissions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">permissions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the permissions granted to ZenML to access the cloud resources.</span>
 
 <span class="sd">    Returns:</span>
@@ -5681,7 +5681,7 @@ complete.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/stack_deployments/gcp_stack_deployment.py</code></summary>
           <div class="highlight"><pre><span></span><code>    <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">post_deploy_instructions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">post_deploy_instructions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return instructions on what to do after the deployment is complete.</span>
 
 <span class="sd">        This will be displayed after the deployment is complete.</span>
@@ -5739,7 +5739,7 @@ complete.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/stack_deployments/gcp_stack_deployment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">skypilot_default_regions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">skypilot_default_regions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the regions supported by default for the Skypilot.</span>
 
 <span class="sd">    Returns:</span>
@@ -5822,7 +5822,7 @@ ZenMLCloudStackDeployment            (<span title="pydantic.main.BaseModel">Base
 
         <details class="quote">
           <summary>Source code in <code>zenml/stack_deployments/stack_deployment.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ZenMLCloudStackDeployment</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ZenMLCloudStackDeployment</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;ZenML Cloud Stack CLI Deployment base class.&quot;&quot;&quot;</span>
 
     <span class="n">provider</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">StackDeploymentProvider</span><span class="p">]</span>
@@ -5835,7 +5835,7 @@ ZenMLCloudStackDeployment            (<span title="pydantic.main.BaseModel">Base
 
     <span class="nd">@classmethod</span>
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">description</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">description</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a description of the ZenML Cloud Stack Deployment.</span>
 
 <span class="sd">        This will be displayed when the user is prompted to deploy</span>
@@ -5847,7 +5847,7 @@ ZenMLCloudStackDeployment            (<span title="pydantic.main.BaseModel">Base
 
     <span class="nd">@classmethod</span>
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">instructions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">instructions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return instructions on how to deploy the ZenML stack to the specified cloud provider.</span>
 
 <span class="sd">        This will be displayed before the user is prompted to deploy the ZenML</span>
@@ -5860,7 +5860,7 @@ ZenMLCloudStackDeployment            (<span title="pydantic.main.BaseModel">Base
 
     <span class="nd">@classmethod</span>
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">post_deploy_instructions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">post_deploy_instructions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return instructions on what to do after the deployment is complete.</span>
 
 <span class="sd">        This will be displayed after the deployment is complete.</span>
@@ -5872,7 +5872,7 @@ ZenMLCloudStackDeployment            (<span title="pydantic.main.BaseModel">Base
 
     <span class="nd">@classmethod</span>
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">integrations</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">integrations</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the ZenML integrations required for the stack.</span>
 
 <span class="sd">        Returns:</span>
@@ -5882,7 +5882,7 @@ ZenMLCloudStackDeployment            (<span title="pydantic.main.BaseModel">Base
 
     <span class="nd">@classmethod</span>
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">permissions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">permissions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the permissions granted to ZenML to access the cloud resources.</span>
 
 <span class="sd">        Returns:</span>
@@ -5892,7 +5892,7 @@ ZenMLCloudStackDeployment            (<span title="pydantic.main.BaseModel">Base
 
     <span class="nd">@classmethod</span>
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">locations</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">locations</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the locations where the ZenML stack can be deployed.</span>
 
 <span class="sd">        Returns:</span>
@@ -5901,7 +5901,7 @@ ZenMLCloudStackDeployment            (<span title="pydantic.main.BaseModel">Base
 <span class="sd">        &quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">deployment_type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">deployment_type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the type of deployment.</span>
 
 <span class="sd">        Returns:</span>
@@ -5912,7 +5912,7 @@ ZenMLCloudStackDeployment            (<span title="pydantic.main.BaseModel">Base
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">deployment</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">skypilot_default_regions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">skypilot_default_regions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the regions supported by default for the Skypilot.</span>
 
 <span class="sd">        Returns:</span>
@@ -5921,7 +5921,7 @@ ZenMLCloudStackDeployment            (<span title="pydantic.main.BaseModel">Base
         <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">locations</span><span class="p">()</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">get_deployment_info</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StackDeploymentInfo</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_deployment_info</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StackDeploymentInfo</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return information about the ZenML Cloud Stack Deployment.</span>
 
 <span class="sd">        Returns:</span>
@@ -5939,7 +5939,7 @@ ZenMLCloudStackDeployment            (<span title="pydantic.main.BaseModel">Base
         <span class="p">)</span>
 
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">get_deployment_config</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_deployment_config</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StackDeploymentConfig</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the configuration to deploy the ZenML stack to the specified cloud provider.</span>
@@ -5963,7 +5963,7 @@ ZenMLCloudStackDeployment            (<span title="pydantic.main.BaseModel">Base
 <span class="sd">            specified cloud provider.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">get_stack</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_stack</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">date_start</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">DeployedStack</span><span class="p">]:</span>
@@ -6128,7 +6128,7 @@ the ZenML stack.</p>
           <summary>Source code in <code>zenml/stack_deployments/stack_deployment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="nd">@abstractmethod</span>
-<span class="k">def</span> <span class="nf">description</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">description</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a description of the ZenML Cloud Stack Deployment.</span>
 
 <span class="sd">    This will be displayed when the user is prompted to deploy</span>
@@ -6192,7 +6192,7 @@ specified cloud provider.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/stack_deployments/stack_deployment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
-<span class="k">def</span> <span class="nf">get_deployment_config</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_deployment_config</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StackDeploymentConfig</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the configuration to deploy the ZenML stack to the specified cloud provider.</span>
@@ -6258,7 +6258,7 @@ specified cloud provider.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/stack_deployments/stack_deployment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">get_deployment_info</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StackDeploymentInfo</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_deployment_info</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StackDeploymentInfo</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Return information about the ZenML Cloud Stack Deployment.</span>
 
 <span class="sd">    Returns:</span>
@@ -6335,7 +6335,7 @@ matching stack was not found.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/stack_deployments/stack_deployment.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_stack</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_stack</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">date_start</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">DeployedStack</span><span class="p">]:</span>
@@ -6441,7 +6441,7 @@ specified cloud provider.</p></td>
           <summary>Source code in <code>zenml/stack_deployments/stack_deployment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="nd">@abstractmethod</span>
-<span class="k">def</span> <span class="nf">instructions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">instructions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Return instructions on how to deploy the ZenML stack to the specified cloud provider.</span>
 
 <span class="sd">    This will be displayed before the user is prompted to deploy the ZenML</span>
@@ -6496,7 +6496,7 @@ stack to be usable.</p></td>
           <summary>Source code in <code>zenml/stack_deployments/stack_deployment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="nd">@abstractmethod</span>
-<span class="k">def</span> <span class="nf">integrations</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">integrations</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the ZenML integrations required for the stack.</span>
 
 <span class="sd">    Returns:</span>
@@ -6548,7 +6548,7 @@ names to region descriptions.</p></td>
           <summary>Source code in <code>zenml/stack_deployments/stack_deployment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="nd">@abstractmethod</span>
-<span class="k">def</span> <span class="nf">locations</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">locations</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the locations where the ZenML stack can be deployed.</span>
 
 <span class="sd">    Returns:</span>
@@ -6600,7 +6600,7 @@ a dictionary grouping permissions by resource.</p></td>
           <summary>Source code in <code>zenml/stack_deployments/stack_deployment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="nd">@abstractmethod</span>
-<span class="k">def</span> <span class="nf">permissions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">permissions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the permissions granted to ZenML to access the cloud resources.</span>
 
 <span class="sd">    Returns:</span>
@@ -6653,7 +6653,7 @@ complete.</p></td>
           <summary>Source code in <code>zenml/stack_deployments/stack_deployment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="nd">@abstractmethod</span>
-<span class="k">def</span> <span class="nf">post_deploy_instructions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">post_deploy_instructions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Return instructions on what to do after the deployment is complete.</span>
 
 <span class="sd">    This will be displayed after the deployment is complete.</span>
@@ -6705,7 +6705,7 @@ complete.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/stack_deployments/stack_deployment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">skypilot_default_regions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">skypilot_default_regions</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the regions supported by default for the Skypilot.</span>
 
 <span class="sd">    Returns:</span>
@@ -6819,7 +6819,7 @@ complete.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/stack_deployments/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_stack_deployment_class</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_stack_deployment_class</span><span class="p">(</span>
     <span class="n">provider</span><span class="p">:</span> <span class="n">StackDeploymentProvider</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">ZenMLCloudStackDeployment</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the ZenML Cloud Stack Deployment class for the specified provider.</span>

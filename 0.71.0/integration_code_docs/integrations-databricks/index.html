@@ -3372,7 +3372,7 @@ DatabricksIntegration            (<a class="autorefs autorefs-internal" title="z
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/databricks/__init__.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DatabricksIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">DatabricksIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Definition of Databricks Integration for ZenML.&quot;&quot;&quot;</span>
 
     <span class="n">NAME</span> <span class="o">=</span> <span class="n">DATABRICKS</span>
@@ -3381,7 +3381,7 @@ DatabricksIntegration            (<a class="autorefs autorefs-internal" title="z
     <span class="n">REQUIREMENTS_IGNORED_ON_UNINSTALL</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;numpy&quot;</span><span class="p">,</span> <span class="s2">&quot;pandas&quot;</span><span class="p">]</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">get_requirements</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">target_os</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_requirements</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">target_os</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Method to get the requirements for the integration.</span>
 
 <span class="sd">        Args:</span>
@@ -3390,21 +3390,21 @@ DatabricksIntegration            (<a class="autorefs autorefs-internal" title="z
 <span class="sd">        Returns:</span>
 <span class="sd">            A list of requirements.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.numpy</span> <span class="kn">import</span> <span class="n">NumpyIntegration</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.pandas</span> <span class="kn">import</span> <span class="n">PandasIntegration</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.numpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">NumpyIntegration</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.pandas</span><span class="w"> </span><span class="kn">import</span> <span class="n">PandasIntegration</span>
 
         <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">REQUIREMENTS</span> <span class="o">+</span> \
             <span class="n">NumpyIntegration</span><span class="o">.</span><span class="n">get_requirements</span><span class="p">(</span><span class="n">target_os</span><span class="o">=</span><span class="n">target_os</span><span class="p">)</span> <span class="o">+</span> \
             <span class="n">PandasIntegration</span><span class="o">.</span><span class="n">get_requirements</span><span class="p">(</span><span class="n">target_os</span><span class="o">=</span><span class="n">target_os</span><span class="p">)</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Databricks integration.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            List of stack component flavors for this integration.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.databricks.flavors</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.databricks.flavors</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">DatabricksOrchestratorFlavor</span><span class="p">,</span>
             <span class="n">DatabricksModelDeployerFlavor</span><span class="p">,</span>
         <span class="p">)</span>
@@ -3466,13 +3466,13 @@ DatabricksIntegration            (<a class="autorefs autorefs-internal" title="z
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/databricks/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Databricks integration.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        List of stack component flavors for this integration.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.integrations.databricks.flavors</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.databricks.flavors</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
         <span class="n">DatabricksOrchestratorFlavor</span><span class="p">,</span>
         <span class="n">DatabricksModelDeployerFlavor</span><span class="p">,</span>
     <span class="p">)</span>
@@ -3543,7 +3543,7 @@ DatabricksIntegration            (<a class="autorefs autorefs-internal" title="z
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/databricks/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">get_requirements</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">target_os</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_requirements</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">target_os</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Method to get the requirements for the integration.</span>
 
 <span class="sd">    Args:</span>
@@ -3552,8 +3552,8 @@ DatabricksIntegration            (<a class="autorefs autorefs-internal" title="z
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of requirements.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.integrations.numpy</span> <span class="kn">import</span> <span class="n">NumpyIntegration</span>
-    <span class="kn">from</span> <span class="nn">zenml.integrations.pandas</span> <span class="kn">import</span> <span class="n">PandasIntegration</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.numpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">NumpyIntegration</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.pandas</span><span class="w"> </span><span class="kn">import</span> <span class="n">PandasIntegration</span>
 
     <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">REQUIREMENTS</span> <span class="o">+</span> \
         <span class="n">NumpyIntegration</span><span class="o">.</span><span class="n">get_requirements</span><span class="p">(</span><span class="n">target_os</span><span class="o">=</span><span class="n">target_os</span><span class="p">)</span> <span class="o">+</span> \
@@ -3655,7 +3655,7 @@ DatabricksBaseConfig            (<span title="pydantic.main.BaseModel">BaseModel
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/databricks/flavors/databricks_model_deployer_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DatabricksBaseConfig</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">DatabricksBaseConfig</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Databricks Inference Endpoint configuration.&quot;&quot;&quot;</span>
 
     <span class="n">workload_size</span><span class="p">:</span> <span class="nb">str</span>
@@ -3754,7 +3754,7 @@ DatabricksModelDeployerConfig            (<a class="autorefs autorefs-internal" 
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/databricks/flavors/databricks_model_deployer_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DatabricksModelDeployerConfig</span><span class="p">(</span><span class="n">BaseModelDeployerConfig</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">DatabricksModelDeployerConfig</span><span class="p">(</span><span class="n">BaseModelDeployerConfig</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Configuration for the Databricks model deployer.</span>
 
 <span class="sd">    Attributes:</span>
@@ -3828,11 +3828,11 @@ DatabricksModelDeployerFlavor            (<a class="autorefs autorefs-internal" 
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/databricks/flavors/databricks_model_deployer_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DatabricksModelDeployerFlavor</span><span class="p">(</span><span class="n">BaseModelDeployerFlavor</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">DatabricksModelDeployerFlavor</span><span class="p">(</span><span class="n">BaseModelDeployerFlavor</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Databricks Endpoint model deployer flavor.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -3841,7 +3841,7 @@ DatabricksModelDeployerFlavor            (<a class="autorefs autorefs-internal" 
         <span class="k">return</span> <span class="n">DATABRICKS_MODEL_DEPLOYER_FLAVOR</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -3850,7 +3850,7 @@ DatabricksModelDeployerFlavor            (<a class="autorefs autorefs-internal" 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at SDK docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -3859,7 +3859,7 @@ DatabricksModelDeployerFlavor            (<a class="autorefs autorefs-internal" 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_sdk_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to represent the flavor in the dashboard.</span>
 
 <span class="sd">        Returns:</span>
@@ -3868,7 +3868,7 @@ DatabricksModelDeployerFlavor            (<a class="autorefs autorefs-internal" 
         <span class="k">return</span> <span class="s2">&quot;https://public-flavor-logos.s3.eu-central-1.amazonaws.com/model_deployer/databricks.png&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">DatabricksModelDeployerConfig</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">DatabricksModelDeployerConfig</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns `DatabricksModelDeployerConfig` config class.</span>
 
 <span class="sd">        Returns:</span>
@@ -3877,13 +3877,13 @@ DatabricksModelDeployerFlavor            (<a class="autorefs autorefs-internal" 
         <span class="k">return</span> <span class="n">DatabricksModelDeployerConfig</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;DatabricksModelDeployer&quot;</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;DatabricksModelDeployer&quot;</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The implementation class.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.databricks.model_deployers.databricks_model_deployer</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.databricks.model_deployers.databricks_model_deployer</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">DatabricksModelDeployer</span><span class="p">,</span>
         <span class="p">)</span>
 
@@ -4198,7 +4198,7 @@ DatabricksAvailabilityType            (<a class="autorefs autorefs-internal" tit
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/databricks/flavors/databricks_orchestrator_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DatabricksAvailabilityType</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">DatabricksAvailabilityType</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Databricks availability type.&quot;&quot;&quot;</span>
 
     <span class="n">ON_DEMAND</span> <span class="o">=</span> <span class="s2">&quot;ON_DEMAND&quot;</span>
@@ -4279,7 +4279,7 @@ DatabricksOrchestratorConfig            (<a class="autorefs autorefs-internal" t
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/databricks/flavors/databricks_orchestrator_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DatabricksOrchestratorConfig</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">DatabricksOrchestratorConfig</span><span class="p">(</span>
     <span class="n">BaseOrchestratorConfig</span><span class="p">,</span> <span class="n">DatabricksOrchestratorSettings</span>
 <span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Databricks orchestrator base config.</span>
@@ -4295,7 +4295,7 @@ DatabricksOrchestratorConfig            (<a class="autorefs autorefs-internal" t
     <span class="n">client_secret</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">SecretField</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">is_local</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_local</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if this stack component is running locally.</span>
 
 <span class="sd">        Returns:</span>
@@ -4304,7 +4304,7 @@ DatabricksOrchestratorConfig            (<a class="autorefs autorefs-internal" t
         <span class="k">return</span> <span class="kc">False</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">is_remote</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_remote</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if this stack component is running remotely.</span>
 
 <span class="sd">        Returns:</span>
@@ -4313,7 +4313,7 @@ DatabricksOrchestratorConfig            (<a class="autorefs autorefs-internal" t
         <span class="k">return</span> <span class="kc">True</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">is_schedulable</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_schedulable</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Whether the orchestrator is schedulable or not.</span>
 
 <span class="sd">        Returns:</span>
@@ -4494,11 +4494,11 @@ DatabricksOrchestratorFlavor            (<a class="autorefs autorefs-internal" t
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/databricks/flavors/databricks_orchestrator_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DatabricksOrchestratorFlavor</span><span class="p">(</span><span class="n">BaseOrchestratorFlavor</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">DatabricksOrchestratorFlavor</span><span class="p">(</span><span class="n">BaseOrchestratorFlavor</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Databricks orchestrator flavor.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -4507,7 +4507,7 @@ DatabricksOrchestratorFlavor            (<a class="autorefs autorefs-internal" t
         <span class="k">return</span> <span class="n">DATABRICKS_ORCHESTRATOR_FLAVOR</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -4516,7 +4516,7 @@ DatabricksOrchestratorFlavor            (<a class="autorefs autorefs-internal" t
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at SDK docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -4525,7 +4525,7 @@ DatabricksOrchestratorFlavor            (<a class="autorefs autorefs-internal" t
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_sdk_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to represent the flavor in the dashboard.</span>
 
 <span class="sd">        Returns:</span>
@@ -4534,7 +4534,7 @@ DatabricksOrchestratorFlavor            (<a class="autorefs autorefs-internal" t
         <span class="k">return</span> <span class="s2">&quot;https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/databricks.png&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">DatabricksOrchestratorConfig</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">DatabricksOrchestratorConfig</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns `KubeflowOrchestratorConfig` config class.</span>
 
 <span class="sd">        Returns:</span>
@@ -4543,13 +4543,13 @@ DatabricksOrchestratorFlavor            (<a class="autorefs autorefs-internal" t
         <span class="k">return</span> <span class="n">DatabricksOrchestratorConfig</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;DatabricksOrchestrator&quot;</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;DatabricksOrchestrator&quot;</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The implementation class.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.databricks.orchestrators</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.databricks.orchestrators</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">DatabricksOrchestrator</span><span class="p">,</span>
         <span class="p">)</span>
 
@@ -4888,7 +4888,7 @@ DatabricksOrchestratorSettings            (<a class="autorefs autorefs-internal"
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/databricks/flavors/databricks_orchestrator_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DatabricksOrchestratorSettings</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">DatabricksOrchestratorSettings</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Databricks orchestrator base settings.</span>
 
 <span class="sd">    Attributes:</span>
@@ -5055,7 +5055,7 @@ DatabricksModelDeployer            (<a class="autorefs autorefs-internal" title=
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/databricks/model_deployers/databricks_model_deployer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DatabricksModelDeployer</span><span class="p">(</span><span class="n">BaseModelDeployer</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">DatabricksModelDeployer</span><span class="p">(</span><span class="n">BaseModelDeployer</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Databricks endpoint model deployer.&quot;&quot;&quot;</span>
 
     <span class="n">NAME</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Databricks&quot;</span>
@@ -5064,7 +5064,7 @@ DatabricksModelDeployer            (<a class="autorefs autorefs-internal" title=
     <span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DatabricksModelDeployerConfig</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DatabricksModelDeployerConfig</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Config class for the Databricks Model deployer settings class.</span>
 
 <span class="sd">        Returns:</span>
@@ -5073,7 +5073,7 @@ DatabricksModelDeployer            (<a class="autorefs autorefs-internal" title=
         <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">DatabricksModelDeployerConfig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">validator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">StackValidator</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">validator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">StackValidator</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Validates the stack.</span>
 
 <span class="sd">        Returns:</span>
@@ -5081,7 +5081,7 @@ DatabricksModelDeployer            (<a class="autorefs autorefs-internal" title=
 <span class="sd">            store.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="k">def</span> <span class="nf">_validate_if_secret_or_token_is_present</span><span class="p">(</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">_validate_if_secret_or_token_is_present</span><span class="p">(</span>
             <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
         <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">            </span><span class="sd">&quot;&quot;&quot;Check if client id and client secret or secret name is present in the stack.</span>
@@ -5105,7 +5105,7 @@ DatabricksModelDeployer            (<a class="autorefs autorefs-internal" title=
             <span class="n">custom_validation_function</span><span class="o">=</span><span class="n">_validate_if_secret_or_token_is_present</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_create_new_service</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_create_new_service</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">DatabricksDeploymentConfig</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DatabricksDeploymentService</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Creates a new DatabricksDeploymentService.</span>
@@ -5129,7 +5129,7 @@ DatabricksModelDeployer            (<a class="autorefs autorefs-internal" title=
         <span class="n">service</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">service</span>
 
-    <span class="k">def</span> <span class="nf">_clean_up_existing_service</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_clean_up_existing_service</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
@@ -5146,7 +5146,7 @@ DatabricksModelDeployer            (<a class="autorefs autorefs-internal" title=
         <span class="c1"># stop the older service</span>
         <span class="n">existing_service</span><span class="o">.</span><span class="n">stop</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span> <span class="n">force</span><span class="o">=</span><span class="n">force</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">perform_deploy_model</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">perform_deploy_model</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="nb">id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span>
         <span class="n">config</span><span class="p">:</span> <span class="n">ServiceConfig</span><span class="p">,</span>
@@ -5191,7 +5191,7 @@ DatabricksModelDeployer            (<a class="autorefs autorefs-internal" title=
 
         <span class="k">return</span> <span class="n">service</span>
 
-    <span class="k">def</span> <span class="nf">perform_stop_model</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">perform_stop_model</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">service</span><span class="p">:</span> <span class="n">BaseService</span><span class="p">,</span>
         <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT</span><span class="p">,</span>
@@ -5210,7 +5210,7 @@ DatabricksModelDeployer            (<a class="autorefs autorefs-internal" title=
         <span class="n">service</span><span class="o">.</span><span class="n">stop</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span> <span class="n">force</span><span class="o">=</span><span class="n">force</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">service</span>
 
-    <span class="k">def</span> <span class="nf">perform_start_model</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">perform_start_model</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">service</span><span class="p">:</span> <span class="n">BaseService</span><span class="p">,</span>
         <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT</span><span class="p">,</span>
@@ -5227,7 +5227,7 @@ DatabricksModelDeployer            (<a class="autorefs autorefs-internal" title=
         <span class="n">service</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">service</span>
 
-    <span class="k">def</span> <span class="nf">perform_delete_model</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">perform_delete_model</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">service</span><span class="p">:</span> <span class="n">BaseService</span><span class="p">,</span>
         <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT</span><span class="p">,</span>
@@ -5246,7 +5246,7 @@ DatabricksModelDeployer            (<a class="autorefs autorefs-internal" title=
         <span class="p">)</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">get_model_server_info</span><span class="p">(</span>  <span class="c1"># type: ignore[override]</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_model_server_info</span><span class="p">(</span>  <span class="c1"># type: ignore[override]</span>
         <span class="n">service_instance</span><span class="p">:</span> <span class="s2">&quot;DatabricksDeploymentService&quot;</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return implementation specific information that might be relevant to the user.</span>
@@ -5371,11 +5371,11 @@ FLAVOR            (<a class="autorefs autorefs-internal" title="zenml.model_depl
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/databricks/model_deployers/databricks_model_deployer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DatabricksModelDeployerFlavor</span><span class="p">(</span><span class="n">BaseModelDeployerFlavor</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">DatabricksModelDeployerFlavor</span><span class="p">(</span><span class="n">BaseModelDeployerFlavor</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Databricks Endpoint model deployer flavor.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -5384,7 +5384,7 @@ FLAVOR            (<a class="autorefs autorefs-internal" title="zenml.model_depl
         <span class="k">return</span> <span class="n">DATABRICKS_MODEL_DEPLOYER_FLAVOR</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -5393,7 +5393,7 @@ FLAVOR            (<a class="autorefs autorefs-internal" title="zenml.model_depl
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at SDK docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -5402,7 +5402,7 @@ FLAVOR            (<a class="autorefs autorefs-internal" title="zenml.model_depl
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_sdk_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to represent the flavor in the dashboard.</span>
 
 <span class="sd">        Returns:</span>
@@ -5411,7 +5411,7 @@ FLAVOR            (<a class="autorefs autorefs-internal" title="zenml.model_depl
         <span class="k">return</span> <span class="s2">&quot;https://public-flavor-logos.s3.eu-central-1.amazonaws.com/model_deployer/databricks.png&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">DatabricksModelDeployerConfig</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">DatabricksModelDeployerConfig</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns `DatabricksModelDeployerConfig` config class.</span>
 
 <span class="sd">        Returns:</span>
@@ -5420,13 +5420,13 @@ FLAVOR            (<a class="autorefs autorefs-internal" title="zenml.model_depl
         <span class="k">return</span> <span class="n">DatabricksModelDeployerConfig</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;DatabricksModelDeployer&quot;</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;DatabricksModelDeployer&quot;</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The implementation class.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.databricks.model_deployers.databricks_model_deployer</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.databricks.model_deployers.databricks_model_deployer</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">DatabricksModelDeployer</span><span class="p">,</span>
         <span class="p">)</span>
 
@@ -5740,7 +5740,7 @@ FLAVOR            (<a class="autorefs autorefs-internal" title="zenml.model_depl
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/databricks/model_deployers/databricks_model_deployer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
-<span class="k">def</span> <span class="nf">get_model_server_info</span><span class="p">(</span>  <span class="c1"># type: ignore[override]</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_model_server_info</span><span class="p">(</span>  <span class="c1"># type: ignore[override]</span>
     <span class="n">service_instance</span><span class="p">:</span> <span class="s2">&quot;DatabricksDeploymentService&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Return implementation specific information that might be relevant to the user.</span>
@@ -5810,7 +5810,7 @@ FLAVOR            (<a class="autorefs autorefs-internal" title="zenml.model_depl
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/databricks/model_deployers/databricks_model_deployer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">perform_delete_model</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">perform_delete_model</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">BaseService</span><span class="p">,</span>
     <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT</span><span class="p">,</span>
@@ -5902,7 +5902,7 @@ interact with the remote Databricks inference endpoint server.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/databricks/model_deployers/databricks_model_deployer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">perform_deploy_model</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">perform_deploy_model</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span>
     <span class="n">config</span><span class="p">:</span> <span class="n">ServiceConfig</span><span class="p">,</span>
@@ -6010,7 +6010,7 @@ interact with the remote Databricks inference endpoint server.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/databricks/model_deployers/databricks_model_deployer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">perform_start_model</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">perform_start_model</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">BaseService</span><span class="p">,</span>
     <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT</span><span class="p">,</span>
@@ -6096,7 +6096,7 @@ interact with the remote Databricks inference endpoint server.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/databricks/model_deployers/databricks_model_deployer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">perform_stop_model</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">perform_stop_model</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">BaseService</span><span class="p">,</span>
     <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT</span><span class="p">,</span>
@@ -6238,7 +6238,7 @@ DatabricksOrchestrator            (<a class="autorefs autorefs-internal" title="
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/databricks/orchestrators/databricks_orchestrator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DatabricksOrchestrator</span><span class="p">(</span><span class="n">WheeledOrchestrator</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">DatabricksOrchestrator</span><span class="p">(</span><span class="n">WheeledOrchestrator</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for Orchestrator responsible for running pipelines remotely in a VM.</span>
 
 <span class="sd">    This orchestrator does not support running on a schedule.</span>
@@ -6248,7 +6248,7 @@ DatabricksOrchestrator            (<a class="autorefs autorefs-internal" title="
     <span class="n">DEFAULT_INSTANCE_TYPE</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">validator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">StackValidator</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">validator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">StackValidator</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Validates the stack.</span>
 
 <span class="sd">        In the remote case, checks that the stack contains a container registry,</span>
@@ -6258,7 +6258,7 @@ DatabricksOrchestrator            (<a class="autorefs autorefs-internal" title="
 <span class="sd">            A `StackValidator` instance.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="k">def</span> <span class="nf">_validate_remote_components</span><span class="p">(</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">_validate_remote_components</span><span class="p">(</span>
             <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
         <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
             <span class="k">for</span> <span class="n">component</span> <span class="ow">in</span> <span class="n">stack</span><span class="o">.</span><span class="n">components</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
@@ -6280,7 +6280,7 @@ DatabricksOrchestrator            (<a class="autorefs autorefs-internal" title="
             <span class="n">custom_validation_function</span><span class="o">=</span><span class="n">_validate_remote_components</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_get_databricks_client</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_databricks_client</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DatabricksClient</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Creates a Databricks client.</span>
@@ -6295,7 +6295,7 @@ DatabricksOrchestrator            (<a class="autorefs autorefs-internal" title="
         <span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DatabricksOrchestratorConfig</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DatabricksOrchestratorConfig</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the `DatabricksOrchestratorConfig` config.</span>
 
 <span class="sd">        Returns:</span>
@@ -6304,7 +6304,7 @@ DatabricksOrchestrator            (<a class="autorefs autorefs-internal" title="
         <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">DatabricksOrchestratorConfig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">settings_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">DatabricksOrchestratorSettings</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">settings_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">DatabricksOrchestratorSettings</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Settings class for the Databricks orchestrator.</span>
 
 <span class="sd">        Returns:</span>
@@ -6312,7 +6312,7 @@ DatabricksOrchestrator            (<a class="autorefs autorefs-internal" title="
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">DatabricksOrchestratorSettings</span>
 
-    <span class="k">def</span> <span class="nf">get_orchestrator_run_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_orchestrator_run_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the active orchestrator run id.</span>
 
 <span class="sd">        Raises:</span>
@@ -6334,7 +6334,7 @@ DatabricksOrchestrator            (<a class="autorefs autorefs-internal" title="
             <span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">root_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">root_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Path to the root directory for all files concerning this orchestrator.</span>
 
 <span class="sd">        Returns:</span>
@@ -6347,7 +6347,7 @@ DatabricksOrchestrator            (<a class="autorefs autorefs-internal" title="
         <span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">pipeline_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">pipeline_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns path to a directory in which the kubeflow pipeline files are stored.</span>
 
 <span class="sd">        Returns:</span>
@@ -6355,13 +6355,13 @@ DatabricksOrchestrator            (<a class="autorefs autorefs-internal" title="
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">root_directory</span><span class="p">,</span> <span class="s2">&quot;pipelines&quot;</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">setup_credentials</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">setup_credentials</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Set up credentials for the orchestrator.&quot;&quot;&quot;</span>
         <span class="n">connector</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_connector</span><span class="p">()</span>
         <span class="k">assert</span> <span class="n">connector</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
         <span class="n">connector</span><span class="o">.</span><span class="n">configure_local_client</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">prepare_or_run_pipeline</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">prepare_or_run_pipeline</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeploymentResponse&quot;</span><span class="p">,</span>
         <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
@@ -6428,7 +6428,7 @@ DatabricksOrchestrator            (<a class="autorefs autorefs-internal" title="
         <span class="n">deployment_id</span> <span class="o">=</span> <span class="n">deployment</span><span class="o">.</span><span class="n">id</span>
 
         <span class="c1"># Create a callable for future compilation into a dsl.Pipeline.</span>
-        <span class="k">def</span> <span class="nf">_construct_databricks_pipeline</span><span class="p">(</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">_construct_databricks_pipeline</span><span class="p">(</span>
             <span class="n">zenml_project_wheel</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">job_cluster_key</span><span class="p">:</span> <span class="nb">str</span>
         <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">DatabricksTask</span><span class="p">]:</span>
 <span class="w">            </span><span class="sd">&quot;&quot;&quot;Create a databrcks task for each step.</span>
@@ -6563,7 +6563,7 @@ DatabricksOrchestrator            (<a class="autorefs autorefs-internal" title="
             <span class="n">schedule</span><span class="o">=</span><span class="n">deployment</span><span class="o">.</span><span class="n">schedule</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_upload_and_run_pipeline</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_upload_and_run_pipeline</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">pipeline_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">settings</span><span class="p">:</span> <span class="n">DatabricksOrchestratorSettings</span><span class="p">,</span>
@@ -6649,7 +6649,7 @@ DatabricksOrchestrator            (<a class="autorefs autorefs-internal" title="
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;An error occurred while getting the job id.&quot;</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_pipeline_run_metadata</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_pipeline_run_metadata</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">run_id</span><span class="p">:</span> <span class="n">UUID</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;MetadataType&quot;</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get general component-specific metadata for a pipeline run.</span>
@@ -6936,7 +6936,7 @@ gets called while the orchestrator is not running a pipeline.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/databricks/orchestrators/databricks_orchestrator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_orchestrator_run_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_orchestrator_run_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the active orchestrator run id.</span>
 
 <span class="sd">    Raises:</span>
@@ -7014,7 +7014,7 @@ gets called while the orchestrator is not running a pipeline.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/databricks/orchestrators/databricks_orchestrator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_pipeline_run_metadata</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_pipeline_run_metadata</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">run_id</span><span class="p">:</span> <span class="n">UUID</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;MetadataType&quot;</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get general component-specific metadata for a pipeline run.</span>
@@ -7115,7 +7115,7 @@ is not set.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/databricks/orchestrators/databricks_orchestrator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">prepare_or_run_pipeline</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">prepare_or_run_pipeline</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeploymentResponse&quot;</span><span class="p">,</span>
     <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
@@ -7182,7 +7182,7 @@ is not set.</p></td>
     <span class="n">deployment_id</span> <span class="o">=</span> <span class="n">deployment</span><span class="o">.</span><span class="n">id</span>
 
     <span class="c1"># Create a callable for future compilation into a dsl.Pipeline.</span>
-    <span class="k">def</span> <span class="nf">_construct_databricks_pipeline</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_construct_databricks_pipeline</span><span class="p">(</span>
         <span class="n">zenml_project_wheel</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">job_cluster_key</span><span class="p">:</span> <span class="nb">str</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">DatabricksTask</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a databrcks task for each step.</span>
@@ -7340,7 +7340,7 @@ is not set.</p></td>
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/databricks/orchestrators/databricks_orchestrator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">setup_credentials</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">setup_credentials</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Set up credentials for the orchestrator.&quot;&quot;&quot;</span>
     <span class="n">connector</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_connector</span><span class="p">()</span>
     <span class="k">assert</span> <span class="n">connector</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
@@ -7425,7 +7425,7 @@ allowed for Databricks Processor steps from their individual components.</p>
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/databricks/orchestrators/databricks_orchestrator_entrypoint_config.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DatabricksEntrypointConfiguration</span><span class="p">(</span><span class="n">StepEntrypointConfiguration</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">DatabricksEntrypointConfiguration</span><span class="p">(</span><span class="n">StepEntrypointConfiguration</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Entrypoint configuration for ZenML Databricks pipeline steps.</span>
 
 <span class="sd">    The only purpose of this entrypoint configuration is to reconstruct the</span>
@@ -7434,7 +7434,7 @@ allowed for Databricks Processor steps from their individual components.</p>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">get_entrypoint_options</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_entrypoint_options</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets all options required for running with this configuration.</span>
 
 <span class="sd">        Returns:</span>
@@ -7447,7 +7447,7 @@ allowed for Databricks Processor steps from their individual components.</p>
         <span class="p">)</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">get_entrypoint_arguments</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_entrypoint_arguments</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
@@ -7472,7 +7472,7 @@ allowed for Databricks Processor steps from their individual components.</p>
             <span class="n">kwargs</span><span class="p">[</span><span class="n">DATABRICKS_JOB_ID_OPTION</span><span class="p">],</span>
         <span class="p">]</span>
 
-    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Runs the step.&quot;&quot;&quot;</span>
         <span class="c1"># Get the wheel package and add it to the sys path</span>
         <span class="n">wheel_package</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">entrypoint_args</span><span class="p">[</span><span class="n">WHEEL_PACKAGE_OPTION</span><span class="p">]</span>
@@ -7564,7 +7564,7 @@ It needs to provide values for all options returned by the
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/databricks/orchestrators/databricks_orchestrator_entrypoint_config.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">get_entrypoint_arguments</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_entrypoint_arguments</span><span class="p">(</span>
     <span class="bp">cls</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
@@ -7631,7 +7631,7 @@ It needs to provide values for all options returned by the
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/databricks/orchestrators/databricks_orchestrator_entrypoint_config.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">get_entrypoint_options</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_entrypoint_options</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets all options required for running with this configuration.</span>
 
 <span class="sd">    Returns:</span>
@@ -7666,7 +7666,7 @@ It needs to provide values for all options returned by the
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/databricks/orchestrators/databricks_orchestrator_entrypoint_config.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Runs the step.&quot;&quot;&quot;</span>
     <span class="c1"># Get the wheel package and add it to the sys path</span>
     <span class="n">wheel_package</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">entrypoint_args</span><span class="p">[</span><span class="n">WHEEL_PACKAGE_OPTION</span><span class="p">]</span>
@@ -7801,7 +7801,7 @@ DatabricksDeploymentConfig            (<a class="autorefs autorefs-internal" tit
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/databricks/services/databricks_deployment.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DatabricksDeploymentConfig</span><span class="p">(</span><span class="n">DatabricksBaseConfig</span><span class="p">,</span> <span class="n">ServiceConfig</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">DatabricksDeploymentConfig</span><span class="p">(</span><span class="n">DatabricksBaseConfig</span><span class="p">,</span> <span class="n">ServiceConfig</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Databricks service configurations.&quot;&quot;&quot;</span>
 
     <span class="n">model_uri</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
@@ -7812,7 +7812,7 @@ DatabricksDeploymentConfig            (<a class="autorefs autorefs-internal" tit
         <span class="kc">None</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Databricks host URL for the deployment.&quot;</span>
     <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_databricks_deployment_labels</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_databricks_deployment_labels</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate labels for the Databricks deployment from the service configuration.</span>
 
 <span class="sd">        These labels are attached to the Databricks deployment resource</span>
@@ -7895,7 +7895,7 @@ and may be used as label selectors in lookup operations.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/databricks/services/databricks_deployment.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_databricks_deployment_labels</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_databricks_deployment_labels</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Generate labels for the Databricks deployment from the service configuration.</span>
 
 <span class="sd">    These labels are attached to the Databricks deployment resource</span>
@@ -7975,7 +7975,7 @@ the Databricks deployment service class</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/databricks/services/databricks_deployment.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DatabricksDeploymentService</span><span class="p">(</span><span class="n">BaseDeploymentService</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">DatabricksDeploymentService</span><span class="p">(</span><span class="n">BaseDeploymentService</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Databricks model deployment service.</span>
 
 <span class="sd">    Attributes:</span>
@@ -7995,7 +7995,7 @@ the Databricks deployment service class</p></td>
         <span class="n">default_factory</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">DatabricksServiceStatus</span><span class="p">()</span>
     <span class="p">)</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">DatabricksDeploymentConfig</span><span class="p">,</span> <span class="o">**</span><span class="n">attrs</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">DatabricksDeploymentConfig</span><span class="p">,</span> <span class="o">**</span><span class="n">attrs</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the Databricks deployment service.</span>
 
 <span class="sd">        Args:</span>
@@ -8004,7 +8004,7 @@ the Databricks deployment service class</p></td>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span> <span class="o">**</span><span class="n">attrs</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_client_id_and_secret</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_client_id_and_secret</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the Databricks client id and secret.</span>
 
 <span class="sd">        Raises:</span>
@@ -8017,7 +8017,7 @@ the Databricks deployment service class</p></td>
         <span class="n">client_id</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="n">client_secret</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="n">host</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.databricks.model_deployers.databricks_model_deployer</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.databricks.model_deployers.databricks_model_deployer</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">DatabricksModelDeployer</span><span class="p">,</span>
         <span class="p">)</span>
 
@@ -8044,7 +8044,7 @@ the Databricks deployment service class</p></td>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Host not found.&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">host</span><span class="p">,</span> <span class="n">client_id</span><span class="p">,</span> <span class="n">client_secret</span>
 
-    <span class="k">def</span> <span class="nf">_get_databricks_deployment_labels</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_databricks_deployment_labels</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate the labels for the Databricks deployment from the service configuration.</span>
 
 <span class="sd">        Returns:</span>
@@ -8056,7 +8056,7 @@ the Databricks deployment service class</p></td>
         <span class="k">return</span> <span class="n">labels</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">databricks_client</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DatabricksClient</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">databricks_client</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DatabricksClient</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the deployed Databricks inference endpoint.</span>
 
 <span class="sd">        Returns:</span>
@@ -8069,7 +8069,7 @@ the Databricks deployment service class</p></td>
         <span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">databricks_endpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ServingEndpointDetailed</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">databricks_endpoint</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ServingEndpointDetailed</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the deployed Hugging Face inference endpoint.</span>
 
 <span class="sd">        Returns:</span>
@@ -8080,7 +8080,7 @@ the Databricks deployment service class</p></td>
         <span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">prediction_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">prediction_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The prediction URI exposed by the prediction service.</span>
 
 <span class="sd">        Returns:</span>
@@ -8089,9 +8089,9 @@ the Databricks deployment service class</p></td>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">host</span><span class="si">}</span><span class="s2">/serving-endpoints/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_generate_an_endpoint_name</span><span class="p">()</span><span class="si">}</span><span class="s2">/invocations&quot;</span>
 
-    <span class="k">def</span> <span class="nf">provision</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">provision</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Provision or update remote Databricks deployment instance.&quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">databricks.sdk.service.serving</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">databricks.sdk.service.serving</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">ServedModelInputWorkloadSize</span><span class="p">,</span>
             <span class="n">ServedModelInputWorkloadType</span><span class="p">,</span>
         <span class="p">)</span>
@@ -8131,7 +8131,7 @@ the Databricks deployment service class</p></td>
                 <span class="s2">&quot;Failed to start Databricks inference endpoint service: No URL available, please check the Databricks console for more details.&quot;</span>
             <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">check_status</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">ServiceState</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">check_status</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">ServiceState</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Check the the current operational state of the Databricks deployment.</span>
 
 <span class="sd">        Returns:</span>
@@ -8171,7 +8171,7 @@ the Databricks deployment service class</p></td>
                 <span class="sa">f</span><span class="s2">&quot;Databricks Inference Endpoint deployment is inactive or not found: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
             <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">deprovision</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">deprovision</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Deprovision the remote Databricks deployment instance.</span>
 
 <span class="sd">        Args:</span>
@@ -8187,7 +8187,7 @@ the Databricks deployment service class</p></td>
                 <span class="s2">&quot;Databricks Inference Endpoint is deleted or cannot be found.&quot;</span>
             <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">predict</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="s2">&quot;NDArray[Any]&quot;</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;NDArray[Any]&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Make a prediction using the service.</span>
@@ -8239,7 +8239,7 @@ the Databricks deployment service class</p></td>
 
         <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s2">&quot;predictions&quot;</span><span class="p">])</span>
 
-    <span class="k">def</span> <span class="nf">get_logs</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_logs</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">follow</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">tail</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Retrieve the service logs.</span>
@@ -8255,7 +8255,7 @@ the Databricks deployment service class</p></td>
             <span class="s2">&quot;Databricks Endpoints provides access to the logs of your Endpoints through the UI in the `Logs` tab of your Endpoint&quot;</span>
         <span class="p">)</span>
 
-        <span class="k">def</span> <span class="nf">log_generator</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">log_generator</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
             <span class="n">last_log_count</span> <span class="o">=</span> <span class="mi">0</span>
             <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
                 <span class="n">logs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">databricks_client</span><span class="o">.</span><span class="n">serving_endpoints</span><span class="o">.</span><span class="n">logs</span><span class="p">(</span>
@@ -8283,7 +8283,7 @@ the Databricks deployment service class</p></td>
 
         <span class="k">yield from</span> <span class="n">log_generator</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">_generate_an_endpoint_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_generate_an_endpoint_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate a unique name for the Databricks Inference Endpoint.</span>
 
 <span class="sd">        Returns:</span>
@@ -8482,7 +8482,7 @@ the service is not yet ready.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/databricks/services/databricks_deployment.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">DatabricksDeploymentConfig</span><span class="p">,</span> <span class="o">**</span><span class="n">attrs</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">DatabricksDeploymentConfig</span><span class="p">,</span> <span class="o">**</span><span class="n">attrs</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize the Databricks deployment service.</span>
 
 <span class="sd">    Args:</span>
@@ -8531,7 +8531,7 @@ description of the error, if one is encountered).</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/databricks/services/databricks_deployment.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">check_status</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">ServiceState</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">check_status</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">ServiceState</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Check the the current operational state of the Databricks deployment.</span>
 
 <span class="sd">    Returns:</span>
@@ -8614,7 +8614,7 @@ forcefully deprovisioned.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/databricks/services/databricks_deployment.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">deprovision</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">deprovision</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Deprovision the remote Databricks deployment instance.</span>
 
 <span class="sd">    Args:</span>
@@ -8683,7 +8683,7 @@ forcefully deprovisioned.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/databricks/services/databricks_deployment.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_client_id_and_secret</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_client_id_and_secret</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the Databricks client id and secret.</span>
 
 <span class="sd">    Raises:</span>
@@ -8696,7 +8696,7 @@ forcefully deprovisioned.</p></td>
     <span class="n">client_id</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">client_secret</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">host</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="kn">from</span> <span class="nn">zenml.integrations.databricks.model_deployers.databricks_model_deployer</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.databricks.model_deployers.databricks_model_deployer</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
         <span class="n">DatabricksModelDeployer</span><span class="p">,</span>
     <span class="p">)</span>
 
@@ -8786,7 +8786,7 @@ forcefully deprovisioned.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/databricks/services/databricks_deployment.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_logs</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_logs</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">follow</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">tail</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Retrieve the service logs.</span>
@@ -8802,7 +8802,7 @@ forcefully deprovisioned.</p></td>
         <span class="s2">&quot;Databricks Endpoints provides access to the logs of your Endpoints through the UI in the `Logs` tab of your Endpoint&quot;</span>
     <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">log_generator</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">log_generator</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
         <span class="n">last_log_count</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
             <span class="n">logs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">databricks_client</span><span class="o">.</span><span class="n">serving_endpoints</span><span class="o">.</span><span class="n">logs</span><span class="p">(</span>
@@ -8906,7 +8906,7 @@ forcefully deprovisioned.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/databricks/services/databricks_deployment.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">predict</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">predict</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="s2">&quot;NDArray[Any]&quot;</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;NDArray[Any]&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Make a prediction using the service.</span>
@@ -8981,9 +8981,9 @@ forcefully deprovisioned.</p></td>
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/databricks/services/databricks_deployment.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">provision</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">provision</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Provision or update remote Databricks deployment instance.&quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">databricks.sdk.service.serving</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">databricks.sdk.service.serving</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
         <span class="n">ServedModelInputWorkloadSize</span><span class="p">,</span>
         <span class="n">ServedModelInputWorkloadType</span><span class="p">,</span>
     <span class="p">)</span>
@@ -9059,7 +9059,7 @@ DatabricksServiceStatus            (<a class="autorefs autorefs-internal" title=
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/databricks/services/databricks_deployment.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DatabricksServiceStatus</span><span class="p">(</span><span class="n">ServiceStatus</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">DatabricksServiceStatus</span><span class="p">(</span><span class="n">ServiceStatus</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Databricks service status.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
@@ -9265,7 +9265,7 @@ DatabricksServiceStatus            (<a class="autorefs autorefs-internal" title=
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/databricks/utils/databricks_utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">convert_step_to_task</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">convert_step_to_task</span><span class="p">(</span>
     <span class="n">task_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">command</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">arguments</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
@@ -9354,7 +9354,7 @@ https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/databricks/utils/databricks_utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">sanitize_labels</span><span class="p">(</span><span class="n">labels</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">sanitize_labels</span><span class="p">(</span><span class="n">labels</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Update the label values to be valid Kubernetes labels.</span>
 
 <span class="sd">    See:</span>

@@ -3987,7 +3987,7 @@ AWSIntegration            (<a class="autorefs autorefs-internal" title="zenml.in
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/__init__.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AWSIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AWSIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Definition of AWS integration for ZenML.&quot;&quot;&quot;</span>
 
     <span class="n">NAME</span> <span class="o">=</span> <span class="n">AWS</span>
@@ -3999,18 +3999,18 @@ AWSIntegration            (<a class="autorefs autorefs-internal" title="zenml.in
     <span class="n">REQUIREMENTS_IGNORED_ON_UNINSTALL</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;kubernetes&quot;</span><span class="p">]</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Activate the AWS integration.&quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.aws</span> <span class="kn">import</span> <span class="n">service_connectors</span>  <span class="c1"># noqa</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.aws</span><span class="w"> </span><span class="kn">import</span> <span class="n">service_connectors</span>  <span class="c1"># noqa</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the AWS integration.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            List of stack component flavors for this integration.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.aws.flavors</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.aws.flavors</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">AWSContainerRegistryFlavor</span><span class="p">,</span>
             <span class="n">AWSImageBuilderFlavor</span><span class="p">,</span>
             <span class="n">SagemakerOrchestratorFlavor</span><span class="p">,</span>
@@ -4061,9 +4061,9 @@ AWSIntegration            (<a class="autorefs autorefs-internal" title="zenml.in
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Activate the AWS integration.&quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.integrations.aws</span> <span class="kn">import</span> <span class="n">service_connectors</span>  <span class="c1"># noqa</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.aws</span><span class="w"> </span><span class="kn">import</span> <span class="n">service_connectors</span>  <span class="c1"># noqa</span>
 </code></pre></div>
         </details>
     </div>
@@ -4107,13 +4107,13 @@ AWSIntegration            (<a class="autorefs autorefs-internal" title="zenml.in
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the AWS integration.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        List of stack component flavors for this integration.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.integrations.aws.flavors</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.aws.flavors</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
         <span class="n">AWSContainerRegistryFlavor</span><span class="p">,</span>
         <span class="n">AWSImageBuilderFlavor</span><span class="p">,</span>
         <span class="n">SagemakerOrchestratorFlavor</span><span class="p">,</span>
@@ -4224,11 +4224,11 @@ AWSContainerRegistry            (<a class="autorefs autorefs-internal" title="ze
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/container_registries/aws_container_registry.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AWSContainerRegistry</span><span class="p">(</span><span class="n">BaseContainerRegistry</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AWSContainerRegistry</span><span class="p">(</span><span class="n">BaseContainerRegistry</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Class for AWS Container Registry.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AWSContainerRegistryConfig</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AWSContainerRegistryConfig</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the `AWSContainerRegistryConfig` config.</span>
 
 <span class="sd">        Returns:</span>
@@ -4236,7 +4236,7 @@ AWSContainerRegistry            (<a class="autorefs autorefs-internal" title="ze
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">AWSContainerRegistryConfig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_get_region</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_region</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Parses the AWS region from the registry URI.</span>
 
 <span class="sd">        Raises:</span>
@@ -4255,7 +4255,7 @@ AWSContainerRegistry            (<a class="autorefs autorefs-internal" title="ze
 
         <span class="k">return</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_get_ecr_client</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseClient</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_ecr_client</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseClient</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get an ECR client.</span>
 
 <span class="sd">        If this container registry is configured with an AWS service connector,</span>
@@ -4284,7 +4284,7 @@ AWSContainerRegistry            (<a class="autorefs autorefs-internal" title="ze
             <span class="n">region_name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_region</span><span class="p">(),</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">prepare_image_push</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">prepare_image_push</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Logs warning message if trying to push an image for which no repository exists.</span>
 
 <span class="sd">        Args:</span>
@@ -4337,7 +4337,7 @@ AWSContainerRegistry            (<a class="autorefs autorefs-internal" title="ze
             <span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">post_registration_message</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">post_registration_message</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Optional message printed after the stack component is registered.</span>
 
 <span class="sd">        Returns:</span>
@@ -4492,7 +4492,7 @@ AWSContainerRegistry            (<a class="autorefs autorefs-internal" title="ze
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/container_registries/aws_container_registry.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">prepare_image_push</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">prepare_image_push</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Logs warning message if trying to push an image for which no repository exists.</span>
 
 <span class="sd">    Args:</span>
@@ -4658,12 +4658,12 @@ AWSContainerRegistryConfig            (<a class="autorefs autorefs-internal" tit
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/flavors/aws_container_registry_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AWSContainerRegistryConfig</span><span class="p">(</span><span class="n">BaseContainerRegistryConfig</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AWSContainerRegistryConfig</span><span class="p">(</span><span class="n">BaseContainerRegistryConfig</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Configuration for AWS Container Registry.&quot;&quot;&quot;</span>
 
     <span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;uri&quot;</span><span class="p">)</span>
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">validate_aws_uri</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">uri</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">validate_aws_uri</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">uri</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Validates that the URI is in the correct format.</span>
 
 <span class="sd">        Args:</span>
@@ -4783,7 +4783,7 @@ AWSContainerRegistryConfig            (<a class="autorefs autorefs-internal" tit
           <summary>Source code in <code>zenml/integrations/aws/flavors/aws_container_registry_flavor.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;uri&quot;</span><span class="p">)</span>
 <span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">validate_aws_uri</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">uri</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">validate_aws_uri</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">uri</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Validates that the URI is in the correct format.</span>
 
 <span class="sd">    Args:</span>
@@ -4839,11 +4839,11 @@ AWSContainerRegistryFlavor            (<a class="autorefs autorefs-internal" tit
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/flavors/aws_container_registry_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AWSContainerRegistryFlavor</span><span class="p">(</span><span class="n">BaseContainerRegistryFlavor</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AWSContainerRegistryFlavor</span><span class="p">(</span><span class="n">BaseContainerRegistryFlavor</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;AWS Container Registry flavor.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -4852,7 +4852,7 @@ AWSContainerRegistryFlavor            (<a class="autorefs autorefs-internal" tit
         <span class="k">return</span> <span class="n">AWS_CONTAINER_REGISTRY_FLAVOR</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">service_connector_requirements</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">service_connector_requirements</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ServiceConnectorRequirements</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Service connector resource requirements for service connectors.</span>
@@ -4871,7 +4871,7 @@ AWSContainerRegistryFlavor            (<a class="autorefs autorefs-internal" tit
         <span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -4880,7 +4880,7 @@ AWSContainerRegistryFlavor            (<a class="autorefs autorefs-internal" tit
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at SDK docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -4889,7 +4889,7 @@ AWSContainerRegistryFlavor            (<a class="autorefs autorefs-internal" tit
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_sdk_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to represent the flavor in the dashboard.</span>
 
 <span class="sd">        Returns:</span>
@@ -4898,7 +4898,7 @@ AWSContainerRegistryFlavor            (<a class="autorefs autorefs-internal" tit
         <span class="k">return</span> <span class="s2">&quot;https://public-flavor-logos.s3.eu-central-1.amazonaws.com/container_registry/aws.png&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">AWSContainerRegistryConfig</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">AWSContainerRegistryConfig</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Config class for this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -4907,13 +4907,13 @@ AWSContainerRegistryFlavor            (<a class="autorefs autorefs-internal" tit
         <span class="k">return</span> <span class="n">AWSContainerRegistryConfig</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;AWSContainerRegistry&quot;</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;AWSContainerRegistry&quot;</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The implementation class.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.aws.container_registries</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.aws.container_registries</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">AWSContainerRegistry</span><span class="p">,</span>
         <span class="p">)</span>
 
@@ -5326,7 +5326,7 @@ generate short-lived credentials.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/flavors/aws_image_builder_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AWSImageBuilderConfig</span><span class="p">(</span><span class="n">BaseImageBuilderConfig</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AWSImageBuilderConfig</span><span class="p">(</span><span class="n">BaseImageBuilderConfig</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;AWS Code Build image builder configuration.</span>
 
 <span class="sd">    Attributes:</span>
@@ -5421,11 +5421,11 @@ AWSImageBuilderFlavor            (<a class="autorefs autorefs-internal" title="z
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/flavors/aws_image_builder_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AWSImageBuilderFlavor</span><span class="p">(</span><span class="n">BaseImageBuilderFlavor</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AWSImageBuilderFlavor</span><span class="p">(</span><span class="n">BaseImageBuilderFlavor</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;AWS Code Build image builder flavor.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The flavor name.</span>
 
 <span class="sd">        Returns:</span>
@@ -5434,7 +5434,7 @@ AWSImageBuilderFlavor            (<a class="autorefs autorefs-internal" title="z
         <span class="k">return</span> <span class="n">AWS_IMAGE_BUILDER_FLAVOR</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">service_connector_requirements</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">service_connector_requirements</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ServiceConnectorRequirements</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Service connector resource requirements for service connectors.</span>
@@ -5452,7 +5452,7 @@ AWSImageBuilderFlavor            (<a class="autorefs autorefs-internal" title="z
         <span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -5461,7 +5461,7 @@ AWSImageBuilderFlavor            (<a class="autorefs autorefs-internal" title="z
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at SDK docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -5470,7 +5470,7 @@ AWSImageBuilderFlavor            (<a class="autorefs autorefs-internal" title="z
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_sdk_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to represent the flavor in the dashboard.</span>
 
 <span class="sd">        Returns:</span>
@@ -5479,7 +5479,7 @@ AWSImageBuilderFlavor            (<a class="autorefs autorefs-internal" title="z
         <span class="k">return</span> <span class="s2">&quot;https://public-flavor-logos.s3.eu-central-1.amazonaws.com/image_builder/aws.png&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseImageBuilderConfig</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseImageBuilderConfig</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The config class.</span>
 
 <span class="sd">        Returns:</span>
@@ -5488,13 +5488,13 @@ AWSImageBuilderFlavor            (<a class="autorefs autorefs-internal" title="z
         <span class="k">return</span> <span class="n">AWSImageBuilderConfig</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;AWSImageBuilder&quot;</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;AWSImageBuilder&quot;</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The implementation class.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.aws.image_builders</span> <span class="kn">import</span> <span class="n">AWSImageBuilder</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.aws.image_builders</span><span class="w"> </span><span class="kn">import</span> <span class="n">AWSImageBuilder</span>
 
         <span class="k">return</span> <span class="n">AWSImageBuilder</span>
 </code></pre></div>
@@ -5913,7 +5913,7 @@ based on the following format:
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/flavors/sagemaker_orchestrator_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SagemakerOrchestratorConfig</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SagemakerOrchestratorConfig</span><span class="p">(</span>
     <span class="n">BaseOrchestratorConfig</span><span class="p">,</span> <span class="n">SagemakerOrchestratorSettings</span>
 <span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Config for the Sagemaker orchestrator.</span>
@@ -5954,7 +5954,7 @@ based on the following format:
     <span class="n">bucket</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">is_remote</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_remote</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if this stack component is running remotely.</span>
 
 <span class="sd">        This designation is used to determine if the stack component can be</span>
@@ -5967,7 +5967,7 @@ based on the following format:
         <span class="k">return</span> <span class="kc">True</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">is_synchronous</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_synchronous</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Whether the orchestrator runs synchronous or not.</span>
 
 <span class="sd">        Returns:</span>
@@ -6113,11 +6113,11 @@ SagemakerOrchestratorFlavor            (<a class="autorefs autorefs-internal" ti
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/flavors/sagemaker_orchestrator_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SagemakerOrchestratorFlavor</span><span class="p">(</span><span class="n">BaseOrchestratorFlavor</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SagemakerOrchestratorFlavor</span><span class="p">(</span><span class="n">BaseOrchestratorFlavor</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Flavor for the Sagemaker orchestrator.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -6126,7 +6126,7 @@ SagemakerOrchestratorFlavor            (<a class="autorefs autorefs-internal" ti
         <span class="k">return</span> <span class="n">AWS_SAGEMAKER_STEP_OPERATOR_FLAVOR</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">service_connector_requirements</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">service_connector_requirements</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ServiceConnectorRequirements</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Service connector resource requirements for service connectors.</span>
@@ -6141,7 +6141,7 @@ SagemakerOrchestratorFlavor            (<a class="autorefs autorefs-internal" ti
         <span class="k">return</span> <span class="n">ServiceConnectorRequirements</span><span class="p">(</span><span class="n">resource_type</span><span class="o">=</span><span class="n">AWS_RESOURCE_TYPE</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -6150,7 +6150,7 @@ SagemakerOrchestratorFlavor            (<a class="autorefs autorefs-internal" ti
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at SDK docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -6159,7 +6159,7 @@ SagemakerOrchestratorFlavor            (<a class="autorefs autorefs-internal" ti
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_sdk_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to represent the flavor in the dashboard.</span>
 
 <span class="sd">        Returns:</span>
@@ -6168,7 +6168,7 @@ SagemakerOrchestratorFlavor            (<a class="autorefs autorefs-internal" ti
         <span class="k">return</span> <span class="s2">&quot;https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/sagemaker.png&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">SagemakerOrchestratorConfig</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">SagemakerOrchestratorConfig</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns SagemakerOrchestratorConfig config class.</span>
 
 <span class="sd">        Returns:</span>
@@ -6177,13 +6177,13 @@ SagemakerOrchestratorFlavor            (<a class="autorefs autorefs-internal" ti
         <span class="k">return</span> <span class="n">SagemakerOrchestratorConfig</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;SagemakerOrchestrator&quot;</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;SagemakerOrchestrator&quot;</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The implementation class.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.aws.orchestrators</span> <span class="kn">import</span> <span class="n">SagemakerOrchestrator</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.aws.orchestrators</span><span class="w"> </span><span class="kn">import</span> <span class="n">SagemakerOrchestrator</span>
 
         <span class="k">return</span> <span class="n">SagemakerOrchestrator</span>
 </code></pre></div>
@@ -6639,7 +6639,7 @@ input types:
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/flavors/sagemaker_orchestrator_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SagemakerOrchestratorSettings</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SagemakerOrchestratorSettings</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Settings for the Sagemaker orchestrator.</span>
 
 <span class="sd">    Attributes:</span>
@@ -6736,7 +6736,7 @@ input types:
     <span class="p">)</span>
 
     <span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;before&quot;</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">validate_model</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">validate_model</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if model is configured correctly.</span>
 
 <span class="sd">        Args:</span>
@@ -6871,7 +6871,7 @@ input types:
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/flavors/sagemaker_orchestrator_flavor.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;before&quot;</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">validate_model</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">validate_model</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if model is configured correctly.</span>
 
 <span class="sd">    Args:</span>
@@ -7005,7 +7005,7 @@ based on the following format: "sagemaker-{region}-{aws-account-id}".</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/flavors/sagemaker_step_operator_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SagemakerStepOperatorConfig</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SagemakerStepOperatorConfig</span><span class="p">(</span>
     <span class="n">BaseStepOperatorConfig</span><span class="p">,</span> <span class="n">SagemakerStepOperatorSettings</span>
 <span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Config for the Sagemaker step operator.</span>
@@ -7022,7 +7022,7 @@ based on the following format: "sagemaker-{region}-{aws-account-id}".</p></td>
     <span class="n">bucket</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">is_remote</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_remote</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if this stack component is running remotely.</span>
 
 <span class="sd">        This designation is used to determine if the stack component can be</span>
@@ -7134,11 +7134,11 @@ SagemakerStepOperatorFlavor            (<a class="autorefs autorefs-internal" ti
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/flavors/sagemaker_step_operator_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SagemakerStepOperatorFlavor</span><span class="p">(</span><span class="n">BaseStepOperatorFlavor</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SagemakerStepOperatorFlavor</span><span class="p">(</span><span class="n">BaseStepOperatorFlavor</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Flavor for the Sagemaker step operator.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -7147,7 +7147,7 @@ SagemakerStepOperatorFlavor            (<a class="autorefs autorefs-internal" ti
         <span class="k">return</span> <span class="n">AWS_SAGEMAKER_STEP_OPERATOR_FLAVOR</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">service_connector_requirements</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">service_connector_requirements</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ServiceConnectorRequirements</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Service connector resource requirements for service connectors.</span>
@@ -7162,7 +7162,7 @@ SagemakerStepOperatorFlavor            (<a class="autorefs autorefs-internal" ti
         <span class="k">return</span> <span class="n">ServiceConnectorRequirements</span><span class="p">(</span><span class="n">resource_type</span><span class="o">=</span><span class="n">AWS_RESOURCE_TYPE</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -7171,7 +7171,7 @@ SagemakerStepOperatorFlavor            (<a class="autorefs autorefs-internal" ti
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at SDK docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -7180,7 +7180,7 @@ SagemakerStepOperatorFlavor            (<a class="autorefs autorefs-internal" ti
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_sdk_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to represent the flavor in the dashboard.</span>
 
 <span class="sd">        Returns:</span>
@@ -7189,7 +7189,7 @@ SagemakerStepOperatorFlavor            (<a class="autorefs autorefs-internal" ti
         <span class="k">return</span> <span class="s2">&quot;https://public-flavor-logos.s3.eu-central-1.amazonaws.com/step_operator/sagemaker.png&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">SagemakerStepOperatorConfig</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">SagemakerStepOperatorConfig</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns SagemakerStepOperatorConfig config class.</span>
 
 <span class="sd">        Returns:</span>
@@ -7198,13 +7198,13 @@ SagemakerStepOperatorFlavor            (<a class="autorefs autorefs-internal" ti
         <span class="k">return</span> <span class="n">SagemakerStepOperatorConfig</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;SagemakerStepOperator&quot;</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;SagemakerStepOperator&quot;</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The implementation class.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.aws.step_operators</span> <span class="kn">import</span> <span class="n">SagemakerStepOperator</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.aws.step_operators</span><span class="w"> </span><span class="kn">import</span> <span class="n">SagemakerStepOperator</span>
 
         <span class="k">return</span> <span class="n">SagemakerStepOperator</span>
 </code></pre></div>
@@ -7562,7 +7562,7 @@ for a list of available instance types.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/flavors/sagemaker_step_operator_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SagemakerStepOperatorSettings</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SagemakerStepOperatorSettings</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Settings for the Sagemaker step operator.</span>
 
 <span class="sd">    Attributes:</span>
@@ -7736,13 +7736,13 @@ AWSImageBuilder            (<a class="autorefs autorefs-internal" title="zenml.i
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/image_builders/aws_image_builder.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AWSImageBuilder</span><span class="p">(</span><span class="n">BaseImageBuilder</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AWSImageBuilder</span><span class="p">(</span><span class="n">BaseImageBuilder</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;AWS Code Build image builder implementation.&quot;&quot;&quot;</span>
 
     <span class="n">_code_build_client</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AWSImageBuilderConfig</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AWSImageBuilderConfig</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The stack component configuration.</span>
 
 <span class="sd">        Returns:</span>
@@ -7751,7 +7751,7 @@ AWSImageBuilder            (<a class="autorefs autorefs-internal" title="zenml.i
         <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">AWSImageBuilderConfig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">is_building_locally</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_building_locally</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Whether the image builder builds the images on the client machine.</span>
 
 <span class="sd">        Returns:</span>
@@ -7760,7 +7760,7 @@ AWSImageBuilder            (<a class="autorefs autorefs-internal" title="zenml.i
         <span class="k">return</span> <span class="kc">False</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">validator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;StackValidator&quot;</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">validator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;StackValidator&quot;</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Validates the stack for the AWS Code Build Image Builder.</span>
 
 <span class="sd">        The AWS Code Build Image Builder requires a container registry to</span>
@@ -7771,7 +7771,7 @@ AWSImageBuilder            (<a class="autorefs autorefs-internal" title="zenml.i
 <span class="sd">            Stack validator.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="k">def</span> <span class="nf">_validate_remote_components</span><span class="p">(</span><span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">_validate_remote_components</span><span class="p">(</span><span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
             <span class="k">if</span> <span class="n">stack</span><span class="o">.</span><span class="n">artifact_store</span><span class="o">.</span><span class="n">flavor</span> <span class="o">!=</span> <span class="s2">&quot;s3&quot;</span><span class="p">:</span>
                 <span class="k">return</span> <span class="kc">False</span><span class="p">,</span> <span class="p">(</span>
                     <span class="s2">&quot;The AWS Image Builder requires an S3 Artifact Store to &quot;</span>
@@ -7788,7 +7788,7 @@ AWSImageBuilder            (<a class="autorefs autorefs-internal" title="zenml.i
         <span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">code_build_client</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">code_build_client</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The authenticated AWS Code Build client to use for interacting with AWS services.</span>
 
 <span class="sd">        Returns:</span>
@@ -7820,7 +7820,7 @@ AWSImageBuilder            (<a class="autorefs autorefs-internal" title="zenml.i
         <span class="bp">self</span><span class="o">.</span><span class="n">_code_build_client</span> <span class="o">=</span> <span class="n">boto_session</span><span class="o">.</span><span class="n">client</span><span class="p">(</span><span class="s2">&quot;codebuild&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_code_build_client</span>
 
-    <span class="k">def</span> <span class="nf">build</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">build</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">image_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">build_context</span><span class="p">:</span> <span class="s2">&quot;BuildContext&quot;</span><span class="p">,</span>
@@ -8275,7 +8275,7 @@ so AWS Code Build can access it.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/image_builders/aws_image_builder.py</code></summary>
-          <div class="highlight"><pre><span></span><code>    <span class="k">def</span> <span class="nf">build</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code>    <span class="k">def</span><span class="w"> </span><span class="nf">build</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">image_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">build_context</span><span class="p">:</span> <span class="s2">&quot;BuildContext&quot;</span><span class="p">,</span>
@@ -8577,11 +8577,11 @@ SagemakerOrchestrator            (<a class="autorefs autorefs-internal" title="z
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/orchestrators/sagemaker_orchestrator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SagemakerOrchestrator</span><span class="p">(</span><span class="n">ContainerizedOrchestrator</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SagemakerOrchestrator</span><span class="p">(</span><span class="n">ContainerizedOrchestrator</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Orchestrator responsible for running pipelines on Sagemaker.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SagemakerOrchestratorConfig</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SagemakerOrchestratorConfig</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the `SagemakerOrchestratorConfig` config.</span>
 
 <span class="sd">        Returns:</span>
@@ -8590,7 +8590,7 @@ SagemakerOrchestrator            (<a class="autorefs autorefs-internal" title="z
         <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">SagemakerOrchestratorConfig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">validator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">StackValidator</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">validator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">StackValidator</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Validates the stack.</span>
 
 <span class="sd">        In the remote case, checks that the stack contains a container registry,</span>
@@ -8600,7 +8600,7 @@ SagemakerOrchestrator            (<a class="autorefs autorefs-internal" title="z
 <span class="sd">            A `StackValidator` instance.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="k">def</span> <span class="nf">_validate_remote_components</span><span class="p">(</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">_validate_remote_components</span><span class="p">(</span>
             <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
         <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
             <span class="k">for</span> <span class="n">component</span> <span class="ow">in</span> <span class="n">stack</span><span class="o">.</span><span class="n">components</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
@@ -8626,7 +8626,7 @@ SagemakerOrchestrator            (<a class="autorefs autorefs-internal" title="z
             <span class="n">custom_validation_function</span><span class="o">=</span><span class="n">_validate_remote_components</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_orchestrator_run_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_orchestrator_run_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the run id of the active orchestrator run.</span>
 
 <span class="sd">        Important: This needs to be a unique ID and return the same value for</span>
@@ -8647,7 +8647,7 @@ SagemakerOrchestrator            (<a class="autorefs autorefs-internal" title="z
             <span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">settings_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseSettings&quot;</span><span class="p">]]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">settings_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseSettings&quot;</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Settings class for the Sagemaker orchestrator.</span>
 
 <span class="sd">        Returns:</span>
@@ -8655,7 +8655,7 @@ SagemakerOrchestrator            (<a class="autorefs autorefs-internal" title="z
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">SagemakerOrchestratorSettings</span>
 
-    <span class="k">def</span> <span class="nf">_get_sagemaker_session</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">sagemaker</span><span class="o">.</span><span class="n">Session</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_sagemaker_session</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">sagemaker</span><span class="o">.</span><span class="n">Session</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Method to create the sagemaker session with proper authentication.</span>
 
 <span class="sd">        Returns:</span>
@@ -8702,7 +8702,7 @@ SagemakerOrchestrator            (<a class="autorefs autorefs-internal" title="z
             <span class="n">boto_session</span><span class="o">=</span><span class="n">boto_session</span><span class="p">,</span> <span class="n">default_bucket</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">bucket</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">prepare_or_run_pipeline</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">prepare_or_run_pipeline</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeploymentResponse&quot;</span><span class="p">,</span>
         <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
@@ -8992,7 +8992,7 @@ SagemakerOrchestrator            (<a class="autorefs autorefs-internal" title="z
                     <span class="sa">f</span><span class="s2">&quot;--synchronous=False`&quot;</span>
                 <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_pipeline_run_metadata</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_pipeline_run_metadata</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">run_id</span><span class="p">:</span> <span class="n">UUID</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;MetadataType&quot;</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get general component-specific metadata for a pipeline run.</span>
@@ -9010,7 +9010,7 @@ SagemakerOrchestrator            (<a class="autorefs autorefs-internal" title="z
 
         <span class="k">return</span> <span class="n">run_metadata</span>
 
-    <span class="k">def</span> <span class="nf">fetch_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run</span><span class="p">:</span> <span class="s2">&quot;PipelineRunResponse&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ExecutionStatus</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">fetch_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run</span><span class="p">:</span> <span class="s2">&quot;PipelineRunResponse&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ExecutionStatus</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Refreshes the status of a specific pipeline run.</span>
 
 <span class="sd">        Args:</span>
@@ -9066,7 +9066,7 @@ SagemakerOrchestrator            (<a class="autorefs autorefs-internal" title="z
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Unknown status for the pipeline execution.&quot;</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">compute_metadata</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">compute_metadata</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">execution</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
         <span class="n">settings</span><span class="p">:</span> <span class="n">SagemakerOrchestratorSettings</span><span class="p">,</span>
@@ -9100,7 +9100,7 @@ SagemakerOrchestrator            (<a class="autorefs autorefs-internal" title="z
         <span class="k">yield</span> <span class="n">metadata</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">_compute_orchestrator_url</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_compute_orchestrator_url</span><span class="p">(</span>
         <span class="n">pipeline_execution</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate the Orchestrator Dashboard URL upon pipeline execution.</span>
@@ -9136,7 +9136,7 @@ SagemakerOrchestrator            (<a class="autorefs autorefs-internal" title="z
             <span class="k">return</span> <span class="kc">None</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">_compute_orchestrator_logs_url</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_compute_orchestrator_logs_url</span><span class="p">(</span>
         <span class="n">pipeline_execution</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
         <span class="n">settings</span><span class="p">:</span> <span class="n">SagemakerOrchestratorSettings</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
@@ -9173,7 +9173,7 @@ SagemakerOrchestrator            (<a class="autorefs autorefs-internal" title="z
             <span class="k">return</span> <span class="kc">None</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">_compute_orchestrator_run_id</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_compute_orchestrator_run_id</span><span class="p">(</span>
         <span class="n">pipeline_execution</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Fetch the Orchestrator Run ID upon pipeline execution.</span>
@@ -9379,7 +9379,7 @@ image builder and only remote components.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/orchestrators/sagemaker_orchestrator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">compute_metadata</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">compute_metadata</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">execution</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="n">settings</span><span class="p">:</span> <span class="n">SagemakerOrchestratorSettings</span><span class="p">,</span>
@@ -9489,7 +9489,7 @@ the orchestrator run ID.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/orchestrators/sagemaker_orchestrator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">fetch_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run</span><span class="p">:</span> <span class="s2">&quot;PipelineRunResponse&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ExecutionStatus</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">fetch_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run</span><span class="p">:</span> <span class="s2">&quot;PipelineRunResponse&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ExecutionStatus</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Refreshes the status of a specific pipeline run.</span>
 
 <span class="sd">    Args:</span>
@@ -9600,7 +9600,7 @@ all steps of a pipeline run.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/orchestrators/sagemaker_orchestrator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_orchestrator_run_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_orchestrator_run_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the run id of the active orchestrator run.</span>
 
 <span class="sd">    Important: This needs to be a unique ID and return the same value for</span>
@@ -9677,7 +9677,7 @@ all steps of a pipeline run.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/orchestrators/sagemaker_orchestrator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_pipeline_run_metadata</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_pipeline_run_metadata</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">run_id</span><span class="p">:</span> <span class="n">UUID</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;MetadataType&quot;</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get general component-specific metadata for a pipeline run.</span>
@@ -9786,7 +9786,7 @@ AWS SageMaker NetworkConfig class.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/orchestrators/sagemaker_orchestrator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">prepare_or_run_pipeline</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">prepare_or_run_pipeline</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeploymentResponse&quot;</span><span class="p">,</span>
     <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
@@ -10144,7 +10144,7 @@ AWS SageMaker NetworkConfig class.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/orchestrators/sagemaker_orchestrator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">dissect_pipeline_execution_arn</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">dissect_pipeline_execution_arn</span><span class="p">(</span>
     <span class="n">pipeline_execution_arn</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Extract region name, pipeline name, and execution id from the ARN.</span>
@@ -10237,7 +10237,7 @@ allowed for Sagemaker Processor steps from their individual components.</p>
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/orchestrators/sagemaker_orchestrator_entrypoint_config.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SagemakerEntrypointConfiguration</span><span class="p">(</span><span class="n">StepEntrypointConfiguration</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SagemakerEntrypointConfiguration</span><span class="p">(</span><span class="n">StepEntrypointConfiguration</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Entrypoint configuration for ZenML Sagemaker pipeline steps.</span>
 
 <span class="sd">    The only purpose of this entrypoint configuration is to reconstruct the</span>
@@ -10245,7 +10245,7 @@ allowed for Sagemaker Processor steps from their individual components.</p>
 <span class="sd">    allowed for Sagemaker Processor steps from their individual components.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Runs the step.&quot;&quot;&quot;</span>
         <span class="c1"># Reconstruct the environment variables that exceed the maximum length</span>
         <span class="c1"># of 256 characters from their individual chunks</span>
@@ -10284,7 +10284,7 @@ allowed for Sagemaker Processor steps from their individual components.</p>
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/orchestrators/sagemaker_orchestrator_entrypoint_config.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Runs the step.&quot;&quot;&quot;</span>
     <span class="c1"># Reconstruct the environment variables that exceed the maximum length</span>
     <span class="c1"># of 256 characters from their individual chunks</span>
@@ -10423,7 +10423,7 @@ AWSAuthenticationMethods            (<a class="autorefs autorefs-internal" title
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/service_connectors/aws_service_connector.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AWSAuthenticationMethods</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AWSAuthenticationMethods</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;AWS Authentication methods.&quot;&quot;&quot;</span>
 
     <span class="n">IMPLICIT</span> <span class="o">=</span> <span class="s2">&quot;implicit&quot;</span>
@@ -10483,7 +10483,7 @@ AWSBaseConfig            (<a class="autorefs autorefs-internal" title="zenml.ser
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/service_connectors/aws_service_connector.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AWSBaseConfig</span><span class="p">(</span><span class="n">AuthenticationConfig</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AWSBaseConfig</span><span class="p">(</span><span class="n">AuthenticationConfig</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;AWS base configuration.&quot;&quot;&quot;</span>
 
     <span class="n">region</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
@@ -10552,7 +10552,7 @@ AWSImplicitConfig            (<a class="autorefs autorefs-internal" title="zenml
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/service_connectors/aws_service_connector.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AWSImplicitConfig</span><span class="p">(</span><span class="n">AWSBaseConfig</span><span class="p">,</span> <span class="n">AWSSessionPolicy</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AWSImplicitConfig</span><span class="p">(</span><span class="n">AWSBaseConfig</span><span class="p">,</span> <span class="n">AWSSessionPolicy</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;AWS implicit configuration.&quot;&quot;&quot;</span>
 
     <span class="n">profile_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
@@ -10622,7 +10622,7 @@ AWSSecretKey            (<a class="autorefs autorefs-internal" title="zenml.serv
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/service_connectors/aws_service_connector.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AWSSecretKey</span><span class="p">(</span><span class="n">AuthenticationConfig</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AWSSecretKey</span><span class="p">(</span><span class="n">AuthenticationConfig</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;AWS secret key credentials.&quot;&quot;&quot;</span>
 
     <span class="n">aws_access_key_id</span><span class="p">:</span> <span class="n">PlainSerializedSecretStr</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
@@ -10691,7 +10691,7 @@ AWSSecretKeyConfig            (<a class="autorefs autorefs-internal" title="zenm
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/service_connectors/aws_service_connector.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AWSSecretKeyConfig</span><span class="p">(</span><span class="n">AWSBaseConfig</span><span class="p">,</span> <span class="n">AWSSecretKey</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AWSSecretKeyConfig</span><span class="p">(</span><span class="n">AWSBaseConfig</span><span class="p">,</span> <span class="n">AWSSecretKey</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;AWS secret key authentication configuration.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
@@ -10752,7 +10752,7 @@ AWSServiceConnector            (<a class="autorefs autorefs-internal" title="zen
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/service_connectors/aws_service_connector.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AWSServiceConnector</span><span class="p">(</span><span class="n">ServiceConnector</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AWSServiceConnector</span><span class="p">(</span><span class="n">ServiceConnector</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;AWS service connector.&quot;&quot;&quot;</span>
 
     <span class="n">config</span><span class="p">:</span> <span class="n">AWSBaseConfig</span>
@@ -10764,7 +10764,7 @@ AWSServiceConnector            (<a class="autorefs autorefs-internal" title="zen
     <span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">_get_connector_type</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ServiceConnectorTypeModel</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_connector_type</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ServiceConnectorTypeModel</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the service connector type specification.</span>
 
 <span class="sd">        Returns:</span>
@@ -10773,7 +10773,7 @@ AWSServiceConnector            (<a class="autorefs autorefs-internal" title="zen
         <span class="k">return</span> <span class="n">AWS_SERVICE_CONNECTOR_TYPE_SPEC</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">account_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">account_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the AWS account ID.</span>
 
 <span class="sd">        Returns:</span>
@@ -10792,13 +10792,13 @@ AWSServiceConnector            (<a class="autorefs autorefs-internal" title="zen
             <span class="k">except</span> <span class="p">(</span><span class="n">ClientError</span><span class="p">,</span> <span class="n">BotoCoreError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">AuthorizationException</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">&quot;Failed to fetch the AWS account ID: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
-                <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+                <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
             <span class="bp">self</span><span class="o">.</span><span class="n">_account_id</span> <span class="o">=</span> <span class="n">response</span><span class="p">[</span><span class="s2">&quot;Account&quot;</span><span class="p">]</span>
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_account_id</span>
 
-    <span class="k">def</span> <span class="nf">get_boto3_session</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_boto3_session</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">auth_method</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">resource_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -10843,7 +10843,7 @@ AWSServiceConnector            (<a class="autorefs autorefs-internal" title="zen
         <span class="bp">self</span><span class="o">.</span><span class="n">_session_cache</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">expires_at</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">session</span><span class="p">,</span> <span class="n">expires_at</span>
 
-    <span class="k">def</span> <span class="nf">get_ecr_client</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseClient</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_ecr_client</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseClient</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get an ECR client.</span>
 
 <span class="sd">        Raises:</span>
@@ -10874,7 +10874,7 @@ AWSServiceConnector            (<a class="autorefs autorefs-internal" title="zen
             <span class="n">endpoint_url</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">endpoint_url</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_get_iam_policy</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_iam_policy</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">region_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">resource_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
@@ -10983,7 +10983,7 @@ AWSServiceConnector            (<a class="autorefs autorefs-internal" title="zen
 
         <span class="k">return</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="nf">_authenticate</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_authenticate</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">auth_method</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">resource_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -11047,7 +11047,7 @@ AWSServiceConnector            (<a class="autorefs autorefs-internal" title="zen
                     <span class="k">raise</span> <span class="n">AuthorizationException</span><span class="p">(</span>
                         <span class="sa">f</span><span class="s2">&quot;Failed to assume IAM role </span><span class="si">{</span><span class="n">cfg</span><span class="o">.</span><span class="n">role_arn</span><span class="si">}</span><span class="s2"> &quot;</span>
                         <span class="sa">f</span><span class="s2">&quot;using the implicit AWS credentials: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
-                    <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+                    <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
                 <span class="n">session</span> <span class="o">=</span> <span class="n">boto3</span><span class="o">.</span><span class="n">Session</span><span class="p">(</span>
                     <span class="n">aws_access_key_id</span><span class="o">=</span><span class="n">response</span><span class="p">[</span><span class="s2">&quot;Credentials&quot;</span><span class="p">][</span><span class="s2">&quot;AccessKeyId&quot;</span><span class="p">],</span>
@@ -11156,7 +11156,7 @@ AWSServiceConnector            (<a class="autorefs autorefs-internal" title="zen
                             <span class="sa">f</span><span class="s2">&quot;Failed to assume IAM role </span><span class="si">{</span><span class="n">cfg</span><span class="o">.</span><span class="n">role_arn</span><span class="si">}</span><span class="s2"> &quot;</span>
                             <span class="sa">f</span><span class="s2">&quot;using the AWS credentials configured in the &quot;</span>
                             <span class="sa">f</span><span class="s2">&quot;connector: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
-                        <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+                        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
                 <span class="k">else</span><span class="p">:</span>
                     <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">FederationTokenAuthenticationConfig</span><span class="p">)</span>
@@ -11172,7 +11172,7 @@ AWSServiceConnector            (<a class="autorefs autorefs-internal" title="zen
                             <span class="s2">&quot;Failed to get federation token &quot;</span>
                             <span class="s2">&quot;using the AWS credentials configured in the &quot;</span>
                             <span class="sa">f</span><span class="s2">&quot;connector: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
-                        <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+                        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">SessionTokenAuthenticationConfig</span><span class="p">)</span>
@@ -11185,7 +11185,7 @@ AWSServiceConnector            (<a class="autorefs autorefs-internal" title="zen
                         <span class="s2">&quot;Failed to get session token &quot;</span>
                         <span class="s2">&quot;using the AWS credentials configured in the &quot;</span>
                         <span class="sa">f</span><span class="s2">&quot;connector: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
-                    <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+                    <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
             <span class="n">session</span> <span class="o">=</span> <span class="n">boto3</span><span class="o">.</span><span class="n">Session</span><span class="p">(</span>
                 <span class="n">aws_access_key_id</span><span class="o">=</span><span class="n">response</span><span class="p">[</span><span class="s2">&quot;Credentials&quot;</span><span class="p">][</span><span class="s2">&quot;AccessKeyId&quot;</span><span class="p">],</span>
@@ -11205,7 +11205,7 @@ AWSServiceConnector            (<a class="autorefs autorefs-internal" title="zen
         <span class="p">)</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">_get_eks_bearer_token</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_eks_bearer_token</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span>
         <span class="n">session</span><span class="p">:</span> <span class="n">boto3</span><span class="o">.</span><span class="n">Session</span><span class="p">,</span>
         <span class="n">cluster_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -11260,7 +11260,7 @@ AWSServiceConnector            (<a class="autorefs autorefs-internal" title="zen
         <span class="c1"># remove any base64 encoding padding:</span>
         <span class="k">return</span> <span class="s2">&quot;k8s-aws-v1.&quot;</span> <span class="o">+</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;=*&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">base64_url</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_parse_s3_resource_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">resource_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_parse_s3_resource_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">resource_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate and convert an S3 resource ID to an S3 bucket name.</span>
 
 <span class="sd">        Args:</span>
@@ -11310,7 +11310,7 @@ AWSServiceConnector            (<a class="autorefs autorefs-internal" title="zen
 
         <span class="k">return</span> <span class="n">bucket_name</span>
 
-    <span class="k">def</span> <span class="nf">_parse_ecr_resource_id</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_parse_ecr_resource_id</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">resource_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
@@ -11369,7 +11369,7 @@ AWSServiceConnector            (<a class="autorefs autorefs-internal" title="zen
 
         <span class="k">return</span> <span class="n">registry_id</span>
 
-    <span class="k">def</span> <span class="nf">_parse_eks_resource_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">resource_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_parse_eks_resource_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">resource_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate and convert an EKS resource ID to an AWS region and EKS cluster name.</span>
 
 <span class="sd">        Args:</span>
@@ -11425,7 +11425,7 @@ AWSServiceConnector            (<a class="autorefs autorefs-internal" title="zen
 
         <span class="k">return</span> <span class="n">cluster_name</span>
 
-    <span class="k">def</span> <span class="nf">_canonical_resource_id</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_canonical_resource_id</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">resource_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">resource_id</span><span class="p">:</span> <span class="nb">str</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert a resource ID to its canonical form.</span>
@@ -11451,7 +11451,7 @@ AWSServiceConnector            (<a class="autorefs autorefs-internal" title="zen
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">resource_id</span>
 
-    <span class="k">def</span> <span class="nf">_get_default_resource_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">resource_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_default_resource_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">resource_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the default resource ID for a resource type.</span>
 
 <span class="sd">        Args:</span>
@@ -11480,7 +11480,7 @@ AWSServiceConnector            (<a class="autorefs autorefs-internal" title="zen
             <span class="sa">f</span><span class="s2">&quot;Default resource ID for &#39;</span><span class="si">{</span><span class="n">resource_type</span><span class="si">}</span><span class="s2">&#39; not available.&quot;</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_connect_to_resource</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_connect_to_resource</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
@@ -11552,7 +11552,7 @@ AWSServiceConnector            (<a class="autorefs autorefs-internal" title="zen
             <span class="s2">&quot;instance for the resource.&quot;</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_configure_local_client</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_configure_local_client</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">profile_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
@@ -11638,7 +11638,7 @@ AWSServiceConnector            (<a class="autorefs autorefs-internal" title="zen
         <span class="p">)</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">_auto_configure</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_auto_configure</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span>
         <span class="n">auth_method</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">resource_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -11892,7 +11892,7 @@ AWSServiceConnector            (<a class="autorefs autorefs-internal" title="zen
             <span class="n">config</span><span class="o">=</span><span class="n">auth_config</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_verify</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_verify</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">resource_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">resource_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -11938,7 +11938,7 @@ AWSServiceConnector            (<a class="autorefs autorefs-internal" title="zen
         <span class="k">except</span> <span class="p">(</span><span class="n">ClientError</span><span class="p">,</span> <span class="n">BotoCoreError</span><span class="p">)</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
             <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;failed to verify AWS account access: </span><span class="si">{</span><span class="n">err</span><span class="si">}</span><span class="s2">&quot;</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
-            <span class="k">raise</span> <span class="n">AuthorizationException</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">err</span>
+            <span class="k">raise</span> <span class="n">AuthorizationException</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">err</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="n">resource_type</span><span class="p">:</span>
             <span class="k">return</span> <span class="p">[]</span>
@@ -11960,7 +11960,7 @@ AWSServiceConnector            (<a class="autorefs autorefs-internal" title="zen
                 <span class="k">except</span> <span class="p">(</span><span class="n">ClientError</span><span class="p">,</span> <span class="n">BotoCoreError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                     <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;failed to list S3 buckets: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
                     <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
-                    <span class="k">raise</span> <span class="n">AuthorizationException</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+                    <span class="k">raise</span> <span class="n">AuthorizationException</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
                 <span class="k">return</span> <span class="p">[</span>
                     <span class="sa">f</span><span class="s2">&quot;s3://</span><span class="si">{</span><span class="n">bucket</span><span class="p">[</span><span class="s1">&#39;Name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">bucket</span> <span class="ow">in</span> <span class="n">response</span><span class="p">[</span><span class="s2">&quot;Buckets&quot;</span><span class="p">]</span>
@@ -11974,7 +11974,7 @@ AWSServiceConnector            (<a class="autorefs autorefs-internal" title="zen
                 <span class="k">except</span> <span class="p">(</span><span class="n">ClientError</span><span class="p">,</span> <span class="n">BotoCoreError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                     <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;failed to fetch S3 bucket </span><span class="si">{</span><span class="n">bucket_name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
                     <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
-                    <span class="k">raise</span> <span class="n">AuthorizationException</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+                    <span class="k">raise</span> <span class="n">AuthorizationException</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
         <span class="k">if</span> <span class="n">resource_type</span> <span class="o">==</span> <span class="n">DOCKER_REGISTRY_RESOURCE_TYPE</span><span class="p">:</span>
             <span class="k">assert</span> <span class="n">resource_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
@@ -11990,7 +11990,7 @@ AWSServiceConnector            (<a class="autorefs autorefs-internal" title="zen
             <span class="k">except</span> <span class="p">(</span><span class="n">ClientError</span><span class="p">,</span> <span class="n">BotoCoreError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                 <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;failed to list ECR repositories: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
-                <span class="k">raise</span> <span class="n">AuthorizationException</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+                <span class="k">raise</span> <span class="n">AuthorizationException</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">repositories</span><span class="p">[</span><span class="s2">&quot;repositories&quot;</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">AuthorizationException</span><span class="p">(</span>
@@ -12015,7 +12015,7 @@ AWSServiceConnector            (<a class="autorefs autorefs-internal" title="zen
                 <span class="k">except</span> <span class="p">(</span><span class="n">ClientError</span><span class="p">,</span> <span class="n">BotoCoreError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                     <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Failed to list EKS clusters: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
                     <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
-                    <span class="k">raise</span> <span class="n">AuthorizationException</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+                    <span class="k">raise</span> <span class="n">AuthorizationException</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
                 <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">clusters</span><span class="p">[</span><span class="s2">&quot;clusters&quot;</span><span class="p">])</span>
             <span class="k">else</span><span class="p">:</span>
@@ -12026,13 +12026,13 @@ AWSServiceConnector            (<a class="autorefs autorefs-internal" title="zen
                 <span class="k">except</span> <span class="p">(</span><span class="n">ClientError</span><span class="p">,</span> <span class="n">BotoCoreError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                     <span class="n">msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Failed to fetch EKS cluster </span><span class="si">{</span><span class="n">cluster_name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
                     <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
-                    <span class="k">raise</span> <span class="n">AuthorizationException</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+                    <span class="k">raise</span> <span class="n">AuthorizationException</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
                 <span class="k">return</span> <span class="p">[</span><span class="n">resource_id</span><span class="p">]</span>
 
         <span class="k">return</span> <span class="p">[]</span>
 
-    <span class="k">def</span> <span class="nf">_get_connector_client</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_connector_client</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">resource_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">resource_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -12175,7 +12175,7 @@ AWSServiceConnector            (<a class="autorefs autorefs-internal" title="zen
             <span class="k">except</span> <span class="p">(</span><span class="n">ClientError</span><span class="p">,</span> <span class="n">BotoCoreError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">AuthorizationException</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">&quot;Failed to get authorization token from ECR: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
-                <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+                <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
             <span class="n">token</span> <span class="o">=</span> <span class="n">auth_token</span><span class="p">[</span><span class="s2">&quot;authorizationData&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;authorizationToken&quot;</span><span class="p">]</span>
             <span class="n">endpoint</span> <span class="o">=</span> <span class="n">auth_token</span><span class="p">[</span><span class="s2">&quot;authorizationData&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;proxyEndpoint&quot;</span><span class="p">]</span>
@@ -12227,7 +12227,7 @@ AWSServiceConnector            (<a class="autorefs autorefs-internal" title="zen
             <span class="k">except</span> <span class="p">(</span><span class="n">ClientError</span><span class="p">,</span> <span class="n">BotoCoreError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">AuthorizationException</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">&quot;Failed to get EKS cluster </span><span class="si">{</span><span class="n">cluster_name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
-                <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+                <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
             <span class="k">try</span><span class="p">:</span>
                 <span class="n">user_token</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_eks_bearer_token</span><span class="p">(</span>
@@ -12238,7 +12238,7 @@ AWSServiceConnector            (<a class="autorefs autorefs-internal" title="zen
             <span class="k">except</span> <span class="p">(</span><span class="n">ClientError</span><span class="p">,</span> <span class="n">BotoCoreError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">AuthorizationException</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">&quot;Failed to get EKS bearer token: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
-                <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+                <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
             <span class="c1"># Kubernetes authentication tokens issued by AWS EKS have a fixed</span>
             <span class="c1"># expiration time of 15 minutes</span>
@@ -12258,7 +12258,7 @@ AWSServiceConnector            (<a class="autorefs autorefs-internal" title="zen
             <span class="c1"># temporary Kubernetes credentials</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="c1"># Import libraries only when needed</span>
-                <span class="kn">from</span> <span class="nn">zenml.integrations.kubernetes.service_connectors.kubernetes_service_connector</span> <span class="kn">import</span> <span class="p">(</span>
+                <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.kubernetes.service_connectors.kubernetes_service_connector</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
                     <span class="n">KubernetesAuthenticationMethods</span><span class="p">,</span>
                     <span class="n">KubernetesServiceConnector</span><span class="p">,</span>
                     <span class="n">KubernetesTokenConfig</span><span class="p">,</span>
@@ -12430,7 +12430,7 @@ timestamp, if applicable.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/service_connectors/aws_service_connector.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_boto3_session</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_boto3_session</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">auth_method</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">resource_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -12529,7 +12529,7 @@ ECR client.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/service_connectors/aws_service_connector.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_ecr_client</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseClient</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_ecr_client</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseClient</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get an ECR client.</span>
 
 <span class="sd">    Raises:</span>
@@ -12609,7 +12609,7 @@ ECR client.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/service_connectors/aws_service_connector.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">init_private_attributes</span><span class="p">(</span><span class="bp">self</span><span class="p">:</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">/</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">init_private_attributes</span><span class="p">(</span><span class="bp">self</span><span class="p">:</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">/</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;This function is meant to behave like a BaseModel method to initialise private attributes.</span>
 
 <span class="sd">    It takes context as an argument since that&#39;s what pydantic-core passes when calling it.</span>
@@ -12662,7 +12662,7 @@ AWSSessionPolicy            (<a class="autorefs autorefs-internal" title="zenml.
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/service_connectors/aws_service_connector.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AWSSessionPolicy</span><span class="p">(</span><span class="n">AuthenticationConfig</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AWSSessionPolicy</span><span class="p">(</span><span class="n">AuthenticationConfig</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;AWS session IAM policy configuration.&quot;&quot;&quot;</span>
 
     <span class="n">policy_arns</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
@@ -12735,7 +12735,7 @@ FederationTokenAuthenticationConfig            (<a class="autorefs autorefs-inte
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/service_connectors/aws_service_connector.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">FederationTokenAuthenticationConfig</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">FederationTokenAuthenticationConfig</span><span class="p">(</span>
     <span class="n">AWSSecretKeyConfig</span><span class="p">,</span> <span class="n">AWSSessionPolicy</span>
 <span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;AWS federation token authentication config.&quot;&quot;&quot;</span>
@@ -12798,7 +12798,7 @@ IAMRoleAuthenticationConfig            (<a class="autorefs autorefs-internal" ti
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/service_connectors/aws_service_connector.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">IAMRoleAuthenticationConfig</span><span class="p">(</span><span class="n">AWSSecretKeyConfig</span><span class="p">,</span> <span class="n">AWSSessionPolicy</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">IAMRoleAuthenticationConfig</span><span class="p">(</span><span class="n">AWSSecretKeyConfig</span><span class="p">,</span> <span class="n">AWSSessionPolicy</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;AWS IAM authentication config.&quot;&quot;&quot;</span>
 
     <span class="n">role_arn</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
@@ -12863,7 +12863,7 @@ STSToken            (<a class="autorefs autorefs-internal" title="zenml.integrat
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/service_connectors/aws_service_connector.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">STSToken</span><span class="p">(</span><span class="n">AWSSecretKey</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">STSToken</span><span class="p">(</span><span class="n">AWSSecretKey</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;AWS STS token.&quot;&quot;&quot;</span>
 
     <span class="n">aws_session_token</span><span class="p">:</span> <span class="n">PlainSerializedSecretStr</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
@@ -12928,7 +12928,7 @@ STSTokenConfig            (<a class="autorefs autorefs-internal" title="zenml.in
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/service_connectors/aws_service_connector.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">STSTokenConfig</span><span class="p">(</span><span class="n">AWSBaseConfig</span><span class="p">,</span> <span class="n">STSToken</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">STSTokenConfig</span><span class="p">(</span><span class="n">AWSBaseConfig</span><span class="p">,</span> <span class="n">STSToken</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;AWS STS token authentication configuration.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
@@ -12989,7 +12989,7 @@ SessionTokenAuthenticationConfig            (<a class="autorefs autorefs-interna
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/service_connectors/aws_service_connector.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SessionTokenAuthenticationConfig</span><span class="p">(</span><span class="n">AWSSecretKeyConfig</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SessionTokenAuthenticationConfig</span><span class="p">(</span><span class="n">AWSSecretKeyConfig</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;AWS session token authentication config.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
@@ -13132,7 +13132,7 @@ to run using Sagemaker's Estimator.</p>
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/step_operators/sagemaker_step_operator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SagemakerStepOperator</span><span class="p">(</span><span class="n">BaseStepOperator</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SagemakerStepOperator</span><span class="p">(</span><span class="n">BaseStepOperator</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Step operator to run a step on Sagemaker.</span>
 
 <span class="sd">    This class defines code that builds an image with the ZenML entrypoint</span>
@@ -13140,7 +13140,7 @@ to run using Sagemaker's Estimator.</p>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SagemakerStepOperatorConfig</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SagemakerStepOperatorConfig</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the `SagemakerStepOperatorConfig` config.</span>
 
 <span class="sd">        Returns:</span>
@@ -13149,7 +13149,7 @@ to run using Sagemaker's Estimator.</p>
         <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">SagemakerStepOperatorConfig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">settings_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseSettings&quot;</span><span class="p">]]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">settings_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseSettings&quot;</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Settings class for the SageMaker step operator.</span>
 
 <span class="sd">        Returns:</span>
@@ -13158,7 +13158,7 @@ to run using Sagemaker's Estimator.</p>
         <span class="k">return</span> <span class="n">SagemakerStepOperatorSettings</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">entrypoint_config_class</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">entrypoint_config_class</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">StepOperatorEntrypointConfiguration</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the entrypoint configuration class for this step operator.</span>
@@ -13169,7 +13169,7 @@ to run using Sagemaker's Estimator.</p>
         <span class="k">return</span> <span class="n">SagemakerEntrypointConfiguration</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">validator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">StackValidator</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">validator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">StackValidator</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Validates the stack.</span>
 
 <span class="sd">        Returns:</span>
@@ -13177,7 +13177,7 @@ to run using Sagemaker's Estimator.</p>
 <span class="sd">            registry and a remote artifact store.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="k">def</span> <span class="nf">_validate_remote_components</span><span class="p">(</span><span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">_validate_remote_components</span><span class="p">(</span><span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
             <span class="k">if</span> <span class="n">stack</span><span class="o">.</span><span class="n">artifact_store</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">is_local</span><span class="p">:</span>
                 <span class="k">return</span> <span class="kc">False</span><span class="p">,</span> <span class="p">(</span>
                     <span class="s2">&quot;The SageMaker step operator runs code remotely and &quot;</span>
@@ -13211,7 +13211,7 @@ to run using Sagemaker's Estimator.</p>
             <span class="n">custom_validation_function</span><span class="o">=</span><span class="n">_validate_remote_components</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_docker_builds</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_docker_builds</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeploymentBase&quot;</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="s2">&quot;BuildConfiguration&quot;</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets the Docker builds required for the component.</span>
@@ -13235,7 +13235,7 @@ to run using Sagemaker's Estimator.</p>
 
         <span class="k">return</span> <span class="n">builds</span>
 
-    <span class="k">def</span> <span class="nf">launch</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">launch</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">info</span><span class="p">:</span> <span class="s2">&quot;StepRunInfo&quot;</span><span class="p">,</span>
         <span class="n">entrypoint_command</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
@@ -13569,7 +13569,7 @@ registry and a remote artifact store.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/step_operators/sagemaker_step_operator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_docker_builds</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_docker_builds</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeploymentBase&quot;</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="s2">&quot;BuildConfiguration&quot;</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets the Docker builds required for the component.</span>
@@ -13664,7 +13664,7 @@ environment.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/step_operators/sagemaker_step_operator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">launch</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">launch</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">info</span><span class="p">:</span> <span class="s2">&quot;StepRunInfo&quot;</span><span class="p">,</span>
     <span class="n">entrypoint_command</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
@@ -13858,7 +13858,7 @@ allowed for Sagemaker Estimator steps from their individual components.</p>
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/step_operators/sagemaker_step_operator_entrypoint_config.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SagemakerEntrypointConfiguration</span><span class="p">(</span><span class="n">StepOperatorEntrypointConfiguration</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SagemakerEntrypointConfiguration</span><span class="p">(</span><span class="n">StepOperatorEntrypointConfiguration</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Entrypoint configuration for ZenML Sagemaker step operator.</span>
 
 <span class="sd">    The only purpose of this entrypoint configuration is to reconstruct the</span>
@@ -13866,7 +13866,7 @@ allowed for Sagemaker Estimator steps from their individual components.</p>
 <span class="sd">    allowed for Sagemaker Estimator steps from their individual components.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Runs the step.&quot;&quot;&quot;</span>
         <span class="c1"># Reconstruct the environment variables that exceed the maximum length</span>
         <span class="c1"># of 512 characters from their individual chunks</span>
@@ -13905,7 +13905,7 @@ allowed for Sagemaker Estimator steps from their individual components.</p>
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/aws/step_operators/sagemaker_step_operator_entrypoint_config.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Runs the step.&quot;&quot;&quot;</span>
     <span class="c1"># Reconstruct the environment variables that exceed the maximum length</span>
     <span class="c1"># of 512 characters from their individual chunks</span>

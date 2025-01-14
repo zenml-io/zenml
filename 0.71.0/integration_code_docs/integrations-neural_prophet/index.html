@@ -2145,7 +2145,7 @@ NeuralProphetIntegration            (<a class="autorefs autorefs-internal" title
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/neural_prophet/__init__.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">NeuralProphetIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">NeuralProphetIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Definition of NeuralProphet integration for ZenML.&quot;&quot;&quot;</span>
 
     <span class="n">NAME</span> <span class="o">=</span> <span class="n">NEURAL_PROPHET</span>
@@ -2157,9 +2157,9 @@ NeuralProphetIntegration            (<a class="autorefs autorefs-internal" title
     <span class="n">REQUIREMENTS_IGNORED_ON_UNINSTALL</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;tenacity&quot;</span><span class="p">]</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Activates the integration.&quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.neural_prophet</span> <span class="kn">import</span> <span class="n">materializers</span>  <span class="c1"># noqa</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.neural_prophet</span><span class="w"> </span><span class="kn">import</span> <span class="n">materializers</span>  <span class="c1"># noqa</span>
 </code></pre></div>
         </details>
 
@@ -2198,9 +2198,9 @@ NeuralProphetIntegration            (<a class="autorefs autorefs-internal" title
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/neural_prophet/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Activates the integration.&quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.integrations.neural_prophet</span> <span class="kn">import</span> <span class="n">materializers</span>  <span class="c1"># noqa</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.neural_prophet</span><span class="w"> </span><span class="kn">import</span> <span class="n">materializers</span>  <span class="c1"># noqa</span>
 </code></pre></div>
         </details>
     </div>
@@ -2298,7 +2298,7 @@ NeuralProphetMaterializer            (<a class="autorefs autorefs-internal" titl
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/neural_prophet/materializers/neural_prophet_materializer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">NeuralProphetMaterializer</span><span class="p">(</span><span class="n">BasePyTorchMaterializer</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">NeuralProphetMaterializer</span><span class="p">(</span><span class="n">BasePyTorchMaterializer</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Materializer to read/write NeuralProphet models.&quot;&quot;&quot;</span>
 
     <span class="n">ASSOCIATED_TYPES</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span> <span class="o">...</span><span class="p">]]</span> <span class="o">=</span> <span class="p">(</span><span class="n">NeuralProphet</span><span class="p">,)</span>

@@ -2890,7 +2890,7 @@
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/analytics/__init__.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">alias</span><span class="p">(</span><span class="n">user_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span> <span class="n">previous_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>  <span class="c1"># type: ignore[return]</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">alias</span><span class="p">(</span><span class="n">user_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span> <span class="n">previous_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>  <span class="c1"># type: ignore[return]</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Alias user IDs.</span>
 
 <span class="sd">    Args:</span>
@@ -2900,7 +2900,7 @@
 <span class="sd">    Returns:</span>
 <span class="sd">        True if event is sent successfully, False is not.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.analytics.context</span> <span class="kn">import</span> <span class="n">AnalyticsContext</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.analytics.context</span><span class="w"> </span><span class="kn">import</span> <span class="n">AnalyticsContext</span>
 
     <span class="k">with</span> <span class="n">AnalyticsContext</span><span class="p">()</span> <span class="k">as</span> <span class="n">analytics</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">analytics</span><span class="o">.</span><span class="n">alias</span><span class="p">(</span><span class="n">user_id</span><span class="o">=</span><span class="n">user_id</span><span class="p">,</span> <span class="n">previous_id</span><span class="o">=</span><span class="n">previous_id</span><span class="p">)</span>
@@ -2968,7 +2968,7 @@
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/analytics/__init__.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">group</span><span class="p">(</span>  <span class="c1"># type: ignore[return]</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">group</span><span class="p">(</span>  <span class="c1"># type: ignore[return]</span>
     <span class="n">group_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span>
     <span class="n">group_metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
@@ -2981,7 +2981,7 @@
 <span class="sd">    Returns:</span>
 <span class="sd">        True if event is sent successfully, False if not.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.analytics.context</span> <span class="kn">import</span> <span class="n">AnalyticsContext</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.analytics.context</span><span class="w"> </span><span class="kn">import</span> <span class="n">AnalyticsContext</span>
 
     <span class="k">with</span> <span class="n">AnalyticsContext</span><span class="p">()</span> <span class="k">as</span> <span class="n">analytics</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">analytics</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="n">group_id</span><span class="o">=</span><span class="n">group_id</span><span class="p">,</span> <span class="n">traits</span><span class="o">=</span><span class="n">group_metadata</span><span class="p">)</span>
@@ -3043,7 +3043,7 @@
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/analytics/__init__.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">identify</span><span class="p">(</span>  <span class="c1"># type: ignore[return]</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">identify</span><span class="p">(</span>  <span class="c1"># type: ignore[return]</span>
     <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Attach metadata to user directly.</span>
@@ -3054,7 +3054,7 @@
 <span class="sd">    Returns:</span>
 <span class="sd">        True if event is sent successfully, False is not.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.analytics.context</span> <span class="kn">import</span> <span class="n">AnalyticsContext</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.analytics.context</span><span class="w"> </span><span class="kn">import</span> <span class="n">AnalyticsContext</span>
 
     <span class="k">if</span> <span class="n">metadata</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">False</span>
@@ -3125,7 +3125,7 @@
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/analytics/__init__.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">track</span><span class="p">(</span>  <span class="c1"># type: ignore[return]</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">track</span><span class="p">(</span>  <span class="c1"># type: ignore[return]</span>
     <span class="n">event</span><span class="p">:</span> <span class="s2">&quot;AnalyticsEvent&quot;</span><span class="p">,</span>
     <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
@@ -3138,7 +3138,7 @@
 <span class="sd">    Returns:</span>
 <span class="sd">        True if event is sent successfully, False if not.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.analytics.context</span> <span class="kn">import</span> <span class="n">AnalyticsContext</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.analytics.context</span><span class="w"> </span><span class="kn">import</span> <span class="n">AnalyticsContext</span>
 
     <span class="k">if</span> <span class="n">metadata</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">metadata</span> <span class="o">=</span> <span class="p">{}</span>
@@ -3202,10 +3202,10 @@ Client        </code>
 
         <details class="quote">
           <summary>Source code in <code>zenml/analytics/client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">Client</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Client</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;The client class for ZenML analytics.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">send</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">15</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">send</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">15</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialization of the client.</span>
 
 <span class="sd">        Args:</span>
@@ -3215,7 +3215,7 @@ Client        </code>
         <span class="bp">self</span><span class="o">.</span><span class="n">send</span> <span class="o">=</span> <span class="n">send</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">timeout</span> <span class="o">=</span> <span class="n">timeout</span>
 
-    <span class="k">def</span> <span class="nf">identify</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">identify</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span> <span class="n">traits</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Method to identify a user with given traits.</span>
@@ -3235,7 +3235,7 @@ Client        </code>
         <span class="p">}</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_enqueue</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">AnalyticsEncoder</span><span class="p">))</span>
 
-    <span class="k">def</span> <span class="nf">alias</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span> <span class="n">previous_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">alias</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span> <span class="n">previous_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Method to alias user IDs.</span>
 
 <span class="sd">        Args:</span>
@@ -3253,7 +3253,7 @@ Client        </code>
         <span class="p">}</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_enqueue</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">AnalyticsEncoder</span><span class="p">))</span>
 
-    <span class="k">def</span> <span class="nf">track</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">track</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">user_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span>
         <span class="n">event</span><span class="p">:</span> <span class="s2">&quot;AnalyticsEvent&quot;</span><span class="p">,</span>
@@ -3278,7 +3278,7 @@ Client        </code>
         <span class="p">}</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_enqueue</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">AnalyticsEncoder</span><span class="p">))</span>
 
-    <span class="k">def</span> <span class="nf">group</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">group</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span> <span class="n">group_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span> <span class="n">traits</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Method to group users.</span>
@@ -3300,7 +3300,7 @@ Client        </code>
         <span class="p">}</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_enqueue</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="bp">cls</span><span class="o">=</span><span class="n">AnalyticsEncoder</span><span class="p">))</span>
 
-    <span class="k">def</span> <span class="nf">_enqueue</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_enqueue</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Method to queue messages to be sent.</span>
 
 <span class="sd">        Args:</span>
@@ -3374,7 +3374,7 @@ Client        </code>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/analytics/client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">send</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">15</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">send</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">15</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialization of the client.</span>
 
 <span class="sd">    Args:</span>
@@ -3447,7 +3447,7 @@ Client        </code>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/analytics/client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">alias</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span> <span class="n">previous_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">alias</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span> <span class="n">previous_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Method to alias user IDs.</span>
 
 <span class="sd">    Args:</span>
@@ -3534,7 +3534,7 @@ Client        </code>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/analytics/client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">group</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">group</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span> <span class="n">group_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span> <span class="n">traits</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Method to group users.</span>
@@ -3619,7 +3619,7 @@ Client        </code>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/analytics/client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">identify</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">identify</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span> <span class="n">traits</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Method to identify a user with given traits.</span>
@@ -3708,7 +3708,7 @@ Client        </code>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/analytics/client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">track</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">track</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">user_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span>
     <span class="n">event</span><span class="p">:</span> <span class="s2">&quot;AnalyticsEvent&quot;</span><span class="p">,</span>
@@ -3809,10 +3809,10 @@ AnalyticsContext        </code>
 
         <details class="quote">
           <summary>Source code in <code>zenml/analytics/context.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AnalyticsContext</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AnalyticsContext</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Client class for ZenML Analytics v2.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialization.</span>
 
 <span class="sd">        Use this as a context manager to ensure that analytics are initialized</span>
@@ -3832,7 +3832,7 @@ AnalyticsContext        </code>
         <span class="bp">self</span><span class="o">.</span><span class="n">database_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;ServerDatabaseType&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">deployment_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;ServerDeploymentType&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;AnalyticsContext&quot;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;AnalyticsContext&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Enter analytics context manager.</span>
 
 <span class="sd">        Returns:</span>
@@ -3843,7 +3843,7 @@ AnalyticsContext        </code>
             <span class="k">return</span> <span class="bp">self</span>
 
         <span class="c1"># Fetch the analytics opt-in setting</span>
-        <span class="kn">from</span> <span class="nn">zenml.config.global_config</span> <span class="kn">import</span> <span class="n">GlobalConfiguration</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.config.global_config</span><span class="w"> </span><span class="kn">import</span> <span class="n">GlobalConfiguration</span>
 
         <span class="k">try</span><span class="p">:</span>
             <span class="n">gc</span> <span class="o">=</span> <span class="n">GlobalConfiguration</span><span class="p">()</span>
@@ -3869,8 +3869,8 @@ AnalyticsContext        </code>
 
             <span class="c1"># Fetch the `user_id`</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_server</span><span class="p">:</span>
-                <span class="kn">from</span> <span class="nn">zenml.zen_server.auth</span> <span class="kn">import</span> <span class="n">get_auth_context</span>
-                <span class="kn">from</span> <span class="nn">zenml.zen_server.utils</span> <span class="kn">import</span> <span class="n">server_config</span>
+                <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.zen_server.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_auth_context</span>
+                <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.zen_server.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">server_config</span>
 
                 <span class="c1"># If the code is running on the server, use the auth context.</span>
                 <span class="n">auth_context</span> <span class="o">=</span> <span class="n">get_auth_context</span><span class="p">()</span>
@@ -3909,7 +3909,7 @@ AnalyticsContext        </code>
 
         <span class="k">return</span> <span class="bp">self</span>
 
-    <span class="k">def</span> <span class="fm">__exit__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__exit__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">exc_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="ne">BaseException</span><span class="p">]],</span>
         <span class="n">exc_val</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="ne">BaseException</span><span class="p">],</span>
@@ -3931,7 +3931,7 @@ AnalyticsContext        </code>
         <span class="k">return</span> <span class="kc">True</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">in_server</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">in_server</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Flag to check whether the code is running in a ZenML server.</span>
 
 <span class="sd">        Returns:</span>
@@ -3939,7 +3939,7 @@ AnalyticsContext        </code>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">handle_bool_env_var</span><span class="p">(</span><span class="n">ENV_ZENML_SERVER</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">identify</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">traits</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">identify</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">traits</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Identify the user through segment.</span>
 
 <span class="sd">        Args:</span>
@@ -3957,7 +3957,7 @@ AnalyticsContext        </code>
 
         <span class="k">return</span> <span class="n">success</span>
 
-    <span class="k">def</span> <span class="nf">alias</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span> <span class="n">previous_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">alias</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span> <span class="n">previous_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Alias user IDs.</span>
 
 <span class="sd">        Args:</span>
@@ -3976,7 +3976,7 @@ AnalyticsContext        </code>
 
         <span class="k">return</span> <span class="n">success</span>
 
-    <span class="k">def</span> <span class="nf">group</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">group</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">group_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span>
         <span class="n">traits</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -4000,7 +4000,7 @@ AnalyticsContext        </code>
 
         <span class="k">return</span> <span class="n">success</span>
 
-    <span class="k">def</span> <span class="nf">track</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">track</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">event</span><span class="p">:</span> <span class="s2">&quot;AnalyticsEvent&quot;</span><span class="p">,</span>
         <span class="n">properties</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -4014,7 +4014,7 @@ AnalyticsContext        </code>
 <span class="sd">        Returns:</span>
 <span class="sd">            True if tracking information was sent, False otherwise.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.analytics.enums</span> <span class="kn">import</span> <span class="n">AnalyticsEvent</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.analytics.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">AnalyticsEvent</span>
 
         <span class="k">if</span> <span class="n">properties</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">properties</span> <span class="o">=</span> <span class="p">{}</span>
@@ -4175,7 +4175,7 @@ AnalyticsContext        </code>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/analytics/context.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;AnalyticsContext&quot;</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;AnalyticsContext&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Enter analytics context manager.</span>
 
 <span class="sd">    Returns:</span>
@@ -4186,7 +4186,7 @@ AnalyticsContext        </code>
         <span class="k">return</span> <span class="bp">self</span>
 
     <span class="c1"># Fetch the analytics opt-in setting</span>
-    <span class="kn">from</span> <span class="nn">zenml.config.global_config</span> <span class="kn">import</span> <span class="n">GlobalConfiguration</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.config.global_config</span><span class="w"> </span><span class="kn">import</span> <span class="n">GlobalConfiguration</span>
 
     <span class="k">try</span><span class="p">:</span>
         <span class="n">gc</span> <span class="o">=</span> <span class="n">GlobalConfiguration</span><span class="p">()</span>
@@ -4212,8 +4212,8 @@ AnalyticsContext        </code>
 
         <span class="c1"># Fetch the `user_id`</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">in_server</span><span class="p">:</span>
-            <span class="kn">from</span> <span class="nn">zenml.zen_server.auth</span> <span class="kn">import</span> <span class="n">get_auth_context</span>
-            <span class="kn">from</span> <span class="nn">zenml.zen_server.utils</span> <span class="kn">import</span> <span class="n">server_config</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.zen_server.auth</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_auth_context</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.zen_server.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">server_config</span>
 
             <span class="c1"># If the code is running on the server, use the auth context.</span>
             <span class="n">auth_context</span> <span class="o">=</span> <span class="n">get_auth_context</span><span class="p">()</span>
@@ -4324,7 +4324,7 @@ AnalyticsContext        </code>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/analytics/context.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__exit__</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__exit__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">exc_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="ne">BaseException</span><span class="p">]],</span>
     <span class="n">exc_val</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="ne">BaseException</span><span class="p">],</span>
@@ -4374,7 +4374,7 @@ are handled gracefully.</p>
 
         <details class="quote">
           <summary>Source code in <code>zenml/analytics/context.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialization.</span>
 
 <span class="sd">    Use this as a context manager to ensure that analytics are initialized</span>
@@ -4457,7 +4457,7 @@ are handled gracefully.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/analytics/context.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">alias</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span> <span class="n">previous_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">alias</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span> <span class="n">previous_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Alias user IDs.</span>
 
 <span class="sd">    Args:</span>
@@ -4539,7 +4539,7 @@ are handled gracefully.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/analytics/context.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">group</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">group</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">group_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span>
     <span class="n">traits</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -4620,7 +4620,7 @@ are handled gracefully.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/analytics/context.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">identify</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">traits</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">identify</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">traits</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Identify the user through segment.</span>
 
 <span class="sd">    Args:</span>
@@ -4701,7 +4701,7 @@ are handled gracefully.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/analytics/context.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">track</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">track</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">event</span><span class="p">:</span> <span class="s2">&quot;AnalyticsEvent&quot;</span><span class="p">,</span>
     <span class="n">properties</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -4715,7 +4715,7 @@ are handled gracefully.</p>
 <span class="sd">    Returns:</span>
 <span class="sd">        True if tracking information was sent, False otherwise.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.analytics.enums</span> <span class="kn">import</span> <span class="n">AnalyticsEvent</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.analytics.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">AnalyticsEvent</span>
 
     <span class="k">if</span> <span class="n">properties</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">properties</span> <span class="o">=</span> <span class="p">{}</span>
@@ -4863,7 +4863,7 @@ AnalyticsEvent            (<span title="str">str</span>, <span title="enum.Enum"
 
         <details class="quote">
           <summary>Source code in <code>zenml/analytics/enums.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AnalyticsEvent</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Enum</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AnalyticsEvent</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Enum</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Enum of events to track in segment.&quot;&quot;&quot;</span>
 
     <span class="c1"># Login</span>
@@ -4999,7 +4999,7 @@ AnalyticsEvent            (<span title="str">str</span>, <span title="enum.Enum"
 
         <details class="quote">
           <summary>Source code in <code>zenml/analytics/enums.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__format__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">format_spec</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__format__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">format_spec</span><span class="p">):</span>
     <span class="k">return</span> <span class="nb">str</span><span class="o">.</span><span class="fm">__format__</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span> <span class="n">format_spec</span><span class="p">)</span>
 </code></pre></div>
         </details>
@@ -5083,7 +5083,7 @@ tracking metadata.</p>
 
         <details class="quote">
           <summary>Source code in <code>zenml/analytics/models.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AnalyticsTrackedModelMixin</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AnalyticsTrackedModelMixin</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Mixin for models that are tracked through analytics events.</span>
 
 <span class="sd">    Classes that have information tracked in analytics events can inherit</span>
@@ -5095,7 +5095,7 @@ tracking metadata.</p>
 
     <span class="n">ANALYTICS_FIELDS</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
 
-    <span class="k">def</span> <span class="nf">get_analytics_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_analytics_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the analytics metadata for the model.</span>
 
 <span class="sd">        Returns:</span>
@@ -5167,7 +5167,7 @@ tracking metadata.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/analytics/models.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_analytics_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_analytics_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the analytics metadata for the model.</span>
 
 <span class="sd">    Returns:</span>
@@ -5307,7 +5307,7 @@ The base functionalities are adapted to work with the ZenML analytics server.</p
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/analytics/request.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">post</span><span class="p">(</span><span class="n">batch</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">15</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">requests</span><span class="o">.</span><span class="n">Response</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">post</span><span class="p">(</span><span class="n">batch</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">15</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">requests</span><span class="o">.</span><span class="n">Response</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Post a batch of messages to the ZenML analytics server.</span>
 
 <span class="sd">    Args:</span>
@@ -5320,7 +5320,7 @@ The base functionalities are adapted to work with the ZenML analytics server.</p
 <span class="sd">    Raises:</span>
 <span class="sd">        AnalyticsAPIError: If the post request has failed.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.analytics</span> <span class="kn">import</span> <span class="n">source_context</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.analytics</span><span class="w"> </span><span class="kn">import</span> <span class="n">source_context</span>
 
     <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span>
         <span class="s2">&quot;accept&quot;</span><span class="p">:</span> <span class="s2">&quot;application/json&quot;</span><span class="p">,</span>
@@ -5404,10 +5404,10 @@ AnalyticsAPIError            (<span title="Exception">Exception</span>)
 
         <details class="quote">
           <summary>Source code in <code>zenml/analytics/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AnalyticsAPIError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AnalyticsAPIError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Custom exception class for API-related errors.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">status</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">status</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialization.</span>
 
 <span class="sd">        Args:</span>
@@ -5417,7 +5417,7 @@ AnalyticsAPIError            (<span title="Exception">Exception</span>)
         <span class="bp">self</span><span class="o">.</span><span class="n">message</span> <span class="o">=</span> <span class="n">message</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">status</span>
 
-    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Method to represent the instance as a string.</span>
 
 <span class="sd">        Returns:</span>
@@ -5484,7 +5484,7 @@ AnalyticsAPIError            (<span title="Exception">Exception</span>)
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/analytics/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">status</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">status</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialization.</span>
 
 <span class="sd">    Args:</span>
@@ -5535,7 +5535,7 @@ AnalyticsAPIError            (<span title="Exception">Exception</span>)
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/analytics/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Method to represent the instance as a string.</span>
 
 <span class="sd">    Returns:</span>
@@ -5580,10 +5580,10 @@ AnalyticsEncoder            (<span title="json.encoder.JSONEncoder">JSONEncoder<
 
         <details class="quote">
           <summary>Source code in <code>zenml/analytics/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AnalyticsEncoder</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">JSONEncoder</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AnalyticsEncoder</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">JSONEncoder</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Helper encoder class for JSON serialization.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">default</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">default</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The default method to handle UUID and &#39;AnalyticsEvent&#39; objects.</span>
 
 <span class="sd">        Args:</span>
@@ -5592,7 +5592,7 @@ AnalyticsEncoder            (<span title="json.encoder.JSONEncoder">JSONEncoder<
 <span class="sd">        Returns:</span>
 <span class="sd">            The encoded object.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.analytics.enums</span> <span class="kn">import</span> <span class="n">AnalyticsEvent</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.analytics.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">AnalyticsEvent</span>
 
         <span class="c1"># If the object is UUID, we simply return the value of UUID</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">UUID</span><span class="p">):</span>
@@ -5668,7 +5668,7 @@ AnalyticsEncoder            (<span title="json.encoder.JSONEncoder">JSONEncoder<
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/analytics/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">default</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">default</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;The default method to handle UUID and &#39;AnalyticsEvent&#39; objects.</span>
 
 <span class="sd">    Args:</span>
@@ -5677,7 +5677,7 @@ AnalyticsEncoder            (<span title="json.encoder.JSONEncoder">JSONEncoder<
 <span class="sd">    Returns:</span>
 <span class="sd">        The encoded object.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.analytics.enums</span> <span class="kn">import</span> <span class="n">AnalyticsEvent</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.analytics.enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">AnalyticsEvent</span>
 
     <span class="c1"># If the object is UUID, we simply return the value of UUID</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">UUID</span><span class="p">):</span>
@@ -5724,20 +5724,20 @@ analytics_disabler        </code>
 
         <details class="quote">
           <summary>Source code in <code>zenml/analytics/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">analytics_disabler</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">analytics_disabler</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Context manager which disables ZenML analytics.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialization of the context manager.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">original_value</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Disable the analytics.&quot;&quot;&quot;</span>
         <span class="k">global</span> <span class="n">_INTERNAL_DISABLE_ANALYTICS</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">original_value</span> <span class="o">=</span> <span class="n">_INTERNAL_DISABLE_ANALYTICS</span>
         <span class="n">_INTERNAL_DISABLE_ANALYTICS</span> <span class="o">=</span> <span class="kc">True</span>
 
-    <span class="k">def</span> <span class="fm">__exit__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__exit__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">exc_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span>
         <span class="n">exc_value</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span>
@@ -5787,7 +5787,7 @@ analytics_disabler        </code>
 
         <details class="quote">
           <summary>Source code in <code>zenml/analytics/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Disable the analytics.&quot;&quot;&quot;</span>
     <span class="k">global</span> <span class="n">_INTERNAL_DISABLE_ANALYTICS</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">original_value</span> <span class="o">=</span> <span class="n">_INTERNAL_DISABLE_ANALYTICS</span>
@@ -5850,7 +5850,7 @@ analytics_disabler        </code>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/analytics/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__exit__</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__exit__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">exc_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span>
     <span class="n">exc_value</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span>
@@ -5893,7 +5893,7 @@ analytics_disabler        </code>
 
         <details class="quote">
           <summary>Source code in <code>zenml/analytics/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialization of the context manager.&quot;&quot;&quot;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">original_value</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 </code></pre></div>
@@ -5932,10 +5932,10 @@ track_handler        </code>
 
         <details class="quote">
           <summary>Source code in <code>zenml/analytics/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">track_handler</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">track_handler</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Context handler to enable tracking the success status of an event.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">event</span><span class="p">:</span> <span class="n">AnalyticsEvent</span><span class="p">,</span>
         <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -5949,7 +5949,7 @@ track_handler        </code>
         <span class="bp">self</span><span class="o">.</span><span class="n">event</span><span class="p">:</span> <span class="n">AnalyticsEvent</span> <span class="o">=</span> <span class="n">event</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">metadata</span> <span class="ow">or</span> <span class="p">{}</span>
 
-    <span class="k">def</span> <span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;track_handler&quot;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;track_handler&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Enter function of the event handler.</span>
 
 <span class="sd">        Returns:</span>
@@ -5957,7 +5957,7 @@ track_handler        </code>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span>
 
-    <span class="k">def</span> <span class="fm">__exit__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__exit__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">type_</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span>
         <span class="n">value</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span>
@@ -6033,7 +6033,7 @@ track_handler        </code>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/analytics/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;track_handler&quot;</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;track_handler&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Enter function of the event handler.</span>
 
 <span class="sd">    Returns:</span>
@@ -6101,7 +6101,7 @@ event.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/analytics/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__exit__</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__exit__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">type_</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span>
     <span class="n">value</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span>
@@ -6180,7 +6180,7 @@ event.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/analytics/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">event</span><span class="p">:</span> <span class="n">AnalyticsEvent</span><span class="p">,</span>
     <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -6259,7 +6259,7 @@ event.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/analytics/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">email_opt_int</span><span class="p">(</span><span class="n">opted_in</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">email</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">source</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">email_opt_int</span><span class="p">(</span><span class="n">opted_in</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">email</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">source</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Track the event of the users response to the email prompt, identify them.</span>
 
 <span class="sd">    Args:</span>
@@ -6315,7 +6315,7 @@ event.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/analytics/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">is_analytics_disabled_internally</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">is_analytics_disabled_internally</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Whether analytics are disabled by an internal helper function.</span>
 
 <span class="sd">    Returns:</span>
@@ -6387,7 +6387,7 @@ tracking analytics.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/analytics/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">track_decorator</span><span class="p">(</span><span class="n">event</span><span class="p">:</span> <span class="n">AnalyticsEvent</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">F</span><span class="p">],</span> <span class="n">F</span><span class="p">]:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">track_decorator</span><span class="p">(</span><span class="n">event</span><span class="p">:</span> <span class="n">AnalyticsEvent</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">F</span><span class="p">],</span> <span class="n">F</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Decorator to track event.</span>
 
 <span class="sd">    If the decorated function takes in a `AnalyticsTrackedModelMixin` object as</span>
@@ -6406,7 +6406,7 @@ tracking analytics.</p>
 <span class="sd">        A decorator that applies the analytics tracking to a function.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">inner_decorator</span><span class="p">(</span><span class="n">func</span><span class="p">:</span> <span class="n">F</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">F</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">inner_decorator</span><span class="p">(</span><span class="n">func</span><span class="p">:</span> <span class="n">F</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">F</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Inner decorator function.</span>
 
 <span class="sd">        Args:</span>
@@ -6417,7 +6417,7 @@ tracking analytics.</p>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="nd">@wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
-        <span class="k">def</span> <span class="nf">inner_func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">inner_func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <span class="w">            </span><span class="sd">&quot;&quot;&quot;Inner function.</span>
 
 <span class="sd">            Args:</span>

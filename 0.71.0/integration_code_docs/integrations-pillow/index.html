@@ -2213,16 +2213,16 @@ PillowIntegration            (<a class="autorefs autorefs-internal" title="zenml
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/pillow/__init__.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">PillowIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">PillowIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Definition of Pillow integration for ZenML.&quot;&quot;&quot;</span>
 
     <span class="n">NAME</span> <span class="o">=</span> <span class="n">PILLOW</span>
     <span class="n">REQUIREMENTS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Pillow&gt;=9.2.0&quot;</span><span class="p">]</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Activates the integration.&quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.pillow</span> <span class="kn">import</span> <span class="n">materializers</span>  <span class="c1"># noqa</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.pillow</span><span class="w"> </span><span class="kn">import</span> <span class="n">materializers</span>  <span class="c1"># noqa</span>
 </code></pre></div>
         </details>
 
@@ -2260,9 +2260,9 @@ PillowIntegration            (<a class="autorefs autorefs-internal" title="zenml
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/pillow/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Activates the integration.&quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.integrations.pillow</span> <span class="kn">import</span> <span class="n">materializers</span>  <span class="c1"># noqa</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.pillow</span><span class="w"> </span><span class="kn">import</span> <span class="n">materializers</span>  <span class="c1"># noqa</span>
 </code></pre></div>
         </details>
     </div>
@@ -2365,7 +2365,7 @@ https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html.</p>
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/pillow/materializers/pillow_image_materializer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">PillowImageMaterializer</span><span class="p">(</span><span class="n">BaseMaterializer</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">PillowImageMaterializer</span><span class="p">(</span><span class="n">BaseMaterializer</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Materializer for Image.Image objects.</span>
 
 <span class="sd">    This materializer takes a PIL image object and returns a PIL image object.</span>
@@ -2376,7 +2376,7 @@ https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html.</p>
     <span class="n">ASSOCIATED_TYPES</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span> <span class="o">...</span><span class="p">]]</span> <span class="o">=</span> <span class="p">(</span><span class="n">Image</span><span class="o">.</span><span class="n">Image</span><span class="p">,)</span>
     <span class="n">ASSOCIATED_ARTIFACT_TYPE</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">ArtifactType</span><span class="p">]</span> <span class="o">=</span> <span class="n">ArtifactType</span><span class="o">.</span><span class="n">DATA</span>
 
-    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Image</span><span class="o">.</span><span class="n">Image</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Image</span><span class="o">.</span><span class="n">Image</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Image</span><span class="o">.</span><span class="n">Image</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Image</span><span class="o">.</span><span class="n">Image</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Read from artifact store.</span>
 
 <span class="sd">        Args:</span>
@@ -2398,7 +2398,7 @@ https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html.</p>
             <span class="n">fileio</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">filepath</span><span class="p">,</span> <span class="n">temp_file</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">temp_file</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image</span><span class="p">:</span> <span class="n">Image</span><span class="o">.</span><span class="n">Image</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image</span><span class="p">:</span> <span class="n">Image</span><span class="o">.</span><span class="n">Image</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Write to artifact store.</span>
 
 <span class="sd">        Args:</span>
@@ -2416,7 +2416,7 @@ https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html.</p>
             <span class="n">artifact_store_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">uri</span><span class="p">,</span> <span class="n">full_filename</span><span class="p">)</span>
             <span class="n">io_utils</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">temp_image_path</span><span class="p">,</span> <span class="n">artifact_store_path</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># type: ignore[attr-defined]</span>
 
-    <span class="k">def</span> <span class="nf">save_visualizations</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">save_visualizations</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">image</span><span class="p">:</span> <span class="n">Image</span><span class="o">.</span><span class="n">Image</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">VisualizationType</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Finds and saves the given image as a visualization.</span>
@@ -2433,7 +2433,7 @@ https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html.</p>
         <span class="n">artifact_store_path</span> <span class="o">=</span> <span class="n">artifact_store_path</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;/&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="p">{</span><span class="n">artifact_store_path</span><span class="p">:</span> <span class="n">VisualizationType</span><span class="o">.</span><span class="n">IMAGE</span><span class="p">}</span>
 
-    <span class="k">def</span> <span class="nf">extract_metadata</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">extract_metadata</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">image</span><span class="p">:</span> <span class="n">Image</span><span class="o">.</span><span class="n">Image</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;MetadataType&quot;</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Extract metadata from the given `Image` object.</span>
@@ -2519,7 +2519,7 @@ https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/pillow/materializers/pillow_image_materializer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">extract_metadata</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">extract_metadata</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">image</span><span class="p">:</span> <span class="n">Image</span><span class="o">.</span><span class="n">Image</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;MetadataType&quot;</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Extract metadata from the given `Image` object.</span>
@@ -2596,7 +2596,7 @@ https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/pillow/materializers/pillow_image_materializer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Image</span><span class="o">.</span><span class="n">Image</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Image</span><span class="o">.</span><span class="n">Image</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Image</span><span class="o">.</span><span class="n">Image</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Image</span><span class="o">.</span><span class="n">Image</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Read from artifact store.</span>
 
 <span class="sd">    Args:</span>
@@ -2660,7 +2660,7 @@ https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/pillow/materializers/pillow_image_materializer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image</span><span class="p">:</span> <span class="n">Image</span><span class="o">.</span><span class="n">Image</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image</span><span class="p">:</span> <span class="n">Image</span><span class="o">.</span><span class="n">Image</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Write to artifact store.</span>
 
 <span class="sd">    Args:</span>
@@ -2735,7 +2735,7 @@ https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/pillow/materializers/pillow_image_materializer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">save_visualizations</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">save_visualizations</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">image</span><span class="p">:</span> <span class="n">Image</span><span class="o">.</span><span class="n">Image</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">VisualizationType</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Finds and saves the given image as a visualization.</span>

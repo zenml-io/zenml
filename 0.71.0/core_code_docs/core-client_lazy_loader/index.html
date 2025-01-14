@@ -2147,14 +2147,14 @@ ClientLazyLoader            (<span title="pydantic.main.BaseModel">BaseModel</sp
 
         <details class="quote">
           <summary>Source code in <code>zenml/client_lazy_loader.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ClientLazyLoader</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ClientLazyLoader</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Lazy loader for Client methods.&quot;&quot;&quot;</span>
 
     <span class="n">method_name</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">call_chain</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">_CallStep</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="n">exclude_next_call</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 
-    <span class="k">def</span> <span class="fm">__getattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ClientLazyLoader&quot;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__getattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ClientLazyLoader&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get attribute not defined in ClientLazyLoader.</span>
 
 <span class="sd">        Args:</span>
@@ -2173,7 +2173,7 @@ ClientLazyLoader            (<span title="pydantic.main.BaseModel">BaseModel</sp
             <span class="n">self_</span><span class="o">.</span><span class="n">exclude_next_call</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="k">return</span> <span class="n">self_</span>
 
-    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ClientLazyLoader&quot;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ClientLazyLoader&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Call mocked attribute.</span>
 
 <span class="sd">        Args:</span>
@@ -2191,7 +2191,7 @@ ClientLazyLoader            (<span title="pydantic.main.BaseModel">BaseModel</sp
         <span class="bp">self</span><span class="o">.</span><span class="n">exclude_next_call</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="k">return</span> <span class="bp">self</span>
 
-    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ClientLazyLoader&quot;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ClientLazyLoader&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get item from mocked attribute.</span>
 
 <span class="sd">        Args:</span>
@@ -2203,15 +2203,15 @@ ClientLazyLoader            (<span title="pydantic.main.BaseModel">BaseModel</sp
         <span class="bp">self</span><span class="o">.</span><span class="n">call_chain</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_CallStep</span><span class="p">(</span><span class="n">selector</span><span class="o">=</span><span class="n">item</span><span class="p">))</span>
         <span class="k">return</span> <span class="bp">self</span>
 
-    <span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Evaluate lazy loaded Client method.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Evaluated lazy loader chain of calls.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.client</span> <span class="kn">import</span> <span class="n">Client</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">Client</span>
 
-        <span class="k">def</span> <span class="nf">_iterate_over_lazy_chain</span><span class="p">(</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">_iterate_over_lazy_chain</span><span class="p">(</span>
             <span class="bp">self</span><span class="p">:</span> <span class="s2">&quot;ClientLazyLoader&quot;</span><span class="p">,</span> <span class="n">self_</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">call_chain_</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">_CallStep</span><span class="p">]</span>
         <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
             <span class="n">next_step</span> <span class="o">=</span> <span class="n">call_chain_</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
@@ -2339,7 +2339,7 @@ ClientLazyLoader            (<span title="pydantic.main.BaseModel">BaseModel</sp
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/client_lazy_loader.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ClientLazyLoader&quot;</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ClientLazyLoader&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Call mocked attribute.</span>
 
 <span class="sd">    Args:</span>
@@ -2417,7 +2417,7 @@ ClientLazyLoader            (<span title="pydantic.main.BaseModel">BaseModel</sp
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/client_lazy_loader.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__getattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ClientLazyLoader&quot;</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__getattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ClientLazyLoader&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get attribute not defined in ClientLazyLoader.</span>
 
 <span class="sd">    Args:</span>
@@ -2496,7 +2496,7 @@ ClientLazyLoader            (<span title="pydantic.main.BaseModel">BaseModel</sp
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/client_lazy_loader.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ClientLazyLoader&quot;</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ClientLazyLoader&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get item from mocked attribute.</span>
 
 <span class="sd">    Args:</span>
@@ -2546,15 +2546,15 @@ ClientLazyLoader            (<span title="pydantic.main.BaseModel">BaseModel</sp
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/client_lazy_loader.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">evaluate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Evaluate lazy loaded Client method.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Evaluated lazy loader chain of calls.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.client</span> <span class="kn">import</span> <span class="n">Client</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">Client</span>
 
-    <span class="k">def</span> <span class="nf">_iterate_over_lazy_chain</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_iterate_over_lazy_chain</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">:</span> <span class="s2">&quot;ClientLazyLoader&quot;</span><span class="p">,</span> <span class="n">self_</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">call_chain_</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">_CallStep</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
         <span class="n">next_step</span> <span class="o">=</span> <span class="n">call_chain_</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
@@ -2680,7 +2680,7 @@ ClientLazyLoader            (<span title="pydantic.main.BaseModel">BaseModel</sp
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/client_lazy_loader.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">client_lazy_loader</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">client_lazy_loader</span><span class="p">(</span>
     <span class="n">method_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ClientLazyLoader</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Lazy loader for Client methods helper.</span>
@@ -2701,7 +2701,7 @@ ClientLazyLoader            (<span title="pydantic.main.BaseModel">BaseModel</sp
 <span class="sd">    Returns:</span>
 <span class="sd">        The result of the method call.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml</span> <span class="kn">import</span> <span class="n">get_pipeline_context</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_pipeline_context</span>
 
     <span class="k">try</span><span class="p">:</span>
         <span class="n">get_pipeline_context</span><span class="p">()</span>
@@ -2769,7 +2769,7 @@ ClientLazyLoader            (<span title="pydantic.main.BaseModel">BaseModel</sp
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/client_lazy_loader.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">evaluate_all_lazy_load_args_in_client_methods</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">evaluate_all_lazy_load_args_in_client_methods</span><span class="p">(</span>
     <span class="bp">cls</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;Client&quot;</span><span class="p">],</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;Client&quot;</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Class wrapper to evaluate lazy loader arguments of all methods.</span>
@@ -2780,15 +2780,15 @@ ClientLazyLoader            (<span title="pydantic.main.BaseModel">BaseModel</sp
 <span class="sd">    Returns:</span>
 <span class="sd">        Wrapped class.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">import</span> <span class="nn">inspect</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">inspect</span>
 
-    <span class="k">def</span> <span class="nf">_evaluate_args</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_evaluate_args</span><span class="p">(</span>
         <span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">is_instance_method</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
-        <span class="k">def</span> <span class="nf">_inner</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">_inner</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
             <span class="n">args_</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">args</span><span class="p">)</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">is_instance_method</span><span class="p">:</span>
-                <span class="kn">from</span> <span class="nn">zenml.client</span> <span class="kn">import</span> <span class="n">Client</span>
+                <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">Client</span>
 
                 <span class="k">if</span> <span class="n">args</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">Client</span><span class="p">):</span>
                     <span class="n">args_</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
@@ -2809,7 +2809,7 @@ ClientLazyLoader            (<span title="pydantic.main.BaseModel">BaseModel</sp
 
         <span class="k">return</span> <span class="n">_inner</span>
 
-    <span class="k">def</span> <span class="nf">_decorate</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;Client&quot;</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_decorate</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;Client&quot;</span><span class="p">]:</span>
         <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">fn</span> <span class="ow">in</span> <span class="n">inspect</span><span class="o">.</span><span class="n">getmembers</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">inspect</span><span class="o">.</span><span class="n">isfunction</span><span class="p">):</span>
             <span class="nb">setattr</span><span class="p">(</span>
                 <span class="bp">cls</span><span class="p">,</span>

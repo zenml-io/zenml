@@ -2420,7 +2420,7 @@ SkypilotGCPIntegration            (<a class="autorefs autorefs-internal" title="
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/skypilot_gcp/__init__.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SkypilotGCPIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SkypilotGCPIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Definition of Skypilot (GCP) Integration for ZenML.&quot;&quot;&quot;</span>
 
     <span class="n">NAME</span> <span class="o">=</span> <span class="n">SKYPILOT_GCP</span>
@@ -2428,13 +2428,13 @@ SkypilotGCPIntegration            (<a class="autorefs autorefs-internal" title="
     <span class="n">APT_PACKAGES</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;openssh-client&quot;</span><span class="p">,</span> <span class="s2">&quot;rsync&quot;</span><span class="p">]</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Skypilot GCP integration.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            List of stack component flavors for this integration.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.skypilot_gcp.flavors</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.skypilot_gcp.flavors</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">SkypilotGCPOrchestratorFlavor</span><span class="p">,</span>
         <span class="p">)</span>
 
@@ -2492,13 +2492,13 @@ SkypilotGCPIntegration            (<a class="autorefs autorefs-internal" title="
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/skypilot_gcp/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Skypilot GCP integration.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        List of stack component flavors for this integration.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.integrations.skypilot_gcp.flavors</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.skypilot_gcp.flavors</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
         <span class="n">SkypilotGCPOrchestratorFlavor</span><span class="p">,</span>
     <span class="p">)</span>
 
@@ -2601,7 +2601,7 @@ SkypilotGCPOrchestratorConfig            (<a class="autorefs autorefs-internal" 
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/skypilot_gcp/flavors/skypilot_orchestrator_gcp_vm_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SkypilotGCPOrchestratorConfig</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SkypilotGCPOrchestratorConfig</span><span class="p">(</span>
     <span class="n">SkypilotBaseOrchestratorConfig</span><span class="p">,</span>
     <span class="n">GoogleCredentialsConfigMixin</span><span class="p">,</span>
     <span class="n">SkypilotGCPOrchestratorSettings</span><span class="p">,</span>
@@ -2667,11 +2667,11 @@ SkypilotGCPOrchestratorFlavor            (<a class="autorefs autorefs-internal" 
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/skypilot_gcp/flavors/skypilot_orchestrator_gcp_vm_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SkypilotGCPOrchestratorFlavor</span><span class="p">(</span><span class="n">BaseOrchestratorFlavor</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SkypilotGCPOrchestratorFlavor</span><span class="p">(</span><span class="n">BaseOrchestratorFlavor</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Flavor for the Skypilot orchestrator for GCP.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the orchestrator flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -2680,7 +2680,7 @@ SkypilotGCPOrchestratorFlavor            (<a class="autorefs autorefs-internal" 
         <span class="k">return</span> <span class="n">SKYPILOT_GCP_ORCHESTRATOR_FLAVOR</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">service_connector_requirements</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">service_connector_requirements</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ServiceConnectorRequirements</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Service connector resource requirements for service connectors.</span>
@@ -2697,7 +2697,7 @@ SkypilotGCPOrchestratorFlavor            (<a class="autorefs autorefs-internal" 
         <span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -2706,7 +2706,7 @@ SkypilotGCPOrchestratorFlavor            (<a class="autorefs autorefs-internal" 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at SDK docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -2715,7 +2715,7 @@ SkypilotGCPOrchestratorFlavor            (<a class="autorefs autorefs-internal" 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_sdk_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to represent the flavor in the dashboard.</span>
 
 <span class="sd">        Returns:</span>
@@ -2724,7 +2724,7 @@ SkypilotGCPOrchestratorFlavor            (<a class="autorefs autorefs-internal" 
         <span class="k">return</span> <span class="s2">&quot;https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/gcp-skypilot.png&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseOrchestratorConfig</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseOrchestratorConfig</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Config class for the base orchestrator flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -2733,13 +2733,13 @@ SkypilotGCPOrchestratorFlavor            (<a class="autorefs autorefs-internal" 
         <span class="k">return</span> <span class="n">SkypilotGCPOrchestratorConfig</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;SkypilotGCPOrchestrator&quot;</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;SkypilotGCPOrchestrator&quot;</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Implementation class for this flavor.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.skypilot_gcp.orchestrators</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.skypilot_gcp.orchestrators</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">SkypilotGCPOrchestrator</span><span class="p">,</span>
         <span class="p">)</span>
 
@@ -3057,7 +3057,7 @@ SkypilotGCPOrchestratorSettings            (<a class="autorefs autorefs-internal
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/skypilot_gcp/flavors/skypilot_orchestrator_gcp_vm_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SkypilotGCPOrchestratorSettings</span><span class="p">(</span><span class="n">SkypilotBaseOrchestratorSettings</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SkypilotGCPOrchestratorSettings</span><span class="p">(</span><span class="n">SkypilotBaseOrchestratorSettings</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Skypilot orchestrator settings for GCP.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
@@ -3199,7 +3199,7 @@ SkypilotGCPOrchestrator            (<a class="autorefs autorefs-internal" title=
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/skypilot_gcp/orchestrators/skypilot_gcp_vm_orchestrator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SkypilotGCPOrchestrator</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SkypilotGCPOrchestrator</span><span class="p">(</span>
     <span class="n">SkypilotBaseOrchestrator</span><span class="p">,</span> <span class="n">GoogleCredentialsMixin</span>
 <span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Orchestrator responsible for running pipelines remotely in a VM on GCP.</span>
@@ -3210,7 +3210,7 @@ SkypilotGCPOrchestrator            (<a class="autorefs autorefs-internal" title=
     <span class="n">DEFAULT_INSTANCE_TYPE</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;n1-standard-4&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">cloud</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">sky</span><span class="o">.</span><span class="n">clouds</span><span class="o">.</span><span class="n">Cloud</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">cloud</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">sky</span><span class="o">.</span><span class="n">clouds</span><span class="o">.</span><span class="n">Cloud</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The type of sky cloud to use.</span>
 
 <span class="sd">        Returns:</span>
@@ -3219,7 +3219,7 @@ SkypilotGCPOrchestrator            (<a class="autorefs autorefs-internal" title=
         <span class="k">return</span> <span class="n">sky</span><span class="o">.</span><span class="n">clouds</span><span class="o">.</span><span class="n">GCP</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SkypilotGCPOrchestratorConfig</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SkypilotGCPOrchestratorConfig</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the `SkypilotGCPOrchestratorConfig` config.</span>
 
 <span class="sd">        Returns:</span>
@@ -3228,7 +3228,7 @@ SkypilotGCPOrchestrator            (<a class="autorefs autorefs-internal" title=
         <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">SkypilotGCPOrchestratorConfig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">settings_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseSettings&quot;</span><span class="p">]]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">settings_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseSettings&quot;</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Settings class for the Skypilot orchestrator.</span>
 
 <span class="sd">        Returns:</span>
@@ -3236,7 +3236,7 @@ SkypilotGCPOrchestrator            (<a class="autorefs autorefs-internal" title=
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">SkypilotGCPOrchestratorSettings</span>
 
-    <span class="k">def</span> <span class="nf">prepare_environment_variable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">set</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">prepare_environment_variable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">set</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Set up Environment variables that are required for the orchestrator.</span>
 
 <span class="sd">        Args:</span>
@@ -3408,7 +3408,7 @@ SkypilotGCPOrchestrator            (<a class="autorefs autorefs-internal" title=
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/skypilot_gcp/orchestrators/skypilot_gcp_vm_orchestrator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">prepare_environment_variable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">set</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">prepare_environment_variable</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">set</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Set up Environment variables that are required for the orchestrator.</span>
 
 <span class="sd">    Args:</span>

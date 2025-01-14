@@ -3898,7 +3898,7 @@ AzureIntegration            (<a class="autorefs autorefs-internal" title="zenml.
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/__init__.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AzureIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AzureIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Definition of Azure integration for ZenML.&quot;&quot;&quot;</span>
 
     <span class="n">NAME</span> <span class="o">=</span> <span class="n">AZURE</span>
@@ -3920,18 +3920,18 @@ AzureIntegration            (<a class="autorefs autorefs-internal" title="zenml.
     <span class="n">REQUIREMENTS_IGNORED_ON_UNINSTALL</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;kubernetes&quot;</span><span class="p">,</span> <span class="s2">&quot;numpy&quot;</span><span class="p">]</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Activate the Azure integration.&quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.azure</span> <span class="kn">import</span> <span class="n">service_connectors</span>  <span class="c1"># noqa</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.azure</span><span class="w"> </span><span class="kn">import</span> <span class="n">service_connectors</span>  <span class="c1"># noqa</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Declares the flavors for the integration.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            List of stack component flavors for this integration.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.azure.flavors</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.azure.flavors</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">AzureArtifactStoreFlavor</span><span class="p">,</span>
             <span class="n">AzureMLStepOperatorFlavor</span><span class="p">,</span>
             <span class="n">AzureMLOrchestratorFlavor</span><span class="p">,</span>
@@ -3980,9 +3980,9 @@ AzureIntegration            (<a class="autorefs autorefs-internal" title="zenml.
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Activate the Azure integration.&quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.integrations.azure</span> <span class="kn">import</span> <span class="n">service_connectors</span>  <span class="c1"># noqa</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.azure</span><span class="w"> </span><span class="kn">import</span> <span class="n">service_connectors</span>  <span class="c1"># noqa</span>
 </code></pre></div>
         </details>
     </div>
@@ -4026,13 +4026,13 @@ AzureIntegration            (<a class="autorefs autorefs-internal" title="zenml.
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Declares the flavors for the integration.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        List of stack component flavors for this integration.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.integrations.azure.flavors</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.azure.flavors</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
         <span class="n">AzureArtifactStoreFlavor</span><span class="p">,</span>
         <span class="n">AzureMLStepOperatorFlavor</span><span class="p">,</span>
         <span class="n">AzureMLOrchestratorFlavor</span><span class="p">,</span>
@@ -4141,13 +4141,13 @@ AzureArtifactStore            (<a class="autorefs autorefs-internal" title="zenm
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/artifact_stores/azure_artifact_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AzureArtifactStore</span><span class="p">(</span><span class="n">BaseArtifactStore</span><span class="p">,</span> <span class="n">AuthenticationMixin</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AzureArtifactStore</span><span class="p">(</span><span class="n">BaseArtifactStore</span><span class="p">,</span> <span class="n">AuthenticationMixin</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Artifact Store for Microsoft Azure based artifacts.&quot;&quot;&quot;</span>
 
     <span class="n">_filesystem</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">adlfs</span><span class="o">.</span><span class="n">AzureBlobFileSystem</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AzureArtifactStoreConfig</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AzureArtifactStoreConfig</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the `AzureArtifactStoreConfig` config.</span>
 
 <span class="sd">        Returns:</span>
@@ -4155,7 +4155,7 @@ AzureArtifactStore            (<a class="autorefs autorefs-internal" title="zenm
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">AzureArtifactStoreConfig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_credentials</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">AzureSecretSchema</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_credentials</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">AzureSecretSchema</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the credentials for the Azure Artifact Store if configured.</span>
 
 <span class="sd">        Returns:</span>
@@ -4167,8 +4167,8 @@ AzureArtifactStore            (<a class="autorefs autorefs-internal" title="zenm
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">connector</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_connector</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">connector</span><span class="p">:</span>
-            <span class="kn">from</span> <span class="nn">azure.identity</span> <span class="kn">import</span> <span class="n">ClientSecretCredential</span>
-            <span class="kn">from</span> <span class="nn">azure.storage.blob</span> <span class="kn">import</span> <span class="n">BlobServiceClient</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">azure.identity</span><span class="w"> </span><span class="kn">import</span> <span class="n">ClientSecretCredential</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">azure.storage.blob</span><span class="w"> </span><span class="kn">import</span> <span class="n">BlobServiceClient</span>
 
             <span class="n">client</span> <span class="o">=</span> <span class="n">connector</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">client</span><span class="p">,</span> <span class="n">BlobServiceClient</span><span class="p">):</span>
@@ -4199,7 +4199,7 @@ AzureArtifactStore            (<a class="autorefs autorefs-internal" title="zenm
         <span class="k">return</span> <span class="n">secret</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">filesystem</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">adlfs</span><span class="o">.</span><span class="n">AzureBlobFileSystem</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">filesystem</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">adlfs</span><span class="o">.</span><span class="n">AzureBlobFileSystem</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The adlfs filesystem to access this artifact store.</span>
 
 <span class="sd">        Returns:</span>
@@ -4216,7 +4216,7 @@ AzureArtifactStore            (<a class="autorefs autorefs-internal" title="zenm
             <span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filesystem</span>
 
-    <span class="k">def</span> <span class="nf">_split_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_split_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Splits a path into the filesystem prefix and remainder.</span>
 
 <span class="sd">        Example:</span>
@@ -4241,7 +4241,7 @@ AzureArtifactStore            (<a class="autorefs autorefs-internal" title="zenm
 
         <span class="k">return</span> <span class="n">prefix</span><span class="p">,</span> <span class="n">path</span>
 
-    <span class="k">def</span> <span class="nf">open</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">open</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Open a file at the given path.</span>
 
 <span class="sd">        Args:</span>
@@ -4254,7 +4254,7 @@ AzureArtifactStore            (<a class="autorefs autorefs-internal" title="zenm
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">filesystem</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">copyfile</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">copyfile</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">src</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">dst</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Copy a file.</span>
@@ -4280,7 +4280,7 @@ AzureArtifactStore            (<a class="autorefs autorefs-internal" title="zenm
         <span class="c1">#  manually remove it first</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">filesystem</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">path1</span><span class="o">=</span><span class="n">src</span><span class="p">,</span> <span class="n">path2</span><span class="o">=</span><span class="n">dst</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">exists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">exists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Check whether a path exists.</span>
 
 <span class="sd">        Args:</span>
@@ -4291,7 +4291,7 @@ AzureArtifactStore            (<a class="autorefs autorefs-internal" title="zenm
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">filesystem</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">)</span>  <span class="c1"># type: ignore[no-any-return]</span>
 
-    <span class="k">def</span> <span class="nf">glob</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pattern</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">glob</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pattern</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return all paths that match the given glob pattern.</span>
 
 <span class="sd">        The glob pattern may include:</span>
@@ -4312,7 +4312,7 @@ AzureArtifactStore            (<a class="autorefs autorefs-internal" title="zenm
             <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">prefix</span><span class="si">}{</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">filesystem</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">pattern</span><span class="p">)</span>
         <span class="p">]</span>
 
-    <span class="k">def</span> <span class="nf">isdir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">isdir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Check whether a path is a directory.</span>
 
 <span class="sd">        Args:</span>
@@ -4323,7 +4323,7 @@ AzureArtifactStore            (<a class="autorefs autorefs-internal" title="zenm
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">filesystem</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">)</span>  <span class="c1"># type: ignore[no-any-return]</span>
 
-    <span class="k">def</span> <span class="nf">listdir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">listdir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return a list of files in a directory.</span>
 
 <span class="sd">        Args:</span>
@@ -4334,7 +4334,7 @@ AzureArtifactStore            (<a class="autorefs autorefs-internal" title="zenm
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">_</span><span class="p">,</span> <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_split_path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
 
-        <span class="k">def</span> <span class="nf">_extract_basename</span><span class="p">(</span><span class="n">file_dict</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">_extract_basename</span><span class="p">(</span><span class="n">file_dict</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">            </span><span class="sd">&quot;&quot;&quot;Extracts the basename from a dictionary returned by the Azure filesystem.</span>
 
 <span class="sd">            Args:</span>
@@ -4352,7 +4352,7 @@ AzureArtifactStore            (<a class="autorefs autorefs-internal" title="zenm
             <span class="k">for</span> <span class="n">dict_</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">filesystem</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">)</span>
         <span class="p">]</span>
 
-    <span class="k">def</span> <span class="nf">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a directory at the given path.</span>
 
 <span class="sd">        If needed also create missing parent directories.</span>
@@ -4362,7 +4362,7 @@ AzureArtifactStore            (<a class="autorefs autorefs-internal" title="zenm
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">filesystem</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">mkdir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">mkdir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a directory at the given path.</span>
 
 <span class="sd">        Args:</span>
@@ -4370,7 +4370,7 @@ AzureArtifactStore            (<a class="autorefs autorefs-internal" title="zenm
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">filesystem</span><span class="o">.</span><span class="n">makedir</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove the file at the given path.</span>
 
 <span class="sd">        Args:</span>
@@ -4378,7 +4378,7 @@ AzureArtifactStore            (<a class="autorefs autorefs-internal" title="zenm
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">filesystem</span><span class="o">.</span><span class="n">rm_file</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">rename</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">rename</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">src</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">dst</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Rename source file to destination file.</span>
@@ -4404,7 +4404,7 @@ AzureArtifactStore            (<a class="autorefs autorefs-internal" title="zenm
         <span class="c1">#  to manually remove it first</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">filesystem</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">path1</span><span class="o">=</span><span class="n">src</span><span class="p">,</span> <span class="n">path2</span><span class="o">=</span><span class="n">dst</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">rmtree</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">rmtree</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove the given directory.</span>
 
 <span class="sd">        Args:</span>
@@ -4412,7 +4412,7 @@ AzureArtifactStore            (<a class="autorefs autorefs-internal" title="zenm
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">filesystem</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">stat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return stat info for the given path.</span>
 
 <span class="sd">        Args:</span>
@@ -4423,7 +4423,7 @@ AzureArtifactStore            (<a class="autorefs autorefs-internal" title="zenm
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">filesystem</span><span class="o">.</span><span class="n">stat</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">)</span>  <span class="c1"># type: ignore[no-any-return]</span>
 
-    <span class="k">def</span> <span class="nf">size</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">size</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the size of a file in bytes.</span>
 
 <span class="sd">        Args:</span>
@@ -4434,7 +4434,7 @@ AzureArtifactStore            (<a class="autorefs autorefs-internal" title="zenm
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">filesystem</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">)</span>  <span class="c1"># type: ignore[no-any-return]</span>
 
-    <span class="k">def</span> <span class="nf">walk</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">walk</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">top</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span>
         <span class="n">topdown</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -4616,7 +4616,7 @@ and overwrite is not set to <code>True</code>.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/artifact_stores/azure_artifact_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">copyfile</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">copyfile</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">src</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">dst</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Copy a file.</span>
@@ -4699,7 +4699,7 @@ and overwrite is not set to <code>True</code>.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/artifact_stores/azure_artifact_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">exists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">exists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Check whether a path exists.</span>
 
 <span class="sd">    Args:</span>
@@ -4764,7 +4764,7 @@ principal credentials.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/artifact_stores/azure_artifact_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_credentials</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">AzureSecretSchema</span><span class="p">]:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_credentials</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">AzureSecretSchema</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the credentials for the Azure Artifact Store if configured.</span>
 
 <span class="sd">    Returns:</span>
@@ -4776,8 +4776,8 @@ principal credentials.</p></td>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">connector</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_connector</span><span class="p">()</span>
     <span class="k">if</span> <span class="n">connector</span><span class="p">:</span>
-        <span class="kn">from</span> <span class="nn">azure.identity</span> <span class="kn">import</span> <span class="n">ClientSecretCredential</span>
-        <span class="kn">from</span> <span class="nn">azure.storage.blob</span> <span class="kn">import</span> <span class="n">BlobServiceClient</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">azure.identity</span><span class="w"> </span><span class="kn">import</span> <span class="n">ClientSecretCredential</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">azure.storage.blob</span><span class="w"> </span><span class="kn">import</span> <span class="n">BlobServiceClient</span>
 
         <span class="n">client</span> <span class="o">=</span> <span class="n">connector</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">client</span><span class="p">,</span> <span class="n">BlobServiceClient</span><span class="p">):</span>
@@ -4870,7 +4870,7 @@ principal credentials.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/artifact_stores/azure_artifact_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">glob</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pattern</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">glob</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pattern</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Return all paths that match the given glob pattern.</span>
 
 <span class="sd">    The glob pattern may include:</span>
@@ -4948,7 +4948,7 @@ principal credentials.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/artifact_stores/azure_artifact_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">isdir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">isdir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Check whether a path is a directory.</span>
 
 <span class="sd">    Args:</span>
@@ -5016,7 +5016,7 @@ principal credentials.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/artifact_stores/azure_artifact_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">listdir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">listdir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PathType</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Return a list of files in a directory.</span>
 
 <span class="sd">    Args:</span>
@@ -5027,7 +5027,7 @@ principal credentials.</p></td>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">_</span><span class="p">,</span> <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_split_path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_extract_basename</span><span class="p">(</span><span class="n">file_dict</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_extract_basename</span><span class="p">(</span><span class="n">file_dict</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Extracts the basename from a dictionary returned by the Azure filesystem.</span>
 
 <span class="sd">        Args:</span>
@@ -5088,7 +5088,7 @@ principal credentials.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/artifact_stores/azure_artifact_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a directory at the given path.</span>
 
 <span class="sd">    If needed also create missing parent directories.</span>
@@ -5140,7 +5140,7 @@ principal credentials.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/artifact_stores/azure_artifact_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">mkdir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">mkdir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a directory at the given path.</span>
 
 <span class="sd">    Args:</span>
@@ -5212,7 +5212,7 @@ principal credentials.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/artifact_stores/azure_artifact_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">open</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">open</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Open a file at the given path.</span>
 
 <span class="sd">    Args:</span>
@@ -5267,7 +5267,7 @@ principal credentials.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/artifact_stores/azure_artifact_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">remove</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Remove the file at the given path.</span>
 
 <span class="sd">    Args:</span>
@@ -5347,7 +5347,7 @@ and overwrite is not set to <code>True</code>.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/artifact_stores/azure_artifact_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">rename</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">rename</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">src</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">dst</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Rename source file to destination file.</span>
@@ -5415,7 +5415,7 @@ and overwrite is not set to <code>True</code>.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/artifact_stores/azure_artifact_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">rmtree</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">rmtree</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Remove the given directory.</span>
 
 <span class="sd">    Args:</span>
@@ -5480,7 +5480,7 @@ and overwrite is not set to <code>True</code>.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/artifact_stores/azure_artifact_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">size</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">size</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the size of a file in bytes.</span>
 
 <span class="sd">    Args:</span>
@@ -5548,7 +5548,7 @@ and overwrite is not set to <code>True</code>.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/artifact_stores/azure_artifact_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">stat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">stat</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="n">PathType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Return stat info for the given path.</span>
 
 <span class="sd">    Args:</span>
@@ -5630,7 +5630,7 @@ and a list of files inside the current directory.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/artifact_stores/azure_artifact_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">walk</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">walk</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">top</span><span class="p">:</span> <span class="n">PathType</span><span class="p">,</span>
     <span class="n">topdown</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -5769,7 +5769,7 @@ and a list of files inside the current directory.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/azureml_utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">check_settings_and_compute_configuration</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">check_settings_and_compute_configuration</span><span class="p">(</span>
     <span class="n">parameter</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">settings</span><span class="p">:</span> <span class="n">AzureMLComputeSettings</span><span class="p">,</span>
     <span class="n">compute</span><span class="p">:</span> <span class="n">Compute</span><span class="p">,</span>
@@ -5880,7 +5880,7 @@ compute target.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/azureml_utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">create_or_get_compute</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">create_or_get_compute</span><span class="p">(</span>
     <span class="n">client</span><span class="p">:</span> <span class="n">MLClient</span><span class="p">,</span>
     <span class="n">settings</span><span class="p">:</span> <span class="n">AzureMLComputeSettings</span><span class="p">,</span>
     <span class="n">default_compute_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -5994,7 +5994,7 @@ compute target.</p></td>
                 <span class="s2">&quot;few minutes.&quot;</span>
             <span class="p">)</span>
 
-            <span class="kn">from</span> <span class="nn">azure.ai.ml.entities</span> <span class="kn">import</span> <span class="n">ComputeInstance</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">azure.ai.ml.entities</span><span class="w"> </span><span class="kn">import</span> <span class="n">ComputeInstance</span>
 
             <span class="n">compute_instance</span> <span class="o">=</span> <span class="n">ComputeInstance</span><span class="p">(</span>
                 <span class="n">name</span><span class="o">=</span><span class="n">compute_name</span><span class="p">,</span>
@@ -6010,7 +6010,7 @@ compute target.</p></td>
                 <span class="s2">&quot;few minutes.&quot;</span>
             <span class="p">)</span>
 
-            <span class="kn">from</span> <span class="nn">azure.ai.ml.entities</span> <span class="kn">import</span> <span class="n">AmlCompute</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">azure.ai.ml.entities</span><span class="w"> </span><span class="kn">import</span> <span class="n">AmlCompute</span>
 
             <span class="n">compute_cluster</span> <span class="o">=</span> <span class="n">AmlCompute</span><span class="p">(</span>
                 <span class="n">name</span><span class="o">=</span><span class="n">compute_name</span><span class="p">,</span>
@@ -6120,7 +6120,7 @@ AzureArtifactStoreConfig            (<a class="autorefs autorefs-internal" title
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/flavors/azure_artifact_store_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AzureArtifactStoreConfig</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AzureArtifactStoreConfig</span><span class="p">(</span>
     <span class="n">BaseArtifactStoreConfig</span><span class="p">,</span> <span class="n">AuthenticationConfigMixin</span>
 <span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Configuration class for Azure Artifact Store.&quot;&quot;&quot;</span>
@@ -6187,11 +6187,11 @@ AzureArtifactStoreFlavor            (<a class="autorefs autorefs-internal" title
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/flavors/azure_artifact_store_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AzureArtifactStoreFlavor</span><span class="p">(</span><span class="n">BaseArtifactStoreFlavor</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AzureArtifactStoreFlavor</span><span class="p">(</span><span class="n">BaseArtifactStoreFlavor</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Azure Artifact Store flavor.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -6200,7 +6200,7 @@ AzureArtifactStoreFlavor            (<a class="autorefs autorefs-internal" title
         <span class="k">return</span> <span class="n">AZURE_ARTIFACT_STORE_FLAVOR</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">service_connector_requirements</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">service_connector_requirements</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ServiceConnectorRequirements</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Service connector resource requirements for service connectors.</span>
@@ -6219,7 +6219,7 @@ AzureArtifactStoreFlavor            (<a class="autorefs autorefs-internal" title
         <span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -6228,7 +6228,7 @@ AzureArtifactStoreFlavor            (<a class="autorefs autorefs-internal" title
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at SDK docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -6237,7 +6237,7 @@ AzureArtifactStoreFlavor            (<a class="autorefs autorefs-internal" title
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_sdk_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to represent the flavor in the dashboard.</span>
 
 <span class="sd">        Returns:</span>
@@ -6246,7 +6246,7 @@ AzureArtifactStoreFlavor            (<a class="autorefs autorefs-internal" title
         <span class="k">return</span> <span class="s2">&quot;https://public-flavor-logos.s3.eu-central-1.amazonaws.com/artifact_store/azure.png&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">AzureArtifactStoreConfig</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">AzureArtifactStoreConfig</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns AzureArtifactStoreConfig config class.</span>
 
 <span class="sd">        Returns:</span>
@@ -6255,13 +6255,13 @@ AzureArtifactStoreFlavor            (<a class="autorefs autorefs-internal" title
         <span class="k">return</span> <span class="n">AzureArtifactStoreConfig</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;AzureArtifactStore&quot;</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;AzureArtifactStore&quot;</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The implementation class.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.azure.artifact_stores</span> <span class="kn">import</span> <span class="n">AzureArtifactStore</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.azure.artifact_stores</span><span class="w"> </span><span class="kn">import</span> <span class="n">AzureArtifactStore</span>
 
         <span class="k">return</span> <span class="n">AzureArtifactStore</span>
 </code></pre></div>
@@ -6643,7 +6643,7 @@ pipeline execution.</p>
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/flavors/azureml.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AzureMLComputeSettings</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AzureMLComputeSettings</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Settings for the AzureML compute.</span>
 
 <span class="sd">    These settings adjust the compute resources that will be used by the</span>
@@ -6695,7 +6695,7 @@ pipeline execution.</p>
     <span class="n">tier</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;after&quot;</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">azureml_settings_validator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;AzureMLComputeSettings&quot;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">azureml_settings_validator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;AzureMLComputeSettings&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks whether the right configuration is set based on mode.</span>
 
 <span class="sd">        Returns:</span>
@@ -6827,7 +6827,7 @@ instances and clusters.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/flavors/azureml.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;after&quot;</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">azureml_settings_validator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;AzureMLComputeSettings&quot;</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">azureml_settings_validator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;AzureMLComputeSettings&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks whether the right configuration is set based on mode.</span>
 
 <span class="sd">    Returns:</span>
@@ -6917,7 +6917,7 @@ AzureMLComputeTypes            (<a class="autorefs autorefs-internal" title="zen
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/flavors/azureml.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AzureMLComputeTypes</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AzureMLComputeTypes</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Enum for different types of compute on AzureML.&quot;&quot;&quot;</span>
 
     <span class="n">SERVERLESS</span> <span class="o">=</span> <span class="s2">&quot;serverless&quot;</span>
@@ -7009,7 +7009,7 @@ AzureMLOrchestratorConfig            (<a class="autorefs autorefs-internal" titl
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/flavors/azureml_orchestrator_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AzureMLOrchestratorConfig</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AzureMLOrchestratorConfig</span><span class="p">(</span>
     <span class="n">BaseOrchestratorConfig</span><span class="p">,</span> <span class="n">AzureMLOrchestratorSettings</span>
 <span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Configuration for the AzureML orchestrator.&quot;&quot;&quot;</span>
@@ -7025,7 +7025,7 @@ AzureMLOrchestratorConfig            (<a class="autorefs autorefs-internal" titl
     <span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">is_remote</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_remote</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if this stack component is running remotely.</span>
 
 <span class="sd">        This designation is used to determine if the stack component can be</span>
@@ -7038,7 +7038,7 @@ AzureMLOrchestratorConfig            (<a class="autorefs autorefs-internal" titl
         <span class="k">return</span> <span class="kc">True</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">is_synchronous</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_synchronous</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Whether the orchestrator runs synchronously or not.</span>
 
 <span class="sd">        Returns:</span>
@@ -7047,7 +7047,7 @@ AzureMLOrchestratorConfig            (<a class="autorefs autorefs-internal" titl
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">synchronous</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">is_schedulable</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_schedulable</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Whether the orchestrator is schedulable or not.</span>
 
 <span class="sd">        Returns:</span>
@@ -7231,11 +7231,11 @@ AzureMLOrchestratorFlavor            (<a class="autorefs autorefs-internal" titl
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/flavors/azureml_orchestrator_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AzureMLOrchestratorFlavor</span><span class="p">(</span><span class="n">BaseOrchestratorFlavor</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AzureMLOrchestratorFlavor</span><span class="p">(</span><span class="n">BaseOrchestratorFlavor</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Flavor for the AzureML orchestrator.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -7244,7 +7244,7 @@ AzureMLOrchestratorFlavor            (<a class="autorefs autorefs-internal" titl
         <span class="k">return</span> <span class="n">AZUREML_ORCHESTRATOR_FLAVOR</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">service_connector_requirements</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">service_connector_requirements</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ServiceConnectorRequirements</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Service connector resource requirements for service connectors.</span>
@@ -7259,7 +7259,7 @@ AzureMLOrchestratorFlavor            (<a class="autorefs autorefs-internal" titl
         <span class="k">return</span> <span class="n">ServiceConnectorRequirements</span><span class="p">(</span><span class="n">resource_type</span><span class="o">=</span><span class="n">AZURE_RESOURCE_TYPE</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A URL to point at docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -7268,7 +7268,7 @@ AzureMLOrchestratorFlavor            (<a class="autorefs autorefs-internal" titl
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A URL to point at SDK docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -7277,7 +7277,7 @@ AzureMLOrchestratorFlavor            (<a class="autorefs autorefs-internal" titl
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_sdk_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A URL to represent the flavor in the dashboard.</span>
 
 <span class="sd">        Returns:</span>
@@ -7286,7 +7286,7 @@ AzureMLOrchestratorFlavor            (<a class="autorefs autorefs-internal" titl
         <span class="k">return</span> <span class="s2">&quot;https://public-flavor-logos.s3.eu-central-1.amazonaws.com/orchestrator/azureml.png&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">AzureMLOrchestratorConfig</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">AzureMLOrchestratorConfig</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns AzureMLOrchestratorConfig config class.</span>
 
 <span class="sd">        Returns:</span>
@@ -7295,13 +7295,13 @@ AzureMLOrchestratorFlavor            (<a class="autorefs autorefs-internal" titl
         <span class="k">return</span> <span class="n">AzureMLOrchestratorConfig</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;AzureMLOrchestrator&quot;</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;AzureMLOrchestrator&quot;</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The implementation class.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.azure.orchestrators</span> <span class="kn">import</span> <span class="n">AzureMLOrchestrator</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.azure.orchestrators</span><span class="w"> </span><span class="kn">import</span> <span class="n">AzureMLOrchestrator</span>
 
         <span class="k">return</span> <span class="n">AzureMLOrchestrator</span>
 </code></pre></div>
@@ -7617,7 +7617,7 @@ AzureMLOrchestratorSettings            (<a class="autorefs autorefs-internal" ti
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/flavors/azureml_orchestrator_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AzureMLOrchestratorSettings</span><span class="p">(</span><span class="n">AzureMLComputeSettings</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AzureMLOrchestratorSettings</span><span class="p">(</span><span class="n">AzureMLComputeSettings</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Settings for the AzureML orchestrator.&quot;&quot;&quot;</span>
 
     <span class="n">synchronous</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
@@ -7765,7 +7765,7 @@ to allow apps to access secure resources.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/flavors/azureml_step_operator_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AzureMLStepOperatorConfig</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AzureMLStepOperatorConfig</span><span class="p">(</span>
     <span class="n">BaseStepOperatorConfig</span><span class="p">,</span> <span class="n">AzureMLStepOperatorSettings</span>
 <span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Config for the AzureML step operator.</span>
@@ -7798,7 +7798,7 @@ to allow apps to access secure resources.</p></td>
     <span class="n">service_principal_password</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">SecretField</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">is_remote</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_remote</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if this stack component is running remotely.</span>
 
 <span class="sd">        This designation is used to determine if the stack component can be</span>
@@ -7910,11 +7910,11 @@ AzureMLStepOperatorFlavor            (<a class="autorefs autorefs-internal" titl
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/flavors/azureml_step_operator_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AzureMLStepOperatorFlavor</span><span class="p">(</span><span class="n">BaseStepOperatorFlavor</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AzureMLStepOperatorFlavor</span><span class="p">(</span><span class="n">BaseStepOperatorFlavor</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Flavor for the AzureML step operator.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -7923,7 +7923,7 @@ AzureMLStepOperatorFlavor            (<a class="autorefs autorefs-internal" titl
         <span class="k">return</span> <span class="n">AZUREML_STEP_OPERATOR_FLAVOR</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">service_connector_requirements</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">service_connector_requirements</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ServiceConnectorRequirements</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Service connector resource requirements for service connectors.</span>
@@ -7938,7 +7938,7 @@ AzureMLStepOperatorFlavor            (<a class="autorefs autorefs-internal" titl
         <span class="k">return</span> <span class="n">ServiceConnectorRequirements</span><span class="p">(</span><span class="n">resource_type</span><span class="o">=</span><span class="n">AZURE_RESOURCE_TYPE</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -7947,7 +7947,7 @@ AzureMLStepOperatorFlavor            (<a class="autorefs autorefs-internal" titl
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at SDK docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -7956,7 +7956,7 @@ AzureMLStepOperatorFlavor            (<a class="autorefs autorefs-internal" titl
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_sdk_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to represent the flavor in the dashboard.</span>
 
 <span class="sd">        Returns:</span>
@@ -7965,7 +7965,7 @@ AzureMLStepOperatorFlavor            (<a class="autorefs autorefs-internal" titl
         <span class="k">return</span> <span class="s2">&quot;https://public-flavor-logos.s3.eu-central-1.amazonaws.com/step_operator/azureml.png&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">AzureMLStepOperatorConfig</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">AzureMLStepOperatorConfig</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns AzureMLStepOperatorConfig config class.</span>
 
 <span class="sd">        Returns:</span>
@@ -7974,13 +7974,13 @@ AzureMLStepOperatorFlavor            (<a class="autorefs autorefs-internal" titl
         <span class="k">return</span> <span class="n">AzureMLStepOperatorConfig</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;AzureMLStepOperator&quot;</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;AzureMLStepOperator&quot;</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The implementation class.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.azure.step_operators</span> <span class="kn">import</span> <span class="n">AzureMLStepOperator</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.azure.step_operators</span><span class="w"> </span><span class="kn">import</span> <span class="n">AzureMLStepOperator</span>
 
         <span class="k">return</span> <span class="n">AzureMLStepOperator</span>
 </code></pre></div>
@@ -8314,7 +8314,7 @@ Deprecated in favor of <code>compute_name</code>.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/flavors/azureml_step_operator_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AzureMLStepOperatorSettings</span><span class="p">(</span><span class="n">AzureMLComputeSettings</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AzureMLStepOperatorSettings</span><span class="p">(</span><span class="n">AzureMLComputeSettings</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Settings for the AzureML step operator.</span>
 
 <span class="sd">    Attributes:</span>
@@ -8331,7 +8331,7 @@ Deprecated in favor of <code>compute_name</code>.</p></td>
     <span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;before&quot;</span><span class="p">)</span>
     <span class="nd">@classmethod</span>
     <span class="nd">@before_validator_handler</span>
-    <span class="k">def</span> <span class="nf">_migrate_compute_name</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_migrate_compute_name</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Backward compatibility for compute_target_name.</span>
 
 <span class="sd">        Args:</span>
@@ -8489,11 +8489,11 @@ AzureMLOrchestrator            (<a class="autorefs autorefs-internal" title="zen
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/orchestrators/azureml_orchestrator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AzureMLOrchestrator</span><span class="p">(</span><span class="n">ContainerizedOrchestrator</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AzureMLOrchestrator</span><span class="p">(</span><span class="n">ContainerizedOrchestrator</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Orchestrator responsible for running pipelines on AzureML.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AzureMLOrchestratorConfig</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AzureMLOrchestratorConfig</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the `AzureMLOrchestratorConfig` config.</span>
 
 <span class="sd">        Returns:</span>
@@ -8502,7 +8502,7 @@ AzureMLOrchestrator            (<a class="autorefs autorefs-internal" title="zen
         <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">AzureMLOrchestratorConfig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">settings_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseSettings&quot;</span><span class="p">]]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">settings_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseSettings&quot;</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Settings class for the AzureML orchestrator.</span>
 
 <span class="sd">        Returns:</span>
@@ -8511,7 +8511,7 @@ AzureMLOrchestrator            (<a class="autorefs autorefs-internal" title="zen
         <span class="k">return</span> <span class="n">AzureMLOrchestratorSettings</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">validator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">StackValidator</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">validator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">StackValidator</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Validates the stack.</span>
 
 <span class="sd">        In the remote case, checks that the stack contains a container registry,</span>
@@ -8521,7 +8521,7 @@ AzureMLOrchestrator            (<a class="autorefs autorefs-internal" title="zen
 <span class="sd">            A `StackValidator` instance.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="k">def</span> <span class="nf">_validate_remote_components</span><span class="p">(</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">_validate_remote_components</span><span class="p">(</span>
             <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
         <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
             <span class="k">for</span> <span class="n">component</span> <span class="ow">in</span> <span class="n">stack</span><span class="o">.</span><span class="n">components</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
@@ -8547,7 +8547,7 @@ AzureMLOrchestrator            (<a class="autorefs autorefs-internal" title="zen
             <span class="n">custom_validation_function</span><span class="o">=</span><span class="n">_validate_remote_components</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_orchestrator_run_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_orchestrator_run_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the run id of the active orchestrator run.</span>
 
 <span class="sd">        Important: This needs to be a unique ID and return the same value for</span>
@@ -8568,7 +8568,7 @@ AzureMLOrchestrator            (<a class="autorefs autorefs-internal" title="zen
             <span class="p">)</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">_create_command_component</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_create_command_component</span><span class="p">(</span>
         <span class="n">step</span><span class="p">:</span> <span class="n">Step</span><span class="p">,</span>
         <span class="n">step_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">env_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -8610,7 +8610,7 @@ AzureMLOrchestrator            (<a class="autorefs autorefs-internal" title="zen
             <span class="n">command</span><span class="o">=</span><span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">command</span> <span class="o">+</span> <span class="n">arguments</span><span class="p">),</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">prepare_or_run_pipeline</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">prepare_or_run_pipeline</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeploymentResponse&quot;</span><span class="p">,</span>
         <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
@@ -8689,7 +8689,7 @@ AzureMLOrchestrator            (<a class="autorefs autorefs-internal" title="zen
             <span class="n">pipeline_args</span><span class="p">[</span><span class="s2">&quot;compute&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">compute_target</span>
 
         <span class="nd">@pipeline</span><span class="p">(</span><span class="n">force_rerun</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">pipeline_args</span><span class="p">)</span>  <span class="c1"># type: ignore[call-overload, misc]</span>
-        <span class="k">def</span> <span class="nf">azureml_pipeline</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">azureml_pipeline</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">            </span><span class="sd">&quot;&quot;&quot;Create an AzureML pipeline.&quot;&quot;&quot;</span>
             <span class="c1"># Here we have to track the inputs and outputs so that we can bind</span>
             <span class="c1"># the components to each other to execute them in a specific order.</span>
@@ -8815,7 +8815,7 @@ AzureMLOrchestrator            (<a class="autorefs autorefs-internal" title="zen
                 <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Waiting for pipeline to finish...&quot;</span><span class="p">)</span>
                 <span class="n">ml_client</span><span class="o">.</span><span class="n">jobs</span><span class="o">.</span><span class="n">stream</span><span class="p">(</span><span class="n">job</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_pipeline_run_metadata</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_pipeline_run_metadata</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">run_id</span><span class="p">:</span> <span class="n">UUID</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;MetadataType&quot;</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get general component-specific metadata for a pipeline run.</span>
@@ -8852,7 +8852,7 @@ AzureMLOrchestrator            (<a class="autorefs autorefs-internal" title="zen
             <span class="p">)</span>
             <span class="k">return</span> <span class="p">{}</span>
 
-    <span class="k">def</span> <span class="nf">fetch_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run</span><span class="p">:</span> <span class="s2">&quot;PipelineRunResponse&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ExecutionStatus</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">fetch_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run</span><span class="p">:</span> <span class="s2">&quot;PipelineRunResponse&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ExecutionStatus</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Refreshes the status of a specific pipeline run.</span>
 
 <span class="sd">        Args:</span>
@@ -8928,7 +8928,7 @@ AzureMLOrchestrator            (<a class="autorefs autorefs-internal" title="zen
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Unknown status for the pipeline job.&quot;</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">compute_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">MetadataType</span><span class="p">]]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">compute_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">MetadataType</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate run metadata based on the generated AzureML PipelineJob.</span>
 
 <span class="sd">        Args:</span>
@@ -8951,7 +8951,7 @@ AzureMLOrchestrator            (<a class="autorefs autorefs-internal" title="zen
         <span class="k">yield</span> <span class="n">metadata</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">_compute_orchestrator_url</span><span class="p">(</span><span class="n">job</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_compute_orchestrator_url</span><span class="p">(</span><span class="n">job</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate the Orchestrator Dashboard URL upon pipeline execution.</span>
 
 <span class="sd">        Args:</span>
@@ -8973,7 +8973,7 @@ AzureMLOrchestrator            (<a class="autorefs autorefs-internal" title="zen
             <span class="k">return</span> <span class="kc">None</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">_compute_orchestrator_run_id</span><span class="p">(</span><span class="n">job</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_compute_orchestrator_run_id</span><span class="p">(</span><span class="n">job</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate the Orchestrator Dashboard URL upon pipeline execution.</span>
 
 <span class="sd">        Args:</span>
@@ -9174,7 +9174,7 @@ image builder and only remote components.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/orchestrators/azureml_orchestrator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">compute_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">MetadataType</span><span class="p">]]:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">compute_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">job</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">MetadataType</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Generate run metadata based on the generated AzureML PipelineJob.</span>
 
 <span class="sd">    Args:</span>
@@ -9273,7 +9273,7 @@ the orchestrator run ID.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/orchestrators/azureml_orchestrator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">fetch_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run</span><span class="p">:</span> <span class="s2">&quot;PipelineRunResponse&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ExecutionStatus</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">fetch_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run</span><span class="p">:</span> <span class="s2">&quot;PipelineRunResponse&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ExecutionStatus</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Refreshes the status of a specific pipeline run.</span>
 
 <span class="sd">    Args:</span>
@@ -9404,7 +9404,7 @@ all steps of a pipeline run.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/orchestrators/azureml_orchestrator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_orchestrator_run_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_orchestrator_run_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the run id of the active orchestrator run.</span>
 
 <span class="sd">    Important: This needs to be a unique ID and return the same value for</span>
@@ -9481,7 +9481,7 @@ all steps of a pipeline run.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/orchestrators/azureml_orchestrator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_pipeline_run_metadata</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_pipeline_run_metadata</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">run_id</span><span class="p">:</span> <span class="n">UUID</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;MetadataType&quot;</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get general component-specific metadata for a pipeline run.</span>
@@ -9603,7 +9603,7 @@ environment.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/orchestrators/azureml_orchestrator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">prepare_or_run_pipeline</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">prepare_or_run_pipeline</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeploymentResponse&quot;</span><span class="p">,</span>
     <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
@@ -9682,7 +9682,7 @@ environment.</p></td>
         <span class="n">pipeline_args</span><span class="p">[</span><span class="s2">&quot;compute&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">compute_target</span>
 
     <span class="nd">@pipeline</span><span class="p">(</span><span class="n">force_rerun</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">pipeline_args</span><span class="p">)</span>  <span class="c1"># type: ignore[call-overload, misc]</span>
-    <span class="k">def</span> <span class="nf">azureml_pipeline</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">azureml_pipeline</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Create an AzureML pipeline.&quot;&quot;&quot;</span>
         <span class="c1"># Here we have to track the inputs and outputs so that we can bind</span>
         <span class="c1"># the components to each other to execute them in a specific order.</span>
@@ -9883,11 +9883,11 @@ AzureMLEntrypointConfiguration            (<a class="autorefs autorefs-internal"
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/orchestrators/azureml_orchestrator_entrypoint_config.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AzureMLEntrypointConfiguration</span><span class="p">(</span><span class="n">StepEntrypointConfiguration</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AzureMLEntrypointConfiguration</span><span class="p">(</span><span class="n">StepEntrypointConfiguration</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Entrypoint configuration for ZenML AzureML pipeline steps.&quot;&quot;&quot;</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">get_entrypoint_options</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_entrypoint_options</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets all options required for running with this configuration.</span>
 
 <span class="sd">        Returns:</span>
@@ -9897,7 +9897,7 @@ AzureMLEntrypointConfiguration            (<a class="autorefs autorefs-internal"
         <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">get_entrypoint_options</span><span class="p">()</span> <span class="o">|</span> <span class="p">{</span><span class="n">ZENML_ENV_VARIABLES</span><span class="p">}</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">get_entrypoint_arguments</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_entrypoint_arguments</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets all arguments that the entrypoint command should be called with.</span>
 
 <span class="sd">        Args:</span>
@@ -9912,14 +9912,14 @@ AzureMLEntrypointConfiguration            (<a class="autorefs autorefs-internal"
             <span class="n">kwargs</span><span class="p">[</span><span class="n">ZENML_ENV_VARIABLES</span><span class="p">],</span>
         <span class="p">]</span>
 
-    <span class="k">def</span> <span class="nf">_set_env_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_set_env_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Sets the environmental variables before executing the step.&quot;&quot;&quot;</span>
         <span class="n">env_variables</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span>
             <span class="n">b64_decode</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">entrypoint_args</span><span class="p">[</span><span class="n">ZENML_ENV_VARIABLES</span><span class="p">])</span>
         <span class="p">)</span>
         <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">env_variables</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Runs the step.&quot;&quot;&quot;</span>
         <span class="c1"># Set the environmental variables first</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_set_env_variables</span><span class="p">()</span>
@@ -10012,7 +10012,7 @@ variables.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/orchestrators/azureml_orchestrator_entrypoint_config.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">get_entrypoint_arguments</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_entrypoint_arguments</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets all arguments that the entrypoint command should be called with.</span>
 
 <span class="sd">    Args:</span>
@@ -10070,7 +10070,7 @@ environmental variables.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/orchestrators/azureml_orchestrator_entrypoint_config.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">get_entrypoint_options</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_entrypoint_options</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets all options required for running with this configuration.</span>
 
 <span class="sd">    Returns:</span>
@@ -10102,7 +10102,7 @@ environmental variables.</p></td>
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/orchestrators/azureml_orchestrator_entrypoint_config.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Runs the step.&quot;&quot;&quot;</span>
     <span class="c1"># Set the environmental variables first</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_set_env_variables</span><span class="p">()</span>
@@ -10245,7 +10245,7 @@ AzureAccessToken            (<a class="autorefs autorefs-internal" title="zenml.
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/service_connectors/azure_service_connector.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AzureAccessToken</span><span class="p">(</span><span class="n">AuthenticationConfig</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AzureAccessToken</span><span class="p">(</span><span class="n">AuthenticationConfig</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Azure access token credentials.&quot;&quot;&quot;</span>
 
     <span class="n">token</span><span class="p">:</span> <span class="n">PlainSerializedSecretStr</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
@@ -10311,7 +10311,7 @@ AzureAccessTokenConfig            (<a class="autorefs autorefs-internal" title="
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/service_connectors/azure_service_connector.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AzureAccessTokenConfig</span><span class="p">(</span><span class="n">AzureBaseConfig</span><span class="p">,</span> <span class="n">AzureAccessToken</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AzureAccessTokenConfig</span><span class="p">(</span><span class="n">AzureBaseConfig</span><span class="p">,</span> <span class="n">AzureAccessToken</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Azure token configuration.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
@@ -10372,7 +10372,7 @@ AzureAuthenticationMethods            (<a class="autorefs autorefs-internal" tit
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/service_connectors/azure_service_connector.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AzureAuthenticationMethods</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AzureAuthenticationMethods</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Azure Authentication methods.&quot;&quot;&quot;</span>
 
     <span class="n">IMPLICIT</span> <span class="o">=</span> <span class="s2">&quot;implicit&quot;</span>
@@ -10426,7 +10426,7 @@ AzureBaseConfig            (<a class="autorefs autorefs-internal" title="zenml.s
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/service_connectors/azure_service_connector.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AzureBaseConfig</span><span class="p">(</span><span class="n">AuthenticationConfig</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AzureBaseConfig</span><span class="p">(</span><span class="n">AuthenticationConfig</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Azure base configuration.&quot;&quot;&quot;</span>
 
     <span class="n">subscription_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UUID</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
@@ -10518,7 +10518,7 @@ AzureClientConfig            (<a class="autorefs autorefs-internal" title="zenml
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/service_connectors/azure_service_connector.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AzureClientConfig</span><span class="p">(</span><span class="n">AzureBaseConfig</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AzureClientConfig</span><span class="p">(</span><span class="n">AzureBaseConfig</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Azure client configuration.&quot;&quot;&quot;</span>
 
     <span class="n">client_id</span><span class="p">:</span> <span class="n">UUID</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
@@ -10589,7 +10589,7 @@ AzureClientSecret            (<a class="autorefs autorefs-internal" title="zenml
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/service_connectors/azure_service_connector.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AzureClientSecret</span><span class="p">(</span><span class="n">AuthenticationConfig</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AzureClientSecret</span><span class="p">(</span><span class="n">AuthenticationConfig</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Azure client secret credentials.&quot;&quot;&quot;</span>
 
     <span class="n">client_secret</span><span class="p">:</span> <span class="n">PlainSerializedSecretStr</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
@@ -10655,7 +10655,7 @@ AzureServiceConnector            (<a class="autorefs autorefs-internal" title="z
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/service_connectors/azure_service_connector.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AzureServiceConnector</span><span class="p">(</span><span class="n">ServiceConnector</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AzureServiceConnector</span><span class="p">(</span><span class="n">ServiceConnector</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Azure service connector.&quot;&quot;&quot;</span>
 
     <span class="n">config</span><span class="p">:</span> <span class="n">AzureBaseConfig</span>
@@ -10669,7 +10669,7 @@ AzureServiceConnector            (<a class="autorefs autorefs-internal" title="z
     <span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">_get_connector_type</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ServiceConnectorTypeModel</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_connector_type</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ServiceConnectorTypeModel</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the service connector type specification.</span>
 
 <span class="sd">        Returns:</span>
@@ -10678,7 +10678,7 @@ AzureServiceConnector            (<a class="autorefs autorefs-internal" title="z
         <span class="k">return</span> <span class="n">AZURE_SERVICE_CONNECTOR_TYPE_SPEC</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">subscription</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">subscription</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the Azure subscription ID and name.</span>
 
 <span class="sd">        Returns:</span>
@@ -10721,14 +10721,14 @@ AzureServiceConnector            (<a class="autorefs autorefs-internal" title="z
             <span class="k">except</span> <span class="n">AzureError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">AuthorizationException</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">&quot;failed to fetch the Azure subscription: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
-                <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+                <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
         <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_subscription_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
         <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_subscription_name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_subscription_id</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_subscription_name</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">tenant_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">tenant_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the Azure tenant ID.</span>
 
 <span class="sd">        Returns:</span>
@@ -10774,11 +10774,11 @@ AzureServiceConnector            (<a class="autorefs autorefs-internal" title="z
             <span class="k">except</span> <span class="n">AzureError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">AuthorizationException</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">&quot;failed to fetch the Azure tenant: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
-                <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+                <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
         <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tenant_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tenant_id</span>
 
-    <span class="k">def</span> <span class="nf">get_azure_credential</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_azure_credential</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">auth_method</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">resource_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -10824,7 +10824,7 @@ AzureServiceConnector            (<a class="autorefs autorefs-internal" title="z
         <span class="bp">self</span><span class="o">.</span><span class="n">_session_cache</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">expires_at</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">session</span><span class="p">,</span> <span class="n">expires_at</span>
 
-    <span class="k">def</span> <span class="nf">_authenticate</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_authenticate</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">auth_method</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">resource_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -10896,7 +10896,7 @@ AzureServiceConnector            (<a class="autorefs autorefs-internal" title="z
             <span class="s2">&quot;the Azure connector.&quot;</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_parse_blob_container_resource_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">resource_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_parse_blob_container_resource_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">resource_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate and convert an Azure blob resource ID to a container name.</span>
 
 <span class="sd">        The resource ID could mean different things:</span>
@@ -10940,7 +10940,7 @@ AzureServiceConnector            (<a class="autorefs autorefs-internal" title="z
 
         <span class="k">return</span> <span class="n">container_name</span>
 
-    <span class="k">def</span> <span class="nf">_parse_acr_resource_id</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_parse_acr_resource_id</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">resource_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
@@ -10986,7 +10986,7 @@ AzureServiceConnector            (<a class="autorefs autorefs-internal" title="z
 
         <span class="k">return</span> <span class="n">registry_name</span>
 
-    <span class="k">def</span> <span class="nf">_parse_aks_resource_id</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_parse_aks_resource_id</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">resource_id</span><span class="p">:</span> <span class="nb">str</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate and convert an AKS resource ID to an AKS cluster name.</span>
@@ -11044,7 +11044,7 @@ AzureServiceConnector            (<a class="autorefs autorefs-internal" title="z
 
         <span class="k">return</span> <span class="n">resource_group</span><span class="p">,</span> <span class="n">cluster_name</span>
 
-    <span class="k">def</span> <span class="nf">_canonical_resource_id</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_canonical_resource_id</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">resource_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">resource_id</span><span class="p">:</span> <span class="nb">str</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert a resource ID to its canonical form.</span>
@@ -11076,7 +11076,7 @@ AzureServiceConnector            (<a class="autorefs autorefs-internal" title="z
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">resource_id</span>
 
-    <span class="k">def</span> <span class="nf">_get_default_resource_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">resource_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_default_resource_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">resource_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the default resource ID for a resource type.</span>
 
 <span class="sd">        Args:</span>
@@ -11100,7 +11100,7 @@ AzureServiceConnector            (<a class="autorefs autorefs-internal" title="z
             <span class="sa">f</span><span class="s2">&quot;Default resource ID for &#39;</span><span class="si">{</span><span class="n">resource_type</span><span class="si">}</span><span class="s2">&#39; not available.&quot;</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_connect_to_resource</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_connect_to_resource</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
@@ -11175,7 +11175,7 @@ AzureServiceConnector            (<a class="autorefs autorefs-internal" title="z
             <span class="s2">&quot;instance for the resource.&quot;</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_configure_local_client</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_configure_local_client</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -11224,7 +11224,7 @@ AzureServiceConnector            (<a class="autorefs autorefs-internal" title="z
                     <span class="k">raise</span> <span class="n">AuthorizationException</span><span class="p">(</span>
                         <span class="sa">f</span><span class="s2">&quot;Failed to update the local Azure CLI with the &quot;</span>
                         <span class="sa">f</span><span class="s2">&quot;connector service principal credentials: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
-                    <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+                    <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
                 <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
                     <span class="s2">&quot;Updated the local Azure CLI configuration with the &quot;</span>
@@ -11248,7 +11248,7 @@ AzureServiceConnector            (<a class="autorefs autorefs-internal" title="z
         <span class="p">)</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">_auto_configure</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_auto_configure</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span>
         <span class="n">auth_method</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">resource_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -11357,7 +11357,7 @@ AzureServiceConnector            (<a class="autorefs autorefs-internal" title="z
         <span class="p">)</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">_get_resource_group</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">resource_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_resource_group</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">resource_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the resource group of an Azure resource.</span>
 
 <span class="sd">        Args:</span>
@@ -11369,7 +11369,7 @@ AzureServiceConnector            (<a class="autorefs autorefs-internal" title="z
         <span class="c1"># The resource group is the fourth component of the resource ID.</span>
         <span class="k">return</span> <span class="n">resource_id</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)[</span><span class="mi">4</span><span class="p">]</span>
 
-    <span class="k">def</span> <span class="nf">_list_blob_containers</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_list_blob_containers</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">credential</span><span class="p">:</span> <span class="n">TokenCredential</span><span class="p">,</span> <span class="n">container_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the list of blob storage containers that the connector can access.</span>
@@ -11412,7 +11412,7 @@ AzureServiceConnector            (<a class="autorefs autorefs-internal" title="z
                     <span class="sa">f</span><span class="s2">&quot;check that the credentials have permissions to list &quot;</span>
                     <span class="sa">f</span><span class="s2">&quot;storage accounts or consider configuring a storage &quot;</span>
                     <span class="sa">f</span><span class="s2">&quot;account in the connector: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
-                <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+                <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
             <span class="k">if</span> <span class="ow">not</span> <span class="n">accounts</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">AuthorizationException</span><span class="p">(</span>
@@ -11462,7 +11462,7 @@ AzureServiceConnector            (<a class="autorefs autorefs-internal" title="z
                     <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="n">storage_account</span><span class="si">}</span><span class="s2">&#39; storage account. Please check that &quot;</span>
                     <span class="sa">f</span><span class="s2">&quot;the credentials have permissions to list containers in &quot;</span>
                     <span class="sa">f</span><span class="s2">&quot;that storage account: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
-                <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+                <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
             <span class="k">if</span> <span class="n">container_name</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">container_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">account_containers</span><span class="p">:</span>
@@ -11505,7 +11505,7 @@ AzureServiceConnector            (<a class="autorefs autorefs-internal" title="z
 
         <span class="k">return</span> <span class="n">containers</span>
 
-    <span class="k">def</span> <span class="nf">_list_acr_registries</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_list_acr_registries</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">credential</span><span class="p">:</span> <span class="n">TokenCredential</span><span class="p">,</span> <span class="n">registry_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the list of ACR registries that the connector can access.</span>
@@ -11549,7 +11549,7 @@ AzureServiceConnector            (<a class="autorefs autorefs-internal" title="z
                     <span class="sa">f</span><span class="s2">&quot;Please check that the registry exists in that resource &quot;</span>
                     <span class="sa">f</span><span class="s2">&quot;group and that the connector credentials have &quot;</span>
                     <span class="sa">f</span><span class="s2">&quot;permissions to access that registry: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
-                <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+                <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="n">container_client</span> <span class="o">=</span> <span class="n">ContainerRegistryManagementClient</span><span class="p">(</span>
@@ -11561,7 +11561,7 @@ AzureServiceConnector            (<a class="autorefs autorefs-internal" title="z
                     <span class="s2">&quot;failed to list available Azure container registries. &quot;</span>
                     <span class="s2">&quot;Please check that the credentials have permissions to &quot;</span>
                     <span class="sa">f</span><span class="s2">&quot;list container registries: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
-                <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+                <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
             <span class="k">if</span> <span class="ow">not</span> <span class="n">registries</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">AuthorizationException</span><span class="p">(</span>
@@ -11621,7 +11621,7 @@ AzureServiceConnector            (<a class="autorefs autorefs-internal" title="z
 
         <span class="k">return</span> <span class="n">container_registries</span>
 
-    <span class="k">def</span> <span class="nf">_list_aks_clusters</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_list_aks_clusters</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">credential</span><span class="p">:</span> <span class="n">TokenCredential</span><span class="p">,</span>
         <span class="n">cluster_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -11668,7 +11668,7 @@ AzureServiceConnector            (<a class="autorefs autorefs-internal" title="z
                     <span class="sa">f</span><span class="s2">&quot;that the cluster exists in that resource group and that &quot;</span>
                     <span class="sa">f</span><span class="s2">&quot;the connector credentials have permissions to access &quot;</span>
                     <span class="sa">f</span><span class="s2">&quot;that cluster: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
-                <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+                <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="n">container_client</span> <span class="o">=</span> <span class="n">ContainerServiceClient</span><span class="p">(</span>
@@ -11680,7 +11680,7 @@ AzureServiceConnector            (<a class="autorefs autorefs-internal" title="z
                     <span class="sa">f</span><span class="s2">&quot;failed to list available Azure AKS clusters. Please &quot;</span>
                     <span class="sa">f</span><span class="s2">&quot;check that the credentials have permissions to list &quot;</span>
                     <span class="sa">f</span><span class="s2">&quot;AKS clusters: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
-                <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+                <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
             <span class="k">if</span> <span class="ow">not</span> <span class="n">aks_clusters</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">AuthorizationException</span><span class="p">(</span>
@@ -11748,7 +11748,7 @@ AzureServiceConnector            (<a class="autorefs autorefs-internal" title="z
 
         <span class="k">return</span> <span class="n">clusters</span>
 
-    <span class="k">def</span> <span class="nf">_verify</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_verify</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">resource_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">resource_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -11849,7 +11849,7 @@ AzureServiceConnector            (<a class="autorefs autorefs-internal" title="z
 
         <span class="k">return</span> <span class="p">[]</span>
 
-    <span class="k">def</span> <span class="nf">_get_connector_client</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_connector_client</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">resource_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">resource_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -11969,7 +11969,7 @@ AzureServiceConnector            (<a class="autorefs autorefs-internal" title="z
                         <span class="sa">f</span><span class="s2">&quot;Registry &#39;</span><span class="si">{</span><span class="n">registry_name</span><span class="si">}</span><span class="s2">&#39; in resource group &quot;</span>
                         <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="n">resource_group</span><span class="si">}</span><span class="s2">&#39;. Make sure the registry is &quot;</span>
                         <span class="sa">f</span><span class="s2">&quot;configured with an admin account: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
-                    <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+                    <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
             <span class="c1"># Create a client-side Docker connector instance with the temporary</span>
             <span class="c1"># Docker credentials</span>
@@ -12013,7 +12013,7 @@ AzureServiceConnector            (<a class="autorefs autorefs-internal" title="z
                     <span class="sa">f</span><span class="s2">&quot;failed to list credentials for Azure Kubernetes &quot;</span>
                     <span class="sa">f</span><span class="s2">&quot;Service cluster &#39;</span><span class="si">{</span><span class="n">cluster_name</span><span class="si">}</span><span class="s2">&#39; in resource group &quot;</span>
                     <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="n">resource_group</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
-                <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+                <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
             <span class="n">kubeconfig</span> <span class="o">=</span> <span class="n">yaml</span><span class="o">.</span><span class="n">safe_load</span><span class="p">(</span><span class="n">kubeconfig_yaml</span><span class="p">)</span>
 
@@ -12021,7 +12021,7 @@ AzureServiceConnector            (<a class="autorefs autorefs-internal" title="z
             <span class="c1"># Kubernetes credentials</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="c1"># Import libraries only when needed</span>
-                <span class="kn">from</span> <span class="nn">zenml.integrations.kubernetes.service_connectors.kubernetes_service_connector</span> <span class="kn">import</span> <span class="p">(</span>
+                <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.kubernetes.service_connectors.kubernetes_service_connector</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
                     <span class="n">KubernetesAuthenticationMethods</span><span class="p">,</span>
                     <span class="n">KubernetesServiceConnector</span><span class="p">,</span>
                     <span class="n">KubernetesTokenConfig</span><span class="p">,</span>
@@ -12254,7 +12254,7 @@ timestamp, if applicable.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/service_connectors/azure_service_connector.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_azure_credential</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_azure_credential</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">auth_method</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">resource_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -12349,7 +12349,7 @@ timestamp, if applicable.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/service_connectors/azure_service_connector.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">init_private_attributes</span><span class="p">(</span><span class="bp">self</span><span class="p">:</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">/</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">init_private_attributes</span><span class="p">(</span><span class="bp">self</span><span class="p">:</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">/</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;This function is meant to behave like a BaseModel method to initialise private attributes.</span>
 
 <span class="sd">    It takes context as an argument since that&#39;s what pydantic-core passes when calling it.</span>
@@ -12402,7 +12402,7 @@ AzureServicePrincipalConfig            (<a class="autorefs autorefs-internal" ti
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/service_connectors/azure_service_connector.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AzureServicePrincipalConfig</span><span class="p">(</span><span class="n">AzureClientConfig</span><span class="p">,</span> <span class="n">AzureClientSecret</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AzureServicePrincipalConfig</span><span class="p">(</span><span class="n">AzureClientConfig</span><span class="p">,</span> <span class="n">AzureClientSecret</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Azure service principal configuration.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
@@ -12466,7 +12466,7 @@ to Azure clients to authenticate requests.</p>
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/service_connectors/azure_service_connector.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ZenMLAzureTokenCredential</span><span class="p">(</span><span class="n">TokenCredential</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ZenMLAzureTokenCredential</span><span class="p">(</span><span class="n">TokenCredential</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;ZenML Azure token credential.</span>
 
 <span class="sd">    This class is used to provide a pre-configured token credential to Azure</span>
@@ -12474,7 +12474,7 @@ to Azure clients to authenticate requests.</p>
 <span class="sd">    to Azure clients to authenticate requests.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">expires_at</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">expires_at</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize ZenML Azure token credential.</span>
 
 <span class="sd">        Args:</span>
@@ -12491,7 +12491,7 @@ to Azure clients to authenticate requests.</p>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">expires_on</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">expires_at</span><span class="o">.</span><span class="n">timestamp</span><span class="p">())</span>
 
-    <span class="k">def</span> <span class="nf">get_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">scopes</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">scopes</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get token.</span>
 
 <span class="sd">        Args:</span>
@@ -12561,7 +12561,7 @@ to Azure clients to authenticate requests.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/service_connectors/azure_service_connector.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">expires_at</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">expires_at</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize ZenML Azure token credential.</span>
 
 <span class="sd">    Args:</span>
@@ -12641,7 +12641,7 @@ to Azure clients to authenticate requests.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/service_connectors/azure_service_connector.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">scopes</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">scopes</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get token.</span>
 
 <span class="sd">    Args:</span>
@@ -12771,7 +12771,7 @@ ZenML entrypoint command in it.</p>
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/step_operators/azureml_step_operator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AzureMLStepOperator</span><span class="p">(</span><span class="n">BaseStepOperator</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AzureMLStepOperator</span><span class="p">(</span><span class="n">BaseStepOperator</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Step operator to run a step on AzureML.</span>
 
 <span class="sd">    This class defines code that can set up an AzureML environment and run the</span>
@@ -12779,7 +12779,7 @@ ZenML entrypoint command in it.</p>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AzureMLStepOperatorConfig</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AzureMLStepOperatorConfig</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the `AzureMLStepOperatorConfig` config.</span>
 
 <span class="sd">        Returns:</span>
@@ -12788,7 +12788,7 @@ ZenML entrypoint command in it.</p>
         <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">AzureMLStepOperatorConfig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">settings_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseSettings&quot;</span><span class="p">]]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">settings_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseSettings&quot;</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Settings class for the AzureML step operator.</span>
 
 <span class="sd">        Returns:</span>
@@ -12797,7 +12797,7 @@ ZenML entrypoint command in it.</p>
         <span class="k">return</span> <span class="n">AzureMLStepOperatorSettings</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">validator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">StackValidator</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">validator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">StackValidator</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Validates the stack.</span>
 
 <span class="sd">        Returns:</span>
@@ -12805,7 +12805,7 @@ ZenML entrypoint command in it.</p>
 <span class="sd">            registry and a remote artifact store.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="k">def</span> <span class="nf">_validate_remote_components</span><span class="p">(</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">_validate_remote_components</span><span class="p">(</span>
             <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
         <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
             <span class="k">if</span> <span class="n">stack</span><span class="o">.</span><span class="n">artifact_store</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">is_local</span><span class="p">:</span>
@@ -12841,7 +12841,7 @@ ZenML entrypoint command in it.</p>
             <span class="n">custom_validation_function</span><span class="o">=</span><span class="n">_validate_remote_components</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_get_credentials</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TokenCredential</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_credentials</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TokenCredential</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the authentication object for the AzureML environment.</span>
 
 <span class="sd">        Returns:</span>
@@ -12865,7 +12865,7 @@ ZenML entrypoint command in it.</p>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">DefaultAzureCredential</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">get_docker_builds</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_docker_builds</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeploymentBase&quot;</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="s2">&quot;BuildConfiguration&quot;</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets the Docker builds required for the component.</span>
@@ -12888,7 +12888,7 @@ ZenML entrypoint command in it.</p>
 
         <span class="k">return</span> <span class="n">builds</span>
 
-    <span class="k">def</span> <span class="nf">launch</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">launch</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">info</span><span class="p">:</span> <span class="s2">&quot;StepRunInfo&quot;</span><span class="p">,</span>
         <span class="n">entrypoint_command</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
@@ -13112,7 +13112,7 @@ registry and a remote artifact store.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/step_operators/azureml_step_operator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_docker_builds</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_docker_builds</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeploymentBase&quot;</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="s2">&quot;BuildConfiguration&quot;</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets the Docker builds required for the component.</span>
@@ -13190,7 +13190,7 @@ environment.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/azure/step_operators/azureml_step_operator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">launch</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">launch</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">info</span><span class="p">:</span> <span class="s2">&quot;StepRunInfo&quot;</span><span class="p">,</span>
     <span class="n">entrypoint_command</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>

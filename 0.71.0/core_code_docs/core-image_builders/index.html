@@ -2585,11 +2585,11 @@ BaseImageBuilder            (<a class="autorefs autorefs-internal" title="zenml.
 
         <details class="quote">
           <summary>Source code in <code>zenml/image_builders/base_image_builder.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseImageBuilder</span><span class="p">(</span><span class="n">StackComponent</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">BaseImageBuilder</span><span class="p">(</span><span class="n">StackComponent</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for all ZenML image builders.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseImageBuilderConfig</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseImageBuilderConfig</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The stack component configuration.</span>
 
 <span class="sd">        Returns:</span>
@@ -2598,7 +2598,7 @@ BaseImageBuilder            (<a class="autorefs autorefs-internal" title="zenml.
         <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">BaseImageBuilderConfig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">build_context_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BuildContext&quot;</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">build_context_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BuildContext&quot;</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Build context class to use.</span>
 
 <span class="sd">        The default build context class creates a build context that works</span>
@@ -2608,13 +2608,13 @@ BaseImageBuilder            (<a class="autorefs autorefs-internal" title="zenml.
 <span class="sd">        Returns:</span>
 <span class="sd">            The build context class.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.image_builders</span> <span class="kn">import</span> <span class="n">BuildContext</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.image_builders</span><span class="w"> </span><span class="kn">import</span> <span class="n">BuildContext</span>
 
         <span class="k">return</span> <span class="n">BuildContext</span>
 
     <span class="nd">@property</span>
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">is_building_locally</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_building_locally</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Whether the image builder builds the images on the client machine.</span>
 
 <span class="sd">        Returns:</span>
@@ -2622,7 +2622,7 @@ BaseImageBuilder            (<a class="autorefs autorefs-internal" title="zenml.
 <span class="sd">        &quot;&quot;&quot;</span>
 
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">build</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">build</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">image_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">build_context</span><span class="p">:</span> <span class="s2">&quot;BuildContext&quot;</span><span class="p">,</span>
@@ -2645,7 +2645,7 @@ BaseImageBuilder            (<a class="autorefs autorefs-internal" title="zenml.
 <span class="sd">        &quot;&quot;&quot;</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">_upload_build_context</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_upload_build_context</span><span class="p">(</span>
         <span class="n">build_context</span><span class="p">:</span> <span class="s2">&quot;BuildContext&quot;</span><span class="p">,</span>
         <span class="n">parent_path_directory_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">archive_type</span><span class="p">:</span> <span class="n">ArchiveType</span> <span class="o">=</span> <span class="n">ArchiveType</span><span class="o">.</span><span class="n">TAR_GZ</span><span class="p">,</span>
@@ -2890,7 +2890,7 @@ registry.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/image_builders/base_image_builder.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
-<span class="k">def</span> <span class="nf">build</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">build</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">image_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">build_context</span><span class="p">:</span> <span class="s2">&quot;BuildContext&quot;</span><span class="p">,</span>
@@ -2948,7 +2948,7 @@ BaseImageBuilderConfig            (<a class="autorefs autorefs-internal" title="
 
         <details class="quote">
           <summary>Source code in <code>zenml/image_builders/base_image_builder.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseImageBuilderConfig</span><span class="p">(</span><span class="n">StackComponentConfig</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">BaseImageBuilderConfig</span><span class="p">(</span><span class="n">StackComponentConfig</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Base config for image builders.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
@@ -3010,11 +3010,11 @@ BaseImageBuilderFlavor            (<a class="autorefs autorefs-internal" title="
 
         <details class="quote">
           <summary>Source code in <code>zenml/image_builders/base_image_builder.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseImageBuilderFlavor</span><span class="p">(</span><span class="n">Flavor</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">BaseImageBuilderFlavor</span><span class="p">(</span><span class="n">Flavor</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for all ZenML image builder flavors.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StackComponentType</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StackComponentType</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the flavor type.</span>
 
 <span class="sd">        Returns:</span>
@@ -3023,7 +3023,7 @@ BaseImageBuilderFlavor            (<a class="autorefs autorefs-internal" title="
         <span class="k">return</span> <span class="n">StackComponentType</span><span class="o">.</span><span class="n">IMAGE_BUILDER</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseImageBuilderConfig</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseImageBuilderConfig</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Config class.</span>
 
 <span class="sd">        Returns:</span>
@@ -3032,7 +3032,7 @@ BaseImageBuilderFlavor            (<a class="autorefs autorefs-internal" title="
         <span class="k">return</span> <span class="n">BaseImageBuilderConfig</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseImageBuilder</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseImageBuilder</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class.</span>
 
 <span class="sd">        Returns:</span>
@@ -3237,14 +3237,14 @@ build a container image.</p>
 
         <details class="quote">
           <summary>Source code in <code>zenml/image_builders/build_context.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BuildContext</span><span class="p">(</span><span class="n">Archivable</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">BuildContext</span><span class="p">(</span><span class="n">Archivable</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Image build context.</span>
 
 <span class="sd">    This class is responsible for creating an archive of the files needed to</span>
 <span class="sd">    build a container image.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">root</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">dockerignore_file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -3262,7 +3262,7 @@ build a container image.</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">_dockerignore_file</span> <span class="o">=</span> <span class="n">dockerignore_file</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">dockerignore_file</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">dockerignore_file</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The dockerignore file to use.</span>
 
 <span class="sd">        Returns:</span>
@@ -3280,7 +3280,7 @@ build a container image.</p>
 
         <span class="k">return</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="nf">write_archive</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">write_archive</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">output_file</span><span class="p">:</span> <span class="n">IO</span><span class="p">[</span><span class="nb">bytes</span><span class="p">],</span>
         <span class="n">archive_type</span><span class="p">:</span> <span class="n">ArchiveType</span> <span class="o">=</span> <span class="n">ArchiveType</span><span class="o">.</span><span class="n">TAR_GZ</span><span class="p">,</span>
@@ -3310,7 +3310,7 @@ build a container image.</p>
                 <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_root</span><span class="p">,</span> <span class="s2">&quot;.dockerignore&quot;</span><span class="p">),</span>
             <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_files</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_files</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets all regular files that should be included in the archive.</span>
 
 <span class="sd">        Returns:</span>
@@ -3318,7 +3318,7 @@ build a container image.</p>
 <span class="sd">            in the archive.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_root</span><span class="p">:</span>
-            <span class="kn">from</span> <span class="nn">docker.utils</span> <span class="kn">import</span> <span class="n">build</span> <span class="k">as</span> <span class="n">docker_build_utils</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">docker.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">build</span> <span class="k">as</span> <span class="n">docker_build_utils</span>
 
             <span class="n">exclude_patterns</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_exclude_patterns</span><span class="p">()</span>
 
@@ -3335,7 +3335,7 @@ build a container image.</p>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="p">{}</span>
 
-    <span class="k">def</span> <span class="nf">_get_exclude_patterns</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_exclude_patterns</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets all exclude patterns from the dockerignore file.</span>
 
 <span class="sd">        Returns:</span>
@@ -3355,7 +3355,7 @@ build a container image.</p>
             <span class="k">return</span> <span class="p">[]</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">_parse_dockerignore</span><span class="p">(</span><span class="n">dockerignore_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_parse_dockerignore</span><span class="p">(</span><span class="n">dockerignore_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Parses a dockerignore file and returns a list of patterns to ignore.</span>
 
 <span class="sd">        Args:</span>
@@ -3481,7 +3481,7 @@ directory will be used instead if it exists.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/image_builders/build_context.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">root</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">dockerignore_file</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -3537,7 +3537,7 @@ in the archive.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/image_builders/build_context.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_files</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_files</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets all regular files that should be included in the archive.</span>
 
 <span class="sd">    Returns:</span>
@@ -3545,7 +3545,7 @@ in the archive.</p></td>
 <span class="sd">        in the archive.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_root</span><span class="p">:</span>
-        <span class="kn">from</span> <span class="nn">docker.utils</span> <span class="kn">import</span> <span class="n">build</span> <span class="k">as</span> <span class="n">docker_build_utils</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">docker.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">build</span> <span class="k">as</span> <span class="n">docker_build_utils</span>
 
         <span class="n">exclude_patterns</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_exclude_patterns</span><span class="p">()</span>
 
@@ -3610,7 +3610,7 @@ in the archive.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/image_builders/build_context.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">write_archive</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">write_archive</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">output_file</span><span class="p">:</span> <span class="n">IO</span><span class="p">[</span><span class="nb">bytes</span><span class="p">],</span>
     <span class="n">archive_type</span><span class="p">:</span> <span class="n">ArchiveType</span> <span class="o">=</span> <span class="n">ArchiveType</span><span class="o">.</span><span class="n">TAR_GZ</span><span class="p">,</span>
@@ -3713,11 +3713,11 @@ LocalImageBuilder            (<a class="autorefs autorefs-internal" title="zenml
 
         <details class="quote">
           <summary>Source code in <code>zenml/image_builders/local_image_builder.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">LocalImageBuilder</span><span class="p">(</span><span class="n">BaseImageBuilder</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">LocalImageBuilder</span><span class="p">(</span><span class="n">BaseImageBuilder</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Local image builder implementation.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LocalImageBuilderConfig</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">LocalImageBuilderConfig</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The stack component configuration.</span>
 
 <span class="sd">        Returns:</span>
@@ -3726,7 +3726,7 @@ LocalImageBuilder            (<a class="autorefs autorefs-internal" title="zenml
         <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">LocalImageBuilderConfig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">is_building_locally</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_building_locally</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Whether the image builder builds the images on the client machine.</span>
 
 <span class="sd">        Returns:</span>
@@ -3735,7 +3735,7 @@ LocalImageBuilder            (<a class="autorefs autorefs-internal" title="zenml
         <span class="k">return</span> <span class="kc">True</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">_check_prerequisites</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_check_prerequisites</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks that all prerequisites are installed.</span>
 
 <span class="sd">        Raises:</span>
@@ -3769,7 +3769,7 @@ LocalImageBuilder            (<a class="autorefs autorefs-internal" title="zenml
                 <span class="s2">&quot;`DOCKER_HOST` environment variable to that value.&quot;</span>
             <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">build</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">build</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">image_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">build_context</span><span class="p">:</span> <span class="s2">&quot;BuildContext&quot;</span><span class="p">,</span>
@@ -3971,7 +3971,7 @@ LocalImageBuilder            (<a class="autorefs autorefs-internal" title="zenml
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/image_builders/local_image_builder.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">build</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">image_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">build_context</span><span class="p">:</span> <span class="s2">&quot;BuildContext&quot;</span><span class="p">,</span>
@@ -4051,7 +4051,7 @@ LocalImageBuilderConfig            (<a class="autorefs autorefs-internal" title=
 
         <details class="quote">
           <summary>Source code in <code>zenml/image_builders/local_image_builder.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">LocalImageBuilderConfig</span><span class="p">(</span><span class="n">BaseImageBuilderConfig</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">LocalImageBuilderConfig</span><span class="p">(</span><span class="n">BaseImageBuilderConfig</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Local image builder configuration.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
@@ -4113,11 +4113,11 @@ LocalImageBuilderFlavor            (<a class="autorefs autorefs-internal" title=
 
         <details class="quote">
           <summary>Source code in <code>zenml/image_builders/local_image_builder.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">LocalImageBuilderFlavor</span><span class="p">(</span><span class="n">BaseImageBuilderFlavor</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">LocalImageBuilderFlavor</span><span class="p">(</span><span class="n">BaseImageBuilderFlavor</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Local image builder flavor.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The flavor name.</span>
 
 <span class="sd">        Returns:</span>
@@ -4126,7 +4126,7 @@ LocalImageBuilderFlavor            (<a class="autorefs autorefs-internal" title=
         <span class="k">return</span> <span class="s2">&quot;local&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -4135,7 +4135,7 @@ LocalImageBuilderFlavor            (<a class="autorefs autorefs-internal" title=
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -4144,7 +4144,7 @@ LocalImageBuilderFlavor            (<a class="autorefs autorefs-internal" title=
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_sdk_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to represent the flavor in the dashboard.</span>
 
 <span class="sd">        Returns:</span>
@@ -4153,7 +4153,7 @@ LocalImageBuilderFlavor            (<a class="autorefs autorefs-internal" title=
         <span class="k">return</span> <span class="s2">&quot;https://public-flavor-logos.s3.eu-central-1.amazonaws.com/image_builder/local.svg&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">LocalImageBuilderConfig</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">LocalImageBuilderConfig</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Config class.</span>
 
 <span class="sd">        Returns:</span>
@@ -4162,7 +4162,7 @@ LocalImageBuilderFlavor            (<a class="autorefs autorefs-internal" title=
         <span class="k">return</span> <span class="n">LocalImageBuilderConfig</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">LocalImageBuilder</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">LocalImageBuilder</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class.</span>
 
 <span class="sd">        Returns:</span>

@@ -2582,7 +2582,7 @@ GitHubIntegration            (<a class="autorefs autorefs-internal" title="zenml
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/github/__init__.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">GitHubIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">GitHubIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Definition of GitHub integration for ZenML.&quot;&quot;&quot;</span>
 
     <span class="n">NAME</span> <span class="o">=</span> <span class="n">GITHUB</span>
@@ -2590,13 +2590,13 @@ GitHubIntegration            (<a class="autorefs autorefs-internal" title="zenml
 
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">plugin_flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">BasePluginFlavor</span><span class="p">]]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">plugin_flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">BasePluginFlavor</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Declare the event flavors for the github integration.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            List of stack component flavors for this integration.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.github.plugins</span> <span class="kn">import</span> <span class="n">GithubWebhookEventSourceFlavor</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.github.plugins</span><span class="w"> </span><span class="kn">import</span> <span class="n">GithubWebhookEventSourceFlavor</span>
 
         <span class="k">return</span> <span class="p">[</span><span class="n">GithubWebhookEventSourceFlavor</span><span class="p">]</span>
 </code></pre></div>
@@ -2651,13 +2651,13 @@ GitHubIntegration            (<a class="autorefs autorefs-internal" title="zenml
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/github/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">plugin_flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">BasePluginFlavor</span><span class="p">]]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">plugin_flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">BasePluginFlavor</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Declare the event flavors for the github integration.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        List of stack component flavors for this integration.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.integrations.github.plugins</span> <span class="kn">import</span> <span class="n">GithubWebhookEventSourceFlavor</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.github.plugins</span><span class="w"> </span><span class="kn">import</span> <span class="n">GithubWebhookEventSourceFlavor</span>
 
     <span class="k">return</span> <span class="p">[</span><span class="n">GithubWebhookEventSourceFlavor</span><span class="p">]</span>
 </code></pre></div>
@@ -2758,11 +2758,11 @@ GitHubCodeRepository            (<a class="autorefs autorefs-internal" title="ze
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/github/code_repositories/github_code_repository.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">GitHubCodeRepository</span><span class="p">(</span><span class="n">BaseCodeRepository</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">GitHubCodeRepository</span><span class="p">(</span><span class="n">BaseCodeRepository</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;GitHub code repository.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GitHubCodeRepositoryConfig</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GitHubCodeRepositoryConfig</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the `GitHubCodeRepositoryConfig` config.</span>
 
 <span class="sd">        Returns:</span>
@@ -2771,7 +2771,7 @@ GitHubCodeRepository            (<a class="autorefs autorefs-internal" title="ze
         <span class="k">return</span> <span class="n">GitHubCodeRepositoryConfig</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">github_repo</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Repository</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">github_repo</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Repository</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The GitHub repository object from the GitHub API.</span>
 
 <span class="sd">        Returns:</span>
@@ -2790,7 +2790,7 @@ GitHubCodeRepository            (<a class="autorefs autorefs-internal" title="ze
             <span class="p">)</span>
         <span class="k">return</span> <span class="n">github_repository</span>
 
-    <span class="k">def</span> <span class="nf">check_github_repo_public</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">repo</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">check_github_repo_public</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">repo</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if a GitHub repository is public.</span>
 
 <span class="sd">        Args:</span>
@@ -2816,7 +2816,7 @@ GitHubCodeRepository            (<a class="autorefs autorefs-internal" title="ze
                 <span class="sa">f</span><span class="s2">&quot;An error occurred while checking if repository is public: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
             <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">login</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">login</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Logs in to GitHub using the token provided in the config.</span>
@@ -2836,7 +2836,7 @@ GitHubCodeRepository            (<a class="autorefs autorefs-internal" title="ze
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;An error occurred while logging in: </span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">download_files</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">download_files</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">commit</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">directory</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">repo_sub_directory</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Downloads files from a commit to a local directory.</span>
@@ -2872,7 +2872,7 @@ GitHubCodeRepository            (<a class="autorefs autorefs-internal" title="ze
                 <span class="k">except</span> <span class="p">(</span><span class="n">GithubException</span><span class="p">,</span> <span class="ne">IOError</span><span class="p">,</span> <span class="ne">AssertionError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                     <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Error processing </span><span class="si">%s</span><span class="s2">: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">content</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_local_context</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">LocalRepositoryContext</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_local_context</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">LocalRepositoryContext</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets the local repository context.</span>
 
 <span class="sd">        Args:</span>
@@ -2887,7 +2887,7 @@ GitHubCodeRepository            (<a class="autorefs autorefs-internal" title="ze
             <span class="n">remote_url_validation_callback</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">check_remote_url</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">check_remote_url</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">check_remote_url</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks whether the remote url matches the code repository.</span>
 
 <span class="sd">        Args:</span>
@@ -3069,7 +3069,7 @@ GitHubCodeRepository            (<a class="autorefs autorefs-internal" title="ze
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/github/code_repositories/github_code_repository.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">check_github_repo_public</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">repo</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">check_github_repo_public</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">repo</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks if a GitHub repository is public.</span>
 
 <span class="sd">    Args:</span>
@@ -3152,7 +3152,7 @@ GitHubCodeRepository            (<a class="autorefs autorefs-internal" title="ze
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/github/code_repositories/github_code_repository.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">check_remote_url</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">check_remote_url</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks whether the remote url matches the code repository.</span>
 
 <span class="sd">    Args:</span>
@@ -3242,7 +3242,7 @@ GitHubCodeRepository            (<a class="autorefs autorefs-internal" title="ze
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/github/code_repositories/github_code_repository.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">download_files</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">download_files</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">commit</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">directory</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">repo_sub_directory</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Downloads files from a commit to a local directory.</span>
@@ -3335,7 +3335,7 @@ GitHubCodeRepository            (<a class="autorefs autorefs-internal" title="ze
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/github/code_repositories/github_code_repository.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_local_context</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">LocalRepositoryContext</span><span class="p">]:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_local_context</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">LocalRepositoryContext</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets the local repository context.</span>
 
 <span class="sd">    Args:</span>
@@ -3388,7 +3388,7 @@ GitHubCodeRepository            (<a class="autorefs autorefs-internal" title="ze
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/github/code_repositories/github_code_repository.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">login</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">login</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Logs in to GitHub using the token provided in the config.</span>
@@ -3487,7 +3487,7 @@ GitHubCodeRepositoryConfig            (<a class="autorefs autorefs-internal" tit
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/github/code_repositories/github_code_repository.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">GitHubCodeRepositoryConfig</span><span class="p">(</span><span class="n">BaseCodeRepositoryConfig</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">GitHubCodeRepositoryConfig</span><span class="p">(</span><span class="n">BaseCodeRepositoryConfig</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Config for GitHub code repositories.</span>
 
 <span class="sd">    Args:</span>
@@ -3671,7 +3671,7 @@ Commit            (<span title="pydantic.main.BaseModel">BaseModel</span>)
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/github/plugins/event_sources/github_webhook_event_source.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">Commit</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Commit</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Github Event.&quot;&quot;&quot;</span>
 
     <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span>
@@ -3737,7 +3737,7 @@ GithubEvent            (<a class="autorefs autorefs-internal" title="zenml.event
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/github/plugins/event_sources/github_webhook_event_source.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">GithubEvent</span><span class="p">(</span><span class="n">BaseEvent</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">GithubEvent</span><span class="p">(</span><span class="n">BaseEvent</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Push Event from Github.&quot;&quot;&quot;</span>
 
     <span class="n">ref</span><span class="p">:</span> <span class="nb">str</span>
@@ -3751,7 +3751,7 @@ GithubEvent            (<a class="autorefs autorefs-internal" title="zenml.event
     <span class="n">model_config</span> <span class="o">=</span> <span class="n">ConfigDict</span><span class="p">(</span><span class="n">extra</span><span class="o">=</span><span class="s2">&quot;allow&quot;</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">branch</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">branch</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The branch the event happened on.</span>
 
 <span class="sd">        Returns:</span>
@@ -3762,7 +3762,7 @@ GithubEvent            (<a class="autorefs autorefs-internal" title="zenml.event
         <span class="k">return</span> <span class="kc">None</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">event_type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">GithubEventType</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">event_type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">GithubEventType</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The type of github event.</span>
 
 <span class="sd">        Args:</span>
@@ -3914,7 +3914,7 @@ GithubEventType            (<a class="autorefs autorefs-internal" title="zenml.u
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/github/plugins/event_sources/github_webhook_event_source.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">GithubEventType</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">GithubEventType</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Collection of all possible Github Events.&quot;&quot;&quot;</span>
 
     <span class="n">PUSH_EVENT</span> <span class="o">=</span> <span class="s2">&quot;push_event&quot;</span>
@@ -3968,14 +3968,14 @@ GithubWebhookEventFilterConfiguration            (<a class="autorefs autorefs-in
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/github/plugins/event_sources/github_webhook_event_source.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">GithubWebhookEventFilterConfiguration</span><span class="p">(</span><span class="n">WebhookEventFilterConfig</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">GithubWebhookEventFilterConfiguration</span><span class="p">(</span><span class="n">WebhookEventFilterConfig</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Configuration for github event filters.&quot;&quot;&quot;</span>
 
     <span class="n">repo</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">branch</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">event_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">GithubEventType</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="nf">event_matches_filter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">BaseEvent</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">event_matches_filter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">BaseEvent</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks the filter against the inbound event.</span>
 
 <span class="sd">        Args:</span>
@@ -4076,7 +4076,7 @@ GithubWebhookEventFilterConfiguration            (<a class="autorefs autorefs-in
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/github/plugins/event_sources/github_webhook_event_source.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">event_matches_filter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">BaseEvent</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">event_matches_filter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">BaseEvent</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks the filter against the inbound event.</span>
 
 <span class="sd">    Args:</span>
@@ -4134,7 +4134,7 @@ GithubWebhookEventSourceConfiguration            (<a class="autorefs autorefs-in
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/github/plugins/event_sources/github_webhook_event_source.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">GithubWebhookEventSourceConfiguration</span><span class="p">(</span><span class="n">WebhookEventSourceConfig</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">GithubWebhookEventSourceConfiguration</span><span class="p">(</span><span class="n">WebhookEventSourceConfig</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Configuration for github source filters.&quot;&quot;&quot;</span>
 
     <span class="n">webhook_secret</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
@@ -4207,11 +4207,11 @@ GithubWebhookEventSourceHandler            (<a class="autorefs autorefs-internal
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/github/plugins/event_sources/github_webhook_event_source.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">GithubWebhookEventSourceHandler</span><span class="p">(</span><span class="n">BaseWebhookEventSourceHandler</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">GithubWebhookEventSourceHandler</span><span class="p">(</span><span class="n">BaseWebhookEventSourceHandler</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Handler for all github events.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">GithubWebhookEventSourceConfiguration</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">GithubWebhookEventSourceConfiguration</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the webhook event source configuration class.</span>
 
 <span class="sd">        Returns:</span>
@@ -4220,7 +4220,7 @@ GithubWebhookEventSourceHandler            (<a class="autorefs autorefs-internal
         <span class="k">return</span> <span class="n">GithubWebhookEventSourceConfiguration</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">filter_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">GithubWebhookEventFilterConfiguration</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">filter_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">GithubWebhookEventFilterConfiguration</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the webhook event filter configuration class.</span>
 
 <span class="sd">        Returns:</span>
@@ -4229,19 +4229,19 @@ GithubWebhookEventSourceHandler            (<a class="autorefs autorefs-internal
         <span class="k">return</span> <span class="n">GithubWebhookEventFilterConfiguration</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">flavor_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseWebhookEventSourceFlavor</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">flavor_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseWebhookEventSourceFlavor</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the flavor class of the plugin.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The flavor class of the plugin.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.github.plugins.github_webhook_event_source_flavor</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.github.plugins.github_webhook_event_source_flavor</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">GithubWebhookEventSourceFlavor</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="k">return</span> <span class="n">GithubWebhookEventSourceFlavor</span>
 
-    <span class="k">def</span> <span class="nf">_interpret_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">GithubEvent</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_interpret_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">GithubEvent</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Converts the generic event body into a event-source specific pydantic model.</span>
 
 <span class="sd">        Args:</span>
@@ -4260,7 +4260,7 @@ GithubWebhookEventSourceHandler            (<a class="autorefs autorefs-internal
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">github_event</span>
 
-    <span class="k">def</span> <span class="nf">_load_payload</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_load_payload</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">raw_body</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">headers</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Converts the raw body of the request into a python dictionary.</span>
@@ -4285,7 +4285,7 @@ GithubWebhookEventSourceHandler            (<a class="autorefs autorefs-internal
 
         <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_load_payload</span><span class="p">(</span><span class="n">raw_body</span><span class="o">=</span><span class="n">raw_body</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_get_webhook_secret</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_webhook_secret</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">event_source</span><span class="p">:</span> <span class="n">EventSourceResponse</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the webhook secret for the event source.</span>
@@ -4324,7 +4324,7 @@ GithubWebhookEventSourceHandler            (<a class="autorefs autorefs-internal
                 <span class="s2">&quot;Could not retrieve webhook signature.&quot;</span>
             <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_validate_event_source_request</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_event_source_request</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">event_source</span><span class="p">:</span> <span class="n">EventSourceRequest</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">EventSourceConfig</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate an event source request before it is created in the database.</span>
@@ -4348,7 +4348,7 @@ GithubWebhookEventSourceHandler            (<a class="autorefs autorefs-internal
                     <span class="s2">&quot;request.&quot;</span>
                 <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_process_event_source_request</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_process_event_source_request</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">event_source</span><span class="p">:</span> <span class="n">EventSourceResponse</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">EventSourceConfig</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Process an event source request after it is created in the database.</span>
@@ -4391,7 +4391,7 @@ GithubWebhookEventSourceHandler            (<a class="autorefs autorefs-internal
         <span class="n">config</span><span class="o">.</span><span class="n">rotate_secret</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="n">config</span><span class="o">.</span><span class="n">webhook_secret_id</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="nf">_validate_event_source_update</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_event_source_update</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">event_source</span><span class="p">:</span> <span class="n">EventSourceResponse</span><span class="p">,</span>
         <span class="n">config</span><span class="p">:</span> <span class="n">EventSourceConfig</span><span class="p">,</span>
@@ -4416,7 +4416,7 @@ GithubWebhookEventSourceHandler            (<a class="autorefs autorefs-internal
 
         <span class="n">config_update</span><span class="o">.</span><span class="n">webhook_secret_id</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">webhook_secret_id</span>
 
-    <span class="k">def</span> <span class="nf">_process_event_source_update</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_process_event_source_update</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">event_source</span><span class="p">:</span> <span class="n">EventSourceResponse</span><span class="p">,</span>
         <span class="n">config</span><span class="p">:</span> <span class="n">EventSourceConfig</span><span class="p">,</span>
@@ -4471,7 +4471,7 @@ GithubWebhookEventSourceHandler            (<a class="autorefs autorefs-internal
         <span class="n">config</span><span class="o">.</span><span class="n">rotate_secret</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="n">config</span><span class="o">.</span><span class="n">webhook_secret_id</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="nf">_process_event_source_delete</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_process_event_source_delete</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">event_source</span><span class="p">:</span> <span class="n">EventSourceResponse</span><span class="p">,</span>
         <span class="n">config</span><span class="p">:</span> <span class="n">EventSourceConfig</span><span class="p">,</span>
@@ -4500,7 +4500,7 @@ GithubWebhookEventSourceHandler            (<a class="autorefs autorefs-internal
         <span class="n">config</span><span class="o">.</span><span class="n">rotate_secret</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="n">config</span><span class="o">.</span><span class="n">webhook_secret_id</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="nf">_process_event_source_response</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_process_event_source_response</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">event_source</span><span class="p">:</span> <span class="n">EventSourceResponse</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">EventSourceConfig</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Process an event source response before it is returned to the user.</span>
@@ -4674,7 +4674,7 @@ PullRequest            (<span title="pydantic.main.BaseModel">BaseModel</span>)
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/github/plugins/event_sources/github_webhook_event_source.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">PullRequest</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">PullRequest</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Github Pull Request.&quot;&quot;&quot;</span>
 
     <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span>
@@ -4742,7 +4742,7 @@ Repository            (<span title="pydantic.main.BaseModel">BaseModel</span>)
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/github/plugins/event_sources/github_webhook_event_source.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">Repository</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Repository</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Github Repository.&quot;&quot;&quot;</span>
 
     <span class="nb">id</span><span class="p">:</span> <span class="nb">int</span>
@@ -4808,7 +4808,7 @@ Tag            (<span title="pydantic.main.BaseModel">BaseModel</span>)
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/github/plugins/event_sources/github_webhook_event_source.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">Tag</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Tag</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Github Tag.&quot;&quot;&quot;</span>
 
     <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span>
@@ -4873,7 +4873,7 @@ User            (<span title="pydantic.main.BaseModel">BaseModel</span>)
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/github/plugins/event_sources/github_webhook_event_source.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">User</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">User</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Github User.&quot;&quot;&quot;</span>
 
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
@@ -4984,7 +4984,7 @@ GithubWebhookEventSourceFlavor            (<a class="autorefs autorefs-internal"
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/github/plugins/github_webhook_event_source_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">GithubWebhookEventSourceFlavor</span><span class="p">(</span><span class="n">BaseWebhookEventSourceFlavor</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">GithubWebhookEventSourceFlavor</span><span class="p">(</span><span class="n">BaseWebhookEventSourceFlavor</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Enables users to configure github event sources.&quot;&quot;&quot;</span>
 
     <span class="n">FLAVOR</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">GITHUB_EVENT_FLAVOR</span>
@@ -5032,14 +5032,14 @@ EVENT_FILTER_CONFIG_CLASS            (<a class="autorefs autorefs-internal" titl
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/github/plugins/github_webhook_event_source_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">GithubWebhookEventFilterConfiguration</span><span class="p">(</span><span class="n">WebhookEventFilterConfig</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">GithubWebhookEventFilterConfiguration</span><span class="p">(</span><span class="n">WebhookEventFilterConfig</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Configuration for github event filters.&quot;&quot;&quot;</span>
 
     <span class="n">repo</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">branch</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">event_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">GithubEventType</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="nf">event_matches_filter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">BaseEvent</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">event_matches_filter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">BaseEvent</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks the filter against the inbound event.</span>
 
 <span class="sd">        Args:</span>
@@ -5140,7 +5140,7 @@ EVENT_FILTER_CONFIG_CLASS            (<a class="autorefs autorefs-internal" titl
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/github/plugins/github_webhook_event_source_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">event_matches_filter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">BaseEvent</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">event_matches_filter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">BaseEvent</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks the filter against the inbound event.</span>
 
 <span class="sd">    Args:</span>
@@ -5198,7 +5198,7 @@ EVENT_SOURCE_CONFIG_CLASS            (<a class="autorefs autorefs-internal" titl
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/github/plugins/github_webhook_event_source_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">GithubWebhookEventSourceConfiguration</span><span class="p">(</span><span class="n">WebhookEventSourceConfig</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">GithubWebhookEventSourceConfiguration</span><span class="p">(</span><span class="n">WebhookEventSourceConfig</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Configuration for github source filters.&quot;&quot;&quot;</span>
 
     <span class="n">webhook_secret</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
@@ -5271,11 +5271,11 @@ PLUGIN_CLASS            (<a class="autorefs autorefs-internal" title="zenml.even
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/github/plugins/github_webhook_event_source_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">GithubWebhookEventSourceHandler</span><span class="p">(</span><span class="n">BaseWebhookEventSourceHandler</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">GithubWebhookEventSourceHandler</span><span class="p">(</span><span class="n">BaseWebhookEventSourceHandler</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Handler for all github events.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">GithubWebhookEventSourceConfiguration</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">GithubWebhookEventSourceConfiguration</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the webhook event source configuration class.</span>
 
 <span class="sd">        Returns:</span>
@@ -5284,7 +5284,7 @@ PLUGIN_CLASS            (<a class="autorefs autorefs-internal" title="zenml.even
         <span class="k">return</span> <span class="n">GithubWebhookEventSourceConfiguration</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">filter_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">GithubWebhookEventFilterConfiguration</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">filter_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">GithubWebhookEventFilterConfiguration</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the webhook event filter configuration class.</span>
 
 <span class="sd">        Returns:</span>
@@ -5293,19 +5293,19 @@ PLUGIN_CLASS            (<a class="autorefs autorefs-internal" title="zenml.even
         <span class="k">return</span> <span class="n">GithubWebhookEventFilterConfiguration</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">flavor_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseWebhookEventSourceFlavor</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">flavor_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseWebhookEventSourceFlavor</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the flavor class of the plugin.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The flavor class of the plugin.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.github.plugins.github_webhook_event_source_flavor</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.github.plugins.github_webhook_event_source_flavor</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">GithubWebhookEventSourceFlavor</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="k">return</span> <span class="n">GithubWebhookEventSourceFlavor</span>
 
-    <span class="k">def</span> <span class="nf">_interpret_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">GithubEvent</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_interpret_event</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">GithubEvent</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Converts the generic event body into a event-source specific pydantic model.</span>
 
 <span class="sd">        Args:</span>
@@ -5324,7 +5324,7 @@ PLUGIN_CLASS            (<a class="autorefs autorefs-internal" title="zenml.even
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">github_event</span>
 
-    <span class="k">def</span> <span class="nf">_load_payload</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_load_payload</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">raw_body</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">headers</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Converts the raw body of the request into a python dictionary.</span>
@@ -5349,7 +5349,7 @@ PLUGIN_CLASS            (<a class="autorefs autorefs-internal" title="zenml.even
 
         <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_load_payload</span><span class="p">(</span><span class="n">raw_body</span><span class="o">=</span><span class="n">raw_body</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_get_webhook_secret</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_webhook_secret</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">event_source</span><span class="p">:</span> <span class="n">EventSourceResponse</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the webhook secret for the event source.</span>
@@ -5388,7 +5388,7 @@ PLUGIN_CLASS            (<a class="autorefs autorefs-internal" title="zenml.even
                 <span class="s2">&quot;Could not retrieve webhook signature.&quot;</span>
             <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_validate_event_source_request</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_event_source_request</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">event_source</span><span class="p">:</span> <span class="n">EventSourceRequest</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">EventSourceConfig</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate an event source request before it is created in the database.</span>
@@ -5412,7 +5412,7 @@ PLUGIN_CLASS            (<a class="autorefs autorefs-internal" title="zenml.even
                     <span class="s2">&quot;request.&quot;</span>
                 <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_process_event_source_request</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_process_event_source_request</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">event_source</span><span class="p">:</span> <span class="n">EventSourceResponse</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">EventSourceConfig</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Process an event source request after it is created in the database.</span>
@@ -5455,7 +5455,7 @@ PLUGIN_CLASS            (<a class="autorefs autorefs-internal" title="zenml.even
         <span class="n">config</span><span class="o">.</span><span class="n">rotate_secret</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="n">config</span><span class="o">.</span><span class="n">webhook_secret_id</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="nf">_validate_event_source_update</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_event_source_update</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">event_source</span><span class="p">:</span> <span class="n">EventSourceResponse</span><span class="p">,</span>
         <span class="n">config</span><span class="p">:</span> <span class="n">EventSourceConfig</span><span class="p">,</span>
@@ -5480,7 +5480,7 @@ PLUGIN_CLASS            (<a class="autorefs autorefs-internal" title="zenml.even
 
         <span class="n">config_update</span><span class="o">.</span><span class="n">webhook_secret_id</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">webhook_secret_id</span>
 
-    <span class="k">def</span> <span class="nf">_process_event_source_update</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_process_event_source_update</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">event_source</span><span class="p">:</span> <span class="n">EventSourceResponse</span><span class="p">,</span>
         <span class="n">config</span><span class="p">:</span> <span class="n">EventSourceConfig</span><span class="p">,</span>
@@ -5535,7 +5535,7 @@ PLUGIN_CLASS            (<a class="autorefs autorefs-internal" title="zenml.even
         <span class="n">config</span><span class="o">.</span><span class="n">rotate_secret</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="n">config</span><span class="o">.</span><span class="n">webhook_secret_id</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="nf">_process_event_source_delete</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_process_event_source_delete</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">event_source</span><span class="p">:</span> <span class="n">EventSourceResponse</span><span class="p">,</span>
         <span class="n">config</span><span class="p">:</span> <span class="n">EventSourceConfig</span><span class="p">,</span>
@@ -5564,7 +5564,7 @@ PLUGIN_CLASS            (<a class="autorefs autorefs-internal" title="zenml.even
         <span class="n">config</span><span class="o">.</span><span class="n">rotate_secret</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="n">config</span><span class="o">.</span><span class="n">webhook_secret_id</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="nf">_process_event_source_response</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_process_event_source_response</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">event_source</span><span class="p">:</span> <span class="n">EventSourceResponse</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">EventSourceConfig</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Process an event source response before it is returned to the user.</span>

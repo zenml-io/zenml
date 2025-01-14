@@ -2406,11 +2406,11 @@ BasePlugin            (<span title="abc.ABC">ABC</span>)
 
         <details class="quote">
           <summary>Source code in <code>zenml/plugins/base_plugin_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BasePlugin</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">BasePlugin</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Base Class for all Plugins.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">zen_store</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseZenStore&quot;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">zen_store</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseZenStore&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the active zen store.</span>
 
 <span class="sd">        Returns:</span>
@@ -2420,7 +2420,7 @@ BasePlugin            (<span title="abc.ABC">ABC</span>)
 
     <span class="nd">@property</span>
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BasePluginConfig</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BasePluginConfig</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the `BasePluginConfig` config.</span>
 
 <span class="sd">        Returns:</span>
@@ -2429,7 +2429,7 @@ BasePlugin            (<span title="abc.ABC">ABC</span>)
 
     <span class="nd">@property</span>
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">flavor_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Type[BasePluginFlavor]&quot;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">flavor_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Type[BasePluginFlavor]&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the flavor class of the plugin.</span>
 
 <span class="sd">        Returns:</span>
@@ -2593,7 +2593,7 @@ BasePluginConfig            (<span title="pydantic.main.BaseModel">BaseModel</sp
 
         <details class="quote">
           <summary>Source code in <code>zenml/plugins/base_plugin_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BasePluginConfig</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">BasePluginConfig</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Allows configuring of Event Source and Filter configuration.&quot;&quot;&quot;</span>
 
     <span class="n">model_config</span> <span class="o">=</span> <span class="n">ConfigDict</span><span class="p">(</span>
@@ -2661,7 +2661,7 @@ BasePluginFlavor            (<span title="abc.ABC">ABC</span>)
 
         <details class="quote">
           <summary>Source code in <code>zenml/plugins/base_plugin_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BasePluginFlavor</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">BasePluginFlavor</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Base Class for all PluginFlavors.&quot;&quot;&quot;</span>
 
     <span class="n">TYPE</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">PluginType</span><span class="p">]</span>
@@ -2671,7 +2671,7 @@ BasePluginFlavor            (<span title="abc.ABC">ABC</span>)
 
     <span class="nd">@classmethod</span>
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">get_flavor_response_model</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_flavor_response_model</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span> <span class="n">hydrate</span><span class="p">:</span> <span class="nb">bool</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BasePluginFlavorResponse</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert the Flavor into a Response Model.</span>
@@ -2734,7 +2734,7 @@ BasePluginFlavor            (<span title="abc.ABC">ABC</span>)
           <summary>Source code in <code>zenml/plugins/base_plugin_flavor.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
 <span class="nd">@abstractmethod</span>
-<span class="k">def</span> <span class="nf">get_flavor_response_model</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_flavor_response_model</span><span class="p">(</span>
     <span class="bp">cls</span><span class="p">,</span> <span class="n">hydrate</span><span class="p">:</span> <span class="nb">bool</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BasePluginFlavorResponse</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert the Flavor into a Response Model.</span>
@@ -2816,10 +2816,10 @@ PluginFlavorRegistry        </code>
 
         <details class="quote">
           <summary>Source code in <code>zenml/plugins/plugin_flavor_registry.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">PluginFlavorRegistry</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">PluginFlavorRegistry</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Registry for plugin flavors.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the event flavor registry.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">plugin_flavors</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span>
             <span class="n">PluginType</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="n">PluginSubType</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">RegistryEntry</span><span class="p">]]</span>
@@ -2827,7 +2827,7 @@ PluginFlavorRegistry        </code>
         <span class="bp">self</span><span class="o">.</span><span class="n">register_plugin_flavors</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">_types</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PluginType</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_types</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PluginType</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns all available types.</span>
 
 <span class="sd">        Returns:</span>
@@ -2835,7 +2835,7 @@ PluginFlavorRegistry        </code>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">plugin_flavors</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
 
-    <span class="k">def</span> <span class="nf">list_subtypes_within_type</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">list_subtypes_within_type</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">_type</span><span class="p">:</span> <span class="n">PluginType</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PluginSubType</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns all available subtypes for a given type.</span>
@@ -2848,7 +2848,7 @@ PluginFlavorRegistry        </code>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">plugin_flavors</span><span class="p">[</span><span class="n">_type</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
 
-    <span class="k">def</span> <span class="nf">_flavor_entries</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_flavor_entries</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">_type</span><span class="p">:</span> <span class="n">PluginType</span><span class="p">,</span> <span class="n">subtype</span><span class="p">:</span> <span class="n">PluginSubType</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">RegistryEntry</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a list of all subtypes for a specific flavor and type.</span>
@@ -2868,7 +2868,7 @@ PluginFlavorRegistry        </code>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="p">{}</span>
 
-    <span class="k">def</span> <span class="nf">list_available_flavors_for_type_and_subtype</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">list_available_flavors_for_type_and_subtype</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">_type</span><span class="p">:</span> <span class="n">PluginType</span><span class="p">,</span>
         <span class="n">subtype</span><span class="p">:</span> <span class="n">PluginSubType</span><span class="p">,</span>
@@ -2892,7 +2892,7 @@ PluginFlavorRegistry        </code>
         <span class="p">)</span>
         <span class="k">return</span> <span class="n">flavors</span>
 
-    <span class="k">def</span> <span class="nf">list_available_flavor_responses_for_type_and_subtype</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">list_available_flavor_responses_for_type_and_subtype</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">_type</span><span class="p">:</span> <span class="n">PluginType</span><span class="p">,</span>
         <span class="n">subtype</span><span class="p">:</span> <span class="n">PluginSubType</span><span class="p">,</span>
@@ -2950,13 +2950,13 @@ PluginFlavorRegistry        </code>
         <span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">_builtin_flavors</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BasePluginFlavor&quot;</span><span class="p">]]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_builtin_flavors</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BasePluginFlavor&quot;</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A list of all default in-built flavors.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            A list of builtin flavors.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.actions.pipeline_run.pipeline_run_action</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.actions.pipeline_run.pipeline_run_action</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">PipelineRunActionFlavor</span><span class="p">,</span>
         <span class="p">)</span>
 
@@ -2964,7 +2964,7 @@ PluginFlavorRegistry        </code>
         <span class="k">return</span> <span class="n">flavors</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">_integration_flavors</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BasePluginFlavor&quot;</span><span class="p">]]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_integration_flavors</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BasePluginFlavor&quot;</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A list of all integration event flavors.</span>
 
 <span class="sd">        Returns:</span>
@@ -2978,7 +2978,7 @@ PluginFlavorRegistry        </code>
 
         <span class="k">return</span> <span class="n">integrated_flavors</span>
 
-    <span class="k">def</span> <span class="nf">_get_registry_entry</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_registry_entry</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">_type</span><span class="p">:</span> <span class="n">PluginType</span><span class="p">,</span>
         <span class="n">subtype</span><span class="p">:</span> <span class="n">PluginSubType</span><span class="p">,</span>
@@ -2996,14 +2996,14 @@ PluginFlavorRegistry        </code>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">plugin_flavors</span><span class="p">[</span><span class="n">_type</span><span class="p">][</span><span class="n">subtype</span><span class="p">][</span><span class="n">flavor_name</span><span class="p">]</span>
 
-    <span class="k">def</span> <span class="nf">register_plugin_flavors</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">register_plugin_flavors</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Registers all flavors.&quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="n">flavor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_builtin_flavors</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">register_plugin_flavor</span><span class="p">(</span><span class="n">flavor_class</span><span class="o">=</span><span class="n">flavor</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">flavor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_integration_flavors</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">register_plugin_flavor</span><span class="p">(</span><span class="n">flavor_class</span><span class="o">=</span><span class="n">flavor</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">register_plugin_flavor</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">register_plugin_flavor</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">flavor_class</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">BasePluginFlavor</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Registers a new event_source.</span>
@@ -3039,7 +3039,7 @@ PluginFlavorRegistry        </code>
                 <span class="sa">f</span><span class="s2">&quot;Skipping registration for </span><span class="si">{</span><span class="n">flavor_class</span><span class="si">}</span><span class="s2">.&quot;</span>
             <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_flavor_class</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_flavor_class</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">_type</span><span class="p">:</span> <span class="n">PluginType</span><span class="p">,</span>
         <span class="n">subtype</span><span class="p">:</span> <span class="n">PluginSubType</span><span class="p">,</span>
@@ -3070,7 +3070,7 @@ PluginFlavorRegistry        </code>
                 <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">_type</span><span class="si">}</span><span class="s2"> and subtype </span><span class="si">{</span><span class="n">subtype</span><span class="si">}</span><span class="s2">.&quot;</span>
             <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_plugin</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_plugin</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">_type</span><span class="p">:</span> <span class="n">PluginType</span><span class="p">,</span>
         <span class="n">subtype</span><span class="p">:</span> <span class="n">PluginSubType</span><span class="p">,</span>
@@ -3108,7 +3108,7 @@ PluginFlavorRegistry        </code>
                 <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">_type</span><span class="si">}</span><span class="s2"> and subtype </span><span class="si">{</span><span class="n">subtype</span><span class="si">}</span><span class="s2">.&quot;</span>
             <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">initialize_plugins</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">initialize_plugins</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes all registered plugins.&quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">subtypes_dict</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">plugin_flavors</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">flavor_dict</span> <span class="ow">in</span> <span class="n">subtypes_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
@@ -3151,7 +3151,7 @@ PluginFlavorRegistry        </code>
 
         <details class="quote">
           <summary>Source code in <code>zenml/plugins/plugin_flavor_registry.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize the event flavor registry.&quot;&quot;&quot;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">plugin_flavors</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span>
         <span class="n">PluginType</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="n">PluginSubType</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">RegistryEntry</span><span class="p">]]</span>
@@ -3242,7 +3242,7 @@ PluginFlavorRegistry        </code>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/plugins/plugin_flavor_registry.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_flavor_class</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_flavor_class</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">_type</span><span class="p">:</span> <span class="n">PluginType</span><span class="p">,</span>
     <span class="n">subtype</span><span class="p">:</span> <span class="n">PluginSubType</span><span class="p">,</span>
@@ -3362,7 +3362,7 @@ subtype.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/plugins/plugin_flavor_registry.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_plugin</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_plugin</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">_type</span><span class="p">:</span> <span class="n">PluginType</span><span class="p">,</span>
     <span class="n">subtype</span><span class="p">:</span> <span class="n">PluginSubType</span><span class="p">,</span>
@@ -3423,7 +3423,7 @@ subtype.</p></td>
 
         <details class="quote">
           <summary>Source code in <code>zenml/plugins/plugin_flavor_registry.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">initialize_plugins</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">initialize_plugins</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes all registered plugins.&quot;&quot;&quot;</span>
     <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">subtypes_dict</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">plugin_flavors</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
         <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">flavor_dict</span> <span class="ow">in</span> <span class="n">subtypes_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
@@ -3529,7 +3529,7 @@ subtype.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/plugins/plugin_flavor_registry.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">list_available_flavor_responses_for_type_and_subtype</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">list_available_flavor_responses_for_type_and_subtype</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">_type</span><span class="p">:</span> <span class="n">PluginType</span><span class="p">,</span>
     <span class="n">subtype</span><span class="p">:</span> <span class="n">PluginSubType</span><span class="p">,</span>
@@ -3649,7 +3649,7 @@ subtype.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/plugins/plugin_flavor_registry.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">list_available_flavors_for_type_and_subtype</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">list_available_flavors_for_type_and_subtype</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">_type</span><span class="p">:</span> <span class="n">PluginType</span><span class="p">,</span>
     <span class="n">subtype</span><span class="p">:</span> <span class="n">PluginSubType</span><span class="p">,</span>
@@ -3730,7 +3730,7 @@ subtype.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/plugins/plugin_flavor_registry.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">list_subtypes_within_type</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">list_subtypes_within_type</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">_type</span><span class="p">:</span> <span class="n">PluginType</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">PluginSubType</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns all available subtypes for a given type.</span>
@@ -3785,7 +3785,7 @@ subtype.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/plugins/plugin_flavor_registry.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">register_plugin_flavor</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">register_plugin_flavor</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">flavor_class</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">BasePluginFlavor</span><span class="p">]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Registers a new event_source.</span>
@@ -3844,7 +3844,7 @@ subtype.</p></td>
 
         <details class="quote">
           <summary>Source code in <code>zenml/plugins/plugin_flavor_registry.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">register_plugin_flavors</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">register_plugin_flavors</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Registers all flavors.&quot;&quot;&quot;</span>
     <span class="k">for</span> <span class="n">flavor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_builtin_flavors</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">register_plugin_flavor</span><span class="p">(</span><span class="n">flavor_class</span><span class="o">=</span><span class="n">flavor</span><span class="p">)</span>
@@ -3887,7 +3887,7 @@ RegistryEntry            (<span title="pydantic.main.BaseModel">BaseModel</span>
 
         <details class="quote">
           <summary>Source code in <code>zenml/plugins/plugin_flavor_registry.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">RegistryEntry</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">RegistryEntry</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Registry Entry Class for the Plugin Registry.&quot;&quot;&quot;</span>
 
     <span class="n">flavor_class</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">BasePluginFlavor</span><span class="p">]</span>

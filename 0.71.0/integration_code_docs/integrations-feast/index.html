@@ -2517,7 +2517,7 @@ FeastIntegration            (<a class="autorefs autorefs-internal" title="zenml.
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/feast/__init__.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">FeastIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">FeastIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Definition of Feast integration for ZenML.&quot;&quot;&quot;</span>
 
     <span class="n">NAME</span> <span class="o">=</span> <span class="n">FEAST</span>
@@ -2526,18 +2526,18 @@ FeastIntegration            (<a class="autorefs autorefs-internal" title="zenml.
     <span class="n">REQUIREMENTS_IGNORED_ON_UNINSTALL</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;click&quot;</span><span class="p">,</span> <span class="s2">&quot;pandas&quot;</span><span class="p">]</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Feast integration.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            List of stack component flavors for this integration.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.feast.flavors</span> <span class="kn">import</span> <span class="n">FeastFeatureStoreFlavor</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.feast.flavors</span><span class="w"> </span><span class="kn">import</span> <span class="n">FeastFeatureStoreFlavor</span>
 
         <span class="k">return</span> <span class="p">[</span><span class="n">FeastFeatureStoreFlavor</span><span class="p">]</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">get_requirements</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">target_os</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_requirements</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">target_os</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Method to get the requirements for the integration.</span>
 
 <span class="sd">        Args:</span>
@@ -2546,7 +2546,7 @@ FeastIntegration            (<a class="autorefs autorefs-internal" title="zenml.
 <span class="sd">        Returns:</span>
 <span class="sd">            A list of requirements.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.pandas</span> <span class="kn">import</span> <span class="n">PandasIntegration</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.pandas</span><span class="w"> </span><span class="kn">import</span> <span class="n">PandasIntegration</span>
 
         <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">REQUIREMENTS</span> <span class="o">+</span> \
             <span class="n">PandasIntegration</span><span class="o">.</span><span class="n">get_requirements</span><span class="p">(</span><span class="n">target_os</span><span class="o">=</span><span class="n">target_os</span><span class="p">)</span>
@@ -2603,13 +2603,13 @@ FeastIntegration            (<a class="autorefs autorefs-internal" title="zenml.
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/feast/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Feast integration.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        List of stack component flavors for this integration.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.integrations.feast.flavors</span> <span class="kn">import</span> <span class="n">FeastFeatureStoreFlavor</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.feast.flavors</span><span class="w"> </span><span class="kn">import</span> <span class="n">FeastFeatureStoreFlavor</span>
 
     <span class="k">return</span> <span class="p">[</span><span class="n">FeastFeatureStoreFlavor</span><span class="p">]</span>
 </code></pre></div>
@@ -2674,7 +2674,7 @@ FeastIntegration            (<a class="autorefs autorefs-internal" title="zenml.
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/feast/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">get_requirements</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">target_os</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_requirements</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">target_os</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Method to get the requirements for the integration.</span>
 
 <span class="sd">    Args:</span>
@@ -2683,7 +2683,7 @@ FeastIntegration            (<a class="autorefs autorefs-internal" title="zenml.
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of requirements.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.integrations.pandas</span> <span class="kn">import</span> <span class="n">PandasIntegration</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.pandas</span><span class="w"> </span><span class="kn">import</span> <span class="n">PandasIntegration</span>
 
     <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">REQUIREMENTS</span> <span class="o">+</span> \
         <span class="n">PandasIntegration</span><span class="o">.</span><span class="n">get_requirements</span><span class="p">(</span><span class="n">target_os</span><span class="o">=</span><span class="n">target_os</span><span class="p">)</span>
@@ -2792,11 +2792,11 @@ FeastFeatureStore            (<a class="autorefs autorefs-internal" title="zenml
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/feast/feature_stores/feast_feature_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">FeastFeatureStore</span><span class="p">(</span><span class="n">BaseFeatureStore</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">FeastFeatureStore</span><span class="p">(</span><span class="n">BaseFeatureStore</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Class to interact with the Feast feature store.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FeastFeatureStoreConfig</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FeastFeatureStoreConfig</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the `FeastFeatureStoreConfig` config.</span>
 
 <span class="sd">        Returns:</span>
@@ -2804,7 +2804,7 @@ FeastFeatureStore            (<a class="autorefs autorefs-internal" title="zenml
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">FeastFeatureStoreConfig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_historical_features</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_historical_features</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">entity_df</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
         <span class="n">features</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">FeatureService</span><span class="p">],</span>
@@ -2831,7 +2831,7 @@ FeastFeatureStore            (<a class="autorefs autorefs-internal" title="zenml
             <span class="n">full_feature_names</span><span class="o">=</span><span class="n">full_feature_names</span><span class="p">,</span>
         <span class="p">)</span><span class="o">.</span><span class="n">to_df</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">get_online_features</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_online_features</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">entity_rows</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span>
         <span class="n">features</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">FeatureService</span><span class="p">],</span>
@@ -2858,7 +2858,7 @@ FeastFeatureStore            (<a class="autorefs autorefs-internal" title="zenml
             <span class="n">full_feature_names</span><span class="o">=</span><span class="n">full_feature_names</span><span class="p">,</span>
         <span class="p">)</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">get_data_sources</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_data_sources</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the data sources&#39; names.</span>
 
 <span class="sd">        Raise:</span>
@@ -2870,7 +2870,7 @@ FeastFeatureStore            (<a class="autorefs autorefs-internal" title="zenml
         <span class="n">fs</span> <span class="o">=</span> <span class="n">FeatureStore</span><span class="p">(</span><span class="n">repo_path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">feast_repo</span><span class="p">)</span>
         <span class="k">return</span> <span class="p">[</span><span class="n">ds</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">ds</span> <span class="ow">in</span> <span class="n">fs</span><span class="o">.</span><span class="n">list_data_sources</span><span class="p">()]</span>
 
-    <span class="k">def</span> <span class="nf">get_entities</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_entities</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the entity names.</span>
 
 <span class="sd">        Raise:</span>
@@ -2882,7 +2882,7 @@ FeastFeatureStore            (<a class="autorefs autorefs-internal" title="zenml
         <span class="n">fs</span> <span class="o">=</span> <span class="n">FeatureStore</span><span class="p">(</span><span class="n">repo_path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">feast_repo</span><span class="p">)</span>
         <span class="k">return</span> <span class="p">[</span><span class="n">ds</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">ds</span> <span class="ow">in</span> <span class="n">fs</span><span class="o">.</span><span class="n">list_entities</span><span class="p">()]</span>
 
-    <span class="k">def</span> <span class="nf">get_feature_services</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">FeatureService</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_feature_services</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">FeatureService</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the feature services.</span>
 
 <span class="sd">        Raise:</span>
@@ -2898,7 +2898,7 @@ FeastFeatureStore            (<a class="autorefs autorefs-internal" title="zenml
 
         <span class="k">return</span> <span class="n">feature_services</span>
 
-    <span class="k">def</span> <span class="nf">get_feature_views</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_feature_views</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the feature view names.</span>
 
 <span class="sd">        Raise:</span>
@@ -2910,7 +2910,7 @@ FeastFeatureStore            (<a class="autorefs autorefs-internal" title="zenml
         <span class="n">fs</span> <span class="o">=</span> <span class="n">FeatureStore</span><span class="p">(</span><span class="n">repo_path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">feast_repo</span><span class="p">)</span>
         <span class="k">return</span> <span class="p">[</span><span class="n">ds</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">ds</span> <span class="ow">in</span> <span class="n">fs</span><span class="o">.</span><span class="n">list_feature_views</span><span class="p">()]</span>
 
-    <span class="k">def</span> <span class="nf">get_project</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_project</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the project name.</span>
 
 <span class="sd">        Raise:</span>
@@ -2922,7 +2922,7 @@ FeastFeatureStore            (<a class="autorefs autorefs-internal" title="zenml
         <span class="n">fs</span> <span class="o">=</span> <span class="n">FeatureStore</span><span class="p">(</span><span class="n">repo_path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">feast_repo</span><span class="p">)</span>
         <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">fs</span><span class="o">.</span><span class="n">project</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_registry</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseRegistry</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_registry</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseRegistry</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the feature store registry.</span>
 
 <span class="sd">        Raise:</span>
@@ -2934,7 +2934,7 @@ FeastFeatureStore            (<a class="autorefs autorefs-internal" title="zenml
         <span class="n">fs</span><span class="p">:</span> <span class="n">FeatureStore</span> <span class="o">=</span> <span class="n">FeatureStore</span><span class="p">(</span><span class="n">repo_path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">feast_repo</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">fs</span><span class="o">.</span><span class="n">registry</span>
 
-    <span class="k">def</span> <span class="nf">get_feast_version</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_feast_version</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the version of Feast used.</span>
 
 <span class="sd">        Raise:</span>
@@ -3044,7 +3044,7 @@ FeastFeatureStore            (<a class="autorefs autorefs-internal" title="zenml
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/feast/feature_stores/feast_feature_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_data_sources</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_data_sources</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the data sources&#39; names.</span>
 
 <span class="sd">    Raise:</span>
@@ -3109,7 +3109,7 @@ FeastFeatureStore            (<a class="autorefs autorefs-internal" title="zenml
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/feast/feature_stores/feast_feature_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_entities</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_entities</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the entity names.</span>
 
 <span class="sd">    Raise:</span>
@@ -3174,7 +3174,7 @@ FeastFeatureStore            (<a class="autorefs autorefs-internal" title="zenml
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/feast/feature_stores/feast_feature_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_feast_version</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_feast_version</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the version of Feast used.</span>
 
 <span class="sd">    Raise:</span>
@@ -3239,7 +3239,7 @@ FeastFeatureStore            (<a class="autorefs autorefs-internal" title="zenml
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/feast/feature_stores/feast_feature_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_feature_services</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">FeatureService</span><span class="p">]:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_feature_services</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">FeatureService</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the feature services.</span>
 
 <span class="sd">    Raise:</span>
@@ -3308,7 +3308,7 @@ FeastFeatureStore            (<a class="autorefs autorefs-internal" title="zenml
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/feast/feature_stores/feast_feature_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_feature_views</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_feature_views</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the feature view names.</span>
 
 <span class="sd">    Raise:</span>
@@ -3404,7 +3404,7 @@ FeastFeatureStore            (<a class="autorefs autorefs-internal" title="zenml
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/feast/feature_stores/feast_feature_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_historical_features</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_historical_features</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">entity_df</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
     <span class="n">features</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">FeatureService</span><span class="p">],</span>
@@ -3515,7 +3515,7 @@ FeastFeatureStore            (<a class="autorefs autorefs-internal" title="zenml
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/feast/feature_stores/feast_feature_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_online_features</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_online_features</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">entity_rows</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span>
     <span class="n">features</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">FeatureService</span><span class="p">],</span>
@@ -3595,7 +3595,7 @@ FeastFeatureStore            (<a class="autorefs autorefs-internal" title="zenml
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/feast/feature_stores/feast_feature_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_project</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_project</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the project name.</span>
 
 <span class="sd">    Raise:</span>
@@ -3660,7 +3660,7 @@ FeastFeatureStore            (<a class="autorefs autorefs-internal" title="zenml
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/feast/feature_stores/feast_feature_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_registry</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseRegistry</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_registry</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseRegistry</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the feature store registry.</span>
 
 <span class="sd">    Raise:</span>
@@ -3786,7 +3786,7 @@ FeastFeatureStoreConfig            (<a class="autorefs autorefs-internal" title=
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/feast/flavors/feast_feature_store_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">FeastFeatureStoreConfig</span><span class="p">(</span><span class="n">BaseFeatureStoreConfig</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">FeastFeatureStoreConfig</span><span class="p">(</span><span class="n">BaseFeatureStoreConfig</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Config for Feast feature store.&quot;&quot;&quot;</span>
 
     <span class="n">online_host</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;localhost&quot;</span>
@@ -3794,7 +3794,7 @@ FeastFeatureStoreConfig            (<a class="autorefs autorefs-internal" title=
     <span class="n">feast_repo</span><span class="p">:</span> <span class="nb">str</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">is_local</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_local</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if this stack component is running locally.</span>
 
 <span class="sd">        Returns:</span>
@@ -3901,11 +3901,11 @@ FeastFeatureStoreFlavor            (<a class="autorefs autorefs-internal" title=
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/feast/flavors/feast_feature_store_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">FeastFeatureStoreFlavor</span><span class="p">(</span><span class="n">BaseFeatureStoreFlavor</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">FeastFeatureStoreFlavor</span><span class="p">(</span><span class="n">BaseFeatureStoreFlavor</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Feast Feature store flavor.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -3914,7 +3914,7 @@ FeastFeatureStoreFlavor            (<a class="autorefs autorefs-internal" title=
         <span class="k">return</span> <span class="n">FEAST_FEATURE_STORE_FLAVOR</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -3923,7 +3923,7 @@ FeastFeatureStoreFlavor            (<a class="autorefs autorefs-internal" title=
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at SDK docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -3932,7 +3932,7 @@ FeastFeatureStoreFlavor            (<a class="autorefs autorefs-internal" title=
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_sdk_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to represent the flavor in the dashboard.</span>
 
 <span class="sd">        Returns:</span>
@@ -3941,7 +3941,7 @@ FeastFeatureStoreFlavor            (<a class="autorefs autorefs-internal" title=
         <span class="k">return</span> <span class="s2">&quot;https://public-flavor-logos.s3.eu-central-1.amazonaws.com/feature_store/feast.png&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">FeastFeatureStoreConfig</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">FeastFeatureStoreConfig</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns FeastFeatureStoreConfig config class.</span>
 
 <span class="sd">        Returns:</span>
@@ -3951,13 +3951,13 @@ FeastFeatureStoreFlavor            (<a class="autorefs autorefs-internal" title=
         <span class="k">return</span> <span class="n">FeastFeatureStoreConfig</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;FeastFeatureStore&quot;</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;FeastFeatureStore&quot;</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The implementation class.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.feast.feature_stores</span> <span class="kn">import</span> <span class="n">FeastFeatureStore</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.feast.feature_stores</span><span class="w"> </span><span class="kn">import</span> <span class="n">FeastFeatureStore</span>
 
         <span class="k">return</span> <span class="n">FeastFeatureStore</span>
 </code></pre></div>

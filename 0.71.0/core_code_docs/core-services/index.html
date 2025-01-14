@@ -3952,7 +3952,7 @@ name='sleeper' type='container' flavor='sleeping' description='Sleeping containe
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/services/container/container_service.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ContainerService</span><span class="p">(</span><span class="n">BaseService</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ContainerService</span><span class="p">(</span><span class="n">BaseService</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;A service represented by a containerized process.</span>
 
 <span class="sd">    This class extends the base service class with functionality concerning</span>
@@ -4018,7 +4018,7 @@ name='sleeper' type='container' flavor='sleeping' description='Sleeping containe
     <span class="n">_docker_client</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">DockerClient</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">docker_client</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DockerClient</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">docker_client</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DockerClient</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize and/or return the docker client.</span>
 
 <span class="sd">        Returns:</span>
@@ -4031,7 +4031,7 @@ name='sleeper' type='container' flavor='sleeping' description='Sleeping containe
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_docker_client</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">container_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">container_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the ID of the docker container for a service.</span>
 
 <span class="sd">        Returns:</span>
@@ -4039,7 +4039,7 @@ name='sleeper' type='container' flavor='sleeping' description='Sleeping containe
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;zenml-</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">uuid</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
 
-    <span class="k">def</span> <span class="nf">get_service_status_message</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_service_status_message</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a message about the current operational state of the service.</span>
 
 <span class="sd">        Returns:</span>
@@ -4055,7 +4055,7 @@ name='sleeper' type='container' flavor='sleeping' description='Sleeping containe
             <span class="p">)</span>
         <span class="k">return</span> <span class="n">msg</span>
 
-    <span class="k">def</span> <span class="nf">check_status</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">ServiceState</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">check_status</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">ServiceState</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Check the the current operational state of the docker container.</span>
 
 <span class="sd">        Returns:</span>
@@ -4085,7 +4085,7 @@ name='sleeper' type='container' flavor='sleeping' description='Sleeping containe
                 <span class="sa">f</span><span class="s2">&quot;Docker container is </span><span class="si">{</span><span class="n">container</span><span class="o">.</span><span class="n">status</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
             <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_setup_runtime_path</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_setup_runtime_path</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Set up the runtime path for the service.</span>
 
 <span class="sd">        This method sets up the runtime path for the service.</span>
@@ -4109,7 +4109,7 @@ name='sleeper' type='container' flavor='sleeping' description='Sleeping containe
                     <span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;zenml-service-&quot;</span>
                 <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_get_container_cmd</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_container_cmd</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the command to run the service container.</span>
 
 <span class="sd">        The default implementation provided by this class is the following:</span>
@@ -4130,7 +4130,7 @@ name='sleeper' type='container' flavor='sleeping' description='Sleeping containe
 <span class="sd">            variables to set, in the formats accepted by subprocess.Popen.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># to avoid circular imports, import here</span>
-        <span class="kn">from</span> <span class="nn">zenml.services.container</span> <span class="kn">import</span> <span class="n">entrypoint</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.services.container</span><span class="w"> </span><span class="kn">import</span> <span class="n">entrypoint</span>
 
         <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">config_file</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
         <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">log_file</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
@@ -4161,7 +4161,7 @@ name='sleeper' type='container' flavor='sleeping' description='Sleeping containe
 
         <span class="k">return</span> <span class="n">command</span><span class="p">,</span> <span class="n">command_env</span>
 
-    <span class="k">def</span> <span class="nf">_get_container_volumes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_container_volumes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the volumes to mount into the service container.</span>
 
 <span class="sd">        The default implementation provided by this class mounts the</span>
@@ -4194,7 +4194,7 @@ name='sleeper' type='container' flavor='sleeping' description='Sleeping containe
         <span class="k">return</span> <span class="n">volumes</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">container</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Container</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">container</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Container</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the docker container for the service.</span>
 
 <span class="sd">        Returns:</span>
@@ -4207,7 +4207,7 @@ name='sleeper' type='container' flavor='sleeping' description='Sleeping containe
             <span class="c1"># container doesn&#39;t exist yet or was removed</span>
             <span class="k">return</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="nf">_start_container</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_start_container</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Start the service docker container associated with this service.&quot;&quot;&quot;</span>
         <span class="n">container</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">container</span>
 
@@ -4299,7 +4299,7 @@ name='sleeper' type='container' flavor='sleeping' description='Sleeping containe
                 <span class="n">e</span><span class="p">,</span>
             <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_stop_daemon</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_stop_daemon</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Stop the service docker container associated with this service.</span>
 
 <span class="sd">        Args:</span>
@@ -4322,11 +4322,11 @@ name='sleeper' type='container' flavor='sleeping' description='Sleeping containe
             <span class="n">container</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
             <span class="n">container</span><span class="o">.</span><span class="n">remove</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">provision</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">provision</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Provision the service.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_start_container</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">deprovision</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">deprovision</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Deprovision the service.</span>
 
 <span class="sd">        Args:</span>
@@ -4334,7 +4334,7 @@ name='sleeper' type='container' flavor='sleeping' description='Sleeping containe
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_stop_daemon</span><span class="p">(</span><span class="n">force</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_logs</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_logs</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">follow</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">tail</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Retrieve the service logs.</span>
@@ -4376,7 +4376,7 @@ name='sleeper' type='container' flavor='sleeping' description='Sleeping containe
                     <span class="k">break</span>
 
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Run the containerized service logic associated with this service.</span>
 
 <span class="sd">        Subclasses must implement this method to provide the containerized</span>
@@ -4562,7 +4562,7 @@ description of the error, if one is encountered).</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/services/container/container_service.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">check_status</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">ServiceState</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">check_status</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">ServiceState</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Check the the current operational state of the docker container.</span>
 
 <span class="sd">    Returns:</span>
@@ -4634,7 +4634,7 @@ description of the error, if one is encountered).</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/services/container/container_service.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">deprovision</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">deprovision</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Deprovision the service.</span>
 
 <span class="sd">    Args:</span>
@@ -4705,7 +4705,7 @@ description of the error, if one is encountered).</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/services/container/container_service.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_logs</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_logs</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">follow</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">tail</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Retrieve the service logs.</span>
@@ -4785,7 +4785,7 @@ state of the service.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/services/container/container_service.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_service_status_message</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_service_status_message</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get a message about the current operational state of the service.</span>
 
 <span class="sd">    Returns:</span>
@@ -4850,7 +4850,7 @@ state of the service.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/services/container/container_service.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">init_private_attributes</span><span class="p">(</span><span class="bp">self</span><span class="p">:</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">/</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">init_private_attributes</span><span class="p">(</span><span class="bp">self</span><span class="p">:</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">/</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;This function is meant to behave like a BaseModel method to initialise private attributes.</span>
 
 <span class="sd">    It takes context as an argument since that&#39;s what pydantic-core passes when calling it.</span>
@@ -4890,7 +4890,7 @@ state of the service.</p></td>
 
         <details class="quote">
           <summary>Source code in <code>zenml/services/container/container_service.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">provision</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">provision</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Provision the service.&quot;&quot;&quot;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_start_container</span><span class="p">()</span>
 </code></pre></div>
@@ -4922,7 +4922,7 @@ the running container, not in the context of the process that calls the
         <details class="quote">
           <summary>Source code in <code>zenml/services/container/container_service.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
-<span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Run the containerized service logic associated with this service.</span>
 
 <span class="sd">    Subclasses must implement this method to provide the containerized</span>
@@ -4997,7 +4997,7 @@ also set.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/services/container/container_service.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ContainerServiceConfig</span><span class="p">(</span><span class="n">ServiceConfig</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ContainerServiceConfig</span><span class="p">(</span><span class="n">ServiceConfig</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;containerized service configuration.</span>
 
 <span class="sd">    Attributes:</span>
@@ -5089,7 +5089,7 @@ file used to start the service daemon and the logfile) are located</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/services/container/container_service.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ContainerServiceStatus</span><span class="p">(</span><span class="n">ServiceStatus</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ContainerServiceStatus</span><span class="p">(</span><span class="n">ServiceStatus</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;containerized service status.</span>
 
 <span class="sd">    Attributes:</span>
@@ -5100,7 +5100,7 @@ file used to start the service daemon and the logfile) are located</p></td>
     <span class="n">runtime_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config_file</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config_file</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the path to the service configuration file.</span>
 
 <span class="sd">        Returns:</span>
@@ -5112,7 +5112,7 @@ file used to start the service daemon and the logfile) are located</p></td>
         <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">runtime_path</span><span class="p">,</span> <span class="n">SERVICE_CONFIG_FILE_NAME</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">log_file</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">log_file</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the path to the log file where the service output is/has been logged.</span>
 
 <span class="sd">        Returns:</span>
@@ -5327,7 +5327,7 @@ by external services implemented as containerized processes.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/services/container/container_service_endpoint.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ContainerServiceEndpoint</span><span class="p">(</span><span class="n">BaseServiceEndpoint</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ContainerServiceEndpoint</span><span class="p">(</span><span class="n">BaseServiceEndpoint</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;A service endpoint exposed by a containerized process.</span>
 
 <span class="sd">    This class extends the base service endpoint class with functionality</span>
@@ -5350,7 +5350,7 @@ by external services implemented as containerized processes.</p>
         <span class="n">Union</span><span class="p">[</span><span class="n">HTTPEndpointHealthMonitor</span><span class="p">,</span> <span class="n">TCPEndpointHealthMonitor</span><span class="p">]</span>
     <span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">discriminator</span><span class="o">=</span><span class="s2">&quot;type&quot;</span><span class="p">,</span> <span class="n">union_mode</span><span class="o">=</span><span class="s2">&quot;left_to_right&quot;</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_lookup_free_port</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_lookup_free_port</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Search for a free TCP port for the service endpoint.</span>
 
 <span class="sd">        If a preferred TCP port value is explicitly requested through the</span>
@@ -5386,7 +5386,7 @@ by external services implemented as containerized processes.</p>
             <span class="k">return</span> <span class="n">port</span>
         <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s2">&quot;No free TCP ports found&quot;</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">prepare_for_start</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">prepare_for_start</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Prepare the service endpoint for starting.</span>
 
 <span class="sd">        This method is called before the service is started.</span>
@@ -5442,7 +5442,7 @@ by external services implemented as containerized processes.</p>
 
         <details class="quote">
           <summary>Source code in <code>zenml/services/container/container_service_endpoint.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">prepare_for_start</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">prepare_for_start</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Prepare the service endpoint for starting.</span>
 
 <span class="sd">    This method is called before the service is started.</span>
@@ -5519,7 +5519,7 @@ service endpoint automatically.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/services/container/container_service_endpoint.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ContainerServiceEndpointConfig</span><span class="p">(</span><span class="n">ServiceEndpointConfig</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ContainerServiceEndpointConfig</span><span class="p">(</span><span class="n">ServiceEndpointConfig</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Local daemon service endpoint configuration.</span>
 
 <span class="sd">    Attributes:</span>
@@ -5594,7 +5594,7 @@ ContainerServiceEndpointStatus            (<a class="autorefs autorefs-internal"
 
         <details class="quote">
           <summary>Source code in <code>zenml/services/container/container_service_endpoint.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ContainerServiceEndpointStatus</span><span class="p">(</span><span class="n">ServiceEndpointStatus</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ContainerServiceEndpointStatus</span><span class="p">(</span><span class="n">ServiceEndpointStatus</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Local daemon service endpoint status.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
@@ -5726,7 +5726,7 @@ that are implemented as locally running docker containers.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/services/container/entrypoint.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">launch_service</span><span class="p">(</span><span class="n">service_config_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">launch_service</span><span class="p">(</span><span class="n">service_config_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Instantiate and launch a ZenML local service from its configuration file.</span>
 
 <span class="sd">    Args:</span>
@@ -5737,9 +5737,9 @@ that are implemented as locally running docker containers.</p>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># doing zenml imports here to avoid polluting the stdout/stderr</span>
     <span class="c1"># with messages before daemonization is complete</span>
-    <span class="kn">from</span> <span class="nn">zenml.integrations.registry</span> <span class="kn">import</span> <span class="n">integration_registry</span>
-    <span class="kn">from</span> <span class="nn">zenml.logger</span> <span class="kn">import</span> <span class="n">get_logger</span>
-    <span class="kn">from</span> <span class="nn">zenml.services</span> <span class="kn">import</span> <span class="n">ContainerService</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">integration_registry</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.logger</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.services</span><span class="w"> </span><span class="kn">import</span> <span class="n">ContainerService</span>
 
     <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -5954,7 +5954,7 @@ name='sleeper' type='daemon' flavor='sleeping' description='Sleeping daemon'
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/services/local/local_service.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">LocalDaemonService</span><span class="p">(</span><span class="n">BaseService</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">LocalDaemonService</span><span class="p">(</span><span class="n">BaseService</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;A service represented by a local daemon process.</span>
 
 <span class="sd">    This class extends the base service class with functionality concerning</span>
@@ -6018,7 +6018,7 @@ name='sleeper' type='daemon' flavor='sleeping' description='Sleeping daemon'
     <span class="c1"># TODO [ENG-705]: allow multiple endpoints per service</span>
     <span class="n">endpoint</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">LocalDaemonServiceEndpoint</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="nf">get_service_status_message</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_service_status_message</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a message about the current operational state of the service.</span>
 
 <span class="sd">        Returns:</span>
@@ -6036,7 +6036,7 @@ name='sleeper' type='daemon' flavor='sleeping' description='Sleeping daemon'
             <span class="p">)</span>
         <span class="k">return</span> <span class="n">msg</span>
 
-    <span class="k">def</span> <span class="nf">check_status</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">ServiceState</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">check_status</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">ServiceState</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Check the the current operational state of the daemon process.</span>
 
 <span class="sd">        Returns:</span>
@@ -6050,7 +6050,7 @@ name='sleeper' type='daemon' flavor='sleeping' description='Sleeping daemon'
         <span class="c1"># the daemon is running</span>
         <span class="k">return</span> <span class="n">ServiceState</span><span class="o">.</span><span class="n">ACTIVE</span><span class="p">,</span> <span class="s2">&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">_get_daemon_cmd</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_daemon_cmd</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the command to run the service daemon.</span>
 
 <span class="sd">        The default implementation provided by this class is the following:</span>
@@ -6072,7 +6072,7 @@ name='sleeper' type='daemon' flavor='sleeping' description='Sleeping daemon'
 <span class="sd">            variables to set, in the formats accepted by subprocess.Popen.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># to avoid circular imports, import here</span>
-        <span class="kn">import</span> <span class="nn">zenml.services.local.local_daemon_entrypoint</span> <span class="k">as</span> <span class="nn">daemon_entrypoint</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">zenml.services.local.local_daemon_entrypoint</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">daemon_entrypoint</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">silent_daemon</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">silent_daemon</span>
         <span class="c1"># reuse the config file and logfile location from a previous run,</span>
@@ -6122,7 +6122,7 @@ name='sleeper' type='daemon' flavor='sleeping' description='Sleeping daemon'
 
         <span class="k">return</span> <span class="n">command</span><span class="p">,</span> <span class="n">command_env</span>
 
-    <span class="k">def</span> <span class="nf">_start_daemon</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_start_daemon</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Start the service daemon process associated with this service.&quot;&quot;&quot;</span>
         <span class="n">pid</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">pid</span>
         <span class="k">if</span> <span class="n">pid</span><span class="p">:</span>
@@ -6160,7 +6160,7 @@ name='sleeper' type='daemon' flavor='sleeping' description='Sleeping daemon'
                 <span class="bp">self</span><span class="p">,</span>
             <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_stop_daemon</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_stop_daemon</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Stop the service daemon process associated with this service.</span>
 
 <span class="sd">        Args:</span>
@@ -6188,11 +6188,11 @@ name='sleeper' type='daemon' flavor='sleeping' description='Sleeping daemon'
         <span class="k">else</span><span class="p">:</span>
             <span class="n">p</span><span class="o">.</span><span class="n">terminate</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">provision</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">provision</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Provision the service.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_start_daemon</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">deprovision</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">deprovision</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Deprovision the service.</span>
 
 <span class="sd">        Args:</span>
@@ -6200,7 +6200,7 @@ name='sleeper' type='daemon' flavor='sleeping' description='Sleeping daemon'
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_stop_daemon</span><span class="p">(</span><span class="n">force</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Start the service and optionally wait for it to become active.</span>
 
 <span class="sd">        Args:</span>
@@ -6213,7 +6213,7 @@ name='sleeper' type='daemon' flavor='sleeping' description='Sleeping daemon'
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">get_logs</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_logs</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">follow</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">tail</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Retrieve the service logs.</span>
@@ -6255,7 +6255,7 @@ name='sleeper' type='daemon' flavor='sleeping' description='Sleeping daemon'
                     <span class="k">break</span>
 
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Run the service daemon process associated with this service.</span>
 
 <span class="sd">        Subclasses must implement this method to provide the service daemon</span>
@@ -6326,7 +6326,7 @@ description of the error, if one is encountered).</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/services/local/local_service.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">check_status</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">ServiceState</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">check_status</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">ServiceState</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Check the the current operational state of the daemon process.</span>
 
 <span class="sd">    Returns:</span>
@@ -6382,7 +6382,7 @@ description of the error, if one is encountered).</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/services/local/local_service.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">deprovision</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">deprovision</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Deprovision the service.</span>
 
 <span class="sd">    Args:</span>
@@ -6453,7 +6453,7 @@ description of the error, if one is encountered).</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/services/local/local_service.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_logs</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_logs</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">follow</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">tail</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Retrieve the service logs.</span>
@@ -6533,7 +6533,7 @@ state of the service.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/services/local/local_service.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_service_status_message</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_service_status_message</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get a message about the current operational state of the service.</span>
 
 <span class="sd">    Returns:</span>
@@ -6574,7 +6574,7 @@ state of the service.</p></td>
 
         <details class="quote">
           <summary>Source code in <code>zenml/services/local/local_service.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">provision</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">provision</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Provision the service.&quot;&quot;&quot;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">_start_daemon</span><span class="p">()</span>
 </code></pre></div>
@@ -6606,7 +6606,7 @@ running daemon, not in the context of the process that calls the
         <details class="quote">
           <summary>Source code in <code>zenml/services/local/local_service.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
-<span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Run the service daemon process associated with this service.</span>
 
 <span class="sd">    Subclasses must implement this method to provide the service daemon</span>
@@ -6659,7 +6659,7 @@ the service status.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/services/local/local_service.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Start the service and optionally wait for it to become active.</span>
 
 <span class="sd">    Args:</span>
@@ -6749,7 +6749,7 @@ that do not support daemon processes.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/services/local/local_service.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">LocalDaemonServiceConfig</span><span class="p">(</span><span class="n">ServiceConfig</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">LocalDaemonServiceConfig</span><span class="p">(</span><span class="n">ServiceConfig</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Local daemon service configuration.</span>
 
 <span class="sd">    Attributes:</span>
@@ -6856,7 +6856,7 @@ is suppressed (redirected to /dev/null).</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/services/local/local_service.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">LocalDaemonServiceStatus</span><span class="p">(</span><span class="n">ServiceStatus</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">LocalDaemonServiceStatus</span><span class="p">(</span><span class="n">ServiceStatus</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Local daemon service status.</span>
 
 <span class="sd">    Attributes:</span>
@@ -6874,7 +6874,7 @@ is suppressed (redirected to /dev/null).</p></td>
     <span class="n">silent_daemon</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config_file</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config_file</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the path to the configuration file used to start the service daemon.</span>
 
 <span class="sd">        Returns:</span>
@@ -6886,7 +6886,7 @@ is suppressed (redirected to /dev/null).</p></td>
         <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">runtime_path</span><span class="p">,</span> <span class="n">SERVICE_DAEMON_CONFIG_FILE_NAME</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">log_file</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">log_file</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the path to the log file where the service output is/has been logged.</span>
 
 <span class="sd">        Returns:</span>
@@ -6898,7 +6898,7 @@ is suppressed (redirected to /dev/null).</p></td>
         <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">runtime_path</span><span class="p">,</span> <span class="n">SERVICE_DAEMON_LOG_FILE_NAME</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">pid_file</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">pid_file</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the path to a daemon PID file.</span>
 
 <span class="sd">        This is where the last known PID of the daemon process is stored.</span>
@@ -6912,7 +6912,7 @@ is suppressed (redirected to /dev/null).</p></td>
         <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">runtime_path</span><span class="p">,</span> <span class="n">SERVICE_DAEMON_PID_FILE_NAME</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">pid</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">pid</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the PID of the currently running daemon.</span>
 
 <span class="sd">        Returns:</span>
@@ -6928,8 +6928,8 @@ is suppressed (redirected to /dev/null).</p></td>
             <span class="p">)</span>
             <span class="k">return</span> <span class="kc">None</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="kn">import</span> <span class="nn">zenml.services.local.local_daemon_entrypoint</span> <span class="k">as</span> <span class="nn">daemon_entrypoint</span>
-            <span class="kn">from</span> <span class="nn">zenml.utils.daemon</span> <span class="kn">import</span> <span class="n">get_daemon_pid_if_running</span>
+            <span class="kn">import</span><span class="w"> </span><span class="nn">zenml.services.local.local_daemon_entrypoint</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">daemon_entrypoint</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.utils.daemon</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_daemon_pid_if_running</span>
 
             <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Checking PID file </span><span class="si">{</span><span class="n">pid_file</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
 
@@ -7258,7 +7258,7 @@ by external services implemented as local daemon processes.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/services/local/local_service_endpoint.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">LocalDaemonServiceEndpoint</span><span class="p">(</span><span class="n">BaseServiceEndpoint</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">LocalDaemonServiceEndpoint</span><span class="p">(</span><span class="n">BaseServiceEndpoint</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;A service endpoint exposed by a local daemon process.</span>
 
 <span class="sd">    This class extends the base service endpoint class with functionality</span>
@@ -7281,7 +7281,7 @@ by external services implemented as local daemon processes.</p>
         <span class="n">Union</span><span class="p">[</span><span class="n">HTTPEndpointHealthMonitor</span><span class="p">,</span> <span class="n">TCPEndpointHealthMonitor</span><span class="p">]</span>
     <span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">discriminator</span><span class="o">=</span><span class="s2">&quot;type&quot;</span><span class="p">,</span> <span class="n">union_mode</span><span class="o">=</span><span class="s2">&quot;left_to_right&quot;</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_lookup_free_port</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_lookup_free_port</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Search for a free TCP port for the service endpoint.</span>
 
 <span class="sd">        If a preferred TCP port value is explicitly requested through the</span>
@@ -7317,7 +7317,7 @@ by external services implemented as local daemon processes.</p>
             <span class="k">return</span> <span class="n">port</span>
         <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s2">&quot;No free TCP ports found&quot;</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">prepare_for_start</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">prepare_for_start</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Prepare the service endpoint for starting.</span>
 
 <span class="sd">        This method is called before the service is started.</span>
@@ -7372,7 +7372,7 @@ by external services implemented as local daemon processes.</p>
 
         <details class="quote">
           <summary>Source code in <code>zenml/services/local/local_service_endpoint.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">prepare_for_start</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">prepare_for_start</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Prepare the service endpoint for starting.</span>
 
 <span class="sd">    This method is called before the service is started.</span>
@@ -7454,7 +7454,7 @@ service endpoint automatically.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/services/local/local_service_endpoint.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">LocalDaemonServiceEndpointConfig</span><span class="p">(</span><span class="n">ServiceEndpointConfig</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">LocalDaemonServiceEndpointConfig</span><span class="p">(</span><span class="n">ServiceEndpointConfig</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Local daemon service endpoint configuration.</span>
 
 <span class="sd">    Attributes:</span>
@@ -7532,7 +7532,7 @@ LocalDaemonServiceEndpointStatus            (<a class="autorefs autorefs-interna
 
         <details class="quote">
           <summary>Source code in <code>zenml/services/local/local_service_endpoint.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">LocalDaemonServiceEndpointStatus</span><span class="p">(</span><span class="n">ServiceEndpointStatus</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">LocalDaemonServiceEndpointStatus</span><span class="p">(</span><span class="n">ServiceEndpointStatus</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Local daemon service endpoint status.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
@@ -7642,11 +7642,11 @@ BaseDeploymentService            (<a class="autorefs autorefs-internal" title="z
 
         <details class="quote">
           <summary>Source code in <code>zenml/services/service.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseDeploymentService</span><span class="p">(</span><span class="n">BaseService</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">BaseDeploymentService</span><span class="p">(</span><span class="n">BaseService</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for deployment services.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">prediction_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">prediction_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets the prediction URL for the endpoint.</span>
 
 <span class="sd">        Returns:</span>
@@ -7655,7 +7655,7 @@ BaseDeploymentService            (<a class="autorefs autorefs-internal" title="z
         <span class="k">return</span> <span class="kc">None</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">healthcheck_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">healthcheck_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets the healthcheck URL for the endpoint.</span>
 
 <span class="sd">        Returns:</span>
@@ -7843,7 +7843,7 @@ the service class. Every concrete service class must define this.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/services/service.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseService</span><span class="p">(</span><span class="n">BaseTypedModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">BaseService</span><span class="p">(</span><span class="n">BaseTypedModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Base service class.</span>
 
 <span class="sd">    This class implements generic functionality concerning the life-cycle</span>
@@ -7869,7 +7869,7 @@ the service class. Every concrete service class must define this.</p></td>
     <span class="c1"># TODO [ENG-703]: allow multiple endpoints per service</span>
     <span class="n">endpoint</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseServiceEndpoint</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="o">**</span><span class="n">attrs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -7882,7 +7882,7 @@ the service class. Every concrete service class must define this.</p></td>
         <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">name</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">from_model</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="s2">&quot;ServiceResponse&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseService&quot;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_model</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="s2">&quot;ServiceResponse&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseService&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Loads a service from a model.</span>
 
 <span class="sd">        Args:</span>
@@ -7909,7 +7909,7 @@ the service class. Every concrete service class must define this.</p></td>
         <span class="p">)</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">from_json</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseTypedModel&quot;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_json</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseTypedModel&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Loads a service from a JSON string.</span>
 
 <span class="sd">        Args:</span>
@@ -7925,7 +7925,7 @@ the service class. Every concrete service class must define this.</p></td>
         <span class="k">return</span> <span class="n">class_</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">service_dict</span><span class="p">)</span>
 
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">check_status</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">ServiceState</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">check_status</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">ServiceState</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Check the the current operational state of the external service.</span>
 
 <span class="sd">        This method should be overridden by subclasses that implement</span>
@@ -7939,7 +7939,7 @@ the service class. Every concrete service class must define this.</p></td>
 <span class="sd">        &quot;&quot;&quot;</span>
 
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">get_logs</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_logs</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">follow</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">tail</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Retrieve the service logs.</span>
@@ -7955,7 +7955,7 @@ the service class. Every concrete service class must define this.</p></td>
 <span class="sd">            A generator that can be accessed to get the service logs.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">update_status</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update_status</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Update the status of the service.</span>
 
 <span class="sd">        Check the current operational state of the external service</span>
@@ -7991,7 +7991,7 @@ the service class. Every concrete service class must define this.</p></td>
             <span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">update_state</span><span class="p">(</span><span class="n">ServiceState</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
 
-    <span class="k">def</span> <span class="nf">get_service_status_message</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_service_status_message</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a service status message.</span>
 
 <span class="sd">        Returns:</span>
@@ -8004,7 +8004,7 @@ the service class. Every concrete service class must define this.</p></td>
             <span class="sa">f</span><span class="s2">&quot;  Last status message: &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">last_error</span><span class="si">}</span><span class="s2">&#39;</span><span class="se">\n</span><span class="s2">&quot;</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">poll_service_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">poll_service_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Polls the external service status.</span>
 
 <span class="sd">        It does this until the service operational state matches the</span>
@@ -8042,7 +8042,7 @@ the service class. Every concrete service class must define this.</p></td>
         <span class="k">return</span> <span class="kc">False</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">is_running</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_running</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if the service is currently running.</span>
 
 <span class="sd">        This method will actively poll the external service to get its status</span>
@@ -8058,7 +8058,7 @@ the service class. Every concrete service class must define this.</p></td>
         <span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">is_stopped</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_stopped</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if the service is currently stopped.</span>
 
 <span class="sd">        This method will actively poll the external service to get its status</span>
@@ -8071,7 +8071,7 @@ the service class. Every concrete service class must define this.</p></td>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">state</span> <span class="o">==</span> <span class="n">ServiceState</span><span class="o">.</span><span class="n">INACTIVE</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">is_failed</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_failed</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if the service is currently failed.</span>
 
 <span class="sd">        This method will actively poll the external service to get its status</span>
@@ -8083,7 +8083,7 @@ the service class. Every concrete service class must define this.</p></td>
         <span class="bp">self</span><span class="o">.</span><span class="n">update_status</span><span class="p">()</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">state</span> <span class="o">==</span> <span class="n">ServiceState</span><span class="o">.</span><span class="n">ERROR</span>
 
-    <span class="k">def</span> <span class="nf">provision</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">provision</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Provisions resources to run the service.</span>
 
 <span class="sd">        Raises:</span>
@@ -8093,7 +8093,7 @@ the service class. Every concrete service class must define this.</p></td>
             <span class="sa">f</span><span class="s2">&quot;Provisioning resources not implemented for </span><span class="si">{</span><span class="bp">self</span><span class="si">}</span><span class="s2">.&quot;</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">deprovision</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">deprovision</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Deprovisions all resources used by the service.</span>
 
 <span class="sd">        Args:</span>
@@ -8108,7 +8108,7 @@ the service class. Every concrete service class must define this.</p></td>
             <span class="sa">f</span><span class="s2">&quot;Deprovisioning resources not implemented for </span><span class="si">{</span><span class="bp">self</span><span class="si">}</span><span class="s2">.&quot;</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">ServiceConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">ServiceConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Update the service configuration.</span>
 
 <span class="sd">        Args:</span>
@@ -8120,7 +8120,7 @@ the service class. Every concrete service class must define this.</p></td>
         <span class="n">pre_status</span><span class="o">=</span><span class="n">ServiceState</span><span class="o">.</span><span class="n">PENDING_STARTUP</span><span class="p">,</span>
         <span class="n">post_status</span><span class="o">=</span><span class="n">ServiceState</span><span class="o">.</span><span class="n">ACTIVE</span><span class="p">,</span>
     <span class="p">)</span>
-    <span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Start the service and optionally wait for it to become active.</span>
 
 <span class="sd">        Args:</span>
@@ -8141,7 +8141,7 @@ the service class. Every concrete service class must define this.</p></td>
         <span class="n">pre_status</span><span class="o">=</span><span class="n">ServiceState</span><span class="o">.</span><span class="n">PENDING_SHUTDOWN</span><span class="p">,</span>
         <span class="n">post_status</span><span class="o">=</span><span class="n">ServiceState</span><span class="o">.</span><span class="n">INACTIVE</span><span class="p">,</span>
     <span class="p">)</span>
-    <span class="k">def</span> <span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Stop the service and optionally wait for it to shutdown.</span>
 
 <span class="sd">        Args:</span>
@@ -8163,7 +8163,7 @@ the service class. Every concrete service class must define this.</p></td>
                         <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">last_error</span><span class="si">}</span><span class="s2">&#39;&quot;</span>
                     <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_prediction_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_prediction_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets the prediction URL for the endpoint.</span>
 
 <span class="sd">        Returns:</span>
@@ -8178,7 +8178,7 @@ the service class. Every concrete service class must define this.</p></td>
             <span class="p">)</span>
         <span class="k">return</span> <span class="n">prediction_url</span>
 
-    <span class="k">def</span> <span class="nf">get_healthcheck_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_healthcheck_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets the healthcheck URL for the endpoint.</span>
 
 <span class="sd">        Returns:</span>
@@ -8191,7 +8191,7 @@ the service class. Every concrete service class must define this.</p></td>
             <span class="k">else</span> <span class="kc">None</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;String representation of the service.</span>
 
 <span class="sd">        Returns:</span>
@@ -8199,7 +8199,7 @@ the service class. Every concrete service class must define this.</p></td>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__qualname__</span><span class="si">}</span><span class="s2">[</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">uuid</span><span class="si">}</span><span class="s2">] (type: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">SERVICE_TYPE</span><span class="o">.</span><span class="n">type</span><span class="si">}</span><span class="s2">, flavor: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">SERVICE_TYPE</span><span class="o">.</span><span class="n">flavor</span><span class="si">}</span><span class="s2">)&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;String representation of the service.</span>
 
 <span class="sd">        Returns:</span>
@@ -8400,7 +8400,7 @@ and will return the result.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/services/service.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="o">**</span><span class="n">attrs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -8453,7 +8453,7 @@ and will return the result.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/services/service.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;String representation of the service.</span>
 
 <span class="sd">    Returns:</span>
@@ -8502,7 +8502,7 @@ and will return the result.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/services/service.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;String representation of the service.</span>
 
 <span class="sd">    Returns:</span>
@@ -8554,7 +8554,7 @@ service status).</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/services/service.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
-<span class="k">def</span> <span class="nf">check_status</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">ServiceState</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">check_status</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">ServiceState</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Check the the current operational state of the external service.</span>
 
 <span class="sd">    This method should be overridden by subclasses that implement</span>
@@ -8626,7 +8626,7 @@ deprovisioning functionality.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/services/service.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">deprovision</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">deprovision</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Deprovisions all resources used by the service.</span>
 
 <span class="sd">    Args:</span>
@@ -8702,7 +8702,7 @@ deprovisioning functionality.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/services/service.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">from_json</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseTypedModel&quot;</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">from_json</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">json_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseTypedModel&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Loads a service from a JSON string.</span>
 
 <span class="sd">    Args:</span>
@@ -8793,7 +8793,7 @@ deprovisioning functionality.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/services/service.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">from_model</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="s2">&quot;ServiceResponse&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseService&quot;</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">from_model</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="s2">&quot;ServiceResponse&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseService&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Loads a service from a model.</span>
 
 <span class="sd">    Args:</span>
@@ -8857,7 +8857,7 @@ deprovisioning functionality.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/services/service.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_healthcheck_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_healthcheck_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets the healthcheck URL for the endpoint.</span>
 
 <span class="sd">    Returns:</span>
@@ -8936,7 +8936,7 @@ concrete service tracking functionality.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/services/service.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
-<span class="k">def</span> <span class="nf">get_logs</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_logs</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">follow</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">tail</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Retrieve the service logs.</span>
@@ -8990,7 +8990,7 @@ concrete service tracking functionality.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/services/service.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_prediction_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_prediction_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets the prediction URL for the endpoint.</span>
 
 <span class="sd">    Returns:</span>
@@ -9044,7 +9044,7 @@ state of the service.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/services/service.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_service_status_message</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_service_status_message</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get a service status message.</span>
 
 <span class="sd">    Returns:</span>
@@ -9119,7 +9119,7 @@ state, False otherwise.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/services/service.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">poll_service_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">poll_service_status</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Polls the external service status.</span>
 
 <span class="sd">    It does this until the service operational state matches the</span>
@@ -9194,7 +9194,7 @@ state, False otherwise.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/services/service.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">provision</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">provision</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Provisions resources to run the service.</span>
 
 <span class="sd">    Raises:</span>
@@ -9252,7 +9252,7 @@ the service status.</p></td>
     <span class="n">pre_status</span><span class="o">=</span><span class="n">ServiceState</span><span class="o">.</span><span class="n">PENDING_STARTUP</span><span class="p">,</span>
     <span class="n">post_status</span><span class="o">=</span><span class="n">ServiceState</span><span class="o">.</span><span class="n">ACTIVE</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="k">def</span> <span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">start</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Start the service and optionally wait for it to become active.</span>
 
 <span class="sd">    Args:</span>
@@ -9324,7 +9324,7 @@ currently running.</p></td>
     <span class="n">pre_status</span><span class="o">=</span><span class="n">ServiceState</span><span class="o">.</span><span class="n">PENDING_SHUTDOWN</span><span class="p">,</span>
     <span class="n">post_status</span><span class="o">=</span><span class="n">ServiceState</span><span class="o">.</span><span class="n">INACTIVE</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="k">def</span> <span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Stop the service and optionally wait for it to shutdown.</span>
 
 <span class="sd">    Args:</span>
@@ -9388,7 +9388,7 @@ currently running.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/services/service.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">ServiceConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">ServiceConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Update the service configuration.</span>
 
 <span class="sd">    Args:</span>
@@ -9423,7 +9423,7 @@ concrete service status tracking functionality.</p>
 
         <details class="quote">
           <summary>Source code in <code>zenml/services/service.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">update_status</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">update_status</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Update the status of the service.</span>
 
 <span class="sd">    Check the current operational state of the external service</span>
@@ -9535,7 +9535,7 @@ configuration.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/services/service.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ServiceConfig</span><span class="p">(</span><span class="n">BaseTypedModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ServiceConfig</span><span class="p">(</span><span class="n">BaseTypedModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Generic service configuration.</span>
 
 <span class="sd">    Concrete service classes should extend this class and add additional</span>
@@ -9566,7 +9566,7 @@ configuration.</p>
     <span class="c1">#  careful we might overwrite some fields protected by pydantic.</span>
     <span class="n">model_config</span> <span class="o">=</span> <span class="n">ConfigDict</span><span class="p">(</span><span class="n">protected_namespaces</span><span class="o">=</span><span class="p">())</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the service configuration.</span>
 
 <span class="sd">        Args:</span>
@@ -9584,7 +9584,7 @@ configuration.</p>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Either &#39;name&#39; or &#39;model_name&#39; must be set.&quot;</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_service_labels</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_service_labels</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the service labels.</span>
 
 <span class="sd">        Returns:</span>
@@ -9678,7 +9678,7 @@ configuration.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/services/service.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize the service configuration.</span>
 
 <span class="sd">    Args:</span>
@@ -9734,7 +9734,7 @@ configuration.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/services/service.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_service_labels</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_service_labels</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the service labels.</span>
 
 <span class="sd">    Returns:</span>
@@ -9829,7 +9829,7 @@ service status is updated to reflect the error state.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/services/service.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">update_service_status</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">update_service_status</span><span class="p">(</span>
     <span class="n">pre_status</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ServiceState</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">post_status</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ServiceState</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">error_status</span><span class="p">:</span> <span class="n">ServiceState</span> <span class="o">=</span> <span class="n">ServiceState</span><span class="o">.</span><span class="n">ERROR</span><span class="p">,</span>
@@ -9849,9 +9849,9 @@ service status is updated to reflect the error state.</p>
 <span class="sd">        Callable[..., Any]: The wrapped method with exception handling.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">decorator</span><span class="p">(</span><span class="n">func</span><span class="p">:</span> <span class="n">T</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">decorator</span><span class="p">(</span><span class="n">func</span><span class="p">:</span> <span class="n">T</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>
         <span class="nd">@wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
-        <span class="k">def</span> <span class="nf">wrapper</span><span class="p">(</span><span class="bp">self</span><span class="p">:</span> <span class="s2">&quot;BaseService&quot;</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">wrapper</span><span class="p">(</span><span class="bp">self</span><span class="p">:</span> <span class="s2">&quot;BaseService&quot;</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">pre_status</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">update_state</span><span class="p">(</span><span class="n">pre_status</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
             <span class="k">try</span><span class="p">:</span>
@@ -9970,7 +9970,7 @@ API or generic TCP endpoint exposed by a service).</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/services/service_endpoint.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseServiceEndpoint</span><span class="p">(</span><span class="n">BaseTypedModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">BaseServiceEndpoint</span><span class="p">(</span><span class="n">BaseTypedModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Base service class.</span>
 
 <span class="sd">    This class implements generic functionality concerning the life-cycle</span>
@@ -9990,7 +9990,7 @@ API or generic TCP endpoint exposed by a service).</p>
     <span class="c1"># TODO [ENG-701]: allow multiple monitors per endpoint</span>
     <span class="n">monitor</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseServiceEndpointHealthMonitor</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
@@ -10004,7 +10004,7 @@ API or generic TCP endpoint exposed by a service).</p>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">name</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span>
 
-    <span class="k">def</span> <span class="nf">check_status</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">ServiceState</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">check_status</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">ServiceState</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Check the the current operational state of the external service endpoint.</span>
 
 <span class="sd">        Returns:</span>
@@ -10019,7 +10019,7 @@ API or generic TCP endpoint exposed by a service).</p>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">admin_state</span><span class="p">,</span> <span class="s2">&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">check_endpoint_status</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">update_status</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update_status</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Check the the current operational state of the external service endpoint.</span>
 
 <span class="sd">        It updates the local operational status information accordingly.</span>
@@ -10037,7 +10037,7 @@ API or generic TCP endpoint exposed by a service).</p>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">update_state</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="n">err</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">is_active</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_active</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if the service endpoint is active.</span>
 
 <span class="sd">        This means that it is responsive and can receive requests). This method</span>
@@ -10050,7 +10050,7 @@ API or generic TCP endpoint exposed by a service).</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">update_status</span><span class="p">()</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">state</span> <span class="o">==</span> <span class="n">ServiceState</span><span class="o">.</span><span class="n">ACTIVE</span>
 
-    <span class="k">def</span> <span class="nf">is_inactive</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_inactive</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if the service endpoint is inactive.</span>
 
 <span class="sd">        This means that it is unresponsive and cannot receive requests. This</span>
@@ -10136,7 +10136,7 @@ API or generic TCP endpoint exposed by a service).</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/services/service_endpoint.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
@@ -10191,7 +10191,7 @@ checking the service status).</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/services/service_endpoint.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">check_status</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">ServiceState</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">check_status</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">ServiceState</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Check the the current operational state of the external service endpoint.</span>
 
 <span class="sd">    Returns:</span>
@@ -10247,7 +10247,7 @@ status and will return the result.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/services/service_endpoint.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">is_active</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">is_active</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if the service endpoint is active.</span>
 
 <span class="sd">    This means that it is responsive and can receive requests). This method</span>
@@ -10301,7 +10301,7 @@ endpoint status and will return the result.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/services/service_endpoint.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">is_inactive</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">is_inactive</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if the service endpoint is inactive.</span>
 
 <span class="sd">    This means that it is unresponsive and cannot receive requests. This</span>
@@ -10338,7 +10338,7 @@ endpoint status and will return the result.</p>
 
         <details class="quote">
           <summary>Source code in <code>zenml/services/service_endpoint.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">update_status</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">update_status</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Check the the current operational state of the external service endpoint.</span>
 
 <span class="sd">    It updates the local operational status information accordingly.</span>
@@ -10417,7 +10417,7 @@ configuration.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/services/service_endpoint.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ServiceEndpointConfig</span><span class="p">(</span><span class="n">BaseTypedModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ServiceEndpointConfig</span><span class="p">(</span><span class="n">BaseTypedModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Generic service endpoint configuration.</span>
 
 <span class="sd">    Concrete service classes should extend this class and add additional</span>
@@ -10490,7 +10490,7 @@ ServiceEndpointProtocol            (<a class="autorefs autorefs-internal" title=
 
         <details class="quote">
           <summary>Source code in <code>zenml/services/service_endpoint.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ServiceEndpointProtocol</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ServiceEndpointProtocol</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Possible endpoint protocol values.&quot;&quot;&quot;</span>
 
     <span class="n">TCP</span> <span class="o">=</span> <span class="s2">&quot;tcp&quot;</span>
@@ -10575,7 +10575,7 @@ endpoint.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/services/service_endpoint.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ServiceEndpointStatus</span><span class="p">(</span><span class="n">ServiceStatus</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ServiceEndpointStatus</span><span class="p">(</span><span class="n">ServiceStatus</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Status information describing the operational state of a service endpoint.</span>
 
 <span class="sd">    For example, this could be a HTTP/HTTPS API or generic TCP endpoint exposed</span>
@@ -10594,7 +10594,7 @@ endpoint.</p>
     <span class="n">port</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">uri</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">uri</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the URI of the service endpoint.</span>
 
 <span class="sd">        Returns:</span>
@@ -10765,7 +10765,7 @@ BaseServiceEndpointHealthMonitor            (<a class="autorefs autorefs-interna
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/services/service_monitor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseServiceEndpointHealthMonitor</span><span class="p">(</span><span class="n">BaseTypedModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">BaseServiceEndpointHealthMonitor</span><span class="p">(</span><span class="n">BaseTypedModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class used for service endpoint health monitors.</span>
 
 <span class="sd">    Attributes:</span>
@@ -10777,7 +10777,7 @@ BaseServiceEndpointHealthMonitor            (<a class="autorefs autorefs-interna
     <span class="p">)</span>
 
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">check_endpoint_status</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">check_endpoint_status</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">endpoint</span><span class="p">:</span> <span class="s2">&quot;BaseServiceEndpoint&quot;</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">ServiceState</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Check the the current operational state of the external service endpoint.</span>
@@ -10878,7 +10878,7 @@ the service endpoint status.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/services/service_monitor.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
-<span class="k">def</span> <span class="nf">check_endpoint_status</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">check_endpoint_status</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">endpoint</span><span class="p">:</span> <span class="s2">&quot;BaseServiceEndpoint&quot;</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">ServiceState</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Check the the current operational state of the external service endpoint.</span>
@@ -10948,7 +10948,7 @@ HTTPEndpointHealthMonitor            (<a class="autorefs autorefs-internal" titl
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/services/service_monitor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">HTTPEndpointHealthMonitor</span><span class="p">(</span><span class="n">BaseServiceEndpointHealthMonitor</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">HTTPEndpointHealthMonitor</span><span class="p">(</span><span class="n">BaseServiceEndpointHealthMonitor</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;HTTP service endpoint health monitor.</span>
 
 <span class="sd">    Attributes:</span>
@@ -10959,7 +10959,7 @@ HTTPEndpointHealthMonitor            (<a class="autorefs autorefs-internal" titl
         <span class="n">default_factory</span><span class="o">=</span><span class="n">HTTPEndpointHealthMonitorConfig</span>
     <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_healthcheck_uri</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_healthcheck_uri</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">endpoint</span><span class="p">:</span> <span class="s2">&quot;BaseServiceEndpoint&quot;</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the healthcheck URI for the given service endpoint.</span>
@@ -10980,7 +10980,7 @@ HTTPEndpointHealthMonitor            (<a class="autorefs autorefs-internal" titl
             <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">uri</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">healthcheck_uri_path</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">check_endpoint_status</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">check_endpoint_status</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">endpoint</span><span class="p">:</span> <span class="s2">&quot;BaseServiceEndpoint&quot;</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">ServiceState</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Run a HTTP endpoint API healthcheck.</span>
@@ -10994,7 +10994,7 @@ HTTPEndpointHealthMonitor            (<a class="autorefs autorefs-internal" titl
 <span class="sd">            if an error is encountered while checking the HTTP endpoint</span>
 <span class="sd">            status).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.services.service_endpoint</span> <span class="kn">import</span> <span class="n">ServiceEndpointProtocol</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.services.service_endpoint</span><span class="w"> </span><span class="kn">import</span> <span class="n">ServiceEndpointProtocol</span>
 
         <span class="k">if</span> <span class="n">endpoint</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">protocol</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span>
             <span class="n">ServiceEndpointProtocol</span><span class="o">.</span><span class="n">HTTP</span><span class="p">,</span>
@@ -11120,7 +11120,7 @@ status).</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/services/service_monitor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">check_endpoint_status</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">check_endpoint_status</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">endpoint</span><span class="p">:</span> <span class="s2">&quot;BaseServiceEndpoint&quot;</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">ServiceState</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Run a HTTP endpoint API healthcheck.</span>
@@ -11134,7 +11134,7 @@ status).</p></td>
 <span class="sd">        if an error is encountered while checking the HTTP endpoint</span>
 <span class="sd">        status).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.services.service_endpoint</span> <span class="kn">import</span> <span class="n">ServiceEndpointProtocol</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.services.service_endpoint</span><span class="w"> </span><span class="kn">import</span> <span class="n">ServiceEndpointProtocol</span>
 
     <span class="k">if</span> <span class="n">endpoint</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">protocol</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span>
         <span class="n">ServiceEndpointProtocol</span><span class="o">.</span><span class="n">HTTP</span><span class="p">,</span>
@@ -11236,7 +11236,7 @@ the service endpoint doesn't have a healthcheck URI.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/services/service_monitor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_healthcheck_uri</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_healthcheck_uri</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">endpoint</span><span class="p">:</span> <span class="s2">&quot;BaseServiceEndpoint&quot;</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the healthcheck URI for the given service endpoint.</span>
@@ -11329,7 +11329,7 @@ response.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/services/service_monitor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">HTTPEndpointHealthMonitorConfig</span><span class="p">(</span><span class="n">ServiceEndpointHealthMonitorConfig</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">HTTPEndpointHealthMonitorConfig</span><span class="p">(</span><span class="n">ServiceEndpointHealthMonitorConfig</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;HTTP service endpoint health monitor configuration.</span>
 
 <span class="sd">    Attributes:</span>
@@ -11409,7 +11409,7 @@ configuration.</p>
 
         <details class="quote">
           <summary>Source code in <code>zenml/services/service_monitor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ServiceEndpointHealthMonitorConfig</span><span class="p">(</span><span class="n">BaseTypedModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ServiceEndpointHealthMonitorConfig</span><span class="p">(</span><span class="n">BaseTypedModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Generic service health monitor configuration.</span>
 
 <span class="sd">    Concrete service classes should extend this class and add additional</span>
@@ -11492,7 +11492,7 @@ TCPEndpointHealthMonitor            (<a class="autorefs autorefs-internal" title
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/services/service_monitor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">TCPEndpointHealthMonitor</span><span class="p">(</span><span class="n">BaseServiceEndpointHealthMonitor</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">TCPEndpointHealthMonitor</span><span class="p">(</span><span class="n">BaseServiceEndpointHealthMonitor</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;TCP service endpoint health monitor.</span>
 
 <span class="sd">    Attributes:</span>
@@ -11501,7 +11501,7 @@ TCPEndpointHealthMonitor            (<a class="autorefs autorefs-internal" title
 
     <span class="n">config</span><span class="p">:</span> <span class="n">TCPEndpointHealthMonitorConfig</span>
 
-    <span class="k">def</span> <span class="nf">check_endpoint_status</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">check_endpoint_status</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">endpoint</span><span class="p">:</span> <span class="s2">&quot;BaseServiceEndpoint&quot;</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">ServiceState</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Run a TCP endpoint healthcheck.</span>
@@ -11617,7 +11617,7 @@ status).</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/services/service_monitor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">check_endpoint_status</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">check_endpoint_status</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">endpoint</span><span class="p">:</span> <span class="s2">&quot;BaseServiceEndpoint&quot;</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">ServiceState</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Run a TCP endpoint healthcheck.</span>
@@ -11687,7 +11687,7 @@ TCPEndpointHealthMonitorConfig            (<a class="autorefs autorefs-internal"
 
         <details class="quote">
           <summary>Source code in <code>zenml/services/service_monitor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">TCPEndpointHealthMonitorConfig</span><span class="p">(</span><span class="n">ServiceEndpointHealthMonitorConfig</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">TCPEndpointHealthMonitorConfig</span><span class="p">(</span><span class="n">ServiceEndpointHealthMonitorConfig</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;TCP service endpoint health monitor configuration.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
@@ -11786,7 +11786,7 @@ ServiceState            (<a class="autorefs autorefs-internal" title="zenml.util
 
         <details class="quote">
           <summary>Source code in <code>zenml/services/service_status.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ServiceState</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ServiceState</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Possible states for the service and service endpoint.&quot;&quot;&quot;</span>
 
     <span class="n">INACTIVE</span> <span class="o">=</span> <span class="s2">&quot;inactive&quot;</span>
@@ -11878,7 +11878,7 @@ attributes that make up the operational state of the service.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/services/service_status.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ServiceStatus</span><span class="p">(</span><span class="n">BaseTypedModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ServiceStatus</span><span class="p">(</span><span class="n">BaseTypedModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Information about the status of a service or process.</span>
 
 <span class="sd">    This information describes the operational status of an external process or</span>
@@ -11898,7 +11898,7 @@ attributes that make up the operational state of the service.</p>
     <span class="n">last_state</span><span class="p">:</span> <span class="n">ServiceState</span> <span class="o">=</span> <span class="n">ServiceState</span><span class="o">.</span><span class="n">INACTIVE</span>
     <span class="n">last_error</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">update_state</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update_state</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">new_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ServiceState</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">error</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
@@ -11917,7 +11917,7 @@ attributes that make up the operational state of the service.</p>
         <span class="k">if</span> <span class="n">error</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">last_error</span> <span class="o">=</span> <span class="n">error</span>
 
-    <span class="k">def</span> <span class="nf">clear_error</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">clear_error</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Clear the last error message.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">last_error</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
 </code></pre></div>
@@ -11966,7 +11966,7 @@ attributes that make up the operational state of the service.</p>
 
         <details class="quote">
           <summary>Source code in <code>zenml/services/service_status.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">clear_error</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">clear_error</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Clear the last error message.&quot;&quot;&quot;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">last_error</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
 </code></pre></div>
@@ -12020,7 +12020,7 @@ during the last service status update</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/services/service_status.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">update_state</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">update_state</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">new_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ServiceState</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">error</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
@@ -12149,7 +12149,7 @@ ServiceType            (<span title="pydantic.main.BaseModel">BaseModel</span>)
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/services/service_type.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ServiceType</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ServiceType</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Service type descriptor.</span>
 
 <span class="sd">    Attributes:</span>

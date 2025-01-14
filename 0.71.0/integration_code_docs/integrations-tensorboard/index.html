@@ -2389,14 +2389,14 @@ TensorBoardIntegration            (<a class="autorefs autorefs-internal" title="
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/tensorboard/__init__.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">TensorBoardIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">TensorBoardIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Definition of TensorBoard integration for ZenML.&quot;&quot;&quot;</span>
 
     <span class="n">NAME</span> <span class="o">=</span> <span class="n">TENSORBOARD</span>
     <span class="n">REQUIREMENTS</span> <span class="o">=</span> <span class="p">[]</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">get_requirements</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">target_os</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_requirements</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">target_os</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Defines platform specific requirements for the integration.</span>
 
 <span class="sd">        Args:</span>
@@ -2409,9 +2409,9 @@ TensorBoardIntegration            (<a class="autorefs autorefs-internal" title="
         <span class="k">return</span> <span class="n">requirements</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Activates the integration.&quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.tensorboard</span> <span class="kn">import</span> <span class="n">services</span>  <span class="c1"># noqa</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.tensorboard</span><span class="w"> </span><span class="kn">import</span> <span class="n">services</span>  <span class="c1"># noqa</span>
 </code></pre></div>
         </details>
 
@@ -2449,9 +2449,9 @@ TensorBoardIntegration            (<a class="autorefs autorefs-internal" title="
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/tensorboard/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Activates the integration.&quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.integrations.tensorboard</span> <span class="kn">import</span> <span class="n">services</span>  <span class="c1"># noqa</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.tensorboard</span><span class="w"> </span><span class="kn">import</span> <span class="n">services</span>  <span class="c1"># noqa</span>
 </code></pre></div>
         </details>
     </div>
@@ -2514,7 +2514,7 @@ TensorBoardIntegration            (<a class="autorefs autorefs-internal" title="
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/tensorboard/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">get_requirements</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">target_os</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_requirements</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">target_os</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Defines platform specific requirements for the integration.</span>
 
 <span class="sd">    Args:</span>
@@ -2651,7 +2651,7 @@ the TensorBoard service class</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/tensorboard/services/tensorboard_service.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">TensorboardService</span><span class="p">(</span><span class="n">LocalDaemonService</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">TensorboardService</span><span class="p">(</span><span class="n">LocalDaemonService</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;TensorBoard service.</span>
 
 <span class="sd">    This can be used to start a local TensorBoard server for one or more models.</span>
@@ -2673,7 +2673,7 @@ the TensorBoard service class</p></td>
     <span class="n">config</span><span class="p">:</span> <span class="n">TensorboardServiceConfig</span>
     <span class="n">endpoint</span><span class="p">:</span> <span class="n">LocalDaemonServiceEndpoint</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">config</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TensorboardServiceConfig</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span>
         <span class="o">**</span><span class="n">attrs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
@@ -2707,7 +2707,7 @@ the TensorBoard service class</p></td>
             <span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;uuid&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">()</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span> <span class="o">**</span><span class="n">attrs</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize and run the TensorBoard server.&quot;&quot;&quot;</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
             <span class="s2">&quot;Starting TensorBoard service as blocking &quot;</span>
@@ -2807,7 +2807,7 @@ the TensorBoard service class</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/tensorboard/services/tensorboard_service.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">config</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TensorboardServiceConfig</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span>
     <span class="o">**</span><span class="n">attrs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
@@ -2864,7 +2864,7 @@ the TensorBoard service class</p></td>
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/tensorboard/services/tensorboard_service.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize and run the TensorBoard server.&quot;&quot;&quot;</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
         <span class="s2">&quot;Starting TensorBoard service as blocking &quot;</span>
@@ -2955,7 +2955,7 @@ seconds. Set to 0 to load just once at startup.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/tensorboard/services/tensorboard_service.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">TensorboardServiceConfig</span><span class="p">(</span><span class="n">LocalDaemonServiceConfig</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">TensorboardServiceConfig</span><span class="p">(</span><span class="n">LocalDaemonServiceConfig</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;TensorBoard service configuration.</span>
 
 <span class="sd">    Attributes:</span>
@@ -3105,11 +3105,11 @@ TensorboardVisualizer        </code>
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/tensorboard/visualizers/tensorboard_visualizer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">TensorboardVisualizer</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">TensorboardVisualizer</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;The implementation of a TensorBoard Visualizer.&quot;&quot;&quot;</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">find_running_tensorboard_server</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">find_running_tensorboard_server</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span> <span class="n">logdir</span><span class="p">:</span> <span class="nb">str</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TensorBoardInfo</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Find a local TensorBoard server instance.</span>
@@ -3133,7 +3133,7 @@ TensorboardVisualizer        </code>
                 <span class="k">return</span> <span class="n">server</span>
         <span class="k">return</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="nf">visualize</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">visualize</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="nb">object</span><span class="p">:</span> <span class="s2">&quot;StepRunResponse&quot;</span><span class="p">,</span>
         <span class="n">height</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">800</span><span class="p">,</span>
@@ -3191,7 +3191,7 @@ TensorboardVisualizer        </code>
                             <span class="p">)</span>
                     <span class="k">return</span>
 
-    <span class="k">def</span> <span class="nf">visualize_tensorboard</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">visualize_tensorboard</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">port</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">height</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
@@ -3213,7 +3213,7 @@ TensorboardVisualizer        </code>
             <span class="s2">&quot;...to visualize the TensorBoard logs for your trained model.&quot;</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">stop</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stop</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="nb">object</span><span class="p">:</span> <span class="s2">&quot;StepRunResponse&quot;</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -3322,7 +3322,7 @@ None if no server is running for the supplied logdir location.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/tensorboard/visualizers/tensorboard_visualizer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">find_running_tensorboard_server</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">find_running_tensorboard_server</span><span class="p">(</span>
     <span class="bp">cls</span><span class="p">,</span> <span class="n">logdir</span><span class="p">:</span> <span class="nb">str</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TensorBoardInfo</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Find a local TensorBoard server instance.</span>
@@ -3388,7 +3388,7 @@ None if no server is running for the supplied logdir location.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/tensorboard/visualizers/tensorboard_visualizer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">stop</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">stop</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="nb">object</span><span class="p">:</span> <span class="s2">&quot;StepRunResponse&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -3489,7 +3489,7 @@ logged by past and future step runs.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/tensorboard/visualizers/tensorboard_visualizer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">visualize</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">visualize</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="nb">object</span><span class="p">:</span> <span class="s2">&quot;StepRunResponse&quot;</span><span class="p">,</span>
     <span class="n">height</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">800</span><span class="p">,</span>
@@ -3596,7 +3596,7 @@ requests.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/tensorboard/visualizers/tensorboard_visualizer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">visualize_tensorboard</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">visualize_tensorboard</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">port</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="n">height</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
@@ -3707,7 +3707,7 @@ requests.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/tensorboard/visualizers/tensorboard_visualizer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_step</span><span class="p">(</span><span class="n">pipeline_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">step_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;StepRunResponse&quot;</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_step</span><span class="p">(</span><span class="n">pipeline_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">step_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;StepRunResponse&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the StepRunResponseModel for the specified pipeline and step name.</span>
 
 <span class="sd">    Args:</span>
@@ -3783,7 +3783,7 @@ requests.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/tensorboard/visualizers/tensorboard_visualizer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">stop_tensorboard_server</span><span class="p">(</span><span class="n">pipeline_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">step_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">stop_tensorboard_server</span><span class="p">(</span><span class="n">pipeline_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">step_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Stop the TensorBoard server previously started for a pipeline step.</span>
 
 <span class="sd">    Args:</span>
@@ -3844,7 +3844,7 @@ past and future step runs.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/tensorboard/visualizers/tensorboard_visualizer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">visualize_tensorboard</span><span class="p">(</span><span class="n">pipeline_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">step_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">visualize_tensorboard</span><span class="p">(</span><span class="n">pipeline_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">step_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Start a TensorBoard server.</span>
 
 <span class="sd">    Allows for the visualization of all models logged as output by the named</span>

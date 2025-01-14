@@ -3433,7 +3433,7 @@ APIToken            (<span title="pydantic.main.BaseModel">BaseModel</span>)
 
         <details class="quote">
           <summary>Source code in <code>zenml/login/credentials.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">APIToken</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">APIToken</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Cached API Token.&quot;&quot;&quot;</span>
 
     <span class="n">access_token</span><span class="p">:</span> <span class="nb">str</span>
@@ -3445,7 +3445,7 @@ APIToken            (<span title="pydantic.main.BaseModel">BaseModel</span>)
     <span class="n">device_metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">expires_at_with_leeway</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">datetime</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">expires_at_with_leeway</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">datetime</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the token expiration time with leeway.</span>
 
 <span class="sd">        Returns:</span>
@@ -3458,7 +3458,7 @@ APIToken            (<span title="pydantic.main.BaseModel">BaseModel</span>)
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">expires_at</span> <span class="o">-</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">seconds</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">leeway</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">expired</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">expired</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if the token is expired.</span>
 
 <span class="sd">        Returns:</span>
@@ -3608,7 +3608,7 @@ ServerCredentials            (<span title="pydantic.main.BaseModel">BaseModel</s
 
         <details class="quote">
           <summary>Source code in <code>zenml/login/credentials.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ServerCredentials</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ServerCredentials</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Cached Server Credentials.&quot;&quot;&quot;</span>
 
     <span class="n">url</span><span class="p">:</span> <span class="nb">str</span>
@@ -3626,7 +3626,7 @@ ServerCredentials            (<span title="pydantic.main.BaseModel">BaseModel</s
     <span class="n">version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the server identifier.</span>
 
 <span class="sd">        Returns:</span>
@@ -3637,13 +3637,13 @@ ServerCredentials            (<span title="pydantic.main.BaseModel">BaseModel</s
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">url</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ServerType</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ServerType</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the server type.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The server type.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.login.pro.utils</span> <span class="kn">import</span> <span class="n">is_zenml_pro_server_url</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.login.pro.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">is_zenml_pro_server_url</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">url</span> <span class="o">==</span> <span class="n">ZENML_PRO_API_URL</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">ServerType</span><span class="o">.</span><span class="n">PRO_API</span>
@@ -3657,7 +3657,7 @@ ServerCredentials            (<span title="pydantic.main.BaseModel">BaseModel</s
             <span class="k">return</span> <span class="n">ServerType</span><span class="o">.</span><span class="n">LOCAL</span>
         <span class="k">return</span> <span class="n">ServerType</span><span class="o">.</span><span class="n">REMOTE</span>
 
-    <span class="k">def</span> <span class="nf">update_server_info</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update_server_info</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">server_info</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">ServerModel</span><span class="p">,</span> <span class="n">TenantRead</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Update with server information received from the server itself or from a ZenML Pro tenant descriptor.</span>
@@ -3691,7 +3691,7 @@ ServerCredentials            (<span title="pydantic.main.BaseModel">BaseModel</s
             <span class="bp">self</span><span class="o">.</span><span class="n">version</span> <span class="o">=</span> <span class="n">server_info</span><span class="o">.</span><span class="n">version</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">is_available</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_available</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if the server is available (running and authenticated).</span>
 
 <span class="sd">        Returns:</span>
@@ -3712,7 +3712,7 @@ ServerCredentials            (<span title="pydantic.main.BaseModel">BaseModel</s
         <span class="k">return</span> <span class="kc">False</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">auth_status</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">auth_status</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the authentication status.</span>
 
 <span class="sd">        Returns:</span>
@@ -3735,7 +3735,7 @@ ServerCredentials            (<span title="pydantic.main.BaseModel">BaseModel</s
         <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;valid until </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">expires_at</span><span class="si">}</span><span class="s2"> (in </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">expires_in</span><span class="si">}</span><span class="s2">)&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">expires_at</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">expires_at</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the expiration time of the token as a string.</span>
 
 <span class="sd">        Returns:</span>
@@ -3752,7 +3752,7 @@ ServerCredentials            (<span title="pydantic.main.BaseModel">BaseModel</s
         <span class="k">return</span> <span class="n">local_expires_at</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%S %Z&quot;</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">expires_in</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">expires_in</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the time remaining until the token expires.</span>
 
 <span class="sd">        Returns:</span>
@@ -3769,7 +3769,7 @@ ServerCredentials            (<span title="pydantic.main.BaseModel">BaseModel</s
         <span class="k">return</span> <span class="n">get_human_readable_time</span><span class="p">(</span><span class="n">expires_in</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">())</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">dashboard_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">dashboard_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the URL to the ZenML dashboard for this server.</span>
 
 <span class="sd">        Returns:</span>
@@ -3783,7 +3783,7 @@ ServerCredentials            (<span title="pydantic.main.BaseModel">BaseModel</s
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">url</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">dashboard_organization_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">dashboard_organization_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the URL to the ZenML Pro dashboard for this tenant&#39;s organization.</span>
 
 <span class="sd">        Returns:</span>
@@ -3796,7 +3796,7 @@ ServerCredentials            (<span title="pydantic.main.BaseModel">BaseModel</s
         <span class="k">return</span> <span class="s2">&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">dashboard_hyperlink</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">dashboard_hyperlink</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the hyperlink to the ZenML dashboard for this tenant.</span>
 
 <span class="sd">        Returns:</span>
@@ -3805,7 +3805,7 @@ ServerCredentials            (<span title="pydantic.main.BaseModel">BaseModel</s
         <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;[link=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">dashboard_url</span><span class="si">}</span><span class="s2">]</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">dashboard_url</span><span class="si">}</span><span class="s2">[/link]&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">api_hyperlink</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">api_hyperlink</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the hyperlink to the ZenML OpenAPI dashboard for this tenant.</span>
 
 <span class="sd">        Returns:</span>
@@ -3815,7 +3815,7 @@ ServerCredentials            (<span title="pydantic.main.BaseModel">BaseModel</s
         <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;[link=</span><span class="si">{</span><span class="n">api_url</span><span class="si">}</span><span class="s2">]</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">url</span><span class="si">}</span><span class="s2">[/link]&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">server_name_hyperlink</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">server_name_hyperlink</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the hyperlink to the ZenML dashboard for this server using its name.</span>
 
 <span class="sd">        Returns:</span>
@@ -3826,7 +3826,7 @@ ServerCredentials            (<span title="pydantic.main.BaseModel">BaseModel</s
         <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;[link=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">dashboard_url</span><span class="si">}</span><span class="s2">]</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">server_name</span><span class="si">}</span><span class="s2">[/link]&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">server_id_hyperlink</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">server_id_hyperlink</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the hyperlink to the ZenML dashboard for this server using its ID.</span>
 
 <span class="sd">        Returns:</span>
@@ -3837,7 +3837,7 @@ ServerCredentials            (<span title="pydantic.main.BaseModel">BaseModel</s
         <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;[link=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">dashboard_url</span><span class="si">}</span><span class="s2">]</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">server_id</span><span class="p">)</span><span class="si">}</span><span class="s2">[/link]&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">organization_hyperlink</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">organization_hyperlink</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the hyperlink to the ZenML Pro dashboard for this server&#39;s organization.</span>
 
 <span class="sd">        Returns:</span>
@@ -3851,7 +3851,7 @@ ServerCredentials            (<span title="pydantic.main.BaseModel">BaseModel</s
         <span class="k">return</span> <span class="s2">&quot;N/A&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">organization_name_hyperlink</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">organization_name_hyperlink</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the hyperlink to the ZenML Pro dashboard for this server&#39;s organization using its name.</span>
 
 <span class="sd">        Returns:</span>
@@ -3863,7 +3863,7 @@ ServerCredentials            (<span title="pydantic.main.BaseModel">BaseModel</s
         <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;[link=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">dashboard_organization_url</span><span class="si">}</span><span class="s2">]</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">organization_name</span><span class="si">}</span><span class="s2">[/link]&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">organization_id_hyperlink</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">organization_id_hyperlink</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the hyperlink to the ZenML Pro dashboard for this tenant&#39;s organization using its ID.</span>
 
 <span class="sd">        Returns:</span>
@@ -4511,7 +4511,7 @@ organization using its name.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/login/credentials.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">update_server_info</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">update_server_info</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">server_info</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">ServerModel</span><span class="p">,</span> <span class="n">TenantRead</span><span class="p">]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Update with server information received from the server itself or from a ZenML Pro tenant descriptor.</span>
@@ -4580,7 +4580,7 @@ ServerType            (<a class="autorefs autorefs-internal" title="zenml.utils.
 
         <details class="quote">
           <summary>Source code in <code>zenml/login/credentials.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ServerType</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ServerType</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;The type of server.&quot;&quot;&quot;</span>
 
     <span class="n">PRO_API</span> <span class="o">=</span> <span class="s2">&quot;PRO_API&quot;</span>
@@ -4709,7 +4709,7 @@ additional server information:
 
         <details class="quote">
           <summary>Source code in <code>zenml/login/credentials_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">CredentialsStore</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">SingletonMetaClass</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">CredentialsStore</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">SingletonMetaClass</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Login credentials store.</span>
 
 <span class="sd">    This is a singleton object that maintains a cache of all API tokens and API</span>
@@ -4754,7 +4754,7 @@ additional server information:
     <span class="n">credentials</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ServerCredentials</span><span class="p">]</span>
     <span class="n">last_modified_time</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes the login credentials store with values loaded from the credentials YAML file.</span>
 
 <span class="sd">        CredentialsStore is a singleton class: only one instance can exist.</span>
@@ -4765,7 +4765,7 @@ additional server information:
         <span class="bp">self</span><span class="o">.</span><span class="n">_load_credentials</span><span class="p">()</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">reset_instance</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">reset_instance</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span> <span class="n">store</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;CredentialsStore&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Reset the singleton instance of the CredentialsStore.</span>
@@ -4786,7 +4786,7 @@ additional server information:
             <span class="n">store</span><span class="o">.</span><span class="n">_save_credentials</span><span class="p">()</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">get_instance</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;CredentialsStore&quot;</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_instance</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;CredentialsStore&quot;</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the singleton instance of the CredentialsStore.</span>
 
 <span class="sd">        Returns:</span>
@@ -4795,7 +4795,7 @@ additional server information:
         <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">CredentialsStore</span><span class="p">,</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_instance</span><span class="p">())</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">_credentials_file</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_credentials_file</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Path to the file where the credentials are stored.</span>
 
 <span class="sd">        Returns:</span>
@@ -4804,7 +4804,7 @@ additional server information:
         <span class="n">config_path</span> <span class="o">=</span> <span class="n">GlobalConfiguration</span><span class="p">()</span><span class="o">.</span><span class="n">config_directory</span>
         <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">config_path</span><span class="p">,</span> <span class="n">CREDENTIALS_STORE_FILENAME</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_load_credentials</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_load_credentials</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Load the credentials from the YAML file if it exists.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">handle_bool_env_var</span><span class="p">(</span><span class="n">ENV_ZENML_DISABLE_CREDENTIALS_DISK_CACHING</span><span class="p">):</span>
             <span class="k">return</span>
@@ -4841,7 +4841,7 @@ additional server information:
                     <span class="s2">&quot;Ignoring this token.&quot;</span>
                 <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_save_credentials</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_save_credentials</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Dump the current credentials store to the YAML file.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">handle_bool_env_var</span><span class="p">(</span><span class="n">ENV_ZENML_DISABLE_CREDENTIALS_DISK_CACHING</span><span class="p">):</span>
             <span class="k">return</span>
@@ -4867,7 +4867,7 @@ additional server information:
         <span class="n">yaml_utils</span><span class="o">.</span><span class="n">write_yaml</span><span class="p">(</span><span class="n">credentials_file</span><span class="p">,</span> <span class="n">credentials_store</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">last_modified_time</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getmtime</span><span class="p">(</span><span class="n">credentials_file</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_delete_credentials_file</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_delete_credentials_file</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Delete the credentials file.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">handle_bool_env_var</span><span class="p">(</span><span class="n">ENV_ZENML_DISABLE_CREDENTIALS_DISK_CACHING</span><span class="p">):</span>
             <span class="k">return</span>
@@ -4876,7 +4876,7 @@ additional server information:
             <span class="n">fileio</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">credentials_file</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">last_modified_time</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="nf">check_and_reload_from_file</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">check_and_reload_from_file</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if the credentials file has been modified and reload it if necessary.&quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">handle_bool_env_var</span><span class="p">(</span><span class="n">ENV_ZENML_DISABLE_CREDENTIALS_DISK_CACHING</span><span class="p">):</span>
             <span class="k">return</span>
@@ -4892,7 +4892,7 @@ additional server information:
         <span class="k">if</span> <span class="n">last_modified_time</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">last_modified_time</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_load_credentials</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">get_password</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_password</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">server_url</span><span class="p">:</span> <span class="nb">str</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Retrieve the username and password from the credentials store for a specific server URL.</span>
@@ -4910,7 +4910,7 @@ additional server information:
             <span class="k">return</span> <span class="n">credential</span><span class="o">.</span><span class="n">username</span><span class="p">,</span> <span class="n">credential</span><span class="o">.</span><span class="n">password</span>
         <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="nf">get_api_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">server_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_api_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">server_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Retrieve an API key from the credentials store for a specific server URL.</span>
 
 <span class="sd">        Args:</span>
@@ -4925,7 +4925,7 @@ additional server information:
             <span class="k">return</span> <span class="n">credential</span><span class="o">.</span><span class="n">api_key</span>
         <span class="k">return</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="nf">get_token</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_token</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">server_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">allow_expired</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">APIToken</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Retrieve a valid token from the credentials store for a specific server URL.</span>
@@ -4947,7 +4947,7 @@ additional server information:
                 <span class="k">return</span> <span class="n">token</span>
         <span class="k">return</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="nf">get_credentials</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">server_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ServerCredentials</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_credentials</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">server_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ServerCredentials</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Retrieve the credentials for a specific server URL.</span>
 
 <span class="sd">        Args:</span>
@@ -4959,7 +4959,7 @@ additional server information:
         <span class="bp">self</span><span class="o">.</span><span class="n">check_and_reload_from_file</span><span class="p">()</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">credentials</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">server_url</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_pro_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">allow_expired</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">APIToken</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_pro_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">allow_expired</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">APIToken</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Retrieve a valid token from the credentials store for the ZenML Pro API server.</span>
 
 <span class="sd">        Args:</span>
@@ -4972,7 +4972,7 @@ additional server information:
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_token</span><span class="p">(</span><span class="n">ZENML_PRO_API_URL</span><span class="p">,</span> <span class="n">allow_expired</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_pro_credentials</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_pro_credentials</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">allow_expired</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ServerCredentials</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Retrieve a valid token from the credentials store for the ZenML Pro API server.</span>
@@ -4994,11 +4994,11 @@ additional server information:
             <span class="k">return</span> <span class="n">credential</span>
         <span class="k">return</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="nf">clear_pro_credentials</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">clear_pro_credentials</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Delete the token from the store for the ZenML Pro API server.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">clear_token</span><span class="p">(</span><span class="n">ZENML_PRO_API_URL</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">clear_all_pro_tokens</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">clear_all_pro_tokens</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Delete all tokens from the store for ZenML Pro API servers.&quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="n">server_url</span><span class="p">,</span> <span class="n">server</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">credentials</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="k">if</span> <span class="n">server</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">ServerType</span><span class="o">.</span><span class="n">PRO</span><span class="p">:</span>
@@ -5006,7 +5006,7 @@ additional server information:
                     <span class="k">continue</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">clear_token</span><span class="p">(</span><span class="n">server_url</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">has_valid_authentication</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">has_valid_authentication</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if a valid authentication credential for the given server URL is stored.</span>
 
 <span class="sd">        Args:</span>
@@ -5027,7 +5027,7 @@ additional server information:
         <span class="n">token</span> <span class="o">=</span> <span class="n">credential</span><span class="o">.</span><span class="n">api_token</span>
         <span class="k">return</span> <span class="n">token</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">token</span><span class="o">.</span><span class="n">expired</span>
 
-    <span class="k">def</span> <span class="nf">has_valid_pro_authentication</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">has_valid_pro_authentication</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if a valid token for the ZenML Pro API server is stored.</span>
 
 <span class="sd">        Returns:</span>
@@ -5035,7 +5035,7 @@ additional server information:
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_token</span><span class="p">(</span><span class="n">ZENML_PRO_API_URL</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="nf">set_api_key</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_api_key</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">server_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">api_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -5065,7 +5065,7 @@ additional server information:
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_save_credentials</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">set_password</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_password</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">server_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">username</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -5099,7 +5099,7 @@ additional server information:
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_save_credentials</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">set_token</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_token</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">server_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">token_response</span><span class="p">:</span> <span class="n">OAuthTokenResponse</span><span class="p">,</span>
@@ -5155,7 +5155,7 @@ additional server information:
 
         <span class="k">return</span> <span class="n">api_token</span>
 
-    <span class="k">def</span> <span class="nf">set_bare_token</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_bare_token</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">server_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -5187,7 +5187,7 @@ additional server information:
 
         <span class="k">return</span> <span class="n">api_token</span>
 
-    <span class="k">def</span> <span class="nf">update_server_info</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update_server_info</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">server_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">server_info</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">ServerModel</span><span class="p">,</span> <span class="n">TenantRead</span><span class="p">],</span>
@@ -5209,7 +5209,7 @@ additional server information:
         <span class="n">credential</span><span class="o">.</span><span class="n">update_server_info</span><span class="p">(</span><span class="n">server_info</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_save_credentials</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">clear_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">server_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">clear_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">server_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Delete a token from the store for a specific server URL.</span>
 
 <span class="sd">        Args:</span>
@@ -5231,7 +5231,7 @@ additional server information:
                 <span class="n">credential</span><span class="o">.</span><span class="n">api_token</span> <span class="o">=</span> <span class="kc">None</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_save_credentials</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">clear_credentials</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">server_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">clear_credentials</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">server_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Delete all credentials from the store for a specific server URL.</span>
 
 <span class="sd">        Args:</span>
@@ -5243,7 +5243,7 @@ additional server information:
             <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">credentials</span><span class="p">[</span><span class="n">server_url</span><span class="p">]</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_save_credentials</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">list_credentials</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">list_credentials</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="nb">type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ServerType</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">ServerCredentials</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get all credentials stored in the credentials store.</span>
@@ -5300,7 +5300,7 @@ instance.</p>
 
         <details class="quote">
           <summary>Source code in <code>zenml/login/credentials_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes the login credentials store with values loaded from the credentials YAML file.</span>
 
 <span class="sd">    CredentialsStore is a singleton class: only one instance can exist.</span>
@@ -5333,7 +5333,7 @@ instance.</p>
 
         <details class="quote">
           <summary>Source code in <code>zenml/login/credentials_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">check_and_reload_from_file</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">check_and_reload_from_file</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if the credentials file has been modified and reload it if necessary.&quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="n">handle_bool_env_var</span><span class="p">(</span><span class="n">ENV_ZENML_DISABLE_CREDENTIALS_DISK_CACHING</span><span class="p">):</span>
         <span class="k">return</span>
@@ -5372,7 +5372,7 @@ instance.</p>
 
         <details class="quote">
           <summary>Source code in <code>zenml/login/credentials_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">clear_all_pro_tokens</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">clear_all_pro_tokens</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Delete all tokens from the store for ZenML Pro API servers.&quot;&quot;&quot;</span>
     <span class="k">for</span> <span class="n">server_url</span><span class="p">,</span> <span class="n">server</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">credentials</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
         <span class="k">if</span> <span class="n">server</span><span class="o">.</span><span class="n">type</span> <span class="o">==</span> <span class="n">ServerType</span><span class="o">.</span><span class="n">PRO</span><span class="p">:</span>
@@ -5422,7 +5422,7 @@ instance.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/login/credentials_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">clear_credentials</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">server_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">clear_credentials</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">server_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Delete all credentials from the store for a specific server URL.</span>
 
 <span class="sd">    Args:</span>
@@ -5457,7 +5457,7 @@ instance.</p>
 
         <details class="quote">
           <summary>Source code in <code>zenml/login/credentials_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">clear_pro_credentials</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">clear_pro_credentials</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Delete the token from the store for the ZenML Pro API server.&quot;&quot;&quot;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">clear_token</span><span class="p">(</span><span class="n">ZENML_PRO_API_URL</span><span class="p">)</span>
 </code></pre></div>
@@ -5503,7 +5503,7 @@ instance.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/login/credentials_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">clear_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">server_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">clear_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">server_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Delete a token from the store for a specific server URL.</span>
 
 <span class="sd">    Args:</span>
@@ -5582,7 +5582,7 @@ instance.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/login/credentials_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_api_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">server_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_api_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">server_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Retrieve an API key from the credentials store for a specific server URL.</span>
 
 <span class="sd">    Args:</span>
@@ -5654,7 +5654,7 @@ instance.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/login/credentials_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_credentials</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">server_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ServerCredentials</span><span class="p">]:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_credentials</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">server_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ServerCredentials</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Retrieve the credentials for a specific server URL.</span>
 
 <span class="sd">    Args:</span>
@@ -5708,7 +5708,7 @@ instance.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/login/credentials_store.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">get_instance</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;CredentialsStore&quot;</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_instance</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;CredentialsStore&quot;</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the singleton instance of the CredentialsStore.</span>
 
 <span class="sd">    Returns:</span>
@@ -5774,7 +5774,7 @@ password.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/login/credentials_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_password</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_password</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">server_url</span><span class="p">:</span> <span class="nb">str</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Retrieve the username and password from the credentials store for a specific server URL.</span>
@@ -5851,7 +5851,7 @@ expired.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/login/credentials_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_pro_credentials</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_pro_credentials</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">allow_expired</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ServerCredentials</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Retrieve a valid token from the credentials store for the ZenML Pro API server.</span>
@@ -5932,7 +5932,7 @@ expired.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/login/credentials_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_pro_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">allow_expired</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">APIToken</span><span class="p">]:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_pro_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">allow_expired</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">APIToken</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Retrieve a valid token from the credentials store for the ZenML Pro API server.</span>
 
 <span class="sd">    Args:</span>
@@ -6010,7 +6010,7 @@ expired.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/login/credentials_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_token</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_token</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">server_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">allow_expired</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">APIToken</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Retrieve a valid token from the credentials store for a specific server URL.</span>
@@ -6089,7 +6089,7 @@ expired.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/login/credentials_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">has_valid_authentication</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">has_valid_authentication</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if a valid authentication credential for the given server URL is stored.</span>
 
 <span class="sd">    Args:</span>
@@ -6148,7 +6148,7 @@ expired.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/login/credentials_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">has_valid_pro_authentication</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">has_valid_pro_authentication</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if a valid token for the ZenML Pro API server is stored.</span>
 
 <span class="sd">    Returns:</span>
@@ -6213,7 +6213,7 @@ expired.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/login/credentials_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">list_credentials</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">list_credentials</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="nb">type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ServerType</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">ServerCredentials</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get all credentials stored in the credentials store.</span>
@@ -6280,7 +6280,7 @@ singleton instance. If None, a new instance will be created.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/login/credentials_store.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">reset_instance</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">reset_instance</span><span class="p">(</span>
     <span class="bp">cls</span><span class="p">,</span> <span class="n">store</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;CredentialsStore&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Reset the singleton instance of the CredentialsStore.</span>
@@ -6350,7 +6350,7 @@ will be replaced by the API key.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/login/credentials_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">set_api_key</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">set_api_key</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">server_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">api_key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -6443,7 +6443,7 @@ will be replaced by the API key.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/login/credentials_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">set_bare_token</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">set_bare_token</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">server_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -6531,7 +6531,7 @@ replaced by the username and password.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/login/credentials_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">set_password</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">set_password</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">server_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">username</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -6628,7 +6628,7 @@ replaced by the username and password.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/login/credentials_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">set_token</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">set_token</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">server_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">token_response</span><span class="p">:</span> <span class="n">OAuthTokenResponse</span><span class="p">,</span>
@@ -6733,7 +6733,7 @@ updated.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/login/credentials_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">update_server_info</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">update_server_info</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">server_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">server_info</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">ServerModel</span><span class="p">,</span> <span class="n">TenantRead</span><span class="p">],</span>
@@ -6804,7 +6804,7 @@ updated.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/login/credentials_store.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_credentials_store</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">CredentialsStore</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_credentials_store</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">CredentialsStore</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the global credentials store instance.</span>
 
 <span class="sd">    Returns:</span>
@@ -6907,7 +6907,7 @@ ZenMLProClient        </code>
 
         <details class="quote">
           <summary>Source code in <code>zenml/login/pro/client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ZenMLProClient</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">SingletonMetaClass</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ZenMLProClient</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">SingletonMetaClass</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;ZenML Pro client.&quot;&quot;&quot;</span>
 
     <span class="n">_url</span><span class="p">:</span> <span class="nb">str</span>
@@ -6916,7 +6916,7 @@ ZenMLProClient        </code>
     <span class="n">_tenant</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;TenantClient&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">_organization</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;OrganizationClient&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">api_token</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">APIToken</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the ZenML Pro client.</span>
@@ -6949,33 +6949,33 @@ ZenMLProClient        </code>
         <span class="bp">self</span><span class="o">.</span><span class="n">_api_token</span> <span class="o">=</span> <span class="n">api_token</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">tenant</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TenantClient&quot;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">tenant</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TenantClient&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the tenant client.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The tenant client.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tenant</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="kn">from</span> <span class="nn">zenml.login.pro.tenant.client</span> <span class="kn">import</span> <span class="n">TenantClient</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.login.pro.tenant.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">TenantClient</span>
 
             <span class="bp">self</span><span class="o">.</span><span class="n">_tenant</span> <span class="o">=</span> <span class="n">TenantClient</span><span class="p">(</span><span class="n">client</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tenant</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">organization</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;OrganizationClient&quot;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">organization</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;OrganizationClient&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the organization client.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The organization client.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_organization</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="kn">from</span> <span class="nn">zenml.login.pro.organization.client</span> <span class="kn">import</span> <span class="n">OrganizationClient</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.login.pro.organization.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">OrganizationClient</span>
 
             <span class="bp">self</span><span class="o">.</span><span class="n">_organization</span> <span class="o">=</span> <span class="n">OrganizationClient</span><span class="p">(</span><span class="n">client</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_organization</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">api_token</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">api_token</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the API token.</span>
 
 <span class="sd">        Returns:</span>
@@ -6983,7 +6983,7 @@ ZenMLProClient        </code>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_api_token</span><span class="o">.</span><span class="n">access_token</span>
 
-    <span class="k">def</span> <span class="nf">raise_on_expired_api_token</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">raise_on_expired_api_token</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Raise an exception if the API token has expired.</span>
 
 <span class="sd">        Raises:</span>
@@ -6996,7 +6996,7 @@ ZenMLProClient        </code>
             <span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">session</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">requests</span><span class="o">.</span><span class="n">Session</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">session</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">requests</span><span class="o">.</span><span class="n">Session</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Authenticate to the ZenML Pro API server.</span>
 
 <span class="sd">        Returns:</span>
@@ -7018,7 +7018,7 @@ ZenMLProClient        </code>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">_handle_response</span><span class="p">(</span><span class="n">response</span><span class="p">:</span> <span class="n">requests</span><span class="o">.</span><span class="n">Response</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Json</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_handle_response</span><span class="p">(</span><span class="n">response</span><span class="p">:</span> <span class="n">requests</span><span class="o">.</span><span class="n">Response</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Json</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Handle API response, translating http status codes to Exception.</span>
 
 <span class="sd">        Args:</span>
@@ -7058,7 +7058,7 @@ ZenMLProClient        </code>
                 <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span><span class="si">}</span><span class="s2"> with body:</span><span class="se">\n</span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">text</span><span class="si">}</span><span class="s2">&quot;</span>
             <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_request</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_request</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">method</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -7102,7 +7102,7 @@ ZenMLProClient        </code>
             <span class="c1"># If not, raise the exception.</span>
             <span class="k">raise</span>
 
-    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -7126,7 +7126,7 @@ ZenMLProClient        </code>
             <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">delete</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">delete</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -7150,7 +7150,7 @@ ZenMLProClient        </code>
             <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">post</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">post</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">body</span><span class="p">:</span> <span class="n">BaseRestAPIModel</span><span class="p">,</span>
@@ -7177,7 +7177,7 @@ ZenMLProClient        </code>
             <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">put</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">put</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">body</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseRestAPIModel</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -7207,7 +7207,7 @@ ZenMLProClient        </code>
             <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">patch</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">patch</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">body</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseRestAPIModel</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -7237,7 +7237,7 @@ ZenMLProClient        </code>
             <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_create_resource</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_create_resource</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">resource</span><span class="p">:</span> <span class="n">BaseRestAPIModel</span><span class="p">,</span>
         <span class="n">response_model</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">AnyResponse</span><span class="p">],</span>
@@ -7260,7 +7260,7 @@ ZenMLProClient        </code>
 
         <span class="k">return</span> <span class="n">response_model</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">response_body</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_get_resource</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_resource</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">resource_id</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="n">UUID</span><span class="p">],</span>
         <span class="n">route</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -7283,7 +7283,7 @@ ZenMLProClient        </code>
         <span class="n">body</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">route</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">resource_id</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">response_model</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">body</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_list_resources</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_list_resources</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">route</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">response_model</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">AnyResponse</span><span class="p">],</span>
@@ -7311,7 +7311,7 @@ ZenMLProClient        </code>
             <span class="p">)</span>
         <span class="k">return</span> <span class="p">[</span><span class="n">response_model</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">entry</span><span class="p">)</span> <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">body</span><span class="p">]</span>
 
-    <span class="k">def</span> <span class="nf">_update_resource</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_update_resource</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">resource_id</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="n">UUID</span><span class="p">],</span>
         <span class="n">resource_update</span><span class="p">:</span> <span class="n">BaseRestAPIModel</span><span class="p">,</span>
@@ -7340,7 +7340,7 @@ ZenMLProClient        </code>
 
         <span class="k">return</span> <span class="n">response_model</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">response_body</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_delete_resource</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_delete_resource</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">resource_id</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UUID</span><span class="p">],</span> <span class="n">route</span><span class="p">:</span> <span class="nb">str</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Delete a resource.</span>
@@ -7579,7 +7579,7 @@ is found in the credentials store.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/login/pro/client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">api_token</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">APIToken</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize the ZenML Pro client.</span>
@@ -7680,7 +7680,7 @@ is found in the credentials store.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/login/pro/client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">delete</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">delete</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -7773,7 +7773,7 @@ is found in the credentials store.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/login/pro/client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -7872,7 +7872,7 @@ is found in the credentials store.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/login/pro/client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">patch</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">patch</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">body</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseRestAPIModel</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -7977,7 +7977,7 @@ is found in the credentials store.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/login/pro/client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">post</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">post</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">body</span><span class="p">:</span> <span class="n">BaseRestAPIModel</span><span class="p">,</span>
@@ -8079,7 +8079,7 @@ is found in the credentials store.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/login/pro/client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">put</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">put</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">body</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseRestAPIModel</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -8147,7 +8147,7 @@ is found in the credentials store.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/login/pro/client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">raise_on_expired_api_token</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">raise_on_expired_api_token</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Raise an exception if the API token has expired.</span>
 
 <span class="sd">    Raises:</span>
@@ -8278,7 +8278,7 @@ BaseRestAPIModel            (<span title="pydantic.main.BaseModel">BaseModel</sp
 
         <details class="quote">
           <summary>Source code in <code>zenml/login/pro/models.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseRestAPIModel</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">BaseRestAPIModel</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for all REST API models.&quot;&quot;&quot;</span>
 
     <span class="n">model_config</span> <span class="o">=</span> <span class="n">ConfigDict</span><span class="p">(</span>
@@ -8413,10 +8413,10 @@ OrganizationClient        </code>
 
         <details class="quote">
           <summary>Source code in <code>zenml/login/pro/organization/client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">OrganizationClient</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">OrganizationClient</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Organization management client.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">client</span><span class="p">:</span> <span class="n">ZenMLProClient</span><span class="p">,</span>
     <span class="p">):</span>
@@ -8427,7 +8427,7 @@ OrganizationClient        </code>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">client</span>
 
-    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">id_or_name</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">UUID</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">OrganizationRead</span><span class="p">:</span>
@@ -8445,7 +8445,7 @@ OrganizationClient        </code>
             <span class="n">response_model</span><span class="o">=</span><span class="n">OrganizationRead</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">async</span> <span class="k">def</span> <span class="nf">list</span><span class="p">(</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">offset</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
         <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span>
@@ -8518,7 +8518,7 @@ OrganizationClient        </code>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/login/pro/organization/client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">client</span><span class="p">:</span> <span class="n">ZenMLProClient</span><span class="p">,</span>
 <span class="p">):</span>
@@ -8586,7 +8586,7 @@ OrganizationClient        </code>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/login/pro/organization/client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">id_or_name</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">UUID</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">OrganizationRead</span><span class="p">:</span>
@@ -8670,7 +8670,7 @@ OrganizationClient        </code>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/login/pro/organization/client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">async</span> <span class="k">def</span> <span class="nf">list</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">offset</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
     <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span>
@@ -8764,7 +8764,7 @@ OrganizationRead            (<a class="autorefs autorefs-internal" title="zenml.
 
         <details class="quote">
           <summary>Source code in <code>zenml/login/pro/organization/models.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">OrganizationRead</span><span class="p">(</span><span class="n">BaseRestAPIModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">OrganizationRead</span><span class="p">(</span><span class="n">BaseRestAPIModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Model for viewing organizations.&quot;&quot;&quot;</span>
 
     <span class="nb">id</span><span class="p">:</span> <span class="n">UUID</span>
@@ -8911,10 +8911,10 @@ TenantClient        </code>
 
         <details class="quote">
           <summary>Source code in <code>zenml/login/pro/tenant/client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">TenantClient</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">TenantClient</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Tenant management client.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">client</span><span class="p">:</span> <span class="n">ZenMLProClient</span><span class="p">,</span>
     <span class="p">):</span>
@@ -8925,7 +8925,7 @@ TenantClient        </code>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">client</span> <span class="o">=</span> <span class="n">client</span>
 
-    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TenantRead</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TenantRead</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a tenant by id.</span>
 
 <span class="sd">        Args:</span>
@@ -8940,7 +8940,7 @@ TenantClient        </code>
             <span class="n">response_model</span><span class="o">=</span><span class="n">TenantRead</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">list</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">offset</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
         <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span>
@@ -9029,7 +9029,7 @@ TenantClient        </code>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/login/pro/tenant/client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">client</span><span class="p">:</span> <span class="n">ZenMLProClient</span><span class="p">,</span>
 <span class="p">):</span>
@@ -9097,7 +9097,7 @@ TenantClient        </code>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/login/pro/tenant/client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TenantRead</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TenantRead</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get a tenant by id.</span>
 
 <span class="sd">    Args:</span>
@@ -9206,7 +9206,7 @@ TenantClient        </code>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/login/pro/tenant/client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">list</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">list</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">offset</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
     <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span>
@@ -9316,7 +9316,7 @@ TenantRead            (<a class="autorefs autorefs-internal" title="zenml.login.
 
         <details class="quote">
           <summary>Source code in <code>zenml/login/pro/tenant/models.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">TenantRead</span><span class="p">(</span><span class="n">BaseRestAPIModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">TenantRead</span><span class="p">(</span><span class="n">BaseRestAPIModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Pydantic Model for viewing a Tenant.&quot;&quot;&quot;</span>
 
     <span class="nb">id</span><span class="p">:</span> <span class="n">UUID</span>
@@ -9338,7 +9338,7 @@ TenantRead            (<a class="autorefs autorefs-internal" title="zenml.login.
     <span class="n">zenml_service</span><span class="p">:</span> <span class="n">ZenMLServiceRead</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;The ZenML service.&quot;</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">organization_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UUID</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">organization_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UUID</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the organization id.</span>
 
 <span class="sd">        Returns:</span>
@@ -9347,7 +9347,7 @@ TenantRead            (<a class="autorefs autorefs-internal" title="zenml.login.
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">organization</span><span class="o">.</span><span class="n">id</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">organization_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">organization_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the organization name.</span>
 
 <span class="sd">        Returns:</span>
@@ -9356,7 +9356,7 @@ TenantRead            (<a class="autorefs autorefs-internal" title="zenml.login.
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">organization</span><span class="o">.</span><span class="n">name</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">version</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">version</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the ZenML service version.</span>
 
 <span class="sd">        Returns:</span>
@@ -9369,7 +9369,7 @@ TenantRead            (<a class="autorefs autorefs-internal" title="zenml.login.
         <span class="k">return</span> <span class="n">version</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the ZenML server URL.</span>
 
 <span class="sd">        Returns:</span>
@@ -9382,7 +9382,7 @@ TenantRead            (<a class="autorefs autorefs-internal" title="zenml.login.
         <span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">dashboard_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">dashboard_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the URL to the ZenML Pro dashboard for this tenant.</span>
 
 <span class="sd">        Returns:</span>
@@ -9394,7 +9394,7 @@ TenantRead            (<a class="autorefs autorefs-internal" title="zenml.login.
         <span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">dashboard_organization_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">dashboard_organization_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the URL to the ZenML Pro dashboard for this tenant&#39;s organization.</span>
 
 <span class="sd">        Returns:</span>
@@ -9696,7 +9696,7 @@ of the tenant</li>
 
         <details class="quote">
           <summary>Source code in <code>zenml/login/pro/tenant/models.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">TenantStatus</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">TenantStatus</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Enum that represents the desired state or status of a tenant.</span>
 
 <span class="sd">    These values can be used in two places:</span>
@@ -9774,7 +9774,7 @@ ZenMLServiceConfiguration            (<a class="autorefs autorefs-internal" titl
 
         <details class="quote">
           <summary>Source code in <code>zenml/login/pro/tenant/models.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ZenMLServiceConfiguration</span><span class="p">(</span><span class="n">BaseRestAPIModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ZenMLServiceConfiguration</span><span class="p">(</span><span class="n">BaseRestAPIModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;ZenML service configuration.&quot;&quot;&quot;</span>
 
     <span class="n">version</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
@@ -9839,7 +9839,7 @@ ZenMLServiceRead            (<a class="autorefs autorefs-internal" title="zenml.
 
         <details class="quote">
           <summary>Source code in <code>zenml/login/pro/tenant/models.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ZenMLServiceRead</span><span class="p">(</span><span class="n">BaseRestAPIModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ZenMLServiceRead</span><span class="p">(</span><span class="n">BaseRestAPIModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Pydantic Model for viewing a ZenML service.&quot;&quot;&quot;</span>
 
     <span class="n">configuration</span><span class="p">:</span> <span class="n">ZenMLServiceConfiguration</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
@@ -9910,7 +9910,7 @@ ZenMLServiceStatus            (<a class="autorefs autorefs-internal" title="zenm
 
         <details class="quote">
           <summary>Source code in <code>zenml/login/pro/tenant/models.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ZenMLServiceStatus</span><span class="p">(</span><span class="n">BaseRestAPIModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ZenMLServiceStatus</span><span class="p">(</span><span class="n">BaseRestAPIModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;ZenML service status.&quot;&quot;&quot;</span>
 
     <span class="n">server_url</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
@@ -10058,7 +10058,7 @@ ZenMLServiceStatus            (<a class="autorefs autorefs-internal" title="zenm
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/login/pro/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_troubleshooting_instructions</span><span class="p">(</span><span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_troubleshooting_instructions</span><span class="p">(</span><span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get troubleshooting instructions for a given ZenML Pro server URL.</span>
 
 <span class="sd">    Args:</span>
@@ -10191,7 +10191,7 @@ ZenMLServiceStatus            (<a class="autorefs autorefs-internal" title="zenm
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/login/pro/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">is_zenml_pro_server_url</span><span class="p">(</span><span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">is_zenml_pro_server_url</span><span class="p">(</span><span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if a given URL is a ZenML Pro server.</span>
 
 <span class="sd">    Args:</span>
@@ -10349,7 +10349,7 @@ process.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/login/web_login.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">web_login</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">web_login</span><span class="p">(</span>
     <span class="n">url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">verify_ssl</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">APIToken</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Implements the OAuth2 Device Authorization Grant flow.</span>
@@ -10379,8 +10379,8 @@ process.</p></td>
 <span class="sd">        AuthorizationException: If an error occurred during the authorization</span>
 <span class="sd">            process.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.login.credentials_store</span> <span class="kn">import</span> <span class="n">get_credentials_store</span>
-    <span class="kn">from</span> <span class="nn">zenml.models</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.login.credentials_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_credentials_store</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.models</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
         <span class="n">OAuthDeviceAuthorizationRequest</span><span class="p">,</span>
         <span class="n">OAuthDeviceAuthorizationResponse</span><span class="p">,</span>
         <span class="n">OAuthDeviceTokenRequest</span><span class="p">,</span>

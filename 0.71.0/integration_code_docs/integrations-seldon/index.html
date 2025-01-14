@@ -3710,7 +3710,7 @@ SeldonIntegration            (<a class="autorefs autorefs-internal" title="zenml
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/__init__.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SeldonIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SeldonIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Definition of Seldon Core integration for ZenML.&quot;&quot;&quot;</span>
 
     <span class="n">NAME</span> <span class="o">=</span> <span class="n">SELDON</span>
@@ -3721,24 +3721,24 @@ SeldonIntegration            (<a class="autorefs autorefs-internal" title="zenml
     <span class="n">REQUIREMENTS_IGNORED_ON_UNINSTALL</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;kubernetes&quot;</span><span class="p">,</span> <span class="s2">&quot;numpy&quot;</span><span class="p">]</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Activate the Seldon Core integration.&quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.seldon</span> <span class="kn">import</span> <span class="n">secret_schemas</span>  <span class="c1"># noqa</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.seldon</span> <span class="kn">import</span> <span class="n">services</span>  <span class="c1"># noqa</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.seldon</span><span class="w"> </span><span class="kn">import</span> <span class="n">secret_schemas</span>  <span class="c1"># noqa</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.seldon</span><span class="w"> </span><span class="kn">import</span> <span class="n">services</span>  <span class="c1"># noqa</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Seldon Core.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            List of stack component flavors for this integration.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.seldon.flavors</span> <span class="kn">import</span> <span class="n">SeldonModelDeployerFlavor</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.seldon.flavors</span><span class="w"> </span><span class="kn">import</span> <span class="n">SeldonModelDeployerFlavor</span>
 
         <span class="k">return</span> <span class="p">[</span><span class="n">SeldonModelDeployerFlavor</span><span class="p">]</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">get_requirements</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">target_os</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_requirements</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">target_os</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Method to get the requirements for the integration.</span>
 
 <span class="sd">        Args:</span>
@@ -3747,7 +3747,7 @@ SeldonIntegration            (<a class="autorefs autorefs-internal" title="zenml
 <span class="sd">        Returns:</span>
 <span class="sd">            A list of requirements.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.numpy</span> <span class="kn">import</span> <span class="n">NumpyIntegration</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.numpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">NumpyIntegration</span>
 
         <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">REQUIREMENTS</span> <span class="o">+</span> \
             <span class="n">NumpyIntegration</span><span class="o">.</span><span class="n">get_requirements</span><span class="p">(</span><span class="n">target_os</span><span class="o">=</span><span class="n">target_os</span><span class="p">)</span>
@@ -3789,10 +3789,10 @@ SeldonIntegration            (<a class="autorefs autorefs-internal" title="zenml
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Activate the Seldon Core integration.&quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.integrations.seldon</span> <span class="kn">import</span> <span class="n">secret_schemas</span>  <span class="c1"># noqa</span>
-    <span class="kn">from</span> <span class="nn">zenml.integrations.seldon</span> <span class="kn">import</span> <span class="n">services</span>  <span class="c1"># noqa</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.seldon</span><span class="w"> </span><span class="kn">import</span> <span class="n">secret_schemas</span>  <span class="c1"># noqa</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.seldon</span><span class="w"> </span><span class="kn">import</span> <span class="n">services</span>  <span class="c1"># noqa</span>
 </code></pre></div>
         </details>
     </div>
@@ -3836,13 +3836,13 @@ SeldonIntegration            (<a class="autorefs autorefs-internal" title="zenml
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Seldon Core.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        List of stack component flavors for this integration.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.integrations.seldon.flavors</span> <span class="kn">import</span> <span class="n">SeldonModelDeployerFlavor</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.seldon.flavors</span><span class="w"> </span><span class="kn">import</span> <span class="n">SeldonModelDeployerFlavor</span>
 
     <span class="k">return</span> <span class="p">[</span><span class="n">SeldonModelDeployerFlavor</span><span class="p">]</span>
 </code></pre></div>
@@ -3907,7 +3907,7 @@ SeldonIntegration            (<a class="autorefs autorefs-internal" title="zenml
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">get_requirements</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">target_os</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_requirements</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">target_os</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Method to get the requirements for the integration.</span>
 
 <span class="sd">    Args:</span>
@@ -3916,7 +3916,7 @@ SeldonIntegration            (<a class="autorefs autorefs-internal" title="zenml
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of requirements.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.integrations.numpy</span> <span class="kn">import</span> <span class="n">NumpyIntegration</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.numpy</span><span class="w"> </span><span class="kn">import</span> <span class="n">NumpyIntegration</span>
 
     <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">REQUIREMENTS</span> <span class="o">+</span> \
         <span class="n">NumpyIntegration</span><span class="o">.</span><span class="n">get_requirements</span><span class="p">(</span><span class="n">target_os</span><span class="o">=</span><span class="n">target_os</span><span class="p">)</span>
@@ -4087,7 +4087,7 @@ which is used as the main entry point for custom code execution.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/custom_deployer/zenml_custom_model.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ZenMLCustomModel</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ZenMLCustomModel</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Custom model class for ZenML and Seldon.</span>
 
 <span class="sd">    This class is used to implement a custom model for the Seldon Core integration,</span>
@@ -4099,7 +4099,7 @@ which is used as the main entry point for custom code execution.</p>
 <span class="sd">        predict_func: The predict function of the model.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">model_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">model_uri</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -4118,7 +4118,7 @@ which is used as the main entry point for custom code execution.</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">ready</span> <span class="o">=</span> <span class="kc">False</span>
 
-    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Load the model.</span>
 
 <span class="sd">        This function loads the model into memory and sets the ready flag to True.</span>
@@ -4131,7 +4131,7 @@ which is used as the main entry point for custom code execution.</p>
 
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="kn">from</span> <span class="nn">zenml.artifacts.utils</span> <span class="kn">import</span> <span class="n">load_model_from_metadata</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.artifacts.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_model_from_metadata</span>
 
             <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">load_model_from_metadata</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model_uri</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
@@ -4140,7 +4140,7 @@ which is used as the main entry point for custom code execution.</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">ready</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ready</span>
 
-    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">predict</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">X</span><span class="p">:</span> <span class="n">Array_Like</span><span class="p">,</span>
         <span class="n">features_names</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span>
@@ -4243,7 +4243,7 @@ which is used as the main entry point for custom code execution.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/custom_deployer/zenml_custom_model.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">model_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">model_uri</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -4304,7 +4304,7 @@ prediction time by the materializer.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/custom_deployer/zenml_custom_model.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Load the model.</span>
 
 <span class="sd">    This function loads the model into memory and sets the ready flag to True.</span>
@@ -4317,7 +4317,7 @@ prediction time by the materializer.</p>
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="kn">from</span> <span class="nn">zenml.artifacts.utils</span> <span class="kn">import</span> <span class="n">load_model_from_metadata</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.artifacts.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_model_from_metadata</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">load_model_from_metadata</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model_uri</span><span class="p">)</span>
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
@@ -4421,7 +4421,7 @@ the user-defined predict function is called.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/custom_deployer/zenml_custom_model.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">predict</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">predict</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">X</span><span class="p">:</span> <span class="n">Array_Like</span><span class="p">,</span>
     <span class="n">features_names</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span>
@@ -4633,7 +4633,7 @@ ZenML and is already present in the Kubernetes cluster.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/flavors/seldon_model_deployer_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SeldonModelDeployerConfig</span><span class="p">(</span><span class="n">BaseModelDeployerConfig</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SeldonModelDeployerConfig</span><span class="p">(</span><span class="n">BaseModelDeployerConfig</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Config for the Seldon Model Deployer.</span>
 
 <span class="sd">    Attributes:</span>
@@ -4733,11 +4733,11 @@ SeldonModelDeployerFlavor            (<a class="autorefs autorefs-internal" titl
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/flavors/seldon_model_deployer_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SeldonModelDeployerFlavor</span><span class="p">(</span><span class="n">BaseModelDeployerFlavor</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SeldonModelDeployerFlavor</span><span class="p">(</span><span class="n">BaseModelDeployerFlavor</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Seldon Core model deployer flavor.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -4746,7 +4746,7 @@ SeldonModelDeployerFlavor            (<a class="autorefs autorefs-internal" titl
         <span class="k">return</span> <span class="n">SELDON_MODEL_DEPLOYER_FLAVOR</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">service_connector_requirements</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">service_connector_requirements</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ServiceConnectorRequirements</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Service connector resource requirements for service connectors.</span>
@@ -4763,7 +4763,7 @@ SeldonModelDeployerFlavor            (<a class="autorefs autorefs-internal" titl
         <span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -4772,7 +4772,7 @@ SeldonModelDeployerFlavor            (<a class="autorefs autorefs-internal" titl
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at SDK docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -4781,7 +4781,7 @@ SeldonModelDeployerFlavor            (<a class="autorefs autorefs-internal" titl
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_sdk_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to represent the flavor in the dashboard.</span>
 
 <span class="sd">        Returns:</span>
@@ -4790,7 +4790,7 @@ SeldonModelDeployerFlavor            (<a class="autorefs autorefs-internal" titl
         <span class="k">return</span> <span class="s2">&quot;https://public-flavor-logos.s3.eu-central-1.amazonaws.com/model_deployer/seldon.png&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">SeldonModelDeployerConfig</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">SeldonModelDeployerConfig</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns `SeldonModelDeployerConfig` config class.</span>
 
 <span class="sd">        Returns:</span>
@@ -4799,13 +4799,13 @@ SeldonModelDeployerFlavor            (<a class="autorefs autorefs-internal" titl
         <span class="k">return</span> <span class="n">SeldonModelDeployerConfig</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;SeldonModelDeployer&quot;</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;SeldonModelDeployer&quot;</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The implementation class.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.seldon.model_deployers</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.seldon.model_deployers</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">SeldonModelDeployer</span><span class="p">,</span>
         <span class="p">)</span>
 
@@ -5203,7 +5203,7 @@ SeldonModelDeployer            (<a class="autorefs autorefs-internal" title="zen
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/model_deployers/seldon_model_deployer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SeldonModelDeployer</span><span class="p">(</span><span class="n">BaseModelDeployer</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SeldonModelDeployer</span><span class="p">(</span><span class="n">BaseModelDeployer</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Seldon Core model deployer stack component implementation.&quot;&quot;&quot;</span>
 
     <span class="n">NAME</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Seldon Core&quot;</span>
@@ -5212,7 +5212,7 @@ SeldonModelDeployer            (<a class="autorefs autorefs-internal" title="zen
     <span class="n">_client</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">SeldonClient</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SeldonModelDeployerConfig</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SeldonModelDeployerConfig</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the `SeldonModelDeployerConfig` config.</span>
 
 <span class="sd">        Returns:</span>
@@ -5221,7 +5221,7 @@ SeldonModelDeployer            (<a class="autorefs autorefs-internal" title="zen
         <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">SeldonModelDeployerConfig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">validator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">StackValidator</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">validator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">StackValidator</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Ensures there is a container registry and image builder in the stack.</span>
 
 <span class="sd">        Returns:</span>
@@ -5234,7 +5234,7 @@ SeldonModelDeployer            (<a class="autorefs autorefs-internal" title="zen
         <span class="p">)</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">get_model_server_info</span><span class="p">(</span>  <span class="c1"># type: ignore[override]</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_model_server_info</span><span class="p">(</span>  <span class="c1"># type: ignore[override]</span>
         <span class="n">service_instance</span><span class="p">:</span> <span class="s2">&quot;SeldonDeploymentService&quot;</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return implementation specific information that might be relevant to the user.</span>
@@ -5253,7 +5253,7 @@ SeldonModelDeployer            (<a class="autorefs autorefs-internal" title="zen
         <span class="p">}</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">seldon_client</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SeldonClient</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">seldon_client</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SeldonClient</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the Seldon Core client associated with this model deployer.</span>
 
 <span class="sd">        Returns:</span>
@@ -5263,7 +5263,7 @@ SeldonModelDeployer            (<a class="autorefs autorefs-internal" title="zen
 <span class="sd">            RuntimeError: If the Kubernetes namespace is not configured when</span>
 <span class="sd">                using a service connector to deploy models with Seldon Core.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">kubernetes</span> <span class="kn">import</span> <span class="n">client</span> <span class="k">as</span> <span class="n">k8s_client</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">kubernetes</span><span class="w"> </span><span class="kn">import</span> <span class="n">client</span> <span class="k">as</span> <span class="n">k8s_client</span>
 
         <span class="c1"># Refresh the client also if the connector has expired</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">connector_has_expired</span><span class="p">():</span>
@@ -5294,7 +5294,7 @@ SeldonModelDeployer            (<a class="autorefs autorefs-internal" title="zen
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">kubernetes_secret_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">kubernetes_secret_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the Kubernetes secret name associated with this model deployer.</span>
 
 <span class="sd">        If a pre-existing Kubernetes secret is configured for this model</span>
@@ -5326,7 +5326,7 @@ SeldonModelDeployer            (<a class="autorefs autorefs-internal" title="zen
             <span class="o">.</span><span class="n">lower</span><span class="p">()</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_docker_builds</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_docker_builds</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeploymentBase&quot;</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="s2">&quot;BuildConfiguration&quot;</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets the Docker builds required for the component.</span>
@@ -5349,7 +5349,7 @@ SeldonModelDeployer            (<a class="autorefs autorefs-internal" title="zen
 
         <span class="k">return</span> <span class="n">builds</span>
 
-    <span class="k">def</span> <span class="nf">_create_or_update_kubernetes_secret</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_create_or_update_kubernetes_secret</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Create or update the Kubernetes secret used to access the artifact store.</span>
 
 <span class="sd">        Uses the information stored in the ZenML secret configured for the model deployer.</span>
@@ -5419,7 +5419,7 @@ SeldonModelDeployer            (<a class="autorefs autorefs-internal" title="zen
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">kubernetes_secret_name</span>
 
-    <span class="k">def</span> <span class="nf">_convert_artifact_store_secret</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseSecretSchema</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_convert_artifact_store_secret</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseSecretSchema</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert the credentials configured for the artifact store into a ZenML secret.</span>
 
 <span class="sd">        Returns:</span>
@@ -5433,7 +5433,7 @@ SeldonModelDeployer            (<a class="autorefs autorefs-internal" title="zen
         <span class="n">zenml_secret</span><span class="p">:</span> <span class="n">BaseSecretSchema</span>
 
         <span class="k">if</span> <span class="n">artifact_store</span><span class="o">.</span><span class="n">flavor</span> <span class="o">==</span> <span class="s2">&quot;s3&quot;</span><span class="p">:</span>
-            <span class="kn">from</span> <span class="nn">zenml.integrations.s3.artifact_stores</span> <span class="kn">import</span> <span class="n">S3ArtifactStore</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.s3.artifact_stores</span><span class="w"> </span><span class="kn">import</span> <span class="n">S3ArtifactStore</span>
 
             <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">artifact_store</span><span class="p">,</span> <span class="n">S3ArtifactStore</span><span class="p">)</span>
 
@@ -5476,7 +5476,7 @@ SeldonModelDeployer            (<a class="autorefs autorefs-internal" title="zen
             <span class="k">return</span> <span class="n">SeldonS3SecretSchema</span><span class="p">(</span><span class="n">rclone_config_s3_env_auth</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
         <span class="k">elif</span> <span class="n">artifact_store</span><span class="o">.</span><span class="n">flavor</span> <span class="o">==</span> <span class="s2">&quot;gcp&quot;</span><span class="p">:</span>
-            <span class="kn">from</span> <span class="nn">zenml.integrations.gcp.artifact_stores</span> <span class="kn">import</span> <span class="n">GCPArtifactStore</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.gcp.artifact_stores</span><span class="w"> </span><span class="kn">import</span> <span class="n">GCPArtifactStore</span>
 
             <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">artifact_store</span><span class="p">,</span> <span class="n">GCPArtifactStore</span><span class="p">)</span>
 
@@ -5528,7 +5528,7 @@ SeldonModelDeployer            (<a class="autorefs autorefs-internal" title="zen
             <span class="k">return</span> <span class="n">SeldonGSSecretSchema</span><span class="p">(</span><span class="n">rclone_config_gs_anonymous</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
         <span class="k">elif</span> <span class="n">artifact_store</span><span class="o">.</span><span class="n">flavor</span> <span class="o">==</span> <span class="s2">&quot;azure&quot;</span><span class="p">:</span>
-            <span class="kn">from</span> <span class="nn">zenml.integrations.azure.artifact_stores</span> <span class="kn">import</span> <span class="p">(</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.azure.artifact_stores</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
                 <span class="n">AzureArtifactStore</span><span class="p">,</span>
             <span class="p">)</span>
 
@@ -5553,7 +5553,7 @@ SeldonModelDeployer            (<a class="autorefs autorefs-internal" title="zen
                         <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
                             <span class="s2">&quot;The Azure connection string configured for the &quot;</span>
                             <span class="s2">&quot;artifact store expected format.&quot;</span>
-                        <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+                        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
                     <span class="k">return</span> <span class="n">SeldonAzureSecretSchema</span><span class="p">(</span>
                         <span class="n">rclone_config_az_account</span><span class="o">=</span><span class="n">account_name</span><span class="p">,</span>
@@ -5605,7 +5605,7 @@ SeldonModelDeployer            (<a class="autorefs autorefs-internal" title="zen
             <span class="s2">&quot;the model artifacts.&quot;</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_delete_kubernetes_secret</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">secret_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_delete_kubernetes_secret</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">secret_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Delete a Kubernetes secret associated with this model deployer.</span>
 
 <span class="sd">        Do this if no Seldon Core deployments are using it. The only exception</span>
@@ -5627,7 +5627,7 @@ SeldonModelDeployer            (<a class="autorefs autorefs-internal" title="zen
                 <span class="k">return</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">seldon_client</span><span class="o">.</span><span class="n">delete_secret</span><span class="p">(</span><span class="n">secret_name</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">perform_deploy_model</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">perform_deploy_model</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="nb">id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span>
         <span class="n">config</span><span class="p">:</span> <span class="n">ServiceConfig</span><span class="p">,</span>
@@ -5717,7 +5717,7 @@ SeldonModelDeployer            (<a class="autorefs autorefs-internal" title="zen
 
         <span class="k">return</span> <span class="n">service</span>
 
-    <span class="k">def</span> <span class="nf">perform_stop_model</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">perform_stop_model</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">service</span><span class="p">:</span> <span class="n">BaseService</span><span class="p">,</span>
         <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_SELDON_DEPLOYMENT_START_STOP_TIMEOUT</span><span class="p">,</span>
@@ -5739,7 +5739,7 @@ SeldonModelDeployer            (<a class="autorefs autorefs-internal" title="zen
             <span class="s2">&quot;deleting the Seldon Core model server instead.&quot;</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">perform_start_model</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">perform_start_model</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">service</span><span class="p">:</span> <span class="n">BaseService</span><span class="p">,</span>
         <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_SELDON_DEPLOYMENT_START_STOP_TIMEOUT</span><span class="p">,</span>
@@ -5761,7 +5761,7 @@ SeldonModelDeployer            (<a class="autorefs autorefs-internal" title="zen
             <span class="s2">&quot;Starting Seldon Core model servers is not implemented&quot;</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">perform_delete_model</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">perform_delete_model</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">service</span><span class="p">:</span> <span class="n">BaseService</span><span class="p">,</span>
         <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_SELDON_DEPLOYMENT_START_STOP_TIMEOUT</span><span class="p">,</span>
@@ -5994,11 +5994,11 @@ FLAVOR            (<a class="autorefs autorefs-internal" title="zenml.model_depl
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/model_deployers/seldon_model_deployer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SeldonModelDeployerFlavor</span><span class="p">(</span><span class="n">BaseModelDeployerFlavor</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SeldonModelDeployerFlavor</span><span class="p">(</span><span class="n">BaseModelDeployerFlavor</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Seldon Core model deployer flavor.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -6007,7 +6007,7 @@ FLAVOR            (<a class="autorefs autorefs-internal" title="zenml.model_depl
         <span class="k">return</span> <span class="n">SELDON_MODEL_DEPLOYER_FLAVOR</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">service_connector_requirements</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">service_connector_requirements</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ServiceConnectorRequirements</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Service connector resource requirements for service connectors.</span>
@@ -6024,7 +6024,7 @@ FLAVOR            (<a class="autorefs autorefs-internal" title="zenml.model_depl
         <span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -6033,7 +6033,7 @@ FLAVOR            (<a class="autorefs autorefs-internal" title="zenml.model_depl
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at SDK docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -6042,7 +6042,7 @@ FLAVOR            (<a class="autorefs autorefs-internal" title="zenml.model_depl
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_sdk_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to represent the flavor in the dashboard.</span>
 
 <span class="sd">        Returns:</span>
@@ -6051,7 +6051,7 @@ FLAVOR            (<a class="autorefs autorefs-internal" title="zenml.model_depl
         <span class="k">return</span> <span class="s2">&quot;https://public-flavor-logos.s3.eu-central-1.amazonaws.com/model_deployer/seldon.png&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">SeldonModelDeployerConfig</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">SeldonModelDeployerConfig</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns `SeldonModelDeployerConfig` config class.</span>
 
 <span class="sd">        Returns:</span>
@@ -6060,13 +6060,13 @@ FLAVOR            (<a class="autorefs autorefs-internal" title="zenml.model_depl
         <span class="k">return</span> <span class="n">SeldonModelDeployerConfig</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;SeldonModelDeployer&quot;</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;SeldonModelDeployer&quot;</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The implementation class.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.seldon.model_deployers</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.seldon.model_deployers</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">SeldonModelDeployer</span><span class="p">,</span>
         <span class="p">)</span>
 
@@ -6417,7 +6417,7 @@ connector is required for this flavor.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/model_deployers/seldon_model_deployer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_docker_builds</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_docker_builds</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeploymentBase&quot;</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="s2">&quot;BuildConfiguration&quot;</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets the Docker builds required for the component.</span>
@@ -6501,7 +6501,7 @@ connector is required for this flavor.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/model_deployers/seldon_model_deployer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
-<span class="k">def</span> <span class="nf">get_model_server_info</span><span class="p">(</span>  <span class="c1"># type: ignore[override]</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_model_server_info</span><span class="p">(</span>  <span class="c1"># type: ignore[override]</span>
     <span class="n">service_instance</span><span class="p">:</span> <span class="s2">&quot;SeldonDeploymentService&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Return implementation specific information that might be relevant to the user.</span>
@@ -6575,7 +6575,7 @@ deprovisioning the service, without waiting for it to stop.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/model_deployers/seldon_model_deployer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">perform_delete_model</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">perform_delete_model</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">BaseService</span><span class="p">,</span>
     <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_SELDON_DEPLOYMENT_START_STOP_TIMEOUT</span><span class="p">,</span>
@@ -6725,7 +6725,7 @@ it reaches a ready state.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/model_deployers/seldon_model_deployer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">perform_deploy_model</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">perform_deploy_model</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span>
     <span class="n">config</span><span class="p">:</span> <span class="n">ServiceConfig</span><span class="p">,</span>
@@ -6882,7 +6882,7 @@ model servers</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/model_deployers/seldon_model_deployer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">perform_start_model</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">perform_start_model</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">BaseService</span><span class="p">,</span>
     <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_SELDON_DEPLOYMENT_START_STOP_TIMEOUT</span><span class="p">,</span>
@@ -6974,7 +6974,7 @@ supported.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/model_deployers/seldon_model_deployer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">perform_stop_model</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">perform_stop_model</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">BaseService</span><span class="p">,</span>
     <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_SELDON_DEPLOYMENT_START_STOP_TIMEOUT</span><span class="p">,</span>
@@ -7179,7 +7179,7 @@ authentication.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/secret_schemas/secret_schemas.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SeldonAzureSecretSchema</span><span class="p">(</span><span class="n">BaseSecretSchema</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SeldonAzureSecretSchema</span><span class="p">(</span><span class="n">BaseSecretSchema</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Seldon Azure Blob Storage credentials.</span>
 
 <span class="sd">    Based on: https://rclone.org/azureblob/</span>
@@ -7330,7 +7330,7 @@ don't configure credentials.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/secret_schemas/secret_schemas.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SeldonGSSecretSchema</span><span class="p">(</span><span class="n">BaseSecretSchema</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SeldonGSSecretSchema</span><span class="p">(</span><span class="n">BaseSecretSchema</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Seldon GCS credentials.</span>
 
 <span class="sd">    Based on: https://rclone.org/googlecloudstorage/</span>
@@ -7476,7 +7476,7 @@ and secret_access_key are blank.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/secret_schemas/secret_schemas.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SeldonS3SecretSchema</span><span class="p">(</span><span class="n">BaseSecretSchema</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SeldonS3SecretSchema</span><span class="p">(</span><span class="n">BaseSecretSchema</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Seldon S3 credentials.</span>
 
 <span class="sd">    Based on: https://rclone.org/s3/#amazon-s3</span>
@@ -7610,10 +7610,10 @@ SeldonClient        </code>
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/seldon_client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SeldonClient</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SeldonClient</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;A client for interacting with Seldon Deployments.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">context</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
         <span class="n">namespace</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
@@ -7629,7 +7629,7 @@ SeldonClient        </code>
         <span class="bp">self</span><span class="o">.</span><span class="n">_namespace</span> <span class="o">=</span> <span class="n">namespace</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_initialize_k8s_clients</span><span class="p">(</span><span class="n">context</span><span class="o">=</span><span class="n">context</span><span class="p">,</span> <span class="n">kube_client</span><span class="o">=</span><span class="n">kube_client</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_initialize_k8s_clients</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_initialize_k8s_clients</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">context</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
         <span class="n">kube_client</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">k8s_client</span><span class="o">.</span><span class="n">ApiClient</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -7671,12 +7671,12 @@ SeldonClient        </code>
             <span class="k">except</span> <span class="n">k8s_config</span><span class="o">.</span><span class="n">config_exception</span><span class="o">.</span><span class="n">ConfigException</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">SeldonClientError</span><span class="p">(</span>
                     <span class="s2">&quot;Could not load the Kubernetes configuration&quot;</span>
-                <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+                <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_core_api</span> <span class="o">=</span> <span class="n">k8s_client</span><span class="o">.</span><span class="n">CoreV1Api</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_custom_objects_api</span> <span class="o">=</span> <span class="n">k8s_client</span><span class="o">.</span><span class="n">CustomObjectsApi</span><span class="p">()</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">sanitize_labels</span><span class="p">(</span><span class="n">labels</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sanitize_labels</span><span class="p">(</span><span class="n">labels</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Update the label values to be valid Kubernetes labels.</span>
 
 <span class="sd">        See:</span>
@@ -7694,7 +7694,7 @@ SeldonClient        </code>
             <span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">namespace</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">namespace</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the Kubernetes namespace in use by the client.</span>
 
 <span class="sd">        Returns:</span>
@@ -7709,7 +7709,7 @@ SeldonClient        </code>
             <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;The Kubernetes namespace is not configured&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_namespace</span>
 
-    <span class="k">def</span> <span class="nf">create_deployment</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">create_deployment</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">deployment</span><span class="p">:</span> <span class="n">SeldonDeployment</span><span class="p">,</span>
         <span class="n">poll_timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
@@ -7764,7 +7764,7 @@ SeldonClient        </code>
                 <span class="p">)</span>
             <span class="k">raise</span> <span class="n">SeldonClientError</span><span class="p">(</span>
                 <span class="s2">&quot;Exception when creating SeldonDeployment resource&quot;</span>
-            <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
         <span class="n">created_deployment</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_deployment</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">deployment</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
 
@@ -7775,7 +7775,7 @@ SeldonClient        </code>
 
         <span class="k">return</span> <span class="n">created_deployment</span>
 
-    <span class="k">def</span> <span class="nf">delete_deployment</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">delete_deployment</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -7825,7 +7825,7 @@ SeldonClient        </code>
             <span class="p">)</span>
             <span class="k">raise</span> <span class="n">SeldonClientError</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;Exception when deleting SeldonDeployment resource </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
-            <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
         <span class="k">while</span> <span class="n">poll_timeout</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">try</span><span class="p">:</span>
@@ -7835,7 +7835,7 @@ SeldonClient        </code>
             <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
             <span class="n">poll_timeout</span> <span class="o">-=</span> <span class="mi">5</span>
 
-    <span class="k">def</span> <span class="nf">update_deployment</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">update_deployment</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">deployment</span><span class="p">:</span> <span class="n">SeldonDeployment</span><span class="p">,</span>
         <span class="n">poll_timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
@@ -7888,7 +7888,7 @@ SeldonClient        </code>
             <span class="p">)</span>
             <span class="k">raise</span> <span class="n">SeldonClientError</span><span class="p">(</span>
                 <span class="s2">&quot;Exception when creating SeldonDeployment resource&quot;</span>
-            <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
         <span class="n">updated_deployment</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_deployment</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">deployment</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
 
@@ -7899,7 +7899,7 @@ SeldonClient        </code>
 
         <span class="k">return</span> <span class="n">updated_deployment</span>
 
-    <span class="k">def</span> <span class="nf">get_deployment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SeldonDeployment</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_deployment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SeldonDeployment</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a ZenML managed Seldon Core deployment resource by name.</span>
 
 <span class="sd">        Args:</span>
@@ -7948,7 +7948,7 @@ SeldonClient        </code>
             <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="mi">404</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">SeldonDeploymentNotFoundError</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">&quot;SeldonDeployment resource not found: </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
-                <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+                <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
                 <span class="s2">&quot;Exception when fetching SeldonDeployment resource </span><span class="si">%s</span><span class="s2">: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
                 <span class="n">name</span><span class="p">,</span>
@@ -7957,9 +7957,9 @@ SeldonClient        </code>
             <span class="k">raise</span> <span class="n">SeldonClientError</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;Unexpected exception when fetching SeldonDeployment &quot;</span>
                 <span class="sa">f</span><span class="s2">&quot;resource: </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
-            <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
-    <span class="k">def</span> <span class="nf">find_deployments</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">find_deployments</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">labels</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -8031,9 +8031,9 @@ SeldonClient        </code>
             <span class="k">raise</span> <span class="n">SeldonClientError</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;Unexpected exception when searching SeldonDeployment &quot;</span>
                 <span class="sa">f</span><span class="s2">&quot;with labels &#39;</span><span class="si">{</span><span class="n">labels</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="si">}</span><span class="s2">&#39; and field &#39;</span><span class="si">{</span><span class="n">fields</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="si">}</span><span class="s2">&#39;&quot;</span>
-            <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
-    <span class="k">def</span> <span class="nf">get_deployment_logs</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_deployment_logs</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">follow</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -8109,7 +8109,7 @@ SeldonClient        </code>
             <span class="k">raise</span> <span class="n">SeldonClientError</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;Unexpected exception when fetching logs for SeldonDeployment &quot;</span>
                 <span class="sa">f</span><span class="s2">&quot;resource: </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
-            <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
         <span class="k">try</span><span class="p">:</span>
             <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
@@ -8122,7 +8122,7 @@ SeldonClient        </code>
         <span class="k">finally</span><span class="p">:</span>
             <span class="n">response</span><span class="o">.</span><span class="n">release_conn</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">create_or_update_secret</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">create_or_update_secret</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">secret_values</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
@@ -8186,9 +8186,9 @@ SeldonClient        </code>
             <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Exception when creating Secret resource: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
             <span class="k">raise</span> <span class="n">SeldonClientError</span><span class="p">(</span>
                 <span class="s2">&quot;Exception when creating Secret resource&quot;</span>
-            <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
-    <span class="k">def</span> <span class="nf">delete_secret</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">delete_secret</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -8220,7 +8220,7 @@ SeldonClient        </code>
             <span class="p">)</span>
             <span class="k">raise</span> <span class="n">SeldonClientError</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;Exception when deleting Secret resource </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
-            <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 </code></pre></div>
         </details>
 
@@ -8339,7 +8339,7 @@ SeldonClient        </code>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/seldon_client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">context</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
     <span class="n">namespace</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
@@ -8443,7 +8443,7 @@ the deployment.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/seldon_client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">create_deployment</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">create_deployment</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">deployment</span><span class="p">:</span> <span class="n">SeldonDeployment</span><span class="p">,</span>
     <span class="n">poll_timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
@@ -8498,7 +8498,7 @@ the deployment.</p></td>
             <span class="p">)</span>
         <span class="k">raise</span> <span class="n">SeldonClientError</span><span class="p">(</span>
             <span class="s2">&quot;Exception when creating SeldonDeployment resource&quot;</span>
-        <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
     <span class="n">created_deployment</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_deployment</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">deployment</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
 
@@ -8578,7 +8578,7 @@ the secret.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/seldon_client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">create_or_update_secret</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">create_or_update_secret</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">secret_values</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
@@ -8642,7 +8642,7 @@ the secret.</p></td>
         <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Exception when creating Secret resource: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
         <span class="k">raise</span> <span class="n">SeldonClientError</span><span class="p">(</span>
             <span class="s2">&quot;Exception when creating Secret resource&quot;</span>
-        <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 </code></pre></div>
         </details>
     </div>
@@ -8719,7 +8719,7 @@ removal.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/seldon_client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">delete_deployment</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">delete_deployment</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -8769,7 +8769,7 @@ removal.</p></td>
         <span class="p">)</span>
         <span class="k">raise</span> <span class="n">SeldonClientError</span><span class="p">(</span>
             <span class="sa">f</span><span class="s2">&quot;Exception when deleting SeldonDeployment resource </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
     <span class="k">while</span> <span class="n">poll_timeout</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
         <span class="k">try</span><span class="p">:</span>
@@ -8837,7 +8837,7 @@ of the secret.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/seldon_client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">delete_secret</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">delete_secret</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -8869,7 +8869,7 @@ of the secret.</p></td>
         <span class="p">)</span>
         <span class="k">raise</span> <span class="n">SeldonClientError</span><span class="p">(</span>
             <span class="sa">f</span><span class="s2">&quot;Exception when deleting Secret resource </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 </code></pre></div>
         </details>
     </div>
@@ -8958,7 +8958,7 @@ the deployments.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/seldon_client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">find_deployments</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">find_deployments</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">labels</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -9030,7 +9030,7 @@ the deployments.</p></td>
         <span class="k">raise</span> <span class="n">SeldonClientError</span><span class="p">(</span>
             <span class="sa">f</span><span class="s2">&quot;Unexpected exception when searching SeldonDeployment &quot;</span>
             <span class="sa">f</span><span class="s2">&quot;with labels &#39;</span><span class="si">{</span><span class="n">labels</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="si">}</span><span class="s2">&#39; and field &#39;</span><span class="si">{</span><span class="n">fields</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="si">}</span><span class="s2">&#39;&quot;</span>
-        <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 </code></pre></div>
         </details>
     </div>
@@ -9110,7 +9110,7 @@ the deployment.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/seldon_client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_deployment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SeldonDeployment</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_deployment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SeldonDeployment</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get a ZenML managed Seldon Core deployment resource by name.</span>
 
 <span class="sd">    Args:</span>
@@ -9159,7 +9159,7 @@ the deployment.</p></td>
         <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="mi">404</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">SeldonDeploymentNotFoundError</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;SeldonDeployment resource not found: </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
-            <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span>
             <span class="s2">&quot;Exception when fetching SeldonDeployment resource </span><span class="si">%s</span><span class="s2">: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span>
             <span class="n">name</span><span class="p">,</span>
@@ -9168,7 +9168,7 @@ the deployment.</p></td>
         <span class="k">raise</span> <span class="n">SeldonClientError</span><span class="p">(</span>
             <span class="sa">f</span><span class="s2">&quot;Unexpected exception when fetching SeldonDeployment &quot;</span>
             <span class="sa">f</span><span class="s2">&quot;resource: </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 </code></pre></div>
         </details>
     </div>
@@ -9270,7 +9270,7 @@ the logs.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/seldon_client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_deployment_logs</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_deployment_logs</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">follow</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -9346,7 +9346,7 @@ the logs.</p></td>
         <span class="k">raise</span> <span class="n">SeldonClientError</span><span class="p">(</span>
             <span class="sa">f</span><span class="s2">&quot;Unexpected exception when fetching logs for SeldonDeployment &quot;</span>
             <span class="sa">f</span><span class="s2">&quot;resource: </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
     <span class="k">try</span><span class="p">:</span>
         <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
@@ -9407,7 +9407,7 @@ https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/seldon_client.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
-<span class="k">def</span> <span class="nf">sanitize_labels</span><span class="p">(</span><span class="n">labels</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">sanitize_labels</span><span class="p">(</span><span class="n">labels</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Update the label values to be valid Kubernetes labels.</span>
 
 <span class="sd">    See:</span>
@@ -9507,7 +9507,7 @@ deployment.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/seldon_client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">update_deployment</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">update_deployment</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">deployment</span><span class="p">:</span> <span class="n">SeldonDeployment</span><span class="p">,</span>
     <span class="n">poll_timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
@@ -9560,7 +9560,7 @@ deployment.</p></td>
         <span class="p">)</span>
         <span class="k">raise</span> <span class="n">SeldonClientError</span><span class="p">(</span>
             <span class="s2">&quot;Exception when creating SeldonDeployment resource&quot;</span>
-        <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
     <span class="n">updated_deployment</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_deployment</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">deployment</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
 
@@ -9607,7 +9607,7 @@ SeldonClientError            (<span title="Exception">Exception</span>)
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/seldon_client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SeldonClientError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SeldonClientError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Base exception class for all exceptions raised by the SeldonClient.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
@@ -9638,7 +9638,7 @@ SeldonClientTimeout            (<a class="autorefs autorefs-internal" title="zen
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/seldon_client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SeldonClientTimeout</span><span class="p">(</span><span class="n">SeldonClientError</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SeldonClientTimeout</span><span class="p">(</span><span class="n">SeldonClientError</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when the Seldon client timed out while waiting for a resource to reach the expected status.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
@@ -9713,7 +9713,7 @@ SeldonDeployment CRD representation.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/seldon_client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SeldonDeployment</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SeldonDeployment</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;A Seldon Core deployment CRD.</span>
 
 <span class="sd">    This is a Pydantic representation of some of the fields in the Seldon Core</span>
@@ -9741,7 +9741,7 @@ SeldonDeployment CRD representation.</p>
     <span class="n">spec</span><span class="p">:</span> <span class="n">SeldonDeploymentSpec</span>
     <span class="n">status</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">SeldonDeploymentStatus</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns a string representation of the Seldon Deployment.</span>
 
 <span class="sd">        Returns:</span>
@@ -9750,7 +9750,7 @@ SeldonDeployment CRD representation.</p>
         <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model_dump</span><span class="p">(</span><span class="n">exclude_none</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">build</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">build</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span>
         <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">model_uri</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -9843,7 +9843,7 @@ SeldonDeployment CRD representation.</p>
             <span class="n">spec</span><span class="o">=</span><span class="n">SeldonDeploymentSpec</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">predictors</span><span class="o">=</span><span class="n">predictors</span><span class="p">),</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">is_managed_by_zenml</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_managed_by_zenml</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if this Seldon Deployment is managed by ZenML.</span>
 
 <span class="sd">        The convention used to differentiate between SeldonDeployment instances</span>
@@ -9856,7 +9856,7 @@ SeldonDeployment CRD representation.</p>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">labels</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;app&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;zenml&quot;</span>
 
-    <span class="k">def</span> <span class="nf">mark_as_managed_by_zenml</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">mark_as_managed_by_zenml</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Marks this Seldon Deployment as managed by ZenML.</span>
 
 <span class="sd">        The convention used to differentiate between SeldonDeployment instances</span>
@@ -9866,7 +9866,7 @@ SeldonDeployment CRD representation.</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">labels</span><span class="p">[</span><span class="s2">&quot;app&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;zenml&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the name of this Seldon Deployment.</span>
 
 <span class="sd">        This is just a shortcut for `self.metadata.name`.</span>
@@ -9877,7 +9877,7 @@ SeldonDeployment CRD representation.</p>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">name</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">state</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SeldonDeploymentStatusState</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">state</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SeldonDeploymentStatusState</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The state of the Seldon Deployment.</span>
 
 <span class="sd">        Returns:</span>
@@ -9887,7 +9887,7 @@ SeldonDeployment CRD representation.</p>
             <span class="k">return</span> <span class="n">SeldonDeploymentStatusState</span><span class="o">.</span><span class="n">UNKNOWN</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">state</span>
 
-    <span class="k">def</span> <span class="nf">is_pending</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_pending</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if the Seldon Deployment is in a pending state.</span>
 
 <span class="sd">        Returns:</span>
@@ -9895,7 +9895,7 @@ SeldonDeployment CRD representation.</p>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">==</span> <span class="n">SeldonDeploymentStatusState</span><span class="o">.</span><span class="n">CREATING</span>
 
-    <span class="k">def</span> <span class="nf">is_available</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_available</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if the Seldon Deployment is in an available state.</span>
 
 <span class="sd">        Returns:</span>
@@ -9903,7 +9903,7 @@ SeldonDeployment CRD representation.</p>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">==</span> <span class="n">SeldonDeploymentStatusState</span><span class="o">.</span><span class="n">AVAILABLE</span>
 
-    <span class="k">def</span> <span class="nf">is_failed</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_failed</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks if the Seldon Deployment is in a failed state.</span>
 
 <span class="sd">        Returns:</span>
@@ -9911,7 +9911,7 @@ SeldonDeployment CRD representation.</p>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">state</span> <span class="o">==</span> <span class="n">SeldonDeploymentStatusState</span><span class="o">.</span><span class="n">FAILED</span>
 
-    <span class="k">def</span> <span class="nf">get_error</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_error</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a message describing the error, if in an error state.</span>
 
 <span class="sd">        Returns:</span>
@@ -9922,7 +9922,7 @@ SeldonDeployment CRD representation.</p>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">description</span>
         <span class="k">return</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="nf">get_pending_message</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_pending_message</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a message describing the pending conditions of the Seldon Deployment.</span>
 
 <span class="sd">        Returns:</span>
@@ -10087,7 +10087,7 @@ SeldonDeployment CRD representation.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/seldon_client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns a string representation of the Seldon Deployment.</span>
 
 <span class="sd">    Returns:</span>
@@ -10229,7 +10229,7 @@ parameters.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/seldon_client.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">build</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">build</span><span class="p">(</span>
     <span class="bp">cls</span><span class="p">,</span>
     <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">model_uri</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -10361,7 +10361,7 @@ None.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/seldon_client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_error</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_error</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get a message describing the error, if in an error state.</span>
 
 <span class="sd">    Returns:</span>
@@ -10411,7 +10411,7 @@ Deployment, or None, if no conditions are pending.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/seldon_client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_pending_message</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_pending_message</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get a message describing the pending conditions of the Seldon Deployment.</span>
 
 <span class="sd">    Returns:</span>
@@ -10467,7 +10467,7 @@ Deployment, or None, if no conditions are pending.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/seldon_client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">is_available</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">is_available</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks if the Seldon Deployment is in an available state.</span>
 
 <span class="sd">    Returns:</span>
@@ -10513,7 +10513,7 @@ Deployment, or None, if no conditions are pending.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/seldon_client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">is_failed</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">is_failed</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks if the Seldon Deployment is in a failed state.</span>
 
 <span class="sd">    Returns:</span>
@@ -10563,7 +10563,7 @@ otherwise.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/seldon_client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">is_managed_by_zenml</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">is_managed_by_zenml</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks if this Seldon Deployment is managed by ZenML.</span>
 
 <span class="sd">    The convention used to differentiate between SeldonDeployment instances</span>
@@ -10614,7 +10614,7 @@ otherwise.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/seldon_client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">is_pending</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">is_pending</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks if the Seldon Deployment is in a pending state.</span>
 
 <span class="sd">    Returns:</span>
@@ -10648,7 +10648,7 @@ label value to <code>zenml</code>.</p>
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/seldon_client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">mark_as_managed_by_zenml</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">mark_as_managed_by_zenml</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Marks this Seldon Deployment as managed by ZenML.</span>
 
 <span class="sd">    The convention used to differentiate between SeldonDeployment instances</span>
@@ -10710,7 +10710,7 @@ SeldonDeploymentComponentSpecs            (<span title="pydantic.main.BaseModel"
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/seldon_client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SeldonDeploymentComponentSpecs</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SeldonDeploymentComponentSpecs</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Component specs for a Seldon Deployment.</span>
 
 <span class="sd">    Attributes:</span>
@@ -10783,7 +10783,7 @@ SeldonDeploymentExistsError            (<a class="autorefs autorefs-internal" ti
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/seldon_client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SeldonDeploymentExistsError</span><span class="p">(</span><span class="n">SeldonClientError</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SeldonDeploymentExistsError</span><span class="p">(</span><span class="n">SeldonClientError</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when a SeldonDeployment resource cannot be created because a resource with the same name already exists.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
@@ -10846,7 +10846,7 @@ SeldonDeploymentMetadata            (<span title="pydantic.main.BaseModel">BaseM
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/seldon_client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SeldonDeploymentMetadata</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SeldonDeploymentMetadata</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Metadata for a Seldon Deployment.</span>
 
 <span class="sd">    Attributes:</span>
@@ -10925,7 +10925,7 @@ SeldonDeploymentNotFoundError            (<a class="autorefs autorefs-internal" 
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/seldon_client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SeldonDeploymentNotFoundError</span><span class="p">(</span><span class="n">SeldonClientError</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SeldonDeploymentNotFoundError</span><span class="p">(</span><span class="n">SeldonClientError</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when a particular SeldonDeployment resource is not found or is not managed by ZenML.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
@@ -11007,7 +11007,7 @@ model serving graph.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/seldon_client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SeldonDeploymentPredictiveUnit</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SeldonDeploymentPredictiveUnit</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Seldon Deployment predictive unit.</span>
 
 <span class="sd">    Attributes:</span>
@@ -11099,7 +11099,7 @@ SeldonDeploymentPredictiveUnitType            (<a class="autorefs autorefs-inter
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/seldon_client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SeldonDeploymentPredictiveUnitType</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SeldonDeploymentPredictiveUnitType</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Predictive unit types for a Seldon Deployment.&quot;&quot;&quot;</span>
 
     <span class="n">UNKNOWN_TYPE</span> <span class="o">=</span> <span class="s2">&quot;UNKNOWN_TYPE&quot;</span>
@@ -11186,7 +11186,7 @@ SeldonDeploymentPredictor            (<span title="pydantic.main.BaseModel">Base
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/seldon_client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SeldonDeploymentPredictor</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SeldonDeploymentPredictor</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Seldon Deployment predictor.</span>
 
 <span class="sd">    Attributes:</span>
@@ -11294,7 +11294,7 @@ SeldonDeploymentPredictorParameter            (<span title="pydantic.main.BaseMo
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/seldon_client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SeldonDeploymentPredictorParameter</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SeldonDeploymentPredictorParameter</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Parameter for Seldon Deployment predictor.</span>
 
 <span class="sd">    Attributes:</span>
@@ -11403,7 +11403,7 @@ SeldonDeploymentSpec            (<span title="pydantic.main.BaseModel">BaseModel
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/seldon_client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SeldonDeploymentSpec</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SeldonDeploymentSpec</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Spec for a Seldon Deployment.</span>
 
 <span class="sd">    Attributes:</span>
@@ -11519,7 +11519,7 @@ SeldonDeploymentStatus            (<span title="pydantic.main.BaseModel">BaseMod
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/seldon_client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SeldonDeploymentStatus</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SeldonDeploymentStatus</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;The status of a Seldon Deployment.</span>
 
 <span class="sd">    Attributes:</span>
@@ -11617,7 +11617,7 @@ SeldonDeploymentStatusAddress            (<span title="pydantic.main.BaseModel">
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/seldon_client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SeldonDeploymentStatusAddress</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SeldonDeploymentStatusAddress</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;The status address for a Seldon Deployment.</span>
 
 <span class="sd">    Attributes:</span>
@@ -11718,7 +11718,7 @@ transition.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/seldon_client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SeldonDeploymentStatusCondition</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SeldonDeploymentStatusCondition</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;The Kubernetes status condition entry for a Seldon Deployment.</span>
 
 <span class="sd">    Attributes:</span>
@@ -11793,7 +11793,7 @@ SeldonDeploymentStatusState            (<a class="autorefs autorefs-internal" ti
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/seldon_client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SeldonDeploymentStatusState</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SeldonDeploymentStatusState</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Possible state values for a Seldon Deployment.&quot;&quot;&quot;</span>
 
     <span class="n">UNKNOWN</span> <span class="o">=</span> <span class="s2">&quot;Unknown&quot;</span>
@@ -11871,7 +11871,7 @@ SeldonResourceRequirements            (<span title="pydantic.main.BaseModel">Bas
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/seldon_client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SeldonResourceRequirements</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SeldonResourceRequirements</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Resource requirements for a Seldon deployed model.</span>
 
 <span class="sd">    Attributes:</span>
@@ -11997,7 +11997,7 @@ image pull.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/seldon_client.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">create_seldon_core_custom_spec</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">create_seldon_core_custom_spec</span><span class="p">(</span>
     <span class="n">model_uri</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
     <span class="n">custom_docker_image</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
     <span class="n">secret_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
@@ -12248,7 +12248,7 @@ resource configuration.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/services/seldon_deployment.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SeldonDeploymentConfig</span><span class="p">(</span><span class="n">ServiceConfig</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SeldonDeploymentConfig</span><span class="p">(</span><span class="n">ServiceConfig</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Seldon Core deployment service configuration.</span>
 
 <span class="sd">    Attributes:</span>
@@ -12285,7 +12285,7 @@ resource configuration.</p></td>
     <span class="n">spec</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
     <span class="n">serviceAccountName</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="nf">get_seldon_deployment_labels</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_seldon_deployment_labels</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate labels for the Seldon Core deployment from the service configuration.</span>
 
 <span class="sd">        These labels are attached to the Seldon Core deployment resource</span>
@@ -12311,7 +12311,7 @@ resource configuration.</p></td>
         <span class="n">SeldonClient</span><span class="o">.</span><span class="n">sanitize_labels</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">labels</span>
 
-    <span class="k">def</span> <span class="nf">get_seldon_deployment_annotations</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_seldon_deployment_annotations</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate annotations for the Seldon Core deployment from the service configuration.</span>
 
 <span class="sd">        The annotations are used to store additional information about the</span>
@@ -12330,7 +12330,7 @@ resource configuration.</p></td>
         <span class="k">return</span> <span class="n">annotations</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">create_from_deployment</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">create_from_deployment</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span> <span class="n">deployment</span><span class="p">:</span> <span class="n">SeldonDeployment</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;SeldonDeploymentConfig&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Recreate the configuration of a Seldon Core Service from a deployed instance.</span>
@@ -12362,7 +12362,7 @@ resource configuration.</p></td>
                 <span class="sa">f</span><span class="s2">&quot;The loaded Seldon Core deployment resource contains an &quot;</span>
                 <span class="sa">f</span><span class="s2">&quot;invalid or incompatible Seldon Core service configuration: &quot;</span>
                 <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">config_data</span><span class="si">}</span><span class="s2">&quot;</span>
-            <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
         <span class="k">return</span> <span class="n">service_config</span>
 </code></pre></div>
         </details>
@@ -12466,7 +12466,7 @@ incompatible Seldon Core service configuration.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/services/seldon_deployment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">create_from_deployment</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">create_from_deployment</span><span class="p">(</span>
     <span class="bp">cls</span><span class="p">,</span> <span class="n">deployment</span><span class="p">:</span> <span class="n">SeldonDeployment</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;SeldonDeploymentConfig&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Recreate the configuration of a Seldon Core Service from a deployed instance.</span>
@@ -12498,7 +12498,7 @@ incompatible Seldon Core service configuration.</p></td>
             <span class="sa">f</span><span class="s2">&quot;The loaded Seldon Core deployment resource contains an &quot;</span>
             <span class="sa">f</span><span class="s2">&quot;invalid or incompatible Seldon Core service configuration: &quot;</span>
             <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">config_data</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
     <span class="k">return</span> <span class="n">service_config</span>
 </code></pre></div>
         </details>
@@ -12544,7 +12544,7 @@ recreate the service configuration from a remote Seldon deployment.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/services/seldon_deployment.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_seldon_deployment_annotations</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_seldon_deployment_annotations</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Generate annotations for the Seldon Core deployment from the service configuration.</span>
 
 <span class="sd">    The annotations are used to store additional information about the</span>
@@ -12602,7 +12602,7 @@ and may be used as label selectors in lookup operations.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/services/seldon_deployment.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_seldon_deployment_labels</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_seldon_deployment_labels</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Generate labels for the Seldon Core deployment from the service configuration.</span>
 
 <span class="sd">    These labels are attached to the Seldon Core deployment resource</span>
@@ -12686,7 +12686,7 @@ SeldonDeploymentService            (<a class="autorefs autorefs-internal" title=
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/services/seldon_deployment.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SeldonDeploymentService</span><span class="p">(</span><span class="n">BaseDeploymentService</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SeldonDeploymentService</span><span class="p">(</span><span class="n">BaseDeploymentService</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;A service that represents a Seldon Core deployment server.</span>
 
 <span class="sd">    Attributes:</span>
@@ -12707,13 +12707,13 @@ SeldonDeploymentService            (<a class="autorefs autorefs-internal" title=
         <span class="n">default_factory</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">SeldonDeploymentServiceStatus</span><span class="p">()</span>
     <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_get_client</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SeldonClient</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_client</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SeldonClient</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the Seldon Core client from the active Seldon Core model deployer.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The Seldon Core client.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.seldon.model_deployers.seldon_model_deployer</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.seldon.model_deployers.seldon_model_deployer</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">SeldonModelDeployer</span><span class="p">,</span>
         <span class="p">)</span>
 
@@ -12723,7 +12723,7 @@ SeldonDeploymentService            (<a class="autorefs autorefs-internal" title=
         <span class="p">)</span>
         <span class="k">return</span> <span class="n">model_deployer</span><span class="o">.</span><span class="n">seldon_client</span>
 
-    <span class="k">def</span> <span class="nf">check_status</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">ServiceState</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">check_status</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">ServiceState</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Check the the current operational state of the Seldon Core deployment.</span>
 
 <span class="sd">        Returns:</span>
@@ -12758,7 +12758,7 @@ SeldonDeploymentService            (<a class="autorefs autorefs-internal" title=
         <span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">seldon_deployment_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">seldon_deployment_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the name of the Seldon Core deployment.</span>
 
 <span class="sd">        It should return the one that uniquely corresponds to this service instance.</span>
@@ -12768,7 +12768,7 @@ SeldonDeploymentService            (<a class="autorefs autorefs-internal" title=
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;zenml-</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">uuid</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
 
-    <span class="k">def</span> <span class="nf">_get_seldon_deployment_labels</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_seldon_deployment_labels</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate the labels for the Seldon Core deployment from the service configuration.</span>
 
 <span class="sd">        Returns:</span>
@@ -12780,7 +12780,7 @@ SeldonDeploymentService            (<a class="autorefs autorefs-internal" title=
         <span class="k">return</span> <span class="n">labels</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">create_from_deployment</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">create_from_deployment</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span> <span class="n">deployment</span><span class="p">:</span> <span class="n">SeldonDeployment</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;SeldonDeploymentService&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Recreate a Seldon Core service from a Seldon Core deployment resource.</span>
@@ -12809,7 +12809,7 @@ SeldonDeploymentService            (<a class="autorefs autorefs-internal" title=
         <span class="n">service</span><span class="o">.</span><span class="n">update_status</span><span class="p">()</span>
         <span class="k">return</span> <span class="n">service</span>
 
-    <span class="k">def</span> <span class="nf">provision</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">provision</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Provision or update remote Seldon Core deployment instance.</span>
 
 <span class="sd">        This should then match the current configuration.</span>
@@ -12844,7 +12844,7 @@ SeldonDeploymentService            (<a class="autorefs autorefs-internal" title=
             <span class="c1"># create the deployment</span>
             <span class="n">client</span><span class="o">.</span><span class="n">create_deployment</span><span class="p">(</span><span class="n">deployment</span><span class="o">=</span><span class="n">deployment</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">deprovision</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">deprovision</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Deprovision the remote Seldon Core deployment instance.</span>
 
 <span class="sd">        Args:</span>
@@ -12858,7 +12858,7 @@ SeldonDeploymentService            (<a class="autorefs autorefs-internal" title=
         <span class="k">except</span> <span class="n">SeldonDeploymentNotFoundError</span><span class="p">:</span>
             <span class="k">pass</span>
 
-    <span class="k">def</span> <span class="nf">get_logs</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_logs</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">follow</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">tail</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -12879,14 +12879,14 @@ SeldonDeploymentService            (<a class="autorefs autorefs-internal" title=
         <span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">prediction_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">prediction_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The prediction URI exposed by the prediction service.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The prediction URI exposed by the prediction service, or None if</span>
 <span class="sd">            the service is not yet ready.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.seldon.model_deployers.seldon_model_deployer</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.seldon.model_deployers.seldon_model_deployer</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">SeldonModelDeployer</span><span class="p">,</span>
         <span class="p">)</span>
 
@@ -12905,7 +12905,7 @@ SeldonDeploymentService            (<a class="autorefs autorefs-internal" title=
             <span class="s2">&quot;api/v0.1/predictions&quot;</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Make a prediction using the service.</span>
 
 <span class="sd">        Args:</span>
@@ -13079,7 +13079,7 @@ description of the error, if one is encountered).</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/services/seldon_deployment.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">check_status</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">ServiceState</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">check_status</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">ServiceState</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Check the the current operational state of the Seldon Core deployment.</span>
 
 <span class="sd">    Returns:</span>
@@ -13192,7 +13192,7 @@ the expected service_uuid label.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/services/seldon_deployment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">create_from_deployment</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">create_from_deployment</span><span class="p">(</span>
     <span class="bp">cls</span><span class="p">,</span> <span class="n">deployment</span><span class="p">:</span> <span class="n">SeldonDeployment</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;SeldonDeploymentService&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Recreate a Seldon Core service from a Seldon Core deployment resource.</span>
@@ -13264,7 +13264,7 @@ forcefully deprovisioned.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/services/seldon_deployment.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">deprovision</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">deprovision</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Deprovision the remote Seldon Core deployment instance.</span>
 
 <span class="sd">    Args:</span>
@@ -13341,7 +13341,7 @@ forcefully deprovisioned.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/services/seldon_deployment.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_logs</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_logs</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">follow</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">tail</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -13437,7 +13437,7 @@ forcefully deprovisioned.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/services/seldon_deployment.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Make a prediction using the service.</span>
 
 <span class="sd">    Args:</span>
@@ -13494,7 +13494,7 @@ forcefully deprovisioned.</p></td>
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/services/seldon_deployment.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">provision</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">provision</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Provision or update remote Seldon Core deployment instance.</span>
 
 <span class="sd">    This should then match the current configuration.</span>
@@ -13565,7 +13565,7 @@ SeldonDeploymentServiceStatus            (<a class="autorefs autorefs-internal" 
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/seldon/services/seldon_deployment.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SeldonDeploymentServiceStatus</span><span class="p">(</span><span class="n">ServiceStatus</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SeldonDeploymentServiceStatus</span><span class="p">(</span><span class="n">ServiceStatus</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Seldon Core deployment service status.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>

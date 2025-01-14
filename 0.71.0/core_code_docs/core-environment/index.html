@@ -2359,7 +2359,7 @@ the global Environment object with additional information (see
 
         <details class="quote">
           <summary>Source code in <code>zenml/environment.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">Environment</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">SingletonMetaClass</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Environment</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">SingletonMetaClass</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Provides environment information.</span>
 
 <span class="sd">    Individual environment components can be registered separately to extend</span>
@@ -2367,7 +2367,7 @@ the global Environment object with additional information (see
 <span class="sd">    `BaseEnvironmentComponent`).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes an Environment instance.</span>
 
 <span class="sd">        Note: Environment is a singleton class, which means this method will</span>
@@ -2376,7 +2376,7 @@ the global Environment object with additional information (see
 <span class="sd">        &quot;&quot;&quot;</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">get_system_info</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_system_info</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Information about the operating system.</span>
 
 <span class="sd">        Returns:</span>
@@ -2410,7 +2410,7 @@ the global Environment object with additional information (see
         <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;os&quot;</span><span class="p">:</span> <span class="s2">&quot;unknown&quot;</span><span class="p">}</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">python_version</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">python_version</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the python version of the running interpreter.</span>
 
 <span class="sd">        Returns:</span>
@@ -2419,7 +2419,7 @@ the global Environment object with additional information (see
         <span class="k">return</span> <span class="n">platform</span><span class="o">.</span><span class="n">python_version</span><span class="p">()</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">in_container</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">in_container</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;If the current python process is running in a container.</span>
 
 <span class="sd">        Returns:</span>
@@ -2430,7 +2430,7 @@ the global Environment object with additional information (see
         <span class="k">return</span> <span class="n">INSIDE_ZENML_CONTAINER</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">in_docker</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">in_docker</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;If the current python process is running in a docker container.</span>
 
 <span class="sd">        Returns:</span>
@@ -2448,7 +2448,7 @@ the global Environment object with additional information (see
             <span class="k">return</span> <span class="kc">False</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">in_kubernetes</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">in_kubernetes</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;If the current python process is running in a kubernetes pod.</span>
 
 <span class="sd">        Returns:</span>
@@ -2466,7 +2466,7 @@ the global Environment object with additional information (see
             <span class="k">return</span> <span class="kc">False</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">in_google_colab</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">in_google_colab</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;If the current Python process is running in a Google Colab.</span>
 
 <span class="sd">        Returns:</span>
@@ -2474,7 +2474,7 @@ the global Environment object with additional information (see
 <span class="sd">            `False` otherwise.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="kn">import</span> <span class="nn">google.colab</span>  <span class="c1"># noqa</span>
+            <span class="kn">import</span><span class="w"> </span><span class="nn">google.colab</span>  <span class="c1"># noqa</span>
 
             <span class="k">return</span> <span class="kc">True</span>
 
@@ -2482,7 +2482,7 @@ the global Environment object with additional information (see
             <span class="k">return</span> <span class="kc">False</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">in_notebook</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">in_notebook</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;If the current Python process is running in a notebook.</span>
 
 <span class="sd">        Returns:</span>
@@ -2506,7 +2506,7 @@ the global Environment object with additional information (see
         <span class="k">return</span> <span class="kc">False</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">in_github_codespaces</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">in_github_codespaces</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;If the current Python process is running in GitHub Codespaces.</span>
 
 <span class="sd">        Returns:</span>
@@ -2520,7 +2520,7 @@ the global Environment object with additional information (see
         <span class="p">)</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">in_vscode_remote_container</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">in_vscode_remote_container</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;If the current Python process is running in a VS Code Remote Container.</span>
 
 <span class="sd">        Returns:</span>
@@ -2533,7 +2533,7 @@ the global Environment object with additional information (see
         <span class="p">)</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">in_paperspace_gradient</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">in_paperspace_gradient</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;If the current Python process is running in Paperspace Gradient.</span>
 
 <span class="sd">        Returns:</span>
@@ -2543,7 +2543,7 @@ the global Environment object with additional information (see
         <span class="k">return</span> <span class="s2">&quot;PAPERSPACE_NOTEBOOK_REPO_ID&quot;</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">in_github_actions</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">in_github_actions</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;If the current Python process is running in GitHub Actions.</span>
 
 <span class="sd">        Returns:</span>
@@ -2553,7 +2553,7 @@ the global Environment object with additional information (see
         <span class="k">return</span> <span class="s2">&quot;GITHUB_ACTIONS&quot;</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">in_gitlab_ci</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">in_gitlab_ci</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;If the current Python process is running in GitLab CI.</span>
 
 <span class="sd">        Returns:</span>
@@ -2563,7 +2563,7 @@ the global Environment object with additional information (see
         <span class="k">return</span> <span class="s2">&quot;GITLAB_CI&quot;</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">in_circle_ci</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">in_circle_ci</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;If the current Python process is running in Circle CI.</span>
 
 <span class="sd">        Returns:</span>
@@ -2573,7 +2573,7 @@ the global Environment object with additional information (see
         <span class="k">return</span> <span class="s2">&quot;CIRCLECI&quot;</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">in_bitbucket_ci</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">in_bitbucket_ci</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;If the current Python process is running in Bitbucket CI.</span>
 
 <span class="sd">        Returns:</span>
@@ -2583,7 +2583,7 @@ the global Environment object with additional information (see
         <span class="k">return</span> <span class="s2">&quot;BITBUCKET_BUILD_NUMBER&quot;</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">in_ci</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">in_ci</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;If the current Python process is running in any CI.</span>
 
 <span class="sd">        Returns:</span>
@@ -2593,7 +2593,7 @@ the global Environment object with additional information (see
         <span class="k">return</span> <span class="s2">&quot;CI&quot;</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">in_wsl</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">in_wsl</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;If the current process is running in Windows Subsystem for Linux.</span>
 
 <span class="sd">        source: https://www.scivision.dev/python-detect-wsl/</span>
@@ -2604,7 +2604,7 @@ the global Environment object with additional information (see
         <span class="k">return</span> <span class="s2">&quot;microsoft-standard&quot;</span> <span class="ow">in</span> <span class="n">platform</span><span class="o">.</span><span class="n">uname</span><span class="p">()</span><span class="o">.</span><span class="n">release</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">in_lightning_ai_studio</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">in_lightning_ai_studio</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;If the current Python process is running in Lightning.ai studios.</span>
 
 <span class="sd">        Returns:</span>
@@ -2652,7 +2652,7 @@ the previously initialized instance.</p>
 
         <details class="quote">
           <summary>Source code in <code>zenml/environment.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes an Environment instance.</span>
 
 <span class="sd">    Note: Environment is a singleton class, which means this method will</span>
@@ -2702,7 +2702,7 @@ the previously initialized instance.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/environment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
-<span class="k">def</span> <span class="nf">get_system_info</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_system_info</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Information about the operating system.</span>
 
 <span class="sd">    Returns:</span>
@@ -2778,7 +2778,7 @@ CI, <code>False</code> otherwise.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/environment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
-<span class="k">def</span> <span class="nf">in_bitbucket_ci</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">in_bitbucket_ci</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;If the current Python process is running in Bitbucket CI.</span>
 
 <span class="sd">    Returns:</span>
@@ -2830,7 +2830,7 @@ CI, <code>False</code> otherwise.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/environment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
-<span class="k">def</span> <span class="nf">in_ci</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">in_ci</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;If the current Python process is running in any CI.</span>
 
 <span class="sd">    Returns:</span>
@@ -2882,7 +2882,7 @@ CI, <code>False</code> otherwise.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/environment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
-<span class="k">def</span> <span class="nf">in_circle_ci</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">in_circle_ci</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;If the current Python process is running in Circle CI.</span>
 
 <span class="sd">    Returns:</span>
@@ -2934,7 +2934,7 @@ container, <code>False</code> otherwise.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/environment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
-<span class="k">def</span> <span class="nf">in_container</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">in_container</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;If the current python process is running in a container.</span>
 
 <span class="sd">    Returns:</span>
@@ -2987,7 +2987,7 @@ container, <code>False</code> otherwise.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/environment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
-<span class="k">def</span> <span class="nf">in_docker</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">in_docker</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;If the current python process is running in a docker container.</span>
 
 <span class="sd">    Returns:</span>
@@ -3047,7 +3047,7 @@ Actions, <code>False</code> otherwise.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/environment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
-<span class="k">def</span> <span class="nf">in_github_actions</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">in_github_actions</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;If the current Python process is running in GitHub Actions.</span>
 
 <span class="sd">    Returns:</span>
@@ -3099,7 +3099,7 @@ Actions, <code>False</code> otherwise.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/environment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
-<span class="k">def</span> <span class="nf">in_github_codespaces</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">in_github_codespaces</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;If the current Python process is running in GitHub Codespaces.</span>
 
 <span class="sd">    Returns:</span>
@@ -3155,7 +3155,7 @@ CI, <code>False</code> otherwise.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/environment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
-<span class="k">def</span> <span class="nf">in_gitlab_ci</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">in_gitlab_ci</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;If the current Python process is running in GitLab CI.</span>
 
 <span class="sd">    Returns:</span>
@@ -3207,7 +3207,7 @@ CI, <code>False</code> otherwise.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/environment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
-<span class="k">def</span> <span class="nf">in_google_colab</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">in_google_colab</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;If the current Python process is running in a Google Colab.</span>
 
 <span class="sd">    Returns:</span>
@@ -3215,7 +3215,7 @@ CI, <code>False</code> otherwise.</p></td>
 <span class="sd">        `False` otherwise.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="kn">import</span> <span class="nn">google.colab</span>  <span class="c1"># noqa</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">google.colab</span>  <span class="c1"># noqa</span>
 
         <span class="k">return</span> <span class="kc">True</span>
 
@@ -3265,7 +3265,7 @@ pod, <code>False</code> otherwise.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/environment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
-<span class="k">def</span> <span class="nf">in_kubernetes</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">in_kubernetes</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;If the current python process is running in a kubernetes pod.</span>
 
 <span class="sd">    Returns:</span>
@@ -3325,7 +3325,7 @@ pod, <code>False</code> otherwise.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/environment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
-<span class="k">def</span> <span class="nf">in_lightning_ai_studio</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">in_lightning_ai_studio</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;If the current Python process is running in Lightning.ai studios.</span>
 
 <span class="sd">    Returns:</span>
@@ -3380,7 +3380,7 @@ pod, <code>False</code> otherwise.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/environment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
-<span class="k">def</span> <span class="nf">in_notebook</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">in_notebook</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;If the current Python process is running in a notebook.</span>
 
 <span class="sd">    Returns:</span>
@@ -3446,7 +3446,7 @@ Gradient, <code>False</code> otherwise.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/environment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
-<span class="k">def</span> <span class="nf">in_paperspace_gradient</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">in_paperspace_gradient</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;If the current Python process is running in Paperspace Gradient.</span>
 
 <span class="sd">    Returns:</span>
@@ -3498,7 +3498,7 @@ Gradient, <code>False</code> otherwise.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/environment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
-<span class="k">def</span> <span class="nf">in_vscode_remote_container</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">in_vscode_remote_container</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;If the current Python process is running in a VS Code Remote Container.</span>
 
 <span class="sd">    Returns:</span>
@@ -3553,7 +3553,7 @@ Gradient, <code>False</code> otherwise.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/environment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
-<span class="k">def</span> <span class="nf">in_wsl</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">in_wsl</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;If the current process is running in Windows Subsystem for Linux.</span>
 
 <span class="sd">    source: https://www.scivision.dev/python-detect-wsl/</span>
@@ -3605,7 +3605,7 @@ Gradient, <code>False</code> otherwise.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/environment.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
-<span class="k">def</span> <span class="nf">python_version</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">python_version</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the python version of the running interpreter.</span>
 
 <span class="sd">    Returns:</span>
@@ -3662,7 +3662,7 @@ Gradient, <code>False</code> otherwise.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/environment.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_environment</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_environment</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns a string representing the execution environment of the pipeline.</span>
 
 <span class="sd">    Returns:</span>
@@ -3744,7 +3744,7 @@ respectively.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/environment.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_run_environment_dict</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_run_environment_dict</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns a dictionary of the current run environment.</span>
 
 <span class="sd">    Everything that is returned here will be saved in the DB as</span>
@@ -3799,13 +3799,13 @@ respectively.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/environment.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_system_details</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_system_details</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns OS, python and ZenML information.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        str: OS, python and ZenML information</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.integrations.registry</span> <span class="kn">import</span> <span class="n">integration_registry</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">integration_registry</span>
 
     <span class="n">info</span> <span class="o">=</span> <span class="p">{</span>
         <span class="s2">&quot;ZenML version&quot;</span><span class="p">:</span> <span class="n">__version__</span><span class="p">,</span>

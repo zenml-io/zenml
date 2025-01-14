@@ -2968,7 +2968,7 @@
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/pipelines/build_utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">build_required</span><span class="p">(</span><span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeploymentBase&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build_required</span><span class="p">(</span><span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeploymentBase&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks whether a build is required for the deployment and active stack.</span>
 
 <span class="sd">    Args:</span>
@@ -3044,7 +3044,7 @@ download the code inside the container images.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/pipelines/build_utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">code_download_possible</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">code_download_possible</span><span class="p">(</span>
     <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeploymentBase&quot;</span><span class="p">,</span>
     <span class="n">code_repository</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;BaseCodeRepository&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
@@ -3144,7 +3144,7 @@ specification.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/pipelines/build_utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">compute_build_checksum</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">compute_build_checksum</span><span class="p">(</span>
     <span class="n">items</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="s2">&quot;BuildConfiguration&quot;</span><span class="p">],</span>
     <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
     <span class="n">code_repository</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;BaseCodeRepository&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -3236,7 +3236,7 @@ specification.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/pipelines/build_utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">compute_stack_checksum</span><span class="p">(</span><span class="n">stack</span><span class="p">:</span> <span class="n">StackResponse</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">compute_stack_checksum</span><span class="p">(</span><span class="n">stack</span><span class="p">:</span> <span class="n">StackResponse</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute a stack checksum.</span>
 
 <span class="sd">    Args:</span>
@@ -3350,7 +3350,7 @@ settings were specified.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/pipelines/build_utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">create_pipeline_build</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">create_pipeline_build</span><span class="p">(</span>
     <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeploymentBase&quot;</span><span class="p">,</span>
     <span class="n">pipeline_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UUID</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">code_repository</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;BaseCodeRepository&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -3550,7 +3550,7 @@ files in the images.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/pipelines/build_utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">find_existing_build</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">find_existing_build</span><span class="p">(</span>
     <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeploymentBase&quot;</span><span class="p">,</span>
     <span class="n">code_repository</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;BaseCodeRepository&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;PipelineBuildResponse&quot;</span><span class="p">]:</span>
@@ -3657,7 +3657,7 @@ files in the images.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/pipelines/build_utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">requires_download_from_code_repository</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">requires_download_from_code_repository</span><span class="p">(</span>
     <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeploymentBase&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks whether the deployment needs to download code from a repository.</span>
@@ -3748,7 +3748,7 @@ download the code inside the container images.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/pipelines/build_utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">requires_included_code</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">requires_included_code</span><span class="p">(</span>
     <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeploymentBase&quot;</span><span class="p">,</span>
     <span class="n">code_repository</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;BaseCodeRepository&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
@@ -3863,7 +3863,7 @@ download code inside the container images.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/pipelines/build_utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">reuse_or_create_pipeline_build</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">reuse_or_create_pipeline_build</span><span class="p">(</span>
     <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeploymentBase&quot;</span><span class="p">,</span>
     <span class="n">allow_build_reuse</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
     <span class="n">pipeline_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UUID</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -4013,7 +4013,7 @@ download code inside the container images.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/pipelines/build_utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">should_upload_code</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">should_upload_code</span><span class="p">(</span>
     <span class="n">deployment</span><span class="p">:</span> <span class="n">PipelineDeploymentBase</span><span class="p">,</span>
     <span class="n">build</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PipelineBuildResponse</span><span class="p">],</span>
     <span class="n">code_reference</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">CodeReferenceRequest</span><span class="p">],</span>
@@ -4120,7 +4120,7 @@ for the deployment.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/pipelines/build_utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">verify_custom_build</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">verify_custom_build</span><span class="p">(</span>
     <span class="n">build</span><span class="p">:</span> <span class="s2">&quot;PipelineBuildResponse&quot;</span><span class="p">,</span>
     <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeploymentBase&quot;</span><span class="p">,</span>
     <span class="n">code_repository</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;BaseCodeRepository&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -4324,7 +4324,7 @@ deployment, or None if code download is not possible.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/pipelines/build_utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">verify_local_repository_context</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">verify_local_repository_context</span><span class="p">(</span>
     <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeploymentBase&quot;</span><span class="p">,</span>
     <span class="n">local_repo_context</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;LocalRepositoryContext&quot;</span><span class="p">],</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseCodeRepository</span><span class="p">]:</span>
@@ -4490,7 +4490,7 @@ def my_pipeline():
 
         <details class="quote">
           <summary>Source code in <code>zenml/pipelines/pipeline_context.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">PipelineContext</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">PipelineContext</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Provides pipeline configuration context.</span>
 
 <span class="sd">    Usage example:</span>
@@ -4530,7 +4530,7 @@ def my_pipeline():
 <span class="sd">    ```</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pipeline_configuration</span><span class="p">:</span> <span class="s2">&quot;PipelineConfiguration&quot;</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pipeline_configuration</span><span class="p">:</span> <span class="s2">&quot;PipelineConfiguration&quot;</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the context of the current pipeline.</span>
 
 <span class="sd">        Args:</span>
@@ -4603,7 +4603,7 @@ from Pipeline class.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/pipelines/pipeline_context.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pipeline_configuration</span><span class="p">:</span> <span class="s2">&quot;PipelineConfiguration&quot;</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pipeline_configuration</span><span class="p">:</span> <span class="s2">&quot;PipelineConfiguration&quot;</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize the context of the current pipeline.</span>
 
 <span class="sd">    Args:</span>
@@ -4691,7 +4691,7 @@ from Pipeline class.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/pipelines/pipeline_context.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_pipeline_context</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="s2">&quot;PipelineContext&quot;</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_pipeline_context</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="s2">&quot;PipelineContext&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the context of the current pipeline.</span>
 
 <span class="sd">    Returns:</span>
@@ -4701,11 +4701,11 @@ from Pipeline class.</p></td>
 <span class="sd">        RuntimeError: If no active pipeline is found.</span>
 <span class="sd">        RuntimeError: If inside a running step.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.pipelines.pipeline_definition</span> <span class="kn">import</span> <span class="n">Pipeline</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.pipelines.pipeline_definition</span><span class="w"> </span><span class="kn">import</span> <span class="n">Pipeline</span>
 
     <span class="k">if</span> <span class="n">Pipeline</span><span class="o">.</span><span class="n">ACTIVE_PIPELINE</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="kn">from</span> <span class="nn">zenml.steps.step_context</span> <span class="kn">import</span> <span class="n">get_step_context</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.steps.step_context</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_step_context</span>
 
             <span class="n">get_step_context</span><span class="p">()</span>
         <span class="k">except</span> <span class="ne">RuntimeError</span><span class="p">:</span>
@@ -4886,7 +4886,7 @@ function with no arguments, or a source path to such a function
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/pipelines/pipeline_decorator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">pipeline</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">pipeline</span><span class="p">(</span>
     <span class="n">_func</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;F&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -4926,8 +4926,8 @@ function with no arguments, or a source path to such a function
 <span class="sd">        A pipeline instance.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">inner_decorator</span><span class="p">(</span><span class="n">func</span><span class="p">:</span> <span class="s2">&quot;F&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Pipeline&quot;</span><span class="p">:</span>
-        <span class="kn">from</span> <span class="nn">zenml.pipelines.pipeline_definition</span> <span class="kn">import</span> <span class="n">Pipeline</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">inner_decorator</span><span class="p">(</span><span class="n">func</span><span class="p">:</span> <span class="s2">&quot;F&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Pipeline&quot;</span><span class="p">:</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.pipelines.pipeline_definition</span><span class="w"> </span><span class="kn">import</span> <span class="n">Pipeline</span>
 
         <span class="n">p</span> <span class="o">=</span> <span class="n">Pipeline</span><span class="p">(</span>
             <span class="n">name</span><span class="o">=</span><span class="n">name</span> <span class="ow">or</span> <span class="n">func</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
@@ -5012,7 +5012,7 @@ Pipeline        </code>
 
         <details class="quote">
           <summary>Source code in <code>zenml/pipelines/pipeline_definition.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">Pipeline</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Pipeline</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;ZenML pipeline class.&quot;&quot;&quot;</span>
 
     <span class="c1"># The active pipeline is the pipeline to which step invocations will be</span>
@@ -5020,7 +5020,7 @@ Pipeline        </code>
     <span class="c1"># pipeline is called (see Pipeline.__call__ for more context)</span>
     <span class="n">ACTIVE_PIPELINE</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;Pipeline&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">entrypoint</span><span class="p">:</span> <span class="n">F</span><span class="p">,</span>
@@ -5086,7 +5086,7 @@ Pipeline        </code>
         <span class="bp">self</span><span class="o">.</span><span class="n">__suppress_warnings_flag__</span> <span class="o">=</span> <span class="kc">False</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The name of the pipeline.</span>
 
 <span class="sd">        Returns:</span>
@@ -5095,7 +5095,7 @@ Pipeline        </code>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">configuration</span><span class="o">.</span><span class="n">name</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">enable_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">enable_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;If caching is enabled for the pipeline.</span>
 
 <span class="sd">        Returns:</span>
@@ -5104,7 +5104,7 @@ Pipeline        </code>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">configuration</span><span class="o">.</span><span class="n">enable_cache</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">configuration</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PipelineConfiguration</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">configuration</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PipelineConfiguration</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The configuration of the pipeline.</span>
 
 <span class="sd">        Returns:</span>
@@ -5113,7 +5113,7 @@ Pipeline        </code>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_configuration</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">invocations</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">StepInvocation</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">invocations</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">StepInvocation</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the step invocations of this pipeline.</span>
 
 <span class="sd">        This dictionary will only be populated once the pipeline has been</span>
@@ -5124,7 +5124,7 @@ Pipeline        </code>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_invocations</span>
 
-    <span class="k">def</span> <span class="nf">resolve</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Source&quot;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">resolve</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Source&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Resolves the pipeline.</span>
 
 <span class="sd">        Returns:</span>
@@ -5133,7 +5133,7 @@ Pipeline        </code>
         <span class="k">return</span> <span class="n">source_utils</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">entrypoint</span><span class="p">,</span> <span class="n">skip_validation</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">source_object</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">source_object</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The source object of this pipeline.</span>
 
 <span class="sd">        Returns:</span>
@@ -5142,7 +5142,7 @@ Pipeline        </code>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">entrypoint</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">source_code</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">source_code</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The source code of this pipeline.</span>
 
 <span class="sd">        Returns:</span>
@@ -5151,7 +5151,7 @@ Pipeline        </code>
         <span class="k">return</span> <span class="n">inspect</span><span class="o">.</span><span class="n">getsource</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">source_object</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">model</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;PipelineResponse&quot;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">model</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;PipelineResponse&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets the registered pipeline model for this instance.</span>
 
 <span class="sd">        Returns:</span>
@@ -5173,7 +5173,7 @@ Pipeline        </code>
         <span class="p">)</span>
 
     <span class="nd">@contextmanager</span>
-    <span class="k">def</span> <span class="nf">__suppress_configure_warnings__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">__suppress_configure_warnings__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Context manager to suppress warnings in `Pipeline.configure(...)`.</span>
 
 <span class="sd">        Used to suppress warnings when called from inner code and not user-facing code.</span>
@@ -5185,7 +5185,7 @@ Pipeline        </code>
         <span class="k">yield</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">__suppress_warnings_flag__</span> <span class="o">=</span> <span class="kc">False</span>
 
-    <span class="k">def</span> <span class="nf">configure</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">configure</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">enable_cache</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">enable_artifact_metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -5306,7 +5306,7 @@ Pipeline        </code>
         <span class="k">return</span> <span class="bp">self</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">requires_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">requires_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;If the pipeline entrypoint requires parameters.</span>
 
 <span class="sd">        Returns:</span>
@@ -5319,7 +5319,7 @@ Pipeline        </code>
         <span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">is_prepared</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_prepared</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;If the pipeline is prepared.</span>
 
 <span class="sd">        Prepared means that the pipeline entrypoint has been called and the</span>
@@ -5330,7 +5330,7 @@ Pipeline        </code>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">invocations</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
 
-    <span class="k">def</span> <span class="nf">prepare</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">prepare</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Prepares the pipeline.</span>
 
 <span class="sd">        Args:</span>
@@ -5388,14 +5388,14 @@ Pipeline        </code>
             <span class="c1"># is executed will be added as invocation to this pipeline instance.</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_call_entrypoint</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">register</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;PipelineResponse&quot;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">register</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;PipelineResponse&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Register the pipeline in the server.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The registered pipeline model.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># Activating the built-in integrations to load all materializers</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.registry</span> <span class="kn">import</span> <span class="n">integration_registry</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">integration_registry</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_if_possible</span><span class="p">()</span>
         <span class="n">integration_registry</span><span class="o">.</span><span class="n">activate_integrations</span><span class="p">()</span>
@@ -5414,7 +5414,7 @@ Pipeline        </code>
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_register</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">build</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">build</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">settings</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;SettingsOrDict&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">step_configurations</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span>
@@ -5464,7 +5464,7 @@ Pipeline        </code>
                 <span class="n">code_repository</span><span class="o">=</span><span class="n">code_repository</span><span class="p">,</span>
             <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_create_deployment</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_create_deployment</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="o">*</span><span class="p">,</span>
         <span class="n">run_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -5657,7 +5657,7 @@ Pipeline        </code>
         <span class="p">)</span>
         <span class="k">return</span> <span class="n">Client</span><span class="p">()</span><span class="o">.</span><span class="n">zen_store</span><span class="o">.</span><span class="n">create_deployment</span><span class="p">(</span><span class="n">deployment</span><span class="o">=</span><span class="n">request</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_run</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_run</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PipelineRunResponse</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Runs the pipeline on the active stack.</span>
@@ -5712,7 +5712,7 @@ Pipeline        </code>
             <span class="k">return</span> <span class="kc">None</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">log_pipeline_deployment_metadata</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">log_pipeline_deployment_metadata</span><span class="p">(</span>
         <span class="n">deployment_model</span><span class="p">:</span> <span class="n">PipelineDeploymentResponse</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Displays logs based on the deployment model upon running a pipeline.</span>
@@ -5737,7 +5737,7 @@ Pipeline        </code>
                 <span class="p">)</span>
 
                 <span class="c1"># Log about version mismatches between local and build</span>
-                <span class="kn">from</span> <span class="nn">zenml</span> <span class="kn">import</span> <span class="n">__version__</span>
+                <span class="kn">from</span><span class="w"> </span><span class="nn">zenml</span><span class="w"> </span><span class="kn">import</span> <span class="n">__version__</span>
 
                 <span class="k">if</span> <span class="n">deployment_model</span><span class="o">.</span><span class="n">build</span><span class="o">.</span><span class="n">zenml_version</span> <span class="o">!=</span> <span class="n">__version__</span><span class="p">:</span>
                     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
@@ -5745,7 +5745,7 @@ Pipeline        </code>
                         <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">deployment_model</span><span class="o">.</span><span class="n">build</span><span class="o">.</span><span class="n">zenml_version</span><span class="si">}</span><span class="s2">&quot;</span>
                     <span class="p">)</span>
 
-                <span class="kn">import</span> <span class="nn">platform</span>
+                <span class="kn">import</span><span class="w"> </span><span class="nn">platform</span>
 
                 <span class="k">if</span> <span class="p">(</span>
                     <span class="n">deployment_model</span><span class="o">.</span><span class="n">build</span><span class="o">.</span><span class="n">python_version</span>
@@ -5773,7 +5773,7 @@ Pipeline        </code>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Logging pipeline deployment metadata failed: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">write_run_configuration_template</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">write_run_configuration_template</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">stack</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;Stack&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Writes a run configuration yaml template.</span>
@@ -5783,8 +5783,8 @@ Pipeline        </code>
 <span class="sd">            stack: The stack for which the template should be generated. If</span>
 <span class="sd">                not given, the active stack will be used.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.config.base_settings</span> <span class="kn">import</span> <span class="n">ConfigurationLevel</span>
-        <span class="kn">from</span> <span class="nn">zenml.config.step_configurations</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.config.base_settings</span><span class="w"> </span><span class="kn">import</span> <span class="n">ConfigurationLevel</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.config.step_configurations</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">PartialArtifactConfiguration</span><span class="p">,</span>
         <span class="p">)</span>
 
@@ -5828,7 +5828,7 @@ Pipeline        </code>
         <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
             <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">yaml_string</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_apply_configuration</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_apply_configuration</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">config</span><span class="p">:</span> <span class="n">PipelineConfigurationUpdate</span><span class="p">,</span>
         <span class="n">merge</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -5849,7 +5849,7 @@ Pipeline        </code>
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_configuration</span><span class="p">)</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">_validate_configuration</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">PipelineConfigurationUpdate</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_configuration</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">PipelineConfigurationUpdate</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Validates a configuration update.</span>
 
 <span class="sd">        Args:</span>
@@ -5857,7 +5857,7 @@ Pipeline        </code>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">settings_utils</span><span class="o">.</span><span class="n">validate_setting_keys</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">settings</span><span class="p">))</span>
 
-    <span class="k">def</span> <span class="nf">_get_pipeline_analytics_metadata</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_pipeline_analytics_metadata</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeploymentResponse&quot;</span><span class="p">,</span>
         <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
@@ -5898,7 +5898,7 @@ Pipeline        </code>
             <span class="s2">&quot;pipeline_run_id&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">run_id</span><span class="p">)</span> <span class="k">if</span> <span class="n">run_id</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
         <span class="p">}</span>
 
-    <span class="k">def</span> <span class="nf">_compile</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_compile</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">config_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">run_configuration_args</span><span class="p">:</span> <span class="n">Any</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span>
         <span class="s2">&quot;PipelineDeploymentBase&quot;</span><span class="p">,</span>
@@ -5916,7 +5916,7 @@ Pipeline        </code>
 <span class="sd">            the compiled pipeline.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># Activating the built-in integrations to load all materializers</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.registry</span> <span class="kn">import</span> <span class="n">integration_registry</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">integration_registry</span>
 
         <span class="n">integration_registry</span><span class="o">.</span><span class="n">activate_integrations</span><span class="p">()</span>
 
@@ -5945,7 +5945,7 @@ Pipeline        </code>
 
         <span class="k">return</span> <span class="n">deployment</span><span class="p">,</span> <span class="n">run_config</span><span class="o">.</span><span class="n">schedule</span><span class="p">,</span> <span class="n">run_config</span><span class="o">.</span><span class="n">build</span>
 
-    <span class="k">def</span> <span class="nf">_register</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;PipelineResponse&quot;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_register</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;PipelineResponse&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Register the pipeline in the server.</span>
 
 <span class="sd">        Returns:</span>
@@ -5953,7 +5953,7 @@ Pipeline        </code>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span>
 
-        <span class="k">def</span> <span class="nf">_get</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">PipelineResponse</span><span class="p">:</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">_get</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">PipelineResponse</span><span class="p">:</span>
             <span class="n">matching_pipelines</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">list_pipelines</span><span class="p">(</span>
                 <span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
                 <span class="n">size</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
@@ -5986,7 +5986,7 @@ Pipeline        </code>
             <span class="k">except</span> <span class="n">EntityExistsError</span><span class="p">:</span>
                 <span class="k">return</span> <span class="n">_get</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">_compute_unique_identifier</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pipeline_spec</span><span class="p">:</span> <span class="n">PipelineSpec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_compute_unique_identifier</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pipeline_spec</span><span class="p">:</span> <span class="n">PipelineSpec</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Computes a unique identifier from the pipeline spec and steps.</span>
 
 <span class="sd">        Args:</span>
@@ -5995,7 +5995,7 @@ Pipeline        </code>
 <span class="sd">        Returns:</span>
 <span class="sd">            The unique identifier of the pipeline.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">packaging</span> <span class="kn">import</span> <span class="n">version</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">packaging</span><span class="w"> </span><span class="kn">import</span> <span class="n">version</span>
 
         <span class="n">hash_</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">md5</span><span class="p">()</span>  <span class="c1"># nosec</span>
         <span class="n">hash_</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">pipeline_spec</span><span class="o">.</span><span class="n">json_with_string_sources</span><span class="o">.</span><span class="n">encode</span><span class="p">())</span>
@@ -6011,7 +6011,7 @@ Pipeline        </code>
 
         <span class="k">return</span> <span class="n">hash_</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">add_step_invocation</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_step_invocation</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">step</span><span class="p">:</span> <span class="s2">&quot;BaseStep&quot;</span><span class="p">,</span>
         <span class="n">input_artifacts</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">StepArtifact</span><span class="p">],</span>
@@ -6081,7 +6081,7 @@ Pipeline        </code>
         <span class="bp">self</span><span class="o">.</span><span class="n">_invocations</span><span class="p">[</span><span class="n">invocation_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">invocation</span>
         <span class="k">return</span> <span class="n">invocation_id</span>
 
-    <span class="k">def</span> <span class="nf">_compute_invocation_id</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_compute_invocation_id</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">step</span><span class="p">:</span> <span class="s2">&quot;BaseStep&quot;</span><span class="p">,</span>
         <span class="n">custom_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -6118,7 +6118,7 @@ Pipeline        </code>
 
         <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Unable to find step ID&quot;</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Activate the pipeline context.</span>
 
 <span class="sd">        Raises:</span>
@@ -6136,7 +6136,7 @@ Pipeline        </code>
         <span class="n">Pipeline</span><span class="o">.</span><span class="n">ACTIVE_PIPELINE</span> <span class="o">=</span> <span class="bp">self</span>
         <span class="k">return</span> <span class="bp">self</span>
 
-    <span class="k">def</span> <span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Deactivates the pipeline context.</span>
 
 <span class="sd">        Args:</span>
@@ -6144,7 +6144,7 @@ Pipeline        </code>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">Pipeline</span><span class="o">.</span><span class="n">ACTIVE_PIPELINE</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="nf">_parse_config_file</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_parse_config_file</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">config_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">matcher</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Parses the given configuration file and sets `self._from_config_file`.</span>
@@ -6171,14 +6171,14 @@ Pipeline        </code>
                         <span class="s2">&quot;model&quot;</span>
                     <span class="p">]</span>
                 <span class="k">else</span><span class="p">:</span>
-                    <span class="kn">from</span> <span class="nn">zenml.model.model</span> <span class="kn">import</span> <span class="n">Model</span>
+                    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.model.model</span><span class="w"> </span><span class="kn">import</span> <span class="n">Model</span>
 
                     <span class="n">_from_config_file</span><span class="p">[</span><span class="s2">&quot;model&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Model</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span>
                         <span class="n">_from_config_file</span><span class="p">[</span><span class="s2">&quot;model&quot;</span><span class="p">]</span>
                     <span class="p">)</span>
         <span class="k">return</span> <span class="n">_from_config_file</span>
 
-    <span class="k">def</span> <span class="nf">with_options</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">with_options</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">run_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">schedule</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Schedule</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -6245,7 +6245,7 @@ Pipeline        </code>
         <span class="n">pipeline_copy</span><span class="o">.</span><span class="n">_run_args</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">run_args</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">pipeline_copy</span>
 
-    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Pipeline&quot;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Pipeline&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Copies the pipeline.</span>
 
 <span class="sd">        Returns:</span>
@@ -6253,7 +6253,7 @@ Pipeline        </code>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PipelineRunResponse</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Handle a call of the pipeline.</span>
@@ -6286,7 +6286,7 @@ Pipeline        </code>
         <span class="bp">self</span><span class="o">.</span><span class="n">prepare</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">_call_entrypoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_call_entrypoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Calls the pipeline entrypoint function with the given arguments.</span>
 
 <span class="sd">        Args:</span>
@@ -6309,12 +6309,12 @@ Pipeline        </code>
                 <span class="s2">&quot;Invalid or missing pipeline function entrypoint arguments. &quot;</span>
                 <span class="s2">&quot;Only JSON serializable inputs are allowed as pipeline inputs.&quot;</span>
                 <span class="s2">&quot;Check out the pydantic error above for more details.&quot;</span>
-            <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_parameters</span> <span class="o">=</span> <span class="n">validated_args</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">entrypoint</span><span class="p">(</span><span class="o">**</span><span class="n">validated_args</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_prepare_if_possible</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_prepare_if_possible</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Prepares the pipeline if possible.</span>
 
 <span class="sd">        Raises:</span>
@@ -6332,7 +6332,7 @@ Pipeline        </code>
             <span class="k">else</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">prepare</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">create_run_template</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">create_run_template</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RunTemplateResponse</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Create a run template for the pipeline.</span>
@@ -6354,7 +6354,7 @@ Pipeline        </code>
             <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">deployment_id</span><span class="o">=</span><span class="n">deployment</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_reconfigure_from_file_with_overrides</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_reconfigure_from_file_with_overrides</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">config_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
@@ -6830,7 +6830,7 @@ if running with a schedule.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/pipelines/pipeline_definition.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">PipelineRunResponse</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Handle a call of the pipeline.</span>
@@ -6919,7 +6919,7 @@ if running with a schedule.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/pipelines/pipeline_definition.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__enter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Activate the pipeline context.</span>
 
 <span class="sd">    Raises:</span>
@@ -6982,7 +6982,7 @@ if running with a schedule.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/pipelines/pipeline_definition.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__exit__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Deactivates the pipeline context.</span>
 
 <span class="sd">    Args:</span>
@@ -7113,7 +7113,7 @@ function (e.g. <code>module.my_function</code>).</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/pipelines/pipeline_definition.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">entrypoint</span><span class="p">:</span> <span class="n">F</span><span class="p">,</span>
@@ -7221,7 +7221,7 @@ function (e.g. <code>module.my_function</code>).</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/pipelines/pipeline_definition.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@contextmanager</span>
-<span class="k">def</span> <span class="nf">__suppress_configure_warnings__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">__suppress_configure_warnings__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Context manager to suppress warnings in `Pipeline.configure(...)`.</span>
 
 <span class="sd">    Used to suppress warnings when called from inner code and not user-facing code.</span>
@@ -7366,7 +7366,7 @@ a different pipeline.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/pipelines/pipeline_definition.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">add_step_invocation</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">add_step_invocation</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">step</span><span class="p">:</span> <span class="s2">&quot;BaseStep&quot;</span><span class="p">,</span>
     <span class="n">input_artifacts</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">StepArtifact</span><span class="p">],</span>
@@ -7510,7 +7510,7 @@ method.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/pipelines/pipeline_definition.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">build</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">settings</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;SettingsOrDict&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">step_configurations</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span>
@@ -7708,7 +7708,7 @@ method for an example.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/pipelines/pipeline_definition.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">configure</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">configure</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">enable_cache</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">enable_artifact_metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -7866,7 +7866,7 @@ method for an example.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/pipelines/pipeline_definition.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Pipeline&quot;</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Pipeline&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Copies the pipeline.</span>
 
 <span class="sd">    Returns:</span>
@@ -7938,7 +7938,7 @@ template.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/pipelines/pipeline_definition.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">create_run_template</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">create_run_template</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RunTemplateResponse</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a run template for the pipeline.</span>
@@ -8006,7 +8006,7 @@ template.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/pipelines/pipeline_definition.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
-<span class="k">def</span> <span class="nf">log_pipeline_deployment_metadata</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">log_pipeline_deployment_metadata</span><span class="p">(</span>
     <span class="n">deployment_model</span><span class="p">:</span> <span class="n">PipelineDeploymentResponse</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Displays logs based on the deployment model upon running a pipeline.</span>
@@ -8031,7 +8031,7 @@ template.</p></td>
             <span class="p">)</span>
 
             <span class="c1"># Log about version mismatches between local and build</span>
-            <span class="kn">from</span> <span class="nn">zenml</span> <span class="kn">import</span> <span class="n">__version__</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">zenml</span><span class="w"> </span><span class="kn">import</span> <span class="n">__version__</span>
 
             <span class="k">if</span> <span class="n">deployment_model</span><span class="o">.</span><span class="n">build</span><span class="o">.</span><span class="n">zenml_version</span> <span class="o">!=</span> <span class="n">__version__</span><span class="p">:</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
@@ -8039,7 +8039,7 @@ template.</p></td>
                     <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">deployment_model</span><span class="o">.</span><span class="n">build</span><span class="o">.</span><span class="n">zenml_version</span><span class="si">}</span><span class="s2">&quot;</span>
                 <span class="p">)</span>
 
-            <span class="kn">import</span> <span class="nn">platform</span>
+            <span class="kn">import</span><span class="w"> </span><span class="nn">platform</span>
 
             <span class="k">if</span> <span class="p">(</span>
                 <span class="n">deployment_model</span><span class="o">.</span><span class="n">build</span><span class="o">.</span><span class="n">python_version</span>
@@ -8131,7 +8131,7 @@ configuration file and code.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/pipelines/pipeline_definition.py</code></summary>
-          <div class="highlight"><pre><span></span><code>    <span class="k">def</span> <span class="nf">prepare</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code>    <span class="k">def</span><span class="w"> </span><span class="nf">prepare</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Prepares the pipeline.</span>
 
 <span class="sd">        Args:</span>
@@ -8227,14 +8227,14 @@ configuration file and code.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/pipelines/pipeline_definition.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">register</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;PipelineResponse&quot;</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">register</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;PipelineResponse&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Register the pipeline in the server.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The registered pipeline model.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># Activating the built-in integrations to load all materializers</span>
-    <span class="kn">from</span> <span class="nn">zenml.integrations.registry</span> <span class="kn">import</span> <span class="n">integration_registry</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">integration_registry</span>
 
     <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_if_possible</span><span class="p">()</span>
     <span class="n">integration_registry</span><span class="o">.</span><span class="n">activate_integrations</span><span class="p">()</span>
@@ -8291,7 +8291,7 @@ configuration file and code.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/pipelines/pipeline_definition.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">resolve</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Source&quot;</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">resolve</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Source&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Resolves the pipeline.</span>
 
 <span class="sd">    Returns:</span>
@@ -8414,7 +8414,7 @@ to the <code>pipeline.configure(...)</code> method.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/pipelines/pipeline_definition.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">with_options</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">with_options</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">run_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">schedule</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Schedule</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -8530,7 +8530,7 @@ not given, the active stack will be used.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/pipelines/pipeline_definition.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">write_run_configuration_template</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">write_run_configuration_template</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">stack</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;Stack&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Writes a run configuration yaml template.</span>
@@ -8540,8 +8540,8 @@ not given, the active stack will be used.</p></td>
 <span class="sd">        stack: The stack for which the template should be generated. If</span>
 <span class="sd">            not given, the active stack will be used.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.config.base_settings</span> <span class="kn">import</span> <span class="n">ConfigurationLevel</span>
-    <span class="kn">from</span> <span class="nn">zenml.config.step_configurations</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.config.base_settings</span><span class="w"> </span><span class="kn">import</span> <span class="n">ConfigurationLevel</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.config.step_configurations</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
         <span class="n">PartialArtifactConfiguration</span><span class="p">,</span>
     <span class="p">)</span>
 
@@ -8693,7 +8693,7 @@ created.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/pipelines/run_utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">create_placeholder_run</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">create_placeholder_run</span><span class="p">(</span>
     <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeploymentResponse&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;PipelineRunResponse&quot;</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a placeholder run for the deployment.</span>
@@ -8806,7 +8806,7 @@ created.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/pipelines/run_utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">deploy_pipeline</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">deploy_pipeline</span><span class="p">(</span>
     <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeploymentResponse&quot;</span><span class="p">,</span>
     <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
     <span class="n">placeholder_run</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;PipelineRunResponse&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -8905,7 +8905,7 @@ created.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/pipelines/run_utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_all_sources_from_value</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Source</span><span class="p">]:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_all_sources_from_value</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Source</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get all source objects from a value.</span>
 
 <span class="sd">    Args:</span>
@@ -8986,7 +8986,7 @@ created.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/pipelines/run_utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_default_run_name</span><span class="p">(</span><span class="n">pipeline_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_default_run_name</span><span class="p">(</span><span class="n">pipeline_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets the default name for a pipeline run.</span>
 
 <span class="sd">    Args:</span>
@@ -9056,7 +9056,7 @@ deployment.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/pipelines/run_utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_placeholder_run</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_placeholder_run</span><span class="p">(</span>
     <span class="n">deployment_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;PipelineRunResponse&quot;</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the placeholder run for a deployment.</span>
@@ -9152,7 +9152,7 @@ process cannot be extracted into a python file.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/pipelines/run_utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">upload_notebook_cell_code_if_necessary</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">upload_notebook_cell_code_if_necessary</span><span class="p">(</span>
     <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeploymentBase&quot;</span><span class="p">,</span> <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Upload notebook cell code if necessary.</span>
@@ -9282,7 +9282,7 @@ allowed when running a pipeline from the server.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/pipelines/run_utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">validate_run_config_is_runnable_from_server</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">validate_run_config_is_runnable_from_server</span><span class="p">(</span>
     <span class="n">run_configuration</span><span class="p">:</span> <span class="s2">&quot;PipelineRunConfiguration&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Validates that the run configuration can be used to run from the server.</span>
@@ -9382,7 +9382,7 @@ components.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/pipelines/run_utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">validate_stack_is_runnable_from_server</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">validate_stack_is_runnable_from_server</span><span class="p">(</span>
     <span class="n">zen_store</span><span class="p">:</span> <span class="n">BaseZenStore</span><span class="p">,</span> <span class="n">stack</span><span class="p">:</span> <span class="n">StackResponse</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate if a stack model is runnable from the server.</span>
@@ -9470,7 +9470,7 @@ components.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/pipelines/run_utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">wait_for_pipeline_run_to_finish</span><span class="p">(</span><span class="n">run_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;PipelineRunResponse&quot;</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">wait_for_pipeline_run_to_finish</span><span class="p">(</span><span class="n">run_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;PipelineRunResponse&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Waits until a pipeline run is finished.</span>
 
 <span class="sd">    Args:</span>

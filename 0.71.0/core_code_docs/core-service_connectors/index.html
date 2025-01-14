@@ -2715,7 +2715,7 @@ DockerAuthenticationMethods            (<a class="autorefs autorefs-internal" ti
 
         <details class="quote">
           <summary>Source code in <code>zenml/service_connectors/docker_service_connector.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DockerAuthenticationMethods</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">DockerAuthenticationMethods</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Docker Authentication methods.&quot;&quot;&quot;</span>
 
     <span class="n">PASSWORD</span> <span class="o">=</span> <span class="s2">&quot;password&quot;</span>
@@ -2765,7 +2765,7 @@ DockerConfiguration            (<a class="autorefs autorefs-internal" title="zen
 
         <details class="quote">
           <summary>Source code in <code>zenml/service_connectors/docker_service_connector.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DockerConfiguration</span><span class="p">(</span><span class="n">DockerCredentials</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">DockerConfiguration</span><span class="p">(</span><span class="n">DockerCredentials</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Docker client configuration.&quot;&quot;&quot;</span>
 
     <span class="n">registry</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
@@ -2831,7 +2831,7 @@ DockerCredentials            (<a class="autorefs autorefs-internal" title="zenml
 
         <details class="quote">
           <summary>Source code in <code>zenml/service_connectors/docker_service_connector.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DockerCredentials</span><span class="p">(</span><span class="n">AuthenticationConfig</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">DockerCredentials</span><span class="p">(</span><span class="n">AuthenticationConfig</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Docker client authentication credentials.&quot;&quot;&quot;</span>
 
     <span class="n">username</span><span class="p">:</span> <span class="n">PlainSerializedSecretStr</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
@@ -2899,13 +2899,13 @@ DockerServiceConnector            (<a class="autorefs autorefs-internal" title="
 
         <details class="quote">
           <summary>Source code in <code>zenml/service_connectors/docker_service_connector.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DockerServiceConnector</span><span class="p">(</span><span class="n">ServiceConnector</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">DockerServiceConnector</span><span class="p">(</span><span class="n">ServiceConnector</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Docker service connector.&quot;&quot;&quot;</span>
 
     <span class="n">config</span><span class="p">:</span> <span class="n">DockerConfiguration</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">_get_connector_type</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ServiceConnectorTypeModel</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_connector_type</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ServiceConnectorTypeModel</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the service connector specification.</span>
 
 <span class="sd">        Returns:</span>
@@ -2914,7 +2914,7 @@ DockerServiceConnector            (<a class="autorefs autorefs-internal" title="
         <span class="k">return</span> <span class="n">DOCKER_SERVICE_CONNECTOR_TYPE_SPEC</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">_parse_resource_id</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_parse_resource_id</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span>
         <span class="n">resource_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
@@ -2955,7 +2955,7 @@ DockerServiceConnector            (<a class="autorefs autorefs-internal" title="
             <span class="n">registry</span> <span class="o">=</span> <span class="n">DOCKER_REGISTRY_NAME</span>
         <span class="k">return</span> <span class="n">registry</span>
 
-    <span class="k">def</span> <span class="nf">_canonical_resource_id</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_canonical_resource_id</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">resource_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">resource_id</span><span class="p">:</span> <span class="nb">str</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert a resource ID to its canonical form.</span>
@@ -2969,7 +2969,7 @@ DockerServiceConnector            (<a class="autorefs autorefs-internal" title="
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_resource_id</span><span class="p">(</span><span class="n">resource_id</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_get_default_resource_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">resource_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_default_resource_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">resource_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the default resource ID for a resource type.</span>
 
 <span class="sd">        Args:</span>
@@ -2984,7 +2984,7 @@ DockerServiceConnector            (<a class="autorefs autorefs-internal" title="
             <span class="n">resource_type</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">registry</span> <span class="ow">or</span> <span class="n">DOCKER_REGISTRY_NAME</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_authorize_client</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_authorize_client</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">docker_client</span><span class="p">:</span> <span class="n">DockerClient</span><span class="p">,</span>
         <span class="n">resource_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -3015,7 +3015,7 @@ DockerServiceConnector            (<a class="autorefs autorefs-internal" title="
                 <span class="sa">f</span><span class="s2">&quot;failed to authenticate with Docker registry </span><span class="si">{</span><span class="n">registry</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
             <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_connect_to_resource</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_connect_to_resource</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
@@ -3048,7 +3048,7 @@ DockerServiceConnector            (<a class="autorefs autorefs-internal" title="
 
         <span class="k">return</span> <span class="n">docker_client</span>
 
-    <span class="k">def</span> <span class="nf">_configure_local_client</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_configure_local_client</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -3087,10 +3087,10 @@ DockerServiceConnector            (<a class="autorefs autorefs-internal" title="
             <span class="k">raise</span> <span class="n">AuthorizationException</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;Failed to authenticate to Docker registry &quot;</span>
                 <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">resource_id</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
-            <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">_auto_configure</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_auto_configure</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span>
         <span class="n">auth_method</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">resource_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -3120,7 +3120,7 @@ DockerServiceConnector            (<a class="autorefs autorefs-internal" title="
             <span class="s2">&quot;Auto-configuration is not supported by the Docker connector.&quot;</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_verify</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_verify</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">resource_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">resource_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -3247,11 +3247,11 @@ AuthenticationConfig            (<span title="pydantic.main.BaseModel">BaseModel
 
         <details class="quote">
           <summary>Source code in <code>zenml/service_connectors/service_connector.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AuthenticationConfig</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AuthenticationConfig</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Base authentication configuration.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">secret_values</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">SecretStr</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">secret_values</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">SecretStr</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the secret values as a dictionary.</span>
 
 <span class="sd">        Returns:</span>
@@ -3264,7 +3264,7 @@ AuthenticationConfig            (<span title="pydantic.main.BaseModel">BaseModel
         <span class="p">}</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">non_secret_values</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">non_secret_values</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the non-secret values as a dictionary.</span>
 
 <span class="sd">        Returns:</span>
@@ -3277,7 +3277,7 @@ AuthenticationConfig            (<span title="pydantic.main.BaseModel">BaseModel
         <span class="p">}</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">all_values</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">all_values</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get all values as a dictionary.</span>
 
 <span class="sd">        Returns:</span>
@@ -3489,7 +3489,7 @@ types of resources that they need to access.</li>
 
         <details class="quote">
           <summary>Source code in <code>zenml/service_connectors/service_connector.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ServiceConnector</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">,</span> <span class="n">metaclass</span><span class="o">=</span><span class="n">ServiceConnectorMeta</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ServiceConnector</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">,</span> <span class="n">metaclass</span><span class="o">=</span><span class="n">ServiceConnectorMeta</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Base service connector class.</span>
 
 <span class="sd">    Service connectors are standalone components that can be used to link ZenML</span>
@@ -3540,7 +3540,7 @@ types of resources that they need to access.</li>
 
     <span class="n">_TYPE</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">ServiceConnectorTypeModel</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize a new service connector instance.</span>
 
 <span class="sd">        Args:</span>
@@ -3576,14 +3576,14 @@ types of resources that they need to access.</li>
 
     <span class="nd">@classmethod</span>
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">_get_connector_type</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ServiceConnectorTypeModel</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_connector_type</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ServiceConnectorTypeModel</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the connector type specification.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The connector type specification.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">_canonical_resource_id</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_canonical_resource_id</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">resource_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">resource_id</span><span class="p">:</span> <span class="nb">str</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert a resource ID to its canonical form.</span>
@@ -3601,7 +3601,7 @@ types of resources that they need to access.</li>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">resource_id</span>
 
-    <span class="k">def</span> <span class="nf">_get_default_resource_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">resource_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_default_resource_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">resource_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the default resource ID for a resource type.</span>
 
 <span class="sd">        Service connector implementations must override this method and provide</span>
@@ -3628,7 +3628,7 @@ types of resources that they need to access.</li>
         <span class="p">)</span>
 
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">_connect_to_resource</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_connect_to_resource</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
@@ -3656,7 +3656,7 @@ types of resources that they need to access.</li>
 <span class="sd">        &quot;&quot;&quot;</span>
 
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">_configure_local_client</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_configure_local_client</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -3683,7 +3683,7 @@ types of resources that they need to access.</li>
 
     <span class="nd">@classmethod</span>
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">_auto_configure</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_auto_configure</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span>
         <span class="n">auth_method</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">resource_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -3720,7 +3720,7 @@ types of resources that they need to access.</li>
 <span class="sd">        &quot;&quot;&quot;</span>
 
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">_verify</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_verify</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">resource_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">resource_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -3778,7 +3778,7 @@ types of resources that they need to access.</li>
 <span class="sd">            AuthorizationException: If authentication failed.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">_get_connector_client</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_connector_client</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">resource_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">resource_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -3846,7 +3846,7 @@ types of resources that they need to access.</li>
         <span class="n">copy</span><span class="o">.</span><span class="n">resource_id</span> <span class="o">=</span> <span class="n">resource_id</span>
         <span class="k">return</span> <span class="n">copy</span>
 
-    <span class="k">def</span> <span class="nf">_validate_resource_id</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_resource_id</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">resource_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">resource_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate a resource ID value of a certain type against the connector configuration.</span>
@@ -3891,7 +3891,7 @@ types of resources that they need to access.</li>
 
         <span class="k">return</span> <span class="n">resource_id</span>
 
-    <span class="k">def</span> <span class="nf">_check_implicit_auth_method_allowed</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_check_implicit_auth_method_allowed</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if implicit authentication methods are allowed.</span>
 
 <span class="sd">        Raises:</span>
@@ -3911,7 +3911,7 @@ types of resources that they need to access.</li>
             <span class="p">)</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">get_type</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ServiceConnectorTypeModel</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_type</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ServiceConnectorTypeModel</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the connector type specification.</span>
 
 <span class="sd">        Returns:</span>
@@ -3926,7 +3926,7 @@ types of resources that they need to access.</li>
         <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_TYPE</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ServiceConnectorTypeModel</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ServiceConnectorTypeModel</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the connector type specification.</span>
 
 <span class="sd">        Returns:</span>
@@ -3935,7 +3935,7 @@ types of resources that they need to access.</li>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_type</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">supported_resource_types</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">supported_resource_types</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The resource types supported by this connector instance.</span>
 
 <span class="sd">        Returns:</span>
@@ -3955,7 +3955,7 @@ types of resources that they need to access.</li>
         <span class="k">return</span> <span class="n">resource_types</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">from_model</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_model</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span>
         <span class="n">model</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="s2">&quot;ServiceConnectorRequest&quot;</span><span class="p">,</span> <span class="s2">&quot;ServiceConnectorResponse&quot;</span><span class="p">],</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ServiceConnector&quot;</span><span class="p">:</span>
@@ -3993,7 +3993,7 @@ types of resources that they need to access.</li>
         <span class="k">except</span> <span class="p">(</span><span class="ne">KeyError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;connector configuration is not valid: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
-            <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
         <span class="c1"># Unpack the authentication configuration</span>
         <span class="n">config</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">configuration</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
@@ -4004,7 +4004,7 @@ types of resources that they need to access.</li>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">&quot;could not fetch secret with ID &#39;</span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">secret_id</span><span class="si">}</span><span class="s2">&#39; &quot;</span>
                     <span class="sa">f</span><span class="s2">&quot;referenced in the connector configuration: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
-                <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+                <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
             <span class="k">if</span> <span class="n">secret</span><span class="o">.</span><span class="n">has_missing_values</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
@@ -4038,7 +4038,7 @@ types of resources that they need to access.</li>
         <span class="k">except</span> <span class="n">ValidationError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;connector configuration is not valid: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
-            <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
         <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">auth_config</span><span class="p">,</span> <span class="n">AuthenticationConfig</span><span class="p">)</span>
 
@@ -4057,7 +4057,7 @@ types of resources that they need to access.</li>
 
         <span class="k">return</span> <span class="n">connector</span>
 
-    <span class="k">def</span> <span class="nf">to_model</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_model</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">user</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span>
         <span class="n">workspace</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span>
@@ -4113,7 +4113,7 @@ types of resources that they need to access.</li>
 
         <span class="k">return</span> <span class="n">model</span>
 
-    <span class="k">def</span> <span class="nf">to_response_model</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_response_model</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">workspace</span><span class="p">:</span> <span class="n">WorkspaceResponse</span><span class="p">,</span>
         <span class="n">user</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UserResponse</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -4179,7 +4179,7 @@ types of resources that they need to access.</li>
 
         <span class="k">return</span> <span class="n">model</span>
 
-    <span class="k">def</span> <span class="nf">has_expired</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">has_expired</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if the connector authentication credentials have expired.</span>
 
 <span class="sd">        Verify that the authentication credentials associated with the connector</span>
@@ -4213,7 +4213,7 @@ types of resources that they need to access.</li>
 
         <span class="k">return</span> <span class="n">result</span>
 
-    <span class="k">def</span> <span class="nf">validate_runtime_args</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">validate_runtime_args</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">resource_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
         <span class="n">resource_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -4280,7 +4280,7 @@ types of resources that they need to access.</li>
         <span class="k">except</span> <span class="p">(</span><span class="ne">KeyError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;connector configuration is not valid: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
-            <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="n">resource_type</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">resource_spec</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">resource_id</span><span class="p">:</span>
@@ -4321,7 +4321,7 @@ types of resources that they need to access.</li>
 
         <span class="k">return</span> <span class="n">resource_type</span><span class="p">,</span> <span class="n">resource_id</span>
 
-    <span class="k">def</span> <span class="nf">connect</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">connect</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">verify</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
@@ -4375,7 +4375,7 @@ types of resources that they need to access.</li>
         <span class="p">)</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">auto_configure</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">auto_configure</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span>
         <span class="n">auth_method</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">resource_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -4451,7 +4451,7 @@ types of resources that they need to access.</li>
         <span class="p">)</span>
         <span class="k">return</span> <span class="n">connector</span>
 
-    <span class="k">def</span> <span class="nf">configure_local_client</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">configure_local_client</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -4497,7 +4497,7 @@ types of resources that they need to access.</li>
             <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">verify</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">verify</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">resource_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">resource_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -4686,7 +4686,7 @@ types of resources that they need to access.</li>
 
         <span class="k">return</span> <span class="n">resources</span>
 
-    <span class="k">def</span> <span class="nf">get_connector_client</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_connector_client</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">resource_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">resource_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -4900,7 +4900,7 @@ constructor.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/service_connectors/service_connector.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize a new service connector instance.</span>
 
 <span class="sd">    Args:</span>
@@ -5049,7 +5049,7 @@ credentials have expired.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/service_connectors/service_connector.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">auto_configure</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">auto_configure</span><span class="p">(</span>
     <span class="bp">cls</span><span class="p">,</span>
     <span class="n">auth_method</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">resource_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -5193,7 +5193,7 @@ credentials have expired.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/service_connectors/service_connector.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">configure_local_client</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">configure_local_client</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -5329,7 +5329,7 @@ credentials have expired.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/service_connectors/service_connector.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">connect</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">connect</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">verify</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
@@ -5458,7 +5458,7 @@ credentials have expired.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/service_connectors/service_connector.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">from_model</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">from_model</span><span class="p">(</span>
     <span class="bp">cls</span><span class="p">,</span>
     <span class="n">model</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="s2">&quot;ServiceConnectorRequest&quot;</span><span class="p">,</span> <span class="s2">&quot;ServiceConnectorResponse&quot;</span><span class="p">],</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ServiceConnector&quot;</span><span class="p">:</span>
@@ -5496,7 +5496,7 @@ credentials have expired.</p></td>
     <span class="k">except</span> <span class="p">(</span><span class="ne">KeyError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
             <span class="sa">f</span><span class="s2">&quot;connector configuration is not valid: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
     <span class="c1"># Unpack the authentication configuration</span>
     <span class="n">config</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">configuration</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
@@ -5507,7 +5507,7 @@ credentials have expired.</p></td>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;could not fetch secret with ID &#39;</span><span class="si">{</span><span class="n">model</span><span class="o">.</span><span class="n">secret_id</span><span class="si">}</span><span class="s2">&#39; &quot;</span>
                 <span class="sa">f</span><span class="s2">&quot;referenced in the connector configuration: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
-            <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
         <span class="k">if</span> <span class="n">secret</span><span class="o">.</span><span class="n">has_missing_values</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
@@ -5541,7 +5541,7 @@ credentials have expired.</p></td>
     <span class="k">except</span> <span class="n">ValidationError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
             <span class="sa">f</span><span class="s2">&quot;connector configuration is not valid: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
     <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">auth_config</span><span class="p">,</span> <span class="n">AuthenticationConfig</span><span class="p">)</span>
 
@@ -5644,7 +5644,7 @@ resource.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/service_connectors/service_connector.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_connector_client</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_connector_client</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">resource_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">resource_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -5756,7 +5756,7 @@ resource.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/service_connectors/service_connector.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">get_type</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ServiceConnectorTypeModel</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_type</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ServiceConnectorTypeModel</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the connector type specification.</span>
 
 <span class="sd">    Returns:</span>
@@ -5811,7 +5811,7 @@ time.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/service_connectors/service_connector.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">has_expired</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">has_expired</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if the connector authentication credentials have expired.</span>
 
 <span class="sd">    Verify that the authentication credentials associated with the connector</span>
@@ -5942,7 +5942,7 @@ instance.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/service_connectors/service_connector.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">to_model</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">to_model</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">user</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span>
     <span class="n">workspace</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span>
@@ -6101,7 +6101,7 @@ instance.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/service_connectors/service_connector.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">to_response_model</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">to_response_model</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">workspace</span><span class="p">:</span> <span class="n">WorkspaceResponse</span><span class="p">,</span>
     <span class="n">user</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UserResponse</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -6273,7 +6273,7 @@ canonical form.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/service_connectors/service_connector.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">validate_runtime_args</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">validate_runtime_args</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">resource_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
     <span class="n">resource_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -6340,7 +6340,7 @@ canonical form.</p></td>
     <span class="k">except</span> <span class="p">(</span><span class="ne">KeyError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
             <span class="sa">f</span><span class="s2">&quot;connector configuration is not valid: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
     <span class="k">if</span> <span class="ow">not</span> <span class="n">resource_type</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">resource_spec</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">resource_id</span><span class="p">:</span>
@@ -6480,7 +6480,7 @@ not valid.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/service_connectors/service_connector.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">verify</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">verify</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">resource_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">resource_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -6705,10 +6705,10 @@ ServiceConnectorMeta            (<span title="pydantic._internal._model_construc
 
         <details class="quote">
           <summary>Source code in <code>zenml/service_connectors/service_connector.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ServiceConnectorMeta</span><span class="p">(</span><span class="n">ModelMetaclass</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ServiceConnectorMeta</span><span class="p">(</span><span class="n">ModelMetaclass</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Metaclass responsible for automatically registering ServiceConnector classes.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__new__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__new__</span><span class="p">(</span>
         <span class="n">mcs</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">bases</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span> <span class="o">...</span><span class="p">],</span> <span class="n">dct</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ServiceConnectorMeta&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Creates a new ServiceConnector class and registers it.</span>
@@ -6730,7 +6730,7 @@ ServiceConnectorMeta            (<span title="pydantic._internal._model_construc
             <span class="k">return</span> <span class="bp">cls</span>
 
         <span class="k">else</span><span class="p">:</span>
-            <span class="kn">from</span> <span class="nn">zenml.service_connectors.service_connector_registry</span> <span class="kn">import</span> <span class="p">(</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.service_connectors.service_connector_registry</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
                 <span class="n">service_connector_registry</span><span class="p">,</span>
             <span class="p">)</span>
 
@@ -6821,7 +6821,7 @@ ServiceConnectorMeta            (<span title="pydantic._internal._model_construc
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/service_connectors/service_connector.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__new__</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__new__</span><span class="p">(</span>
     <span class="n">mcs</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">bases</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span> <span class="o">...</span><span class="p">],</span> <span class="n">dct</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ServiceConnectorMeta&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Creates a new ServiceConnector class and registers it.</span>
@@ -6843,7 +6843,7 @@ ServiceConnectorMeta            (<span title="pydantic._internal._model_construc
         <span class="k">return</span> <span class="bp">cls</span>
 
     <span class="k">else</span><span class="p">:</span>
-        <span class="kn">from</span> <span class="nn">zenml.service_connectors.service_connector_registry</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.service_connectors.service_connector_registry</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">service_connector_registry</span><span class="p">,</span>
         <span class="p">)</span>
 
@@ -6928,16 +6928,16 @@ ServiceConnectorRegistry        </code>
 
         <details class="quote">
           <summary>Source code in <code>zenml/service_connectors/service_connector_registry.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ServiceConnectorRegistry</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ServiceConnectorRegistry</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Service connector registry.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the service connector registry.&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">service_connector_types</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ServiceConnectorTypeModel</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">initialized</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lock</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">RLock</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">register_service_connector_type</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">register_service_connector_type</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">service_connector_type</span><span class="p">:</span> <span class="n">ServiceConnectorTypeModel</span><span class="p">,</span>
         <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -6968,7 +6968,7 @@ ServiceConnectorRegistry        </code>
                     <span class="s2">&quot;registration.&quot;</span>
                 <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_service_connector_type</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_service_connector_type</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">connector_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ServiceConnectorTypeModel</span><span class="p">:</span>
@@ -6995,7 +6995,7 @@ ServiceConnectorRegistry        </code>
             <span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">service_connector_types</span><span class="p">[</span><span class="n">connector_type</span><span class="p">]</span><span class="o">.</span><span class="n">model_copy</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ServiceConnectorTypeModel</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ServiceConnectorTypeModel</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get a service connector type by its connector type identifier.</span>
 
 <span class="sd">        Args:</span>
@@ -7007,7 +7007,7 @@ ServiceConnectorRegistry        </code>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_service_connector_type</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">is_registered</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">connector_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_registered</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">connector_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns if a service connector is registered for the given type identifier.</span>
 
 <span class="sd">        Args:</span>
@@ -7020,7 +7020,7 @@ ServiceConnectorRegistry        </code>
         <span class="bp">self</span><span class="o">.</span><span class="n">register_builtin_service_connectors</span><span class="p">()</span>
         <span class="k">return</span> <span class="n">connector_type</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">service_connector_types</span>
 
-    <span class="k">def</span> <span class="nf">list_service_connector_types</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">list_service_connector_types</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">connector_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">resource_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -7062,7 +7062,7 @@ ServiceConnectorRegistry        </code>
 
         <span class="k">return</span> <span class="n">matches</span>
 
-    <span class="k">def</span> <span class="nf">instantiate_connector</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">instantiate_connector</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">model</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span>
             <span class="s2">&quot;ServiceConnectorRequest&quot;</span><span class="p">,</span>
@@ -7102,7 +7102,7 @@ ServiceConnectorRegistry        </code>
                 <span class="sa">f</span><span class="s2">&quot;The service connector configuration is not valid: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
             <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">register_builtin_service_connectors</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">register_builtin_service_connectors</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Registers the default built-in service connectors.&quot;&quot;&quot;</span>
         <span class="c1"># Only register built-in service connectors once</span>
         <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">lock</span><span class="p">:</span>
@@ -7112,21 +7112,21 @@ ServiceConnectorRegistry        </code>
             <span class="bp">self</span><span class="o">.</span><span class="n">initialized</span> <span class="o">=</span> <span class="kc">True</span>
 
             <span class="k">try</span><span class="p">:</span>
-                <span class="kn">from</span> <span class="nn">zenml.integrations.aws.service_connectors.aws_service_connector</span> <span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa</span>
+                <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.aws.service_connectors.aws_service_connector</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa</span>
                     <span class="n">AWSServiceConnector</span><span class="p">,</span>
                 <span class="p">)</span>
             <span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Could not import AWS service connector: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
 
             <span class="k">try</span><span class="p">:</span>
-                <span class="kn">from</span> <span class="nn">zenml.integrations.gcp.service_connectors.gcp_service_connector</span> <span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa</span>
+                <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.gcp.service_connectors.gcp_service_connector</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa</span>
                     <span class="n">GCPServiceConnector</span><span class="p">,</span>
                 <span class="p">)</span>
             <span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Could not import GCP service connector: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
 
             <span class="k">try</span><span class="p">:</span>
-                <span class="kn">from</span> <span class="nn">zenml.integrations.azure.service_connectors.azure_service_connector</span> <span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa</span>
+                <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.azure.service_connectors.azure_service_connector</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa</span>
                     <span class="n">AzureServiceConnector</span><span class="p">,</span>
                 <span class="p">)</span>
             <span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
@@ -7135,7 +7135,7 @@ ServiceConnectorRegistry        </code>
                 <span class="p">)</span>
 
             <span class="k">try</span><span class="p">:</span>
-                <span class="kn">from</span> <span class="nn">zenml.integrations.kubernetes.service_connectors.kubernetes_service_connector</span> <span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa</span>
+                <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.kubernetes.service_connectors.kubernetes_service_connector</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa</span>
                     <span class="n">KubernetesServiceConnector</span><span class="p">,</span>
                 <span class="p">)</span>
             <span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
@@ -7144,7 +7144,7 @@ ServiceConnectorRegistry        </code>
                 <span class="p">)</span>
 
             <span class="k">try</span><span class="p">:</span>
-                <span class="kn">from</span> <span class="nn">zenml.service_connectors.docker_service_connector</span> <span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa</span>
+                <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.service_connectors.docker_service_connector</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa</span>
                     <span class="n">DockerServiceConnector</span><span class="p">,</span>
                 <span class="p">)</span>
             <span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
@@ -7153,7 +7153,7 @@ ServiceConnectorRegistry        </code>
                 <span class="p">)</span>
 
             <span class="k">try</span><span class="p">:</span>
-                <span class="kn">from</span> <span class="nn">zenml.integrations.hyperai.service_connectors.hyperai_service_connector</span> <span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa</span>
+                <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.hyperai.service_connectors.hyperai_service_connector</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa</span>
                     <span class="n">HyperAIServiceConnector</span><span class="p">,</span>
                 <span class="p">)</span>
             <span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
@@ -7229,7 +7229,7 @@ connector type identifier.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/service_connectors/service_connector_registry.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ServiceConnectorTypeModel</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ServiceConnectorTypeModel</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get a service connector type by its connector type identifier.</span>
 
 <span class="sd">    Args:</span>
@@ -7267,7 +7267,7 @@ connector type identifier.</p></td>
 
         <details class="quote">
           <summary>Source code in <code>zenml/service_connectors/service_connector_registry.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize the service connector registry.&quot;&quot;&quot;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">service_connector_types</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ServiceConnectorTypeModel</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">initialized</span> <span class="o">=</span> <span class="kc">False</span>
@@ -7347,7 +7347,7 @@ identifier.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/service_connectors/service_connector_registry.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_service_connector_type</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_service_connector_type</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">connector_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ServiceConnectorTypeModel</span><span class="p">:</span>
@@ -7451,7 +7451,7 @@ given type identifier.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/service_connectors/service_connector_registry.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">instantiate_connector</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">instantiate_connector</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">model</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span>
         <span class="s2">&quot;ServiceConnectorRequest&quot;</span><span class="p">,</span>
@@ -7549,7 +7549,7 @@ identifier, False otherwise.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/service_connectors/service_connector_registry.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">is_registered</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">connector_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">is_registered</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">connector_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns if a service connector is registered for the given type identifier.</span>
 
 <span class="sd">    Args:</span>
@@ -7634,7 +7634,7 @@ criteria.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/service_connectors/service_connector_registry.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">list_service_connector_types</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">list_service_connector_types</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">connector_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">resource_type</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -7699,7 +7699,7 @@ criteria.</p></td>
 
         <details class="quote">
           <summary>Source code in <code>zenml/service_connectors/service_connector_registry.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">register_builtin_service_connectors</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">register_builtin_service_connectors</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Registers the default built-in service connectors.&quot;&quot;&quot;</span>
     <span class="c1"># Only register built-in service connectors once</span>
     <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">lock</span><span class="p">:</span>
@@ -7709,21 +7709,21 @@ criteria.</p></td>
         <span class="bp">self</span><span class="o">.</span><span class="n">initialized</span> <span class="o">=</span> <span class="kc">True</span>
 
         <span class="k">try</span><span class="p">:</span>
-            <span class="kn">from</span> <span class="nn">zenml.integrations.aws.service_connectors.aws_service_connector</span> <span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.aws.service_connectors.aws_service_connector</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa</span>
                 <span class="n">AWSServiceConnector</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Could not import AWS service connector: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
 
         <span class="k">try</span><span class="p">:</span>
-            <span class="kn">from</span> <span class="nn">zenml.integrations.gcp.service_connectors.gcp_service_connector</span> <span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.gcp.service_connectors.gcp_service_connector</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa</span>
                 <span class="n">GCPServiceConnector</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Could not import GCP service connector: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
 
         <span class="k">try</span><span class="p">:</span>
-            <span class="kn">from</span> <span class="nn">zenml.integrations.azure.service_connectors.azure_service_connector</span> <span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.azure.service_connectors.azure_service_connector</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa</span>
                 <span class="n">AzureServiceConnector</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
@@ -7732,7 +7732,7 @@ criteria.</p></td>
             <span class="p">)</span>
 
         <span class="k">try</span><span class="p">:</span>
-            <span class="kn">from</span> <span class="nn">zenml.integrations.kubernetes.service_connectors.kubernetes_service_connector</span> <span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.kubernetes.service_connectors.kubernetes_service_connector</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa</span>
                 <span class="n">KubernetesServiceConnector</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
@@ -7741,7 +7741,7 @@ criteria.</p></td>
             <span class="p">)</span>
 
         <span class="k">try</span><span class="p">:</span>
-            <span class="kn">from</span> <span class="nn">zenml.service_connectors.docker_service_connector</span> <span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.service_connectors.docker_service_connector</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa</span>
                 <span class="n">DockerServiceConnector</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
@@ -7750,7 +7750,7 @@ criteria.</p></td>
             <span class="p">)</span>
 
         <span class="k">try</span><span class="p">:</span>
-            <span class="kn">from</span> <span class="nn">zenml.integrations.hyperai.service_connectors.hyperai_service_connector</span> <span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.hyperai.service_connectors.hyperai_service_connector</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>  <span class="c1"># noqa</span>
                 <span class="n">HyperAIServiceConnector</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">except</span> <span class="ne">ImportError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
@@ -7806,7 +7806,7 @@ criteria.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/service_connectors/service_connector_registry.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">register_service_connector_type</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">register_service_connector_type</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">service_connector_type</span><span class="p">:</span> <span class="n">ServiceConnectorTypeModel</span><span class="p">,</span>
     <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -7942,7 +7942,7 @@ criteria.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/service_connectors/service_connector_utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_resources_options_from_resource_model_for_full_stack</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_resources_options_from_resource_model_for_full_stack</span><span class="p">(</span>
     <span class="n">connector_details</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">UUID</span><span class="p">,</span> <span class="n">ServiceConnectorInfo</span><span class="p">],</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ServiceConnectorResourcesInfo</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the resource options from the resource model for the full stack.</span>

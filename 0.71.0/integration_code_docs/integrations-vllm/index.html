@@ -2677,7 +2677,7 @@ VLLMIntegration            (<a class="autorefs autorefs-internal" title="zenml.i
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/vllm/__init__.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">VLLMIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">VLLMIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Definition of vLLM integration for ZenML.&quot;&quot;&quot;</span>
 
     <span class="n">NAME</span> <span class="o">=</span> <span class="n">VLLM</span>
@@ -2685,18 +2685,18 @@ VLLMIntegration            (<a class="autorefs autorefs-internal" title="zenml.i
     <span class="n">REQUIREMENTS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;vllm&gt;=0.6.0,&lt;0.7.0&quot;</span><span class="p">,</span> <span class="s2">&quot;openai&gt;=1.0.0&quot;</span><span class="p">]</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Activates the integration.&quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.vllm</span> <span class="kn">import</span> <span class="n">services</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.vllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">services</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the vLLM integration.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            List of stack component flavors for this integration.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.vllm.flavors</span> <span class="kn">import</span> <span class="n">VLLMModelDeployerFlavor</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.vllm.flavors</span><span class="w"> </span><span class="kn">import</span> <span class="n">VLLMModelDeployerFlavor</span>
 
         <span class="k">return</span> <span class="p">[</span><span class="n">VLLMModelDeployerFlavor</span><span class="p">]</span>
 </code></pre></div>
@@ -2736,9 +2736,9 @@ VLLMIntegration            (<a class="autorefs autorefs-internal" title="zenml.i
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/vllm/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Activates the integration.&quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.integrations.vllm</span> <span class="kn">import</span> <span class="n">services</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.vllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">services</span>
 </code></pre></div>
         </details>
     </div>
@@ -2782,13 +2782,13 @@ VLLMIntegration            (<a class="autorefs autorefs-internal" title="zenml.i
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/vllm/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the vLLM integration.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        List of stack component flavors for this integration.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.integrations.vllm.flavors</span> <span class="kn">import</span> <span class="n">VLLMModelDeployerFlavor</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.vllm.flavors</span><span class="w"> </span><span class="kn">import</span> <span class="n">VLLMModelDeployerFlavor</span>
 
     <span class="k">return</span> <span class="p">[</span><span class="n">VLLMModelDeployerFlavor</span><span class="p">]</span>
 </code></pre></div>
@@ -2888,7 +2888,7 @@ VLLMModelDeployerConfig            (<a class="autorefs autorefs-internal" title=
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/vllm/flavors/vllm_model_deployer_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">VLLMModelDeployerConfig</span><span class="p">(</span><span class="n">BaseModelDeployerConfig</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">VLLMModelDeployerConfig</span><span class="p">(</span><span class="n">BaseModelDeployerConfig</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Configuration for vLLM Inference model deployer.&quot;&quot;&quot;</span>
 
     <span class="n">service_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
@@ -2952,11 +2952,11 @@ VLLMModelDeployerFlavor            (<a class="autorefs autorefs-internal" title=
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/vllm/flavors/vllm_model_deployer_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">VLLMModelDeployerFlavor</span><span class="p">(</span><span class="n">BaseModelDeployerFlavor</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">VLLMModelDeployerFlavor</span><span class="p">(</span><span class="n">BaseModelDeployerFlavor</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;vLLM model deployer flavor.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -2965,7 +2965,7 @@ VLLMModelDeployerFlavor            (<a class="autorefs autorefs-internal" title=
         <span class="k">return</span> <span class="n">VLLM_MODEL_DEPLOYER</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -2974,7 +2974,7 @@ VLLMModelDeployerFlavor            (<a class="autorefs autorefs-internal" title=
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at SDK docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -2983,7 +2983,7 @@ VLLMModelDeployerFlavor            (<a class="autorefs autorefs-internal" title=
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_sdk_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to represent the flavor in the dashboard.</span>
 
 <span class="sd">        Returns:</span>
@@ -2992,7 +2992,7 @@ VLLMModelDeployerFlavor            (<a class="autorefs autorefs-internal" title=
         <span class="k">return</span> <span class="s2">&quot;https://public-flavor-logos.s3.eu-central-1.amazonaws.com/model_deployer/vllm.png&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">VLLMModelDeployerConfig</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">VLLMModelDeployerConfig</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns `VLLMModelDeployerConfig` config class.</span>
 
 <span class="sd">        Returns:</span>
@@ -3001,13 +3001,13 @@ VLLMModelDeployerFlavor            (<a class="autorefs autorefs-internal" title=
         <span class="k">return</span> <span class="n">VLLMModelDeployerConfig</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;VLLMModelDeployer&quot;</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;VLLMModelDeployer&quot;</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The implementation class.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.vllm.model_deployers</span> <span class="kn">import</span> <span class="n">VLLMModelDeployer</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.vllm.model_deployers</span><span class="w"> </span><span class="kn">import</span> <span class="n">VLLMModelDeployer</span>
 
         <span class="k">return</span> <span class="n">VLLMModelDeployer</span>
 </code></pre></div>
@@ -3361,7 +3361,7 @@ VLLMModelDeployer            (<a class="autorefs autorefs-internal" title="zenml
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/vllm/model_deployers/vllm_model_deployer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">VLLMModelDeployer</span><span class="p">(</span><span class="n">BaseModelDeployer</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">VLLMModelDeployer</span><span class="p">(</span><span class="n">BaseModelDeployer</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;vLLM Inference Server.&quot;&quot;&quot;</span>
 
     <span class="n">NAME</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;VLLM&quot;</span>
@@ -3370,7 +3370,7 @@ VLLMModelDeployer            (<a class="autorefs autorefs-internal" title="zenml
     <span class="n">_service_path</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">VLLMModelDeployerConfig</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">VLLMModelDeployerConfig</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the `VLLMModelDeployerConfig` config.</span>
 
 <span class="sd">        Returns:</span>
@@ -3379,7 +3379,7 @@ VLLMModelDeployer            (<a class="autorefs autorefs-internal" title="zenml
         <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">VLLMModelDeployerConfig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="p">)</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">get_service_path</span><span class="p">(</span><span class="n">id_</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_service_path</span><span class="p">(</span><span class="n">id_</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the path where local vLLM service information is stored.</span>
 
 <span class="sd">        This includes the deployment service configuration, PID and log files</span>
@@ -3399,7 +3399,7 @@ VLLMModelDeployer            (<a class="autorefs autorefs-internal" title="zenml
         <span class="k">return</span> <span class="n">service_path</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">local_path</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">local_path</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the path to the root directory.</span>
 
 <span class="sd">        This is where all configurations for vLLM deployment daemon processes</span>
@@ -3423,7 +3423,7 @@ VLLMModelDeployer            (<a class="autorefs autorefs-internal" title="zenml
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_service_path</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">get_model_server_info</span><span class="p">(</span>  <span class="c1"># type: ignore[override]</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_model_server_info</span><span class="p">(</span>  <span class="c1"># type: ignore[override]</span>
         <span class="n">service_instance</span><span class="p">:</span> <span class="s2">&quot;VLLMDeploymentService&quot;</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Return implementation specific information on the model server.</span>
@@ -3441,7 +3441,7 @@ VLLMModelDeployer            (<a class="autorefs autorefs-internal" title="zenml
             <span class="s2">&quot;DAEMON_PID&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">service_instance</span><span class="o">.</span><span class="n">status</span><span class="o">.</span><span class="n">pid</span><span class="p">),</span>
         <span class="p">}</span>
 
-    <span class="k">def</span> <span class="nf">perform_deploy_model</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">perform_deploy_model</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="nb">id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span>
         <span class="n">config</span><span class="p">:</span> <span class="n">ServiceConfig</span><span class="p">,</span>
@@ -3494,7 +3494,7 @@ VLLMModelDeployer            (<a class="autorefs autorefs-internal" title="zenml
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Created a new vLLM deployment service: </span><span class="si">{</span><span class="n">service</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">service</span>
 
-    <span class="k">def</span> <span class="nf">_clean_up_existing_service</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_clean_up_existing_service</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
@@ -3510,7 +3510,7 @@ VLLMModelDeployer            (<a class="autorefs autorefs-internal" title="zenml
     <span class="c1"># the step will receive a config from the user that mentions the number</span>
     <span class="c1"># of workers etc.the step implementation will create a new config using</span>
     <span class="c1"># all values from the user and add values like pipeline name, model_uri</span>
-    <span class="k">def</span> <span class="nf">_create_new_service</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_create_new_service</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">VLLMServiceConfig</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">VLLMDeploymentService</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Creates a new VLLMDeploymentService.</span>
@@ -3533,7 +3533,7 @@ VLLMModelDeployer            (<a class="autorefs autorefs-internal" title="zenml
 
         <span class="k">return</span> <span class="n">service</span>
 
-    <span class="k">def</span> <span class="nf">perform_stop_model</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">perform_stop_model</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">service</span><span class="p">:</span> <span class="n">BaseService</span><span class="p">,</span>
         <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_SERVICE_START_STOP_TIMEOUT</span><span class="p">,</span>
@@ -3552,7 +3552,7 @@ VLLMModelDeployer            (<a class="autorefs autorefs-internal" title="zenml
         <span class="n">service</span><span class="o">.</span><span class="n">stop</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">,</span> <span class="n">force</span><span class="o">=</span><span class="n">force</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">service</span>
 
-    <span class="k">def</span> <span class="nf">perform_start_model</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">perform_start_model</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">service</span><span class="p">:</span> <span class="n">BaseService</span><span class="p">,</span>
         <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_SERVICE_START_STOP_TIMEOUT</span><span class="p">,</span>
@@ -3569,7 +3569,7 @@ VLLMModelDeployer            (<a class="autorefs autorefs-internal" title="zenml
         <span class="n">service</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">service</span>
 
-    <span class="k">def</span> <span class="nf">perform_delete_model</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">perform_delete_model</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">service</span><span class="p">:</span> <span class="n">BaseService</span><span class="p">,</span>
         <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_SERVICE_START_STOP_TIMEOUT</span><span class="p">,</span>
@@ -3699,11 +3699,11 @@ FLAVOR            (<a class="autorefs autorefs-internal" title="zenml.model_depl
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/vllm/model_deployers/vllm_model_deployer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">VLLMModelDeployerFlavor</span><span class="p">(</span><span class="n">BaseModelDeployerFlavor</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">VLLMModelDeployerFlavor</span><span class="p">(</span><span class="n">BaseModelDeployerFlavor</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;vLLM model deployer flavor.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -3712,7 +3712,7 @@ FLAVOR            (<a class="autorefs autorefs-internal" title="zenml.model_depl
         <span class="k">return</span> <span class="n">VLLM_MODEL_DEPLOYER</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -3721,7 +3721,7 @@ FLAVOR            (<a class="autorefs autorefs-internal" title="zenml.model_depl
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at SDK docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -3730,7 +3730,7 @@ FLAVOR            (<a class="autorefs autorefs-internal" title="zenml.model_depl
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_sdk_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to represent the flavor in the dashboard.</span>
 
 <span class="sd">        Returns:</span>
@@ -3739,7 +3739,7 @@ FLAVOR            (<a class="autorefs autorefs-internal" title="zenml.model_depl
         <span class="k">return</span> <span class="s2">&quot;https://public-flavor-logos.s3.eu-central-1.amazonaws.com/model_deployer/vllm.png&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">VLLMModelDeployerConfig</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">VLLMModelDeployerConfig</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns `VLLMModelDeployerConfig` config class.</span>
 
 <span class="sd">        Returns:</span>
@@ -3748,13 +3748,13 @@ FLAVOR            (<a class="autorefs autorefs-internal" title="zenml.model_depl
         <span class="k">return</span> <span class="n">VLLMModelDeployerConfig</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;VLLMModelDeployer&quot;</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;VLLMModelDeployer&quot;</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The implementation class.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.vllm.model_deployers</span> <span class="kn">import</span> <span class="n">VLLMModelDeployer</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.vllm.model_deployers</span><span class="w"> </span><span class="kn">import</span> <span class="n">VLLMModelDeployer</span>
 
         <span class="k">return</span> <span class="n">VLLMModelDeployer</span>
 </code></pre></div>
@@ -4066,7 +4066,7 @@ FLAVOR            (<a class="autorefs autorefs-internal" title="zenml.model_depl
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/vllm/model_deployers/vllm_model_deployer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
-<span class="k">def</span> <span class="nf">get_model_server_info</span><span class="p">(</span>  <span class="c1"># type: ignore[override]</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_model_server_info</span><span class="p">(</span>  <span class="c1"># type: ignore[override]</span>
     <span class="n">service_instance</span><span class="p">:</span> <span class="s2">&quot;VLLMDeploymentService&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Return implementation specific information on the model server.</span>
@@ -4147,7 +4147,7 @@ are stored.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/vllm/model_deployers/vllm_model_deployer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
-<span class="k">def</span> <span class="nf">get_service_path</span><span class="p">(</span><span class="n">id_</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_service_path</span><span class="p">(</span><span class="n">id_</span><span class="p">:</span> <span class="n">UUID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the path where local vLLM service information is stored.</span>
 
 <span class="sd">    This includes the deployment service configuration, PID and log files</span>
@@ -4220,7 +4220,7 @@ are stored.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/vllm/model_deployers/vllm_model_deployer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">perform_delete_model</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">perform_delete_model</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">BaseService</span><span class="p">,</span>
     <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_SERVICE_START_STOP_TIMEOUT</span><span class="p">,</span>
@@ -4338,7 +4338,7 @@ interact with the vLLM model http server.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/vllm/model_deployers/vllm_model_deployer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">perform_deploy_model</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">perform_deploy_model</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span>
     <span class="n">config</span><span class="p">:</span> <span class="n">ServiceConfig</span><span class="p">,</span>
@@ -4454,7 +4454,7 @@ interact with the vLLM model http server.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/vllm/model_deployers/vllm_model_deployer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">perform_start_model</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">perform_start_model</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">BaseService</span><span class="p">,</span>
     <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_SERVICE_START_STOP_TIMEOUT</span><span class="p">,</span>
@@ -4540,7 +4540,7 @@ interact with the vLLM model http server.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/vllm/model_deployers/vllm_model_deployer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">perform_stop_model</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">perform_stop_model</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">BaseService</span><span class="p">,</span>
     <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_SERVICE_START_STOP_TIMEOUT</span><span class="p">,</span>
@@ -4692,7 +4692,7 @@ VLLMDeploymentEndpoint            (<a class="autorefs autorefs-internal" title="
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/vllm/services/vllm_deployment.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">VLLMDeploymentEndpoint</span><span class="p">(</span><span class="n">LocalDaemonServiceEndpoint</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">VLLMDeploymentEndpoint</span><span class="p">(</span><span class="n">LocalDaemonServiceEndpoint</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;A service endpoint exposed by the vLLM deployment daemon.</span>
 
 <span class="sd">    Attributes:</span>
@@ -4703,7 +4703,7 @@ VLLMDeploymentEndpoint            (<a class="autorefs autorefs-internal" title="
     <span class="n">monitor</span><span class="p">:</span> <span class="n">HTTPEndpointHealthMonitor</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">prediction_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">prediction_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets the prediction URL for the endpoint.</span>
 
 <span class="sd">        Returns:</span>
@@ -4827,7 +4827,7 @@ VLLMDeploymentEndpointConfig            (<a class="autorefs autorefs-internal" t
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/vllm/services/vllm_deployment.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">VLLMDeploymentEndpointConfig</span><span class="p">(</span><span class="n">LocalDaemonServiceEndpointConfig</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">VLLMDeploymentEndpointConfig</span><span class="p">(</span><span class="n">LocalDaemonServiceEndpointConfig</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;vLLM deployment service configuration.</span>
 
 <span class="sd">    Attributes:</span>
@@ -4894,7 +4894,7 @@ VLLMDeploymentService            (<a class="autorefs autorefs-internal" title="z
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/vllm/services/vllm_deployment.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">VLLMDeploymentService</span><span class="p">(</span><span class="n">LocalDaemonService</span><span class="p">,</span> <span class="n">BaseDeploymentService</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">VLLMDeploymentService</span><span class="p">(</span><span class="n">LocalDaemonService</span><span class="p">,</span> <span class="n">BaseDeploymentService</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;vLLM Inference Server Deployment Service.&quot;&quot;&quot;</span>
 
     <span class="n">SERVICE_TYPE</span> <span class="o">=</span> <span class="n">ServiceType</span><span class="p">(</span>
@@ -4906,7 +4906,7 @@ VLLMDeploymentService            (<a class="autorefs autorefs-internal" title="z
     <span class="n">config</span><span class="p">:</span> <span class="n">VLLMServiceConfig</span>
     <span class="n">endpoint</span><span class="p">:</span> <span class="n">VLLMDeploymentEndpoint</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">VLLMServiceConfig</span><span class="p">,</span> <span class="o">**</span><span class="n">attrs</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">VLLMServiceConfig</span><span class="p">,</span> <span class="o">**</span><span class="n">attrs</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initialize the vLLM deployment service.</span>
 
 <span class="sd">        Args:</span>
@@ -4930,7 +4930,7 @@ VLLMDeploymentService            (<a class="autorefs autorefs-internal" title="z
             <span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;endpoint&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">endpoint</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span> <span class="o">**</span><span class="n">attrs</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Start the service.&quot;&quot;&quot;</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
             <span class="s2">&quot;Starting vLLM inference server service as blocking &quot;</span>
@@ -4939,14 +4939,14 @@ VLLMDeploymentService            (<a class="autorefs autorefs-internal" title="z
 
         <span class="bp">self</span><span class="o">.</span><span class="n">endpoint</span><span class="o">.</span><span class="n">prepare_for_start</span><span class="p">()</span>
 
-        <span class="kn">import</span> <span class="nn">uvloop</span>
-        <span class="kn">from</span> <span class="nn">vllm.entrypoints.openai.api_server</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">uvloop</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">vllm.entrypoints.openai.api_server</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">run_server</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="kn">from</span> <span class="nn">vllm.entrypoints.openai.cli_args</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">vllm.entrypoints.openai.cli_args</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">make_arg_parser</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="kn">from</span> <span class="nn">vllm.utils</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">vllm.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">FlexibleArgumentParser</span><span class="p">,</span>
         <span class="p">)</span>
 
@@ -4964,7 +4964,7 @@ VLLMDeploymentService            (<a class="autorefs autorefs-internal" title="z
             <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Stopping vLLM prediction service...&quot;</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">prediction_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">prediction_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets the prediction URL for the endpoint.</span>
 
 <span class="sd">        Returns:</span>
@@ -4974,7 +4974,7 @@ VLLMDeploymentService            (<a class="autorefs autorefs-internal" title="z
             <span class="k">return</span> <span class="kc">None</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">endpoint</span><span class="o">.</span><span class="n">prediction_url</span>
 
-    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="s2">&quot;Any&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Any&quot;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="s2">&quot;Any&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Any&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Make a prediction using the service.</span>
 
 <span class="sd">        Args:</span>
@@ -4993,7 +4993,7 @@ VLLMDeploymentService            (<a class="autorefs autorefs-internal" title="z
                 <span class="s2">&quot;Please start the service before making predictions.&quot;</span>
             <span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">endpoint</span><span class="o">.</span><span class="n">prediction_url</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="kn">from</span> <span class="nn">openai</span> <span class="kn">import</span> <span class="n">OpenAI</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">openai</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpenAI</span>
 
             <span class="n">client</span> <span class="o">=</span> <span class="n">OpenAI</span><span class="p">(</span>
                 <span class="n">api_key</span><span class="o">=</span><span class="s2">&quot;EMPTY&quot;</span><span class="p">,</span>
@@ -5119,7 +5119,7 @@ VLLMDeploymentService            (<a class="autorefs autorefs-internal" title="z
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/vllm/services/vllm_deployment.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">VLLMServiceConfig</span><span class="p">,</span> <span class="o">**</span><span class="n">attrs</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">VLLMServiceConfig</span><span class="p">,</span> <span class="o">**</span><span class="n">attrs</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize the vLLM deployment service.</span>
 
 <span class="sd">    Args:</span>
@@ -5219,7 +5219,7 @@ VLLMDeploymentService            (<a class="autorefs autorefs-internal" title="z
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/vllm/services/vllm_deployment.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="s2">&quot;Any&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Any&quot;</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="s2">&quot;Any&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Any&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Make a prediction using the service.</span>
 
 <span class="sd">    Args:</span>
@@ -5238,7 +5238,7 @@ VLLMDeploymentService            (<a class="autorefs autorefs-internal" title="z
             <span class="s2">&quot;Please start the service before making predictions.&quot;</span>
         <span class="p">)</span>
     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">endpoint</span><span class="o">.</span><span class="n">prediction_url</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="kn">from</span> <span class="nn">openai</span> <span class="kn">import</span> <span class="n">OpenAI</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">openai</span><span class="w"> </span><span class="kn">import</span> <span class="n">OpenAI</span>
 
         <span class="n">client</span> <span class="o">=</span> <span class="n">OpenAI</span><span class="p">(</span>
             <span class="n">api_key</span><span class="o">=</span><span class="s2">&quot;EMPTY&quot;</span><span class="p">,</span>
@@ -5275,7 +5275,7 @@ VLLMDeploymentService            (<a class="autorefs autorefs-internal" title="z
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/vllm/services/vllm_deployment.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Start the service.&quot;&quot;&quot;</span>
     <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
         <span class="s2">&quot;Starting vLLM inference server service as blocking &quot;</span>
@@ -5284,14 +5284,14 @@ VLLMDeploymentService            (<a class="autorefs autorefs-internal" title="z
 
     <span class="bp">self</span><span class="o">.</span><span class="n">endpoint</span><span class="o">.</span><span class="n">prepare_for_start</span><span class="p">()</span>
 
-    <span class="kn">import</span> <span class="nn">uvloop</span>
-    <span class="kn">from</span> <span class="nn">vllm.entrypoints.openai.api_server</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">uvloop</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">vllm.entrypoints.openai.api_server</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
         <span class="n">run_server</span><span class="p">,</span>
     <span class="p">)</span>
-    <span class="kn">from</span> <span class="nn">vllm.entrypoints.openai.cli_args</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">vllm.entrypoints.openai.cli_args</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
         <span class="n">make_arg_parser</span><span class="p">,</span>
     <span class="p">)</span>
-    <span class="kn">from</span> <span class="nn">vllm.utils</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">vllm.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
         <span class="n">FlexibleArgumentParser</span><span class="p">,</span>
     <span class="p">)</span>
 
@@ -5344,7 +5344,7 @@ VLLMServiceConfig            (<a class="autorefs autorefs-internal" title="zenml
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/vllm/services/vllm_deployment.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">VLLMServiceConfig</span><span class="p">(</span><span class="n">LocalDaemonServiceConfig</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">VLLMServiceConfig</span><span class="p">(</span><span class="n">LocalDaemonServiceConfig</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;vLLM service configurations.&quot;&quot;&quot;</span>
 
     <span class="n">model</span><span class="p">:</span> <span class="nb">str</span>

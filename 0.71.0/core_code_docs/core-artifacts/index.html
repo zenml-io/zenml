@@ -2653,7 +2653,7 @@ is used.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/artifacts/artifact_config.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ArtifactConfig</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ArtifactConfig</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Artifact configuration class.</span>
 
 <span class="sd">    Can be used in step definitions to define various artifact properties.</span>
@@ -2700,7 +2700,7 @@ is used.</p></td>
     <span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;before&quot;</span><span class="p">)</span>
     <span class="nd">@classmethod</span>
     <span class="nd">@before_validator_handler</span>
-    <span class="k">def</span> <span class="nf">_remove_old_attributes</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_remove_old_attributes</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove old attributes that are not used anymore.</span>
 
 <span class="sd">        Args:</span>
@@ -2906,7 +2906,7 @@ def my_pipeline():
 
         <details class="quote">
           <summary>Source code in <code>zenml/artifacts/external_artifact.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ExternalArtifact</span><span class="p">(</span><span class="n">ExternalArtifactConfiguration</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ExternalArtifact</span><span class="p">(</span><span class="n">ExternalArtifactConfiguration</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;External artifacts can be used to provide values as input to ZenML steps.</span>
 
 <span class="sd">    ZenML steps accept either artifacts (=outputs of other steps), parameters</span>
@@ -2952,7 +2952,7 @@ def my_pipeline():
     <span class="n">store_artifact_visualizations</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
 
     <span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;after&quot;</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">external_artifact_validator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ExternalArtifact&quot;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">external_artifact_validator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ExternalArtifact&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Model validator for the external artifact.</span>
 
 <span class="sd">        Raises:</span>
@@ -2968,13 +2968,13 @@ def my_pipeline():
 
         <span class="k">return</span> <span class="bp">self</span>
 
-    <span class="k">def</span> <span class="nf">upload_by_value</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UUID</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">upload_by_value</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UUID</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Uploads the artifact by value.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The uploaded artifact ID.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.artifacts.utils</span> <span class="kn">import</span> <span class="n">save_artifact</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.artifacts.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">save_artifact</span>
 
         <span class="n">artifact_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;external_</span><span class="si">{</span><span class="n">uuid4</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="n">uri</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot;external_artifacts&quot;</span><span class="p">,</span> <span class="n">artifact_name</span><span class="p">)</span>
@@ -3000,7 +3000,7 @@ def my_pipeline():
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ExternalArtifactConfiguration</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ExternalArtifactConfiguration</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the lightweight config without hard for JSON properties.</span>
 
 <span class="sd">        Returns:</span>
@@ -3124,7 +3124,7 @@ def my_pipeline():
         <details class="quote">
           <summary>Source code in <code>zenml/artifacts/external_artifact.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;after&quot;</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">external_artifact_validator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ExternalArtifact&quot;</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">external_artifact_validator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ExternalArtifact&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Model validator for the external artifact.</span>
 
 <span class="sd">    Raises:</span>
@@ -3178,13 +3178,13 @@ def my_pipeline():
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/artifacts/external_artifact.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">upload_by_value</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UUID</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">upload_by_value</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UUID</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Uploads the artifact by value.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        The uploaded artifact ID.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.artifacts.utils</span> <span class="kn">import</span> <span class="n">save_artifact</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.artifacts.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">save_artifact</span>
 
     <span class="n">artifact_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;external_</span><span class="si">{</span><span class="n">uuid4</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span>
     <span class="n">uri</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s2">&quot;external_artifacts&quot;</span><span class="p">,</span> <span class="n">artifact_name</span><span class="p">)</span>
@@ -3284,7 +3284,7 @@ ExternalArtifactConfiguration            (<span title="pydantic.main.BaseModel">
 
         <details class="quote">
           <summary>Source code in <code>zenml/artifacts/external_artifact_config.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ExternalArtifactConfiguration</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ExternalArtifactConfiguration</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;External artifact configuration.</span>
 
 <span class="sd">    Lightweight class to pass in the steps for runtime inference.</span>
@@ -3295,7 +3295,7 @@ ExternalArtifactConfiguration            (<span title="pydantic.main.BaseModel">
     <span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;before&quot;</span><span class="p">)</span>
     <span class="nd">@classmethod</span>
     <span class="nd">@before_validator_handler</span>
-    <span class="k">def</span> <span class="nf">_remove_old_attributes</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_remove_old_attributes</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove old attributes that are not used anymore.</span>
 
 <span class="sd">        Args:</span>
@@ -3309,7 +3309,7 @@ ExternalArtifactConfiguration            (<span title="pydantic.main.BaseModel">
         <span class="n">data</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;model&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">data</span>
 
-    <span class="k">def</span> <span class="nf">get_artifact_version_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UUID</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_artifact_version_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UUID</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the artifact.</span>
 
 <span class="sd">        Returns:</span>
@@ -3321,7 +3321,7 @@ ExternalArtifactConfiguration            (<span title="pydantic.main.BaseModel">
 <span class="sd">            RuntimeError: If neither the ID nor the name of the artifact was</span>
 <span class="sd">                provided.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.client</span> <span class="kn">import</span> <span class="n">Client</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">Client</span>
 
         <span class="n">client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span>
 
@@ -3433,7 +3433,7 @@ provided.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/artifacts/external_artifact_config.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_artifact_version_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UUID</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_artifact_version_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UUID</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the artifact.</span>
 
 <span class="sd">    Returns:</span>
@@ -3445,7 +3445,7 @@ provided.</p></td>
 <span class="sd">        RuntimeError: If neither the ID nor the name of the artifact was</span>
 <span class="sd">            provided.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.client</span> <span class="kn">import</span> <span class="n">Client</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">Client</span>
 
     <span class="n">client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span>
 
@@ -3553,7 +3553,7 @@ shall happen outside and is in user's responsibility.</p>
 
         <details class="quote">
           <summary>Source code in <code>zenml/artifacts/preexisting_data_materializer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">PreexistingDataMaterializer</span><span class="p">(</span><span class="n">BaseMaterializer</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">PreexistingDataMaterializer</span><span class="p">(</span><span class="n">BaseMaterializer</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Materializer to load directories from the artifact store.</span>
 
 <span class="sd">    This materializer is very special, since it do not implement save</span>
@@ -3567,7 +3567,7 @@ shall happen outside and is in user's responsibility.</p>
     <span class="n">ASSOCIATED_ARTIFACT_TYPE</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">ArtifactType</span><span class="p">]</span> <span class="o">=</span> <span class="n">ArtifactType</span><span class="o">.</span><span class="n">DATA</span>
     <span class="n">SKIP_REGISTRATION</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
 
-    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Copy the artifact file(s) to a local temp directory.</span>
 
 <span class="sd">        Args:</span>
@@ -3585,7 +3585,7 @@ shall happen outside and is in user's responsibility.</p>
                 <span class="n">fileio</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">src</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">uri</span><span class="p">,</span> <span class="n">dst</span><span class="o">=</span><span class="n">dst</span><span class="p">)</span>
                 <span class="k">return</span> <span class="n">Path</span><span class="p">(</span><span class="n">dst</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Store the directory in the artifact store.</span>
 
 <span class="sd">        Args:</span>
@@ -3602,7 +3602,7 @@ shall happen outside and is in user's responsibility.</p>
         <span class="p">)</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">_copy_directory</span><span class="p">(</span><span class="n">src</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">dst</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_copy_directory</span><span class="p">(</span><span class="n">src</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">dst</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Recursively copy a directory.</span>
 
 <span class="sd">        Args:</span>
@@ -3687,7 +3687,7 @@ shall happen outside and is in user's responsibility.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/artifacts/preexisting_data_materializer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Copy the artifact file(s) to a local temp directory.</span>
 
 <span class="sd">    Args:</span>
@@ -3762,7 +3762,7 @@ shall happen outside and is in user's responsibility.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/artifacts/preexisting_data_materializer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Store the directory in the artifact store.</span>
 
 <span class="sd">    Args:</span>
@@ -3862,7 +3862,7 @@ def my_step(input_artifact: UnmaterializedArtifact):
 
         <details class="quote">
           <summary>Source code in <code>zenml/artifacts/unmaterialized_artifact.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">UnmaterializedArtifact</span><span class="p">(</span><span class="n">ArtifactVersionResponse</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">UnmaterializedArtifact</span><span class="p">(</span><span class="n">ArtifactVersionResponse</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Unmaterialized artifact class.</span>
 
 <span class="sd">    Typing a step input to have this type will cause ZenML to not materialize</span>
@@ -3927,7 +3927,7 @@ method.</p>
 
         <details class="quote">
           <summary>Source code in <code>zenml/artifacts/unmaterialized_artifact.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">wrapped_model_post_init</span><span class="p">(</span><span class="bp">self</span><span class="p">:</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">/</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">wrapped_model_post_init</span><span class="p">(</span><span class="bp">self</span><span class="p">:</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">/</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;We need to both initialize private attributes and call the user-defined model_post_init</span>
 <span class="sd">    method.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -4056,7 +4056,7 @@ method.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/artifacts/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">download_artifact_files_from_response</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">download_artifact_files_from_response</span><span class="p">(</span>
     <span class="n">artifact</span><span class="p">:</span> <span class="s2">&quot;ArtifactVersionResponse&quot;</span><span class="p">,</span>
     <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -4175,7 +4175,7 @@ should be returned or also cached artifact versions.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/artifacts/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_artifacts_versions_of_pipeline_run</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_artifacts_versions_of_pipeline_run</span><span class="p">(</span>
     <span class="n">pipeline_run</span><span class="p">:</span> <span class="s2">&quot;PipelineRunResponse&quot;</span><span class="p">,</span> <span class="n">only_produced</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="s2">&quot;ArtifactVersionResponse&quot;</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get all artifact versions produced during a pipeline run.</span>
@@ -4267,7 +4267,7 @@ should be returned or also cached artifact versions.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/artifacts/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_producer_step_of_artifact</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_producer_step_of_artifact</span><span class="p">(</span>
     <span class="n">artifact</span><span class="p">:</span> <span class="s2">&quot;ArtifactVersionResponse&quot;</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;StepRunResponse&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the step run that produced a given artifact.</span>
@@ -4352,7 +4352,7 @@ name. If not provided, the latest version will be loaded.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/artifacts/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">load_artifact</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">load_artifact</span><span class="p">(</span>
     <span class="n">name_or_id</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UUID</span><span class="p">],</span>
     <span class="n">version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
@@ -4426,7 +4426,7 @@ name. If not provided, the latest version will be loaded.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/artifacts/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">load_artifact_from_response</span><span class="p">(</span><span class="n">artifact</span><span class="p">:</span> <span class="s2">&quot;ArtifactVersionResponse&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">load_artifact_from_response</span><span class="p">(</span><span class="n">artifact</span><span class="p">:</span> <span class="s2">&quot;ArtifactVersionResponse&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Load the given artifact into memory.</span>
 
 <span class="sd">    Args:</span>
@@ -4539,7 +4539,7 @@ store.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/artifacts/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">load_artifact_visualization</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">load_artifact_visualization</span><span class="p">(</span>
     <span class="n">artifact</span><span class="p">:</span> <span class="s2">&quot;ArtifactVersionResponse&quot;</span><span class="p">,</span>
     <span class="n">index</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
     <span class="n">zen_store</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;BaseZenStore&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -4659,7 +4659,7 @@ used to load the model into memory in the inference environment.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/artifacts/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">load_model_from_metadata</span><span class="p">(</span><span class="n">model_uri</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">load_model_from_metadata</span><span class="p">(</span><span class="n">model_uri</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Load a zenml model artifact from a json file.</span>
 
 <span class="sd">    This function is used to load information from a Yaml file that was created</span>
@@ -4698,7 +4698,7 @@ used to load the model into memory in the inference environment.</p>
 
     <span class="c1"># Switch to eval mode if the model is a torch model</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">torch.nn</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nn</span>
 
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
             <span class="n">model</span><span class="o">.</span><span class="n">eval</span><span class="p">()</span>
@@ -4784,7 +4784,7 @@ artifact nor an output with the given name exists.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/artifacts/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">log_artifact_metadata</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">log_artifact_metadata</span><span class="p">(</span>
     <span class="n">metadata</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;MetadataType&quot;</span><span class="p">],</span>
     <span class="n">artifact_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">artifact_version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -4814,7 +4814,7 @@ artifact nor an output with the given name exists.</p></td>
         <span class="s2">&quot;removed. Please use `log_metadata` instead.&quot;</span>
     <span class="p">)</span>
 
-    <span class="kn">from</span> <span class="nn">zenml</span> <span class="kn">import</span> <span class="n">log_metadata</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml</span><span class="w"> </span><span class="kn">import</span> <span class="n">log_metadata</span>
 
     <span class="k">if</span> <span class="n">artifact_name</span> <span class="ow">and</span> <span class="n">artifact_version</span><span class="p">:</span>
         <span class="k">assert</span> <span class="n">artifact_name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
@@ -4980,7 +4980,7 @@ bounds.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/artifacts/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">register_artifact</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">register_artifact</span><span class="p">(</span>
     <span class="n">folder_or_file_uri</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -5184,7 +5184,7 @@ the dashboard "Artifacts" tab.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/artifacts/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">save_artifact</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">save_artifact</span><span class="p">(</span>
     <span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -5224,10 +5224,10 @@ the dashboard "Artifacts" tab.</p></td>
 <span class="sd">    Returns:</span>
 <span class="sd">        The saved artifact response.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.materializers.materializer_registry</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.materializers.materializer_registry</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
         <span class="n">materializer_registry</span><span class="p">,</span>
     <span class="p">)</span>
-    <span class="kn">from</span> <span class="nn">zenml.utils</span> <span class="kn">import</span> <span class="n">source_utils</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">source_utils</span>
 
     <span class="n">client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span>
     <span class="n">artifact_store</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">active_stack</span><span class="o">.</span><span class="n">artifact_store</span>
@@ -5343,7 +5343,7 @@ materializer: The path to the materializer class.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/artifacts/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">save_model_metadata</span><span class="p">(</span><span class="n">model_artifact</span><span class="p">:</span> <span class="s2">&quot;ArtifactVersionResponse&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">save_model_metadata</span><span class="p">(</span><span class="n">model_artifact</span><span class="p">:</span> <span class="s2">&quot;ArtifactVersionResponse&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Save a zenml model artifact metadata to a YAML file.</span>
 
 <span class="sd">    This function is used to extract and save information from a zenml model</span>

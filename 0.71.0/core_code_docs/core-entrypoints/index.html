@@ -2497,7 +2497,7 @@ to the entrypoint and what is running inside the entrypoint.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/entrypoints/base_entrypoint_configuration.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseEntrypointConfiguration</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">BaseEntrypointConfiguration</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Abstract base class for entrypoint configurations.</span>
 
 <span class="sd">    An entrypoint configuration specifies the arguments that should be passed</span>
@@ -2507,7 +2507,7 @@ to the entrypoint and what is running inside the entrypoint.</p>
 <span class="sd">        entrypoint_args: The parsed arguments passed to the entrypoint.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arguments</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arguments</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes the entrypoint configuration.</span>
 
 <span class="sd">        Args:</span>
@@ -2516,7 +2516,7 @@ to the entrypoint and what is running inside the entrypoint.</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">entrypoint_args</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parse_arguments</span><span class="p">(</span><span class="n">arguments</span><span class="p">)</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">get_entrypoint_command</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_entrypoint_command</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns a command that runs the entrypoint module.</span>
 
 <span class="sd">        This entrypoint module is responsible for running the entrypoint</span>
@@ -2533,7 +2533,7 @@ to the entrypoint and what is running inside the entrypoint.</p>
         <span class="k">return</span> <span class="n">DEFAULT_ENTRYPOINT_COMMAND</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">get_entrypoint_options</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_entrypoint_options</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets all options required for running with this configuration.</span>
 
 <span class="sd">        Returns:</span>
@@ -2548,7 +2548,7 @@ to the entrypoint and what is running inside the entrypoint.</p>
         <span class="p">}</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">get_entrypoint_arguments</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_entrypoint_arguments</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
@@ -2588,7 +2588,7 @@ to the entrypoint and what is running inside the entrypoint.</p>
         <span class="k">return</span> <span class="n">arguments</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">_parse_arguments</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">arguments</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_parse_arguments</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">arguments</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Parses command line arguments.</span>
 
 <span class="sd">        This method will create an `argparse.ArgumentParser` and add required</span>
@@ -2609,13 +2609,13 @@ to the entrypoint and what is running inside the entrypoint.</p>
 <span class="sd">            ValueError: If the arguments are not valid.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="k">class</span> <span class="nc">_CustomParser</span><span class="p">(</span><span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">):</span>
+        <span class="k">class</span><span class="w"> </span><span class="nc">_CustomParser</span><span class="p">(</span><span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">):</span>
 <span class="w">            </span><span class="sd">&quot;&quot;&quot;Argument parser subclass that suppresses some argparse logs.</span>
 
 <span class="sd">            Also raises an exception instead of the `sys.exit()` call.</span>
 <span class="sd">            &quot;&quot;&quot;</span>
 
-            <span class="k">def</span> <span class="nf">error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NoReturn</span><span class="p">:</span>
+            <span class="k">def</span><span class="w"> </span><span class="nf">error</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NoReturn</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">&quot;Failed to parse entrypoint arguments: </span><span class="si">{</span><span class="n">message</span><span class="si">}</span><span class="s2">&quot;</span>
                 <span class="p">)</span>
@@ -2633,7 +2633,7 @@ to the entrypoint and what is running inside the entrypoint.</p>
         <span class="n">result</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_known_args</span><span class="p">(</span><span class="n">arguments</span><span class="p">)</span>
         <span class="k">return</span> <span class="nb">vars</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">load_deployment</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;PipelineDeploymentResponse&quot;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load_deployment</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;PipelineDeploymentResponse&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Loads the deployment.</span>
 
 <span class="sd">        Returns:</span>
@@ -2642,7 +2642,7 @@ to the entrypoint and what is running inside the entrypoint.</p>
         <span class="n">deployment_id</span> <span class="o">=</span> <span class="n">UUID</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">entrypoint_args</span><span class="p">[</span><span class="n">DEPLOYMENT_ID_OPTION</span><span class="p">])</span>
         <span class="k">return</span> <span class="n">Client</span><span class="p">()</span><span class="o">.</span><span class="n">zen_store</span><span class="o">.</span><span class="n">get_deployment</span><span class="p">(</span><span class="n">deployment_id</span><span class="o">=</span><span class="n">deployment_id</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">download_code_if_necessary</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">download_code_if_necessary</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeploymentResponse&quot;</span><span class="p">,</span>
         <span class="n">step_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -2680,7 +2680,7 @@ to the entrypoint and what is running inside the entrypoint.</p>
 
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Code download finished.&quot;</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">download_code_from_code_repository</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">download_code_from_code_repository</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">code_reference</span><span class="p">:</span> <span class="s2">&quot;CodeReferenceResponse&quot;</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Download code from a code repository.</span>
@@ -2714,7 +2714,7 @@ to the entrypoint and what is running inside the entrypoint.</p>
         <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">download_dir</span><span class="p">)</span>
         <span class="n">os</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="n">download_dir</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_should_download_code</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_should_download_code</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeploymentResponse&quot;</span><span class="p">,</span>
         <span class="n">step_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -2752,7 +2752,7 @@ to the entrypoint and what is running inside the entrypoint.</p>
         <span class="k">return</span> <span class="kc">False</span>
 
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Runs the entrypoint configuration.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
@@ -2807,7 +2807,7 @@ to the entrypoint and what is running inside the entrypoint.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/entrypoints/base_entrypoint_configuration.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arguments</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">arguments</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes the entrypoint configuration.</span>
 
 <span class="sd">    Args:</span>
@@ -2857,7 +2857,7 @@ to the entrypoint and what is running inside the entrypoint.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/entrypoints/base_entrypoint_configuration.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">download_code_from_code_repository</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">download_code_from_code_repository</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">code_reference</span><span class="p">:</span> <span class="s2">&quot;CodeReferenceResponse&quot;</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Download code from a code repository.</span>
@@ -2958,7 +2958,7 @@ but the deployment does not have a reference to any code.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/entrypoints/base_entrypoint_configuration.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">download_code_if_necessary</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">download_code_if_necessary</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeploymentResponse&quot;</span><span class="p">,</span>
     <span class="n">step_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -3077,7 +3077,7 @@ It needs to provide values for all options returned by the
         <details class="quote">
           <summary>Source code in <code>zenml/entrypoints/base_entrypoint_configuration.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">get_entrypoint_arguments</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_entrypoint_arguments</span><span class="p">(</span>
     <span class="bp">cls</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
@@ -3164,7 +3164,7 @@ configuration when called. Defaults to running the
         <details class="quote">
           <summary>Source code in <code>zenml/entrypoints/base_entrypoint_configuration.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">get_entrypoint_command</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_entrypoint_command</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns a command that runs the entrypoint module.</span>
 
 <span class="sd">    This entrypoint module is responsible for running the entrypoint</span>
@@ -3222,7 +3222,7 @@ configuration when called. Defaults to running the
         <details class="quote">
           <summary>Source code in <code>zenml/entrypoints/base_entrypoint_configuration.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">get_entrypoint_options</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_entrypoint_options</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets all options required for running with this configuration.</span>
 
 <span class="sd">    Returns:</span>
@@ -3274,7 +3274,7 @@ configuration when called. Defaults to running the
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/entrypoints/base_entrypoint_configuration.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">load_deployment</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;PipelineDeploymentResponse&quot;</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">load_deployment</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;PipelineDeploymentResponse&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Loads the deployment.</span>
 
 <span class="sd">    Returns:</span>
@@ -3307,7 +3307,7 @@ configuration when called. Defaults to running the
         <details class="quote">
           <summary>Source code in <code>zenml/entrypoints/base_entrypoint_configuration.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
-<span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Runs the entrypoint configuration.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
@@ -3381,7 +3381,7 @@ configuration when called. Defaults to running the
 
         <details class="quote">
           <summary>Source code in <code>zenml/entrypoints/entrypoint.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">main</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Runs the entrypoint configuration given by the command line arguments.&quot;&quot;&quot;</span>
     <span class="n">_setup_logging</span><span class="p">()</span>
 
@@ -3466,10 +3466,10 @@ PipelineEntrypointConfiguration            (<a class="autorefs autorefs-internal
 
         <details class="quote">
           <summary>Source code in <code>zenml/entrypoints/pipeline_entrypoint_configuration.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">PipelineEntrypointConfiguration</span><span class="p">(</span><span class="n">BaseEntrypointConfiguration</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">PipelineEntrypointConfiguration</span><span class="p">(</span><span class="n">BaseEntrypointConfiguration</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for entrypoint configurations that run an entire pipeline.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Prepares the environment and runs the configured pipeline.&quot;&quot;&quot;</span>
         <span class="n">deployment</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_deployment</span><span class="p">()</span>
 
@@ -3515,7 +3515,7 @@ PipelineEntrypointConfiguration            (<a class="autorefs autorefs-internal
 
         <details class="quote">
           <summary>Source code in <code>zenml/entrypoints/pipeline_entrypoint_configuration.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Prepares the environment and runs the configured pipeline.&quot;&quot;&quot;</span>
     <span class="n">deployment</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_deployment</span><span class="p">()</span>
 
@@ -3658,7 +3658,7 @@ class MyOrchestrator(BaseOrchestrator):
 
         <details class="quote">
           <summary>Source code in <code>zenml/entrypoints/step_entrypoint_configuration.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StepEntrypointConfiguration</span><span class="p">(</span><span class="n">BaseEntrypointConfiguration</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">StepEntrypointConfiguration</span><span class="p">(</span><span class="n">BaseEntrypointConfiguration</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for entrypoint configurations that run a single step.</span>
 
 <span class="sd">    If an orchestrator needs to run steps in a separate process or environment</span>
@@ -3719,7 +3719,7 @@ class MyOrchestrator(BaseOrchestrator):
 <span class="sd">    ```</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">post_run</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">post_run</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">pipeline_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">step_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -3736,7 +3736,7 @@ class MyOrchestrator(BaseOrchestrator):
 <span class="sd">        &quot;&quot;&quot;</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">get_entrypoint_options</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_entrypoint_options</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets all options required for running with this configuration.</span>
 
 <span class="sd">        Returns:</span>
@@ -3746,7 +3746,7 @@ class MyOrchestrator(BaseOrchestrator):
         <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">get_entrypoint_options</span><span class="p">()</span> <span class="o">|</span> <span class="p">{</span><span class="n">STEP_NAME_OPTION</span><span class="p">}</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">get_entrypoint_arguments</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_entrypoint_arguments</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
@@ -3770,7 +3770,7 @@ class MyOrchestrator(BaseOrchestrator):
             <span class="n">kwargs</span><span class="p">[</span><span class="n">STEP_NAME_OPTION</span><span class="p">],</span>
         <span class="p">]</span>
 
-    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Prepares the environment and runs the configured step.&quot;&quot;&quot;</span>
         <span class="n">deployment</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_deployment</span><span class="p">()</span>
 
@@ -3794,7 +3794,7 @@ class MyOrchestrator(BaseOrchestrator):
             <span class="n">step_name</span><span class="o">=</span><span class="n">step_name</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_run_step</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_run_step</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">step</span><span class="p">:</span> <span class="s2">&quot;Step&quot;</span><span class="p">,</span>
         <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeploymentResponse&quot;</span><span class="p">,</span>
@@ -3883,7 +3883,7 @@ step to run.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/entrypoints/step_entrypoint_configuration.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">get_entrypoint_arguments</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_entrypoint_arguments</span><span class="p">(</span>
     <span class="bp">cls</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
@@ -3950,7 +3950,7 @@ step to run.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/entrypoints/step_entrypoint_configuration.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">get_entrypoint_options</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_entrypoint_options</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets all options required for running with this configuration.</span>
 
 <span class="sd">    Returns:</span>
@@ -4010,7 +4010,7 @@ executed.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/entrypoints/step_entrypoint_configuration.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">post_run</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">post_run</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">pipeline_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">step_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -4049,7 +4049,7 @@ executed.</p></td>
 
         <details class="quote">
           <summary>Source code in <code>zenml/entrypoints/step_entrypoint_configuration.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Prepares the environment and runs the configured step.&quot;&quot;&quot;</span>
     <span class="n">deployment</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_deployment</span><span class="p">()</span>
 

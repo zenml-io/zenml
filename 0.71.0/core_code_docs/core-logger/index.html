@@ -2147,7 +2147,7 @@ CustomFormatter            (<span title="logging.Formatter">Formatter</span>)
 
         <details class="quote">
           <summary>Source code in <code>zenml/logger.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">CustomFormatter</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">Formatter</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">CustomFormatter</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">Formatter</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Formats logs according to custom specifications.&quot;&quot;&quot;</span>
 
     <span class="n">grey</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\x1b</span><span class="s2">[38;21m&quot;</span>
@@ -2176,7 +2176,7 @@ CustomFormatter            (<span title="logging.Formatter">Formatter</span>)
         <span class="n">LoggingLevels</span><span class="o">.</span><span class="n">CRITICAL</span><span class="p">:</span> <span class="n">bold_red</span><span class="p">,</span>
     <span class="p">}</span>
 
-    <span class="k">def</span> <span class="nf">format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">LogRecord</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">LogRecord</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Converts a log record to a (colored) string.</span>
 
 <span class="sd">        Args:</span>
@@ -2297,7 +2297,7 @@ CustomFormatter            (<span title="logging.Formatter">Formatter</span>)
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/logger.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">LogRecord</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">format</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">LogRecord</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Converts a log record to a (colored) string.</span>
 
 <span class="sd">    Args:</span>
@@ -2391,7 +2391,7 @@ CustomFormatter            (<span title="logging.Formatter">Formatter</span>)
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/logger.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_console_handler</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_console_handler</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get console handler for logging.</span>
 
 <span class="sd">    Returns:</span>
@@ -2458,7 +2458,7 @@ CustomFormatter            (<span title="logging.Formatter">Formatter</span>)
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/logger.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_logger</span><span class="p">(</span><span class="n">logger_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">logging</span><span class="o">.</span><span class="n">Logger</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_logger</span><span class="p">(</span><span class="n">logger_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">logging</span><span class="o">.</span><span class="n">Logger</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Main function to get logger name,.</span>
 
 <span class="sd">    Args:</span>
@@ -2527,7 +2527,7 @@ CustomFormatter            (<span title="logging.Formatter">Formatter</span>)
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/logger.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_logging_level</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">LoggingLevels</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_logging_level</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">LoggingLevels</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get logging level from the env variable.</span>
 
 <span class="sd">    Returns:</span>
@@ -2566,7 +2566,7 @@ CustomFormatter            (<span title="logging.Formatter">Formatter</span>)
 
         <details class="quote">
           <summary>Source code in <code>zenml/logger.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">init_logging</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">init_logging</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Initialize logging with default levels.&quot;&quot;&quot;</span>
     <span class="c1"># Mute tensorflow cuda warnings</span>
     <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;TF_CPP_MIN_LOG_LEVEL&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;3&quot;</span>
@@ -2626,7 +2626,7 @@ CustomFormatter            (<span title="logging.Formatter">Formatter</span>)
 
         <details class="quote">
           <summary>Source code in <code>zenml/logger.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">set_root_verbosity</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">set_root_verbosity</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Set the root verbosity.&quot;&quot;&quot;</span>
     <span class="n">level</span> <span class="o">=</span> <span class="n">get_logging_level</span><span class="p">()</span>
     <span class="k">if</span> <span class="n">level</span> <span class="o">!=</span> <span class="n">LoggingLevels</span><span class="o">.</span><span class="n">NOTSET</span><span class="p">:</span>

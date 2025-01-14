@@ -2496,7 +2496,7 @@ model version during runtime time of the step.</p>
 
         <details class="quote">
           <summary>Source code in <code>zenml/model/lazy_load.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ModelVersionDataLazyLoader</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ModelVersionDataLazyLoader</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Model Version Data Lazy Loader helper class.</span>
 
 <span class="sd">    It helps the inner codes to fetch proper artifact,</span>
@@ -2521,7 +2521,7 @@ model version during runtime time of the step.</p>
     <span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;before&quot;</span><span class="p">)</span>
     <span class="nd">@classmethod</span>
     <span class="nd">@before_validator_handler</span>
-    <span class="k">def</span> <span class="nf">_root_validator</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_root_validator</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate all in one.</span>
 
 <span class="sd">        Args:</span>
@@ -2551,7 +2551,7 @@ model version during runtime time of the step.</p>
         <span class="n">data</span><span class="p">[</span><span class="s2">&quot;suppress_class_validation_warnings&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="k">return</span> <span class="n">data</span>
 
-    <span class="k">def</span> <span class="nf">_get_model_response</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_model_response</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">pipeline_run</span><span class="p">:</span> <span class="s2">&quot;PipelineRunResponse&quot;</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ModelVersionResponse&quot;</span><span class="p">:</span>
         <span class="c1"># if the version/number is None -&gt; return the model in context</span>
@@ -2572,7 +2572,7 @@ model version during runtime time of the step.</p>
 
         <span class="c1"># else return the model version by version</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="kn">from</span> <span class="nn">zenml.client</span> <span class="kn">import</span> <span class="n">Client</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">Client</span>
 
             <span class="k">try</span><span class="p">:</span>
                 <span class="k">return</span> <span class="n">Client</span><span class="p">()</span><span class="o">.</span><span class="n">get_model_version</span><span class="p">(</span>
@@ -2584,7 +2584,7 @@ model version during runtime time of the step.</p>
                     <span class="s2">&quot;Lazy loading of the model version failed: &quot;</span>
                     <span class="sa">f</span><span class="s2">&quot;no model `</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_name</span><span class="si">}</span><span class="s2">` with version &quot;</span>
                     <span class="sa">f</span><span class="s2">&quot;`</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">model_version</span><span class="si">}</span><span class="s2">` could be found.&quot;</span>
-                <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+                <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 </code></pre></div>
         </details>
 
@@ -2697,7 +2697,7 @@ tags: Tags associated with the model.
 
         <details class="quote">
           <summary>Source code in <code>zenml/model/model.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">Model</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Model</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Model class to pass into pipeline or step to set it into a model context.</span>
 
 <span class="sd">    name: The name of the model.</span>
@@ -2750,7 +2750,7 @@ tags: Tags associated with the model.
     <span class="c1">#    Public methods     #</span>
     <span class="c1">#########################</span>
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UUID</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UUID</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get version id from the Model Control Plane.</span>
 
 <span class="sd">        Returns:</span>
@@ -2771,11 +2771,11 @@ tags: Tags associated with the model.
                 <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">&quot;Version `</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">version</span><span class="si">}</span><span class="s2">` of `</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">` model doesn&#39;t &quot;</span>
                     <span class="s2">&quot;exist and cannot be fetched from the Model Control Plane.&quot;</span>
-                <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+                <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_version_id</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">model_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UUID</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">model_id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UUID</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get model id from the Model Control Plane.</span>
 
 <span class="sd">        Returns:</span>
@@ -2786,7 +2786,7 @@ tags: Tags associated with the model.
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model_id</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">number</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">number</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get version number from  the Model Control Plane.</span>
 
 <span class="sd">        Returns:</span>
@@ -2807,11 +2807,11 @@ tags: Tags associated with the model.
                 <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
                     <span class="sa">f</span><span class="s2">&quot;Version `</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">version</span><span class="si">}</span><span class="s2">` of `</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">` model doesn&#39;t &quot;</span>
                     <span class="s2">&quot;exist and cannot be fetched from the Model Control Plane.&quot;</span>
-                <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+                <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_number</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">stage</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ModelStages</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stage</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ModelStages</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get version stage from  the Model Control Plane.</span>
 
 <span class="sd">        Returns:</span>
@@ -2831,7 +2831,7 @@ tags: Tags associated with the model.
             <span class="p">)</span>
         <span class="k">return</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="nf">load_artifact</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load_artifact</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Load artifact from the Model Control Plane.</span>
 
 <span class="sd">        Args:</span>
@@ -2845,8 +2845,8 @@ tags: Tags associated with the model.
 <span class="sd">            ValueError: if the model version is not linked to any artifact with</span>
 <span class="sd">                the given name and version.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.artifacts.utils</span> <span class="kn">import</span> <span class="n">load_artifact</span>
-        <span class="kn">from</span> <span class="nn">zenml.models</span> <span class="kn">import</span> <span class="n">ArtifactVersionResponse</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.artifacts.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_artifact</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArtifactVersionResponse</span>
 
         <span class="n">artifact</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_artifact</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="n">version</span><span class="p">)</span>
 
@@ -2858,7 +2858,7 @@ tags: Tags associated with the model.
 
         <span class="k">return</span> <span class="n">load_artifact</span><span class="p">(</span><span class="n">artifact</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">artifact</span><span class="o">.</span><span class="n">version</span><span class="p">))</span>
 
-    <span class="k">def</span> <span class="nf">get_artifact</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_artifact</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -2882,7 +2882,7 @@ tags: Tags associated with the model.
             <span class="n">version</span><span class="o">=</span><span class="n">version</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_model_artifact</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_model_artifact</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -2906,7 +2906,7 @@ tags: Tags associated with the model.
             <span class="n">version</span><span class="o">=</span><span class="n">version</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_data_artifact</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_data_artifact</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -2930,7 +2930,7 @@ tags: Tags associated with the model.
             <span class="n">version</span><span class="o">=</span><span class="n">version</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_deployment_artifact</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_deployment_artifact</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -2954,7 +2954,7 @@ tags: Tags associated with the model.
             <span class="n">version</span><span class="o">=</span><span class="n">version</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_pipeline_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;PipelineRunResponse&quot;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_pipeline_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;PipelineRunResponse&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get pipeline run linked to this version.</span>
 
 <span class="sd">        Args:</span>
@@ -2965,7 +2965,7 @@ tags: Tags associated with the model.
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_or_create_model_version</span><span class="p">()</span><span class="o">.</span><span class="n">get_pipeline_run</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">set_stage</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_stage</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">stage</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ModelStages</span><span class="p">],</span> <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Sets this Model to a desired stage.</span>
@@ -2977,7 +2977,7 @@ tags: Tags associated with the model.
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_get_or_create_model_version</span><span class="p">()</span><span class="o">.</span><span class="n">set_stage</span><span class="p">(</span><span class="n">stage</span><span class="o">=</span><span class="n">stage</span><span class="p">,</span> <span class="n">force</span><span class="o">=</span><span class="n">force</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">log_metadata</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">log_metadata</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">metadata</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;MetadataType&quot;</span><span class="p">],</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -2988,8 +2988,8 @@ tags: Tags associated with the model.
 <span class="sd">        Args:</span>
 <span class="sd">            metadata: The metadata to log.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.client</span> <span class="kn">import</span> <span class="n">Client</span>
-        <span class="kn">from</span> <span class="nn">zenml.models</span> <span class="kn">import</span> <span class="n">RunMetadataResource</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">Client</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">RunMetadataResource</span>
 
         <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_or_create_model_version</span><span class="p">()</span>
         <span class="n">Client</span><span class="p">()</span><span class="o">.</span><span class="n">create_run_metadata</span><span class="p">(</span>
@@ -3002,7 +3002,7 @@ tags: Tags associated with the model.
         <span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">run_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;MetadataType&quot;</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run_metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;MetadataType&quot;</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get model version run metadata.</span>
 
 <span class="sd">        Returns:</span>
@@ -3011,7 +3011,7 @@ tags: Tags associated with the model.
 <span class="sd">        Raises:</span>
 <span class="sd">            RuntimeError: If the model version run metadata cannot be fetched.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.metadata.lazy_load</span> <span class="kn">import</span> <span class="n">RunMetadataLazyGetter</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.metadata.lazy_load</span><span class="w"> </span><span class="kn">import</span> <span class="n">RunMetadataLazyGetter</span>
 
         <span class="k">try</span><span class="p">:</span>
             <span class="n">get_pipeline_context</span><span class="p">()</span>
@@ -3030,7 +3030,7 @@ tags: Tags associated with the model.
             <span class="p">)</span>
         <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">run_metadata</span>
 
-    <span class="k">def</span> <span class="nf">delete_artifact</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">delete_artifact</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -3049,8 +3049,8 @@ tags: Tags associated with the model.
 <span class="sd">            delete_from_artifact_store: Whether to delete the artifact from the</span>
 <span class="sd">                artifact store.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.client</span> <span class="kn">import</span> <span class="n">Client</span>
-        <span class="kn">from</span> <span class="nn">zenml.models</span> <span class="kn">import</span> <span class="n">ArtifactVersionResponse</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">Client</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArtifactVersionResponse</span>
 
         <span class="n">artifact_version</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_artifact</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">version</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">artifact_version</span><span class="p">,</span> <span class="n">ArtifactVersionResponse</span><span class="p">):</span>
@@ -3066,7 +3066,7 @@ tags: Tags associated with the model.
                     <span class="n">delete_from_artifact_store</span><span class="o">=</span><span class="n">delete_from_artifact_store</span><span class="p">,</span>
                 <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">delete_all_artifacts</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">delete_all_artifacts</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">only_link</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">delete_from_artifact_store</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -3078,7 +3078,7 @@ tags: Tags associated with the model.
 <span class="sd">            delete_from_artifact_store: Whether to delete the artifact from</span>
 <span class="sd">                the artifact store.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.client</span> <span class="kn">import</span> <span class="n">Client</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">Client</span>
 
         <span class="n">client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span>
 
@@ -3096,12 +3096,12 @@ tags: Tags associated with the model.
 
         <span class="n">client</span><span class="o">.</span><span class="n">delete_all_model_version_artifact_links</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">only_link</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_lazy_artifact_get</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_lazy_artifact_get</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;ArtifactVersionResponse&quot;</span><span class="p">]:</span>
-        <span class="kn">from</span> <span class="nn">zenml.models.v2.core.artifact_version</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.models.v2.core.artifact_version</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">LazyArtifactVersionResponse</span><span class="p">,</span>
         <span class="p">)</span>
 
@@ -3118,7 +3118,7 @@ tags: Tags associated with the model.
 
         <span class="k">return</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="nb">object</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="nb">object</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Check two Models for equality.</span>
 
 <span class="sd">        Args:</span>
@@ -3140,7 +3140,7 @@ tags: Tags associated with the model.
     <span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;before&quot;</span><span class="p">)</span>
     <span class="nd">@classmethod</span>
     <span class="nd">@before_validator_handler</span>
-    <span class="k">def</span> <span class="nf">_root_validator</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_root_validator</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Validate all in one.</span>
 
 <span class="sd">        Args:</span>
@@ -3181,7 +3181,7 @@ tags: Tags associated with the model.
         <span class="n">data</span><span class="p">[</span><span class="s2">&quot;suppress_class_validation_warnings&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="k">return</span> <span class="n">data</span>
 
-    <span class="k">def</span> <span class="nf">_get_or_create_model</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ModelResponse&quot;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_or_create_model</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ModelResponse&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;This method should get or create a model from Model Control Plane.</span>
 
 <span class="sd">        New model is created implicitly, if missing, otherwise fetched.</span>
@@ -3189,8 +3189,8 @@ tags: Tags associated with the model.
 <span class="sd">        Returns:</span>
 <span class="sd">            The model based on configuration.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.client</span> <span class="kn">import</span> <span class="n">Client</span>
-        <span class="kn">from</span> <span class="nn">zenml.models</span> <span class="kn">import</span> <span class="n">ModelRequest</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">Client</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelRequest</span>
 
         <span class="n">zenml_client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span>
         <span class="c1"># backup logic, if the Model class is used directly from the code</span>
@@ -3235,7 +3235,7 @@ tags: Tags associated with the model.
         <span class="bp">self</span><span class="o">.</span><span class="n">_model_id</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">id</span>
         <span class="k">return</span> <span class="n">model</span>
 
-    <span class="k">def</span> <span class="nf">_get_model_version</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_model_version</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">hydrate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ModelVersionResponse&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;This method gets a model version from Model Control Plane.</span>
@@ -3247,7 +3247,7 @@ tags: Tags associated with the model.
 <span class="sd">        Returns:</span>
 <span class="sd">            The model version based on configuration.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.client</span> <span class="kn">import</span> <span class="n">Client</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">Client</span>
 
         <span class="n">zenml_client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_version_id</span><span class="p">:</span>
@@ -3286,7 +3286,7 @@ tags: Tags associated with the model.
 
         <span class="k">return</span> <span class="n">mv</span>
 
-    <span class="k">def</span> <span class="nf">_get_or_create_model_version</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_or_create_model_version</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">hydrate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ModelVersionResponse&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;This method should get or create a model and a model version from Model Control Plane.</span>
@@ -3317,8 +3317,8 @@ tags: Tags associated with the model.
 <span class="sd">                provided name is reserved.</span>
 <span class="sd">            RuntimeError: if the model version cannot be created.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.client</span> <span class="kn">import</span> <span class="n">Client</span>
-        <span class="kn">from</span> <span class="nn">zenml.models</span> <span class="kn">import</span> <span class="n">ModelVersionRequest</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">Client</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelVersionRequest</span>
 
         <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_or_create_model</span><span class="p">()</span>
 
@@ -3383,7 +3383,7 @@ tags: Tags associated with the model.
         <span class="bp">self</span><span class="o">.</span><span class="n">_number</span> <span class="o">=</span> <span class="n">model_version</span><span class="o">.</span><span class="n">number</span>
         <span class="k">return</span> <span class="n">model_version</span>
 
-    <span class="k">def</span> <span class="fm">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get hash of the `Model`.</span>
 
 <span class="sd">        Returns:</span>
@@ -3402,7 +3402,7 @@ tags: Tags associated with the model.
         <span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">_lazy_version</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_lazy_version</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get version name for lazy loader.</span>
 
 <span class="sd">        This getter ensures that new model version</span>
@@ -3747,7 +3747,7 @@ cannot be fetched from the Model Control Plane.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/model/model.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="nb">object</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="nb">object</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Check two Models for equality.</span>
 
 <span class="sd">    Args:</span>
@@ -3807,7 +3807,7 @@ cannot be fetched from the Model Control Plane.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/model/model.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__hash__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get hash of the `Model`.</span>
 
 <span class="sd">    Returns:</span>
@@ -3874,7 +3874,7 @@ the artifact store.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/model/model.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">delete_all_artifacts</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">delete_all_artifacts</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">only_link</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">delete_from_artifact_store</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -3886,7 +3886,7 @@ the artifact store.</p></td>
 <span class="sd">        delete_from_artifact_store: Whether to delete the artifact from</span>
 <span class="sd">            the artifact store.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.client</span> <span class="kn">import</span> <span class="n">Client</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">Client</span>
 
     <span class="n">client</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span>
 
@@ -3972,7 +3972,7 @@ artifact store.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/model/model.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">delete_artifact</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">delete_artifact</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -3991,8 +3991,8 @@ artifact store.</p></td>
 <span class="sd">        delete_from_artifact_store: Whether to delete the artifact from the</span>
 <span class="sd">            artifact store.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.client</span> <span class="kn">import</span> <span class="n">Client</span>
-    <span class="kn">from</span> <span class="nn">zenml.models</span> <span class="kn">import</span> <span class="n">ArtifactVersionResponse</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">Client</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArtifactVersionResponse</span>
 
     <span class="n">artifact_version</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_artifact</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">version</span><span class="p">)</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">artifact_version</span><span class="p">,</span> <span class="n">ArtifactVersionResponse</span><span class="p">):</span>
@@ -4073,7 +4073,7 @@ latest/non-versioned)</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/model/model.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_artifact</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_artifact</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -4162,7 +4162,7 @@ time of the pipeline.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/model/model.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_data_artifact</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_data_artifact</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -4251,7 +4251,7 @@ design time of the pipeline.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/model/model.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_deployment_artifact</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_deployment_artifact</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -4340,7 +4340,7 @@ latest/non-versioned)</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/model/model.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_model_artifact</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_model_artifact</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -4421,7 +4421,7 @@ latest/non-versioned)</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/model/model.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_pipeline_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;PipelineRunResponse&quot;</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_pipeline_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;PipelineRunResponse&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get pipeline run linked to this version.</span>
 
 <span class="sd">    Args:</span>
@@ -4511,7 +4511,7 @@ the given name and version.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/model/model.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">load_artifact</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">load_artifact</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Load artifact from the Model Control Plane.</span>
 
 <span class="sd">    Args:</span>
@@ -4525,8 +4525,8 @@ the given name and version.</p></td>
 <span class="sd">        ValueError: if the model version is not linked to any artifact with</span>
 <span class="sd">            the given name and version.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.artifacts.utils</span> <span class="kn">import</span> <span class="n">load_artifact</span>
-    <span class="kn">from</span> <span class="nn">zenml.models</span> <span class="kn">import</span> <span class="n">ArtifactVersionResponse</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.artifacts.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_artifact</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArtifactVersionResponse</span>
 
     <span class="n">artifact</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_artifact</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">version</span><span class="o">=</span><span class="n">version</span><span class="p">)</span>
 
@@ -4581,7 +4581,7 @@ the given name and version.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/model/model.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">log_metadata</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">log_metadata</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">metadata</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;MetadataType&quot;</span><span class="p">],</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -4592,8 +4592,8 @@ the given name and version.</p></td>
 <span class="sd">    Args:</span>
 <span class="sd">        metadata: The metadata to log.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.client</span> <span class="kn">import</span> <span class="n">Client</span>
-    <span class="kn">from</span> <span class="nn">zenml.models</span> <span class="kn">import</span> <span class="n">RunMetadataResource</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">Client</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">RunMetadataResource</span>
 
     <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_or_create_model_version</span><span class="p">()</span>
     <span class="n">Client</span><span class="p">()</span><span class="o">.</span><span class="n">create_run_metadata</span><span class="p">(</span>
@@ -4654,7 +4654,7 @@ the given name and version.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/model/model.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">init_private_attributes</span><span class="p">(</span><span class="bp">self</span><span class="p">:</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">/</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">init_private_attributes</span><span class="p">(</span><span class="bp">self</span><span class="p">:</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">/</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;This function is meant to behave like a BaseModel method to initialise private attributes.</span>
 
 <span class="sd">    It takes context as an argument since that&#39;s what pydantic-core passes when calling it.</span>
@@ -4720,7 +4720,7 @@ target stage or raise.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/model/model.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">set_stage</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">set_stage</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">stage</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ModelStages</span><span class="p">],</span> <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Sets this Model to a desired stage.</span>
@@ -4844,7 +4844,7 @@ target stage or raise.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/model/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">link_artifact_to_model</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">link_artifact_to_model</span><span class="p">(</span>
     <span class="n">artifact_version</span><span class="p">:</span> <span class="n">ArtifactVersionResponse</span><span class="p">,</span>
     <span class="n">model</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;Model&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -4927,7 +4927,7 @@ target stage or raise.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/model/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">link_artifact_version_to_model_version</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">link_artifact_version_to_model_version</span><span class="p">(</span>
     <span class="n">artifact_version</span><span class="p">:</span> <span class="n">ArtifactVersionResponse</span><span class="p">,</span>
     <span class="n">model_version</span><span class="p">:</span> <span class="n">ModelVersionResponse</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -5015,7 +5015,7 @@ identified.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/model/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">link_service_to_model</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">link_service_to_model</span><span class="p">(</span>
     <span class="n">service_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span>
     <span class="n">model</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;Model&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">model_version_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UUID</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -5134,7 +5134,7 @@ be omitted when being called inside a step with configured
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/model/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">log_model_metadata</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">log_model_metadata</span><span class="p">(</span>
     <span class="n">metadata</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;MetadataType&quot;</span><span class="p">],</span>
     <span class="n">model_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">model_version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">ModelStages</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -5160,7 +5160,7 @@ be omitted when being called inside a step with configured
         <span class="s2">&quot;removed. Please use `log_metadata` instead.&quot;</span>
     <span class="p">)</span>
 
-    <span class="kn">from</span> <span class="nn">zenml</span> <span class="kn">import</span> <span class="n">log_metadata</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml</span><span class="w"> </span><span class="kn">import</span> <span class="n">log_metadata</span>
 
     <span class="k">if</span> <span class="n">model_name</span> <span class="ow">and</span> <span class="n">model_version</span><span class="p">:</span>
         <span class="n">log_metadata</span><span class="p">(</span>

@@ -2407,7 +2407,7 @@ a pipeline context available only during pipeline compilation.</p>
 
         <details class="quote">
           <summary>Source code in <code>zenml/metadata/lazy_load.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">LazyRunMetadataResponse</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">LazyRunMetadataResponse</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Lazy run metadata response.</span>
 
 <span class="sd">    Used if the run metadata is accessed from the model in</span>
@@ -2480,7 +2480,7 @@ design time context.</p>
 
         <details class="quote">
           <summary>Source code in <code>zenml/metadata/lazy_load.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">RunMetadataLazyGetter</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">RunMetadataLazyGetter</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Run Metadata Lazy Getter helper class.</span>
 
 <span class="sd">    It serves the purpose to feed back to the user the metadata</span>
@@ -2488,7 +2488,7 @@ design time context.</p>
 <span class="sd">    design time context.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">_lazy_load_model_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">_lazy_load_model_version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
@@ -2508,7 +2508,7 @@ design time context.</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">_lazy_load_artifact_name</span> <span class="o">=</span> <span class="n">_lazy_load_artifact_name</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_lazy_load_artifact_version</span> <span class="o">=</span> <span class="n">_lazy_load_artifact_version</span>
 
-    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MetadataType</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MetadataType</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the metadata for the given key.</span>
 
 <span class="sd">        Args:</span>
@@ -2592,7 +2592,7 @@ design time context.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/metadata/lazy_load.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MetadataType</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MetadataType</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the metadata for the given key.</span>
 
 <span class="sd">    Args:</span>
@@ -2672,7 +2672,7 @@ design time context.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/metadata/lazy_load.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">_lazy_load_model_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">_lazy_load_model_version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
@@ -2770,11 +2770,11 @@ DType            (<span title="str">str</span>)
 
         <details class="quote">
           <summary>Source code in <code>zenml/metadata/metadata_types.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DType</span><span class="p">(</span><span class="nb">str</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">DType</span><span class="p">(</span><span class="nb">str</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Special string class to indicate a data type.&quot;&quot;&quot;</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">__get_pydantic_core_schema__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">__get_pydantic_core_schema__</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span> <span class="n">source_type</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">handler</span><span class="p">:</span> <span class="n">GetCoreSchemaHandler</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CoreSchema</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Additional method for pydantic to recognize it as a valid type.</span>
@@ -2863,7 +2863,7 @@ DType            (<span title="str">str</span>)
         <details class="quote">
           <summary>Source code in <code>zenml/metadata/metadata_types.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">__get_pydantic_core_schema__</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">__get_pydantic_core_schema__</span><span class="p">(</span>
     <span class="bp">cls</span><span class="p">,</span> <span class="n">source_type</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">handler</span><span class="p">:</span> <span class="n">GetCoreSchemaHandler</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CoreSchema</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Additional method for pydantic to recognize it as a valid type.</span>
@@ -2913,7 +2913,7 @@ MetadataTypeEnum            (<a class="autorefs autorefs-internal" title="zenml.
 
         <details class="quote">
           <summary>Source code in <code>zenml/metadata/metadata_types.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">MetadataTypeEnum</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">MetadataTypeEnum</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;String Enum of all possible types that metadata can have.&quot;&quot;&quot;</span>
 
     <span class="n">STRING</span> <span class="o">=</span> <span class="s2">&quot;str&quot;</span>
@@ -2985,11 +2985,11 @@ Path            (<span title="str">str</span>)
 
         <details class="quote">
           <summary>Source code in <code>zenml/metadata/metadata_types.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">Path</span><span class="p">(</span><span class="nb">str</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Path</span><span class="p">(</span><span class="nb">str</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Special string class to indicate a path.&quot;&quot;&quot;</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">__get_pydantic_core_schema__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">__get_pydantic_core_schema__</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span> <span class="n">source_type</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">handler</span><span class="p">:</span> <span class="n">GetCoreSchemaHandler</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CoreSchema</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Additional method for pydantic to recognize it as a valid type.</span>
@@ -3078,7 +3078,7 @@ Path            (<span title="str">str</span>)
         <details class="quote">
           <summary>Source code in <code>zenml/metadata/metadata_types.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">__get_pydantic_core_schema__</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">__get_pydantic_core_schema__</span><span class="p">(</span>
     <span class="bp">cls</span><span class="p">,</span> <span class="n">source_type</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">handler</span><span class="p">:</span> <span class="n">GetCoreSchemaHandler</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CoreSchema</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Additional method for pydantic to recognize it as a valid type.</span>
@@ -3128,11 +3128,11 @@ StorageSize            (<span title="int">int</span>)
 
         <details class="quote">
           <summary>Source code in <code>zenml/metadata/metadata_types.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StorageSize</span><span class="p">(</span><span class="nb">int</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">StorageSize</span><span class="p">(</span><span class="nb">int</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Special int class to indicate the storage size in number of bytes.&quot;&quot;&quot;</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">__get_pydantic_core_schema__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">__get_pydantic_core_schema__</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span> <span class="n">source_type</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">handler</span><span class="p">:</span> <span class="n">GetCoreSchemaHandler</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CoreSchema</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Additional method for pydantic to recognize it as a valid type.</span>
@@ -3221,7 +3221,7 @@ StorageSize            (<span title="int">int</span>)
         <details class="quote">
           <summary>Source code in <code>zenml/metadata/metadata_types.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">__get_pydantic_core_schema__</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">__get_pydantic_core_schema__</span><span class="p">(</span>
     <span class="bp">cls</span><span class="p">,</span> <span class="n">source_type</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">handler</span><span class="p">:</span> <span class="n">GetCoreSchemaHandler</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CoreSchema</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Additional method for pydantic to recognize it as a valid type.</span>
@@ -3271,11 +3271,11 @@ Uri            (<span title="str">str</span>)
 
         <details class="quote">
           <summary>Source code in <code>zenml/metadata/metadata_types.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">Uri</span><span class="p">(</span><span class="nb">str</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Uri</span><span class="p">(</span><span class="nb">str</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Special string class to indicate a URI.&quot;&quot;&quot;</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">__get_pydantic_core_schema__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">__get_pydantic_core_schema__</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span> <span class="n">source_type</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">handler</span><span class="p">:</span> <span class="n">GetCoreSchemaHandler</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CoreSchema</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Additional method for pydantic to recognize it as a valid type.</span>
@@ -3364,7 +3364,7 @@ Uri            (<span title="str">str</span>)
         <details class="quote">
           <summary>Source code in <code>zenml/metadata/metadata_types.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">__get_pydantic_core_schema__</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">__get_pydantic_core_schema__</span><span class="p">(</span>
     <span class="bp">cls</span><span class="p">,</span> <span class="n">source_type</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">handler</span><span class="p">:</span> <span class="n">GetCoreSchemaHandler</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CoreSchema</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Additional method for pydantic to recognize it as a valid type.</span>
@@ -3452,7 +3452,7 @@ Uri            (<span title="str">str</span>)
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/metadata/metadata_types.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">cast_to_metadata_type</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">cast_to_metadata_type</span><span class="p">(</span>
     <span class="n">value</span><span class="p">:</span> <span class="nb">object</span><span class="p">,</span>
     <span class="n">type_</span><span class="p">:</span> <span class="n">MetadataTypeEnum</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MetadataType</span><span class="p">:</span>
@@ -3541,7 +3541,7 @@ Uri            (<span title="str">str</span>)
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/metadata/metadata_types.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_metadata_type</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_metadata_type</span><span class="p">(</span>
     <span class="n">object_</span><span class="p">:</span> <span class="nb">object</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MetadataTypeEnum</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the metadata type enum for a given object.</span>
@@ -3619,7 +3619,7 @@ or of an unsupported type.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/metadata/metadata_types.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">validate_metadata</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">validate_metadata</span><span class="p">(</span>
     <span class="n">metadata</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">MetadataType</span><span class="p">],</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">MetadataType</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate metadata.</span>

@@ -2182,7 +2182,7 @@
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/hooks/alerter_hooks.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">alerter_failure_hook</span><span class="p">(</span><span class="n">exception</span><span class="p">:</span> <span class="ne">BaseException</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">alerter_failure_hook</span><span class="p">(</span><span class="n">exception</span><span class="p">:</span> <span class="ne">BaseException</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Standard failure hook that executes after step fails.</span>
 
 <span class="sd">    This hook uses any `BaseAlerter` that is configured within the active stack to post a message.</span>
@@ -2240,7 +2240,7 @@
 
         <details class="quote">
           <summary>Source code in <code>zenml/hooks/alerter_hooks.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">alerter_success_hook</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">alerter_success_hook</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Standard success hook that executes after step finishes successfully.</span>
 
 <span class="sd">    This hook uses any `BaseAlerter` that is configured within the active stack to post a message.</span>
@@ -2370,7 +2370,7 @@
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/hooks/hook_validators.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">resolve_and_validate_hook</span><span class="p">(</span><span class="n">hook</span><span class="p">:</span> <span class="s2">&quot;HookSpecification&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Source</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">resolve_and_validate_hook</span><span class="p">(</span><span class="n">hook</span><span class="p">:</span> <span class="s2">&quot;HookSpecification&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Source</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Resolves and validates a hook callback.</span>
 
 <span class="sd">    Args:</span>

@@ -2362,11 +2362,11 @@ BaseSecretSchema            (<span title="pydantic.main.BaseModel">BaseModel</sp
 
         <details class="quote">
           <summary>Source code in <code>zenml/secret/base_secret.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseSecretSchema</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">BaseSecretSchema</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for all Secret Schemas.&quot;&quot;&quot;</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">get_schema_keys</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_schema_keys</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get all attributes that are part of the schema.</span>
 
 <span class="sd">        These schema keys can be used to define all required key-value pairs of</span>
@@ -2377,7 +2377,7 @@ BaseSecretSchema            (<span title="pydantic.main.BaseModel">BaseModel</sp
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">model_fields</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
 
-    <span class="k">def</span> <span class="nf">get_values</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_values</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get all values of the secret schema.</span>
 
 <span class="sd">        Returns:</span>
@@ -2458,7 +2458,7 @@ a secret schema.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/secret/base_secret.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">get_schema_keys</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_schema_keys</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get all attributes that are part of the schema.</span>
 
 <span class="sd">    These schema keys can be used to define all required key-value pairs of</span>
@@ -2507,7 +2507,7 @@ a secret schema.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/secret/base_secret.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_values</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_values</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get all values of the secret schema.</span>
 
 <span class="sd">    Returns:</span>
@@ -2620,7 +2620,7 @@ AWSSecretSchema            (<a class="autorefs autorefs-internal" title="zenml.s
 
         <details class="quote">
           <summary>Source code in <code>zenml/secret/schemas/aws_secret_schema.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AWSSecretSchema</span><span class="p">(</span><span class="n">BaseSecretSchema</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AWSSecretSchema</span><span class="p">(</span><span class="n">BaseSecretSchema</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;AWS Authentication Secret Schema definition.&quot;&quot;&quot;</span>
 
     <span class="n">aws_access_key_id</span><span class="p">:</span> <span class="nb">str</span>
@@ -2722,7 +2722,7 @@ AzureSecretSchema            (<a class="autorefs autorefs-internal" title="zenml
 
         <details class="quote">
           <summary>Source code in <code>zenml/secret/schemas/azure_secret_schema.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">AzureSecretSchema</span><span class="p">(</span><span class="n">BaseSecretSchema</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AzureSecretSchema</span><span class="p">(</span><span class="n">BaseSecretSchema</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Azure Authentication Secret Schema definition.&quot;&quot;&quot;</span>
 
     <span class="n">account_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
@@ -2850,7 +2850,7 @@ BasicAuthSecretSchema            (<a class="autorefs autorefs-internal" title="z
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/secret/schemas/basic_auth_secret_schema.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BasicAuthSecretSchema</span><span class="p">(</span><span class="n">BaseSecretSchema</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">BasicAuthSecretSchema</span><span class="p">(</span><span class="n">BaseSecretSchema</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Secret schema for basic authentication.</span>
 
 <span class="sd">    Attributes:</span>
@@ -2956,12 +2956,12 @@ GCPSecretSchema            (<a class="autorefs autorefs-internal" title="zenml.s
 
         <details class="quote">
           <summary>Source code in <code>zenml/secret/schemas/gcp_secret_schema.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">GCPSecretSchema</span><span class="p">(</span><span class="n">BaseSecretSchema</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">GCPSecretSchema</span><span class="p">(</span><span class="n">BaseSecretSchema</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;GCP Authentication Secret Schema definition.&quot;&quot;&quot;</span>
 
     <span class="n">token</span><span class="p">:</span> <span class="nb">str</span>
 
-    <span class="k">def</span> <span class="nf">get_credential_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_credential_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets a dictionary of credentials for authenticating to GCP.</span>
 
 <span class="sd">        Returns:</span>
@@ -3061,7 +3061,7 @@ GCPSecretSchema            (<a class="autorefs autorefs-internal" title="zenml.s
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/secret/schemas/gcp_secret_schema.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_credential_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_credential_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets a dictionary of credentials for authenticating to GCP.</span>
 
 <span class="sd">    Returns:</span>

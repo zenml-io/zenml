@@ -2499,7 +2499,7 @@ DiscordIntegration            (<a class="autorefs autorefs-internal" title="zenm
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/discord/__init__.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DiscordIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">DiscordIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Definition of a Discord integration for ZenML.</span>
 
 <span class="sd">    Implemented using [Discord API Wrapper](https://pypi.org/project/discord.py/).</span>
@@ -2510,13 +2510,13 @@ DiscordIntegration            (<a class="autorefs autorefs-internal" title="zenm
     <span class="n">REQUIREMENTS_IGNORED_ON_UNINSTALL</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;aiohttp&quot;</span><span class="p">,</span><span class="s2">&quot;asyncio&quot;</span><span class="p">]</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Discord integration.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            List of new flavors defined by the Discord integration.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.discord.flavors</span> <span class="kn">import</span> <span class="n">DiscordAlerterFlavor</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.discord.flavors</span><span class="w"> </span><span class="kn">import</span> <span class="n">DiscordAlerterFlavor</span>
 
         <span class="k">return</span> <span class="p">[</span><span class="n">DiscordAlerterFlavor</span><span class="p">]</span>
 </code></pre></div>
@@ -2572,13 +2572,13 @@ DiscordIntegration            (<a class="autorefs autorefs-internal" title="zenm
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/discord/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Discord integration.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        List of new flavors defined by the Discord integration.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.integrations.discord.flavors</span> <span class="kn">import</span> <span class="n">DiscordAlerterFlavor</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.discord.flavors</span><span class="w"> </span><span class="kn">import</span> <span class="n">DiscordAlerterFlavor</span>
 
     <span class="k">return</span> <span class="p">[</span><span class="n">DiscordAlerterFlavor</span><span class="p">]</span>
 </code></pre></div>
@@ -2681,11 +2681,11 @@ DiscordAlerter            (<a class="autorefs autorefs-internal" title="zenml.al
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/discord/alerters/discord_alerter.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DiscordAlerter</span><span class="p">(</span><span class="n">BaseAlerter</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">DiscordAlerter</span><span class="p">(</span><span class="n">BaseAlerter</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Send messages to Discord channels.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DiscordAlerterConfig</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DiscordAlerterConfig</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the `DiscordAlerterConfig` config.</span>
 
 <span class="sd">        Returns:</span>
@@ -2693,7 +2693,7 @@ DiscordAlerter            (<a class="autorefs autorefs-internal" title="zenml.al
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">DiscordAlerterConfig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_get_channel_id</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_channel_id</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseAlerterStepParameters</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the Discord channel ID to be used by post/ask.</span>
@@ -2728,7 +2728,7 @@ DiscordAlerter            (<a class="autorefs autorefs-internal" title="zenml.al
             <span class="s2">&quot;stack component is specified. Please specify at least one.&quot;</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_get_approve_msg_options</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_approve_msg_options</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseAlerterStepParameters</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Define which messages will lead to approval during ask().</span>
@@ -2747,7 +2747,7 @@ DiscordAlerter            (<a class="autorefs autorefs-internal" title="zenml.al
             <span class="k">return</span> <span class="n">params</span><span class="o">.</span><span class="n">approve_msg_options</span>
         <span class="k">return</span> <span class="n">DEFAULT_APPROVE_MSG_OPTIONS</span>
 
-    <span class="k">def</span> <span class="nf">_get_disapprove_msg_options</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_disapprove_msg_options</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseAlerterStepParameters</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Define which messages will lead to disapproval during ask().</span>
@@ -2766,7 +2766,7 @@ DiscordAlerter            (<a class="autorefs autorefs-internal" title="zenml.al
             <span class="k">return</span> <span class="n">params</span><span class="o">.</span><span class="n">disapprove_msg_options</span>
         <span class="k">return</span> <span class="n">DEFAULT_DISAPPROVE_MSG_OPTIONS</span>
 
-    <span class="k">def</span> <span class="nf">_create_blocks</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_create_blocks</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseAlerterStepParameters</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Embed</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Helper function to create discord blocks.</span>
@@ -2814,7 +2814,7 @@ DiscordAlerter            (<a class="autorefs autorefs-internal" title="zenml.al
             <span class="n">blocks_response</span> <span class="o">=</span> <span class="n">embed</span>
         <span class="k">return</span> <span class="n">blocks_response</span>
 
-    <span class="k">def</span> <span class="nf">start_client</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">client</span><span class="p">:</span> <span class="n">Client</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">start_client</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">client</span><span class="p">:</span> <span class="n">Client</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Helper function to start discord client.</span>
 
 <span class="sd">        Args:</span>
@@ -2845,7 +2845,7 @@ DiscordAlerter            (<a class="autorefs autorefs-internal" title="zenml.al
             <span class="c1"># Close the event loop</span>
             <span class="n">loop</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">post</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">post</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseAlerterStepParameters</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Post a message to a Discord channel.</span>
@@ -2866,7 +2866,7 @@ DiscordAlerter            (<a class="autorefs autorefs-internal" title="zenml.al
         <span class="n">message_sent</span> <span class="o">=</span> <span class="kc">False</span>
 
         <span class="nd">@client</span><span class="o">.</span><span class="n">event</span>
-        <span class="k">async</span> <span class="k">def</span> <span class="nf">on_ready</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">on_ready</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">nonlocal</span> <span class="n">message_sent</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="n">channel</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get_channel</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">discord_channel_id</span><span class="p">))</span>
@@ -2890,7 +2890,7 @@ DiscordAlerter            (<a class="autorefs autorefs-internal" title="zenml.al
         <span class="bp">self</span><span class="o">.</span><span class="n">start_client</span><span class="p">(</span><span class="n">client</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">message_sent</span>
 
-    <span class="k">def</span> <span class="nf">ask</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">ask</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseAlerterStepParameters</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Post a message to a Discord channel and wait for approval.</span>
@@ -2911,7 +2911,7 @@ DiscordAlerter            (<a class="autorefs autorefs-internal" title="zenml.al
         <span class="n">approved</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># will be modified by check()</span>
 
         <span class="nd">@client</span><span class="o">.</span><span class="n">event</span>
-        <span class="k">async</span> <span class="k">def</span> <span class="nf">on_ready</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">on_ready</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">try</span><span class="p">:</span>
                 <span class="n">channel</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get_channel</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">discord_channel_id</span><span class="p">))</span>
                 <span class="k">if</span> <span class="n">channel</span><span class="p">:</span>
@@ -2921,7 +2921,7 @@ DiscordAlerter            (<a class="autorefs autorefs-internal" title="zenml.al
                     <span class="k">else</span><span class="p">:</span>
                         <span class="k">await</span> <span class="n">channel</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">content</span><span class="o">=</span><span class="n">message</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
 
-                    <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="n">Message</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+                    <span class="k">def</span><span class="w"> </span><span class="nf">check</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="n">Message</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
                         <span class="k">if</span> <span class="n">message</span><span class="o">.</span><span class="n">channel</span> <span class="o">==</span> <span class="n">channel</span><span class="p">:</span>
                             <span class="k">if</span> <span class="p">(</span>
                                 <span class="n">message</span><span class="o">.</span><span class="n">content</span>
@@ -3060,7 +3060,7 @@ DiscordAlerter            (<a class="autorefs autorefs-internal" title="zenml.al
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/discord/alerters/discord_alerter.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">ask</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">ask</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseAlerterStepParameters</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Post a message to a Discord channel and wait for approval.</span>
@@ -3081,7 +3081,7 @@ DiscordAlerter            (<a class="autorefs autorefs-internal" title="zenml.al
     <span class="n">approved</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># will be modified by check()</span>
 
     <span class="nd">@client</span><span class="o">.</span><span class="n">event</span>
-    <span class="k">async</span> <span class="k">def</span> <span class="nf">on_ready</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">on_ready</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">channel</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get_channel</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">discord_channel_id</span><span class="p">))</span>
             <span class="k">if</span> <span class="n">channel</span><span class="p">:</span>
@@ -3091,7 +3091,7 @@ DiscordAlerter            (<a class="autorefs autorefs-internal" title="zenml.al
                 <span class="k">else</span><span class="p">:</span>
                     <span class="k">await</span> <span class="n">channel</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">content</span><span class="o">=</span><span class="n">message</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
 
-                <span class="k">def</span> <span class="nf">check</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="n">Message</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+                <span class="k">def</span><span class="w"> </span><span class="nf">check</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="n">Message</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
                     <span class="k">if</span> <span class="n">message</span><span class="o">.</span><span class="n">channel</span> <span class="o">==</span> <span class="n">channel</span><span class="p">:</span>
                         <span class="k">if</span> <span class="p">(</span>
                             <span class="n">message</span><span class="o">.</span><span class="n">content</span>
@@ -3185,7 +3185,7 @@ DiscordAlerter            (<a class="autorefs autorefs-internal" title="zenml.al
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/discord/alerters/discord_alerter.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">post</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">post</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseAlerterStepParameters</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Post a message to a Discord channel.</span>
@@ -3206,7 +3206,7 @@ DiscordAlerter            (<a class="autorefs autorefs-internal" title="zenml.al
     <span class="n">message_sent</span> <span class="o">=</span> <span class="kc">False</span>
 
     <span class="nd">@client</span><span class="o">.</span><span class="n">event</span>
-    <span class="k">async</span> <span class="k">def</span> <span class="nf">on_ready</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">on_ready</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">nonlocal</span> <span class="n">message_sent</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">channel</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get_channel</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">discord_channel_id</span><span class="p">))</span>
@@ -3272,7 +3272,7 @@ DiscordAlerter            (<a class="autorefs autorefs-internal" title="zenml.al
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/discord/alerters/discord_alerter.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">start_client</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">client</span><span class="p">:</span> <span class="n">Client</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">start_client</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">client</span><span class="p">:</span> <span class="n">Client</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Helper function to start discord client.</span>
 
 <span class="sd">    Args:</span>
@@ -3339,7 +3339,7 @@ DiscordAlerterParameters            (<a class="autorefs autorefs-internal" title
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/discord/alerters/discord_alerter.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DiscordAlerterParameters</span><span class="p">(</span><span class="n">BaseAlerterStepParameters</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">DiscordAlerterParameters</span><span class="p">(</span><span class="n">BaseAlerterStepParameters</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Discord alerter parameters.&quot;&quot;&quot;</span>
 
     <span class="c1"># The ID of the Discord channel to use for communication.</span>
@@ -3411,7 +3411,7 @@ DiscordAlerterPayload            (<span title="pydantic.main.BaseModel">BaseMode
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/discord/alerters/discord_alerter.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DiscordAlerterPayload</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">DiscordAlerterPayload</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Discord alerter payload implementation.&quot;&quot;&quot;</span>
 
     <span class="n">pipeline_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
@@ -3578,7 +3578,7 @@ communication if no channel ID is provided in the step config.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/discord/flavors/discord_alerter_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DiscordAlerterConfig</span><span class="p">(</span><span class="n">BaseAlerterConfig</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">DiscordAlerterConfig</span><span class="p">(</span><span class="n">BaseAlerterConfig</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Discord alerter config.</span>
 
 <span class="sd">    Attributes:</span>
@@ -3592,14 +3592,14 @@ communication if no channel ID is provided in the step config.</p></td>
     <span class="n">default_discord_channel_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># TODO: Potential setting</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">is_valid</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_valid</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if the stack component is valid.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            True if the stack component is valid, False otherwise.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="kn">from</span> <span class="nn">discord</span> <span class="kn">import</span> <span class="n">Client</span><span class="p">,</span> <span class="n">DiscordException</span><span class="p">,</span> <span class="n">Intents</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">discord</span><span class="w"> </span><span class="kn">import</span> <span class="n">Client</span><span class="p">,</span> <span class="n">DiscordException</span><span class="p">,</span> <span class="n">Intents</span>
         <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
                 <span class="s2">&quot;Unable to validate Discord alerter credentials because the Discord integration is not installed.&quot;</span>
@@ -3613,7 +3613,7 @@ communication if no channel ID is provided in the step config.</p></td>
         <span class="k">try</span><span class="p">:</span>
             <span class="c1"># Check discord token validity</span>
             <span class="nd">@client</span><span class="o">.</span><span class="n">event</span>
-            <span class="k">async</span> <span class="k">def</span> <span class="nf">on_ready</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">on_ready</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="k">nonlocal</span> <span class="n">valid</span>
                 <span class="k">try</span><span class="p">:</span>
                     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_discord_channel_id</span><span class="p">:</span>
@@ -3731,11 +3731,11 @@ DiscordAlerterFlavor            (<a class="autorefs autorefs-internal" title="ze
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/discord/flavors/discord_alerter_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">DiscordAlerterFlavor</span><span class="p">(</span><span class="n">BaseAlerterFlavor</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">DiscordAlerterFlavor</span><span class="p">(</span><span class="n">BaseAlerterFlavor</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Discord alerter flavor.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -3744,7 +3744,7 @@ DiscordAlerterFlavor            (<a class="autorefs autorefs-internal" title="ze
         <span class="k">return</span> <span class="n">DISCORD_ALERTER_FLAVOR</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -3753,7 +3753,7 @@ DiscordAlerterFlavor            (<a class="autorefs autorefs-internal" title="ze
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at SDK docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -3762,7 +3762,7 @@ DiscordAlerterFlavor            (<a class="autorefs autorefs-internal" title="ze
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_sdk_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to represent the flavor in the dashboard.</span>
 
 <span class="sd">        Returns:</span>
@@ -3771,7 +3771,7 @@ DiscordAlerterFlavor            (<a class="autorefs autorefs-internal" title="ze
         <span class="k">return</span> <span class="s2">&quot;https://public-flavor-logos.s3.eu-central-1.amazonaws.com/alerter/discord.png&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">DiscordAlerterConfig</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">DiscordAlerterConfig</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns `DiscordAlerterConfig` config class.</span>
 
 <span class="sd">        Returns:</span>
@@ -3780,13 +3780,13 @@ DiscordAlerterFlavor            (<a class="autorefs autorefs-internal" title="ze
         <span class="k">return</span> <span class="n">DiscordAlerterConfig</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;DiscordAlerter&quot;</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;DiscordAlerter&quot;</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The implementation class.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.discord.alerters</span> <span class="kn">import</span> <span class="n">DiscordAlerter</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.discord.alerters</span><span class="w"> </span><span class="kn">import</span> <span class="n">DiscordAlerter</span>
 
         <span class="k">return</span> <span class="n">DiscordAlerter</span>
 </code></pre></div>

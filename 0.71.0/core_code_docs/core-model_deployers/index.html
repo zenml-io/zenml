@@ -2462,7 +2462,7 @@ management on remote model servers outside the coverage of a pipeline
 
         <details class="quote">
           <summary>Source code in <code>zenml/model_deployers/base_model_deployer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseModelDeployer</span><span class="p">(</span><span class="n">StackComponent</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">BaseModelDeployer</span><span class="p">(</span><span class="n">StackComponent</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for all ZenML model deployers.</span>
 
 <span class="sd">    The model deployer serves three major purposes:</span>
@@ -2501,7 +2501,7 @@ management on remote model servers outside the coverage of a pipeline
     <span class="n">FLAVOR</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseModelDeployerFlavor&quot;</span><span class="p">]]</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseModelDeployerConfig</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseModelDeployerConfig</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the `BaseModelDeployerConfig` config.</span>
 
 <span class="sd">        Returns:</span>
@@ -2510,7 +2510,7 @@ management on remote model servers outside the coverage of a pipeline
         <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">BaseModelDeployerConfig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="p">)</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">get_active_model_deployer</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseModelDeployer&quot;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_active_model_deployer</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseModelDeployer&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the model deployer registered in the active stack.</span>
 
 <span class="sd">        Returns:</span>
@@ -2539,7 +2539,7 @@ management on remote model servers outside the coverage of a pipeline
 
         <span class="k">return</span> <span class="n">model_deployer</span>
 
-    <span class="k">def</span> <span class="nf">deploy_model</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">deploy_model</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">config</span><span class="p">:</span> <span class="n">ServiceConfig</span><span class="p">,</span>
         <span class="n">service_type</span><span class="p">:</span> <span class="n">ServiceType</span><span class="p">,</span>
@@ -2631,7 +2631,7 @@ management on remote model servers outside the coverage of a pipeline
             <span class="n">client</span><span class="o">.</span><span class="n">delete_service</span><span class="p">(</span><span class="n">service_response</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
             <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;Failed to deploy model server for </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">model_name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
-            <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
         <span class="c1"># Update the service in store</span>
         <span class="n">client</span><span class="o">.</span><span class="n">update_service</span><span class="p">(</span>
             <span class="nb">id</span><span class="o">=</span><span class="n">service</span><span class="o">.</span><span class="n">uuid</span><span class="p">,</span>
@@ -2649,7 +2649,7 @@ management on remote model servers outside the coverage of a pipeline
         <span class="k">return</span> <span class="n">service</span>
 
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">perform_deploy_model</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">perform_deploy_model</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="nb">id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span>
         <span class="n">config</span><span class="p">:</span> <span class="n">ServiceConfig</span><span class="p">,</span>
@@ -2682,7 +2682,7 @@ management on remote model servers outside the coverage of a pipeline
 
     <span class="nd">@staticmethod</span>
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">get_model_server_info</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_model_server_info</span><span class="p">(</span>
         <span class="n">service</span><span class="p">:</span> <span class="n">BaseService</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Give implementation specific way to extract relevant model server properties for the user.</span>
@@ -2694,7 +2694,7 @@ management on remote model servers outside the coverage of a pipeline
 <span class="sd">            A dictionary containing the relevant model server properties.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">find_model_server</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">find_model_server</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">running</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -2780,7 +2780,7 @@ management on remote model servers outside the coverage of a pipeline
         <span class="k">return</span> <span class="n">services</span>
 
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">perform_stop_model</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">perform_stop_model</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">service</span><span class="p">:</span> <span class="n">BaseService</span><span class="p">,</span>
         <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT</span><span class="p">,</span>
@@ -2800,7 +2800,7 @@ management on remote model servers outside the coverage of a pipeline
 <span class="sd">            force: if True, force the service to stop.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">stop_model_server</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stop_model_server</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">uuid</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span>
         <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT</span><span class="p">,</span>
@@ -2837,10 +2837,10 @@ management on remote model servers outside the coverage of a pipeline
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;Failed to stop model server with UUID </span><span class="si">{</span><span class="n">uuid</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
-            <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">perform_start_model</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">perform_start_model</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">service</span><span class="p">:</span> <span class="n">BaseService</span><span class="p">,</span>
         <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT</span><span class="p">,</span>
@@ -2855,7 +2855,7 @@ management on remote model servers outside the coverage of a pipeline
 <span class="sd">                active.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">start_model_server</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">start_model_server</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">uuid</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span>
         <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT</span><span class="p">,</span>
@@ -2887,10 +2887,10 @@ management on remote model servers outside the coverage of a pipeline
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;Failed to start model server with UUID </span><span class="si">{</span><span class="n">uuid</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
-            <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">perform_delete_model</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">perform_delete_model</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">service</span><span class="p">:</span> <span class="n">BaseService</span><span class="p">,</span>
         <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT</span><span class="p">,</span>
@@ -2909,7 +2909,7 @@ management on remote model servers outside the coverage of a pipeline
 <span class="sd">            force: if True, force the service to stop.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">delete_model_server</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">delete_model_server</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">uuid</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span>
         <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT</span><span class="p">,</span>
@@ -2938,9 +2938,9 @@ management on remote model servers outside the coverage of a pipeline
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;Failed to delete model server with UUID </span><span class="si">{</span><span class="n">uuid</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
-            <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
-    <span class="k">def</span> <span class="nf">get_model_server_logs</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_model_server_logs</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">uuid</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span>
         <span class="n">follow</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -2964,7 +2964,7 @@ management on remote model servers outside the coverage of a pipeline
             <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;No model server found with UUID </span><span class="si">{</span><span class="n">uuid</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">services</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">get_logs</span><span class="p">(</span><span class="n">follow</span><span class="o">=</span><span class="n">follow</span><span class="p">,</span> <span class="n">tail</span><span class="o">=</span><span class="n">tail</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">load_service</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load_service</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">service_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseService</span><span class="p">:</span>
@@ -3098,7 +3098,7 @@ deprovisioning the service, without waiting for it to stop.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/model_deployers/base_model_deployer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">delete_model_server</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">delete_model_server</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">uuid</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span>
     <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT</span><span class="p">,</span>
@@ -3127,7 +3127,7 @@ deprovisioning the service, without waiting for it to stop.</p></td>
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
             <span class="sa">f</span><span class="s2">&quot;Failed to delete model server with UUID </span><span class="si">{</span><span class="n">uuid</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 </code></pre></div>
         </details>
     </div>
@@ -3246,7 +3246,7 @@ the default service type of the model deployer will be used.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/model_deployers/base_model_deployer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">deploy_model</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">deploy_model</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">config</span><span class="p">:</span> <span class="n">ServiceConfig</span><span class="p">,</span>
     <span class="n">service_type</span><span class="p">:</span> <span class="n">ServiceType</span><span class="p">,</span>
@@ -3338,7 +3338,7 @@ the default service type of the model deployer will be used.</p></td>
         <span class="n">client</span><span class="o">.</span><span class="n">delete_service</span><span class="p">(</span><span class="n">service_response</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
         <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
             <span class="sa">f</span><span class="s2">&quot;Failed to deploy model server for </span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">model_name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
     <span class="c1"># Update the service in store</span>
     <span class="n">client</span><span class="o">.</span><span class="n">update_service</span><span class="p">(</span>
         <span class="nb">id</span><span class="o">=</span><span class="n">service</span><span class="o">.</span><span class="n">uuid</span><span class="p">,</span>
@@ -3487,7 +3487,7 @@ the input search criteria.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/model_deployers/base_model_deployer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">find_model_server</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">find_model_server</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">running</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -3630,7 +3630,7 @@ active stack.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/model_deployers/base_model_deployer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">get_active_model_deployer</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseModelDeployer&quot;</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_active_model_deployer</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseModelDeployer&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the model deployer registered in the active stack.</span>
 
 <span class="sd">    Returns:</span>
@@ -3721,7 +3721,7 @@ active stack.</p></td>
           <summary>Source code in <code>zenml/model_deployers/base_model_deployer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="nd">@abstractmethod</span>
-<span class="k">def</span> <span class="nf">get_model_server_info</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_model_server_info</span><span class="p">(</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">BaseService</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Give implementation specific way to extract relevant model server properties for the user.</span>
@@ -3817,7 +3817,7 @@ active stack.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/model_deployers/base_model_deployer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_model_server_logs</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_model_server_logs</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">uuid</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span>
     <span class="n">follow</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -3898,7 +3898,7 @@ active stack.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/model_deployers/base_model_deployer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">load_service</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">load_service</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">service_id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseService</span><span class="p">:</span>
@@ -3973,7 +3973,7 @@ deprovisioning the service, without waiting for it to stop.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/model_deployers/base_model_deployer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
-<span class="k">def</span> <span class="nf">perform_delete_model</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">perform_delete_model</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">BaseService</span><span class="p">,</span>
     <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT</span><span class="p">,</span>
@@ -4075,7 +4075,7 @@ to start serving the model.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/model_deployers/base_model_deployer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
-<span class="k">def</span> <span class="nf">perform_deploy_model</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">perform_deploy_model</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span>
     <span class="n">config</span><span class="p">:</span> <span class="n">ServiceConfig</span><span class="p">,</span>
@@ -4158,7 +4158,7 @@ active.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/model_deployers/base_model_deployer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
-<span class="k">def</span> <span class="nf">perform_start_model</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">perform_start_model</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">BaseService</span><span class="p">,</span>
     <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT</span><span class="p">,</span>
@@ -4233,7 +4233,7 @@ deprovisioning the service, without waiting for it to stop.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/model_deployers/base_model_deployer.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
-<span class="k">def</span> <span class="nf">perform_stop_model</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">perform_stop_model</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">service</span><span class="p">:</span> <span class="n">BaseService</span><span class="p">,</span>
     <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT</span><span class="p">,</span>
@@ -4319,7 +4319,7 @@ active.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/model_deployers/base_model_deployer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">start_model_server</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">start_model_server</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">uuid</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span>
     <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT</span><span class="p">,</span>
@@ -4351,7 +4351,7 @@ active.</p></td>
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
             <span class="sa">f</span><span class="s2">&quot;Failed to start model server with UUID </span><span class="si">{</span><span class="n">uuid</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 </code></pre></div>
         </details>
     </div>
@@ -4427,7 +4427,7 @@ deprovisioning the service, without waiting for it to stop.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/model_deployers/base_model_deployer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">stop_model_server</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">stop_model_server</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">uuid</span><span class="p">:</span> <span class="n">UUID</span><span class="p">,</span>
     <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT</span><span class="p">,</span>
@@ -4464,7 +4464,7 @@ deprovisioning the service, without waiting for it to stop.</p></td>
     <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
             <span class="sa">f</span><span class="s2">&quot;Failed to stop model server with UUID </span><span class="si">{</span><span class="n">uuid</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 </code></pre></div>
         </details>
     </div>
@@ -4502,7 +4502,7 @@ BaseModelDeployerConfig            (<a class="autorefs autorefs-internal" title=
 
         <details class="quote">
           <summary>Source code in <code>zenml/model_deployers/base_model_deployer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseModelDeployerConfig</span><span class="p">(</span><span class="n">StackComponentConfig</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">BaseModelDeployerConfig</span><span class="p">(</span><span class="n">StackComponentConfig</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Base config for all model deployers.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
@@ -4564,11 +4564,11 @@ BaseModelDeployerFlavor            (<a class="autorefs autorefs-internal" title=
 
         <details class="quote">
           <summary>Source code in <code>zenml/model_deployers/base_model_deployer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseModelDeployerFlavor</span><span class="p">(</span><span class="n">Flavor</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">BaseModelDeployerFlavor</span><span class="p">(</span><span class="n">Flavor</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for model deployer flavors.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StackComponentType</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StackComponentType</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the flavor type.</span>
 
 <span class="sd">        Returns:</span>
@@ -4577,7 +4577,7 @@ BaseModelDeployerFlavor            (<a class="autorefs autorefs-internal" title=
         <span class="k">return</span> <span class="n">StackComponentType</span><span class="o">.</span><span class="n">MODEL_DEPLOYER</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseModelDeployerConfig</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseModelDeployerConfig</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns `BaseModelDeployerConfig` config class.</span>
 
 <span class="sd">        Returns:</span>
@@ -4587,7 +4587,7 @@ BaseModelDeployerFlavor            (<a class="autorefs autorefs-internal" title=
 
     <span class="nd">@property</span>
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseModelDeployer</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseModelDeployer</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The class that implements the model deployer.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
@@ -4770,7 +4770,7 @@ BaseModelDeployerFlavor            (<a class="autorefs autorefs-internal" title=
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/model_deployers/base_model_deployer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_model_version_id_if_exists</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_model_version_id_if_exists</span><span class="p">(</span>
     <span class="n">model_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
     <span class="n">model_version</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">UUID</span><span class="p">]:</span>

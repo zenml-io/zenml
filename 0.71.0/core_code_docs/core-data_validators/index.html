@@ -2272,14 +2272,14 @@ BaseDataValidator            (<a class="autorefs autorefs-internal" title="zenml
 
         <details class="quote">
           <summary>Source code in <code>zenml/data_validators/base_data_validator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseDataValidator</span><span class="p">(</span><span class="n">StackComponent</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">BaseDataValidator</span><span class="p">(</span><span class="n">StackComponent</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for all ZenML data validators.&quot;&quot;&quot;</span>
 
     <span class="n">NAME</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
     <span class="n">FLAVOR</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseDataValidatorFlavor&quot;</span><span class="p">]]</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseDataValidatorConfig</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseDataValidatorConfig</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the config of this data validator.</span>
 
 <span class="sd">        Returns:</span>
@@ -2288,7 +2288,7 @@ BaseDataValidator            (<a class="autorefs autorefs-internal" title="zenml
         <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">BaseDataValidatorConfig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="p">)</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">get_active_data_validator</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseDataValidator&quot;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_active_data_validator</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseDataValidator&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the data validator registered in the active stack.</span>
 
 <span class="sd">        Returns:</span>
@@ -2317,7 +2317,7 @@ BaseDataValidator            (<a class="autorefs autorefs-internal" title="zenml
 
         <span class="k">return</span> <span class="n">data_validator</span>
 
-    <span class="k">def</span> <span class="nf">data_profiling</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">data_profiling</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">dataset</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
         <span class="n">comparison_dataset</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -2365,7 +2365,7 @@ BaseDataValidator            (<a class="autorefs autorefs-internal" title="zenml
             <span class="sa">f</span><span class="s2">&quot;validator.&quot;</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">data_validation</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">data_validation</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">dataset</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
         <span class="n">comparison_dataset</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -2410,7 +2410,7 @@ BaseDataValidator            (<a class="autorefs autorefs-internal" title="zenml
             <span class="sa">f</span><span class="s2">&quot;Data validation not implemented for </span><span class="si">{</span><span class="bp">self</span><span class="si">}</span><span class="s2">.&quot;</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">model_validation</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">model_validation</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">dataset</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
         <span class="n">model</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
@@ -2603,7 +2603,7 @@ data validator.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/data_validators/base_data_validator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">data_profiling</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">data_profiling</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">dataset</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="n">comparison_dataset</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -2747,7 +2747,7 @@ supported by this data validator.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/data_validators/base_data_validator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">data_validation</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">data_validation</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">dataset</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="n">comparison_dataset</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -2850,7 +2850,7 @@ active stack.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/data_validators/base_data_validator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">get_active_data_validator</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseDataValidator&quot;</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_active_data_validator</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseDataValidator&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the data validator registered in the active stack.</span>
 
 <span class="sd">    Returns:</span>
@@ -2983,7 +2983,7 @@ data validator.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/data_validators/base_data_validator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">model_validation</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">model_validation</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">dataset</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="n">model</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
@@ -3069,7 +3069,7 @@ BaseDataValidatorConfig            (<a class="autorefs autorefs-internal" title=
 
         <details class="quote">
           <summary>Source code in <code>zenml/data_validators/base_data_validator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseDataValidatorConfig</span><span class="p">(</span><span class="n">StackComponentConfig</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">BaseDataValidatorConfig</span><span class="p">(</span><span class="n">StackComponentConfig</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Base config for all data validators.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
@@ -3131,11 +3131,11 @@ BaseDataValidatorFlavor            (<a class="autorefs autorefs-internal" title=
 
         <details class="quote">
           <summary>Source code in <code>zenml/data_validators/base_data_validator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseDataValidatorFlavor</span><span class="p">(</span><span class="n">Flavor</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">BaseDataValidatorFlavor</span><span class="p">(</span><span class="n">Flavor</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for data validator flavors.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StackComponentType</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StackComponentType</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The type of the component.</span>
 
 <span class="sd">        Returns:</span>
@@ -3144,7 +3144,7 @@ BaseDataValidatorFlavor            (<a class="autorefs autorefs-internal" title=
         <span class="k">return</span> <span class="n">StackComponentType</span><span class="o">.</span><span class="n">DATA_VALIDATOR</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseDataValidatorConfig</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseDataValidatorConfig</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Config class for data validator.</span>
 
 <span class="sd">        Returns:</span>
@@ -3153,7 +3153,7 @@ BaseDataValidatorFlavor            (<a class="autorefs autorefs-internal" title=
         <span class="k">return</span> <span class="n">BaseDataValidatorConfig</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseDataValidator</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseDataValidator</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation for data validator.</span>
 
 <span class="sd">        Returns:</span>

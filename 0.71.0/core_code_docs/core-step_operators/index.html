@@ -2329,11 +2329,11 @@ BaseStepOperator            (<a class="autorefs autorefs-internal" title="zenml.
 
         <details class="quote">
           <summary>Source code in <code>zenml/step_operators/base_step_operator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseStepOperator</span><span class="p">(</span><span class="n">StackComponent</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">BaseStepOperator</span><span class="p">(</span><span class="n">StackComponent</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for all ZenML step operators.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseStepOperatorConfig</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaseStepOperatorConfig</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the config of the step operator.</span>
 
 <span class="sd">        Returns:</span>
@@ -2342,7 +2342,7 @@ BaseStepOperator            (<a class="autorefs autorefs-internal" title="zenml.
         <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">BaseStepOperatorConfig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">entrypoint_config_class</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">entrypoint_config_class</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">StepOperatorEntrypointConfiguration</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the entrypoint configuration class for this step operator.</span>
@@ -2357,7 +2357,7 @@ BaseStepOperator            (<a class="autorefs autorefs-internal" title="zenml.
         <span class="k">return</span> <span class="n">StepOperatorEntrypointConfiguration</span>
 
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">launch</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">launch</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">info</span><span class="p">:</span> <span class="s2">&quot;StepRunInfo&quot;</span><span class="p">,</span>
         <span class="n">entrypoint_command</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
@@ -2519,7 +2519,7 @@ environment.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/step_operators/base_step_operator.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
-<span class="k">def</span> <span class="nf">launch</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">launch</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">info</span><span class="p">:</span> <span class="s2">&quot;StepRunInfo&quot;</span><span class="p">,</span>
     <span class="n">entrypoint_command</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
@@ -2573,7 +2573,7 @@ BaseStepOperatorConfig            (<a class="autorefs autorefs-internal" title="
 
         <details class="quote">
           <summary>Source code in <code>zenml/step_operators/base_step_operator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseStepOperatorConfig</span><span class="p">(</span><span class="n">StackComponentConfig</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">BaseStepOperatorConfig</span><span class="p">(</span><span class="n">StackComponentConfig</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Base config for step operators.&quot;&quot;&quot;</span>
 </code></pre></div>
         </details>
@@ -2635,11 +2635,11 @@ BaseStepOperatorFlavor            (<a class="autorefs autorefs-internal" title="
 
         <details class="quote">
           <summary>Source code in <code>zenml/step_operators/base_step_operator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseStepOperatorFlavor</span><span class="p">(</span><span class="n">Flavor</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">BaseStepOperatorFlavor</span><span class="p">(</span><span class="n">Flavor</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for all ZenML step operator flavors.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StackComponentType</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StackComponentType</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the flavor type.</span>
 
 <span class="sd">        Returns:</span>
@@ -2648,7 +2648,7 @@ BaseStepOperatorFlavor            (<a class="autorefs autorefs-internal" title="
         <span class="k">return</span> <span class="n">StackComponentType</span><span class="o">.</span><span class="n">STEP_OPERATOR</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseStepOperatorConfig</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseStepOperatorConfig</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the config class for this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -2658,7 +2658,7 @@ BaseStepOperatorFlavor            (<a class="autorefs autorefs-internal" title="
 
     <span class="nd">@property</span>
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseStepOperator</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseStepOperator</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the implementation class for this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -2860,11 +2860,11 @@ StepOperatorEntrypointConfiguration            (<a class="autorefs autorefs-inte
 
         <details class="quote">
           <summary>Source code in <code>zenml/step_operators/step_operator_entrypoint_configuration.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StepOperatorEntrypointConfiguration</span><span class="p">(</span><span class="n">StepEntrypointConfiguration</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">StepOperatorEntrypointConfiguration</span><span class="p">(</span><span class="n">StepEntrypointConfiguration</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for step operator entrypoint configurations.&quot;&quot;&quot;</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">get_entrypoint_options</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_entrypoint_options</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets all options required for running with this configuration.</span>
 
 <span class="sd">        Returns:</span>
@@ -2875,7 +2875,7 @@ StepOperatorEntrypointConfiguration            (<a class="autorefs autorefs-inte
         <span class="p">}</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">get_entrypoint_arguments</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_entrypoint_arguments</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
@@ -2892,7 +2892,7 @@ StepOperatorEntrypointConfiguration            (<a class="autorefs autorefs-inte
             <span class="n">kwargs</span><span class="p">[</span><span class="n">STEP_RUN_ID_OPTION</span><span class="p">],</span>
         <span class="p">]</span>
 
-    <span class="k">def</span> <span class="nf">_run_step</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_run_step</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">step</span><span class="p">:</span> <span class="s2">&quot;Step&quot;</span><span class="p">,</span>
         <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeploymentResponse&quot;</span><span class="p">,</span>
@@ -3002,7 +3002,7 @@ StepOperatorEntrypointConfiguration            (<a class="autorefs autorefs-inte
         <details class="quote">
           <summary>Source code in <code>zenml/step_operators/step_operator_entrypoint_configuration.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">get_entrypoint_arguments</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_entrypoint_arguments</span><span class="p">(</span>
     <span class="bp">cls</span><span class="p">,</span>
     <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
@@ -3061,7 +3061,7 @@ StepOperatorEntrypointConfiguration            (<a class="autorefs autorefs-inte
         <details class="quote">
           <summary>Source code in <code>zenml/step_operators/step_operator_entrypoint_configuration.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">get_entrypoint_options</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_entrypoint_options</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Gets all options required for running with this configuration.</span>
 
 <span class="sd">    Returns:</span>

@@ -3278,10 +3278,10 @@ BaseStep        </code>
 
         <details class="quote">
           <summary>Source code in <code>zenml/steps/base_step.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">BaseStep</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">BaseStep</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Abstract base class for all ZenML steps.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">enable_cache</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -3331,7 +3331,7 @@ BaseStep        </code>
 <span class="sd">            retry: Configuration for retrying the step in case of failure.</span>
 <span class="sd">            substitutions: Extra placeholders to use in the name template.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.config.step_configurations</span> <span class="kn">import</span> <span class="n">PartialStepConfiguration</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.config.step_configurations</span><span class="w"> </span><span class="kn">import</span> <span class="n">PartialStepConfiguration</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">entrypoint_definition</span> <span class="o">=</span> <span class="n">validate_entrypoint_function</span><span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">entrypoint</span><span class="p">,</span>
@@ -3396,7 +3396,7 @@ BaseStep        </code>
         <span class="n">notebook_utils</span><span class="o">.</span><span class="n">try_to_save_notebook_cell_code</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">source_object</span><span class="p">)</span>
 
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">entrypoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">entrypoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Abstract method for core step logic.</span>
 
 <span class="sd">        Args:</span>
@@ -3408,7 +3408,7 @@ BaseStep        </code>
 <span class="sd">        &quot;&quot;&quot;</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">load_from_source</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">source</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Source</span><span class="p">,</span> <span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseStep&quot;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load_from_source</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">source</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Source</span><span class="p">,</span> <span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseStep&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Loads a step from source.</span>
 
 <span class="sd">        Args:</span>
@@ -3429,7 +3429,7 @@ BaseStep        </code>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Invalid step source.&quot;</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">resolve</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Source</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">resolve</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Source</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Resolves the step.</span>
 
 <span class="sd">        Returns:</span>
@@ -3438,7 +3438,7 @@ BaseStep        </code>
         <span class="k">return</span> <span class="n">source_utils</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">source_object</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">source_object</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The source object of this step.</span>
 
 <span class="sd">        Returns:</span>
@@ -3447,7 +3447,7 @@ BaseStep        </code>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">source_code</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">source_code</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The source code of this step.</span>
 
 <span class="sd">        Returns:</span>
@@ -3456,7 +3456,7 @@ BaseStep        </code>
         <span class="k">return</span> <span class="n">inspect</span><span class="o">.</span><span class="n">getsource</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">source_object</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">docstring</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">docstring</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The docstring of this step.</span>
 
 <span class="sd">        Returns:</span>
@@ -3465,7 +3465,7 @@ BaseStep        </code>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__doc__</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">caching_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">caching_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Caching parameters for this step.</span>
 
 <span class="sd">        Returns:</span>
@@ -3492,7 +3492,7 @@ BaseStep        </code>
 
         <span class="k">return</span> <span class="n">parameters</span>
 
-    <span class="k">def</span> <span class="nf">_parse_call_args</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_parse_call_args</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span>
         <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;StepArtifact&quot;</span><span class="p">],</span>
@@ -3514,10 +3514,10 @@ BaseStep        </code>
 <span class="sd">        Returns:</span>
 <span class="sd">            The artifacts, external artifacts, model version artifacts/metadata and parameters for the step.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.artifacts.external_artifact</span> <span class="kn">import</span> <span class="n">ExternalArtifact</span>
-        <span class="kn">from</span> <span class="nn">zenml.metadata.lazy_load</span> <span class="kn">import</span> <span class="n">LazyRunMetadataResponse</span>
-        <span class="kn">from</span> <span class="nn">zenml.model.lazy_load</span> <span class="kn">import</span> <span class="n">ModelVersionDataLazyLoader</span>
-        <span class="kn">from</span> <span class="nn">zenml.models.v2.core.artifact_version</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.artifacts.external_artifact</span><span class="w"> </span><span class="kn">import</span> <span class="n">ExternalArtifact</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.metadata.lazy_load</span><span class="w"> </span><span class="kn">import</span> <span class="n">LazyRunMetadataResponse</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.model.lazy_load</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelVersionDataLazyLoader</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.models.v2.core.artifact_version</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">ArtifactVersionResponse</span><span class="p">,</span>
             <span class="n">LazyArtifactVersionResponse</span><span class="p">,</span>
         <span class="p">)</span>
@@ -3529,7 +3529,7 @@ BaseStep        </code>
         <span class="k">except</span> <span class="ne">TypeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">StepInterfaceError</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">&quot;Wrong arguments when calling step &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
-            <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
         <span class="n">artifacts</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="n">external_artifacts</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span>
@@ -3612,7 +3612,7 @@ BaseStep        </code>
             <span class="n">default_parameters</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
         <span class="nb">id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -3635,10 +3635,10 @@ BaseStep        </code>
 <span class="sd">        Returns:</span>
 <span class="sd">            The outputs of the entrypoint function call.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.pipelines.pipeline_definition</span> <span class="kn">import</span> <span class="n">Pipeline</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.pipelines.pipeline_definition</span><span class="w"> </span><span class="kn">import</span> <span class="n">Pipeline</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="n">Pipeline</span><span class="o">.</span><span class="n">ACTIVE_PIPELINE</span><span class="p">:</span>
-            <span class="kn">from</span> <span class="nn">zenml</span> <span class="kn">import</span> <span class="n">constants</span><span class="p">,</span> <span class="n">get_step_context</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">zenml</span><span class="w"> </span><span class="kn">import</span> <span class="n">constants</span><span class="p">,</span> <span class="n">get_step_context</span>
 
             <span class="c1"># If the environment variable was set to explicitly not run on the</span>
             <span class="c1"># stack, we do that.</span>
@@ -3708,7 +3708,7 @@ BaseStep        </code>
             <span class="n">outputs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">outputs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">outputs</span>
 
-    <span class="k">def</span> <span class="nf">call_entrypoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">call_entrypoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Calls the entrypoint function of the step.</span>
 
 <span class="sd">        Args:</span>
@@ -3733,12 +3733,12 @@ BaseStep        </code>
             <span class="k">raise</span> <span class="n">StepInterfaceError</span><span class="p">(</span>
                 <span class="s2">&quot;Invalid step function entrypoint arguments. Check out the &quot;</span>
                 <span class="s2">&quot;pydantic error above for more details.&quot;</span>
-            <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">entrypoint</span><span class="p">(</span><span class="o">**</span><span class="n">validated_args</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The name of the step.</span>
 
 <span class="sd">        Returns:</span>
@@ -3747,7 +3747,7 @@ BaseStep        </code>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">configuration</span><span class="o">.</span><span class="n">name</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">enable_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">enable_cache</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;If caching is enabled for the step.</span>
 
 <span class="sd">        Returns:</span>
@@ -3756,7 +3756,7 @@ BaseStep        </code>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">configuration</span><span class="o">.</span><span class="n">enable_cache</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">configuration</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;PartialStepConfiguration&quot;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">configuration</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;PartialStepConfiguration&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The configuration of the step.</span>
 
 <span class="sd">        Returns:</span>
@@ -3764,7 +3764,7 @@ BaseStep        </code>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_configuration</span>
 
-    <span class="k">def</span> <span class="nf">configure</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">configure</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">:</span> <span class="n">T</span><span class="p">,</span>
         <span class="n">enable_cache</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">enable_artifact_metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -3831,10 +3831,10 @@ BaseStep        </code>
 <span class="sd">        Returns:</span>
 <span class="sd">            The step instance that this method was called on.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.config.step_configurations</span> <span class="kn">import</span> <span class="n">StepConfigurationUpdate</span>
-        <span class="kn">from</span> <span class="nn">zenml.hooks.hook_validators</span> <span class="kn">import</span> <span class="n">resolve_and_validate_hook</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.config.step_configurations</span><span class="w"> </span><span class="kn">import</span> <span class="n">StepConfigurationUpdate</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.hooks.hook_validators</span><span class="w"> </span><span class="kn">import</span> <span class="n">resolve_and_validate_hook</span>
 
-        <span class="k">def</span> <span class="nf">_resolve_if_necessary</span><span class="p">(</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">_resolve_if_necessary</span><span class="p">(</span>
             <span class="n">value</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Source</span><span class="p">,</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">]],</span>
         <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Source</span><span class="p">:</span>
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
@@ -3844,7 +3844,7 @@ BaseStep        </code>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">return</span> <span class="n">source_utils</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
 
-        <span class="k">def</span> <span class="nf">_convert_to_tuple</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Source</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">_convert_to_tuple</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Source</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">):</span>
                 <span class="k">return</span> <span class="p">(</span><span class="n">_resolve_if_necessary</span><span class="p">(</span><span class="n">value</span><span class="p">),)</span>
             <span class="k">else</span><span class="p">:</span>
@@ -3898,7 +3898,7 @@ BaseStep        </code>
         <span class="bp">self</span><span class="o">.</span><span class="n">_apply_configuration</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">merge</span><span class="o">=</span><span class="n">merge</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span>
 
-    <span class="k">def</span> <span class="nf">with_options</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">with_options</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">enable_cache</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">enable_artifact_metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -3973,7 +3973,7 @@ BaseStep        </code>
         <span class="p">)</span>
         <span class="k">return</span> <span class="n">step_copy</span>
 
-    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseStep&quot;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseStep&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Copies the step.</span>
 
 <span class="sd">        Returns:</span>
@@ -3981,7 +3981,7 @@ BaseStep        </code>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_apply_configuration</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_apply_configuration</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">config</span><span class="p">:</span> <span class="s2">&quot;StepConfigurationUpdate&quot;</span><span class="p">,</span>
         <span class="n">merge</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -4005,7 +4005,7 @@ BaseStep        </code>
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Updated step configuration:&quot;</span><span class="p">)</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_configuration</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_validate_configuration</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_configuration</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">config</span><span class="p">:</span> <span class="s2">&quot;StepConfigurationUpdate&quot;</span><span class="p">,</span>
         <span class="n">runtime_parameters</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
@@ -4022,7 +4022,7 @@ BaseStep        </code>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_validate_outputs</span><span class="p">(</span><span class="n">outputs</span><span class="o">=</span><span class="n">config</span><span class="o">.</span><span class="n">outputs</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_validate_function_parameters</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_function_parameters</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">parameters</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
         <span class="n">runtime_parameters</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
@@ -4082,7 +4082,7 @@ BaseStep        </code>
 <span class="s2">&quot;&quot;&quot;</span>
             <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_validate_outputs</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_outputs</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">outputs</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;PartialArtifactConfiguration&quot;</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Validates the step output configuration.</span>
@@ -4117,7 +4117,7 @@ BaseStep        </code>
                             <span class="s2">&quot;does not resolve to a `BaseMaterializer` subclass.&quot;</span>
                         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_validate_inputs</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_inputs</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">input_artifacts</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;StepArtifact&quot;</span><span class="p">],</span>
         <span class="n">external_artifacts</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;ExternalArtifactConfiguration&quot;</span><span class="p">],</span>
@@ -4151,7 +4151,7 @@ BaseStep        </code>
                 <span class="sa">f</span><span class="s2">&quot;Missing entrypoint input &#39;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&#39; in step &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;.&quot;</span>
             <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_finalize_configuration</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_finalize_configuration</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">input_artifacts</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;StepArtifact&quot;</span><span class="p">],</span>
         <span class="n">external_artifacts</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;ExternalArtifactConfiguration&quot;</span><span class="p">],</span>
@@ -4180,7 +4180,7 @@ BaseStep        </code>
 <span class="sd">        Returns:</span>
 <span class="sd">            The finalized step configuration.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.config.step_configurations</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.config.step_configurations</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">PartialArtifactConfiguration</span><span class="p">,</span>
             <span class="n">StepConfiguration</span><span class="p">,</span>
             <span class="n">StepConfigurationUpdate</span><span class="p">,</span>
@@ -4284,7 +4284,7 @@ BaseStep        </code>
             <span class="bp">self</span><span class="o">.</span><span class="n">_configuration</span><span class="o">.</span><span class="n">model_dump</span><span class="p">()</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_finalize_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_finalize_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Finalizes the config parameters for running this step.</span>
 
 <span class="sd">        Returns:</span>
@@ -4664,7 +4664,7 @@ BaseStep        </code>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/steps/base_step.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="nb">id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -4687,10 +4687,10 @@ BaseStep        </code>
 <span class="sd">    Returns:</span>
 <span class="sd">        The outputs of the entrypoint function call.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.pipelines.pipeline_definition</span> <span class="kn">import</span> <span class="n">Pipeline</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.pipelines.pipeline_definition</span><span class="w"> </span><span class="kn">import</span> <span class="n">Pipeline</span>
 
     <span class="k">if</span> <span class="ow">not</span> <span class="n">Pipeline</span><span class="o">.</span><span class="n">ACTIVE_PIPELINE</span><span class="p">:</span>
-        <span class="kn">from</span> <span class="nn">zenml</span> <span class="kn">import</span> <span class="n">constants</span><span class="p">,</span> <span class="n">get_step_context</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml</span><span class="w"> </span><span class="kn">import</span> <span class="n">constants</span><span class="p">,</span> <span class="n">get_step_context</span>
 
         <span class="c1"># If the environment variable was set to explicitly not run on the</span>
         <span class="c1"># stack, we do that.</span>
@@ -4904,7 +4904,7 @@ function (e.g. <code>module.my_function</code>).</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/steps/base_step.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">enable_cache</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -4954,7 +4954,7 @@ function (e.g. <code>module.my_function</code>).</p></td>
 <span class="sd">        retry: Configuration for retrying the step in case of failure.</span>
 <span class="sd">        substitutions: Extra placeholders to use in the name template.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.config.step_configurations</span> <span class="kn">import</span> <span class="n">PartialStepConfiguration</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.config.step_configurations</span><span class="w"> </span><span class="kn">import</span> <span class="n">PartialStepConfiguration</span>
 
     <span class="bp">self</span><span class="o">.</span><span class="n">entrypoint_definition</span> <span class="o">=</span> <span class="n">validate_entrypoint_function</span><span class="p">(</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">entrypoint</span><span class="p">,</span>
@@ -5097,7 +5097,7 @@ invalid.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/steps/base_step.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">call_entrypoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">call_entrypoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Calls the entrypoint function of the step.</span>
 
 <span class="sd">    Args:</span>
@@ -5122,7 +5122,7 @@ invalid.</p></td>
         <span class="k">raise</span> <span class="n">StepInterfaceError</span><span class="p">(</span>
             <span class="s2">&quot;Invalid step function entrypoint arguments. Check out the &quot;</span>
             <span class="s2">&quot;pydantic error above for more details.&quot;</span>
-        <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">entrypoint</span><span class="p">(</span><span class="o">**</span><span class="n">validated_args</span><span class="p">)</span>
 </code></pre></div>
@@ -5295,7 +5295,7 @@ method for an example.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/steps/base_step.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">configure</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">configure</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">:</span> <span class="n">T</span><span class="p">,</span>
     <span class="n">enable_cache</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">enable_artifact_metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -5362,10 +5362,10 @@ method for an example.</p></td>
 <span class="sd">    Returns:</span>
 <span class="sd">        The step instance that this method was called on.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.config.step_configurations</span> <span class="kn">import</span> <span class="n">StepConfigurationUpdate</span>
-    <span class="kn">from</span> <span class="nn">zenml.hooks.hook_validators</span> <span class="kn">import</span> <span class="n">resolve_and_validate_hook</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.config.step_configurations</span><span class="w"> </span><span class="kn">import</span> <span class="n">StepConfigurationUpdate</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.hooks.hook_validators</span><span class="w"> </span><span class="kn">import</span> <span class="n">resolve_and_validate_hook</span>
 
-    <span class="k">def</span> <span class="nf">_resolve_if_necessary</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_resolve_if_necessary</span><span class="p">(</span>
         <span class="n">value</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Source</span><span class="p">,</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">]],</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Source</span><span class="p">:</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
@@ -5375,7 +5375,7 @@ method for an example.</p></td>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">source_utils</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_convert_to_tuple</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Source</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_convert_to_tuple</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Source</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">):</span>
             <span class="k">return</span> <span class="p">(</span><span class="n">_resolve_if_necessary</span><span class="p">(</span><span class="n">value</span><span class="p">),)</span>
         <span class="k">else</span><span class="p">:</span>
@@ -5467,7 +5467,7 @@ method for an example.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/steps/base_step.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseStep&quot;</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseStep&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Copies the step.</span>
 
 <span class="sd">    Returns:</span>
@@ -5539,7 +5539,7 @@ method for an example.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/steps/base_step.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@abstractmethod</span>
-<span class="k">def</span> <span class="nf">entrypoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">entrypoint</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Abstract method for core step logic.</span>
 
 <span class="sd">    Args:</span>
@@ -5626,7 +5626,7 @@ method for an example.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/steps/base_step.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">load_from_source</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">source</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Source</span><span class="p">,</span> <span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseStep&quot;</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">load_from_source</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">source</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Source</span><span class="p">,</span> <span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseStep&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Loads a step from source.</span>
 
 <span class="sd">    Args:</span>
@@ -5685,7 +5685,7 @@ method for an example.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/steps/base_step.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">resolve</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Source</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">resolve</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Source</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Resolves the step.</span>
 
 <span class="sd">    Returns:</span>
@@ -5847,7 +5847,7 @@ method for an example.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/steps/base_step.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">with_options</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">with_options</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">enable_cache</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">enable_artifact_metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -6041,7 +6041,7 @@ names to output annotations.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/steps/entrypoint_function_utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">EntrypointFunctionDefinition</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">EntrypointFunctionDefinition</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Class representing a step entrypoint function.</span>
 
 <span class="sd">    Attributes:</span>
@@ -6053,7 +6053,7 @@ names to output annotations.</p></td>
     <span class="n">inputs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="p">]</span>
     <span class="n">outputs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">OutputSignature</span><span class="p">]</span>
 
-    <span class="k">def</span> <span class="nf">validate_input</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">validate_input</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Validates an input to the step entrypoint function.</span>
 
 <span class="sd">        Args:</span>
@@ -6069,12 +6069,12 @@ names to output annotations.</p></td>
 <span class="sd">            StepInterfaceError: If the input is a parameter and not JSON</span>
 <span class="sd">                serializable.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.artifacts.external_artifact</span> <span class="kn">import</span> <span class="n">ExternalArtifact</span>
-        <span class="kn">from</span> <span class="nn">zenml.artifacts.unmaterialized_artifact</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.artifacts.external_artifact</span><span class="w"> </span><span class="kn">import</span> <span class="n">ExternalArtifact</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.artifacts.unmaterialized_artifact</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">UnmaterializedArtifact</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="kn">from</span> <span class="nn">zenml.client_lazy_loader</span> <span class="kn">import</span> <span class="n">ClientLazyLoader</span>
-        <span class="kn">from</span> <span class="nn">zenml.models</span> <span class="kn">import</span> <span class="n">ArtifactVersionResponse</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.client_lazy_loader</span><span class="w"> </span><span class="kn">import</span> <span class="n">ClientLazyLoader</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArtifactVersionResponse</span>
 
         <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
@@ -6121,9 +6121,9 @@ names to output annotations.</p></td>
                 <span class="sa">f</span><span class="s2">&quot;Input validation failed for input &#39;</span><span class="si">{</span><span class="n">parameter</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;: &quot;</span>
                 <span class="sa">f</span><span class="s2">&quot;Expected type `</span><span class="si">{</span><span class="n">parameter</span><span class="o">.</span><span class="n">annotation</span><span class="si">}</span><span class="s2">` but received type &quot;</span>
                 <span class="sa">f</span><span class="s2">&quot;`</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="si">}</span><span class="s2">`.&quot;</span>
-            <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
-    <span class="k">def</span> <span class="nf">_validate_input_value</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_input_value</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">parameter</span><span class="p">:</span> <span class="n">inspect</span><span class="o">.</span><span class="n">Parameter</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Validates an input value to the step entrypoint function.</span>
@@ -6181,7 +6181,7 @@ names to output annotations.</p></td>
 
         <details class="quote">
           <summary>Source code in <code>zenml/steps/entrypoint_function_utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">__getnewargs__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">__getnewargs__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
     <span class="s1">&#39;Return self as a plain tuple.  Used by copy and pickle.&#39;</span>
     <span class="k">return</span> <span class="n">_tuple</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 </code></pre></div>
@@ -6235,7 +6235,7 @@ names to output annotations.</p></td>
 
         <details class="quote">
           <summary>Source code in <code>zenml/steps/entrypoint_function_utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
     <span class="s1">&#39;Return a nicely formatted representation string&#39;</span>
     <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">+</span> <span class="n">repr_fmt</span> <span class="o">%</span> <span class="bp">self</span>
 </code></pre></div>
@@ -6317,7 +6317,7 @@ serializable.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/steps/entrypoint_function_utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">validate_input</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">validate_input</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Validates an input to the step entrypoint function.</span>
 
 <span class="sd">    Args:</span>
@@ -6333,12 +6333,12 @@ serializable.</p></td>
 <span class="sd">        StepInterfaceError: If the input is a parameter and not JSON</span>
 <span class="sd">            serializable.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.artifacts.external_artifact</span> <span class="kn">import</span> <span class="n">ExternalArtifact</span>
-    <span class="kn">from</span> <span class="nn">zenml.artifacts.unmaterialized_artifact</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.artifacts.external_artifact</span><span class="w"> </span><span class="kn">import</span> <span class="n">ExternalArtifact</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.artifacts.unmaterialized_artifact</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
         <span class="n">UnmaterializedArtifact</span><span class="p">,</span>
     <span class="p">)</span>
-    <span class="kn">from</span> <span class="nn">zenml.client_lazy_loader</span> <span class="kn">import</span> <span class="n">ClientLazyLoader</span>
-    <span class="kn">from</span> <span class="nn">zenml.models</span> <span class="kn">import</span> <span class="n">ArtifactVersionResponse</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.client_lazy_loader</span><span class="w"> </span><span class="kn">import</span> <span class="n">ClientLazyLoader</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArtifactVersionResponse</span>
 
     <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">inputs</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
@@ -6385,7 +6385,7 @@ serializable.</p></td>
             <span class="sa">f</span><span class="s2">&quot;Input validation failed for input &#39;</span><span class="si">{</span><span class="n">parameter</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;: &quot;</span>
             <span class="sa">f</span><span class="s2">&quot;Expected type `</span><span class="si">{</span><span class="n">parameter</span><span class="o">.</span><span class="n">annotation</span><span class="si">}</span><span class="s2">` but received type &quot;</span>
             <span class="sa">f</span><span class="s2">&quot;`</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="si">}</span><span class="s2">`.&quot;</span>
-        <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 </code></pre></div>
         </details>
     </div>
@@ -6422,10 +6422,10 @@ StepArtifact        </code>
 
         <details class="quote">
           <summary>Source code in <code>zenml/steps/entrypoint_function_utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StepArtifact</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">StepArtifact</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Class to represent step output artifacts.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">invocation_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">output_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -6445,7 +6445,7 @@ StepArtifact        </code>
         <span class="bp">self</span><span class="o">.</span><span class="n">annotation</span> <span class="o">=</span> <span class="n">annotation</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pipeline</span> <span class="o">=</span> <span class="n">pipeline</span>
 
-    <span class="k">def</span> <span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NoReturn</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NoReturn</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Raise a custom error if someone is trying to iterate this object.</span>
 
 <span class="sd">        Raises:</span>
@@ -6529,7 +6529,7 @@ StepArtifact        </code>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/steps/entrypoint_function_utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">invocation_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">output_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -6590,7 +6590,7 @@ StepArtifact        </code>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/steps/entrypoint_function_utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NoReturn</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NoReturn</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Raise a custom error if someone is trying to iterate this object.</span>
 
 <span class="sd">    Raises:</span>
@@ -6699,7 +6699,7 @@ annotation is missing.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/steps/entrypoint_function_utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">validate_entrypoint_function</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">validate_entrypoint_function</span><span class="p">(</span>
     <span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
     <span class="n">reserved_arguments</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">EntrypointFunctionDefinition</span><span class="p">:</span>
@@ -6820,7 +6820,7 @@ annotation is missing.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/steps/entrypoint_function_utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">validate_reserved_arguments</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">validate_reserved_arguments</span><span class="p">(</span>
     <span class="n">signature</span><span class="p">:</span> <span class="n">inspect</span><span class="o">.</span><span class="n">Signature</span><span class="p">,</span> <span class="n">reserved_arguments</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Validates that the signature does not contain any reserved arguments.</span>
@@ -6918,7 +6918,7 @@ def my_trainer_step() -&gt; Any:
 
         <details class="quote">
           <summary>Source code in <code>zenml/steps/step_context.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StepContext</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">SingletonMetaClass</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">StepContext</span><span class="p">(</span><span class="n">metaclass</span><span class="o">=</span><span class="n">SingletonMetaClass</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Provides additional context inside a step function.</span>
 
 <span class="sd">    This singleton class is used to access information about the current run,</span>
@@ -6946,7 +6946,7 @@ def my_trainer_step() -&gt; Any:
 <span class="sd">    ```</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">pipeline_run</span><span class="p">:</span> <span class="s2">&quot;PipelineRunResponse&quot;</span><span class="p">,</span>
         <span class="n">step_run</span><span class="p">:</span> <span class="s2">&quot;StepRunResponse&quot;</span><span class="p">,</span>
@@ -6970,7 +6970,7 @@ def my_trainer_step() -&gt; Any:
 <span class="sd">            StepContextError: If the keys of the output materializers and</span>
 <span class="sd">                output artifacts do not match.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.client</span> <span class="kn">import</span> <span class="n">Client</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">Client</span>
 
         <span class="k">try</span><span class="p">:</span>
             <span class="n">pipeline_run</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span><span class="o">.</span><span class="n">get_pipeline_run</span><span class="p">(</span><span class="n">pipeline_run</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
@@ -7007,7 +7007,7 @@ def my_trainer_step() -&gt; Any:
         <span class="bp">self</span><span class="o">.</span><span class="n">_cleanup_registry</span> <span class="o">=</span> <span class="n">CallbackRegistry</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">pipeline</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;PipelineResponse&quot;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">pipeline</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;PipelineResponse&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the current pipeline.</span>
 
 <span class="sd">        Returns:</span>
@@ -7025,7 +7025,7 @@ def my_trainer_step() -&gt; Any:
         <span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">model</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Model&quot;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">model</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Model&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns configured Model.</span>
 
 <span class="sd">        Order of resolution to search for Model is:</span>
@@ -7049,7 +7049,7 @@ def my_trainer_step() -&gt; Any:
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_version</span><span class="o">.</span><span class="n">to_model_class</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;StepRunInputResponse&quot;</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;StepRunInputResponse&quot;</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the input artifacts of the current step.</span>
 
 <span class="sd">        Returns:</span>
@@ -7057,7 +7057,7 @@ def my_trainer_step() -&gt; Any:
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">step_run</span><span class="o">.</span><span class="n">inputs</span>
 
-    <span class="k">def</span> <span class="nf">_get_output</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_output</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">output_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;StepContextOutput&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the materializer and artifact URI for a given step output.</span>
@@ -7101,7 +7101,7 @@ def my_trainer_step() -&gt; Any:
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_outputs</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
 
-    <span class="k">def</span> <span class="nf">get_output_materializer</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_output_materializer</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">output_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">custom_materializer_class</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseMaterializer&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -7128,7 +7128,7 @@ def my_trainer_step() -&gt; Any:
 <span class="sd">            A materializer initialized with the output artifact for</span>
 <span class="sd">            the given output.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.utils</span> <span class="kn">import</span> <span class="n">materializer_utils</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">materializer_utils</span>
 
         <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_output</span><span class="p">(</span><span class="n">output_name</span><span class="p">)</span>
         <span class="n">materializer_classes</span> <span class="o">=</span> <span class="n">output</span><span class="o">.</span><span class="n">materializer_classes</span>
@@ -7145,7 +7145,7 @@ def my_trainer_step() -&gt; Any:
 
         <span class="k">return</span> <span class="n">materializer_class</span><span class="p">(</span><span class="n">artifact_uri</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">get_output_artifact_uri</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_output_artifact_uri</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">output_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the artifact URI for a given step output.</span>
@@ -7161,7 +7161,7 @@ def my_trainer_step() -&gt; Any:
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_output</span><span class="p">(</span><span class="n">output_name</span><span class="p">)</span><span class="o">.</span><span class="n">artifact_uri</span>
 
-    <span class="k">def</span> <span class="nf">get_output_metadata</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_output_metadata</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">output_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;MetadataType&quot;</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the metadata for a given step output.</span>
@@ -7183,7 +7183,7 @@ def my_trainer_step() -&gt; Any:
             <span class="p">)</span>
         <span class="k">return</span> <span class="n">custom_metadata</span>
 
-    <span class="k">def</span> <span class="nf">get_output_tags</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_output_tags</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the tags for a given step output.</span>
 
 <span class="sd">        Args:</span>
@@ -7203,7 +7203,7 @@ def my_trainer_step() -&gt; Any:
             <span class="p">)</span>
         <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">custom_tags</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">add_output_metadata</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_output_metadata</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">metadata</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;MetadataType&quot;</span><span class="p">],</span>
         <span class="n">output_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -7222,7 +7222,7 @@ def my_trainer_step() -&gt; Any:
             <span class="n">output</span><span class="o">.</span><span class="n">run_metadata</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="n">output</span><span class="o">.</span><span class="n">run_metadata</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="o">**</span><span class="n">metadata</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">add_output_tags</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_output_tags</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">tags</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
         <span class="n">output_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -7484,7 +7484,7 @@ output artifacts do not match.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/steps/step_context.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">pipeline_run</span><span class="p">:</span> <span class="s2">&quot;PipelineRunResponse&quot;</span><span class="p">,</span>
     <span class="n">step_run</span><span class="p">:</span> <span class="s2">&quot;StepRunResponse&quot;</span><span class="p">,</span>
@@ -7508,7 +7508,7 @@ output artifacts do not match.</p></td>
 <span class="sd">        StepContextError: If the keys of the output materializers and</span>
 <span class="sd">            output artifacts do not match.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.client</span> <span class="kn">import</span> <span class="n">Client</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">Client</span>
 
     <span class="k">try</span><span class="p">:</span>
         <span class="n">pipeline_run</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span><span class="o">.</span><span class="n">get_pipeline_run</span><span class="p">(</span><span class="n">pipeline_run</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
@@ -7595,7 +7595,7 @@ step has multiple outputs, an exception will be raised.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/steps/step_context.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">add_output_metadata</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">add_output_metadata</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">metadata</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;MetadataType&quot;</span><span class="p">],</span>
     <span class="n">output_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -7665,7 +7665,7 @@ step has multiple outputs, an exception will be raised.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/steps/step_context.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">add_output_tags</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">add_output_tags</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">tags</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
     <span class="n">output_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -7744,7 +7744,7 @@ multiple outputs, an exception will be raised.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/steps/step_context.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_output_artifact_uri</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_output_artifact_uri</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">output_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the artifact URI for a given step output.</span>
@@ -7840,7 +7840,7 @@ the given output.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/steps/step_context.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_output_materializer</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_output_materializer</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">output_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">custom_materializer_class</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseMaterializer&quot;</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -7867,7 +7867,7 @@ the given output.</p></td>
 <span class="sd">        A materializer initialized with the output artifact for</span>
 <span class="sd">        the given output.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.utils</span> <span class="kn">import</span> <span class="n">materializer_utils</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">materializer_utils</span>
 
     <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_output</span><span class="p">(</span><span class="n">output_name</span><span class="p">)</span>
     <span class="n">materializer_classes</span> <span class="o">=</span> <span class="n">output</span><span class="o">.</span><span class="n">materializer_classes</span>
@@ -7944,7 +7944,7 @@ step has multiple outputs, an exception will be raised.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/steps/step_context.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_output_metadata</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_output_metadata</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">output_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;MetadataType&quot;</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the metadata for a given step output.</span>
@@ -8026,7 +8026,7 @@ step has multiple outputs, an exception will be raised.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/steps/step_context.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_output_tags</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_output_tags</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the tags for a given step output.</span>
 
 <span class="sd">    Args:</span>
@@ -8081,7 +8081,7 @@ StepContextOutput        </code>
 
         <details class="quote">
           <summary>Source code in <code>zenml/steps/step_context.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StepContextOutput</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">StepContextOutput</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Represents a step output in the step context.&quot;&quot;&quot;</span>
 
     <span class="n">materializer_classes</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseMaterializer&quot;</span><span class="p">]]</span>
@@ -8090,7 +8090,7 @@ StepContextOutput        </code>
     <span class="n">artifact_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;ArtifactConfig&quot;</span><span class="p">]</span>
     <span class="n">tags</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">materializer_classes</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseMaterializer&quot;</span><span class="p">]],</span>
         <span class="n">artifact_uri</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -8173,7 +8173,7 @@ StepContextOutput        </code>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/steps/step_context.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">materializer_classes</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseMaterializer&quot;</span><span class="p">]],</span>
     <span class="n">artifact_uri</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
@@ -8254,7 +8254,7 @@ StepContextOutput        </code>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/steps/step_context.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_step_context</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="s2">&quot;StepContext&quot;</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_step_context</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="s2">&quot;StepContext&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the context of the currently running step.</span>
 
 <span class="sd">    Returns:</span>
@@ -8466,7 +8466,7 @@ function with no arguments, or a source path to such a function
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/steps/step_decorator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">step</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">step</span><span class="p">(</span>
     <span class="n">_func</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="s2">&quot;F&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -8521,8 +8521,8 @@ function with no arguments, or a source path to such a function
 <span class="sd">        The step instance.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">inner_decorator</span><span class="p">(</span><span class="n">func</span><span class="p">:</span> <span class="s2">&quot;F&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseStep&quot;</span><span class="p">:</span>
-        <span class="kn">from</span> <span class="nn">zenml.steps.decorated_step</span> <span class="kn">import</span> <span class="n">_DecoratedStep</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">inner_decorator</span><span class="p">(</span><span class="n">func</span><span class="p">:</span> <span class="s2">&quot;F&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;BaseStep&quot;</span><span class="p">:</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.steps.decorated_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">_DecoratedStep</span>
 
         <span class="n">class_</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseStep&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span>
             <span class="n">func</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
@@ -8620,10 +8620,10 @@ StepInvocation        </code>
 
         <details class="quote">
           <summary>Source code in <code>zenml/steps/step_invocation.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">StepInvocation</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">StepInvocation</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Step invocation class.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">step</span><span class="p">:</span> <span class="s2">&quot;BaseStep&quot;</span><span class="p">,</span>
@@ -8664,7 +8664,7 @@ StepInvocation        </code>
         <span class="bp">self</span><span class="o">.</span><span class="n">upstream_steps</span> <span class="o">=</span> <span class="n">upstream_steps</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pipeline</span> <span class="o">=</span> <span class="n">pipeline</span>
 
-    <span class="k">def</span> <span class="nf">finalize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parameters_to_ignore</span><span class="p">:</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="s2">&quot;StepConfiguration&quot;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">finalize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parameters_to_ignore</span><span class="p">:</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="s2">&quot;StepConfiguration&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Finalizes a step invocation.</span>
 
 <span class="sd">        It will validate the upstream steps and run final configurations on the</span>
@@ -8677,7 +8677,7 @@ StepInvocation        </code>
 <span class="sd">        Returns:</span>
 <span class="sd">            The finalized step configuration.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.artifacts.external_artifact_config</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.artifacts.external_artifact_config</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">ExternalArtifactConfiguration</span><span class="p">,</span>
         <span class="p">)</span>
 
@@ -8821,7 +8821,7 @@ the invocation.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/steps/step_invocation.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">step</span><span class="p">:</span> <span class="s2">&quot;BaseStep&quot;</span><span class="p">,</span>
@@ -8922,7 +8922,7 @@ to the step instance.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/steps/step_invocation.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">finalize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parameters_to_ignore</span><span class="p">:</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="s2">&quot;StepConfiguration&quot;</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">finalize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parameters_to_ignore</span><span class="p">:</span> <span class="n">Set</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="s2">&quot;StepConfiguration&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Finalizes a step invocation.</span>
 
 <span class="sd">    It will validate the upstream steps and run final configurations on the</span>
@@ -8935,7 +8935,7 @@ to the step instance.</p></td>
 <span class="sd">    Returns:</span>
 <span class="sd">        The finalized step configuration.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.artifacts.external_artifact_config</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.artifacts.external_artifact_config</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
         <span class="n">ExternalArtifactConfiguration</span><span class="p">,</span>
     <span class="p">)</span>
 
@@ -9047,15 +9047,15 @@ OnlyNoneReturnsVisitor            (<a class="autorefs autorefs-internal" title="
 
         <details class="quote">
           <summary>Source code in <code>zenml/steps/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">OnlyNoneReturnsVisitor</span><span class="p">(</span><span class="n">ReturnVisitor</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">OnlyNoneReturnsVisitor</span><span class="p">(</span><span class="n">ReturnVisitor</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks whether a function AST contains only `None` returns.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes a visitor instance.&quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">has_only_none_returns</span> <span class="o">=</span> <span class="kc">True</span>
 
-    <span class="k">def</span> <span class="nf">visit_Return</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n">ast</span><span class="o">.</span><span class="n">Return</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">visit_Return</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n">ast</span><span class="o">.</span><span class="n">Return</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Visit a return statement.</span>
 
 <span class="sd">        Args:</span>
@@ -9101,7 +9101,7 @@ OnlyNoneReturnsVisitor            (<a class="autorefs autorefs-internal" title="
 
         <details class="quote">
           <summary>Source code in <code>zenml/steps/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes a visitor instance.&quot;&quot;&quot;</span>
     <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">has_only_none_returns</span> <span class="o">=</span> <span class="kc">True</span>
@@ -9148,7 +9148,7 @@ OnlyNoneReturnsVisitor            (<a class="autorefs autorefs-internal" title="
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/steps/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">visit_Return</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n">ast</span><span class="o">.</span><span class="n">Return</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">visit_Return</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n">ast</span><span class="o">.</span><span class="n">Return</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Visit a return statement.</span>
 
 <span class="sd">    Args:</span>
@@ -9197,14 +9197,14 @@ OutputSignature            (<span title="pydantic.main.BaseModel">BaseModel</spa
 
         <details class="quote">
           <summary>Source code in <code>zenml/steps/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">OutputSignature</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">OutputSignature</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;The signature of an output artifact.&quot;&quot;&quot;</span>
 
     <span class="n">resolved_annotation</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">artifact_config</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ArtifactConfig</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">has_custom_name</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 
-    <span class="k">def</span> <span class="nf">get_output_types</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_output_types</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get all output types that match the type annotation.</span>
 
 <span class="sd">        Returns:</span>
@@ -9286,7 +9286,7 @@ OutputSignature            (<span title="pydantic.main.BaseModel">BaseModel</spa
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/steps/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_output_types</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_output_types</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get all output types that match the type annotation.</span>
 
 <span class="sd">    Returns:</span>
@@ -9344,10 +9344,10 @@ ReturnVisitor            (<span title="ast.NodeVisitor">NodeVisitor</span>)
 
         <details class="quote">
           <summary>Source code in <code>zenml/steps/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">ReturnVisitor</span><span class="p">(</span><span class="n">ast</span><span class="o">.</span><span class="n">NodeVisitor</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">ReturnVisitor</span><span class="p">(</span><span class="n">ast</span><span class="o">.</span><span class="n">NodeVisitor</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;AST visitor class that can be subclassed to visit function returns.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ignore_nested_functions</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ignore_nested_functions</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes a return visitor instance.</span>
 
 <span class="sd">        Args:</span>
@@ -9357,7 +9357,7 @@ ReturnVisitor            (<span title="ast.NodeVisitor">NodeVisitor</span>)
         <span class="bp">self</span><span class="o">.</span><span class="n">_ignore_nested_functions</span> <span class="o">=</span> <span class="n">ignore_nested_functions</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_inside_function</span> <span class="o">=</span> <span class="kc">False</span>
 
-    <span class="k">def</span> <span class="nf">_visit_function</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_visit_function</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">ast</span><span class="o">.</span><span class="n">FunctionDef</span><span class="p">,</span> <span class="n">ast</span><span class="o">.</span><span class="n">AsyncFunctionDef</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Visit a (async) function definition node.</span>
@@ -9429,7 +9429,7 @@ functions.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/steps/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ignore_nested_functions</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ignore_nested_functions</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes a return visitor instance.</span>
 
 <span class="sd">    Args:</span>
@@ -9481,7 +9481,7 @@ functions.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/steps/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">_visit_function</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_visit_function</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">ast</span><span class="o">.</span><span class="n">FunctionDef</span><span class="p">,</span> <span class="n">ast</span><span class="o">.</span><span class="n">AsyncFunctionDef</span><span class="p">]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Visit a (async) function definition node.</span>
@@ -9539,7 +9539,7 @@ functions.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/steps/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">_visit_function</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_visit_function</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">ast</span><span class="o">.</span><span class="n">FunctionDef</span><span class="p">,</span> <span class="n">ast</span><span class="o">.</span><span class="n">AsyncFunctionDef</span><span class="p">]</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Visit a (async) function definition node.</span>
@@ -9591,15 +9591,15 @@ TupleReturnVisitor            (<a class="autorefs autorefs-internal" title="zenm
 
         <details class="quote">
           <summary>Source code in <code>zenml/steps/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">TupleReturnVisitor</span><span class="p">(</span><span class="n">ReturnVisitor</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">TupleReturnVisitor</span><span class="p">(</span><span class="n">ReturnVisitor</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks whether a function AST contains tuple returns.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Initializes a visitor instance.&quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">has_tuple_return</span> <span class="o">=</span> <span class="kc">False</span>
 
-    <span class="k">def</span> <span class="nf">visit_Return</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n">ast</span><span class="o">.</span><span class="n">Return</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">visit_Return</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n">ast</span><span class="o">.</span><span class="n">Return</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Visit a return statement.</span>
 
 <span class="sd">        Args:</span>
@@ -9641,7 +9641,7 @@ TupleReturnVisitor            (<a class="autorefs autorefs-internal" title="zenm
 
         <details class="quote">
           <summary>Source code in <code>zenml/steps/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Initializes a visitor instance.&quot;&quot;&quot;</span>
     <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">has_tuple_return</span> <span class="o">=</span> <span class="kc">False</span>
@@ -9688,7 +9688,7 @@ TupleReturnVisitor            (<a class="autorefs autorefs-internal" title="zenm
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/steps/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">visit_Return</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n">ast</span><span class="o">.</span><span class="n">Return</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">visit_Return</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n">ast</span><span class="o">.</span><span class="n">Return</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Visit a return statement.</span>
 
 <span class="sd">    Args:</span>
@@ -9768,7 +9768,7 @@ TupleReturnVisitor            (<a class="autorefs autorefs-internal" title="zenm
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/steps/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_args</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_args</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get arguments of a type annotation.</span>
 
 <span class="sd">    Example:</span>
@@ -9864,7 +9864,7 @@ or if the name was specified multiple times or is an empty string.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/steps/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_artifact_config_from_annotation_metadata</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_artifact_config_from_annotation_metadata</span><span class="p">(</span>
     <span class="n">annotation</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ArtifactConfig</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the artifact config from the annotation metadata of a step output.</span>
@@ -10014,7 +10014,7 @@ has_only_none_returns(f3)  # False
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/steps/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">has_only_none_returns</span><span class="p">(</span><span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">has_only_none_returns</span><span class="p">(</span><span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks whether a function contains only `None` returns.</span>
 
 <span class="sd">    A `None` return could be either an explicit `return None` or an empty</span>
@@ -10129,7 +10129,7 @@ has_tuple_return(f3)  # False
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/steps/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">has_tuple_return</span><span class="p">(</span><span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">has_tuple_return</span><span class="p">(</span><span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Checks whether a function returns multiple values.</span>
 
 <span class="sd">    Multiple values means that the `return` statement is followed by a tuple</span>
@@ -10246,7 +10246,7 @@ the function is not called from within a step.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/steps/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">log_step_metadata</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">log_step_metadata</span><span class="p">(</span>
     <span class="n">metadata</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;MetadataType&quot;</span><span class="p">],</span>
     <span class="n">step_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">pipeline_name_id_or_prefix</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">UUID</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -10397,7 +10397,7 @@ annotation is missing.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/steps/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">parse_return_type_annotations</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">parse_return_type_annotations</span><span class="p">(</span>
     <span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
     <span class="n">enforce_type_annotations</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">OutputSignature</span><span class="p">]:</span>
@@ -10539,7 +10539,7 @@ concrete class <code>dict</code>.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/steps/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">resolve_type_annotation</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">resolve_type_annotation</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the non-generic class for generic aliases of the typing module.</span>
 
 <span class="sd">    Example: if the input object is `typing.Dict`, this method will return the</span>
@@ -10650,7 +10650,7 @@ invalid.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/steps/utils.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">run_as_single_step_pipeline</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">run_as_single_step_pipeline</span><span class="p">(</span>
     <span class="n">__step</span><span class="p">:</span> <span class="s2">&quot;BaseStep&quot;</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Runs the step as a single step pipeline.</span>
@@ -10672,9 +10672,9 @@ invalid.</p></td>
 <span class="sd">    Returns:</span>
 <span class="sd">        The output of the step entrypoint function.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml</span> <span class="kn">import</span> <span class="n">ExternalArtifact</span><span class="p">,</span> <span class="n">pipeline</span>
-    <span class="kn">from</span> <span class="nn">zenml.config.base_settings</span> <span class="kn">import</span> <span class="n">BaseSettings</span>
-    <span class="kn">from</span> <span class="nn">zenml.pipelines.run_utils</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml</span><span class="w"> </span><span class="kn">import</span> <span class="n">ExternalArtifact</span><span class="p">,</span> <span class="n">pipeline</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.config.base_settings</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseSettings</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.pipelines.run_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
         <span class="n">wait_for_pipeline_run_to_finish</span><span class="p">,</span>
     <span class="p">)</span>
 
@@ -10692,7 +10692,7 @@ invalid.</p></td>
         <span class="k">raise</span> <span class="n">StepInterfaceError</span><span class="p">(</span>
             <span class="s2">&quot;Invalid step function entrypoint arguments. Check out the &quot;</span>
             <span class="s2">&quot;error above for more details.&quot;</span>
-        <span class="p">)</span> <span class="kn">from</span> <span class="nn">e</span>
+        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">e</span>
 
     <span class="n">inputs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">validated_arguments</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
@@ -10711,7 +10711,7 @@ invalid.</p></td>
         <span class="n">pipeline_settings</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">BaseSettings</span><span class="p">(</span><span class="n">synchronous</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
     <span class="nd">@pipeline</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">__step</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">enable_cache</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">settings</span><span class="o">=</span><span class="n">pipeline_settings</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">single_step_pipeline</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">single_step_pipeline</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">__step</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">)</span>
 
     <span class="n">run</span> <span class="o">=</span> <span class="n">single_step_pipeline</span><span class="o">.</span><span class="n">with_options</span><span class="p">(</span><span class="n">unlisted</span><span class="o">=</span><span class="kc">True</span><span class="p">)()</span>

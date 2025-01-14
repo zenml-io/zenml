@@ -2712,7 +2712,7 @@ WhylogsIntegration            (<a class="autorefs autorefs-internal" title="zenm
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/whylogs/__init__.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">WhylogsIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">WhylogsIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Definition of [whylogs](https://github.com/whylabs/whylogs) integration for ZenML.&quot;&quot;&quot;</span>
 
     <span class="n">NAME</span> <span class="o">=</span> <span class="n">WHYLOGS</span>
@@ -2721,26 +2721,26 @@ WhylogsIntegration            (<a class="autorefs autorefs-internal" title="zenm
     <span class="n">REQUIREMENTS_IGNORED_ON_UNINSTALL</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;pandas&quot;</span><span class="p">]</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Activates the integration.&quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.whylogs</span> <span class="kn">import</span> <span class="n">materializers</span>  <span class="c1"># noqa</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.whylogs</span> <span class="kn">import</span> <span class="n">secret_schemas</span>  <span class="c1"># noqa</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.whylogs</span><span class="w"> </span><span class="kn">import</span> <span class="n">materializers</span>  <span class="c1"># noqa</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.whylogs</span><span class="w"> </span><span class="kn">import</span> <span class="n">secret_schemas</span>  <span class="c1"># noqa</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Great Expectations integration.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            List of stack component flavors for this integration.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.whylogs.flavors</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.whylogs.flavors</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">WhylogsDataValidatorFlavor</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="k">return</span> <span class="p">[</span><span class="n">WhylogsDataValidatorFlavor</span><span class="p">]</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">get_requirements</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">target_os</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_requirements</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">target_os</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Method to get the requirements for the integration.</span>
 
 <span class="sd">        Args:</span>
@@ -2749,7 +2749,7 @@ WhylogsIntegration            (<a class="autorefs autorefs-internal" title="zenm
 <span class="sd">        Returns:</span>
 <span class="sd">            A list of requirements.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.pandas</span> <span class="kn">import</span> <span class="n">PandasIntegration</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.pandas</span><span class="w"> </span><span class="kn">import</span> <span class="n">PandasIntegration</span>
 
         <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">REQUIREMENTS</span> <span class="o">+</span> \
             <span class="n">PandasIntegration</span><span class="o">.</span><span class="n">get_requirements</span><span class="p">(</span><span class="n">target_os</span><span class="o">=</span><span class="n">target_os</span><span class="p">)</span>
@@ -2791,10 +2791,10 @@ WhylogsIntegration            (<a class="autorefs autorefs-internal" title="zenm
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/whylogs/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">activate</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Activates the integration.&quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.integrations.whylogs</span> <span class="kn">import</span> <span class="n">materializers</span>  <span class="c1"># noqa</span>
-    <span class="kn">from</span> <span class="nn">zenml.integrations.whylogs</span> <span class="kn">import</span> <span class="n">secret_schemas</span>  <span class="c1"># noqa</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.whylogs</span><span class="w"> </span><span class="kn">import</span> <span class="n">materializers</span>  <span class="c1"># noqa</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.whylogs</span><span class="w"> </span><span class="kn">import</span> <span class="n">secret_schemas</span>  <span class="c1"># noqa</span>
 </code></pre></div>
         </details>
     </div>
@@ -2838,13 +2838,13 @@ WhylogsIntegration            (<a class="autorefs autorefs-internal" title="zenm
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/whylogs/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Great Expectations integration.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        List of stack component flavors for this integration.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.integrations.whylogs.flavors</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.whylogs.flavors</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
         <span class="n">WhylogsDataValidatorFlavor</span><span class="p">,</span>
     <span class="p">)</span>
 
@@ -2911,7 +2911,7 @@ WhylogsIntegration            (<a class="autorefs autorefs-internal" title="zenm
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/whylogs/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">get_requirements</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">target_os</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_requirements</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">target_os</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Method to get the requirements for the integration.</span>
 
 <span class="sd">    Args:</span>
@@ -2920,7 +2920,7 @@ WhylogsIntegration            (<a class="autorefs autorefs-internal" title="zenm
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of requirements.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.integrations.pandas</span> <span class="kn">import</span> <span class="n">PandasIntegration</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.pandas</span><span class="w"> </span><span class="kn">import</span> <span class="n">PandasIntegration</span>
 
     <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">REQUIREMENTS</span> <span class="o">+</span> \
         <span class="n">PandasIntegration</span><span class="o">.</span><span class="n">get_requirements</span><span class="p">(</span><span class="n">target_os</span><span class="o">=</span><span class="n">target_os</span><span class="p">)</span>
@@ -3081,7 +3081,7 @@ stored in the ZenML Artifact Store.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/whylogs/data_validators/whylogs_data_validator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">WhylogsDataValidator</span><span class="p">(</span><span class="n">BaseDataValidator</span><span class="p">,</span> <span class="n">AuthenticationMixin</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">WhylogsDataValidator</span><span class="p">(</span><span class="n">BaseDataValidator</span><span class="p">,</span> <span class="n">AuthenticationMixin</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Whylogs data validator stack component.</span>
 
 <span class="sd">    Attributes:</span>
@@ -3097,7 +3097,7 @@ stored in the ZenML Artifact Store.</p></td>
     <span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">WhylogsDataValidatorConfig</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">WhylogsDataValidatorConfig</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the `WhylogsDataValidatorConfig` config.</span>
 
 <span class="sd">        Returns:</span>
@@ -3106,7 +3106,7 @@ stored in the ZenML Artifact Store.</p></td>
         <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">WhylogsDataValidatorConfig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">settings_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseSettings&quot;</span><span class="p">]]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">settings_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="s2">&quot;BaseSettings&quot;</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Settings class for the Whylogs data validator.</span>
 
 <span class="sd">        Returns:</span>
@@ -3114,7 +3114,7 @@ stored in the ZenML Artifact Store.</p></td>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">WhylogsDataValidatorSettings</span>
 
-    <span class="k">def</span> <span class="nf">data_profiling</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">data_profiling</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">dataset</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
         <span class="n">comparison_dataset</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -3144,7 +3144,7 @@ stored in the ZenML Artifact Store.</p></td>
         <span class="n">profile</span><span class="o">.</span><span class="n">set_dataset_timestamp</span><span class="p">(</span><span class="n">dataset_timestamp</span><span class="o">=</span><span class="n">dataset_timestamp</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">profile</span><span class="o">.</span><span class="n">view</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">upload_profile_view</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">upload_profile_view</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">profile_view</span><span class="p">:</span> <span class="n">DatasetProfileView</span><span class="p">,</span>
         <span class="n">dataset_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -3310,11 +3310,11 @@ FLAVOR            (<a class="autorefs autorefs-internal" title="zenml.data_valid
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/whylogs/data_validators/whylogs_data_validator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">WhylogsDataValidatorFlavor</span><span class="p">(</span><span class="n">BaseDataValidatorFlavor</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">WhylogsDataValidatorFlavor</span><span class="p">(</span><span class="n">BaseDataValidatorFlavor</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Whylogs data validator flavor.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -3323,7 +3323,7 @@ FLAVOR            (<a class="autorefs autorefs-internal" title="zenml.data_valid
         <span class="k">return</span> <span class="n">WHYLOGS_DATA_VALIDATOR_FLAVOR</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -3332,7 +3332,7 @@ FLAVOR            (<a class="autorefs autorefs-internal" title="zenml.data_valid
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at SDK docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -3341,7 +3341,7 @@ FLAVOR            (<a class="autorefs autorefs-internal" title="zenml.data_valid
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_sdk_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to represent the flavor in the dashboard.</span>
 
 <span class="sd">        Returns:</span>
@@ -3350,7 +3350,7 @@ FLAVOR            (<a class="autorefs autorefs-internal" title="zenml.data_valid
         <span class="k">return</span> <span class="s2">&quot;https://public-flavor-logos.s3.eu-central-1.amazonaws.com/data_validator/whylogs.png&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">WhylogsDataValidatorConfig</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">WhylogsDataValidatorConfig</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns `WhylogsDataValidatorConfig` config class.</span>
 
 <span class="sd">        Returns:</span>
@@ -3359,13 +3359,13 @@ FLAVOR            (<a class="autorefs autorefs-internal" title="zenml.data_valid
         <span class="k">return</span> <span class="n">WhylogsDataValidatorConfig</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;WhylogsDataValidator&quot;</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;WhylogsDataValidator&quot;</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The implementation class.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.whylogs.data_validators</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.whylogs.data_validators</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">WhylogsDataValidator</span><span class="p">,</span>
         <span class="p">)</span>
 
@@ -3703,7 +3703,7 @@ supplied.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/whylogs/data_validators/whylogs_data_validator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">data_profiling</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">data_profiling</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">dataset</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
     <span class="n">comparison_dataset</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -3803,7 +3803,7 @@ retrieved or inferred from other sources.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/whylogs/data_validators/whylogs_data_validator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">upload_profile_view</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">upload_profile_view</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">profile_view</span><span class="p">:</span> <span class="n">DatasetProfileView</span><span class="p">,</span>
     <span class="n">dataset_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -3975,7 +3975,7 @@ WhylogsDataValidatorConfig            (<a class="autorefs autorefs-internal" tit
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/whylogs/flavors/whylogs_data_validator_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">WhylogsDataValidatorConfig</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">WhylogsDataValidatorConfig</span><span class="p">(</span>
     <span class="n">BaseDataValidatorConfig</span><span class="p">,</span>
     <span class="n">AuthenticationConfigMixin</span><span class="p">,</span>
     <span class="n">WhylogsDataValidatorSettings</span><span class="p">,</span>
@@ -4041,11 +4041,11 @@ WhylogsDataValidatorFlavor            (<a class="autorefs autorefs-internal" tit
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/whylogs/flavors/whylogs_data_validator_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">WhylogsDataValidatorFlavor</span><span class="p">(</span><span class="n">BaseDataValidatorFlavor</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">WhylogsDataValidatorFlavor</span><span class="p">(</span><span class="n">BaseDataValidatorFlavor</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Whylogs data validator flavor.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -4054,7 +4054,7 @@ WhylogsDataValidatorFlavor            (<a class="autorefs autorefs-internal" tit
         <span class="k">return</span> <span class="n">WHYLOGS_DATA_VALIDATOR_FLAVOR</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -4063,7 +4063,7 @@ WhylogsDataValidatorFlavor            (<a class="autorefs autorefs-internal" tit
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at SDK docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -4072,7 +4072,7 @@ WhylogsDataValidatorFlavor            (<a class="autorefs autorefs-internal" tit
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_sdk_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to represent the flavor in the dashboard.</span>
 
 <span class="sd">        Returns:</span>
@@ -4081,7 +4081,7 @@ WhylogsDataValidatorFlavor            (<a class="autorefs autorefs-internal" tit
         <span class="k">return</span> <span class="s2">&quot;https://public-flavor-logos.s3.eu-central-1.amazonaws.com/data_validator/whylogs.png&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">WhylogsDataValidatorConfig</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">WhylogsDataValidatorConfig</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns `WhylogsDataValidatorConfig` config class.</span>
 
 <span class="sd">        Returns:</span>
@@ -4090,13 +4090,13 @@ WhylogsDataValidatorFlavor            (<a class="autorefs autorefs-internal" tit
         <span class="k">return</span> <span class="n">WhylogsDataValidatorConfig</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;WhylogsDataValidator&quot;</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;WhylogsDataValidator&quot;</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The implementation class.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.whylogs.data_validators</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.whylogs.data_validators</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">WhylogsDataValidator</span><span class="p">,</span>
         <span class="p">)</span>
 
@@ -4397,7 +4397,7 @@ to the Whylabs platform if Whylabs credentials are configured.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/whylogs/flavors/whylogs_data_validator_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">WhylogsDataValidatorSettings</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">WhylogsDataValidatorSettings</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Settings for the Whylogs data validator.</span>
 
 <span class="sd">    Attributes:</span>
@@ -4549,7 +4549,7 @@ WhylogsMaterializer            (<a class="autorefs autorefs-internal" title="zen
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/whylogs/materializers/whylogs_materializer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">WhylogsMaterializer</span><span class="p">(</span><span class="n">BaseMaterializer</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">WhylogsMaterializer</span><span class="p">(</span><span class="n">BaseMaterializer</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Materializer to read/write whylogs dataset profile views.&quot;&quot;&quot;</span>
 
     <span class="n">ASSOCIATED_TYPES</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span> <span class="o">...</span><span class="p">]]</span> <span class="o">=</span> <span class="p">(</span><span class="n">DatasetProfileView</span><span class="p">,)</span>
@@ -4557,7 +4557,7 @@ WhylogsMaterializer            (<a class="autorefs autorefs-internal" title="zen
         <span class="n">ArtifactType</span><span class="o">.</span><span class="n">DATA_ANALYSIS</span>
     <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">DatasetProfileView</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">DatasetProfileView</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Reads and returns a whylogs dataset profile view.</span>
 
 <span class="sd">        Args:</span>
@@ -4577,7 +4577,7 @@ WhylogsMaterializer            (<a class="autorefs autorefs-internal" title="zen
 
             <span class="k">return</span> <span class="n">profile_view</span>
 
-    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">profile_view</span><span class="p">:</span> <span class="n">DatasetProfileView</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">profile_view</span><span class="p">:</span> <span class="n">DatasetProfileView</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Writes a whylogs dataset profile view.</span>
 
 <span class="sd">        Args:</span>
@@ -4600,7 +4600,7 @@ WhylogsMaterializer            (<a class="autorefs autorefs-internal" title="zen
                 <span class="s2">&quot;Failed to upload whylogs profile view to Whylabs: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">e</span>
             <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">save_visualizations</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">save_visualizations</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">profile_view</span><span class="p">:</span> <span class="n">DatasetProfileView</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">VisualizationType</span><span class="p">]:</span>
@@ -4627,16 +4627,16 @@ WhylogsMaterializer            (<a class="autorefs autorefs-internal" title="zen
             <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">rendered_html</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
         <span class="k">return</span> <span class="p">{</span><span class="n">filepath</span><span class="p">:</span> <span class="n">VisualizationType</span><span class="o">.</span><span class="n">HTML</span><span class="p">}</span>
 
-    <span class="k">def</span> <span class="nf">_upload_to_whylabs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">profile_view</span><span class="p">:</span> <span class="n">DatasetProfileView</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_upload_to_whylabs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">profile_view</span><span class="p">:</span> <span class="n">DatasetProfileView</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Uploads a whylogs dataset profile view to Whylabs.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            profile_view: A whylogs dataset profile view object.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.whylogs.data_validators</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.whylogs.data_validators</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">WhylogsDataValidator</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.whylogs.flavors.whylogs_data_validator_flavor</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.whylogs.flavors.whylogs_data_validator_flavor</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">WhylogsDataValidatorSettings</span><span class="p">,</span>
         <span class="p">)</span>
 
@@ -4734,7 +4734,7 @@ WhylogsMaterializer            (<a class="autorefs autorefs-internal" title="zen
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/whylogs/materializers/whylogs_materializer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">DatasetProfileView</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">DatasetProfileView</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Reads and returns a whylogs dataset profile view.</span>
 
 <span class="sd">    Args:</span>
@@ -4796,7 +4796,7 @@ WhylogsMaterializer            (<a class="autorefs autorefs-internal" title="zen
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/whylogs/materializers/whylogs_materializer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">profile_view</span><span class="p">:</span> <span class="n">DatasetProfileView</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">profile_view</span><span class="p">:</span> <span class="n">DatasetProfileView</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Writes a whylogs dataset profile view.</span>
 
 <span class="sd">    Args:</span>
@@ -4876,7 +4876,7 @@ WhylogsMaterializer            (<a class="autorefs autorefs-internal" title="zen
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/whylogs/materializers/whylogs_materializer.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">save_visualizations</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">save_visualizations</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">profile_view</span><span class="p">:</span> <span class="n">DatasetProfileView</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">VisualizationType</span><span class="p">]:</span>
@@ -5048,7 +5048,7 @@ logging data profiles.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/whylogs/secret_schemas/whylabs_secret_schema.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">WhylabsSecretSchema</span><span class="p">(</span><span class="n">BaseSecretSchema</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">WhylabsSecretSchema</span><span class="p">(</span><span class="n">BaseSecretSchema</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Whylabs credentials.</span>
 
 <span class="sd">    Attributes:</span>
@@ -5244,7 +5244,7 @@ artifact.</p>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/whylogs/steps/whylogs_profiler.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">get_whylogs_profiler_step</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">get_whylogs_profiler_step</span><span class="p">(</span>
     <span class="n">dataset_timestamp</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">dataset_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">enable_whylabs</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>

@@ -2390,20 +2390,20 @@ KanikoIntegration            (<a class="autorefs autorefs-internal" title="zenml
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/kaniko/__init__.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">KanikoIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">KanikoIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Definition of the Kaniko integration for ZenML.&quot;&quot;&quot;</span>
 
     <span class="n">NAME</span> <span class="o">=</span> <span class="n">KANIKO</span>
     <span class="n">REQUIREMENTS</span> <span class="o">=</span> <span class="p">[]</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Kaniko integration.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            List of new stack component flavors.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.kaniko.flavors</span> <span class="kn">import</span> <span class="n">KanikoImageBuilderFlavor</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.kaniko.flavors</span><span class="w"> </span><span class="kn">import</span> <span class="n">KanikoImageBuilderFlavor</span>
 
         <span class="k">return</span> <span class="p">[</span><span class="n">KanikoImageBuilderFlavor</span><span class="p">]</span>
 </code></pre></div>
@@ -2458,13 +2458,13 @@ KanikoIntegration            (<a class="autorefs autorefs-internal" title="zenml
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/kaniko/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Kaniko integration.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        List of new stack component flavors.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.integrations.kaniko.flavors</span> <span class="kn">import</span> <span class="n">KanikoImageBuilderFlavor</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.kaniko.flavors</span><span class="w"> </span><span class="kn">import</span> <span class="n">KanikoImageBuilderFlavor</span>
 
     <span class="k">return</span> <span class="p">[</span><span class="n">KanikoImageBuilderFlavor</span><span class="p">]</span>
 </code></pre></div>
@@ -2650,7 +2650,7 @@ Example: <code>["--compressed-caching=false"]</code></p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/kaniko/flavors/kaniko_image_builder_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">KanikoImageBuilderConfig</span><span class="p">(</span><span class="n">BaseImageBuilderConfig</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">KanikoImageBuilderConfig</span><span class="p">(</span><span class="n">BaseImageBuilderConfig</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Kaniko image builder configuration.</span>
 
 <span class="sd">    The `env`, `env_from`, `volume_mounts` and `volumes` attributes will be</span>
@@ -2759,11 +2759,11 @@ KanikoImageBuilderFlavor            (<a class="autorefs autorefs-internal" title
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/kaniko/flavors/kaniko_image_builder_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">KanikoImageBuilderFlavor</span><span class="p">(</span><span class="n">BaseImageBuilderFlavor</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">KanikoImageBuilderFlavor</span><span class="p">(</span><span class="n">BaseImageBuilderFlavor</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Kaniko image builder flavor.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The flavor name.</span>
 
 <span class="sd">        Returns:</span>
@@ -2772,7 +2772,7 @@ KanikoImageBuilderFlavor            (<a class="autorefs autorefs-internal" title
         <span class="k">return</span> <span class="n">KANIKO_IMAGE_BUILDER_FLAVOR</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -2781,7 +2781,7 @@ KanikoImageBuilderFlavor            (<a class="autorefs autorefs-internal" title
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at SDK docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -2790,7 +2790,7 @@ KanikoImageBuilderFlavor            (<a class="autorefs autorefs-internal" title
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_sdk_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to represent the flavor in the dashboard.</span>
 
 <span class="sd">        Returns:</span>
@@ -2799,7 +2799,7 @@ KanikoImageBuilderFlavor            (<a class="autorefs autorefs-internal" title
         <span class="k">return</span> <span class="s2">&quot;https://public-flavor-logos.s3.eu-central-1.amazonaws.com/image_builder/kaniko.png&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">KanikoImageBuilderConfig</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">KanikoImageBuilderConfig</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Config class.</span>
 
 <span class="sd">        Returns:</span>
@@ -2808,13 +2808,13 @@ KanikoImageBuilderFlavor            (<a class="autorefs autorefs-internal" title
         <span class="k">return</span> <span class="n">KanikoImageBuilderConfig</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;KanikoImageBuilder&quot;</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;KanikoImageBuilder&quot;</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The implementation class.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.kaniko.image_builders</span> <span class="kn">import</span> <span class="n">KanikoImageBuilder</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.kaniko.image_builders</span><span class="w"> </span><span class="kn">import</span> <span class="n">KanikoImageBuilder</span>
 
         <span class="k">return</span> <span class="n">KanikoImageBuilder</span>
 </code></pre></div>
@@ -3169,11 +3169,11 @@ KanikoImageBuilder            (<a class="autorefs autorefs-internal" title="zenm
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/kaniko/image_builders/kaniko_image_builder.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">KanikoImageBuilder</span><span class="p">(</span><span class="n">BaseImageBuilder</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">KanikoImageBuilder</span><span class="p">(</span><span class="n">BaseImageBuilder</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Kaniko image builder implementation.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">KanikoImageBuilderConfig</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">KanikoImageBuilderConfig</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;The stack component configuration.</span>
 
 <span class="sd">        Returns:</span>
@@ -3182,7 +3182,7 @@ KanikoImageBuilder            (<a class="autorefs autorefs-internal" title="zenm
         <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">KanikoImageBuilderConfig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">is_building_locally</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_building_locally</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Whether the image builder builds the images on the client machine.</span>
 
 <span class="sd">        Returns:</span>
@@ -3191,14 +3191,14 @@ KanikoImageBuilder            (<a class="autorefs autorefs-internal" title="zenm
         <span class="k">return</span> <span class="kc">False</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">validator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">StackValidator</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">validator</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">StackValidator</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Validates that the stack contains a container registry.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Stack validator.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="k">def</span> <span class="nf">_validate_remote_components</span><span class="p">(</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">_validate_remote_components</span><span class="p">(</span>
             <span class="n">stack</span><span class="p">:</span> <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
         <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
             <span class="k">assert</span> <span class="n">stack</span><span class="o">.</span><span class="n">container_registry</span>
@@ -3231,7 +3231,7 @@ KanikoImageBuilder            (<a class="autorefs autorefs-internal" title="zenm
             <span class="n">custom_validation_function</span><span class="o">=</span><span class="n">_validate_remote_components</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">build</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">build</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">image_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">build_context</span><span class="p">:</span> <span class="s2">&quot;BuildContext&quot;</span><span class="p">,</span>
@@ -3302,7 +3302,7 @@ KanikoImageBuilder            (<a class="autorefs autorefs-internal" title="zenm
         <span class="bp">self</span><span class="o">.</span><span class="n">_delete_pod</span><span class="p">(</span><span class="n">pod_name</span><span class="o">=</span><span class="n">pod_name</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">image_name_with_sha</span>
 
-    <span class="k">def</span> <span class="nf">_generate_spec_overrides</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_generate_spec_overrides</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">pod_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">image_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="nb">str</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Generates Kubernetes spec overrides for the Kaniko build Pod.</span>
@@ -3355,7 +3355,7 @@ KanikoImageBuilder            (<a class="autorefs autorefs-internal" title="zenm
             <span class="p">},</span>
         <span class="p">}</span>
 
-    <span class="k">def</span> <span class="nf">_run_kaniko_build</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_run_kaniko_build</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">pod_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">spec_overrides</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
@@ -3413,7 +3413,7 @@ KanikoImageBuilder            (<a class="autorefs autorefs-internal" title="zenm
             <span class="p">)</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">_write_build_context</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_write_build_context</span><span class="p">(</span>
         <span class="n">process</span><span class="p">:</span> <span class="n">BytePopen</span><span class="p">,</span> <span class="n">build_context</span><span class="p">:</span> <span class="s2">&quot;BuildContext&quot;</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Writes the build context to the process stdin.</span>
@@ -3434,7 +3434,7 @@ KanikoImageBuilder            (<a class="autorefs autorefs-internal" title="zenm
                 <span class="n">process</span><span class="o">.</span><span class="n">stdin</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">_generate_pod_name</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_generate_pod_name</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Generates a random name for the Pod that runs the Kaniko build.</span>
 
 <span class="sd">        Returns:</span>
@@ -3442,7 +3442,7 @@ KanikoImageBuilder            (<a class="autorefs autorefs-internal" title="zenm
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;kaniko-build-</span><span class="si">{</span><span class="n">random</span><span class="o">.</span><span class="n">Random</span><span class="p">()</span><span class="o">.</span><span class="n">getrandbits</span><span class="p">(</span><span class="mi">32</span><span class="p">)</span><span class="si">:</span><span class="s2">08x</span><span class="si">}</span><span class="s2">&quot;</span>
 
-    <span class="k">def</span> <span class="nf">_read_pod_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pod_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_read_pod_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pod_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Reads the Pod output message.</span>
 
 <span class="sd">        Args:</span>
@@ -3468,7 +3468,7 @@ KanikoImageBuilder            (<a class="autorefs autorefs-internal" title="zenm
         <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Kaniko build pod termination message: </span><span class="si">%s</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">output</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">output</span>
 
-    <span class="k">def</span> <span class="nf">_delete_pod</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pod_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_delete_pod</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pod_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Deletes a Pod.</span>
 
 <span class="sd">        Args:</span>
@@ -3498,7 +3498,7 @@ KanikoImageBuilder            (<a class="autorefs autorefs-internal" title="zenm
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Deleted Kaniko build Pod </span><span class="si">%s</span><span class="s2">.&quot;</span><span class="p">,</span> <span class="n">pod_name</span><span class="p">)</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">_check_prerequisites</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_check_prerequisites</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Checks that all prerequisites are installed.</span>
 
 <span class="sd">        Raises:</span>
@@ -3510,7 +3510,7 @@ KanikoImageBuilder            (<a class="autorefs autorefs-internal" title="zenm
             <span class="p">)</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">_verify_image_name</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_verify_image_name</span><span class="p">(</span>
         <span class="n">image_name_with_tag</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">image_name_with_sha</span><span class="p">:</span> <span class="nb">str</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Verifies the name/sha of the pushed image.</span>
@@ -3747,7 +3747,7 @@ KanikoImageBuilder            (<a class="autorefs autorefs-internal" title="zenm
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/kaniko/image_builders/kaniko_image_builder.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">build</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">build</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">image_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">build_context</span><span class="p">:</span> <span class="s2">&quot;BuildContext&quot;</span><span class="p">,</span>

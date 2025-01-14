@@ -2513,7 +2513,7 @@ SlackIntegration            (<a class="autorefs autorefs-internal" title="zenml.
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/slack/__init__.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SlackIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SlackIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Definition of a Slack integration for ZenML.</span>
 
 <span class="sd">    Implemented using [Slack SDK](https://pypi.org/project/slack-sdk/).</span>
@@ -2524,13 +2524,13 @@ SlackIntegration            (<a class="autorefs autorefs-internal" title="zenml.
     <span class="n">REQUIREMENTS_IGNORED_ON_UNINSTALL</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;aiohttp&quot;</span><span class="p">]</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Slack integration.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            List of new flavors defined by the Slack integration.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.slack.flavors</span> <span class="kn">import</span> <span class="n">SlackAlerterFlavor</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.slack.flavors</span><span class="w"> </span><span class="kn">import</span> <span class="n">SlackAlerterFlavor</span>
 
         <span class="k">return</span> <span class="p">[</span><span class="n">SlackAlerterFlavor</span><span class="p">]</span>
 </code></pre></div>
@@ -2586,13 +2586,13 @@ SlackIntegration            (<a class="autorefs autorefs-internal" title="zenml.
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/slack/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Slack integration.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        List of new flavors defined by the Slack integration.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.integrations.slack.flavors</span> <span class="kn">import</span> <span class="n">SlackAlerterFlavor</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.slack.flavors</span><span class="w"> </span><span class="kn">import</span> <span class="n">SlackAlerterFlavor</span>
 
     <span class="k">return</span> <span class="p">[</span><span class="n">SlackAlerterFlavor</span><span class="p">]</span>
 </code></pre></div>
@@ -2695,11 +2695,11 @@ SlackAlerter            (<a class="autorefs autorefs-internal" title="zenml.aler
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/slack/alerters/slack_alerter.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SlackAlerter</span><span class="p">(</span><span class="n">BaseAlerter</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SlackAlerter</span><span class="p">(</span><span class="n">BaseAlerter</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Send messages to Slack channels.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SlackAlerterConfig</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SlackAlerterConfig</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the `SlackAlerterConfig` config.</span>
 
 <span class="sd">        Returns:</span>
@@ -2708,7 +2708,7 @@ SlackAlerter            (<a class="autorefs autorefs-internal" title="zenml.aler
         <span class="k">return</span> <span class="n">cast</span><span class="p">(</span><span class="n">SlackAlerterConfig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">settings_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">SlackAlerterSettings</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">settings_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">SlackAlerterSettings</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Settings class for the Slack alerter.</span>
 
 <span class="sd">        Returns:</span>
@@ -2716,7 +2716,7 @@ SlackAlerter            (<a class="autorefs autorefs-internal" title="zenml.aler
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">SlackAlerterSettings</span>
 
-    <span class="k">def</span> <span class="nf">_get_channel_id</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_channel_id</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseAlerterStepParameters</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the Slack channel ID to be used by post/ask.</span>
@@ -2760,7 +2760,7 @@ SlackAlerter            (<a class="autorefs autorefs-internal" title="zenml.aler
             <span class="s2">&quot;stack component is specified. Please specify at least one.&quot;</span>
         <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_get_approve_msg_options</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_approve_msg_options</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseAlerterStepParameters</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Define which messages will lead to approval during ask().</span>
@@ -2779,7 +2779,7 @@ SlackAlerter            (<a class="autorefs autorefs-internal" title="zenml.aler
             <span class="k">return</span> <span class="n">params</span><span class="o">.</span><span class="n">approve_msg_options</span>
         <span class="k">return</span> <span class="n">DEFAULT_APPROVE_MSG_OPTIONS</span>
 
-    <span class="k">def</span> <span class="nf">_get_disapprove_msg_options</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_disapprove_msg_options</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseAlerterStepParameters</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Define which messages will lead to disapproval during ask().</span>
@@ -2798,7 +2798,7 @@ SlackAlerter            (<a class="autorefs autorefs-internal" title="zenml.aler
             <span class="k">return</span> <span class="n">params</span><span class="o">.</span><span class="n">disapprove_msg_options</span>
         <span class="k">return</span> <span class="n">DEFAULT_DISAPPROVE_MSG_OPTIONS</span>
 
-    <span class="k">def</span> <span class="nf">_create_blocks</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_create_blocks</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">message</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
         <span class="n">params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseAlerterStepParameters</span><span class="p">],</span>
@@ -2865,7 +2865,7 @@ SlackAlerter            (<a class="autorefs autorefs-internal" title="zenml.aler
             <span class="p">)</span>
             <span class="k">return</span> <span class="p">[]</span>
 
-    <span class="k">def</span> <span class="nf">post</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">post</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">message</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseAlerterStepParameters</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -2892,7 +2892,7 @@ SlackAlerter            (<a class="autorefs autorefs-internal" title="zenml.aler
             <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;SlackAlerter.post() failed: </span><span class="si">{</span><span class="n">response</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
             <span class="k">return</span> <span class="kc">False</span>
 
-    <span class="k">def</span> <span class="nf">ask</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">ask</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseAlerterStepParameters</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Post a message to a Slack channel and wait for approval.</span>
@@ -2910,7 +2910,7 @@ SlackAlerter            (<a class="autorefs autorefs-internal" title="zenml.aler
         <span class="n">approved</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># will be modified by handle()</span>
 
         <span class="nd">@RTMClient</span><span class="o">.</span><span class="n">run_on</span><span class="p">(</span><span class="n">event</span><span class="o">=</span><span class="s2">&quot;hello&quot;</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
-        <span class="k">def</span> <span class="nf">post_initial_message</span><span class="p">(</span><span class="o">**</span><span class="n">payload</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">post_initial_message</span><span class="p">(</span><span class="o">**</span><span class="n">payload</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">            </span><span class="sd">&quot;&quot;&quot;Post an initial message in a channel and start listening.</span>
 
 <span class="sd">            Args:</span>
@@ -2923,7 +2923,7 @@ SlackAlerter            (<a class="autorefs autorefs-internal" title="zenml.aler
             <span class="p">)</span>
 
         <span class="nd">@RTMClient</span><span class="o">.</span><span class="n">run_on</span><span class="p">(</span><span class="n">event</span><span class="o">=</span><span class="s2">&quot;message&quot;</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
-        <span class="k">def</span> <span class="nf">handle</span><span class="p">(</span><span class="o">**</span><span class="n">payload</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">handle</span><span class="p">(</span><span class="o">**</span><span class="n">payload</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">            </span><span class="sd">&quot;&quot;&quot;Listen / handle messages posted in the channel.</span>
 
 <span class="sd">            Args:</span>
@@ -3094,7 +3094,7 @@ SlackAlerter            (<a class="autorefs autorefs-internal" title="zenml.aler
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/slack/alerters/slack_alerter.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">ask</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">ask</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseAlerterStepParameters</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Post a message to a Slack channel and wait for approval.</span>
@@ -3112,7 +3112,7 @@ SlackAlerter            (<a class="autorefs autorefs-internal" title="zenml.aler
     <span class="n">approved</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># will be modified by handle()</span>
 
     <span class="nd">@RTMClient</span><span class="o">.</span><span class="n">run_on</span><span class="p">(</span><span class="n">event</span><span class="o">=</span><span class="s2">&quot;hello&quot;</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
-    <span class="k">def</span> <span class="nf">post_initial_message</span><span class="p">(</span><span class="o">**</span><span class="n">payload</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">post_initial_message</span><span class="p">(</span><span class="o">**</span><span class="n">payload</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Post an initial message in a channel and start listening.</span>
 
 <span class="sd">        Args:</span>
@@ -3125,7 +3125,7 @@ SlackAlerter            (<a class="autorefs autorefs-internal" title="zenml.aler
         <span class="p">)</span>
 
     <span class="nd">@RTMClient</span><span class="o">.</span><span class="n">run_on</span><span class="p">(</span><span class="n">event</span><span class="o">=</span><span class="s2">&quot;message&quot;</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
-    <span class="k">def</span> <span class="nf">handle</span><span class="p">(</span><span class="o">**</span><span class="n">payload</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">handle</span><span class="p">(</span><span class="o">**</span><span class="n">payload</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Listen / handle messages posted in the channel.</span>
 
 <span class="sd">        Args:</span>
@@ -3213,7 +3213,7 @@ SlackAlerter            (<a class="autorefs autorefs-internal" title="zenml.aler
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/slack/alerters/slack_alerter.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">post</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">post</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">message</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">params</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BaseAlerterStepParameters</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -3276,7 +3276,7 @@ SlackAlerterParameters            (<a class="autorefs autorefs-internal" title="
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/slack/alerters/slack_alerter.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SlackAlerterParameters</span><span class="p">(</span><span class="n">BaseAlerterStepParameters</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SlackAlerterParameters</span><span class="p">(</span><span class="n">BaseAlerterStepParameters</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Slack alerter parameters.&quot;&quot;&quot;</span>
 
     <span class="c1"># The ID of the Slack channel to use for communication.</span>
@@ -3351,7 +3351,7 @@ SlackAlerterPayload            (<span title="pydantic.main.BaseModel">BaseModel<
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/slack/alerters/slack_alerter.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SlackAlerterPayload</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SlackAlerterPayload</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Slack alerter payload implementation.&quot;&quot;&quot;</span>
 
     <span class="n">pipeline_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
@@ -3517,7 +3517,7 @@ SlackAlerterConfig            (<a class="autorefs autorefs-internal" title="zenm
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/slack/flavors/slack_alerter_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SlackAlerterConfig</span><span class="p">(</span><span class="n">BaseAlerterConfig</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SlackAlerterConfig</span><span class="p">(</span><span class="n">BaseAlerterConfig</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Slack alerter config.</span>
 
 <span class="sd">    Attributes:</span>
@@ -3529,15 +3529,15 @@ SlackAlerterConfig            (<a class="autorefs autorefs-internal" title="zenm
     <span class="n">default_slack_channel_id</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">is_valid</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">is_valid</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if the stack component is valid.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            True if the stack component is valid, False otherwise.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="kn">from</span> <span class="nn">slack_sdk</span> <span class="kn">import</span> <span class="n">WebClient</span>
-            <span class="kn">from</span> <span class="nn">slack_sdk.errors</span> <span class="kn">import</span> <span class="n">SlackApiError</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">slack_sdk</span><span class="w"> </span><span class="kn">import</span> <span class="n">WebClient</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">slack_sdk.errors</span><span class="w"> </span><span class="kn">import</span> <span class="n">SlackApiError</span>
         <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
             <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
                 <span class="s2">&quot;Unable to validate Slack alerter credentials because the Slack integration is not installed.&quot;</span>
@@ -3659,11 +3659,11 @@ SlackAlerterFlavor            (<a class="autorefs autorefs-internal" title="zenm
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/slack/flavors/slack_alerter_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SlackAlerterFlavor</span><span class="p">(</span><span class="n">BaseAlerterFlavor</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SlackAlerterFlavor</span><span class="p">(</span><span class="n">BaseAlerterFlavor</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Slack alerter flavor.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -3672,7 +3672,7 @@ SlackAlerterFlavor            (<a class="autorefs autorefs-internal" title="zenm
         <span class="k">return</span> <span class="n">SLACK_ALERTER_FLAVOR</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -3681,7 +3681,7 @@ SlackAlerterFlavor            (<a class="autorefs autorefs-internal" title="zenm
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at SDK docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -3690,7 +3690,7 @@ SlackAlerterFlavor            (<a class="autorefs autorefs-internal" title="zenm
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_sdk_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to represent the flavor in the dashboard.</span>
 
 <span class="sd">        Returns:</span>
@@ -3699,7 +3699,7 @@ SlackAlerterFlavor            (<a class="autorefs autorefs-internal" title="zenm
         <span class="k">return</span> <span class="s2">&quot;https://public-flavor-logos.s3.eu-central-1.amazonaws.com/alerter/slack.png&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">SlackAlerterConfig</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">config_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">SlackAlerterConfig</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns `SlackAlerterConfig` config class.</span>
 
 <span class="sd">        Returns:</span>
@@ -3708,13 +3708,13 @@ SlackAlerterFlavor            (<a class="autorefs autorefs-internal" title="zenm
         <span class="k">return</span> <span class="n">SlackAlerterConfig</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;SlackAlerter&quot;</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;SlackAlerter&quot;</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class for this flavor.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The implementation class.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.slack.alerters</span> <span class="kn">import</span> <span class="n">SlackAlerter</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.slack.alerters</span><span class="w"> </span><span class="kn">import</span> <span class="n">SlackAlerter</span>
 
         <span class="k">return</span> <span class="n">SlackAlerter</span>
 </code></pre></div>
@@ -4006,7 +4006,7 @@ SlackAlerterSettings            (<a class="autorefs autorefs-internal" title="ze
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/slack/flavors/slack_alerter_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">SlackAlerterSettings</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">SlackAlerterSettings</span><span class="p">(</span><span class="n">BaseSettings</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Settings for the Slack alerter.</span>
 
 <span class="sd">    Attributes:</span>

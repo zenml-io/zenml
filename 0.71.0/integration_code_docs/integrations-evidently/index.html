@@ -2836,7 +2836,7 @@ EvidentlyIntegration            (<a class="autorefs autorefs-internal" title="ze
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/evidently/__init__.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">EvidentlyIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">EvidentlyIntegration</span><span class="p">(</span><span class="n">Integration</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;[Evidently](https://github.com/evidentlyai/evidently) integration for ZenML.&quot;&quot;&quot;</span>
 
     <span class="n">NAME</span> <span class="o">=</span> <span class="n">EVIDENTLY</span>
@@ -2847,7 +2847,7 @@ EvidentlyIntegration            (<a class="autorefs autorefs-internal" title="ze
     <span class="n">REQUIREMENTS_IGNORED_ON_UNINSTALL</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;tenacity&quot;</span><span class="p">,</span> <span class="s2">&quot;pandas&quot;</span><span class="p">]</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">get_requirements</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">target_os</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_requirements</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">target_os</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Method to get the requirements for the integration.</span>
 
 <span class="sd">        Args:</span>
@@ -2856,19 +2856,19 @@ EvidentlyIntegration            (<a class="autorefs autorefs-internal" title="ze
 <span class="sd">        Returns:</span>
 <span class="sd">            A list of requirements.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.pandas</span> <span class="kn">import</span> <span class="n">PandasIntegration</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.pandas</span><span class="w"> </span><span class="kn">import</span> <span class="n">PandasIntegration</span>
 
         <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">REQUIREMENTS</span> <span class="o">+</span> \
             <span class="n">PandasIntegration</span><span class="o">.</span><span class="n">get_requirements</span><span class="p">(</span><span class="n">target_os</span><span class="o">=</span><span class="n">target_os</span><span class="p">)</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Great Expectations integration.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            List of stack component flavors for this integration.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.evidently.flavors</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.evidently.flavors</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">EvidentlyDataValidatorFlavor</span><span class="p">,</span>
         <span class="p">)</span>
 
@@ -2926,13 +2926,13 @@ EvidentlyIntegration            (<a class="autorefs autorefs-internal" title="ze
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/evidently/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">flavors</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Flavor</span><span class="p">]]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Declare the stack component flavors for the Great Expectations integration.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        List of stack component flavors for this integration.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.integrations.evidently.flavors</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.evidently.flavors</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
         <span class="n">EvidentlyDataValidatorFlavor</span><span class="p">,</span>
     <span class="p">)</span>
 
@@ -2999,7 +2999,7 @@ EvidentlyIntegration            (<a class="autorefs autorefs-internal" title="ze
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/evidently/__init__.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">get_requirements</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">target_os</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_requirements</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">target_os</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Method to get the requirements for the integration.</span>
 
 <span class="sd">    Args:</span>
@@ -3008,7 +3008,7 @@ EvidentlyIntegration            (<a class="autorefs autorefs-internal" title="ze
 <span class="sd">    Returns:</span>
 <span class="sd">        A list of requirements.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="kn">from</span> <span class="nn">zenml.integrations.pandas</span> <span class="kn">import</span> <span class="n">PandasIntegration</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.pandas</span><span class="w"> </span><span class="kn">import</span> <span class="n">PandasIntegration</span>
 
     <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">REQUIREMENTS</span> <span class="o">+</span> \
         <span class="n">PandasIntegration</span><span class="o">.</span><span class="n">get_requirements</span><span class="p">(</span><span class="n">target_os</span><span class="o">=</span><span class="n">target_os</span><span class="p">)</span>
@@ -3147,7 +3147,7 @@ ColumnMapping data type that can be used as a step configuration field
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/evidently/column_mapping.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">EvidentlyColumnMapping</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">EvidentlyColumnMapping</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Column mapping configuration for Evidently.</span>
 
 <span class="sd">    This class is a 1-to-1 serializable analogue of Evidently&#39;s</span>
@@ -3188,7 +3188,7 @@ ColumnMapping data type that can be used as a step configuration field
         <span class="n">validate_assignment</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">to_evidently_column_mapping</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ColumnMapping</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_evidently_column_mapping</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ColumnMapping</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert this Pydantic object to an Evidently ColumnMapping object.</span>
 
 <span class="sd">        Returns:</span>
@@ -3280,7 +3280,7 @@ ColumnMapping data type that can be used as a step configuration field
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/evidently/column_mapping.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">to_evidently_column_mapping</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ColumnMapping</span><span class="p">:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">to_evidently_column_mapping</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ColumnMapping</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert this Pydantic object to an Evidently ColumnMapping object.</span>
 
 <span class="sd">    Returns:</span>
@@ -3418,7 +3418,7 @@ EvidentlyDataValidator            (<a class="autorefs autorefs-internal" title="
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/evidently/data_validators/evidently_data_validator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">EvidentlyDataValidator</span><span class="p">(</span><span class="n">BaseDataValidator</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">EvidentlyDataValidator</span><span class="p">(</span><span class="n">BaseDataValidator</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Evidently data validator stack component.&quot;&quot;&quot;</span>
 
     <span class="n">NAME</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Evidently&quot;</span>
@@ -3427,7 +3427,7 @@ EvidentlyDataValidator            (<a class="autorefs autorefs-internal" title="
     <span class="p">)</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">_unpack_options</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_unpack_options</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span> <span class="n">option_list</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Unpack Evidently options.</span>
@@ -3495,7 +3495,7 @@ EvidentlyDataValidator            (<a class="autorefs autorefs-internal" title="
         <span class="k">return</span> <span class="n">options</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">_set_nltk_data_path</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_set_nltk_data_path</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Set the NLTK data path to the current working directory.</span>
 
 <span class="sd">        This is necessary because the default download directory is not writable</span>
@@ -3505,7 +3505,7 @@ EvidentlyDataValidator            (<a class="autorefs autorefs-internal" title="
 <span class="sd">            ImportError: if NLTK is not installed.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="kn">from</span> <span class="nn">nltk.data</span> <span class="kn">import</span> <span class="p">(</span>  <span class="c1"># type: ignore[import-untyped]</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">nltk.data</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>  <span class="c1"># type: ignore[import-untyped]</span>
                 <span class="n">path</span> <span class="k">as</span> <span class="n">nltk_path</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
@@ -3521,14 +3521,14 @@ EvidentlyDataValidator            (<a class="autorefs autorefs-internal" title="
         <span class="n">nltk_path</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">())</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">_download_nltk_data</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_download_nltk_data</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Download NLTK data for text metrics and tests.</span>
 
 <span class="sd">        Raises:</span>
 <span class="sd">            ImportError: if NLTK is not installed.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="kn">import</span> <span class="nn">nltk</span>  <span class="c1"># type: ignore[import-untyped]</span>
+            <span class="kn">import</span><span class="w"> </span><span class="nn">nltk</span>  <span class="c1"># type: ignore[import-untyped]</span>
         <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span>
                 <span class="s2">&quot;NLTK is not installed. Please install NLTK to use &quot;</span>
@@ -3539,7 +3539,7 @@ EvidentlyDataValidator            (<a class="autorefs autorefs-internal" title="
         <span class="n">nltk</span><span class="o">.</span><span class="n">download</span><span class="p">(</span><span class="s2">&quot;wordnet&quot;</span><span class="p">,</span> <span class="n">download_dir</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">())</span>
         <span class="n">nltk</span><span class="o">.</span><span class="n">download</span><span class="p">(</span><span class="s2">&quot;omw-1.4&quot;</span><span class="p">,</span> <span class="n">download_dir</span><span class="o">=</span><span class="n">os</span><span class="o">.</span><span class="n">getcwd</span><span class="p">())</span>
 
-    <span class="k">def</span> <span class="nf">data_profiling</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">data_profiling</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">dataset</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
         <span class="n">comparison_dataset</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -3609,7 +3609,7 @@ EvidentlyDataValidator            (<a class="autorefs autorefs-internal" title="
 
         <span class="k">return</span> <span class="n">report</span>
 
-    <span class="k">def</span> <span class="nf">data_validation</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">data_validation</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">dataset</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
         <span class="n">comparison_dataset</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -3688,11 +3688,11 @@ FLAVOR            (<a class="autorefs autorefs-internal" title="zenml.data_valid
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/evidently/data_validators/evidently_data_validator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">EvidentlyDataValidatorFlavor</span><span class="p">(</span><span class="n">BaseDataValidatorFlavor</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">EvidentlyDataValidatorFlavor</span><span class="p">(</span><span class="n">BaseDataValidatorFlavor</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Evidently data validator flavor.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -3701,7 +3701,7 @@ FLAVOR            (<a class="autorefs autorefs-internal" title="zenml.data_valid
         <span class="k">return</span> <span class="n">EVIDENTLY_DATA_VALIDATOR_FLAVOR</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -3710,7 +3710,7 @@ FLAVOR            (<a class="autorefs autorefs-internal" title="zenml.data_valid
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at SDK docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -3719,7 +3719,7 @@ FLAVOR            (<a class="autorefs autorefs-internal" title="zenml.data_valid
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_sdk_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to represent the flavor in the dashboard.</span>
 
 <span class="sd">        Returns:</span>
@@ -3728,13 +3728,13 @@ FLAVOR            (<a class="autorefs autorefs-internal" title="zenml.data_valid
         <span class="k">return</span> <span class="s2">&quot;https://public-flavor-logos.s3.eu-central-1.amazonaws.com/data_validator/evidently.png&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;EvidentlyDataValidator&quot;</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;EvidentlyDataValidator&quot;</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The implementation class.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.evidently.data_validators</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.evidently.data_validators</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">EvidentlyDataValidator</span><span class="p">,</span>
         <span class="p">)</span>
 
@@ -4066,7 +4066,7 @@ Defaults to False.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/evidently/data_validators/evidently_data_validator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">data_profiling</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">data_profiling</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">dataset</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
     <span class="n">comparison_dataset</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -4235,7 +4235,7 @@ Defaults to False.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/evidently/data_validators/evidently_data_validator.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">data_validation</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">data_validation</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">dataset</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="n">comparison_dataset</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -4396,11 +4396,11 @@ EvidentlyDataValidatorFlavor            (<a class="autorefs autorefs-internal" t
 
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/evidently/flavors/evidently_data_validator_flavor.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">EvidentlyDataValidatorFlavor</span><span class="p">(</span><span class="n">BaseDataValidatorFlavor</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">EvidentlyDataValidatorFlavor</span><span class="p">(</span><span class="n">BaseDataValidatorFlavor</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Evidently data validator flavor.&quot;&quot;&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Name of the flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -4409,7 +4409,7 @@ EvidentlyDataValidatorFlavor            (<a class="autorefs autorefs-internal" t
         <span class="k">return</span> <span class="n">EVIDENTLY_DATA_VALIDATOR_FLAVOR</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -4418,7 +4418,7 @@ EvidentlyDataValidatorFlavor            (<a class="autorefs autorefs-internal" t
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sdk_docs_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to point at SDK docs explaining this flavor.</span>
 
 <span class="sd">        Returns:</span>
@@ -4427,7 +4427,7 @@ EvidentlyDataValidatorFlavor            (<a class="autorefs autorefs-internal" t
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">generate_default_sdk_docs_url</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">logo_url</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;A url to represent the flavor in the dashboard.</span>
 
 <span class="sd">        Returns:</span>
@@ -4436,13 +4436,13 @@ EvidentlyDataValidatorFlavor            (<a class="autorefs autorefs-internal" t
         <span class="k">return</span> <span class="s2">&quot;https://public-flavor-logos.s3.eu-central-1.amazonaws.com/data_validator/evidently.png&quot;</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;EvidentlyDataValidator&quot;</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">implementation_class</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="s2">&quot;EvidentlyDataValidator&quot;</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Implementation class.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            The implementation class.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="kn">from</span> <span class="nn">zenml.integrations.evidently.data_validators</span> <span class="kn">import</span> <span class="p">(</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">zenml.integrations.evidently.data_validators</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
             <span class="n">EvidentlyDataValidator</span><span class="p">,</span>
         <span class="p">)</span>
 
@@ -4783,7 +4783,7 @@ Evidently Metric generator. Only used if <code>generator</code> is True.</p></td
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/evidently/metrics.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">EvidentlyMetricConfig</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">EvidentlyMetricConfig</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Declarative Evidently Metric configuration.</span>
 
 <span class="sd">    This is a declarative representation of the configuration that goes into an</span>
@@ -4823,7 +4823,7 @@ Evidently Metric generator. Only used if <code>generator</code> is True.</p></td
     <span class="n">skip_id_column</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">get_metric_class</span><span class="p">(</span><span class="n">metric_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Metric</span><span class="p">,</span> <span class="n">MetricPreset</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_metric_class</span><span class="p">(</span><span class="n">metric_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Metric</span><span class="p">,</span> <span class="n">MetricPreset</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the Evidently metric or metric preset class from a string.</span>
 
 <span class="sd">        Args:</span>
@@ -4869,7 +4869,7 @@ Evidently Metric generator. Only used if <code>generator</code> is True.</p></td
         <span class="k">return</span> <span class="n">metric_class</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">metric_generator</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">metric_generator</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span>
         <span class="n">metric</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Metric</span><span class="p">],</span> <span class="nb">str</span><span class="p">],</span>
         <span class="n">columns</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -4970,7 +4970,7 @@ Evidently Metric generator. Only used if <code>generator</code> is True.</p></td
         <span class="k">return</span> <span class="n">config</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">metric</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">metric</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span>
         <span class="n">metric</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Metric</span><span class="p">],</span> <span class="n">Type</span><span class="p">[</span><span class="n">MetricPreset</span><span class="p">],</span> <span class="nb">str</span><span class="p">],</span>
         <span class="o">**</span><span class="n">parameters</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
@@ -5044,7 +5044,7 @@ Evidently Metric generator. Only used if <code>generator</code> is True.</p></td
         <span class="k">return</span> <span class="n">config</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">default_metrics</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="s2">&quot;EvidentlyMetricConfig&quot;</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">default_metrics</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="s2">&quot;EvidentlyMetricConfig&quot;</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Default Evidently metric configurations.</span>
 
 <span class="sd">        Call this to fetch a default list of Evidently metrics to use in cases</span>
@@ -5064,7 +5064,7 @@ Evidently Metric generator. Only used if <code>generator</code> is True.</p></td
             <span class="k">if</span> <span class="n">metric_preset_class_name</span> <span class="o">!=</span> <span class="s2">&quot;TextOverviewPreset&quot;</span>
         <span class="p">]</span>
 
-    <span class="k">def</span> <span class="nf">to_evidently_metric</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_evidently_metric</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Metric</span><span class="p">,</span> <span class="n">MetricPreset</span><span class="p">,</span> <span class="n">BaseGenerator</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Create an Evidently Metric, MetricPreset or metric generator object.</span>
@@ -5174,7 +5174,7 @@ by default.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/evidently/metrics.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">default_metrics</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="s2">&quot;EvidentlyMetricConfig&quot;</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">default_metrics</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="s2">&quot;EvidentlyMetricConfig&quot;</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Default Evidently metric configurations.</span>
 
 <span class="sd">    Call this to fetch a default list of Evidently metrics to use in cases</span>
@@ -5272,7 +5272,7 @@ metric or metric preset class.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/evidently/metrics.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
-<span class="k">def</span> <span class="nf">get_metric_class</span><span class="p">(</span><span class="n">metric_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Metric</span><span class="p">,</span> <span class="n">MetricPreset</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_metric_class</span><span class="p">(</span><span class="n">metric_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Metric</span><span class="p">,</span> <span class="n">MetricPreset</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the Evidently metric or metric preset class from a string.</span>
 
 <span class="sd">    Args:</span>
@@ -5427,7 +5427,7 @@ or MetricPreset class.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/evidently/metrics.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">metric</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">metric</span><span class="p">(</span>
     <span class="bp">cls</span><span class="p">,</span>
     <span class="n">metric</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Metric</span><span class="p">],</span> <span class="n">Type</span><span class="p">[</span><span class="n">MetricPreset</span><span class="p">],</span> <span class="nb">str</span><span class="p">],</span>
     <span class="o">**</span><span class="n">parameters</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
@@ -5643,7 +5643,7 @@ or MetricPreset class.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/evidently/metrics.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">metric_generator</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">metric_generator</span><span class="p">(</span>
     <span class="bp">cls</span><span class="p">,</span>
     <span class="n">metric</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Metric</span><span class="p">],</span> <span class="nb">str</span><span class="p">],</span>
     <span class="n">columns</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -5799,7 +5799,7 @@ generator could not be instantiated.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/evidently/metrics.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">to_evidently_metric</span><span class="p">(</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">to_evidently_metric</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Metric</span><span class="p">,</span> <span class="n">MetricPreset</span><span class="p">,</span> <span class="n">BaseGenerator</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Create an Evidently Metric, MetricPreset or metric generator object.</span>
@@ -6061,7 +6061,7 @@ applied to. Only used if <code>generator</code> is True.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/evidently/tests.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">EvidentlyTestConfig</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+          <div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">EvidentlyTestConfig</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Declarative Evidently Test configuration.</span>
 
 <span class="sd">    This is a declarative representation of the configuration that goes into an</span>
@@ -6098,7 +6098,7 @@ applied to. Only used if <code>generator</code> is True.</p></td>
     <span class="p">)</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">get_test_class</span><span class="p">(</span><span class="n">test_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Test</span><span class="p">,</span> <span class="n">TestPreset</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_test_class</span><span class="p">(</span><span class="n">test_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Test</span><span class="p">,</span> <span class="n">TestPreset</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the Evidently test or test preset class from a string.</span>
 
 <span class="sd">        Args:</span>
@@ -6144,7 +6144,7 @@ applied to. Only used if <code>generator</code> is True.</p></td>
         <span class="k">return</span> <span class="n">test_class</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">test_generator</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">test_generator</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span>
         <span class="n">test</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Test</span><span class="p">],</span> <span class="nb">str</span><span class="p">],</span>
         <span class="n">columns</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -6241,7 +6241,7 @@ applied to. Only used if <code>generator</code> is True.</p></td>
         <span class="k">return</span> <span class="n">config</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">test</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">test</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span>
         <span class="n">test</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Test</span><span class="p">],</span> <span class="n">Type</span><span class="p">[</span><span class="n">TestPreset</span><span class="p">],</span> <span class="nb">str</span><span class="p">],</span>
         <span class="o">**</span><span class="n">parameters</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
@@ -6314,7 +6314,7 @@ applied to. Only used if <code>generator</code> is True.</p></td>
         <span class="k">return</span> <span class="n">config</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">default_tests</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="s2">&quot;EvidentlyTestConfig&quot;</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">default_tests</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="s2">&quot;EvidentlyTestConfig&quot;</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Default Evidently test configurations.</span>
 
 <span class="sd">        Call this to fetch a default list of Evidently tests to use in cases</span>
@@ -6329,7 +6329,7 @@ applied to. Only used if <code>generator</code> is True.</p></td>
             <span class="k">for</span> <span class="n">test_preset_class_name</span> <span class="ow">in</span> <span class="n">test_preset</span><span class="o">.</span><span class="n">__all__</span>
         <span class="p">]</span>
 
-    <span class="k">def</span> <span class="nf">to_evidently_test</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Test</span><span class="p">,</span> <span class="n">TestPreset</span><span class="p">,</span> <span class="n">BaseGenerator</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_evidently_test</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Test</span><span class="p">,</span> <span class="n">TestPreset</span><span class="p">,</span> <span class="n">BaseGenerator</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Create an Evidently Test, TestPreset or test generator object.</span>
 
 <span class="sd">        Call this method to create an Evidently Test, TestPreset or test</span>
@@ -6434,7 +6434,7 @@ All available Evidently TestPreset classes are used.</p>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/evidently/tests.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">default_tests</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="s2">&quot;EvidentlyTestConfig&quot;</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">default_tests</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="s2">&quot;EvidentlyTestConfig&quot;</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Default Evidently test configurations.</span>
 
 <span class="sd">    Call this to fetch a default list of Evidently tests to use in cases</span>
@@ -6527,7 +6527,7 @@ test or test preset class.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/evidently/tests.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@staticmethod</span>
-<span class="k">def</span> <span class="nf">get_test_class</span><span class="p">(</span><span class="n">test_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Test</span><span class="p">,</span> <span class="n">TestPreset</span><span class="p">]:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_test_class</span><span class="p">(</span><span class="n">test_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Test</span><span class="p">,</span> <span class="n">TestPreset</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the Evidently test or test preset class from a string.</span>
 
 <span class="sd">    Args:</span>
@@ -6682,7 +6682,7 @@ or TestPreset class.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/evidently/tests.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">test</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test</span><span class="p">(</span>
     <span class="bp">cls</span><span class="p">,</span>
     <span class="n">test</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Test</span><span class="p">],</span> <span class="n">Type</span><span class="p">[</span><span class="n">TestPreset</span><span class="p">],</span> <span class="nb">str</span><span class="p">],</span>
     <span class="o">**</span><span class="n">parameters</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
@@ -6890,7 +6890,7 @@ or TestPreset class.</p></td>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/evidently/tests.py</code></summary>
           <div class="highlight"><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">test_generator</span><span class="p">(</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">test_generator</span><span class="p">(</span>
     <span class="bp">cls</span><span class="p">,</span>
     <span class="n">test</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">Test</span><span class="p">],</span> <span class="nb">str</span><span class="p">],</span>
     <span class="n">columns</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -7042,7 +7042,7 @@ generator could not be instantiated.</p></td>
 </table>
         <details class="quote">
           <summary>Source code in <code>zenml/integrations/evidently/tests.py</code></summary>
-          <div class="highlight"><pre><span></span><code><span class="k">def</span> <span class="nf">to_evidently_test</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Test</span><span class="p">,</span> <span class="n">TestPreset</span><span class="p">,</span> <span class="n">BaseGenerator</span><span class="p">]:</span>
+          <div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">to_evidently_test</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Test</span><span class="p">,</span> <span class="n">TestPreset</span><span class="p">,</span> <span class="n">BaseGenerator</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Create an Evidently Test, TestPreset or test generator object.</span>
 
 <span class="sd">    Call this method to create an Evidently Test, TestPreset or test</span>
