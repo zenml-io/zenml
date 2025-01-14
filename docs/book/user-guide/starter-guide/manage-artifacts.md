@@ -218,7 +218,7 @@ The tool preserves your comparison configuration in the URL, making it easy to s
 This feature is currently in Alpha Preview. We encourage you to share feedback about your use cases and requirements through our Slack community.
 {% endhint %}
 
-### Specify a type for your artifacts
+## Specify a type for your artifacts
 
 Assigning a type to an artifact allows ZenML to highlight them differently in the dashboard and also lets you filter your artifacts better.
 
@@ -244,7 +244,7 @@ model = ...
 save_artifact(model, name="model", artifact_type=ArtifactType.MODEL)
 ```
 
-### Consuming external artifacts within a pipeline
+## Consuming external artifacts within a pipeline
 
 While most pipelines start with a step that produces an artifact, it is often the case to want to consume artifacts external from the pipeline. The `ExternalArtifact` class can be used to initialize an artifact within ZenML with any arbitrary data type.
 
@@ -277,7 +277,7 @@ Optionally, you can configure the `ExternalArtifact` to use a custom [materializ
 Using an `ExternalArtifact` for your step automatically disables caching for the step.
 {% endhint %}
 
-### Consuming artifacts produced by other pipelines
+## Consuming artifacts produced by other pipelines
 
 It is also common to consume an artifact downstream after producing it in an upstream pipeline or step. As we have learned in the [previous section](../../how-to/pipeline-development/build-pipelines/fetching-pipelines.md#fetching-artifacts-directly), the `Client` can be used to fetch artifacts directly inside the pipeline code:
 
