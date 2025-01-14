@@ -66,12 +66,12 @@ def telemetry_pipeline():
 ```
 
 This data can be visualized and compared in the ZenML Pro dashboard. The
-illustrations below show the data from this example in the ZenML Pro dashboard
+illustrations below show the data from this example in the [ZenML Pro](https://www.zenml.io/pro) dashboard
 using the Experiment Comparison tool.
 
 ## Visualizing and Comparing Metadata (Pro)
 
-Once you've logged metadata in your pipelines, you can use ZenML's Experiment Comparison tool to analyze and compare metrics across different runs. This feature is available in the ZenML Pro dashboard.
+Once you've logged metadata in your pipelines, you can use ZenML's Experiment Comparison tool to analyze and compare metrics across different runs. This feature is available in the [ZenML Pro](https://www.zenml.io/pro) dashboard.
 
 <div style="position: relative; padding-bottom: 65.81352833638026%; height: 0;"><iframe src="https://www.loom.com/embed/693b2d829600492da7cd429766aeba6a?sid=007c88b1-ffd4-4a75-a575-4a474ee7e0c9" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>
 
