@@ -495,9 +495,7 @@ class DatabricksOrchestrator(WheeledOrchestrator):
         Returns:
             A dictionary of metadata.
         """
-        run_url = (
-            f"{self.config.host}/jobs/" f"{self.get_orchestrator_run_id()}"
-        )
+        run_url = f"{self.config.host}/jobs/{self.get_orchestrator_run_id()}"
         return {
             METADATA_ORCHESTRATOR_URL: Uri(run_url),
         }

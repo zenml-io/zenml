@@ -23,11 +23,9 @@ DATA_LOCATION = "https://raw.githubusercontent.com/ourownstory/neuralprophet-dat
 
 
 @step
-def data_loader() -> (
-    Tuple[
-        Annotated[pd.DataFrame, "df_train"], Annotated[pd.DataFrame, "df_test"]
-    ]
-):
+def data_loader() -> Tuple[
+    Annotated[pd.DataFrame, "df_train"], Annotated[pd.DataFrame, "df_test"]
+]:
     """Return the renewable energy dataset as pandas dataframes."""
     sf_pv_df = pd.read_csv(DATA_LOCATION + "energy/SF_PV.csv", nrows=100)
     df_train, df_test = NeuralProphet().split_df(

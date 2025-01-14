@@ -58,15 +58,15 @@ def func_with_single_annotated_output() -> Annotated[int, "custom_output"]:
     return 1
 
 
-def func_with_single_artifact_config_output() -> (
-    Annotated[int, ArtifactConfig(name="custom_output")]
-):
+def func_with_single_artifact_config_output() -> Annotated[
+    int, ArtifactConfig(name="custom_output")
+]:
     return 1
 
 
-def func_with_single_output_with_both_name_and_artifact_config() -> (
-    Annotated[int, "custom_output", ArtifactConfig()]
-):
+def func_with_single_output_with_both_name_and_artifact_config() -> Annotated[
+    int, "custom_output", ArtifactConfig()
+]:
     return 1
 
 
@@ -75,9 +75,9 @@ def func_with_tuple_output() -> Tuple[int, ...]:
     return return_value
 
 
-def func_with_annotated_tuple_output() -> (
-    Annotated[Tuple[int, int], "custom_output"]
-):
+def func_with_annotated_tuple_output() -> Annotated[
+    Tuple[int, int], "custom_output"
+]:
     return_value = (1, 2)
     return return_value
 
@@ -86,29 +86,25 @@ def func_with_multiple_outputs() -> Tuple[int, int]:
     return 1, 2
 
 
-def func_with_multiple_annotated_outputs() -> (
-    Tuple[Annotated[int, "custom_output"], int]
-):
+def func_with_multiple_annotated_outputs() -> Tuple[
+    Annotated[int, "custom_output"], int
+]:
     return 1, 2
 
 
-def func_with_multiple_annotated_outputs_and_artifact_config() -> (
-    Tuple[Annotated[int, ArtifactConfig(name="custom_output")], int]
-):
+def func_with_multiple_annotated_outputs_and_artifact_config() -> Tuple[
+    Annotated[int, ArtifactConfig(name="custom_output")], int
+]:
     return 1, 2
 
 
-def func_with_multiple_annotated_outputs_and_model_artifact_config() -> (
-    Tuple[
-        Annotated[
-            int,
-            ArtifactConfig(
-                name="custom_output", artifact_type=ArtifactType.MODEL
-            ),
-        ],
+def func_with_multiple_annotated_outputs_and_model_artifact_config() -> Tuple[
+    Annotated[
         int,
-    ]
-):
+        ArtifactConfig(name="custom_output", artifact_type=ArtifactType.MODEL),
+    ],
+    int,
+]:
     return 1, 2
 
 
@@ -290,15 +286,15 @@ def func_with_multiple_annotations() -> Annotated[int, "a", "b"]:
     return 1
 
 
-def func_with_multiple_artifact_configs() -> (
-    Annotated[int, ArtifactConfig(), ArtifactConfig()]
-):
+def func_with_multiple_artifact_configs() -> Annotated[
+    int, ArtifactConfig(), ArtifactConfig()
+]:
     return 1
 
 
-def func_with_ambiguous_output_name() -> (
-    Annotated[int, "a", ArtifactConfig(name="b")]
-):
+def func_with_ambiguous_output_name() -> Annotated[
+    int, "a", ArtifactConfig(name="b")
+]:
     return 1
 
 
@@ -310,9 +306,9 @@ def func_with_ellipsis_annotation() -> Tuple[int, ...]:
     return 1, 2, 3
 
 
-def func_with_duplicate_output_name() -> (
-    Tuple[Annotated[int, "custom_output"], Annotated[int, "custom_output"]]
-):
+def func_with_duplicate_output_name() -> Tuple[
+    Annotated[int, "custom_output"], Annotated[int, "custom_output"]
+]:
     return 1, 1
 
 

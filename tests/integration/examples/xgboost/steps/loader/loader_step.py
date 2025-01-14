@@ -32,11 +32,9 @@ TEST_SET_RAW = (
 
 
 @step
-def data_loader() -> (
-    Tuple[
-        Annotated[xgb.DMatrix, "mat_train"], Annotated[xgb.DMatrix, "mat_test"]
-    ]
-):
+def data_loader() -> Tuple[
+    Annotated[xgb.DMatrix, "mat_train"], Annotated[xgb.DMatrix, "mat_test"]
+]:
     """Retrieves the data from the demo directory of the XGBoost repo."""
     # Write data to temporary files to load it with `xgb.DMatrix`.
     with tempfile.NamedTemporaryFile(

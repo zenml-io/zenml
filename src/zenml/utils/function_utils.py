@@ -196,7 +196,7 @@ def _cli_wrapped_function(func: F) -> F:
         return function
 
     func.__doc__ = (
-        f"{func.__doc__}\n\nThis is ZenML-generated " "CLI wrapper function."
+        f"{func.__doc__}\n\nThis is ZenML-generated CLI wrapper function."
     )
 
     return wrapper(func)
