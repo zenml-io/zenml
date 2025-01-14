@@ -2,6 +2,11 @@
 description: Reference secrets in stack component attributes and settings
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Reference secrets in stack configuration
 
 Some of the components in your stack require you to configure them with sensitive information like passwords or tokens, so they can connect to the underlying infrastructure. Secret references allow you to configure these components in a secure way by not specifying the value directly but instead referencing a secret by providing the secret name and key. Referencing a secret for the value of any string attribute of your stack components, simply specify the attribute using the following syntax: `{{<SECRET_NAME>.<SECRET_KEY>}}`
