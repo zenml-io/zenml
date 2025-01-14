@@ -80,10 +80,12 @@ Once you've logged metadata in your pipelines, you can use ZenML's Experiment Co
 The Experiment Comparison tool offers two complementary views for analyzing your pipeline metadata:
 
 1. **Table View**: Compare metadata across runs with automatic change tracking
-   ![Table View](../../../../book/.gitbook/assets/table-view.png)
+
+![Table View](../../../../book/.gitbook/assets/table-view.png)
 
 2. **Parallel Coordinates Plot**: Visualize relationships between different metrics
-   ![Parallel Coordinates](../../../../book/.gitbook/assets/coordinates-view.png)
+
+![Parallel Coordinates](../../../../book/.gitbook/assets/coordinates-view.png)
 
 The tool lets you compare up to 20 pipeline runs simultaneously and supports any
 numerical metadata (`float` or `int`) that you've logged in your pipelines.
