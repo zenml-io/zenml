@@ -215,7 +215,7 @@ def generate_docs(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Arguments to run the" "mkdocstrings helper"
+        description="Arguments to run themkdocstrings helper"
     )
     # Required positional argument
     parser.add_argument(

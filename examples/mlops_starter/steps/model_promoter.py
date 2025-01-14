@@ -44,7 +44,7 @@ def model_promoter(accuracy: float, stage: str = "production") -> bool:
 
     if accuracy < 0.8:
         logger.info(
-            f"Model accuracy {accuracy*100:.2f}% is below 80% ! Not promoting model."
+            f"Model accuracy {accuracy * 100:.2f}% is below 80% ! Not promoting model."
         )
     else:
         logger.info(f"Model promoted to {stage}!")

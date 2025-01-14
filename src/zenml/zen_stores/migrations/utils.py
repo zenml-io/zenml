@@ -725,8 +725,7 @@ class MigrationUtils(BaseModel):
         self._copy_database(backup_engine, self.engine)
 
         logger.debug(
-            f"Database restored from the `{backup_db_name}` "
-            "backup database."
+            f"Database restored from the `{backup_db_name}` backup database."
         )
 
     model_config = ConfigDict(arbitrary_types_allowed=True)

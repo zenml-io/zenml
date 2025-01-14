@@ -48,7 +48,7 @@ class AzureIntegration(Integration):
         "azure-mgmt-containerservice>=20.0.0",
         "azure-storage-blob==12.17.0",  # temporary fix for https://github.com/Azure/azure-sdk-for-python/issues/32056
         "kubernetes",
-        "azure-ai-ml==1.18.0",
+        "azure-ai-ml==1.23.1",
         # In azureml/core/_metrics.py:212 of azureml-core 1.56.0, they use 
         # an attribute that was removed in Numpy 2.0. However, AzureML itself
         # does not have a limitation on numpy.

@@ -2726,7 +2726,7 @@ class RestZenStore(BaseZenStore):
                 )
             except (ValueError, AuthorizationException) as e:
                 logger.error(
-                    f'Failed to fetch {resource_type or "available"} '
+                    f"Failed to fetch {resource_type or 'available'} "
                     f"resources from service connector {connector.name}/"
                     f"{connector.id}: {e}"
                 )
