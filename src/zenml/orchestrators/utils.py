@@ -26,9 +26,14 @@ from zenml.constants import (
     ENV_ZENML_ACTIVE_STACK_ID,
     ENV_ZENML_ACTIVE_WORKSPACE_ID,
     ENV_ZENML_DISABLE_CREDENTIALS_DISK_CACHING,
+    ENV_ZENML_ENABLE_RICH_TRACEBACK,
+    ENV_ZENML_LOGGING_COLORS_DISABLED,
+    ENV_ZENML_LOGGING_FORMAT,
+    ENV_ZENML_LOGGING_VERBOSITY,
     ENV_ZENML_PIPELINE_RUN_API_TOKEN_EXPIRATION,
     ENV_ZENML_SERVER,
     ENV_ZENML_STORE_PREFIX,
+    ENV_ZENML_SUPPRESS_LOGS,
     ZENML_PIPELINE_RUN_API_TOKEN_EXPIRATION,
 )
 from zenml.enums import APITokenType, AuthScheme, StackComponentType, StoreType
@@ -39,6 +44,14 @@ logger = get_logger(__name__)
 
 if TYPE_CHECKING:
     from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
+
+ENV_VARS_TO_PROPAGATE = [
+    ENV_ZENML_LOGGING_FORMAT,
+    ENV_ZENML_LOGGING_VERBOSITY,
+    ENV_ZENML_LOGGING_COLORS_DISABLED,
+    ENV_ZENML_SUPPRESS_LOGS,
+    ENV_ZENML_ENABLE_RICH_TRACEBACK,
+]
 
 
 def get_orchestrator_run_name(
@@ -219,6 +232,11 @@ def get_config_environment_vars(
     environment_vars[ENV_ZENML_ACTIVE_WORKSPACE_ID] = str(
         Client().active_workspace.id
     )
+
+    # Propagate some environment variables to the execution environment
+    for env_var_name in ENV_VARS_TO_PROPAGATE:
+        if value := os.environ.get(env_var_name, None):
+            environment_vars[env_var_name] = value
 
     return environment_vars
 
