@@ -92,6 +92,7 @@ class ModelVersionRequest(WorkspaceScopedRequest):
 class ModelVersionUpdate(BaseModel):
     """Update model for model versions."""
 
+    # WORKSPACES-TODO: I don't think this is needed?
     model: UUID = Field(
         description="The ID of the model containing version",
     )

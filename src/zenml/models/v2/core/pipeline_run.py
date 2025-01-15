@@ -137,6 +137,7 @@ class PipelineRunUpdate(BaseModel):
 
     status: Optional[ExecutionStatus] = None
     end_time: Optional[datetime] = None
+    # WORKSPACES-TODO: If this needed still?
     model_version_id: Optional[UUID] = Field(
         title="The ID of the model version that was "
         "configured by this pipeline run explicitly.",

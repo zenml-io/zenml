@@ -100,6 +100,7 @@ class ScheduleRequest(WorkspaceScopedRequest):
 # ------------------ Update Model ------------------
 
 
+# WORKSPACES-TODO: Only name should be updatable
 class ScheduleUpdate(BaseUpdate):
     """Update model for schedules."""
 

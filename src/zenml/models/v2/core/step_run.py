@@ -136,6 +136,7 @@ class StepRunRequest(WorkspaceScopedRequest):
         title="Logs associated with this step run.",
         default=None,
     )
+    # WORKSPACES-TODO: We should just get this from the pipeline run?
     deployment: UUID = Field(
         title="The deployment associated with the step run."
     )
@@ -170,6 +171,7 @@ class StepRunUpdate(BaseModel):
         title="The end time of the step run.",
         default=None,
     )
+    # WORKSPACES-TODO: Is this still needed?
     model_version_id: Optional[UUID] = Field(
         title="The ID of the model version that was "
         "configured by this step run explicitly.",

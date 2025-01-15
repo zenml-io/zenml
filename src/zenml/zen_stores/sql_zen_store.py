@@ -1759,6 +1759,7 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The server onboarding state.
         """
+        # WORKSPACES-TODO: This might be separate for each workspace?
         with Session(self.engine) as session:
             settings = self._get_server_settings(session=session)
             if settings.onboarding_state:
@@ -2455,6 +2456,9 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The newly created service.
         """
+        # WORKSPACES-TODO: Ensure pipeline run and model version ID in correct
+        # workspace
+
         with Session(self.engine) as session:
             # Check if a service with the given name already exists
             self._fail_if_service_with_config_exists(
@@ -2540,6 +2544,8 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: if the service doesn't exist.
         """
+        # WORKSPACES-TODO: Make sure model version in correct workspace
+
         with Session(self.engine) as session:
             existing_service = session.exec(
                 select(ServiceSchema).where(ServiceSchema.id == service_id)
@@ -2828,6 +2834,8 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The created artifact version.
         """
+        # WORKSPACES-TODO: Check artifact_id and artifact_store_id are in
+        # correct workspace
         if artifact_name := artifact_version.artifact_name:
             artifact_schema = self._get_or_create_artifact_for_name(
                 name=artifact_name,
@@ -3434,6 +3442,7 @@ class SqlZenStore(BaseZenStore):
             KeyError: if the stack component references a non-existent
                 connector.
         """
+        # WORKSPACES-TODO: Check service connector in same workspace
         validate_name(component)
         with Session(self.engine) as session:
             self._fail_if_component_with_name_type_exists(
@@ -3595,6 +3604,7 @@ class SqlZenStore(BaseZenStore):
             IllegalOperationError: if the stack component is a default stack
                 component.
         """
+        # WORKSPACES-TODO: Check service connector in same workspace
         with Session(self.engine) as session:
             existing_component = session.exec(
                 select(StackComponentSchema).where(
@@ -4479,6 +4489,7 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The newly created build.
         """
+        # WORKSPACES-TODO: Check stack and pipeline in same workspace.
         with Session(self.engine) as session:
             # Create the build
             new_build = PipelineBuildSchema.from_request(build)
@@ -4588,6 +4599,7 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The newly created deployment.
         """
+        # WORKSPACES-TODO: Check entities in same workspace
         with Session(self.engine) as session:
             code_reference_id = self._create_or_reuse_code_reference(
                 session=session,
@@ -4710,6 +4722,7 @@ class SqlZenStore(BaseZenStore):
             ValueError: If the source deployment does not exist or does not
                 have an associated build.
         """
+        # WORKSPACES-TODO: Check deployment in same workspace
         with Session(self.engine) as session:
             existing_template = session.exec(
                 select(RunTemplateSchema)
@@ -5136,6 +5149,7 @@ class SqlZenStore(BaseZenStore):
         Raises:
             EntityExistsError: If a run with the same name already exists.
         """
+        # WORKSPACES-TODO: Check entities in same workspace
         with Session(self.engine) as session:
             # Create the pipeline run
             new_run = PipelineRunSchema.from_request(pipeline_run)
@@ -5324,6 +5338,7 @@ class SqlZenStore(BaseZenStore):
             The pipeline run, and a boolean indicating whether the run was
             created or not.
         """
+        # WORKSPACES-TODO: Check entities in same workspace
         if not pipeline_run.orchestrator_run_id:
             raise ValueError(
                 "Unable to get or create run for request with missing "
@@ -5446,6 +5461,7 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: if the pipeline run doesn't exist.
         """
+        # WORKSPACES-TODO: Check entities in same workspace
         with Session(self.engine) as session:
             # Check if pipeline run with the given ID exists
             existing_run = session.exec(
@@ -5529,6 +5545,7 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The created run metadata.
         """
+        # WORKSPACES-TODO: Check entities in same workspace
         with Session(self.engine) as session:
             if run_metadata.resources:
                 for key, value in run_metadata.values.items():
@@ -5566,6 +5583,7 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The newly created schedule.
         """
+        # WORKSPACES-TODO: Check orchestrator/pipeline in same workspace
         with Session(self.engine) as session:
             new_schedule = ScheduleSchema.from_request(schedule)
             session.add(new_schedule)
@@ -5647,6 +5665,7 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: if the schedule doesn't exist.
         """
+        # WORKSPACES-TODO: Check entities in same workspace
         with Session(self.engine) as session:
             # Check if schedule with the given ID exists
             existing_schedule = session.exec(
@@ -7469,6 +7488,7 @@ class SqlZenStore(BaseZenStore):
             Exception: If the full stack creation fails, due to unforeseen
                 errors.
         """
+        # WORKSPACES-TODO: Check entities in same workspace
         with Session(self.engine) as session:
             # For clean-up purposes, each created entity is tracked here
             service_connectors_created_ids: List[UUID] = []
@@ -7835,6 +7855,7 @@ class SqlZenStore(BaseZenStore):
             KeyError: if the stack doesn't exist.
             IllegalOperationError: if the stack is a default stack.
         """
+        # WORKSPACES-TODO: Check components in same workspace
         with Session(self.engine) as session:
             # Check if stack with the domain key (name, workspace, owner)
             # already exists
@@ -8122,6 +8143,7 @@ class SqlZenStore(BaseZenStore):
             EntityExistsError: if the step run already exists.
             KeyError: if the pipeline run doesn't exist.
         """
+        # WORKSPACES-TODO: Check entities in same workspace
         with Session(self.engine) as session:
             # Check if the pipeline run exists
             run = session.exec(
@@ -8332,6 +8354,7 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: if the step run doesn't exist.
         """
+        # WORKSPACES-TODO: Check entities in same workspace
         with Session(self.engine) as session:
             # Check if the step exists
             existing_step_run = session.exec(
@@ -8424,6 +8447,7 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: if the child step run or parent step run doesn't exist.
         """
+        # WORKSPACES-TODO: Check child and parent in same workspace
         # Check if the child step exists.
         child_step_run = session.exec(
             select(StepRunSchema).where(StepRunSchema.id == child_id)
@@ -8480,6 +8504,7 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: if the step run or artifact doesn't exist.
         """
+        # WORKSPACES-TODO: Check step and artifact in same workspace
         # Check if the step exists.
         step_run = session.exec(
             select(StepRunSchema).where(StepRunSchema.id == run_step_id)
@@ -8541,6 +8566,7 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: if the step run or artifact doesn't exist.
         """
+        # WORKSPACES-TODO: Check step and artifact in same workspace
         # Check if the step exists.
         step_run = session.exec(
             select(StepRunSchema).where(StepRunSchema.id == step_run_id)
@@ -8704,6 +8730,7 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The newly created trigger.
         """
+        # WORKSPACES-TODO: Check entities in same workspace
         with Session(self.engine) as session:
             # Verify that the given action exists
             self._get_action(action_id=trigger.action_id, session=session)
@@ -8803,6 +8830,7 @@ class SqlZenStore(BaseZenStore):
             KeyError: If the trigger doesn't exist.
             ValueError: If both a schedule and an event source are provided.
         """
+        # WORKSPACES-TODO: Check schedule in same workspace
         with Session(self.engine) as session:
             # Check if trigger with the domain key (name, workspace, owner)
             # already exists
@@ -10064,6 +10092,7 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The code reference ID.
         """
+        # WORKSPACES-TODO: Check code repository in same workspace
         if not code_reference:
             return None
 
@@ -10662,6 +10691,7 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The newly created model version.
         """
+        # WORKSPACES-TODO: Check entities in same workspace
         return self._create_model_version(model_version=model_version)
 
     def get_model_version(
@@ -10863,6 +10893,7 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The newly created model version to artifact link.
         """
+        # WORKSPACES-TODO: Check MV/AV in same workspace
         with Session(self.engine) as session:
             # If the link already exists, return it
             existing_model_version_artifact_link = session.exec(
@@ -11023,6 +11054,7 @@ class SqlZenStore(BaseZenStore):
             - Otherwise, returns the newly created model version to pipeline
                 run link.
         """
+        # WORKSPACES-TODO: Check MV/PR in same workspace
         with Session(self.engine) as session:
             # If the link already exists, return it
             existing_model_version_pipeline_run_link = session.exec(
@@ -11150,6 +11182,7 @@ class SqlZenStore(BaseZenStore):
             except KeyError:
                 tag = self.create_tag(TagRequest(name=tag_name))
             try:
+                # WORKSPACES-TODO: Check tag/resource in same workspace
                 self.create_tag_resource(
                     TagResourceRequest(
                         tag_id=tag.id,
@@ -11256,6 +11289,7 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: specified ID or name not found.
         """
+        # WORKSPACES-TODO: Only fetch from workspace
         with Session(self.engine) as session:
             tag = self._get_tag_schema(
                 tag_name_or_id=tag_name_or_id, session=session
@@ -11346,6 +11380,7 @@ class SqlZenStore(BaseZenStore):
             EntityExistsError: If a tag resource relationship with the given
                 configuration already exists.
         """
+        # WORKSPACES-TODO: Check tag/resource in same workspace
         with Session(self.engine) as session:
             existing_tag_resource = session.exec(
                 select(TagResourceSchema).where(
