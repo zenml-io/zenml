@@ -27,7 +27,6 @@ from zenml.constants import (
     PIPELINE_BUILDS,
     PIPELINE_DEPLOYMENTS,
     PIPELINES,
-    REPORTABLE_RESOURCES,
     RUN_METADATA,
     RUN_TEMPLATES,
     RUNS,
@@ -112,6 +111,7 @@ from zenml.zen_server.rbac.utils import (
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
+    server_config,
     zen_store,
 )
 
@@ -524,7 +524,7 @@ def create_pipeline(
 
     # We limit pipeline namespaces, not pipeline versions
     needs_usage_increment = (
-        ResourceType.PIPELINE in REPORTABLE_RESOURCES
+        ResourceType.PIPELINE in server_config().reportable_resources
         and zen_store().count_pipelines(PipelineFilter(name=pipeline.name))
         == 0
     )
