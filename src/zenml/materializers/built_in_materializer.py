@@ -28,6 +28,10 @@ from typing import (
 )
 
 from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
+from zenml.constants import (
+    ENV_ZENML_MATERIALIAZERS_ALLOW_NON_ASCII_JSON_DUMPS,
+    handle_bool_env_var,
+)
 from zenml.enums import ArtifactType, VisualizationType
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -48,7 +52,9 @@ BASIC_TYPES = (
     str,
     type(None),
 )  # complex/bytes are not JSON serializable
-
+ZENML_MATERIALIAZERS_ALLOW_NON_ASCII_JSON_DUMPS = handle_bool_env_var(
+    ENV_ZENML_MATERIALIAZERS_ALLOW_NON_ASCII_JSON_DUMPS, False
+)
 
 class BuiltInMaterializer(BaseMaterializer):
     """Handle JSON-serializable basic types (`bool`, `float`, `int`, `str`)."""
@@ -94,7 +100,10 @@ class BuiltInMaterializer(BaseMaterializer):
         Args:
             data: The data to store.
         """
-        yaml_utils.write_json(self.data_path, data)
+        yaml_utils.write_json(
+            self.data_path, data,
+            ensure_ascii=not ZENML_MATERIALIAZERS_ALLOW_NON_ASCII_JSON_DUMPS
+        )
 
     def extract_metadata(
         self, data: Union[bool, float, int, str]
@@ -371,7 +380,10 @@ class BuiltInContainerMaterializer(BaseMaterializer):
 
         # If the data is serializable, just write it into a single JSON file.
         if _is_serializable(data):
-            yaml_utils.write_json(self.data_path, data)
+            yaml_utils.write_json(
+                self.data_path, data,
+                ensure_ascii=not ZENML_MATERIALIAZERS_ALLOW_NON_ASCII_JSON_DUMPS
+            )
             return
 
         # non-serializable dict: Handle as non-serializable list of lists.
