@@ -145,6 +145,18 @@ def set_root_verbosity() -> None:
         get_logger(__name__).debug("Logging NOTSET")
 
 
+def get_formatter() -> logging.Formatter:
+    """Get a configured logging formatter.
+
+    Returns:
+        The formatter.
+    """
+    if log_format := os.environ.get(ENV_ZENML_LOGGING_FORMAT, None):
+        return logging.Formatter(fmt=log_format)
+    else:
+        return CustomFormatter()
+
+
 def get_console_handler() -> Any:
     """Get console handler for logging.
 
@@ -152,7 +164,7 @@ def get_console_handler() -> Any:
         A console handler.
     """
     console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setFormatter(CustomFormatter())
+    console_handler.setFormatter(get_formatter())
     return console_handler
 
 
@@ -180,13 +192,7 @@ def init_logging() -> None:
     set_root_verbosity()
 
     console_handler = logging.StreamHandler(sys.stdout)
-
-    if log_format := os.environ.get(ENV_ZENML_LOGGING_FORMAT, None):
-        formatter = logging.Formatter(fmt=log_format)
-        console_handler.setFormatter(formatter)
-    else:
-        console_handler.setFormatter(CustomFormatter())
-
+    console_handler.setFormatter(get_formatter())
     logging.root.addHandler(console_handler)
 
     # Enable logs if environment variable SUPPRESS_ZENML_LOGS is not set to True
