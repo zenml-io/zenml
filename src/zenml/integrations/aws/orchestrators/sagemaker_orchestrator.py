@@ -239,7 +239,8 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 environment.
 
         Raises:
-            RuntimeError: If there is an error creating or scheduling the pipeline.
+            RuntimeError: If there is an error creating or scheduling the
+                pipeline.
             TypeError: If the network_config passed is not compatible with the
                 AWS SageMaker NetworkConfig class.
             ValueError: If the schedule is not valid.
@@ -484,7 +485,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                     "deployment process."
                 )
 
-            schedule_name = f"zenml-{deployment.pipeline_configuration.name}"
+            schedule_name = orchestrator_run_name
             next_execution = None
 
             # Create PipelineSchedule based on schedule type
@@ -541,7 +542,8 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             # Get the current role ARN if not explicitly configured
             if self.config.scheduler_role is None:
                 logger.info(
-                    "No scheduler_role configured. Using service connector role to schedule pipeline."
+                    "No scheduler_role configured. Using service connector "
+                    "role to schedule pipeline."
                 )
                 sts = session.boto_session.client("sts")
                 try:
@@ -560,7 +562,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                     elif ":assumed-role/" in service_connector_role_arn:
                         # Convert assumed-role ARN format to role ARN format
                         # From: arn:aws:sts::123456789012:assumed-role/role-name/session-name
-                        # To:   arn:aws:iam::123456789012:role/role-name
+                        # To: arn:aws:iam::123456789012:role/role-name
                         service_connector_role_arn = re.sub(
                             r"arn:aws:sts::(\d+):assumed-role/([^/]+)/.*",
                             r"arn:aws:iam::\1:role/\2",
@@ -568,10 +570,12 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                         )
                 except Exception:
                     raise RuntimeError(
-                        "Failed to get current role ARN from service connector. This means "
-                        "the service connector is not configured correctly to schedule sagemaker "
-                        "pipelines. You can either fix the service connector or configure "
-                        "`scheduler_role` explicitly in your orchestrator config."
+                        "Failed to get current role ARN from service "
+                        "connector. This means the service connector is not "
+                        "configured correctly to schedule sagemaker "
+                        "pipelines. You can either fix the service connector "
+                        "or configure `scheduler_role` explicitly in your "
+                        "orchestrator config."
                     )
             else:
                 service_connector_role_arn = self.config.scheduler_role
@@ -590,7 +594,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                     f"{next_execution.strftime('%Y-%m-%d %H:%M:%S UTC')}"
                     if next_execution
                     else f"Using cron expression: "
-                         f"{deployment.schedule.cron_expression}"
+                    f"{deployment.schedule.cron_expression}"
                 )
                 + (
                     f" (and every {minutes} minutes after)"
@@ -615,7 +619,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
 
             # Yield metadata based on the generated execution object
             yield from self.compute_metadata(
-                execution=execution, settings=settings
+                execution_arn=execution.arn, settings=settings
             )
 
             # mainly for testing purposes, we wait for the pipeline to finish
@@ -652,14 +656,27 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         Returns:
             A dictionary of metadata.
         """
-        # TODO: Here we need to find some relevant metadata to track
-        #   in case of a scheduled pipeline.
-        #   Use ARN to fetch the execution
-        #   Metadata about the schedule
-        pipeline_execution_arn = os.environ[ENV_ZENML_SAGEMAKER_RUN_ID]
+        from zenml.client import Client
+
+        execution_arn = os.environ[ENV_ZENML_SAGEMAKER_RUN_ID]
         run_metadata: Dict[str, "MetadataType"] = {
-            "pipeline_execution_arn": pipeline_execution_arn,
+            "pipeline_execution_arn": execution_arn,
         }
+
+        client = Client()
+
+        deployment_id = client.get_pipeline_run(run_id).deployment_id
+        deployment = client.get_deployment(deployment_id)
+
+        settings = cast(
+            SagemakerOrchestratorSettings, self.get_settings(deployment)
+        )
+
+        for metadata in self.compute_metadata(
+            execution_arn=execution_arn,
+            settings=settings,
+        ):
+            run_metadata.update(metadata)
 
         return run_metadata
 
@@ -721,13 +738,13 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
 
     def compute_metadata(
         self,
-        execution: Any,
+        execution_arn: Any,
         settings: SagemakerOrchestratorSettings,
     ) -> Iterator[Dict[str, MetadataType]]:
         """Generate run metadata based on the generated Sagemaker Execution.
 
         Args:
-            execution: The corresponding _PipelineExecution object.
+            execution_arn: The ARN of the pipeline execution.
             settings: The Sagemaker orchestrator settings.
 
         Yields:
@@ -737,40 +754,42 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         metadata: Dict[str, MetadataType] = {}
 
         # Orchestrator Run ID
-        if run_id := self._compute_orchestrator_run_id(execution):
-            metadata[METADATA_ORCHESTRATOR_RUN_ID] = run_id
+        if execution_arn:
+            metadata[METADATA_ORCHESTRATOR_RUN_ID] = execution_arn
 
         # URL to the Sagemaker's pipeline view
-        if orchestrator_url := self._compute_orchestrator_url(execution):
+        if orchestrator_url := self._compute_orchestrator_url(
+            execution_arn=execution_arn
+        ):
             metadata[METADATA_ORCHESTRATOR_URL] = Uri(orchestrator_url)
 
         # URL to the corresponding CloudWatch page
         if logs_url := self._compute_orchestrator_logs_url(
-            execution, settings
+            execution_arn=execution_arn, settings=settings
         ):
             metadata[METADATA_ORCHESTRATOR_LOGS_URL] = Uri(logs_url)
 
         yield metadata
 
-    @staticmethod
     def _compute_orchestrator_url(
-        pipeline_execution: Any,
+        self,
+        execution_arn: Any,
     ) -> Optional[str]:
         """Generate the Orchestrator Dashboard URL upon pipeline execution.
 
         Args:
-            pipeline_execution: The corresponding _PipelineExecution object.
+            execution_arn: The ARN of the pipeline execution.
 
         Returns:
              the URL to the dashboard view in SageMaker.
         """
         try:
             region_name, pipeline_name, execution_id = (
-                dissect_pipeline_execution_arn(pipeline_execution.arn)
+                dissect_pipeline_execution_arn(execution_arn)
             )
 
             # Get the Sagemaker session
-            session = pipeline_execution.sagemaker_session
+            session = self._get_sagemaker_session()
 
             # List the Studio domains and get the Studio Domain ID
             domains_response = session.sagemaker_client.list_domains()
@@ -790,13 +809,13 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
 
     @staticmethod
     def _compute_orchestrator_logs_url(
-        pipeline_execution: Any,
+        execution_arn: Any,
         settings: SagemakerOrchestratorSettings,
     ) -> Optional[str]:
         """Generate the CloudWatch URL upon pipeline execution.
 
         Args:
-            pipeline_execution: The corresponding _PipelineExecution object.
+            execution_arn: The ARN of the pipeline execution.
             settings: The Sagemaker orchestrator settings.
 
         Returns:
@@ -804,7 +823,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         """
         try:
             region_name, _, execution_id = dissect_pipeline_execution_arn(
-                pipeline_execution.arn
+                execution_arn
             )
 
             use_training_jobs = True
@@ -827,18 +846,18 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
 
     @staticmethod
     def _compute_orchestrator_run_id(
-        pipeline_execution: Any,
+        execution_arn: Any,
     ) -> Optional[str]:
         """Fetch the Orchestrator Run ID upon pipeline execution.
 
         Args:
-            pipeline_execution: The corresponding _PipelineExecution object.
+            execution_arn: The ARN of the pipeline execution.
 
         Returns:
              the Execution ID of the run in SageMaker.
         """
         try:
-            return str(pipeline_execution.arn)
+            return str(execution_arn)
 
         except Exception as e:
             logger.warning(
