@@ -121,11 +121,6 @@ class PipelineRunRequest(WorkspaceScopedRequest):
         default=None,
         title="Tags of the pipeline run.",
     )
-    model_version_id: Optional[UUID] = Field(
-        title="The ID of the model version that was "
-        "configured by this pipeline run explicitly.",
-        default=None,
-    )
 
     model_config = ConfigDict(protected_namespaces=())
 
