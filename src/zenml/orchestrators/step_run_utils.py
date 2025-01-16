@@ -73,7 +73,6 @@ class StepRunRequestFactory:
         return StepRunRequest(
             name=invocation_id,
             pipeline_run_id=self.pipeline_run.id,
-            deployment=self.deployment.id,
             status=ExecutionStatus.RUNNING,
             start_time=datetime.utcnow(),
             user=Client().active_user.id,

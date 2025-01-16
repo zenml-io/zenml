@@ -139,20 +139,6 @@ class ScheduleSchema(NamedSchema, table=True):
         """
         if schedule_update.name is not None:
             self.name = schedule_update.name
-        if schedule_update.active is not None:
-            self.active = schedule_update.active
-        if schedule_update.cron_expression is not None:
-            self.cron_expression = schedule_update.cron_expression
-        if schedule_update.start_time is not None:
-            self.start_time = schedule_update.start_time
-        if schedule_update.end_time is not None:
-            self.end_time = schedule_update.end_time
-        if schedule_update.interval_second is not None:
-            self.interval_second = (
-                schedule_update.interval_second.total_seconds()
-            )
-        if schedule_update.catchup is not None:
-            self.catchup = schedule_update.catchup
         self.updated = datetime.utcnow()
         return self
 

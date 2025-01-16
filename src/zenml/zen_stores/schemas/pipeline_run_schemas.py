@@ -250,7 +250,6 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             pipeline_id=request.pipeline,
             deployment_id=request.deployment,
             trigger_execution_id=request.trigger_execution_id,
-            model_version_id=request.model_version_id,
         )
 
     def fetch_metadata_collection(self) -> Dict[str, List[RunMetadataEntry]]:
@@ -427,8 +426,6 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         if run_update.status:
             self.status = run_update.status.value
             self.end_time = run_update.end_time
-        if run_update.model_version_id and self.model_version_id is None:
-            self.model_version_id = run_update.model_version_id
 
         self.updated = datetime.utcnow()
         return self

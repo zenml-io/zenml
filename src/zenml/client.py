@@ -6439,7 +6439,6 @@ class Client(metaclass=ClientMetaClass):
         return self.zen_store.update_model_version(
             model_version_id=version_name_or_id,  # type:ignore[arg-type]
             model_version_update_model=ModelVersionUpdate(
-                model=model_name_or_id,
                 stage=stage,
                 force=force,
                 name=name,

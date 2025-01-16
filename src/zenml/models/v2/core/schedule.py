@@ -100,20 +100,10 @@ class ScheduleRequest(WorkspaceScopedRequest):
 # ------------------ Update Model ------------------
 
 
-# WORKSPACES-TODO: Only name should be updatable
 class ScheduleUpdate(BaseUpdate):
     """Update model for schedules."""
 
     name: Optional[str] = None
-    active: Optional[bool] = None
-    cron_expression: Optional[str] = None
-    start_time: Optional[datetime.datetime] = None
-    end_time: Optional[datetime.datetime] = None
-    interval_second: Optional[datetime.timedelta] = None
-    catchup: Optional[bool] = None
-    run_once_start_time: Optional[datetime.datetime] = None
-    orchestrator_id: Optional[UUID] = None
-    pipeline_id: Optional[UUID] = None
 
 
 # ------------------ Response Model ------------------

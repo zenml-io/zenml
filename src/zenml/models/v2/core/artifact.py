@@ -49,6 +49,7 @@ AnyQuery = TypeVar("AnyQuery", bound=Any)
 # ------------------ Request Model ------------------
 
 
+# WORKSPACES-TODO: make workspace scoped
 class ArtifactRequest(BaseRequest):
     """Artifact request model."""
 

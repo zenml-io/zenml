@@ -31,6 +31,7 @@ from zenml.models.v2.base.filter import BaseFilter
 
 # ------------------ Request Model ------------------
 
+
 # WORKSPACES-TODO: Make workspace scoped
 class TagRequest(BaseRequest):
     """Request model for tags."""

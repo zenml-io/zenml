@@ -131,6 +131,7 @@ class TriggerUpdate(BaseUpdate):
         "valid if the trigger is already configured to be activated by an "
         "event source.",
     )
+    # WORKSPACES-TODO: This should be an ID
     schedule: Optional[Schedule] = Field(
         default=None,
         title="The updated schedule for the trigger. Only valid if the trigger "

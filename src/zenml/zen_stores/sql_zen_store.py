@@ -290,6 +290,7 @@ from zenml.models import (
     WorkspaceFilter,
     WorkspaceRequest,
     WorkspaceResponse,
+    WorkspaceScopedResponse,
     WorkspaceUpdate,
 )
 from zenml.models.v2.core.component import InternalComponentRequest
@@ -2456,9 +2457,6 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The newly created service.
         """
-        # WORKSPACES-TODO: Ensure pipeline run and model version ID in correct
-        # workspace
-
         with Session(self.engine) as session:
             # Check if a service with the given name already exists
             self._fail_if_service_with_config_exists(
@@ -2466,7 +2464,19 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            # Create the service.
+            if pipeline_run_id := service.pipeline_run_id:
+                self._verify_workspace(
+                    expected_workspace_id=service.workspace,
+                    obj=(PipelineRunSchema, pipeline_run_id),
+                    session=session,
+                )
+            if model_version_id := service.model_version_id:
+                self._verify_workspace(
+                    expected_workspace_id=service.workspace,
+                    obj=(ModelVersionSchema, model_version_id),
+                    session=session,
+                )
+
             service_schema = ServiceSchema.from_request(service)
             logger.debug("Creating service: %s", service_schema)
             session.add(service_schema)
@@ -2544,14 +2554,19 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: if the service doesn't exist.
         """
-        # WORKSPACES-TODO: Make sure model version in correct workspace
-
         with Session(self.engine) as session:
             existing_service = session.exec(
                 select(ServiceSchema).where(ServiceSchema.id == service_id)
             ).first()
             if not existing_service:
                 raise KeyError(f"Service with ID {service_id} not found.")
+
+            if model_version_id := update.model_version_id:
+                self._verify_workspace(
+                    expected_workspace_id=existing_service.workspace_id,
+                    obj=(ModelVersionSchema, model_version_id),
+                    session=session,
+                )
 
             # Update the schema itself.
             existing_service.update(update=update)
@@ -2834,8 +2849,7 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The created artifact version.
         """
-        # WORKSPACES-TODO: Check artifact_id and artifact_store_id are in
-        # correct workspace
+        # WORKSPACES-TODO: Check artifact_id is in correct workspace
         if artifact_name := artifact_version.artifact_name:
             artifact_schema = self._get_or_create_artifact_for_name(
                 name=artifact_name,
@@ -2844,6 +2858,12 @@ class SqlZenStore(BaseZenStore):
             artifact_version.artifact_id = artifact_schema.id
 
         assert artifact_version.artifact_id
+
+        if artifact_store_id := artifact_version.artifact_store_id:
+            self._verify_workspace(
+                expected_workspace_id=artifact_version.workspace,
+                obj=(StackComponentSchema, artifact_store_id),
+            )
 
         artifact_version_id = None
 
@@ -3442,7 +3462,6 @@ class SqlZenStore(BaseZenStore):
             KeyError: if the stack component references a non-existent
                 connector.
         """
-        # WORKSPACES-TODO: Check service connector in same workspace
         validate_name(component)
         with Session(self.engine) as session:
             self._fail_if_component_with_name_type_exists(
@@ -3486,6 +3505,11 @@ class SqlZenStore(BaseZenStore):
                         f"Service connector with ID {component.connector} not "
                         "found."
                     )
+
+                self._verify_workspace(
+                    expected_workspace_id=component.workspace,
+                    obj=service_connector,
+                )
 
             # warn about skypilot regions, if needed
             if component.flavor in {"vm_gcp", "vm_azure"}:
@@ -3604,7 +3628,6 @@ class SqlZenStore(BaseZenStore):
             IllegalOperationError: if the stack component is a default stack
                 component.
         """
-        # WORKSPACES-TODO: Check service connector in same workspace
         with Session(self.engine) as session:
             existing_component = session.exec(
                 select(StackComponentSchema).where(
@@ -3669,6 +3692,12 @@ class SqlZenStore(BaseZenStore):
                         "Service connector with ID "
                         f"{component_update.connector} not found."
                     )
+
+                self._verify_workspace(
+                    expected_workspace_id=existing_component.workspace.id,
+                    obj=service_connector,
+                )
+
                 existing_component.connector = service_connector
                 existing_component.connector_resource_id = (
                     component_update.connector_resource_id
@@ -4489,9 +4518,21 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The newly created build.
         """
-        # WORKSPACES-TODO: Check stack and pipeline in same workspace.
         with Session(self.engine) as session:
-            # Create the build
+            if stack_id := build.stack:
+                self._verify_workspace(
+                    expected_workspace_id=build.workspace,
+                    obj=(StackSchema, stack_id),
+                    session=session,
+                )
+
+            if pipeline_id := build.pipeline:
+                self._verify_workspace(
+                    expected_workspace_id=build.workspace,
+                    obj=(PipelineSchema, pipeline_id),
+                    session=session,
+                )
+
             new_build = PipelineBuildSchema.from_request(build)
             session.add(new_build)
             session.commit()
@@ -4599,8 +4640,51 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The newly created deployment.
         """
-        # WORKSPACES-TODO: Check entities in same workspace
         with Session(self.engine) as session:
+            self._verify_workspace(
+                expected_workspace_id=deployment.workspace,
+                obj=(StackSchema, deployment.workspace),
+                session=session,
+            )
+
+            if pipeline_id := deployment.pipeline:
+                self._verify_workspace(
+                    expected_workspace_id=deployment.workspace,
+                    obj=(PipelineSchema, pipeline_id),
+                    session=session,
+                )
+
+            if build_id := deployment.build:
+                self._verify_workspace(
+                    expected_workspace_id=deployment.workspace,
+                    obj=(PipelineBuildSchema, build_id),
+                    session=session,
+                )
+
+            if schedule_id := deployment.schedule:
+                self._verify_workspace(
+                    expected_workspace_id=deployment.workspace,
+                    obj=(ScheduleSchema, schedule_id),
+                    session=session,
+                )
+
+            if deployment.code_reference:
+                self._verify_workspace(
+                    expected_workspace_id=deployment.workspace,
+                    obj=(
+                        CodeRepositorySchema,
+                        deployment.code_reference.code_repository,
+                    ),
+                    session=session,
+                )
+
+            if template_id := deployment.template:
+                self._verify_workspace(
+                    expected_workspace_id=deployment.workspace,
+                    obj=(RunTemplateSchema, template_id),
+                    session=session,
+                )
+
             code_reference_id = self._create_or_reuse_code_reference(
                 session=session,
                 workspace_id=deployment.workspace,
@@ -4722,7 +4806,6 @@ class SqlZenStore(BaseZenStore):
             ValueError: If the source deployment does not exist or does not
                 have an associated build.
         """
-        # WORKSPACES-TODO: Check deployment in same workspace
         with Session(self.engine) as session:
             existing_template = session.exec(
                 select(RunTemplateSchema)
@@ -4747,6 +4830,10 @@ class SqlZenStore(BaseZenStore):
                     f"Source deployment {template.source_deployment_id} not "
                     "found."
                 )
+
+            self._verify_workspace(
+                expected_workspace_id=template.workspace, obj=deployment
+            )
 
             template_utils.validate_deployment_is_templatable(deployment)
 
@@ -5149,9 +5236,21 @@ class SqlZenStore(BaseZenStore):
         Raises:
             EntityExistsError: If a run with the same name already exists.
         """
-        # WORKSPACES-TODO: Check entities in same workspace
+        # WORKSPACES-TODO: Check trigger in same workspace
         with Session(self.engine) as session:
-            # Create the pipeline run
+            self._verify_workspace(
+                expected_workspace_id=pipeline_run.workspace,
+                obj=(PipelineDeploymentSchema, pipeline_run.deployment),
+                session=session,
+            )
+
+            if pipeline_id := pipeline_run.pipeline:
+                self._verify_workspace(
+                    expected_workspace_id=pipeline_run.workspace,
+                    obj=(PipelineSchema, pipeline_id),
+                    session=session,
+                )
+
             new_run = PipelineRunSchema.from_request(pipeline_run)
 
             if pipeline_run.tags:
@@ -5338,7 +5437,6 @@ class SqlZenStore(BaseZenStore):
             The pipeline run, and a boolean indicating whether the run was
             created or not.
         """
-        # WORKSPACES-TODO: Check entities in same workspace
         if not pipeline_run.orchestrator_run_id:
             raise ValueError(
                 "Unable to get or create run for request with missing "
@@ -5461,7 +5559,6 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: if the pipeline run doesn't exist.
         """
-        # WORKSPACES-TODO: Check entities in same workspace
         with Session(self.engine) as session:
             # Check if pipeline run with the given ID exists
             existing_run = session.exec(
@@ -5583,8 +5680,20 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The newly created schedule.
         """
-        # WORKSPACES-TODO: Check orchestrator/pipeline in same workspace
         with Session(self.engine) as session:
+            if orchestrator_id := schedule.orchestrator_id:
+                self._verify_workspace(
+                    expected_workspace_id=schedule.workspace,
+                    obj=(StackComponentSchema, orchestrator_id),
+                    session=session,
+                )
+            if pipeline_id := schedule.pipeline_id:
+                self._verify_workspace(
+                    expected_workspace_id=schedule.workspace,
+                    obj=(PipelineSchema, pipeline_id),
+                    session=session,
+                )
+
             new_schedule = ScheduleSchema.from_request(schedule)
             session.add(new_schedule)
             session.commit()
@@ -5665,7 +5774,6 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: if the schedule doesn't exist.
         """
-        # WORKSPACES-TODO: Check entities in same workspace
         with Session(self.engine) as session:
             # Check if schedule with the given ID exists
             existing_schedule = session.exec(
@@ -7855,7 +7963,6 @@ class SqlZenStore(BaseZenStore):
             KeyError: if the stack doesn't exist.
             IllegalOperationError: if the stack is a default stack.
         """
-        # WORKSPACES-TODO: Check components in same workspace
         with Session(self.engine) as session:
             # Check if stack with the domain key (name, workspace, owner)
             # already exists
@@ -7893,6 +8000,12 @@ class SqlZenStore(BaseZenStore):
                         select(StackComponentSchema).where(or_(*filters))
                     ).all()
                 )
+
+                for component in components:
+                    self._verify_workspace(
+                        expected_workspace_id=existing_stack.workspace_id,
+                        obj=component,
+                    )
 
             existing_stack.update(
                 stack_update=stack_update,
@@ -8143,7 +8256,6 @@ class SqlZenStore(BaseZenStore):
             EntityExistsError: if the step run already exists.
             KeyError: if the pipeline run doesn't exist.
         """
-        # WORKSPACES-TODO: Check entities in same workspace
         with Session(self.engine) as session:
             # Check if the pipeline run exists
             run = session.exec(
@@ -8157,7 +8269,19 @@ class SqlZenStore(BaseZenStore):
                     f"with ID '{step_run.pipeline_run_id}' found."
                 )
 
-            step_schema = StepRunSchema.from_request(step_run)
+            self._verify_workspace(
+                expected_workspace_id=step_run.workspace, obj=run
+            )
+            if original_step_run_id := step_run.original_step_run_id:
+                self._verify_workspace(
+                    expected_workspace_id=step_run.workspace,
+                    obj=(StepRunSchema, original_step_run_id),
+                    session=session,
+                )
+
+            step_schema = StepRunSchema.from_request(
+                step_run, deployment_id=run.deployment_id
+            )
             session.add(step_schema)
             try:
                 session.commit()
@@ -8170,6 +8294,15 @@ class SqlZenStore(BaseZenStore):
 
             # Add logs entry for the step if exists
             if step_run.logs is not None:
+                self._verify_workspace(
+                    expected_workspace_id=step_run.workspace,
+                    obj=(
+                        StackComponentSchema,
+                        step_run.logs.artifact_store_id,
+                    ),
+                    session=session,
+                )
+
                 log_entry = LogsSchema(
                     uri=step_run.logs.uri,
                     step_run_id=step_schema.id,
@@ -8220,7 +8353,7 @@ class SqlZenStore(BaseZenStore):
             # Save parent step IDs into the database.
             for parent_step_id in step_run.parent_step_ids:
                 self._set_run_step_parent_step(
-                    child_id=step_schema.id,
+                    child_step_run=step_schema,
                     parent_id=parent_step_id,
                     session=session,
                 )
@@ -8238,7 +8371,7 @@ class SqlZenStore(BaseZenStore):
                     step_spec=step_model.spec,
                 )
                 self._set_run_step_input_artifact(
-                    run_step_id=step_schema.id,
+                    step_run=step_schema,
                     artifact_version_id=artifact_version_id,
                     name=input_name,
                     input_type=input_type,
@@ -8249,7 +8382,7 @@ class SqlZenStore(BaseZenStore):
             for name, artifact_version_ids in step_run.outputs.items():
                 for artifact_version_id in artifact_version_ids:
                     self._set_run_step_output_artifact(
-                        step_run_id=step_schema.id,
+                        step_run=step_schema,
                         artifact_version_id=artifact_version_id,
                         name=name,
                         session=session,
@@ -8354,7 +8487,6 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: if the step run doesn't exist.
         """
-        # WORKSPACES-TODO: Check entities in same workspace
         with Session(self.engine) as session:
             # Check if the step exists
             existing_step_run = session.exec(
@@ -8374,7 +8506,7 @@ class SqlZenStore(BaseZenStore):
             for name, artifact_version_ids in step_run_update.outputs.items():
                 for artifact_version_id in artifact_version_ids:
                     self._set_run_step_output_artifact(
-                        step_run_id=step_run_id,
+                        step_run=existing_step_run,
                         artifact_version_id=artifact_version_id,
                         name=name,
                         session=session,
@@ -8386,7 +8518,7 @@ class SqlZenStore(BaseZenStore):
                 artifact_version_id,
             ) in step_run_update.loaded_artifact_versions.items():
                 self._set_run_step_input_artifact(
-                    run_step_id=step_run_id,
+                    step_run=existing_step_run,
                     artifact_version_id=artifact_version_id,
                     name=artifact_name,
                     input_type=StepRunInputArtifactType.MANUAL,
@@ -8433,60 +8565,48 @@ class SqlZenStore(BaseZenStore):
         else:
             return StepRunInputArtifactType.MANUAL
 
-    @staticmethod
     def _set_run_step_parent_step(
-        child_id: UUID, parent_id: UUID, session: Session
+        self, child_step_run: StepRunSchema, parent_id: UUID, session: Session
     ) -> None:
         """Sets the parent step run for a step run.
 
         Args:
-            child_id: The ID of the child step run to set the parent for.
+            child_step_run: The child step run to set the parent for.
             parent_id: The ID of the parent step run to set a child for.
             session: The database session to use.
 
         Raises:
             KeyError: if the child step run or parent step run doesn't exist.
         """
-        # WORKSPACES-TODO: Check child and parent in same workspace
-        # Check if the child step exists.
-        child_step_run = session.exec(
-            select(StepRunSchema).where(StepRunSchema.id == child_id)
-        ).first()
-        if child_step_run is None:
-            raise KeyError(
-                f"Unable to set parent step for step with ID "
-                f"{child_id}: No step with this ID found."
-            )
-
-        # Check if the parent step exists.
         parent_step_run = session.exec(
             select(StepRunSchema).where(StepRunSchema.id == parent_id)
         ).first()
         if parent_step_run is None:
-            raise KeyError(
-                f"Unable to set parent step for step with ID "
-                f"{child_id}: No parent step with ID {parent_id} "
-                "found."
-            )
+            raise KeyError(f"No parent step with ID {parent_id} found.")
+
+        self._verify_workspace(
+            expected_workspace_id=parent_step_run.workspace_id,
+            obj=child_step_run,
+        )
 
         # Check if the parent step is already set.
         assignment = session.exec(
             select(StepRunParentsSchema)
-            .where(StepRunParentsSchema.child_id == child_id)
-            .where(StepRunParentsSchema.parent_id == parent_id)
+            .where(StepRunParentsSchema.child_id == child_step_run.id)
+            .where(StepRunParentsSchema.parent_id == parent_step_run.id)
         ).first()
         if assignment is not None:
             return
 
         # Save the parent step assignment in the database.
         assignment = StepRunParentsSchema(
-            child_id=child_id, parent_id=parent_id
+            child_id=child_step_run.id, parent_id=parent_step_run.id
         )
         session.add(assignment)
 
-    @staticmethod
     def _set_run_step_input_artifact(
-        run_step_id: UUID,
+        self,
+        step_run: StepRunSchema,
         artifact_version_id: UUID,
         name: str,
         input_type: StepRunInputArtifactType,
@@ -8495,7 +8615,7 @@ class SqlZenStore(BaseZenStore):
         """Sets an artifact as an input of a step run.
 
         Args:
-            run_step_id: The ID of the step run.
+            step_run: The step run.
             artifact_version_id: The ID of the artifact.
             name: The name of the input in the step run.
             input_type: In which way the artifact was loaded in the step.
@@ -8504,17 +8624,6 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: if the step run or artifact doesn't exist.
         """
-        # WORKSPACES-TODO: Check step and artifact in same workspace
-        # Check if the step exists.
-        step_run = session.exec(
-            select(StepRunSchema).where(StepRunSchema.id == run_step_id)
-        ).first()
-        if step_run is None:
-            raise KeyError(
-                f"Unable to set input artifact: No step run with ID "
-                f"'{run_step_id}' found."
-            )
-
         # Check if the artifact exists.
         artifact = session.exec(
             select(ArtifactVersionSchema).where(
@@ -8527,10 +8636,14 @@ class SqlZenStore(BaseZenStore):
                 f"'{artifact_version_id}' found."
             )
 
+        self._verify_workspace(
+            expected_workspace_id=step_run.workspace_id, obj=artifact
+        )
+
         # Check if the input is already set.
         assignment = session.exec(
             select(StepRunInputArtifactSchema)
-            .where(StepRunInputArtifactSchema.step_id == run_step_id)
+            .where(StepRunInputArtifactSchema.step_id == step_run.id)
             .where(
                 StepRunInputArtifactSchema.artifact_id == artifact_version_id
             )
@@ -8541,16 +8654,16 @@ class SqlZenStore(BaseZenStore):
 
         # Save the input assignment in the database.
         assignment = StepRunInputArtifactSchema(
-            step_id=run_step_id,
+            step_id=step_run.id,
             artifact_id=artifact_version_id,
             name=name,
             type=input_type.value,
         )
         session.add(assignment)
 
-    @staticmethod
     def _set_run_step_output_artifact(
-        step_run_id: UUID,
+        self,
+        step_run: StepRunSchema,
         artifact_version_id: UUID,
         name: str,
         session: Session,
@@ -8558,7 +8671,7 @@ class SqlZenStore(BaseZenStore):
         """Sets an artifact as an output of a step run.
 
         Args:
-            step_run_id: The ID of the step run.
+            step_run: The step run.
             artifact_version_id: The ID of the artifact version.
             name: The name of the output in the step run.
             session: The database session to use.
@@ -8566,17 +8679,6 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: if the step run or artifact doesn't exist.
         """
-        # WORKSPACES-TODO: Check step and artifact in same workspace
-        # Check if the step exists.
-        step_run = session.exec(
-            select(StepRunSchema).where(StepRunSchema.id == step_run_id)
-        ).first()
-        if step_run is None:
-            raise KeyError(
-                f"Unable to set output artifact: No step run with ID "
-                f"'{step_run_id}' found."
-            )
-
         # Check if the artifact exists.
         artifact = session.exec(
             select(ArtifactVersionSchema).where(
@@ -8589,10 +8691,14 @@ class SqlZenStore(BaseZenStore):
                 f"'{artifact_version_id}' found."
             )
 
+        self._verify_workspace(
+            expected_workspace_id=step_run.workspace_id, obj=artifact
+        )
+
         # Check if the output is already set.
         assignment = session.exec(
             select(StepRunOutputArtifactSchema)
-            .where(StepRunOutputArtifactSchema.step_id == step_run_id)
+            .where(StepRunOutputArtifactSchema.step_id == step_run.id)
             .where(
                 StepRunOutputArtifactSchema.artifact_id == artifact_version_id
             )
@@ -8602,7 +8708,7 @@ class SqlZenStore(BaseZenStore):
 
         # Save the output assignment in the database.
         assignment = StepRunOutputArtifactSchema(
-            step_id=step_run_id,
+            step_id=step_run.id,
             artifact_id=artifact_version_id,
             name=name,
         )
@@ -8830,7 +8936,6 @@ class SqlZenStore(BaseZenStore):
             KeyError: If the trigger doesn't exist.
             ValueError: If both a schedule and an event source are provided.
         """
-        # WORKSPACES-TODO: Check schedule in same workspace
         with Session(self.engine) as session:
             # Check if trigger with the domain key (name, workspace, owner)
             # already exists
@@ -10092,7 +10197,6 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The code reference ID.
         """
-        # WORKSPACES-TODO: Check code repository in same workspace
         if not code_reference:
             return None
 
@@ -10597,6 +10701,9 @@ class SqlZenStore(BaseZenStore):
                 )
 
         model = self.get_model(model_version.model)
+        self._verify_workspace(
+            expected_workspace_id=model_version.workspace, obj=model
+        )
         model_version_id = None
 
         remaining_tries = MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION
@@ -10691,7 +10798,6 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The newly created model version.
         """
-        # WORKSPACES-TODO: Check entities in same workspace
         return self._create_model_version(model_version=model_version)
 
     def get_model_version(
@@ -10809,12 +10915,9 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             existing_model_version = session.exec(
-                select(ModelVersionSchema)
-                .where(
-                    ModelVersionSchema.model_id
-                    == model_version_update_model.model
+                select(ModelVersionSchema).where(
+                    ModelVersionSchema.id == model_version_id
                 )
-                .where(ModelVersionSchema.id == model_version_id)
             ).first()
 
             if not existing_model_version:
@@ -10828,7 +10931,7 @@ class SqlZenStore(BaseZenStore):
                     select(ModelVersionSchema)
                     .where(
                         ModelVersionSchema.model_id
-                        == model_version_update_model.model
+                        == existing_model_version.model_id
                     )
                     .where(ModelVersionSchema.stage == stage)
                 ).first()
@@ -11163,6 +11266,52 @@ class SqlZenStore(BaseZenStore):
     # Tags
     #################
 
+    @staticmethod
+    def _get_taggable_resource_type(
+        resource: AnySchema,
+    ) -> TaggableResourceTypes:
+        return {
+            ModelSchema: TaggableResourceTypes.MODEL,
+            ModelVersionSchema: TaggableResourceTypes.MODEL_VERSION,
+            ArtifactSchema: TaggableResourceTypes.ARTIFACT,
+            ArtifactVersionSchema: TaggableResourceTypes.ARTIFACT_VERSION,
+            PipelineSchema: TaggableResourceTypes.PIPELINE,
+            PipelineRunSchema: TaggableResourceTypes.PIPELINE_RUN,
+            RunTemplateSchema: TaggableResourceTypes.RUN_TEMPLATE,
+        }[type(resource)]
+
+    def _attach_tags_to_resource_new(
+        self, tag_names: List[str], resource: AnySchema
+    ) -> None:
+        """Creates a tag<>resource link if not present.
+
+        Args:
+            tag_names: The list of names of the tags.
+            resource_id: The id of the resource.
+            resource_type: The type of the resource to create link with.
+        """
+        for tag_name in tag_names:
+            try:
+                tag = self.get_tag(tag_name)
+                self._verify_workspace(
+                    expected_workspace_id=resource.workspace_id, obj=tag
+                )
+            except KeyError:
+                tag = self.create_tag(TagRequest(name=tag_name))
+            try:
+                resource_type = self._get_taggable_resource_type(
+                    resource=resource
+                )
+                self.create_tag_resource(
+                    TagResourceRequest(
+                        tag_id=tag.id,
+                        resource_id=resource.id,
+                        resource_type=resource_type,
+                    )
+                )
+            except EntityExistsError:
+                pass
+
     def _attach_tags_to_resource(
         self,
         tag_names: List[str],
@@ -11439,3 +11588,43 @@ class SqlZenStore(BaseZenStore):
                 )
             session.delete(tag_model)
             session.commit()
+
+    def _verify_workspace(
+        self,
+        expected_workspace_id: UUID,
+        obj: Union[
+            AnySchema, WorkspaceScopedResponse, Tuple[Type[AnySchema], UUID]
+        ],
+        session: Optional[Session] = None,
+    ) -> None:
+        def _raise_error(resource: str, id_: UUID) -> NoReturn:
+            raise ValueError(
+                f"{resource} {id_} is not in workspace {expected_workspace_id}."
+            )
+
+        if isinstance(obj, WorkspaceScopedResponse):
+            if obj.workspace.id != expected_workspace_id:
+                _raise_error(resource=type(obj).__name__, id_=obj.id)
+        elif isinstance(obj, BaseSchema):
+            if getattr(obj, "workspace_id", None) != expected_workspace_id:
+                _raise_error(resource=obj.__name__, id_=obj.id)
+        else:
+            schema, id_ = obj
+
+            workspace_col = getattr(schema, "workspace_id", None)
+            if not workspace_col:
+                raise ValueError(
+                    f"Schema {schema.__name__} has no attribute workspace_id."
+                )
+
+            query = select(col(workspace_col)).where(schema.id == id_)
+
+            result: UUID
+            if session:
+                result = session.exec(query).one()
+            else:
+                with Session(self.engine) as session:
+                    result = session.exec(query).one()
+
+            if result != expected_workspace_id:
+                _raise_error(resource=schema.__name__, id_=id_)
