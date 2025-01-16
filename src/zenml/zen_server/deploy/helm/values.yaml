@@ -922,8 +922,8 @@ resources: {}
   #   memory: 128Mi
 
 resourcesMigrationPod: {}
-  # This is the resource request for the migration pod. Follows the same
-  # format as the resources section above.
+  # Resource requests and limits for the database migration pod.
+  # If not set, falls back to the global resources configuration defined in .Values.resources
 
 autoscaling:
   enabled: false
