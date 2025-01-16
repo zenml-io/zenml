@@ -132,15 +132,6 @@ class SagemakerOrchestratorSettings(BaseSettings):
         ("processor_role", "execution_role"), ("processor_tags", "tags")
     )
 
-    @property
-    def is_schedulable(self) -> bool:
-        """Whether the orchestrator is schedulable or not.
-
-        Returns:
-            Whether the orchestrator is schedulable or not.
-        """
-        return True
-
     @model_validator(mode="before")
     def validate_model(cls, data: Dict[str, Any]) -> Dict[str, Any]:
         """Check if model is configured correctly.
@@ -242,6 +233,15 @@ class SagemakerOrchestratorConfig(
             Whether the orchestrator runs synchronous or not.
         """
         return self.synchronous
+
+    @property
+    def is_schedulable(self) -> bool:
+        """Whether the orchestrator is schedulable or not.
+
+        Returns:
+            Whether the orchestrator is schedulable or not.
+        """
+        return True
 
 
 class SagemakerOrchestratorFlavor(BaseOrchestratorFlavor):

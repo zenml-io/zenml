@@ -479,8 +479,9 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         if deployment.schedule:
             if settings.synchronous:
                 logger.warning(
-                    "The 'synchronous' setting is ignored for scheduled pipelines since "
-                    "they run independently of the deployment process."
+                    "The 'synchronous' setting is ignored for scheduled "
+                    "pipelines since they run independently of the "
+                    "deployment process."
                 )
 
             schedule_name = f"zenml-{deployment.pipeline_configuration.name}"
@@ -498,8 +499,8 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                     enabled=True,
                 )
             elif deployment.schedule.interval_second:
-                # This is necessary because SageMaker's PipelineSchedule rate expressions
-                # require minutes as the minimum time unit.
+                # This is necessary because SageMaker's PipelineSchedule rate
+                # expressions require minutes as the minimum time unit.
                 # Even if a user specifies an interval of less than 60 seconds,
                 # it will be rounded up to 1 minute.
                 minutes = max(
@@ -527,7 +528,8 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 )
                 if not execution_time:
                     raise ValueError(
-                        "A start time must be specified for one-time schedule execution"
+                        "A start time must be specified for one-time "
+                        "schedule execution"
                     )
                 schedule = PipelineSchedule(
                     name=schedule_name,
@@ -549,8 +551,10 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                     # If this is a user ARN, try to get the role ARN
                     if ":user/" in service_connector_role_arn:
                         logger.warning(
-                            f"Using IAM user credentials ({service_connector_role_arn}). For production "
-                            "environments, it's recommended to use IAM roles instead."
+                            f"Using IAM user credentials "
+                            f"({service_connector_role_arn}). For production "
+                            "environments, it's recommended to use IAM roles "
+                            "instead."
                         )
                     # If this is an assumed role, extract the role ARN
                     elif ":assumed-role/" in service_connector_role_arn:
@@ -574,16 +578,19 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
 
             # Attach schedule to pipeline
             triggers = pipeline.put_triggers(
-                triggers=[schedule], role_arn=service_connector_role_arn
+                triggers=[schedule],
+                role_arn=service_connector_role_arn,
             )
             logger.info(f"The schedule ARN is: {triggers[0]}")
 
             logger.info(
                 f"Successfully scheduled pipeline with name: {schedule_name}\n"
                 + (
-                    f"First execution will occur at: {next_execution.strftime('%Y-%m-%d %H:%M:%S UTC')}"
+                    f"First execution will occur at: "
+                    f"{next_execution.strftime('%Y-%m-%d %H:%M:%S UTC')}"
                     if next_execution
-                    else f"Using cron expression: {deployment.schedule.cron_expression}"
+                    else f"Using cron expression: "
+                         f"{deployment.schedule.cron_expression}"
                 )
                 + (
                     f" (and every {minutes} minutes after)"
@@ -592,7 +599,8 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 )
             )
             logger.info(
-                "\n\nIn order to cancel the schedule, you can use execute the following command:\n"
+                "\n\nIn order to cancel the schedule, you can use execute "
+                "the following command:\n"
             )
             logger.info(
                 f"`aws scheduler delete-schedule --name {schedule_name}`"
@@ -613,7 +621,8 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             # mainly for testing purposes, we wait for the pipeline to finish
             if settings.synchronous:
                 logger.info(
-                    "Executing synchronously. Waiting for pipeline to finish... \n"
+                    "Executing synchronously. Waiting for pipeline to "
+                    "finish... \n"
                     "At this point you can `Ctrl-C` out without cancelling the "
                     "execution."
                 )
@@ -626,8 +635,8 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                     raise RuntimeError(
                         "Timed out while waiting for pipeline execution to "
                         "finish. For long-running pipelines we recommend "
-                        "configuring your orchestrator for asynchronous execution. "
-                        "The following command does this for you: \n"
+                        "configuring your orchestrator for asynchronous "
+                        "execution. The following command does this for you: \n"
                         f"`zenml orchestrator update {self.name} "
                         f"--synchronous=False`"
                     )
@@ -644,7 +653,9 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             A dictionary of metadata.
         """
         # TODO: Here we need to find some relevant metadata to track
-        #  in case of a scheduled pipeline. 
+        #   in case of a scheduled pipeline.
+        #   Use ARN to fetch the execution
+        #   Metadata about the schedule
         pipeline_execution_arn = os.environ[ENV_ZENML_SAGEMAKER_RUN_ID]
         run_metadata: Dict[str, "MetadataType"] = {
             "pipeline_execution_arn": pipeline_execution_arn,
@@ -835,8 +846,9 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             )
             return None
 
-    def _validate_cron_expression(self, cron_expression: str) -> str:
-        """Validates and formats a cron expression for SageMaker Pipeline Schedule.
+    @staticmethod
+    def _validate_cron_expression(cron_expression: str) -> str:
+        """Validates and formats a cron expression for SageMaker schedules.
 
         Args:
             cron_expression: The cron expression to validate
@@ -854,9 +866,10 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         parts = cron_exp.split()
         if len(parts) not in [6, 7]:  # AWS cron requires 6 or 7 fields
             raise ValueError(
-                f"Invalid cron expression: {cron_expression}. AWS cron expressions must "
-                "have 6 or 7 fields: minute hour day-of-month month day-of-week year(optional). "
-                "Example: '15 10 ? * 6L 2022-2023'"
+                f"Invalid cron expression: {cron_expression}. AWS cron "
+                "expressions must have 6 or 7 fields: minute hour day-of-month "
+                "month day-of-week year(optional). Example: '15 10 ? * 6L "
+                "2022-2023'"
             )
 
         return cron_exp
