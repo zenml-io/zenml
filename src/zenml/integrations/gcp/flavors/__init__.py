@@ -21,6 +21,10 @@ from zenml.integrations.gcp.flavors.gcp_image_builder_flavor import (
     GCPImageBuilderConfig,
     GCPImageBuilderFlavor,
 )
+from zenml.integrations.gcp.flavors.vertex_experiment_tracker_flavor import (
+    VertexExperimentTrackerConfig,
+    VertexExperimentTrackerFlavor,
+)
 from zenml.integrations.gcp.flavors.vertex_orchestrator_flavor import (
     VertexOrchestratorConfig,
     VertexOrchestratorFlavor,
@@ -35,6 +39,8 @@ __all__ = [
     "GCPArtifactStoreConfig",
     "GCPImageBuilderFlavor",
     "GCPImageBuilderConfig",
+    "VertexExperimentTrackerFlavor",
+    "VertexExperimentTrackerConfig",
     "VertexOrchestratorFlavor",
     "VertexOrchestratorConfig",
     "VertexStepOperatorFlavor",
