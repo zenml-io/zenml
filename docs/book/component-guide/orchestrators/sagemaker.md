@@ -166,19 +166,23 @@ Additional configuration for the Sagemaker orchestrator can be passed via `Sagem
 * `base_job_name`
 * `env`
 
-For example, settings can be provided in the following way:
+For example, settings can be provided and applied in the following way:
 
 ```python
+from zenml import step
+from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import (
+    SagemakerOrchestratorSettings
+)
+
 sagemaker_orchestrator_settings = SagemakerOrchestratorSettings(
     instance_type="ml.m5.large",
     volume_size_in_gb=30,
 )
-```
 
-They can then be applied to a step as follows:
 
-```python
 @step(settings={"orchestrator": sagemaker_orchestrator_settings})
+def my_step() -> None:
+    pass
 ```
 
 For example, if your ZenML component is configured to use `ml.c5.xlarge` with 400GB additional storage by default, all steps will use it except for the step above, which will use `ml.t3.medium` (for Processing Steps) or `ml.m5.xlarge` (for Training Steps) with 30GB additional storage. See the next section for details on how ZenML decides which Sagemaker Step type to use.
@@ -194,6 +198,8 @@ For more information and a full list of configurable attributes of the Sagemaker
 To enable Warm Pools, use the [`SagemakerOrchestratorSettings`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-aws/#zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor.SagemakerOrchestratorSettings) class:
 
 ```python
+from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import SagemakerOrchestratorSettings
+
 sagemaker_orchestrator_settings = SagemakerOrchestratorSettings(
     keep_alive_period_in_seconds = 300, # 5 minutes, default value
 )
@@ -204,6 +210,8 @@ This configuration keeps instances warm for 5 minutes after each job completes, 
 If you prefer not to use Warm Pools, you can explicitly disable them:
 
 ```python
+from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import SagemakerOrchestratorSettings
+
 sagemaker_orchestrator_settings = SagemakerOrchestratorSettings(
     keep_alive_period_in_seconds = None,
 )
@@ -212,6 +220,8 @@ sagemaker_orchestrator_settings = SagemakerOrchestratorSettings(
 By default, the SageMaker orchestrator uses Training Steps where possible, which can offer performance benefits and better integration with SageMaker's training capabilities. To disable this behavior:
 
 ```python
+from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import SagemakerOrchestratorSettings
+
 sagemaker_orchestrator_settings = SagemakerOrchestratorSettings(
     use_training_step = False
 )
@@ -232,6 +242,10 @@ Note that data import and export can be used jointly with `processor_args` for m
 A simple example of importing data from S3 to the Sagemaker job is as follows:
 
 ```python
+from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import (
+    SagemakerOrchestratorSettings
+)
+
 sagemaker_orchestrator_settings = SagemakerOrchestratorSettings(
     input_data_s3_mode="File",
     input_data_s3_uri="s3://some-bucket-name/folder"
@@ -243,6 +257,10 @@ In this case, data will be available at `/opt/ml/processing/input/data` within t
 It is also possible to split your input over channels. This can be useful if the dataset is already split in S3, or maybe even located in different buckets.
 
 ```python
+from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import (
+    SagemakerOrchestratorSettings
+)
+
 sagemaker_orchestrator_settings = SagemakerOrchestratorSettings(
     input_data_s3_mode="File",
     input_data_s3_uri={
@@ -264,6 +282,10 @@ Data from within the job (e.g. produced by the training process, or when preproc
 In the simple case, data in `/opt/ml/processing/output/data` will be copied to S3 at the end of a job:
 
 ```python
+from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import (
+    SagemakerOrchestratorSettings
+)
+
 sagemaker_orchestrator_settings = SagemakerOrchestratorSettings(
     output_data_s3_mode="EndOfJob",
     output_data_s3_uri="s3://some-results-bucket-name/results"
@@ -273,6 +295,10 @@ sagemaker_orchestrator_settings = SagemakerOrchestratorSettings(
 In a more complex case, data in `/opt/ml/processing/output/data/metadata` and `/opt/ml/processing/output/data/checkpoints` will be written away continuously:
 
 ```python
+from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import (
+    SagemakerOrchestratorSettings
+)
+
 sagemaker_orchestrator_settings = SagemakerOrchestratorSettings(
     output_data_s3_mode="Continuous",
     output_data_s3_uri={
@@ -292,7 +318,9 @@ The SageMaker orchestrator allows you to add tags to your pipeline executions an
 
 ```python
 from zenml import pipeline, step
-from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import SagemakerOrchestratorSettings
+from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import (
+    SagemakerOrchestratorSettings
+)
 
 # Define settings for the pipeline
 pipeline_settings = SagemakerOrchestratorSettings(
@@ -344,35 +372,58 @@ The SageMaker orchestrator supports running pipelines on a schedule using SageMa
 * Running once at a specific time
 
 ```python
-from zenml import pipeline
 from datetime import datetime, timedelta
 
+from zenml import pipeline
+from zenml.config.schedule import Schedule
+
 # Using a cron expression (runs daily at 2 AM UTC)
-@pipeline(schedule=Schedule(cron_expression="0 2 * * *"))
+@pipeline
 def my_scheduled_pipeline():
     # Your pipeline steps here
     pass
 
+my_scheduled_pipeline.with_options(
+    schedule=Schedule(cron_expression="0 2 * * *")
+)()
+
 # Using an interval (runs every 2 hours)
-@pipeline(schedule=Schedule(interval_second=timedelta(hours=2)))
+@pipeline
 def my_interval_pipeline():
     # Your pipeline steps here
     pass
 
+my_interval_pipeline.with_options(
+    schedule=Schedule(
+        start_time=datetime.now(),
+        interval_second=timedelta(hours=2)
+    )
+)()
+
 # Running once at a specific time
-@pipeline(schedule=Schedule(run_once_start_time=datetime(2024, 12, 31, 23, 59)))
+@pipeline
 def my_one_time_pipeline():
     # Your pipeline steps here
     pass
+
+my_one_time_pipeline.with_options(
+    schedule=Schedule(run_once_start_time=datetime(2024, 12, 31, 23, 59))
+)()
 ```
 
 When you deploy a scheduled pipeline, ZenML will:
+
 1. Create a SageMaker Pipeline Schedule with the specified configuration
 2. Configure the pipeline as the target for the schedule
 3. Enable automatic execution based on the schedule
 
 {% hint style="info" %}
-If you run the same pipeline with a schedule multiple times, the existing schedule will **not** be updated with the new settings. Rather, ZenML will create a new sagemaker pipeline and attach a new schedule to it. The user must manually delete the old pipeline and their attached schedule using the AWS CLI or API (`aws scheduler delete-schedule <SCHEDULE_NAME>`). See details here: [SageMaker Pipeline Schedules](https://docs.aws.amazon.com/sagemaker/latest/dg/pipeline-eventbridge.html)
+If you run the same pipeline with a schedule multiple times, the existing 
+schedule will **not** be updated with the new settings. Rather, ZenML will 
+create a new sagemaker pipeline and attach a new schedule to it. The user 
+must manually delete the old pipeline and their attached schedule using the 
+AWS CLI or API (`aws scheduler delete-schedule <SCHEDULE_NAME>`). See details 
+here: [SageMaker Pipeline Schedules](https://docs.aws.amazon.com/sagemaker/latest/dg/pipeline-eventbridge.html)
 {% endhint %}
 
 #### Required IAM Permissions
@@ -380,60 +431,60 @@ If you run the same pipeline with a schedule multiple times, the existing schedu
 When using scheduled pipelines, you need to ensure your IAM role (either the service connector role or the configured `scheduler_role`) has the correct permissions and trust relationships:
 
 1. **Trust Relationships**
-Your service connector role needs to trust both SageMaker and EventBridge Scheduler services:
-
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
+    Your service connector role needs to trust both SageMaker and EventBridge Scheduler services:
+    
+    ```json
     {
-      "Effect": "Allow",
-      "Principal": {
-        "AWS": "<SERVICE_CONNECTOR_USER_ARN>", ## This is the ARN of the user that is configured in the service connector
-        # This is the list of services that the service connector role needs to schedule pipelines
-        "Service": [
-          "sagemaker.amazonaws.com",
-          "scheduler.amazonaws.com"
-        ]
-      },
-      "Action": "sts:AssumeRole"
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Effect": "Allow",
+          "Principal": {
+            "AWS": "<SERVICE_CONNECTOR_USER_ARN>", ## This is the ARN of the user that is configured in the service connector
+            # This is the list of services that the service connector role needs to schedule pipelines
+            "Service": [
+              "sagemaker.amazonaws.com",
+              "scheduler.amazonaws.com"
+            ]
+          },
+          "Action": "sts:AssumeRole"
+        }
+      ]
     }
-  ]
-}
-```
+    ```
 
 2. **Required IAM Policies**
 
-The scheduler role (see below) needs the following permissions to manage scheduled pipelines:
-
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
+    The scheduler role (see below) needs the following permissions to manage scheduled pipelines:
+    
+    ```json
     {
-      "Effect": "Allow",
-      "Action": [
-        "scheduler:ListSchedules",
-        "scheduler:GetSchedule",
-        "scheduler:CreateSchedule",
-        "scheduler:UpdateSchedule",
-        "scheduler:DeleteSchedule"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Effect": "Allow",
-      "Action": "iam:PassRole",
-      "Resource": "arn:aws:iam::*:role/*",
-      "Condition": {
-        "StringLike": {
-          "iam:PassedToService": "scheduler.amazonaws.com"
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Effect": "Allow",
+          "Action": [
+            "scheduler:ListSchedules",
+            "scheduler:GetSchedule",
+            "scheduler:CreateSchedule",
+            "scheduler:UpdateSchedule",
+            "scheduler:DeleteSchedule"
+          ],
+          "Resource": "*"
+        },
+        {
+          "Effect": "Allow",
+          "Action": "iam:PassRole",
+          "Resource": "arn:aws:iam::*:role/*",
+          "Condition": {
+            "StringLike": {
+              "iam:PassedToService": "scheduler.amazonaws.com"
+            }
+          }
         }
-      }
+      ]
     }
-  ]
-}
-```
+    ```
 
 Or you can use the `AmazonEventBridgeSchedulerFullAccess` managed policy.
 
@@ -447,7 +498,7 @@ Without these permissions, the scheduling functionality will fail. Make sure to 
 
 By default, the SageMaker orchestrator will use the attached [service connector role](../../how-to/infrastructure-deployment/auth-management/aws-service-connector.md) to schedule pipelines. However, you can specify a different role to be used for scheduling by configuring the `scheduler_role` parameter:
 
-```python
+```bash
 # When registering the orchestrator
 zenml orchestrator register sagemaker-orchestrator \
     --flavor=sagemaker \
