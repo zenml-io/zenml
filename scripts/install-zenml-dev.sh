@@ -66,6 +66,13 @@ install_integrations() {
 
     uv pip install $PIP_ARGS -r integration-requirements.txt
     rm integration-requirements.txt
+
+    # https://github.com/Kludex/python-multipart/pull/166
+    # There is an install conflict between multipart and python_multipart
+    # which causes our server to fail in case both are installed. We
+    # need to uninstall this library for now until the changes make it into
+    # fastapi and then need to bump the fastapi version to resolve this.
+    uv pip uninstall $PIP_ARGS multipart
 }
 
 set -x

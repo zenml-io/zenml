@@ -20,7 +20,6 @@ from fastapi import APIRouter, Depends, Security
 from zenml.constants import (
     API,
     PIPELINES,
-    REPORTABLE_RESOURCES,
     RUNS,
     VERSION_1,
 )
@@ -45,6 +44,7 @@ from zenml.zen_server.rbac.models import ResourceType
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
+    server_config,
     zen_store,
 )
 
@@ -159,7 +159,7 @@ def delete_pipeline(
     )
 
     should_decrement = (
-        ResourceType.PIPELINE in REPORTABLE_RESOURCES
+        ResourceType.PIPELINE in server_config().reportable_resources
         and zen_store().count_pipelines(PipelineFilter(name=pipeline.name))
         == 0
     )
