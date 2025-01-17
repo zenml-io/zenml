@@ -24,8 +24,8 @@ The ZenML Pro API is a RESTful API that follows OpenAPI 3.1.0 specifications. It
 To use the ZenML Pro API, you need to authenticate your requests. If you are logged in to your ZenML Pro account,
 you can use the same browser window to authenticate requests to your ZenML Pro API, directly in the OpenAPI docs. 
 
-For example, for the SaaS variant, you can access the docs here: https://cloudapi.zenml.io. You can make requests
-by being logged into ZenML Pro at https://cloud.zenml.io.
+For example, for the SaaS variant, you can access the docs here: [https://cloudapi.zenml.io](https://cloudapi.zenml.io). You can make requests
+by being logged into ZenML Pro at [https://cloud.zenml.io](https://cloud.zenml.io).
 
 Programmatic access is not possible at the moment.
 
@@ -67,7 +67,7 @@ The API uses standard HTTP status codes to indicate the success or failure of re
 
 Be aware that the ZenML Pro API may have rate limiting in place to ensure fair usage. If you exceed the rate limit, you may receive a 429 (Too Many Requests) status code. Implement appropriate backoff and retry logic in your applications to handle this scenario.
 
-Remember to refer to the complete API documentation available at `https://cloudapi.zenml.io` for detailed information about all available endpoints, request/response schemas, and additional features.
+Remember to refer to the complete API documentation available at [https://cloudapi.zenml.io](https://cloudapi.zenml.io) for detailed information about all available endpoints, request/response schemas, and additional features.
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
 
