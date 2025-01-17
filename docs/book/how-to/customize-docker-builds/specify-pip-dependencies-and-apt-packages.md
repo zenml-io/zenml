@@ -8,13 +8,14 @@ When a [pipeline is run with a remote orchestrator](../pipeline-development/conf
 
 For all of examples on this page, note that `DockerSettings` can be imported using `from zenml.config import DockerSettings`.
 
-By default, ZenML automatically installs all packages required by your active ZenML stack. However, you can specify additional packages to be installed in various ways:
+By default, ZenML automatically installs all packages required by your active ZenML stack. Additionally, it tries to look for
+`requirements.txt` and `pyproject.toml` files inside your current source root and installs packages from the first one it finds.
+If needed, you can customize the package installation behavior as follows:
 
-* Install all the packages in your local Python environment (This will use the `pip` or `poetry` package manager to get a list of your local packages):
+* Install all the packages in your local Python environment (This will run `pip freeze` to get a list of your local packages):
 
 ```python
-# or use "poetry_export"
-docker_settings = DockerSettings(replicate_local_python_environment="pip_freeze")
+docker_settings = DockerSettings(replicate_local_python_environment=True)
 
 
 @pipeline(settings={"docker": docker_settings})
@@ -22,16 +23,29 @@ def my_pipeline(...):
     ...
 ```
 
-If required, a custom command can be provided. This command must output a list of requirements following the format of the [requirements file](https://pip.pypa.io/en/stable/reference/requirements-file-format/):
+*   Specify a `pyproject.toml` file:
+
+```python
+docker_settings = DockerSettings(pyproject_path="/path/to/pyproject.toml")
+
+@pipeline(settings={"docker": docker_settings})
+def my_pipeline(...):
+    ...
+```
+
+By default, ZenML will try to export the dependencies specified in the `pyproject.toml` by trying to run `uv export` and `poetry export`.
+If both of these commands do not work for your `pyproject.toml` file or you want to customize the command (for example to install certain
+extras), you can specify a custom command using the `pyproject_export_command` attribute. This command must output a list of requirements following the format of the [requirements file](https://pip.pypa.io/en/stable/reference/requirements-file-format/). The command can contain a `{directory}` placeholder which will be replaced with the directory in which the `pyproject.toml` file is stored.
 
 ```python
 from zenml.config import DockerSettings
 
-docker_settings = DockerSettings(replicate_local_python_environment=[
-    "poetry",
+docker_settings = DockerSettings(pyproject_export_command=[
+    "uv",
     "export",
-    "--extras=train",
-    "--format=requirements.txt"
+    "--extra=train",
+    "--format=requirements-txt"
+    "--directory={directory}
 ])
 
 
@@ -110,6 +124,7 @@ Depending on the options specified in your Docker settings, ZenML installs the r
 * The packages required by the stack unless this is disabled by setting `install_stack_requirements=False`.
 * The packages specified via the `required_integrations`
 * The packages specified via the `requirements` attribute
+* The packages defined in the pyproject.toml file specified by the `pyproject_path` attribute
 * You can specify additional arguments for the installer used to install your Python packages as follows:
 ```python
 # This will result in a `pip install --timeout=1000 ...` call when installing packages in the
