@@ -69,6 +69,10 @@ This data can be visualized and compared in the ZenML Pro dashboard. The
 illustrations below show the data from this example in the [ZenML Pro](https://www.zenml.io/pro) dashboard
 using the Experiment Comparison tool.
 
+{% hint style="warning" %}
+This feature is currently in Alpha Preview. We encourage you to share feedback about your use cases and requirements through our Slack community.
+{% endhint %}
+
 ## Visualizing and Comparing Metadata (Pro)
 
 Once you've logged metadata in your pipelines, you can use ZenML's Experiment Comparison tool to analyze and compare metrics across different runs. This feature is available in the [ZenML Pro](https://www.zenml.io/pro) dashboard.
