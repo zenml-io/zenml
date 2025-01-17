@@ -46,7 +46,16 @@ def get_space_id(
             f"{BASE_URL}/orgs/{organization}/spaces",
             headers=headers,
             params=params,
-        ).json()
+        )
+
+        try:
+            response.raise_for_status()
+        except requests.exceptions.HTTPError:
+            raise RuntimeError(
+                f"Request failed with response content: {response.text}"
+            )
+
+        response_json = response.json()
 
         # Iterate through the spaces in the current page
         for space in response["items"]:
@@ -57,14 +66,14 @@ def get_space_id(
                 return space["id"]
 
         # Check if there are more pages
-        if "next" not in response or not response["next"]:
+        if "next" not in response_json or not response_json["next"]:
             # If no more pages and space not found, raise StopIteration
             raise StopIteration(
                 f"Space '{name}' not found in collection '{collection}'"
             )
 
         # If space not found in current page, update params for next page
-        params.update(response["next"])
+        params.update(response_json["next"])
 
 
 def duplicate_space(space_id: str, headers: dict) -> str:
@@ -83,8 +92,12 @@ def duplicate_space(space_id: str, headers: dict) -> str:
     response = requests.post(
         f"{BASE_URL}/spaces/{space_id}/duplicate", headers=headers
     )
-    if response.status_code != 200:
-        raise requests.HTTPError("There was a problem duplicating the space.")
+    try:
+        response.raise_for_status()
+    except requests.exceptions.HTTPError:
+        raise RuntimeError(
+            f"Request failed with response content: {response.text}"
+        )
     return response.json()["id"]
 
 
@@ -102,8 +115,12 @@ def update_space(space_id: str, changes: dict, headers: dict) -> None:
     response = requests.patch(
         f"{BASE_URL}/spaces/{space_id}", headers=headers, json=changes
     )
-    if response.status_code != 200:
-        raise requests.HTTPError("There was a problem updating the space.")
+    try:
+        response.raise_for_status()
+    except requests.exceptions.HTTPError:
+        raise RuntimeError(
+            f"Request failed with response content: {response.text}"
+        )
 
 
 def move_space(
@@ -127,9 +144,12 @@ def move_space(
 
     # Make the POST request to move the space
     response = requests.post(url, headers=headers, json=payload)
-
-    if response.status_code != 200:
-        raise requests.HTTPError("There was a problem moving the space.")
+    try:
+        response.raise_for_status()
+    except requests.exceptions.HTTPError:
+        raise RuntimeError(
+            f"Request failed with response content: {response.text}"
+        )
 
 
 def main() -> None:
