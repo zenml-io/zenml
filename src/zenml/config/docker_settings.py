@@ -102,8 +102,7 @@ class DockerSettings(BaseSettings):
 
     If none of the above are specified, ZenML will try to automatically find
     a `requirements.txt` or `pyproject.toml` file in your current source root
-    and install the first one it finds.
-    TODO: How to disable this
+    and installs packages from the first one it finds.
 
     Attributes:
         parent_image: Full name of the Docker image that should be

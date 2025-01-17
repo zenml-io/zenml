@@ -68,6 +68,7 @@ PIP_DEFAULT_ARGS = {
 }
 UV_DEFAULT_ARGS = {"no-cache-dir": None}
 
+# TODO: these don't actually install any extras. Should we include all extras? No extras? Exclude dev extras?
 DEFAULT_PYPROJECT_EXPORT_COMMANDS = [
     "uv export --format=requirements-txt --directory={directory}",
     "poetry export --format=requirements.txt --directory={directory}",
