@@ -137,10 +137,11 @@ class DockerSettings(BaseSettings):
             packages.
         python_package_installer_args: Arguments to pass to the python package
             installer.
-        replicate_local_python_environment: If not `None`, ZenML will use the
-            specified method to generate a requirements file that replicates
-            the packages installed in the currently running python environment.
-            This requirements file will then be installed in the Docker image.
+        replicate_local_python_environment: If set to True, ZenML will run
+            `pip freeze` to gather the requirements of the local Python
+            environment and then install them in the Docker image.
+        pyproject_path: TODO
+        pyproject_export_command: TODO
         requirements: Path to a requirements file or a list of required pip
             packages. During the image build, these requirements will be
             installed using pip. If you need to use a different tool to
@@ -192,8 +193,10 @@ class DockerSettings(BaseSettings):
     )
     python_package_installer_args: Dict[str, Any] = {}
     replicate_local_python_environment: Optional[
-        Union[List[str], PythonEnvironmentExportMethod]
+        Union[List[str], PythonEnvironmentExportMethod, bool]
     ] = Field(default=None, union_mode="left_to_right")
+    pyproject_path: Optional[str] = None
+    pyproject_export_command: Optional[List[str]] = None
     requirements: Union[None, str, List[str]] = Field(
         default=None, union_mode="left_to_right"
     )
@@ -301,6 +304,29 @@ class DockerSettings(BaseSettings):
                 "contain a `parent_image`. This parent image will be used "
                 "to run the steps of your pipeline directly without additional "
                 "Docker builds on top of it."
+            )
+
+        return self
+
+    @model_validator(mode="after")
+    def _deprecate_replicate_local_environment_commands(
+        self,
+    ) -> "DockerSettings":
+        """Deprecates some values for `replicate_local_python_environment`.
+
+        Returns:
+            The validated settings values.
+        """
+        if isinstance(self.replicate_local_python_environment, (str, list)):
+            logger.warning(
+                "Specifying a command (`%s`) for "
+                "`DockerSettings.replicate_local_python_environment` is "
+                "deprecated. If you want to replicate your exact local "
+                "environment using `pip freeze`, set "
+                "`DockerSettings.replicate_local_python_environment=True`. "
+                "If you want to export requirements from a pyproject.toml "
+                "file, use `DockerSettings.pyproject_path` and "
+                "`DockerSettings.pyproject_export_command`"
             )
 
         return self
