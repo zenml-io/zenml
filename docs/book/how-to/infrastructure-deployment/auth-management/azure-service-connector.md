@@ -68,7 +68,7 @@ If set, the resource name must identify an Azure blob storage container using on
 If a storage account is configured in the connector, only blob storage containers in that storage account will be accessible. Otherwise, if a resource group is configured in the connector, only blob storage containers in storage accounts in that resource group will be accessible. Finally, if neither a storage account nor a resource group is configured in the connector, all blob storage containers in all accessible storage accounts will be accessible.
 
 {% hint style="warning" %}
-The only Azure authentication method that works with Azure blob storage resources is the service principal authentication method.
+The only Azure authentication methods that work with Azure blob storage resources are the implicit authentication and the service principal authentication method.
 {% endhint %}
 
 ### AKS Kubernetes cluster
@@ -104,7 +104,10 @@ If set, the resource name must identify an ACR registry using one of the followi
 
 If a resource group is configured in the connector, only ACR registries in that resource group will be accessible.
 
-If an authentication method other than the Azure service principal is used for authentication, the admin account must be enabled for the registry, otherwise, clients will not be able to authenticate to the registry. See the official Azure [documentation on the admin account](https://docs.microsoft.com/en-us/azure/container-registry/container-registry-authentication#admin-account) for more information.
+If an authentication method other than the Azure service principal is used, Entra ID authentication is used.
+This requires the configured identity to have the `AcrPush` role to be configured.
+If Entra ID authentication fails, admin account authentication is tried. For this the admin account must be enabled for the registry.
+See the official Azure[documentation on the admin account](https://docs.microsoft.com/en-us/azure/container-registry/container-registry-authentication#admin-account) for more information.
 
 ## Authentication Methods
 
