@@ -91,11 +91,19 @@ class DockerSettings(BaseSettings):
     --------------------------------
     Depending on the configuration of this object, requirements will be
     installed in the following order (each step optional):
-    - The packages installed in your local python environment
+    - The packages installed in your local python environment (extracted using
+      `pip freeze`)
     - The packages required by the stack unless this is disabled by setting
-      `install_stack_requirements=False`.
+      `install_stack_requirements=False`
     - The packages specified via the `required_integrations`
+    - The packages defined inside a pyproject.toml file given by the
+      `pyproject_path` attribute.
     - The packages specified via the `requirements` attribute
+
+    If none of the above are specified, ZenML will try to automatically find
+    a `requirements.txt` or `pyproject.toml` file in your current source root
+    and install the first one it finds.
+    TODO: How to disable this
 
     Attributes:
         parent_image: Full name of the Docker image that should be
@@ -140,8 +148,17 @@ class DockerSettings(BaseSettings):
         replicate_local_python_environment: If set to True, ZenML will run
             `pip freeze` to gather the requirements of the local Python
             environment and then install them in the Docker image.
-        pyproject_path: TODO
-        pyproject_export_command: TODO
+        pyproject_path: Path to a pyproject.toml file. If given, the
+            dependencies will be exported to a requirements.txt
+            formatted file using the `pyproject_export_command` and then
+            installed inside the Docker image.
+        pyproject_export_command: Command to export the dependencies inside a
+            pyproject.toml file to a requirements.txt formatted file. If not
+            given and ZenML needs to export the requirements anyway, `uv export`
+            and `poetry export` will be tried to see if one of them works. This
+            command can contain a `{directory}` placeholder which will be
+            replaced with the directory in which the pyproject.toml file is
+            stored.
         requirements: Path to a requirements file or a list of required pip
             packages. During the image build, these requirements will be
             installed using pip. If you need to use a different tool to
