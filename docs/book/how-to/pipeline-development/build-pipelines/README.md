@@ -1,7 +1,7 @@
 ---
 icon: flask
 description: >-
-  Building pipelines is as simple as adding the `@step` and `@pipeline`
+  Building pipelines is as simple as adding the @step and @pipeline
   decorators to your code.
 ---
 
