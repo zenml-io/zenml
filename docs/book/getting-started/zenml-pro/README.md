@@ -10,7 +10,7 @@ description: Learn about the ZenML Pro features and deployment scenarios.
 The [Pro version of ZenML](https://zenml.io/pro) comes with a number of features 
 that expand the functionality of the Open Source product. ZenML Pro adds a managed control plane with benefits like:
 
-- **A managed production-grade ZenML deployment**: With ZenML Pro you can deploy multiple ZenML servers called [tenants](./tenants).
+- **A managed production-grade ZenML deployment**: With ZenML Pro you can deploy multiple ZenML servers called [tenants](./tenants.md).
 - **User management with teams**: Create [organizations](./organization.md) and [teams](./teams.md) to easily manage users at scale.
 - **Role-based access control and permissions**: Implement fine-grained access control using customizable [roles](./roles.md) to ensure secure and efficient resource management.
 - **Enhanced model and artifact control plane**: Leverage the [Model Control Plane](../../user-guide/starter-guide/track-ml-models.md) and [Artifact Control Plane](../../user-guide/starter-guide/manage-artifacts.md) for improved tracking and management of your ML assets.
