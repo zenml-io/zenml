@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Utility class to help with interacting with the dashboard."""
 
+import os
 from typing import Optional
 from uuid import UUID
 
@@ -157,8 +158,17 @@ def show_dashboard(url: str) -> None:
 
     elif environment in (EnvironmentType.NATIVE, EnvironmentType.WSL):
         if constants.handle_bool_env_var(
-            constants.ENV_AUTO_OPEN_DASHBOARD, default=True
+            constants.ENV_AUTO_OPEN_DASHBOARD, default=False
+        ) or constants.handle_bool_env_var(
+            constants.ENV_ZENML_AUTO_OPEN_DASHBOARD, default=True
         ):
+            if constants.ENV_AUTO_OPEN_DASHBOARD in os.environ:
+                logger.warning(
+                    "The `%s` environment variable is deprecated, use the `%s` "
+                    "environment variable instead.",
+                    constants.ENV_AUTO_OPEN_DASHBOARD,
+                    constants.ENV_ZENML_AUTO_OPEN_DASHBOARD,
+                )
             try:
                 import webbrowser
 
@@ -169,14 +179,16 @@ def show_dashboard(url: str) -> None:
                 logger.info(
                     "Automatically opening the dashboard in your "
                     "browser. To disable this, set the env variable "
-                    "AUTO_OPEN_DASHBOARD=false."
+                    "`%s=false`.",
+                    constants.ENV_ZENML_AUTO_OPEN_DASHBOARD,
                 )
             except Exception as e:
                 logger.error(e)
         else:
             logger.info(
                 "To open the dashboard in a browser automatically, "
-                "set the env variable AUTO_OPEN_DASHBOARD=true."
+                "set the env variable `%s=true`.",
+                constants.ENV_ZENML_AUTO_OPEN_DASHBOARD,
             )
 
     else:

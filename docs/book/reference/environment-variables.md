@@ -15,6 +15,14 @@ export ZENML_LOGGING_VERBOSITY=INFO
 
 Choose from `INFO`, `WARN`, `ERROR`, `CRITICAL`, `DEBUG`.
 
+## Logging format
+
+```bash
+export ZENML_LOGGING_FORMAT=%(asctime)s %(message)s
+```
+
+See [this page](../how-to/control-logging/set-logging-format.md) for more information.
+
 ## Disable step logs
 
 Usually, ZenML [stores step logs in the artifact store](../how-to/control-logging/enable-or-disable-logs-storing.md), but this can sometimes cause performance bottlenecks, especially if the code utilizes progress bars.
