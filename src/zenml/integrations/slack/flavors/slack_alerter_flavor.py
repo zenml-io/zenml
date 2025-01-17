@@ -19,6 +19,7 @@ from zenml.alerter.base_alerter import BaseAlerterConfig, BaseAlerterFlavor
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.slack import SLACK_ALERTER_FLAVOR
 from zenml.logger import get_logger
+from zenml.utils.deprecation_utils import deprecate_pydantic_attributes
 from zenml.utils.secret_utils import SecretField
 
 logger = get_logger(__name__)
@@ -32,21 +33,28 @@ class SlackAlerterSettings(BaseSettings):
 
     Attributes:
         slack_channel_id: The ID of the Slack channel to use for communication.
+        timeout: The amount of seconds to wait for the ask method.
     """
 
     slack_channel_id: Optional[str] = None
+    timeout: int = 300
 
 
-class SlackAlerterConfig(BaseAlerterConfig):
+class SlackAlerterConfig(BaseAlerterConfig, SlackAlerterSettings):
     """Slack alerter config.
 
     Attributes:
         slack_token: The Slack token tied to the Slack account to be used.
-        default_slack_channel_id: The ID of the default Slack channel to use for communication.
+        default_slack_channel_id: (deprecated) The ID of the default Slack
+            channel to use for communication.
     """
 
     slack_token: str = SecretField()
+
     default_slack_channel_id: Optional[str] = None
+    _deprecation_validator = deprecate_pydantic_attributes(
+        ("default_slack_channel_id", "slack_channel_id")
+    )
 
     @property
     def is_valid(self) -> bool:
@@ -60,9 +68,11 @@ class SlackAlerterConfig(BaseAlerterConfig):
             from slack_sdk.errors import SlackApiError
         except ImportError:
             logger.warning(
-                "Unable to validate Slack alerter credentials because the Slack integration is not installed."
+                "Unable to validate the slack alerter, because the Slack "
+                "integration is not installed."
             )
             return True
+
         client = WebClient(token=self.slack_token)
         try:
             # Check slack token validity
@@ -70,10 +80,10 @@ class SlackAlerterConfig(BaseAlerterConfig):
             if not response["ok"]:
                 return False
 
-            if self.default_slack_channel_id:
+            if self.slack_channel_id:
                 # Check channel validity
                 response = client.conversations_info(
-                    channel=self.default_slack_channel_id
+                    channel=self.slack_channel_id
                 )
             valid: bool = response["ok"]
             return valid
@@ -97,7 +107,7 @@ class SlackAlerterFlavor(BaseAlerterFlavor):
 
     @property
     def docs_url(self) -> Optional[str]:
-        """A url to point at docs explaining this flavor.
+        """A URL to point at docs explaining this flavor.
 
         Returns:
             A flavor docs url.
@@ -106,7 +116,7 @@ class SlackAlerterFlavor(BaseAlerterFlavor):
 
     @property
     def sdk_docs_url(self) -> Optional[str]:
-        """A url to point at SDK docs explaining this flavor.
+        """A URL to point at SDK docs explaining this flavor.
 
         Returns:
             A flavor SDK docs url.
@@ -115,7 +125,7 @@ class SlackAlerterFlavor(BaseAlerterFlavor):
 
     @property
     def logo_url(self) -> str:
-        """A url to represent the flavor in the dashboard.
+        """A URL to represent the flavor in the dashboard.
 
         Returns:
             The flavor logo.

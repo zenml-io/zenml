@@ -30,8 +30,7 @@ class SlackIntegration(Integration):
     """
 
     NAME = SLACK
-    REQUIREMENTS = ["slack-sdk>=3.16.1", "aiohttp>=3.8.1"]
-    REQUIREMENTS_IGNORED_ON_UNINSTALL = ["aiohttp"]
+    REQUIREMENTS = ["slack-sdk==3.30.0"]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
