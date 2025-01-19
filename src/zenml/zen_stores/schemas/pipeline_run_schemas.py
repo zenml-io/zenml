@@ -270,10 +270,11 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 metadata_collection[f"{s.name}::{k}"] = v
 
         # Fetch the metadata related to the schedule of this run
-        if schedule := self.deployment.schedule:
-            schedule_metadata = schedule.fetch_metadata_collection()
-            for k, v in schedule_metadata.items():
-                metadata_collection[f"schedule:{k}"] = v
+        if self.deployment is not None:
+            if schedule := self.deployment.schedule:
+                schedule_metadata = schedule.fetch_metadata_collection()
+                for k, v in schedule_metadata.items():
+                    metadata_collection[f"schedule:{k}"] = v
 
         return metadata_collection
 

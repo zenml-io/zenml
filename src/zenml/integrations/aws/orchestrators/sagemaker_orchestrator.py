@@ -86,6 +86,9 @@ def dissect_schedule_arn(
 
     Returns:
         Region Name, Schedule Name (including the group name)
+
+    Raises:
+        ValueError: If the input is not a properly formatted ARN.
     """
     # Split the ARN into parts
     arn_parts = schedule_arn.split(":")
@@ -636,7 +639,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 )
 
                 Client().create_run_metadata(
-                    metadata=schedule_metadata,
+                    metadata=schedule_metadata,  # type: ignore[arg-type]
                     resources=[
                         RunMetadataResource(
                             id=deployment.schedule.id,
@@ -726,18 +729,20 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
 
         zenml_client = Client()
 
-        deployment_id = zenml_client.get_pipeline_run(run_id).deployment_id
-        deployment = zenml_client.get_deployment(deployment_id)
+        if deployment_id := zenml_client.get_pipeline_run(
+            run_id
+        ).deployment_id:
+            deployment = zenml_client.get_deployment(deployment_id)
 
-        settings = cast(
-            SagemakerOrchestratorSettings, self.get_settings(deployment)
-        )
+            settings = cast(
+                SagemakerOrchestratorSettings, self.get_settings(deployment)
+            )
 
-        for metadata in self.compute_metadata(
-            execution_arn=execution_arn,
-            settings=settings,
-        ):
-            run_metadata.update(metadata)
+            for metadata in self.compute_metadata(
+                execution_arn=execution_arn,
+                settings=settings,
+            ):
+                run_metadata.update(metadata)
 
         return run_metadata
 
@@ -911,6 +916,9 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
 
         Args:
             schedule_arn: The trigger ARNs that is generated on the AWS side.
+
+        Returns:
+            a dictionary containing metadata related to the schedule.
         """
         region, name = dissect_schedule_arn(schedule_arn=schedule_arn)
 
