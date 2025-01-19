@@ -262,7 +262,7 @@ resource_settings = ResourceSettings(cpu_count=8, memory="16GB")
 ```
 
 To run your pipeline (or some steps of it) on a GPU, you will need to set both 
-a node selector and the gpu count as follows:
+a node selector and the GPU count as follows:
 
 ```python
 from zenml import step, pipeline
