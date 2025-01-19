@@ -107,6 +107,10 @@ if __name__ == "__main__":
     my_pipeline()
 ```
 
+{% hint style="warning" %}
+In case of an error, the output of the `ask()` method default to `False`.
+{% endhint %}
+
 
 ### Use it with custom settings
 

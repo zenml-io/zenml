@@ -280,13 +280,23 @@ class SlackAlerter(BaseAlerter):
             response = client.chat_postMessage(
                 channel=slack_channel_id, text=message, blocks=blocks
             )
-            if not response["ok"]:
-                logger.error("Failed to send message to Slack channel.")
+            if not response.get("ok", False):
+                error_details = response.get("error", "Unknown error")
+                logger.error(
+                    f"Failed to send message to Slack channel. "
+                    f"Error: {error_details}. Full response: {response}"
+                )
                 return False
             return True
         except SlackApiError as error:
-            response = error.response["error"]
-            logger.error(f"SlackAlerter.post() failed: {response}")
+            error_message = error.response.get("error", "Unknown error")
+            logger.error(
+                "SlackAlerter.post() failed with Slack API error: "
+                f"{error_message}. Full response: {error.response}"
+            )
+            return False
+        except Exception as e:
+            logger.error(f"Unexpected error in SlackAlerter.post(): {str(e)}")
             return False
 
     def ask(
@@ -315,8 +325,12 @@ class SlackAlerter(BaseAlerter):
                 blocks=self._create_blocks(question, params),
             )
 
-            if not response["ok"]:
-                logger.error("Failed to send message to Slack channel.")
+            if not response.get("ok", False):
+                error_details = response.get("error", "Unknown error")
+                logger.error(
+                    f"Failed to send the initial message to the Slack channel. "
+                    f"Error: {error_details}. Full response: {response}"
+                )
                 return False
 
             # Retrieve timestamp of sent message
@@ -349,7 +363,12 @@ class SlackAlerter(BaseAlerter):
             return False
 
         except SlackApiError as error:
+            error_message = error.response.get("error", "Unknown error")
             logger.error(
-                f"Slack API error during ask(): {error.response['error']}"
+                f"SlackAlerter.ask() failed with Slack API error: "
+                f"{error_message}. Full response: {error.response}"
             )
+            return False
+        except Exception as e:
+            logger.error(f"Unexpected error in SlackAlerter.ask(): {str(e)}")
             return False
