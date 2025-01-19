@@ -14,13 +14,14 @@
 """Models representing schedules."""
 
 import datetime
-from typing import Optional, Union
+from typing import Dict, Optional, Union
 from uuid import UUID
 
 from pydantic import Field, model_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.logger import get_logger
+from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
@@ -135,6 +136,11 @@ class ScheduleResponseMetadata(WorkspaceScopedResponseMetadata):
 
     orchestrator_id: Optional[UUID]
     pipeline_id: Optional[UUID]
+
+    run_metadata: Dict[str, MetadataType] = Field(
+        title="Metadata associated with this step run.",
+        default={},
+    )
 
 
 class ScheduleResponseResources(WorkspaceScopedResponseResources):
@@ -271,6 +277,15 @@ class ScheduleResponse(
             the value of the property.
         """
         return self.get_metadata().pipeline_id
+
+    @property
+    def run_metadata(self) -> Dict[str, MetadataType]:
+        """The `run_metadata` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().run_metadata
 
 
 # ------------------ Filter Model ------------------

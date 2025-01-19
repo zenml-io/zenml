@@ -38,13 +38,18 @@ from sagemaker.workflow.pipeline import Pipeline
 from sagemaker.workflow.steps import ProcessingStep, TrainingStep
 from sagemaker.workflow.triggers import PipelineSchedule
 
+from zenml.client import Client
 from zenml.config.base_settings import BaseSettings
 from zenml.constants import (
     METADATA_ORCHESTRATOR_LOGS_URL,
     METADATA_ORCHESTRATOR_RUN_ID,
     METADATA_ORCHESTRATOR_URL,
 )
-from zenml.enums import ExecutionStatus, StackComponentType
+from zenml.enums import (
+    ExecutionStatus,
+    MetadataResourceTypes,
+    StackComponentType,
+)
 from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import (
     SagemakerOrchestratorConfig,
     SagemakerOrchestratorSettings,
@@ -69,6 +74,33 @@ MAX_POLLING_ATTEMPTS = 100
 POLLING_DELAY = 30
 
 logger = get_logger(__name__)
+
+
+def dissect_schedule_arn(
+    schedule_arn: str,
+) -> Tuple[Optional[str], Optional[str]]:
+    """Extracts the region and the name from an EventBridge schedule ARN.
+
+    Args:
+        schedule_arn: The ARN of the EventBridge schedule.
+
+    Returns:
+        Region Name, Schedule Name (including the group name)
+    """
+    # Split the ARN into parts
+    arn_parts = schedule_arn.split(":")
+
+    # Validate ARN structure
+    if len(arn_parts) < 6 or not arn_parts[5].startswith("schedule/"):
+        raise ValueError("Invalid EventBridge schedule ARN format.")
+
+    # Extract the region
+    region = arn_parts[3]
+
+    # Extract the group name and schedule name
+    name = arn_parts[5].split("schedule/")[1]
+
+    return region, name
 
 
 def dissect_pipeline_execution_arn(
@@ -587,6 +619,28 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             )
             logger.info(f"The schedule ARN is: {triggers[0]}")
 
+            try:
+                from zenml.models import RunMetadataResource
+
+                schedule_metadata = self.generate_schedule_metadata(
+                    schedule_arn=triggers[0]
+                )
+
+                Client().create_run_metadata(
+                    metadata=schedule_metadata,
+                    resources=[
+                        RunMetadataResource(
+                            id=deployment.schedule.id,
+                            type=MetadataResourceTypes.SCHEDULE,
+                        )
+                    ],
+                )
+            except Exception as e:
+                logger.debug(
+                    "There was a warning attaching the metadata to the ZenML"
+                    f"schedule: {e}"
+                )
+
             logger.info(
                 f"Successfully scheduled pipeline with name: {schedule_name}\n"
                 + (
@@ -656,17 +710,16 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         Returns:
             A dictionary of metadata.
         """
-        from zenml.client import Client
 
         execution_arn = os.environ[ENV_ZENML_SAGEMAKER_RUN_ID]
         run_metadata: Dict[str, "MetadataType"] = {
             "pipeline_execution_arn": execution_arn,
         }
 
-        client = Client()
+        zenml_client = Client()
 
-        deployment_id = client.get_pipeline_run(run_id).deployment_id
-        deployment = client.get_deployment(deployment_id)
+        deployment_id = zenml_client.get_pipeline_run(run_id).deployment_id
+        deployment = zenml_client.get_deployment(deployment_id)
 
         settings = cast(
             SagemakerOrchestratorSettings, self.get_settings(deployment)
@@ -845,25 +898,20 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             return None
 
     @staticmethod
-    def _compute_orchestrator_run_id(
-        execution_arn: Any,
-    ) -> Optional[str]:
-        """Fetch the Orchestrator Run ID upon pipeline execution.
+    def generate_schedule_metadata(schedule_arn: str) -> Dict[str, str]:
+        """Attaches metadata to the ZenML Schedules.
 
         Args:
-            execution_arn: The ARN of the pipeline execution.
-
-        Returns:
-             the Execution ID of the run in SageMaker.
+            schedule_arn: The trigger ARNs that is generated on the AWS side.
         """
-        try:
-            return str(execution_arn)
+        region, name = dissect_schedule_arn(schedule_arn=schedule_arn)
 
-        except Exception as e:
-            logger.warning(
-                f"There was an issue while extracting the pipeline run ID: {e}"
-            )
-            return None
+        return {
+            "trigger_url": (
+                f"https://{region}.console.aws.amazon.com/scheduler/home"
+                f"?region={region}#schedules/{name}"
+            ),
+        }
 
     @staticmethod
     def _validate_cron_expression(cron_expression: str) -> str:
