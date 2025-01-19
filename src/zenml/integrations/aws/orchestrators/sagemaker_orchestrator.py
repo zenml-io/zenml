@@ -637,7 +637,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 )
             except Exception as e:
                 logger.debug(
-                    "There was a warning attaching the metadata to the ZenML"
+                    "There was an error attaching metadata to the "
                     f"schedule: {e}"
                 )
 
@@ -710,7 +710,6 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         Returns:
             A dictionary of metadata.
         """
-
         execution_arn = os.environ[ENV_ZENML_SAGEMAKER_RUN_ID]
         run_metadata: Dict[str, "MetadataType"] = {
             "pipeline_execution_arn": execution_arn,
