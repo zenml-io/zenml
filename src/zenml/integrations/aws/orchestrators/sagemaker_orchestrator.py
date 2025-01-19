@@ -574,48 +574,57 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             # Get the current role ARN if not explicitly configured
             if self.config.scheduler_role is None:
                 logger.info(
-                    "No scheduler_role configured. Using service connector "
-                    "role to schedule pipeline."
+                    "No scheduler_role configured. Trying to extract it from "
+                    "the client side authentication."
                 )
                 sts = session.boto_session.client("sts")
                 try:
-                    service_connector_role_arn = sts.get_caller_identity()[
-                        "Arn"
-                    ]
+                    scheduler_role_arn = sts.get_caller_identity()["Arn"]
                     # If this is a user ARN, try to get the role ARN
-                    if ":user/" in service_connector_role_arn:
+                    if ":user/" in scheduler_role_arn:
                         logger.warning(
                             f"Using IAM user credentials "
-                            f"({service_connector_role_arn}). For production "
+                            f"({scheduler_role_arn}). For production "
                             "environments, it's recommended to use IAM roles "
                             "instead."
                         )
                     # If this is an assumed role, extract the role ARN
-                    elif ":assumed-role/" in service_connector_role_arn:
+                    elif ":assumed-role/" in scheduler_role_arn:
                         # Convert assumed-role ARN format to role ARN format
                         # From: arn:aws:sts::123456789012:assumed-role/role-name/session-name
                         # To: arn:aws:iam::123456789012:role/role-name
-                        service_connector_role_arn = re.sub(
+                        scheduler_role_arn = re.sub(
                             r"arn:aws:sts::(\d+):assumed-role/([^/]+)/.*",
                             r"arn:aws:iam::\1:role/\2",
-                            service_connector_role_arn,
+                            scheduler_role_arn,
+                        )
+                    elif ":role/" not in scheduler_role_arn:
+                        raise RuntimeError(
+                            f"Unexpected credential type "
+                            f"({scheduler_role_arn}). Please use IAM "
+                            f"roles for SageMaker pipeline scheduling."
+                        )
+                    else:
+                        raise RuntimeError(
+                            "The ARN of the caller identity "
+                            f"`{scheduler_role_arn}` does not "
+                            "include a user or a proper role."
                         )
                 except Exception:
                     raise RuntimeError(
-                        "Failed to get current role ARN from service "
-                        "connector. This means the service connector is not "
-                        "configured correctly to schedule sagemaker "
-                        "pipelines. You can either fix the service connector "
-                        "or configure `scheduler_role` explicitly in your "
-                        "orchestrator config."
+                        "Failed to get current role ARN. This means the "
+                        "your client side credentials that you are "
+                        "is not configured correctly to schedule sagemaker "
+                        "pipelines. For more information, please check:"
+                        "https://docs.zenml.io/stack-components/orchestrators/sagemaker#required-iam-permissions-for-schedules"
                     )
             else:
-                service_connector_role_arn = self.config.scheduler_role
+                scheduler_role_arn = self.config.scheduler_role
 
             # Attach schedule to pipeline
             triggers = pipeline.put_triggers(
                 triggers=[schedule],
-                role_arn=service_connector_role_arn,
+                role_arn=scheduler_role_arn,
             )
             logger.info(f"The schedule ARN is: {triggers[0]}")
 
