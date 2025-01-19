@@ -54,6 +54,7 @@ zenml integration install aws s3
 * A [remote container registry](../container-registries/container-registries.md) as part of your stack.
 * An IAM role or user with [an `AmazonSageMakerFullAccess` managed policy](https://docs.aws.amazon.com/sagemaker/latest/dg/security-iam-awsmanpol.html) applied to it as well as `sagemaker.amazonaws.com` added as a Principal Service. Full details on these permissions can be found [here](https://docs.aws.amazon.com/sagemaker/latest/dg/sagemaker-roles.html) or use the ZenML recipe (when available) which will set up the necessary permissions for you.
 * The local client (whoever is running the pipeline) will also have to have the necessary permissions or roles to be able to launch Sagemaker jobs. (This would be covered by the `AmazonSageMakerFullAccess` policy suggested above.)
+* If you want to use schedules, you also need to set up the correct roles, permissions and policies covered [here](#required-iam-permissions-for-schedules).
 
 There are three ways you can authenticate your orchestrator and link it to the IAM role you have created:
 
@@ -114,7 +115,9 @@ If all went well, you should now see the following output:
 
 ```
 Steps can take 5-15 minutes to start running when using the Sagemaker Orchestrator.
-Your orchestrator 'sagemaker' is running remotely. Note that the pipeline run will only show up on the ZenML dashboard once the first step has started executing on the remote infrastructure.
+Your orchestrator 'sagemaker' is running remotely. Note that the pipeline run 
+will only show up on the ZenML dashboard once the first step has started 
+executing on the remote infrastructure.
 ```
 
 {% hint style="warning" %}
@@ -365,7 +368,9 @@ Note that if you wish to use this orchestrator to run steps on a GPU, you will n
 
 ### Scheduling Pipelines
 
-The SageMaker orchestrator supports running pipelines on a schedule using SageMaker's native scheduling capabilities. You can configure schedules in three ways:
+The SageMaker orchestrator supports running pipelines on a schedule using 
+SageMaker's native scheduling capabilities. You can configure schedules in 
+three ways:
 
 * Using a cron expression
 * Using a fixed interval
@@ -426,13 +431,45 @@ AWS CLI or API (`aws scheduler delete-schedule <SCHEDULE_NAME>`). See details
 here: [SageMaker Pipeline Schedules](https://docs.aws.amazon.com/sagemaker/latest/dg/pipeline-eventbridge.html)
 {% endhint %}
 
-#### Required IAM Permissions
+#### Required IAM Permissions for schedules
 
-When using scheduled pipelines, you need to ensure your IAM role (either the service connector role or the configured `scheduler_role`) has the correct permissions and trust relationships:
+When using scheduled pipelines, you need to ensure your IAM role has the 
+correct permissions and trust relationships. You can set this up by either
+defining an explicit `scheduler_role` in your orchestrator configuration or 
+you can adjust the role that you are already using on the client side to manage 
+Sagemaker pipelines.
+
+```bash
+# When registering the orchestrator
+zenml orchestrator register sagemaker-orchestrator \
+    --flavor=sagemaker \
+    --scheduler_role=arn:aws:iam::123456789012:role/my-scheduler-role
+
+# Or updating an existing orchestrator
+zenml orchestrator update sagemaker-orchestrator \
+    --scheduler_role=arn:aws:iam::123456789012:role/my-scheduler-role
+```
+
+{% hint style="info" %}
+The IAM role that you are using on the client side can come from multiple 
+sources depending on how you configured your orchestrator, such as explicit 
+credentials, a service connector or an implicit authentication. 
+
+If you are using a service connector, keep in mind, this only works with 
+authentication methods that involve IAM roles (IAM role, Implicit 
+authentication). LINK
+{% endhint %}
+
+This is particularly useful when:
+
+* You want to use different roles for creating pipelines and scheduling them
+* Your organization's security policies require separate roles for different operations
+* You need to grant specific permissions only to the scheduling operations
 
 1. **Trust Relationships**
-    Your service connector role needs to trust both SageMaker and EventBridge Scheduler services:
-    
+    Your `scheduler_role` (or your client role if you did not configure
+    a `scheduler_role`) needs to be assumed by the EventBridge Scheduler 
+    service:
     ```json
     {
       "Version": "2012-10-17",
@@ -440,10 +477,8 @@ When using scheduled pipelines, you need to ensure your IAM role (either the ser
         {
           "Effect": "Allow",
           "Principal": {
-            "AWS": "<SERVICE_CONNECTOR_USER_ARN>", ## This is the ARN of the user that is configured in the service connector
-            # This is the list of services that the service connector role needs to schedule pipelines
+            "AWS": "<ROLE_ARN>",
             "Service": [
-              "sagemaker.amazonaws.com",
               "scheduler.amazonaws.com"
             ]
           },
@@ -453,9 +488,11 @@ When using scheduled pipelines, you need to ensure your IAM role (either the ser
     }
     ```
 
-2. **Required IAM Policies**
+2. **Required IAM Permissions for the client role**
 
-    The scheduler role (see below) needs the following permissions to manage scheduled pipelines:
+    In addition to permissions needed to manage pipelines, the role on the 
+client side also needs the following permissions to create schedules on 
+EventBridge:
     
     ```json
     {
@@ -486,38 +523,22 @@ When using scheduled pipelines, you need to ensure your IAM role (either the ser
     }
     ```
 
-Or you can use the `AmazonEventBridgeSchedulerFullAccess` managed policy.
+    Or you can use the `AmazonEventBridgeSchedulerFullAccess` managed policy.
+    
+    These permissions enable:
 
-These permissions enable:
-* Creation and management of Pipeline Schedules
-* Setting up trust relationships between services
-* Managing IAM policies required for the scheduled execution
-* Cleanup of resources when schedules are removed
+   * Creation and management of Pipeline Schedules
+   * Setting up trust relationships between services
+   * Managing IAM policies required for the scheduled execution
+   * Cleanup of resources when schedules are removed
 
-Without these permissions, the scheduling functionality will fail. Make sure to configure them before attempting to use scheduled pipelines.
+   Without these permissions, the scheduling functionality will fail. Make 
+sure to configure them before attempting to use scheduled pipelines.
 
-By default, the SageMaker orchestrator will use the attached [service connector role](../../how-to/infrastructure-deployment/auth-management/aws-service-connector.md) to schedule pipelines. However, you can specify a different role to be used for scheduling by configuring the `scheduler_role` parameter:
-
-```bash
-# When registering the orchestrator
-zenml orchestrator register sagemaker-orchestrator \
-    --flavor=sagemaker \
-    --scheduler_role=arn:aws:iam::123456789012:role/my-scheduler-role
-
-# Or updating an existing orchestrator
-zenml orchestrator update sagemaker-orchestrator \
-    --scheduler_role=arn:aws:iam::123456789012:role/my-scheduler-role
-```
-
-This is particularly useful when:
-* You want to use different roles for creating pipelines and scheduling them
-* Your organization's security policies require separate roles for different operations
-* You need to grant specific permissions only to the scheduling operations
-
-If no `scheduler_role` is configured, the orchestrator will:
-1. Use the service connector's role
-2. Log an informative message about using the service connector role
-3. Handle both user credentials and assumed role scenarios appropriately
-
+3. **Required IAM Permissions for the `scheduler_role`**
+    
+    The `scheduler_role` requires the same permissions as the client role (that 
+would run the pipeline in a non-scheduled case) to launch and manage Sagemaker 
+jobs. This would be covered by the `AmazonSageMakerFullAccess` permission.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
