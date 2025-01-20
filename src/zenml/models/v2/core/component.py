@@ -21,6 +21,7 @@ from typing import (
     List,
     Optional,
     Type,
+    TypeVar,
     Union,
 )
 from uuid import UUID
@@ -42,9 +43,11 @@ from zenml.utils import secret_utils
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
-    from sqlmodel import SQLModel
 
     from zenml.models import FlavorResponse, ServiceConnectorResponse
+    from zenml.zen_stores.schemas.base_schemas import BaseSchema
+
+    AnySchema = TypeVar("AnySchema", bound=BaseSchema)
 
 # ------------------ Base Model ------------------
 
@@ -356,7 +359,6 @@ class ComponentFilter(WorkspaceScopedFilter):
         *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
         "scope_type",
         "stack_id",
-        "user",
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
@@ -366,7 +368,6 @@ class ComponentFilter(WorkspaceScopedFilter):
         default=None,
         description="The type to scope this query to.",
     )
-
     name: Optional[str] = Field(
         default=None,
         description="Name of the stack component",
@@ -379,16 +380,6 @@ class ComponentFilter(WorkspaceScopedFilter):
         default=None,
         description="Type of the stack component",
     )
-    workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="Workspace of the stack component",
-        union_mode="left_to_right",
-    )
-    user_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="User of the stack component",
-        union_mode="left_to_right",
-    )
     connector_id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Connector linked to the stack component",
@@ -398,10 +389,6 @@ class ComponentFilter(WorkspaceScopedFilter):
         default=None,
         description="Stack of the stack component",
         union_mode="left_to_right",
-    )
-    user: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="Name/ID of the user that created the component.",
     )
 
     def set_scope_type(self, component_type: str) -> None:
@@ -413,7 +400,7 @@ class ComponentFilter(WorkspaceScopedFilter):
         self.scope_type = component_type
 
     def generate_filter(
-        self, table: Type["SQLModel"]
+        self, table: Type["AnySchema"]
     ) -> Union["ColumnElement[bool]"]:
         """Generate the filter for the query.
 
@@ -449,31 +436,3 @@ class ComponentFilter(WorkspaceScopedFilter):
             base_filter = operator(base_filter, stack_filter)
 
         return base_filter
-
-    def get_custom_filters(self) -> List["ColumnElement[bool]"]:
-        """Get custom filters.
-
-        Returns:
-            A list of custom filters.
-        """
-        from sqlmodel import and_
-
-        from zenml.zen_stores.schemas import (
-            StackComponentSchema,
-            UserSchema,
-        )
-
-        custom_filters = super().get_custom_filters()
-
-        if self.user:
-            user_filter = and_(
-                StackComponentSchema.user_id == UserSchema.id,
-                self.generate_name_or_id_query_conditions(
-                    value=self.user,
-                    table=UserSchema,
-                    additional_columns=["full_name"],
-                ),
-            )
-            custom_filters.append(user_filter)
-
-        return custom_filters

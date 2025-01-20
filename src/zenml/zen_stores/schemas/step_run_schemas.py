@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from uuid import UUID
 
 from pydantic import ConfigDict
-from sqlalchemy import TEXT, Column, String
+from sqlalchemy import TEXT, Column, String, UniqueConstraint
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -67,6 +67,13 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
     """SQL Model for steps of pipeline runs."""
 
     __tablename__ = "step_run"
+    __table_args__ = (
+        UniqueConstraint(
+            "name",
+            "pipeline_run_id",
+            name="unique_step_name_for_pipeline_run",
+        ),
+    )
 
     # Fields
     start_time: Optional[datetime] = Field(nullable=True)
