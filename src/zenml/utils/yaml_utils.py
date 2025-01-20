@@ -130,6 +130,7 @@ def write_json(
         file_path: Path to JSON file.
         contents: Contents of JSON file.
         encoder: Custom JSON encoder to use when saving json.
+        json_dump_args: Extra arguments to pass to json.dumps.
 
     Raises:
         FileNotFoundError: if directory does not exist.
