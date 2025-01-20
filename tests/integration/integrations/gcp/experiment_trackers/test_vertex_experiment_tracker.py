@@ -95,12 +95,12 @@ def is_valid_experiment_name(name: str) -> bool:
 def test_format_name(vertex_experiment_tracker, input_name, expected_output):
     """Test the name formatting function."""
     formatted_name = vertex_experiment_tracker._format_name(input_name)
-    assert (
-        formatted_name == expected_output
-    ), f"Failed for input: '{input_name}'"
-    assert is_valid_experiment_name(
-        formatted_name
-    ), f"Formatted name '{formatted_name}' does not match the regex"
+    assert formatted_name == expected_output, (
+        f"Failed for input: '{input_name}'"
+    )
+    assert is_valid_experiment_name(formatted_name), (
+        f"Formatted name '{formatted_name}' does not match the regex"
+    )
 
 
 @pytest.mark.parametrize(
@@ -126,12 +126,12 @@ def test_get_experiment_name(
     info.pipeline.name = "default-experiment"
 
     experiment_name = vertex_experiment_tracker._get_experiment_name(info)
-    assert (
-        experiment_name == expected_output
-    ), f"Failed for input: '{input_name}'"
-    assert is_valid_experiment_name(
-        experiment_name
-    ), f"Generated experiment name '{experiment_name}' does not match the regex"
+    assert experiment_name == expected_output, (
+        f"Failed for input: '{input_name}'"
+    )
+    assert is_valid_experiment_name(experiment_name), (
+        f"Generated experiment name '{experiment_name}' does not match the regex"
+    )
 
 
 @pytest.mark.parametrize(
@@ -149,6 +149,6 @@ def test_get_run_name(vertex_experiment_tracker, input_name, expected_output):
 
     run_name = vertex_experiment_tracker._get_run_name(info)
     assert run_name == expected_output, f"Failed for input: '{input_name}'"
-    assert is_valid_experiment_name(
-        run_name
-    ), f"Generated run name '{run_name}' does not match the regex"
+    assert is_valid_experiment_name(run_name), (
+        f"Generated run name '{run_name}' does not match the regex"
+    )

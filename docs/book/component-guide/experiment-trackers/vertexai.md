@@ -144,7 +144,7 @@ Here are two examples demonstrating how to use the experiment tracker:
 
 ### Example 1: Logging Metrics Using Built-in Methods
 
-This example demonstrates how to log time-series metrics using `aiplatform.log_time_series_metrics` from within a Keras callback, and using `aiplatform.log_metrics` to log specific metrics and `aiplatform.log_params` to log experiment parameters. The logged metrics can then be visualised in the UI of Vertex AI Experiment Tracker and integrated TensorBoard instance.
+This example demonstrates how to log time-series metrics using `aiplatform.log_time_series_metrics` from within a Keras callback, and using `aiplatform.log_metrics` to log specific metrics and `aiplatform.log_params` to log experiment parameters. The logged metrics can then be visualized in the UI of Vertex AI Experiment Tracker and integrated TensorBoard instance.
 
 > **Note:** To use the autologging functionality, ensure that the google-cloud-aiplatform library is installed with the Autologging extension. You can do this by running the following command:
 > ```bash
