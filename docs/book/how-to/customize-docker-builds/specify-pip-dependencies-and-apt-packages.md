@@ -9,7 +9,7 @@ When a [pipeline is run with a remote orchestrator](../pipeline-development/conf
 For all of examples on this page, note that `DockerSettings` can be imported using `from zenml.config import DockerSettings`.
 
 By default, ZenML automatically installs all packages required by your active ZenML stack. Additionally, it tries to look for
-`requirements.txt` and `pyproject.toml` files inside your current source root and installs packages from the first one it finds.
+`requirements.txt` and `pyproject.toml` files inside your current [source root](./which-files-are-built-into-the-image.md) and installs packages from the first one it finds.
 If needed, you can customize the package installation behavior as follows:
 
 * Install all the packages in your local Python environment (This will run `pip freeze` to get a list of your local packages):
