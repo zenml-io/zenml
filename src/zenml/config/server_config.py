@@ -431,6 +431,26 @@ class ServerConfiguration(BaseModel):
                 data["secure_headers_csp"] = merged_csp_str
 
         return data
+    
+    @field_validator("reportable_resources", mode="before")
+    @classmethod
+    def _convert_reportable_resources(cls, value: Any) -> Any:
+        """Convert reportable resources value if necessary.
+
+        This was previously set via an environment variable as a JSON-formatted
+        string. In case this still exists somewhere, this method converts the
+        JSON string to a list.
+    
+        Args:
+            value: The reportable resources values.
+
+        Returns:
+            The potentially converted value.
+        """
+        if isinstance(value, str):
+            value = json.loads(value)
+        
+        return value
 
     @property
     def deployment_id(self) -> UUID:
