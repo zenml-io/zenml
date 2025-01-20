@@ -159,7 +159,7 @@ def create_or_get_compute(
     # If the compute target does not exist create it
     except ResourceNotFoundError:
         logger.info(
-            "Can not find the compute target with name: " f"'{compute_name}':"
+            f"Can not find the compute target with name: '{compute_name}':"
         )
 
         if settings.mode == AzureMLComputeTypes.COMPUTE_INSTANCE:

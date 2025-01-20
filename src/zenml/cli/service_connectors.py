@@ -1487,7 +1487,7 @@ def update_service_connector(
                 resource_type = None
                 title = (
                     "The connector is configured to access any of the supported "
-                    f'resource types ({", ".join(available_resource_types)}). '
+                    f"resource types ({', '.join(available_resource_types)}). "
                     "Would you like to restrict it to a single resource type?"
                 )
             else:

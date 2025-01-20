@@ -34,12 +34,10 @@ logger = get_logger(__name__)
 
 
 @step
-def deployment_deploy() -> (
-    Annotated[
-        Optional[MLFlowDeploymentService],
-        ArtifactConfig(name="mlflow_deployment", is_deployment_artifact=True),
-    ]
-):
+def deployment_deploy() -> Annotated[
+    Optional[MLFlowDeploymentService],
+    ArtifactConfig(name="mlflow_deployment", is_deployment_artifact=True),
+]:
     """Predictions step.
 
     This is an example of a predictions step that takes the data in and returns

@@ -205,7 +205,7 @@ class EvidentlyTestConfig(BaseModel):
         else:
             raise ValueError(f"Invalid Evidently Test class: {test}")
 
-        class_path = f"{test_class.__module__}." f"{test_class.__name__}"
+        class_path = f"{test_class.__module__}.{test_class.__name__}"
 
         config = cls(
             class_path=class_path,
@@ -284,7 +284,7 @@ class EvidentlyTestConfig(BaseModel):
                 f"Invalid Evidently Test or TestPreset class: {test}"
             )
 
-        class_path = f"{test_class.__module__}." f"{test_class.__name__}"
+        class_path = f"{test_class.__module__}.{test_class.__name__}"
         config = cls(class_path=class_path, parameters=parameters)
 
         # Try to instantiate the configuration to check if the parameters are

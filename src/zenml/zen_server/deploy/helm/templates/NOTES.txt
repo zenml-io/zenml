@@ -1,3 +1,24 @@
+{{- if .Values.zenml.pro.enabled }}
+
+The ZenML Pro server API is now active and ready to use at the following URL:
+
+  {{ .Values.zenml.serverURL }}
+
+{{- if .Values.zenml.pro.enrollmentKey }}
+
+The following enrollment key has been used to enroll your server in the ZenML Pro control plane:
+
+  {{ .Values.zenml.pro.enrollmentKey }}
+
+{{- else }}
+
+An enrollment key has been auto-generated for your server. Please use the following command to fetch the enrollment key:
+
+  kubectl get secret {{ include "zenml.fullname" . }} -o jsonpath="{.data.ZENML_SERVER_PRO_OAUTH2_CLIENT_SECRET}" | base64 --decode
+
+{{- end }}
+
+{{- else }}
 {{- if .Values.zenml.ingress.enabled }}
 {{- if .Values.zenml.ingress.host }}
 
@@ -27,4 +48,5 @@ You can get the ZenML server URL by running these commands:
   kubectl --namespace {{ .Release.Namespace }} port-forward $POD_NAME 8080:$CONTAINER_PORT
 {{- end }}
 
+{{- end }}
 {{- end }}

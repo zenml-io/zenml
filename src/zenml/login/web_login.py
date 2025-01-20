@@ -34,13 +34,14 @@ from zenml.exceptions import AuthorizationException, OAuthError
 from zenml.logger import get_logger
 from zenml.login.credentials import APIToken
 from zenml.login.pro.constants import ZENML_PRO_API_URL
-from zenml.login.pro.utils import is_zenml_pro_server_url
 
 logger = get_logger(__name__)
 
 
 def web_login(
-    url: Optional[str] = None, verify_ssl: Optional[Union[str, bool]] = None
+    url: Optional[str] = None,
+    verify_ssl: Optional[Union[str, bool]] = None,
+    pro_api_url: Optional[str] = None,
 ) -> APIToken:
     """Implements the OAuth2 Device Authorization Grant flow.
 
@@ -61,6 +62,8 @@ def web_login(
         verify_ssl: Whether to verify the SSL certificate of the OAuth2 server.
             If a string is passed, it is interpreted as the path to a CA bundle
             file.
+        pro_api_url: The URL of the ZenML Pro API server. If not provided, the
+            default ZenML Pro API server URL is used.
 
     Returns:
         The response returned by the OAuth2 server.
@@ -103,16 +106,16 @@ def web_login(
     if not url:
         # If no URL is provided, we use the ZenML Pro API server by default
         zenml_pro = True
-        url = base_url = ZENML_PRO_API_URL
+        url = base_url = pro_api_url or ZENML_PRO_API_URL
     else:
         # Get rid of any trailing slashes to prevent issues when having double
         # slashes in the URL
         url = url.rstrip("/")
-        if is_zenml_pro_server_url(url):
+        if pro_api_url:
             # This is a ZenML Pro server. The device authentication is done
             # through the ZenML Pro API.
             zenml_pro = True
-            base_url = ZENML_PRO_API_URL
+            base_url = pro_api_url
         else:
             base_url = url
 
@@ -240,4 +243,6 @@ def web_login(
             )
 
     # Save the token in the credentials store
-    return credentials_store.set_token(url, token_response)
+    return credentials_store.set_token(
+        url, token_response, is_zenml_pro=zenml_pro
+    )

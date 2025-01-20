@@ -23,14 +23,12 @@ from zenml import step
 
 
 @step
-def importer() -> (
-    Tuple[
-        Annotated[pd.DataFrame, "X_train"],
-        Annotated[pd.DataFrame, "X_test"],
-        Annotated[pd.Series, "y_train"],
-        Annotated[pd.Series, "y_test"],
-    ]
-):
+def importer() -> Tuple[
+    Annotated[pd.DataFrame, "X_train"],
+    Annotated[pd.DataFrame, "X_test"],
+    Annotated[pd.Series, "y_train"],
+    Annotated[pd.Series, "y_test"],
+]:
     """Load the iris dataset as tuple of Pandas DataFrame / Series."""
     iris = load_iris(as_frame=True)
     X_train, X_test, y_train, y_test = train_test_split(

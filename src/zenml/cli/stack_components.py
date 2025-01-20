@@ -266,7 +266,7 @@ def generate_stack_component_register_command(
                 client.get_service_connector(connector)
             except KeyError as err:
                 cli_utils.error(
-                    f"Could not find a connector '{connector}': " f"{str(err)}"
+                    f"Could not find a connector '{connector}': {str(err)}"
                 )
 
         with console.status(f"Registering {display_name} '{name}'...\n"):
@@ -971,8 +971,7 @@ def prompt_select_resource(
         # Prompt the user to select a connector by its name or ID
         while True:
             connector_id = click.prompt(
-                "Please enter the name or ID of the connector you want "
-                "to use",
+                "Please enter the name or ID of the connector you want to use",
                 type=click.Choice(
                     [
                         str(connector.id)
@@ -1344,8 +1343,7 @@ def connect_stack_component_with_service_connector(
 
     if not connector and not interactive:
         cli_utils.error(
-            "Please provide either a connector ID or set the interactive "
-            "flag."
+            "Please provide either a connector ID or set the interactive flag."
         )
 
     if connector and interactive:
@@ -1446,7 +1444,7 @@ def connect_stack_component_with_service_connector(
             connector_model = client.get_service_connector(connector)
         except KeyError as err:
             cli_utils.error(
-                f"Could not find a connector '{connector}': " f"{str(err)}"
+                f"Could not find a connector '{connector}': {str(err)}"
             )
 
         connector_id = connector_model.id

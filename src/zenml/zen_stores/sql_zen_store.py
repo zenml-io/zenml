@@ -1369,8 +1369,7 @@ class SqlZenStore(BaseZenStore):
                     os.remove(dump_file)
                 except OSError:
                     logger.warning(
-                        f"Failed to cleanup database dump file "
-                        f"{dump_file}."
+                        f"Failed to cleanup database dump file {dump_file}."
                     )
                 else:
                     logger.info(
@@ -7399,7 +7398,7 @@ class SqlZenStore(BaseZenStore):
                     )
                 except (ValueError, AuthorizationException) as e:
                     error = (
-                        f'Failed to fetch {resource_type or "available"} '
+                        f"Failed to fetch {resource_type or 'available'} "
                         f"resources from service connector {connector.name}/"
                         f"{connector.id}: {e}"
                     )

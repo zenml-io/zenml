@@ -211,7 +211,7 @@ class EvidentlyMetricConfig(BaseModel):
         else:
             raise ValueError(f"Invalid Evidently Metric class: {metric}")
 
-        class_path = f"{metric_class.__module__}." f"{metric_class.__name__}"
+        class_path = f"{metric_class.__module__}.{metric_class.__name__}"
 
         config = cls(
             class_path=class_path,
@@ -291,7 +291,7 @@ class EvidentlyMetricConfig(BaseModel):
                 f"Invalid Evidently Metric or MetricPreset class: {metric}"
             )
 
-        class_path = f"{metric_class.__module__}." f"{metric_class.__name__}"
+        class_path = f"{metric_class.__module__}.{metric_class.__name__}"
 
         config = cls(class_path=class_path, parameters=parameters)
 

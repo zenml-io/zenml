@@ -183,8 +183,7 @@ def register_model_registry_subcommands() -> None:  # noqa: C901
             return
         if not yes:
             confirmation = cli_utils.confirmation(
-                f"Found Model with name {name}. Do you want to "
-                f"delete them?"
+                f"Found Model with name {name}. Do you want to delete them?"
             )
             if not confirmation:
                 cli_utils.declare("Model deletion canceled.")

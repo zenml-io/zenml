@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Functionality to support ZenML GlobalConfiguration."""
+"""Functionality to support ZenML Server Configuration."""
 
 import json
 import os
@@ -19,9 +19,17 @@ from secrets import token_hex
 from typing import Any, Dict, List, Optional, Union
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, PositiveInt, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    PositiveInt,
+    field_validator,
+    model_validator,
+)
 
 from zenml.constants import (
+    DEFAULT_REPORTABLE_RESOURCES,
     DEFAULT_ZENML_JWT_TOKEN_ALGORITHM,
     DEFAULT_ZENML_JWT_TOKEN_LEEWAY,
     DEFAULT_ZENML_SERVER_DEVICE_AUTH_POLLING,
@@ -44,6 +52,7 @@ from zenml.constants import (
     DEFAULT_ZENML_SERVER_SECURE_HEADERS_XXP,
     DEFAULT_ZENML_SERVER_THREAD_POOL_SIZE,
     ENV_ZENML_SERVER_PREFIX,
+    ENV_ZENML_SERVER_PRO_PREFIX,
 )
 from zenml.enums import AuthScheme
 from zenml.logger import get_logger
@@ -127,10 +136,6 @@ class ServerConfiguration(BaseModel):
             to use with the `EXTERNAL` authentication scheme.
         external_user_info_url: The user info URL of an external authenticator
             service to use with the `EXTERNAL` authentication scheme.
-        external_cookie_name: The name of the http-only cookie used to store the
-            bearer token used to authenticate with the external authenticator
-            service. Must be specified if the `EXTERNAL` authentication scheme
-            is used.
         external_server_id: The ID of the ZenML server to use with the
             `EXTERNAL` authentication scheme. If not specified, the regular
             ZenML server ID is used.
@@ -246,7 +251,7 @@ class ServerConfiguration(BaseModel):
     server_url: Optional[str] = None
     dashboard_url: Optional[str] = None
     root_url_path: str = ""
-    metadata: Dict[str, Any] = {}
+    metadata: Dict[str, str] = {}
     auth_scheme: AuthScheme = AuthScheme.OAUTH2_PASSWORD_BEARER
     jwt_token_algorithm: str = DEFAULT_ZENML_JWT_TOKEN_ALGORITHM
     jwt_token_issuer: Optional[str] = None
@@ -276,11 +281,11 @@ class ServerConfiguration(BaseModel):
 
     external_login_url: Optional[str] = None
     external_user_info_url: Optional[str] = None
-    external_cookie_name: Optional[str] = None
     external_server_id: Optional[UUID] = None
 
     rbac_implementation_source: Optional[str] = None
     feature_gate_implementation_source: Optional[str] = None
+    reportable_resources: List[str] = []
     workload_manager_implementation_source: Optional[str] = None
     pipeline_run_auth_window: int = (
         DEFAULT_ZENML_SERVER_PIPELINE_RUN_AUTH_WINDOW
@@ -368,14 +373,6 @@ class ServerConfiguration(BaseModel):
                     "The external login and user info authenticator "
                     "URLs must be specified when using the EXTERNAL "
                     "authentication scheme."
-                )
-
-            # If the authentication scheme is set to `EXTERNAL`, the
-            # external cookie name must be specified.
-            if not data.get("external_cookie_name"):
-                raise ValueError(
-                    "The external cookie name must be specified when "
-                    "using the EXTERNAL authentication scheme."
                 )
 
         if cors_allow_origins := data.get("cors_allow_origins"):
@@ -552,12 +549,140 @@ class ServerConfiguration(BaseModel):
         for k, v in os.environ.items():
             if v == "":
                 continue
+            if k.startswith(ENV_ZENML_SERVER_PRO_PREFIX):
+                # Skip Pro configuration
+                continue
             if k.startswith(ENV_ZENML_SERVER_PREFIX):
                 env_server_config[
                     k[len(ENV_ZENML_SERVER_PREFIX) :].lower()
                 ] = v
 
-        return ServerConfiguration(**env_server_config)
+        server_config = ServerConfiguration(**env_server_config)
+
+        if server_config.deployment_type == ServerDeploymentType.CLOUD:
+            # If the zenml server is a Pro server, we will apply the Pro
+            # configuration overrides to the server config automatically.
+            # TODO: these should be retrieved dynamically from the ZenML Pro
+            # API.
+            server_pro_config = ServerProConfiguration.get_server_config()
+            server_config.auth_scheme = AuthScheme.EXTERNAL
+            server_config.external_login_url = (
+                f"{server_pro_config.dashboard_url}/api/auth/login"
+            )
+            server_config.external_user_info_url = (
+                f"{server_pro_config.api_url}/users/authorize_server"
+            )
+            server_config.external_server_id = server_pro_config.tenant_id
+            server_config.rbac_implementation_source = (
+                "zenml.zen_server.rbac.zenml_cloud_rbac.ZenMLCloudRBAC"
+            )
+            server_config.feature_gate_implementation_source = "zenml.zen_server.feature_gate.zenml_cloud_feature_gate.ZenMLCloudFeatureGateInterface"
+            server_config.reportable_resources = DEFAULT_REPORTABLE_RESOURCES
+            server_config.dashboard_url = f"{server_pro_config.dashboard_url}/organizations/{server_pro_config.organization_id}/tenants/{server_pro_config.tenant_id}"
+            server_config.metadata.update(
+                dict(
+                    account_id=str(server_pro_config.organization_id),
+                    organization_id=str(server_pro_config.organization_id),
+                    tenant_id=str(server_pro_config.tenant_id),
+                )
+            )
+            if server_pro_config.tenant_name:
+                server_config.metadata.update(
+                    dict(tenant_name=server_pro_config.tenant_name)
+                )
+
+            extra_cors_allow_origins = [
+                server_pro_config.dashboard_url,
+                server_pro_config.api_url,
+            ]
+            if server_config.server_url:
+                extra_cors_allow_origins.append(server_config.server_url)
+            if (
+                not server_config.cors_allow_origins
+                or server_config.cors_allow_origins == ["*"]
+            ):
+                server_config.cors_allow_origins = extra_cors_allow_origins
+            else:
+                server_config.cors_allow_origins += extra_cors_allow_origins
+                if "*" in server_config.cors_allow_origins:
+                    # Remove the wildcard from the list
+                    server_config.cors_allow_origins.remove("*")
+
+                # Remove duplicates
+                server_config.cors_allow_origins = list(
+                    set(server_config.cors_allow_origins)
+                )
+
+            if server_config.jwt_token_expire_minutes is None:
+                server_config.jwt_token_expire_minutes = 60
+
+        return server_config
+
+    model_config = ConfigDict(
+        # Allow extra attributes from configs of previous ZenML versions to
+        # permit downgrading
+        extra="allow",
+    )
+
+
+class ServerProConfiguration(BaseModel):
+    """ZenML Server Pro configuration attributes.
+
+    All these attributes can be set through the environment with the
+    `ZENML_SERVER_PRO_`-Prefix. E.g. the value of the `ZENML_SERVER_PRO_API_URL`
+    environment variable will be extracted to api_url.
+
+    Attributes:
+        api_url: The ZenML Pro API URL.
+        dashboard_url: The ZenML Pro dashboard URL.
+        oauth2_client_secret: The ZenML Pro OAuth2 client secret used to
+            authenticate the ZenML server with the ZenML Pro API.
+        oauth2_audience: The OAuth2 audience.
+        organization_id: The ZenML Pro organization ID.
+        organization_name: The ZenML Pro organization name.
+        tenant_id: The ZenML Pro tenant ID.
+        tenant_name: The ZenML Pro tenant name.
+    """
+
+    api_url: str
+    dashboard_url: str
+    oauth2_client_secret: str
+    oauth2_audience: str
+    organization_id: UUID
+    organization_name: Optional[str] = None
+    tenant_id: UUID
+    tenant_name: Optional[str] = None
+
+    @field_validator("api_url", "dashboard_url")
+    @classmethod
+    def _strip_trailing_slashes_url(cls, url: str) -> str:
+        """Strip any trailing slashes on the API URL.
+
+        Args:
+            url: The API URL.
+
+        Returns:
+            The API URL with potential trailing slashes removed.
+        """
+        return url.rstrip("/")
+
+    @classmethod
+    def get_server_config(cls) -> "ServerProConfiguration":
+        """Get the server Pro configuration.
+
+        Returns:
+            The server Pro configuration.
+        """
+        env_server_config: Dict[str, Any] = {}
+        for k, v in os.environ.items():
+            if v == "":
+                continue
+            if k.startswith(ENV_ZENML_SERVER_PRO_PREFIX):
+                env_server_config[
+                    k[len(ENV_ZENML_SERVER_PRO_PREFIX) :].lower()
+                ] = v
+
+        return ServerProConfiguration(**env_server_config)
 
     model_config = ConfigDict(
         # Allow extra attributes from configs of previous ZenML versions to

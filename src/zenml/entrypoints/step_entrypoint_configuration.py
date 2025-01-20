@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 """Base class for entrypoint configurations that run a single step."""
 
+import os
+import sys
 from typing import TYPE_CHECKING, Any, List, Set
 
 from zenml.client import Client
@@ -153,9 +155,22 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
 
         step_name = self.entrypoint_args[STEP_NAME_OPTION]
 
+        # Change the working directory to make sure we're in the correct
+        # directory where the files in the Docker image should be included.
+        # This is necessary as some services overwrite the working directory
+        # configured in the Docker image itself.
+        os.makedirs("/app", exist_ok=True)
+        os.chdir("/app")
+
         self.download_code_if_necessary(
             deployment=deployment, step_name=step_name
         )
+
+        # If the working directory is not in the sys.path, we include it to make
+        # sure user code gets correctly imported.
+        cwd = os.getcwd()
+        if cwd not in sys.path:
+            sys.path.insert(0, cwd)
 
         pipeline_name = deployment.pipeline_configuration.name
 

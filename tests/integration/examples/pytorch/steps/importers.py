@@ -23,12 +23,10 @@ from zenml import step
 
 
 @step
-def importer_mnist() -> (
-    Tuple[
-        Annotated[DataLoader, "train_dataloader"],
-        Annotated[DataLoader, "test_dataloader"],
-    ]
-):
+def importer_mnist() -> Tuple[
+    Annotated[DataLoader, "train_dataloader"],
+    Annotated[DataLoader, "test_dataloader"],
+]:
     """Download the Fashion MNIST dataset."""
     # Download training data from open datasets.
     training_data = datasets.FashionMNIST(
