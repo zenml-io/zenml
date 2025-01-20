@@ -29,14 +29,12 @@ from zenml import step
 
 
 @step
-def importer() -> (
-    Tuple[
-        Annotated[np.ndarray, "X_train"],
-        Annotated[np.ndarray, "X_test"],
-        Annotated[np.ndarray, "y_train"],
-        Annotated[np.ndarray, "y_test"],
-    ]
-):
+def importer() -> Tuple[
+    Annotated[np.ndarray, "X_train"],
+    Annotated[np.ndarray, "X_test"],
+    Annotated[np.ndarray, "y_train"],
+    Annotated[np.ndarray, "y_test"],
+]:
     """Download the MNIST data store it as an artifact."""
     train, test = tf.keras.datasets.mnist.load_data()
     (X_train, y_train), (X_test, y_test) = train, test

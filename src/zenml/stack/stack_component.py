@@ -452,7 +452,7 @@ class StackComponent:
                     "reinstalling the integration either through our CLI: "
                     f"`zenml integration install {flavor_model.integration} "
                     "-y` or by manually installing its requirements: "
-                    f"`pip install {integration_requirements}`. If the error"
+                    f"`pip install {integration_requirements}`. If the error "
                     "persists, please contact the ZenML team."
                 ) from e
             else:

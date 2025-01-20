@@ -76,7 +76,7 @@ class ZenMLServiceStatus(BaseRestAPIModel):
 class ZenMLServiceRead(BaseRestAPIModel):
     """Pydantic Model for viewing a ZenML service."""
 
-    configuration: ZenMLServiceConfiguration = Field(
+    configuration: Optional[ZenMLServiceConfiguration] = Field(
         description="The service configuration."
     )
 
@@ -133,7 +133,9 @@ class TenantRead(BaseRestAPIModel):
         Returns:
             The ZenML service version.
         """
-        version = self.zenml_service.configuration.version
+        version = None
+        if self.zenml_service.configuration:
+            version = self.zenml_service.configuration.version
         if self.zenml_service.status and self.zenml_service.status.version:
             version = self.zenml_service.status.version
 

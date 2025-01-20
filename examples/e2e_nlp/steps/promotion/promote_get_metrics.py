@@ -1,6 +1,6 @@
 # Apache Software License 2.0
 #
-# Copyright (c) ZenML GmbH 2024. All rights reserved.
+# Copyright (c) ZenML GmbH 2025. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,12 +30,10 @@ model_registry = Client().active_stack.model_registry
 
 
 @step
-def promote_get_metrics() -> (
-    Tuple[
-        Annotated[Dict[str, Any], "latest_metrics"],
-        Annotated[Dict[str, Any], "current_metrics`"],
-    ]
-):
+def promote_get_metrics() -> Tuple[
+    Annotated[Dict[str, Any], "latest_metrics"],
+    Annotated[Dict[str, Any], "current_metrics`"],
+]:
     """Get metrics for comparison for promoting a model.
 
     This is an example of a metric retrieval step. It is used to retrieve

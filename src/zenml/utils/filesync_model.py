@@ -80,9 +80,9 @@ class FileSyncModel(BaseModel):
 
         if isinstance(data, dict):
             # Assert that the config file is defined
-            assert (
-                "config_file" in data
-            ), "You have to provide a path for the configuration file."
+            assert "config_file" in data, (
+                "You have to provide a path for the configuration file."
+            )
 
             config_file = data.pop("config_file")
 

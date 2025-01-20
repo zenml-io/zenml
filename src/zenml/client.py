@@ -109,7 +109,6 @@ from zenml.models import (
     EventSourceResponse,
     EventSourceUpdate,
     FlavorFilter,
-    FlavorRequest,
     FlavorResponse,
     ModelFilter,
     ModelRequest,
@@ -2201,17 +2200,8 @@ class Client(metaclass=ClientMetaClass):
                 "configuration class' docstring."
             )
 
-        create_flavor_request = FlavorRequest(
-            source=source,
-            type=flavor.type,
-            name=flavor.name,
-            config_schema=flavor.config_schema,
-            integration="custom",
-            user=self.active_user.id,
-            workspace=self.active_workspace.id,
-        )
-
-        return self.zen_store.create_flavor(flavor=create_flavor_request)
+        flavor_request = flavor.to_model(integration="custom", is_custom=True)
+        return self.zen_store.create_flavor(flavor=flavor_request)
 
     def get_flavor(
         self,
@@ -4679,10 +4669,7 @@ class Client(metaclass=ClientMetaClass):
                     hydrate=hydrate,
                 )
 
-        msg = (
-            f"No secret found with name, ID or prefix "
-            f"'{name_id_or_prefix}'"
-        )
+        msg = f"No secret found with name, ID or prefix '{name_id_or_prefix}'"
         if scope is not None:
             msg += f" in scope '{scope}'"
 

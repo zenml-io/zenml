@@ -31,17 +31,17 @@ def single_output_step_from_context() -> Annotated[int, ArtifactConfig()]:
 
 
 @step(model=Model(name=MODEL_NAME, version=ModelStages.LATEST))
-def single_output_step_from_context_model() -> (
-    Annotated[int, ArtifactConfig(artifact_type=ArtifactType.MODEL)]
-):
+def single_output_step_from_context_model() -> Annotated[
+    int, ArtifactConfig(artifact_type=ArtifactType.MODEL)
+]:
     """Untyped single output linked as a model artifact from step context."""
     return 1
 
 
 @step(model=Model(name=MODEL_NAME, version=ModelStages.LATEST))
-def single_output_step_from_context_endpoint() -> (
-    Annotated[int, ArtifactConfig(artifact_type=ArtifactType.SERVICE)]
-):
+def single_output_step_from_context_endpoint() -> Annotated[
+    int, ArtifactConfig(artifact_type=ArtifactType.SERVICE)
+]:
     """Untyped single output linked as endpoint artifact from step context."""
     return 1
 
@@ -90,13 +90,11 @@ def test_link_minimalistic(clean_client: "Client"):
 
 
 @step(model=Model(name=MODEL_NAME))
-def multi_named_output_step_from_context() -> (
-    Tuple[
-        Annotated[int, "1"],
-        Annotated[int, "2"],
-        Annotated[int, "3"],
-    ]
-):
+def multi_named_output_step_from_context() -> Tuple[
+    Annotated[int, "1"],
+    Annotated[int, "2"],
+    Annotated[int, "3"],
+]:
     """3 typed output step with explicit linking from step context."""
     return 1, 2, 3
 
@@ -121,13 +119,11 @@ def test_link_multiple_named_outputs(clean_client: "Client"):
 
 
 @step(model=Model(name=MODEL_NAME))
-def multi_named_output_step_not_tracked() -> (
-    Tuple[
-        Annotated[int, "1"],
-        Annotated[int, "2"],
-        Annotated[int, "3"],
-    ]
-):
+def multi_named_output_step_not_tracked() -> Tuple[
+    Annotated[int, "1"],
+    Annotated[int, "2"],
+    Annotated[int, "3"],
+]:
     """Here links would be implicitly created based on step Model."""
     return 1, 2, 3
 
@@ -152,29 +148,25 @@ def test_link_multiple_named_outputs_without_links(clean_client: "Client"):
 
 
 @step(model=Model(name="step", version="step"))
-def multi_named_output_step_mixed_linkage() -> (
-    Tuple[
-        Annotated[
-            int,
-            "2",
-        ],
-        Annotated[
-            int,
-            "3",
-        ],
-    ]
-):
+def multi_named_output_step_mixed_linkage() -> Tuple[
+    Annotated[
+        int,
+        "2",
+    ],
+    Annotated[
+        int,
+        "3",
+    ],
+]:
     """Artifact 2 and 3 will get step context."""
     return 2, 3
 
 
 @step
-def pipeline_configuration_is_used_here() -> (
-    Tuple[
-        Annotated[int, ArtifactConfig(name="custom_name")],
-        Annotated[str, "4"],
-    ]
-):
+def pipeline_configuration_is_used_here() -> Tuple[
+    Annotated[int, ArtifactConfig(name="custom_name")],
+    Annotated[str, "4"],
+]:
     """Artifact "1" has own config and overrides name, but "4" will be implicitly tracked with pipeline config."""
     return 1, "foo"
 
@@ -238,11 +230,9 @@ def test_link_multiple_named_outputs_with_mixed_linkage(
 
 
 @step(enable_cache=True)
-def _cacheable_step_annotated() -> (
-    Annotated[
-        str, ArtifactConfig(name="cacheable", artifact_type=ArtifactType.MODEL)
-    ]
-):
+def _cacheable_step_annotated() -> Annotated[
+    str, ArtifactConfig(name="cacheable", artifact_type=ArtifactType.MODEL)
+]:
     return "cacheable"
 
 
@@ -295,9 +285,9 @@ def standard_name_producer() -> str:
 
 
 @step
-def custom_name_producer() -> (
-    Annotated[str, "pipeline_::standard_name_producer::output"]
-):
+def custom_name_producer() -> Annotated[
+    str, "pipeline_::standard_name_producer::output"
+]:
     return "custom"
 
 
