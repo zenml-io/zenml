@@ -17,9 +17,11 @@ This document will guide you through the process.
 
 ### Software Artifacts
 
-The ZenML Pro on-prem installation relies on a set of container images and Helm charts. Most of these artifacts are stored in private ZenML AWS ECR container registries located at `715803424590.dkr.ecr.eu-west-1.amazonaws.com`.
+The ZenML Pro on-prem installation relies on a set of container images and Helm charts. The container images are stored in private ZenML AWS ECR container registries located at `715803424590.dkr.ecr.eu-west-1.amazonaws.com`.
 
-To access these repositories, you need to set up an AWS IAM user or IAM role in your AWS account. The steps below outline how to create an AWS account, configure the necessary IAM entities, and pull images from the private repository. If you're familiar with AWS or even plan on using an AWS EKS cluster to deploy ZenML Pro, then you can simply use your existing IAM user or IAM role and skip steps 1. and 2.
+If you haven't done so already, please [book a demo](https://www.zenml.io/book-your-demo) to get access to the private ZenML Pro container images.
+
+To access these repositories, you need to set up an AWS IAM user or IAM role in your AWS account. The steps below outline how to create an AWS account, configure the necessary IAM entities, and pull images from the private repositories. If you're familiar with AWS or even plan on using an AWS EKS cluster to deploy ZenML Pro, then you can simply use your existing IAM user or IAM role and skip steps 1. and 2.
 
 ---
 
@@ -70,9 +72,9 @@ To access these repositories, you need to set up an AWS IAM user or IAM role in 
 
     ---
     
-- **Step 4: Authenticate your Docker/Helm Client**
+- **Step 4: Authenticate your Docker Client**
     
-    Run these steps on the machine that you'll use to pull the ZenML Pro images and helm chart. It is recommended that you copy the container images into your own container registry that will be accessible from the Kubernetes cluster where ZenML Pro will be stored, otherwise you'll have to find a way to configure the Kubernetes cluster to authenticate directly to the ZenML Pro container registry and that will be problematic if your Kubernetes cluster is not running on AWS.
+    Run these steps on the machine that you'll use to pull the ZenML Pro images. It is recommended that you copy the container images into your own container registry that will be accessible from the Kubernetes cluster where ZenML Pro will be stored, otherwise you'll have to find a way to configure the Kubernetes cluster to authenticate directly to the ZenML Pro container registry and that will be problematic if your Kubernetes cluster is not running on AWS.
     
     **A. Install AWS CLI**
     
@@ -120,28 +122,7 @@ To access these repositories, you need to set up an AWS IAM user or IAM role in 
     docker pull 715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro-api:<tag>
     docker pull 715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro-dashboard:<tag>
     docker pull 715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-cloud-server:<tag>
-    ```
-    
-    **D. Authenticate Helm with ECR**
-    
-    Run the following command to authenticate your Helm client with the ZenML ECR repository:
-    
-    ```bash
-    aws ecr get-login-password --region eu-west-1 | helm registry login --username AWS --password-stdin 715803424590.dkr.ecr.eu-west-1.amazonaws.com
-    ```
-    
-    If you used an IAM role, use the specified profile to execute commands. For example:
-    
-    ```bash
-    aws ecr get-login-password --region eu-west-1 --profile zenml-ecr-access | helm registry login --username AWS --password-stdin 715803424590.dkr.ecr.eu-west-1.amazonaws.com
-    ```
-    
-    This will allow you to authenticate to the ZenML Pro container registries and pull Helm charts, e.g.:
-    
-    ```bash
-    helm install oci://715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro --version 0.10.24 ...
-    ```
-    
+    ```    
 
 #### ZenML Pro Control Plane Artifacts
 
@@ -149,10 +130,10 @@ The following artifacts are required to install the ZenML Pro control plane in y
 
 - `715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro-api` - private container images for the ZenML Pro API server
 - `715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro-dashboard` - private container images for the ZenML Pro dashboard
-- `oci://715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro` - the private ZenML Pro helm chart (as an OCI artifact)
+- `oci://public.ecr.aws/zenml/zenml-pro` - the public ZenML Pro helm chart (as an OCI artifact)
 
 {% hint style="info" %}
-The container image tags and the Helm chart versions are both synchronized and linked to the ZenML Pro releases. The latest ZenML Pro release currently is `0.10.24`.
+The container image tags and the Helm chart versions are both synchronized and linked to the ZenML Pro releases. You can find the ZenML Pro Helm chart along with the available released versions in the [ZenML Pro ArtifactHub repository](https://artifacthub.io/packages/helm/zenml/zenml-pro).
 
 If you're planning on copying the container images to your own private registry (recommended if your Kubernetes cluster isn't running on AWS and can't authenticated directly to the ZenML Pro container registry) make sure to include and keep the same tags.
 
@@ -167,18 +148,12 @@ The following artifacts are required to install ZenML Pro tenant servers in your
 - `oci://public.ecr.aws/zenml/zenml` - the public open-source ZenML Helm chart (as an OCI artifact).
 
 {% hint style="info" %}
-The container image tags and the Helm chart versions are both synchronized and linked to the ZenML open-source releases. The latest ZenML OSS release currently is `0.73.0`.
+The container image tags and the Helm chart versions are both synchronized and linked to the ZenML open-source releases. To find the latest ZenML OSS release, please check the [ZenML release page](https://github.com/zenml-io/zenml/releases).
 
 If you're planning on copying the container images to your own private registry (recommended if your Kubernetes cluster isn't running on AWS and can't authenticated directly to the ZenML Pro container registry) make sure to include and keep the same tags.
 
 By default, the ZenML OSS Helm chart uses the same container image tags as the helm chart version. Configuring custom container image tags when setting up your Helm distribution is also possible, but not recommended because it doesn't yield reproducible results and may even cause problems if used with the wrong Helm chart version.
 {% endhint %}
-
-These are stored in AWS and granting access to them is done via AWS accounting.
-
-You will need to provision an AWS IAM role in your AWS account and send the role ARN to us. This role will be given permission to access the ZenML Pro container images and helm chart:
-
-Make sure to include the tags
 
 ### Infrastructure Requirements
 
@@ -308,10 +283,12 @@ To deploy the ZenML Pro control plane and one or more ZenML Pro tenant servers, 
 
 ### Configure the Helm Chart
 
-There are a variety of options that can be configured for the ZenML Pro helm chart before installation. To have a look at all the options, you can unpack the `values.yaml` file included in the helm chart that contains a definition of all the configuration options and their default values:
+There are a variety of options that can be configured for the ZenML Pro helm chart before installation.
+
+You can take look at the [`values.yaml` file](https://artifacthub.io/packages/helm/zenml/zenml-pro?modal=values) and familiarize yourself with some of the configuration settings that you can customize for your ZenML Pro deployment. Alternatively, you can unpack the `values.yaml` file included in the helm chart:
 
 ```bash
-helm  pull --untar  oci://715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro --version 0.10.24
+helm  pull --untar  oci://public.ecr.aws/zenml/zenml-pro --version <version>
 less zenml-pro/values.yaml
 ```
 
@@ -391,7 +368,7 @@ Ensure that your Kubernetes cluster has access to all the container images. By d
 To install the helm chart (assuming the customized configuration values are in a `my-values.yaml` file), run:
 
 ```bash
-helm --namespace zenml-pro upgrade --install --create-namespace zenml-pro oci://715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro --version 0.10.24  --values my-values.yaml
+helm --namespace zenml-pro upgrade --install --create-namespace zenml-pro oci://public.ecr.aws/zenml/zenml-pro --version <version>  --values my-values.yaml
 ```
 
 If the installation is successful, you should be able to see the following workloads running in your cluster:
@@ -991,7 +968,7 @@ Installing and updating on-prem ZenML Pro tenant servers is not automated, as it
     This is an example of the output from a `enroll-tenant.py` run:
     
     ```python
-    $ python mgmt/enroll-tenant.py 
+    $ python enroll-tenant.py 
     What is the URL of your ZenML Pro instance? (e.g. https://zenml-pro.mydomain.com): https://zenml-pro.test.zenml.io
     Enter the ZenML Pro admin account username [admin@zenml.pro]: 
     Enter the ZenML Pro admin account password: 
@@ -1074,7 +1051,7 @@ resources:
     
     The ZenML Pro tenant server is nothing more than a slightly modified open-source ZenML server. The deployment even uses the official open-source helm chart.
     
-    There are a variety of options that can be configured for the ZenML Pro tenant server chart before installation. To have a look at all the options, you can unpack the `values.yaml` file included in the helm chart that contains a definition of all the configuration options and their default values:
+    There are a variety of options that can be configured for the ZenML Pro tenant server chart before installation. You can start by taking a look at the [`values.yaml` file](https://artifacthub.io/packages/helm/zenml/zenml?modal=values) and familiarize yourself with some of the configuration settings that you can customize for your ZenML server deployment. Alternatively, you can unpack the `values.yaml` file included in the helm chart:
     
     ```bash
     helm  pull --untar  oci://public.ecr.aws/zenml/zenml --version <version>
