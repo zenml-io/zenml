@@ -108,6 +108,7 @@ from zenml.models import (
     ServiceAccountUpdate,
     ServiceConnectorFilter,
     ServiceConnectorUpdate,
+ScheduleRequest,
     StackFilter,
     StackRequest,
     StackUpdate,
@@ -5444,6 +5445,48 @@ class TestRunMetadata:
                 pr if type_ == MetadataResourceTypes.PIPELINE_RUN else sr
             )
 
+        elif type_ == MetadataResourceTypes.SCHEDULE:
+            step_name = sample_name("foo")
+            resource = client.zen_store.create_schedule(
+                ScheduleRequest(
+                    name="foo",
+                    cron_expression="*/5 * * * *",
+                    user=client.active_user.id,
+                    workspace=client.active_workspace.id,
+                    orchestrator_id=client.active_stack.orchestrator.id,
+                    active=False,
+                    pipeline_id=uuid4(),
+                )
+            )
+            deployment = client.zen_store.create_deployment(
+                PipelineDeploymentRequest(
+                    user=client.active_user.id,
+                    workspace=client.active_workspace.id,
+                    run_name_template=sample_name("foo"),
+                    pipeline_configuration=PipelineConfiguration(
+                        name=sample_name("foo")
+                    ),
+                    stack=client.active_stack.id,
+                    client_version="0.1.0",
+                    server_version="0.1.0",
+                    step_configurations={
+                        step_name: Step(
+                            spec=StepSpec(
+                                source=Source(
+                                    module="acme.foo",
+                                    type=SourceType.INTERNAL,
+                                ),
+                                upstream_steps=[],
+                            ),
+                            config=StepConfiguration(name=step_name),
+                        )
+                    },
+                    schedule=resource.id,
+                )
+            )
+        else:
+            raise ValueError("Unknown/untested MetadataResourceType.")
+
         client.zen_store.create_run_metadata(
             RunMetadataRequest(
                 user=client.active_user.id,
@@ -5465,6 +5508,10 @@ class TestRunMetadata:
             rm = client.zen_store.get_run_step(resource.id, True).run_metadata
             assert rm["foo"] == "bar"
 
+        elif type_ == MetadataResourceTypes.SCHEDULE:
+            rm = client.zen_store.get_schedule(resource.id, True).run_metadata
+            assert rm["foo"] == "bar"
+
         if type_ == MetadataResourceTypes.ARTIFACT_VERSION:
             client.zen_store.delete_artifact_version(resource.id)
             client.zen_store.delete_artifact(artifact.id)
@@ -5476,6 +5523,9 @@ class TestRunMetadata:
         ):
             client.zen_store.delete_run(pr.id)
             client.zen_store.delete_deployment(deployment.id)
+        elif type_ == MetadataResourceTypes.SCHEDULE:
+            client.zen_store.delete_deployment(deployment.id)
+            client.zen_store.delete_schedule(resource.id)
 
         client.zen_store.delete_stack_component(sc.id)
 
