@@ -67,12 +67,12 @@ To access these repositories, you need to set up an AWS IAM user or IAM role in 
     2. For an IAM role, the ARN is displayed in the **Roles** section under the **Summary** tab.
     
     Send the ARN to ZenML Support so it can be granted permission to access the ZenML Pro container images and Helm charts.
+
+    ---
     
 - **Step 4: Authenticate your Docker/Helm Client**
     
-    {% hint style="info" %}
     Run these steps on the machine that you'll use to pull the ZenML Pro images and helm chart. It is recommended that you copy the container images into your own container registry that will be accessible from the Kubernetes cluster where ZenML Pro will be stored, otherwise you'll have to find a way to configure the Kubernetes cluster to authenticate directly to the ZenML Pro container registry and that will be problematic if your Kubernetes cluster is not running on AWS.
-    {% endhint %}
     
     **A. Install AWS CLI**
     
@@ -594,7 +594,7 @@ Installing and updating on-prem ZenML Pro tenant servers is not automated, as it
 
 ### Enrolling a Tenant
 
-1. run the [`enroll-tenant.py`](http://enroll-tenant.py) script below. This will collect all the necessary data, then enroll the tenant in the organization and generate a Helm `values.yaml` file template that you can use to install the tenant server:
+1. run the `enroll-tenant.py` script below. This will collect all the necessary data, then enroll the tenant in the organization and generate a Helm `values.yaml` file template that you can use to install the tenant server:
     
     **[file: enroll-tenant.py]**
     
@@ -984,7 +984,7 @@ Installing and updating on-prem ZenML Pro tenant servers is not automated, as it
     
     ```
     
-    This is an example of the output from a [`enroll-tenant.py`](http://enroll-tenant.py) run:
+    This is an example of the output from a `enroll-tenant.py` run:
     
     ```python
     $ python mgmt/enroll-tenant.py 
