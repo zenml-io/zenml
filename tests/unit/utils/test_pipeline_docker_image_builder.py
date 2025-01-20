@@ -59,6 +59,39 @@ def test_requirements_file_generation(mocker, local_stack, tmp_path: Path):
     mocker.patch.object(
         local_stack, "requirements", return_value={"stack_requirements"}
     )
+    from zenml.utils import source_utils
+
+    mocker.patch.object(
+        source_utils,
+        "get_source_root",
+        return_value=str(tmp_path),
+    )
+
+    # Nothing specified, no requirements.txt exists -> Use pyproject.toml
+    pyproject_file = tmp_path / "pyproject.toml"
+    pyproject_file.write_text("pyproject")
+
+    settings = DockerSettings(
+        install_stack_requirements=False,
+    )
+    files = PipelineDockerImageBuilder.gather_requirements_files(
+        settings, stack=local_stack
+    )
+    assert len(files) == 1
+    assert files[0][1] == "pyproject_requirements"
+
+    # Nothing specified, requirements.txt exists -> Use requirements.txt
+    requirements_file = tmp_path / "requirements.txt"
+    requirements_file.write_text("user_requirements")
+
+    files = PipelineDockerImageBuilder.gather_requirements_files(
+        settings, stack=local_stack
+    )
+    assert len(files) == 1
+    assert files[0][1] == "user_requirements"
+
+    pyproject_file.unlink()
+    requirements_file.unlink()
 
     # just local requirements
     settings = DockerSettings(
@@ -104,7 +137,6 @@ def test_requirements_file_generation(mocker, local_stack, tmp_path: Path):
     requirements_file.write_text("user_requirements")
 
     pyproject_file = tmp_path / "pyproject.toml"
-    # mocked subprocess call will ignore this file anywau
     pyproject_file.write_text("pyproject")
 
     settings = DockerSettings(
