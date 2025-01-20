@@ -104,7 +104,10 @@ class VertexExperimentTracker(BaseExperimentTracker, GoogleCredentialsMixin):
         """Gets the experiment name.
 
         Args:
-            info: Info about the
+            info: Info about the step.
+
+        Returns:
+            The experiment name.
         """
         settings = cast(
             VertexExperimentTrackerSettings, self.get_settings(info)
