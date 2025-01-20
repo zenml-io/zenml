@@ -122,7 +122,7 @@ def write_json(
     file_path: str,
     contents: Any,
     encoder: Optional[Type[json.JSONEncoder]] = None,
-    **json_dump_args
+    **json_dump_args,
 ) -> None:
     """Write contents as JSON format to file_path.
 
@@ -142,11 +142,7 @@ def write_json(
             raise FileNotFoundError(f"Directory {dir_} does not exist.")
     io_utils.write_file_contents_as_string(
         file_path,
-        json.dumps(
-            contents,
-            cls=encoder,
-            **json_dump_args
-        ),
+        json.dumps(contents, cls=encoder, **json_dump_args),
     )
 
 

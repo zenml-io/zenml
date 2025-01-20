@@ -56,6 +56,7 @@ ZENML_MATERIALIZER_ALLOW_NON_ASCII_JSON_DUMPS = handle_bool_env_var(
     ENV_ZENML_MATERIALIZER_ALLOW_NON_ASCII_JSON_DUMPS, False
 )
 
+
 class BuiltInMaterializer(BaseMaterializer):
     """Handle JSON-serializable basic types (`bool`, `float`, `int`, `str`)."""
 
@@ -101,8 +102,9 @@ class BuiltInMaterializer(BaseMaterializer):
             data: The data to store.
         """
         yaml_utils.write_json(
-            self.data_path, data,
-            ensure_ascii=not ZENML_MATERIALIZER_ALLOW_NON_ASCII_JSON_DUMPS
+            self.data_path,
+            data,
+            ensure_ascii=not ZENML_MATERIALIZER_ALLOW_NON_ASCII_JSON_DUMPS,
         )
 
     def extract_metadata(
@@ -381,8 +383,9 @@ class BuiltInContainerMaterializer(BaseMaterializer):
         # If the data is serializable, just write it into a single JSON file.
         if _is_serializable(data):
             yaml_utils.write_json(
-                self.data_path, data,
-                ensure_ascii=not ZENML_MATERIALIZER_ALLOW_NON_ASCII_JSON_DUMPS
+                self.data_path,
+                data,
+                ensure_ascii=not ZENML_MATERIALIZER_ALLOW_NON_ASCII_JSON_DUMPS,
             )
             return
 
