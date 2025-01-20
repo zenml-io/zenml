@@ -12,6 +12,7 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -48,6 +49,13 @@ def test_check_user_is_set():
 def test_requirements_file_generation(mocker, local_stack, tmp_path: Path):
     """Tests that the requirements get included in the correct order and only when configured."""
     mocker.patch("subprocess.check_output", return_value=b"local_requirements")
+
+    mocker.patch(
+        "subprocess.run",
+        return_value=subprocess.CompletedProcess(
+            args="", returncode=0, stdout=b"pyproject_requirements"
+        ),
+    )
     mocker.patch.object(
         local_stack, "requirements", return_value={"stack_requirements"}
     )
@@ -94,16 +102,22 @@ def test_requirements_file_generation(mocker, local_stack, tmp_path: Path):
     # all values set
     requirements_file = tmp_path / "requirements.txt"
     requirements_file.write_text("user_requirements")
+
+    pyproject_file = tmp_path / "pyproject.toml"
+    # mocked subprocess call will ignore this file anywau
+    pyproject_file.write_text("pyproject")
+
     settings = DockerSettings(
         install_stack_requirements=True,
         requirements=str(requirements_file),
         required_integrations=[SKLEARN],
         replicate_local_python_environment="pip_freeze",
+        pyproject_path=str(pyproject_file),
     )
     files = PipelineDockerImageBuilder.gather_requirements_files(
         settings, stack=local_stack
     )
-    assert len(files) == 4
+    assert len(files) == 5
     # first up the local python requirements
     assert files[0][1] == "local_requirements"
     # then the stack requirements
@@ -113,8 +127,10 @@ def test_requirements_file_generation(mocker, local_stack, tmp_path: Path):
         sorted(SklearnIntegration.REQUIREMENTS)
     )
     assert files[2][1] == expected_integration_requirements
+    # then the pyproject requirements
+    assert files[3][1] == "pyproject_requirements"
     # last the user requirements
-    assert files[3][1] == "user_requirements"
+    assert files[4][1] == "user_requirements"
 
 
 def test_build_skipping():
