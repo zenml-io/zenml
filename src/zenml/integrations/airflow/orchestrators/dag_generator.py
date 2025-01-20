@@ -119,6 +119,22 @@ def get_operator_init_kwargs(
     except ImportError:
         pass
 
+    try:
+        # Support for apache-airflow-providers-cncf-kubernetes>=10.0.0 where
+        # the import changed
+        from airflow.providers.cncf.kubernetes.operators.pod import (
+            KubernetesPodOperator,
+        )
+
+        if issubclass(operator_class, KubernetesPodOperator):
+            init_kwargs.update(
+                get_kubernetes_pod_operator_init_kwargs(
+                    dag_config=dag_config, task_config=task_config
+                )
+            )
+    except ImportError:
+        pass
+
     init_kwargs.update(task_config.operator_args)
     return init_kwargs
 
