@@ -29,7 +29,7 @@ from typing import (
 
 from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
 from zenml.constants import (
-    ENV_ZENML_MATERIALIAZER_ALLOW_NON_ASCII_JSON_DUMPS,
+    ENV_ZENML_MATERIALIZER_ALLOW_NON_ASCII_JSON_DUMPS,
     handle_bool_env_var,
 )
 from zenml.enums import ArtifactType, VisualizationType
@@ -52,8 +52,8 @@ BASIC_TYPES = (
     str,
     type(None),
 )  # complex/bytes are not JSON serializable
-ZENML_MATERIALIAZER_ALLOW_NON_ASCII_JSON_DUMPS = handle_bool_env_var(
-    ENV_ZENML_MATERIALIAZER_ALLOW_NON_ASCII_JSON_DUMPS, False
+ZENML_MATERIALIZER_ALLOW_NON_ASCII_JSON_DUMPS = handle_bool_env_var(
+    ENV_ZENML_MATERIALIZER_ALLOW_NON_ASCII_JSON_DUMPS, False
 )
 
 class BuiltInMaterializer(BaseMaterializer):
@@ -102,7 +102,7 @@ class BuiltInMaterializer(BaseMaterializer):
         """
         yaml_utils.write_json(
             self.data_path, data,
-            ensure_ascii=not ZENML_MATERIALIAZER_ALLOW_NON_ASCII_JSON_DUMPS
+            ensure_ascii=not ZENML_MATERIALIZER_ALLOW_NON_ASCII_JSON_DUMPS
         )
 
     def extract_metadata(
@@ -382,7 +382,7 @@ class BuiltInContainerMaterializer(BaseMaterializer):
         if _is_serializable(data):
             yaml_utils.write_json(
                 self.data_path, data,
-                ensure_ascii=not ZENML_MATERIALIAZER_ALLOW_NON_ASCII_JSON_DUMPS
+                ensure_ascii=not ZENML_MATERIALIZER_ALLOW_NON_ASCII_JSON_DUMPS
             )
             return
 
