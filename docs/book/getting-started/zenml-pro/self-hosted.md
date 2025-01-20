@@ -104,18 +104,22 @@ To access these repositories, you need to set up an AWS IAM user or IAM role in 
     
     ```bash
     aws ecr get-login-password --region eu-west-1 | docker login --username AWS --password-stdin 715803424590.dkr.ecr.eu-west-1.amazonaws.com
+    aws ecr get-login-password --region eu-central-1 | docker login --username AWS --password-stdin 715803424590.dkr.ecr.eu-central-1.amazonaws.com
     ```
     
     If you used an IAM role, use the specified profile to execute commands. For example:
     
     ```bash
     aws ecr get-login-password --region eu-west-1 --profile zenml-ecr-access | docker login --username AWS --password-stdin 715803424590.dkr.ecr.eu-west-1.amazonaws.com
+    aws ecr get-login-password --region eu-central-1 --profile zenml-ecr-access | docker login --username AWS --password-stdin 715803424590.dkr.ecr.eu-central-1.amazonaws.com
     ```
     
     This will allow you to authenticate to the ZenML Pro container registries and pull images with Docker, e.g.:
     
     ```bash
-    docker pull 715803424590.dkr.ecr.eu-west-1.amazonaws.com/<image-name>:<tag>
+    docker pull 715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro-api:<tag>
+    docker pull 715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro-dashboard:<tag>
+    docker pull 715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-cloud-server:<tag>
     ```
     
     **D. Authenticate Helm with ECR**
@@ -135,7 +139,7 @@ To access these repositories, you need to set up an AWS IAM user or IAM role in 
     This will allow you to authenticate to the ZenML Pro container registries and pull Helm charts, e.g.:
     
     ```bash
-    helm install oci://715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro --version 0.10.6 ...
+    helm install oci://715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro --version 0.10.24 ...
     ```
     
 
@@ -148,7 +152,7 @@ The following artifacts are required to install the ZenML Pro control plane in y
 - `oci://715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro` - the private ZenML Pro helm chart (as an OCI artifact)
 
 {% hint style="info" %}
-The container image tags and the Helm chart versions are both synchronized and linked to the ZenML Pro releases. The latest ZenML Pro release currently is `0.10.6`.
+The container image tags and the Helm chart versions are both synchronized and linked to the ZenML Pro releases. The latest ZenML Pro release currently is `0.10.24`.
 
 If you're planning on copying the container images to your own private registry (recommended if your Kubernetes cluster isn't running on AWS and can't authenticated directly to the ZenML Pro container registry) make sure to include and keep the same tags.
 
@@ -307,7 +311,7 @@ To deploy the ZenML Pro control plane and one or more ZenML Pro tenant servers, 
 There are a variety of options that can be configured for the ZenML Pro helm chart before installation. To have a look at all the options, you can unpack the `values.yaml` file included in the helm chart that contains a definition of all the configuration options and their default values:
 
 ```bash
-helm  pull --untar  oci://715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro --version 0.10.6
+helm  pull --untar  oci://715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro --version 0.10.24
 less zenml-pro/values.yaml
 ```
 
@@ -387,7 +391,7 @@ Ensure that your Kubernetes cluster has access to all the container images. By d
 To install the helm chart (assuming the customized configuration values are in a `my-values.yaml` file), run:
 
 ```bash
-helm --namespace zenml-pro upgrade --install --create-namespace zenml-pro oci://715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro --version 0.10.6  --values my-values.yaml
+helm --namespace zenml-pro upgrade --install --create-namespace zenml-pro oci://715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro --version 0.10.24  --values my-values.yaml
 ```
 
 If the installation is successful, you should be able to see the following workloads running in your cluster:
