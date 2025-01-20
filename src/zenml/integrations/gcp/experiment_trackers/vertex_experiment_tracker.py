@@ -133,7 +133,7 @@ class VertexExperimentTracker(BaseExperimentTracker, GoogleCredentialsMixin):
             The run URL.
         """
         resource = aiplatform.Experiment(experiment_name=experiment)
-        return resource.dashboard_url
+        return cast(str, resource.dashboard_url)
 
     def _get_tensorboard_resource_name(self, experiment: str) -> Optional[str]:
         resource = aiplatform.Experiment(
