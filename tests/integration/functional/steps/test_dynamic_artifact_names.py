@@ -56,30 +56,26 @@ def dynamic_single_string_custom_2() -> Annotated[str, str_namer_custom_2]:
 
 
 @step
-def dynamic_single_string_custom_no_default() -> (
-    Annotated[str, str_namer_custom]
-):
+def dynamic_single_string_custom_no_default() -> Annotated[
+    str, str_namer_custom
+]:
     return "str_namer_custom"
 
 
 @step(substitutions={"funny_name": "name_placeholder"})
-def dynamic_tuple() -> (
-    Tuple[
-        Annotated[str, str_namer_standard],
-        Annotated[str, str_namer_custom],
-    ]
-):
+def dynamic_tuple() -> Tuple[
+    Annotated[str, str_namer_standard],
+    Annotated[str, str_namer_custom],
+]:
     return "str_namer_standard", "str_namer_custom"
 
 
 @step(substitutions={"funny_name": "name_placeholder"})
-def mixed_tuple() -> (
-    Tuple[
-        Annotated[str, str_namer_standard],
-        Annotated[str, static_namer],
-        Annotated[str, str_namer_custom],
-    ]
-):
+def mixed_tuple() -> Tuple[
+    Annotated[str, str_namer_standard],
+    Annotated[str, static_namer],
+    Annotated[str, str_namer_custom],
+]:
     return "str_namer_standard", "static_namer", "str_namer_custom"
 
 
@@ -89,13 +85,11 @@ def static_single() -> Annotated[str, static_namer]:
 
 
 @step(substitutions={"funny_name": "name_placeholder"})
-def mixed_tuple_artifact_config() -> (
-    Tuple[
-        Annotated[str, ArtifactConfig(name=static_namer)],
-        Annotated[str, ArtifactConfig(name=str_namer_standard)],
-        Annotated[str, ArtifactConfig(name=str_namer_custom)],
-    ]
-):
+def mixed_tuple_artifact_config() -> Tuple[
+    Annotated[str, ArtifactConfig(name=static_namer)],
+    Annotated[str, ArtifactConfig(name=str_namer_standard)],
+    Annotated[str, ArtifactConfig(name=str_namer_custom)],
+]:
     return "static_namer", "str_namer_standard", "str_namer_custom"
 
 
@@ -107,14 +101,12 @@ def dynamic_single_string_standard_controlled_return(
 
 
 @step(substitutions={"funny_name": "name_placeholder"})
-def mixed_with_unannotated_returns() -> (
-    Tuple[
-        Annotated[str, str_namer_standard],
-        str,
-        Annotated[str, str_namer_custom],
-        str,
-    ]
-):
+def mixed_with_unannotated_returns() -> Tuple[
+    Annotated[str, str_namer_standard],
+    str,
+    Annotated[str, str_namer_custom],
+    str,
+]:
     return (
         "str_namer_standard",
         "unannotated",

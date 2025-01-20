@@ -27,11 +27,9 @@ TEST_SET_RAW = "https://raw.githubusercontent.com/microsoft/LightGBM/master/exam
 
 
 @step
-def data_loader() -> (
-    Tuple[
-        Annotated[lgb.Dataset, "mat_train"], Annotated[lgb.Dataset, "mat_test"]
-    ]
-):
+def data_loader() -> Tuple[
+    Annotated[lgb.Dataset, "mat_train"], Annotated[lgb.Dataset, "mat_test"]
+]:
     """Retrieves the data from the demo directory of the LightGBM repo."""
     # Write data to temporary files to load it with `lgb.Dataset`.
     with tempfile.NamedTemporaryFile(

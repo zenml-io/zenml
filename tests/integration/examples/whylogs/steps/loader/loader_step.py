@@ -32,12 +32,10 @@ from zenml.integrations.whylogs.flavors.whylogs_data_validator_flavor import (
         )
     }
 )
-def data_loader() -> (
-    Tuple[
-        Annotated[pd.DataFrame, "data"],
-        Annotated[DatasetProfileView, "profile"],
-    ]
-):
+def data_loader() -> Tuple[
+    Annotated[pd.DataFrame, "data"],
+    Annotated[DatasetProfileView, "profile"],
+]:
     """Load the diabetes dataset."""
     X, y = datasets.load_diabetes(return_X_y=True, as_frame=True)
 

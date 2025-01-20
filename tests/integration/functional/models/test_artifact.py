@@ -90,16 +90,16 @@ def auto_versioned_step() -> Annotated[int, ArtifactConfig(name="aria")]:
 
 
 @step
-def manual_string_version_step() -> (
-    Annotated[int, ArtifactConfig(name="aria", version="cat")]
-):
+def manual_string_version_step() -> Annotated[
+    int, ArtifactConfig(name="aria", version="cat")
+]:
     return 1
 
 
 @step
-def manual_int_version_step() -> (
-    Annotated[int, ArtifactConfig(name="aria", version=10)]
-):
+def manual_int_version_step() -> Annotated[
+    int, ArtifactConfig(name="aria", version=10)
+]:
     return 1
 
 
@@ -142,9 +142,9 @@ def test_artifact_versioning(clean_client: "Client", one_step_pipeline):
 
 
 @step
-def duplicate_int_version_step() -> (
-    Annotated[int, ArtifactConfig(name="aria", version="1")]
-):
+def duplicate_int_version_step() -> Annotated[
+    int, ArtifactConfig(name="aria", version="1")
+]:
     return 1
 
 
@@ -179,9 +179,9 @@ def test_artifact_versioning_duplication(
 
 
 @step
-def tagged_artifact_step() -> (
-    Annotated[int, ArtifactConfig(name="aria", tags=["cat", "grumpy"])]
-):
+def tagged_artifact_step() -> Annotated[
+    int, ArtifactConfig(name="aria", tags=["cat", "grumpy"])
+]:
     return 7
 
 

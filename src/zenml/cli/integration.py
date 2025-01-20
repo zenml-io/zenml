@@ -83,7 +83,7 @@ def get_requirements(integration_name: Optional[str] = None) -> None:
     else:
         if requirements:
             title(
-                f'Requirements for {integration_name or "all integrations"}:\n'
+                f"Requirements for {integration_name or 'all integrations'}:\n"
             )
             declare(f"{requirements}")
             warning(

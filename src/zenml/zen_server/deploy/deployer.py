@@ -331,7 +331,7 @@ class LocalServerDeployer(metaclass=SingletonMetaClass):
         provider = self.get_provider(server.config.provider)
 
         logger.info(
-            f"Fetching logs from the local {provider_name} ZenML " f"server..."
+            f"Fetching logs from the local {provider_name} ZenML server..."
         )
         return provider.get_server_logs(
             server.config, follow=follow, tail=tail
