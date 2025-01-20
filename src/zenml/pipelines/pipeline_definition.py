@@ -474,7 +474,7 @@ def pipeline_(param_name: str):
     step_name()
 
 if __name__=="__main__":
-    pipeline_.with_options(config_file="config.yaml")(param_name="value2")
+    pipeline_.with_options(config_path="config.yaml")(param_name="value2")
 ```
 To avoid this consider setting pipeline parameters only in one place (config or code).
 """
