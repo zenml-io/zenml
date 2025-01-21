@@ -1,6 +1,6 @@
 # Apache Software License 2.0
 #
-# Copyright (c) ZenML GmbH 2024. All rights reserved.
+# Copyright (c) ZenML GmbH 2025. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -39,7 +39,9 @@ def deploy_to_huggingface(
     """
     ### ADD YOUR OWN CODE HERE - THIS IS JUST AN EXAMPLE ###
     secret = Client().get_secret("huggingface_creds")
-    assert secret, "No secret found with name 'huggingface_creds'. Please create one that includes your `username` and `token`."
+    assert secret, (
+        "No secret found with name 'huggingface_creds'. Please create one that includes your `username` and `token`."
+    )
     token = secret.secret_values["token"]
     api = HfApi(token=token)
     hf_repo = api.create_repo(
