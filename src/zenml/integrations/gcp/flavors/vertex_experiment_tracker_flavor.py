@@ -52,10 +52,14 @@ class VertexExperimentTrackerSettings(BaseSettings):
 
     @field_validator("experiment", mode="before")
     def _validate_experiment(cls, value: str) -> str:
-        """Validates the experiment name matches the regex [a-z0-9][a-z0-9-]{0,127}.
+        """Validates the experiment name matches the the allowed format.
 
         Args:
             value: The experiment.
+
+        Raises:
+            ValueError: If the experiment name does not match the expected
+                format.
 
         Returns:
             The experiment.
