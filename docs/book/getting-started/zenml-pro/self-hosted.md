@@ -133,7 +133,7 @@ The following artifacts are required to install the ZenML Pro control plane in y
 - `oci://public.ecr.aws/zenml/zenml-pro` - the public ZenML Pro helm chart (as an OCI artifact)
 
 {% hint style="info" %}
-The container image tags and the Helm chart versions are both synchronized and linked to the ZenML Pro releases. You can find the ZenML Pro Helm chart along with the available released versions in the [ZenML Pro ArtifactHub repository](https://artifacthub.io/packages/helm/zenml/zenml-pro).
+The container image tags and the Helm chart versions are both synchronized and linked to the ZenML Pro releases. You can find the ZenML Pro Helm chart along with the available released versions in the [ZenML Pro ArtifactHub repository](https://artifacthub.io/packages/helm/zenml-pro/zenml-pro).
 
 If you're planning on copying the container images to your own private registry (recommended if your Kubernetes cluster isn't running on AWS and can't authenticated directly to the ZenML Pro container registry) make sure to include and keep the same tags.
 
@@ -289,7 +289,7 @@ To deploy the ZenML Pro control plane and one or more ZenML Pro tenant servers, 
 
 There are a variety of options that can be configured for the ZenML Pro helm chart before installation.
 
-You can take look at the [`values.yaml` file](https://artifacthub.io/packages/helm/zenml/zenml-pro?modal=values) and familiarize yourself with some of the configuration settings that you can customize for your ZenML Pro deployment. Alternatively, you can unpack the `values.yaml` file included in the helm chart:
+You can take look at the [`values.yaml` file](https://artifacthub.io/packages/helm/zenml-pro/zenml-pro?modal=values) and familiarize yourself with some of the configuration settings that you can customize for your ZenML Pro deployment. Alternatively, you can unpack the `values.yaml` file included in the helm chart:
 
 ```bash
 helm  pull --untar  oci://public.ecr.aws/zenml/zenml-pro --version <version>
