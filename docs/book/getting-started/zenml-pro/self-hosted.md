@@ -159,6 +159,181 @@ By default, the ZenML OSS Helm chart uses the same container image tags as the h
 
 If you're planning on running containerized ZenML pipelines, or using other containerization related ZenML features, you'll also need to access the public ZenML client container image located [in Docker Hub at `zenmldocker/zenml`](https://hub.docker.com/r/zenmldocker/zenml). This isn't a problem unless you're deploying ZenML Pro in an air-gapped environment, in which case you'll also have to copy the client container image into your own container registry. You'll also have to configure your code to use the correct base container registry via DockerSettings (see the [DockerSettings documentation](../../how-to/customize-docker-builds/README.md) for more information).
 
+### Air-Gapped Installation
+
+If you need to install ZenML Pro in an air-gapped environment (a network with no direct internet access), you'll need to transfer all required artifacts to your internal infrastructure. Here's a step-by-step process:
+
+**1. Prepare a Machine with Internet Access**
+
+First, you'll need a machine with both internet access and sufficient storage space to temporarily store all artifacts. On this machine:
+
+1. Follow the authentication steps described above to gain access to the private repositories
+2. Install the required tools:
+   - Docker
+   - AWS CLI
+   - Helm
+   - A tool like `skopeo` for copying container images (optional but recommended)
+
+**2. Download All Required Artifacts**
+
+A Bash script like the following can be used to download all necessary components, or you can run the listed commands manually:
+
+```bash
+#!/bin/bash
+
+set -e
+
+# Set the version numbers
+ZENML_PRO_VERSION="<version>"  # e.g., "0.10.24"
+ZENML_OSS_VERSION="<version>"  # e.g., "0.73.0"
+
+# Create directories for artifacts
+mkdir -p zenml-artifacts/images
+mkdir -p zenml-artifacts/charts
+
+# Download container images
+echo "Downloading container images..."
+docker pull 715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro-api:${ZENML_PRO_VERSION}
+docker pull 715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro-dashboard:${ZENML_PRO_VERSION}
+docker pull 715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-cloud-server:${ZENML_OSS_VERSION}
+docker pull zenmldocker/zenml:${ZENML_OSS_VERSION}
+
+# Save images to tar files
+echo "Saving images to tar files..."
+docker save 715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro-api:${ZENML_PRO_VERSION} > zenml-artifacts/images/zenml-pro-api.tar
+docker save 715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro-dashboard:${ZENML_PRO_VERSION} > zenml-artifacts/images/zenml-pro-dashboard.tar
+docker save 715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-cloud-server:${ZENML_OSS_VERSION} > zenml-artifacts/images/zenml-cloud-server.tar
+docker save zenmldocker/zenml:${ZENML_OSS_VERSION} > zenml-artifacts/images/zenml-client.tar
+
+# Download Helm charts
+echo "Downloading Helm charts..."
+helm pull oci://public.ecr.aws/zenml/zenml-pro --version ${ZENML_PRO_VERSION} -d zenml-artifacts/charts
+helm pull oci://public.ecr.aws/zenml/zenml --version ${ZENML_OSS_VERSION} -d zenml-artifacts/charts
+
+# Create a manifest file with versions
+echo "Creating manifest file..."
+cat > zenml-artifacts/manifest.txt << EOF
+ZenML Pro Version: ${ZENML_PRO_VERSION}
+ZenML OSS Version: ${ZENML_OSS_VERSION}
+Date Created: $(date)
+
+Container Images:
+- zenml-pro-api:${ZENML_PRO_VERSION}
+- zenml-pro-dashboard:${ZENML_PRO_VERSION}
+- zenml-cloud-server:${ZENML_OSS_VERSION}
+- zenml-client:${ZENML_OSS_VERSION}
+
+Helm Charts:
+- zenml-pro-${ZENML_PRO_VERSION}.tgz
+- zenml-${ZENML_OSS_VERSION}.tgz
+EOF
+
+# Create final archive
+echo "Creating final archive..."
+tar czf zenml-artifacts.tar.gz zenml-artifacts/
+```
+
+**3. Transfer Artifacts to Air-Gapped Environment**
+
+1. Copy the `zenml-artifacts.tar.gz` file to your preferred transfer medium (e.g., USB drive, approved file transfer system)
+2. Transfer the archive to a machine in your air-gapped environment that has access to your internal container registry
+
+**4. Load Artifacts in Air-Gapped Environment**
+
+Create a script to load the artifacts in your air-gapped environment or run the listed commands manually:
+
+```bash
+#!/bin/bash
+
+set -e
+
+# Extract the archive
+echo "Extracting archive..."
+tar xzf zenml-artifacts.tar.gz
+
+# Read the manifest
+echo "Manifest:"
+cat zenml-artifacts/manifest.txt
+
+# Load images and track which ones were loaded
+echo "Loading images into Docker..."
+LOADED_IMAGES=()
+
+# Load each image and capture its reference
+image_ref=$(docker load < zenml-artifacts/images/zenml-pro-api.tar | grep "Loaded image:" | cut -d' ' -f3)
+LOADED_IMAGES+=("$image_ref")
+echo "Loaded image: $image_ref"
+
+image_ref=$(docker load < zenml-artifacts/images/zenml-pro-dashboard.tar | grep "Loaded image:" | cut -d' ' -f3)
+LOADED_IMAGES+=("$image_ref")
+echo "Loaded image: $image_ref"
+
+image_ref=$(docker load < zenml-artifacts/images/zenml-cloud-server.tar | grep "Loaded image:" | cut -d' ' -f3)
+LOADED_IMAGES+=("$image_ref")
+echo "Loaded image: $image_ref"
+
+image_ref=$(docker load < zenml-artifacts/images/zenml-client.tar | grep "Loaded image:" | cut -d' ' -f3)
+LOADED_IMAGES+=("$image_ref")
+echo "Loaded image: $image_ref"
+# Tag and push images to your internal registry
+INTERNAL_REGISTRY="internal-registry.company.com"
+
+echo "Pushing images to internal registry..."
+for img in "${LOADED_IMAGES[@]}"; do
+    # Get the image name without the repository and tag
+    img_name=$(echo $img | awk -F/ '{print $NF}' | cut -d: -f1)
+    # Get the tag
+    tag=$(echo $img | cut -d: -f2)
+    
+    echo "Processing $img"
+    docker tag "$img" "${INTERNAL_REGISTRY}/zenml/$img_name:$tag"
+    docker push "${INTERNAL_REGISTRY}/zenml/$img_name:$tag"
+    echo "Pushed image: ${INTERNAL_REGISTRY}/zenml/$img_name:$tag"
+done
+
+# Copy Helm charts to your internal Helm repository (if applicable)
+echo "Helm charts are available in: zenml-artifacts/charts/"
+```
+
+**5. Update Configuration**
+
+When deploying ZenML Pro in your air-gapped environment, make sure to update all references to container images in your Helm values to point to your internal registry. For example:
+
+```yaml
+zenml:
+  image:
+    api:
+      repository: internal-registry.company.com/zenml/zenml-pro-api
+    dashboard:
+      repository: internal-registry.company.com/zenml/zenml-pro-dashboard
+```
+
+{% hint style="info" %}
+Remember to maintain the same version tags when copying images to your internal registry to ensure compatibility between components.
+{% endhint %}
+
+{% hint style="warning" %}
+The scripts provided above are examples and may need to be adjusted based on your specific security requirements and internal infrastructure setup.
+{% endhint %}
+
+**6. Using the Helm Charts**
+
+After downloading the Helm charts, you can use their local paths instead of a remote OCI registry to deploy ZenML Pro components. Here's an example of how to use them:
+
+```bash
+# Install the ZenML Pro Control Plane
+helm install zenml-pro ./zenml-artifacts/charts/zenml-pro-0.10.24.tgz \
+  --namespace zenml-pro \
+  --create-namespace \
+  --values your-values.yaml
+
+# Install a ZenML Pro Tenant Server
+helm install zenml-tenant ./zenml-artifacts/charts/zenml-0.73.0.tgz \
+  --namespace zenml-tenant \
+  --create-namespace \
+  --values your-tenant-values.yaml
+```
+
 ### Infrastructure Requirements
 
 To deploy the ZenML Pro control plane and one or more ZenML Pro tenant servers, ensure the following prerequisites are met:
@@ -966,34 +1141,6 @@ Installing and updating on-prem ZenML Pro tenant servers is not automated, as it
     
     if __name__ == "__main__":
         main()
-    
-    ```
-    
-    This is an example of the output from a `enroll-tenant.py` run:
-    
-    ```python
-    $ python enroll-tenant.py 
-    What is the URL of your ZenML Pro instance? (e.g. https://zenml-pro.mydomain.com): https://zenml-pro.test.zenml.io
-    Enter the ZenML Pro admin account username [admin@zenml.pro]: 
-    Enter the ZenML Pro admin account password: 
-    Login successful.
-    The following organization was found: MyOrg [0e99e236-0aeb-44cc-aff7-590e41c9a702]. Use this organization? (y/n) [n]: y
-    Choose a name for the tenant, or press enter to use a generated name [zenml-8682b87f]: zenml-eab14ff8
-    A tenant with name zenml-eab14ff8 already exists in the organization 0e99e236-0aeb-44cc-aff7-590e41c9a702. Overwrite ? (y/n) [n]: y
-    Tenant deleted successfully: bf63d3aa-a3ce-49a4-91a8-4c9a822018bf
-    Tenant enrolled successfully: zenml-eab14ff8 [f8e306ef-90e7-4b2f-99db-28298834feed]
-    
-    The tenant was enrolled successfully. It can be accessed at:
-    
-    https://zenml-pro.staging.cloudinfra.zenml.io/organizations/0e99e236-0aeb-44cc-aff7-590e41c9a702/tenants/f8e306ef-90e7-4b2f-99db-28298834feed
-    
-    The tenant server Helm values were written to: zenml-f8e306ef-90e7-4b2f-99db-28298834feed-values.yaml
-    
-    Please note the TODOs in the file and adjust them to your needs.
-    
-    To install the tenant, run e.g.:
-    
-        helm --namespace zenml-pro-f8e306ef-90e7-4b2f-99db-28298834feed upgrade --install --create-namespace         zenml oci://public.ecr.aws/zenml/zenml --version <version>         --values zenml-f8e306ef-90e7-4b2f-99db-28298834feed-values.yaml
     
     ```
     
