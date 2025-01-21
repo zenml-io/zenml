@@ -121,7 +121,7 @@ To access these repositories, you need to set up an AWS IAM user or IAM role in 
     ```bash
     docker pull 715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro-api:<tag>
     docker pull 715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro-dashboard:<tag>
-    docker pull 715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-cloud-server:<tag>
+    docker pull 715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-pro-server:<tag>
     ```    
 
 #### ZenML Pro Control Plane Artifacts
@@ -144,7 +144,7 @@ By default, the ZenML Pro Helm chart uses the same container image tags as the h
 
 The following artifacts are required to install ZenML Pro tenant servers in your own Kubernetes cluster:
 
-- [`715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-cloud-server`](http://715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-cloud-server) - private container images for the ZenML Pro tenant server
+- `715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-pro-server` - private container images for the ZenML Pro tenant server
 - `oci://public.ecr.aws/zenml/zenml` - the public open-source ZenML Helm chart (as an OCI artifact).
 
 {% hint style="info" %}
@@ -193,7 +193,7 @@ mkdir -p zenml-artifacts/charts
 
 # Set registry URLs
 ZENML_PRO_REGISTRY="715803424590.dkr.ecr.eu-west-1.amazonaws.com"
-ZENML_PRO_TENANT_REGISTRY="715803424590.dkr.ecr.eu-central-1.amazonaws.com"
+ZENML_PRO_SERVER_REGISTRY="715803424590.dkr.ecr.eu-central-1.amazonaws.com"
 ZENML_HELM_REGISTRY="public.ecr.aws/zenml"
 ZENML_DOCKERHUB_REGISTRY="zenmldocker"
 
@@ -201,14 +201,14 @@ ZENML_DOCKERHUB_REGISTRY="zenmldocker"
 echo "Downloading container images..."
 docker pull ${ZENML_PRO_REGISTRY}/zenml-pro-api:${ZENML_PRO_VERSION}
 docker pull ${ZENML_PRO_REGISTRY}/zenml-pro-dashboard:${ZENML_PRO_VERSION}
-docker pull ${ZENML_PRO_TENANT_REGISTRY}/zenml-cloud-server:${ZENML_OSS_VERSION}
+docker pull ${ZENML_PRO_SERVER_REGISTRY}/zenml-pro-server:${ZENML_OSS_VERSION}
 docker pull ${ZENML_DOCKERHUB_REGISTRY}/zenml:${ZENML_OSS_VERSION}
 
 # Save images to tar files
 echo "Saving images to tar files..."
 docker save ${ZENML_PRO_REGISTRY}/zenml-pro-api:${ZENML_PRO_VERSION} > zenml-artifacts/images/zenml-pro-api.tar
 docker save ${ZENML_PRO_REGISTRY}/zenml-pro-dashboard:${ZENML_PRO_VERSION} > zenml-artifacts/images/zenml-pro-dashboard.tar
-docker save ${ZENML_PRO_TENANT_REGISTRY}/zenml-cloud-server:${ZENML_OSS_VERSION} > zenml-artifacts/images/zenml-cloud-server.tar
+docker save ${ZENML_PRO_SERVER_REGISTRY}/zenml-pro-server:${ZENML_OSS_VERSION} > zenml-artifacts/images/zenml-pro-server.tar
 docker save ${ZENML_DOCKERHUB_REGISTRY}/zenml:${ZENML_OSS_VERSION} > zenml-artifacts/images/zenml-client.tar
 
 # Download Helm charts
@@ -226,7 +226,7 @@ Date Created: $(date)
 Container Images:
 - zenml-pro-api:${ZENML_PRO_VERSION}
 - zenml-pro-dashboard:${ZENML_PRO_VERSION}
-- zenml-cloud-server:${ZENML_OSS_VERSION}
+- zenml-pro-server:${ZENML_OSS_VERSION}
 - zenml-client:${ZENML_OSS_VERSION}
 
 Helm Charts:
@@ -274,7 +274,7 @@ image_ref=$(docker load < zenml-artifacts/images/zenml-pro-dashboard.tar | grep 
 LOADED_IMAGES+=("$image_ref")
 echo "Loaded image: $image_ref"
 
-image_ref=$(docker load < zenml-artifacts/images/zenml-cloud-server.tar | grep "Loaded image:" | cut -d' ' -f3)
+image_ref=$(docker load < zenml-artifacts/images/zenml-pro-server.tar | grep "Loaded image:" | cut -d' ' -f3)
 LOADED_IMAGES+=("$image_ref")
 echo "Loaded image: $image_ref"
 
@@ -774,7 +774,7 @@ Installing and updating on-prem ZenML Pro tenant servers is not automated, as it
     
     DEFAULT_API_ROOT_PATH = "/api/v1"
     DEFAULT_REPOSITORY = (
-        "715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-cloud-server"
+        "715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-pro-server"
     )
     
     # Configuration
@@ -1171,7 +1171,7 @@ zenml:
     image:
         # TODO: use your actual image repository (omit the tag, which is
         # assumed to be the same as the helm chart version)
-        repository: 715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-cloud-server
+        repository: 715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-pro-server
     # TODO: use your actual server domain here
     serverURL: https://zenml.f8e306ef90e74b2f99db28298834feed.example.com
     ingress:
