@@ -249,6 +249,16 @@ def my_step(...):
 def my_pipeline(...):
 ```
 
+{% hint style="info" %}
+If you're using `apache-airflow-providers-cncf-kubernetes>=10.0.0`, the import of the Kubernetes pod
+operator changed, and you'll need to specify the operator like this:
+```python
+airflow_settings = AirflowOrchestratorSettings(
+    operator="airflow.providers.cncf.kubernetes.operators.pod.KubernetesPodOperator"
+)
+```
+{% endhint %}
+
 **Custom operators**
 
 If you want to use any other operator to run your steps, you can specify the `operator` in your `AirflowSettings` as a

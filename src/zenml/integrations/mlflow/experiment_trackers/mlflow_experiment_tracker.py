@@ -236,7 +236,6 @@ class MLFlowExperimentTracker(BaseExperimentTracker):
         """Disables MLflow autologging for all supported frameworks."""
         frameworks = [
             "tensorflow",
-            "gluon",
             "xgboost",
             "lightgbm",
             "statsmodels",
