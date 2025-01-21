@@ -135,7 +135,7 @@ The following artifacts are required to install the ZenML Pro control plane in y
 {% hint style="info" %}
 The container image tags and the Helm chart versions are both synchronized and linked to the ZenML Pro releases. You can find the ZenML Pro Helm chart along with the available released versions in the [ZenML Pro ArtifactHub repository](https://artifacthub.io/packages/helm/zenml-pro/zenml-pro).
 
-If you're planning on copying the container images to your own private registry (recommended if your Kubernetes cluster isn't running on AWS and can't authenticated directly to the ZenML Pro container registry) make sure to include and keep the same tags.
+If you're planning on copying the container images to your own private registry (recommended if your Kubernetes cluster isn't running on AWS and can't authenticate directly to the ZenML Pro container registry) make sure to include and keep the same tags.
 
 By default, the ZenML Pro Helm chart uses the same container image tags as the helm chart version. Configuring custom container image tags when setting up your Helm distribution is also possible, but not recommended because it doesn't yield reproducible results and may even cause problems if used with the wrong Helm chart version.
 {% endhint %}
