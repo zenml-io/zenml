@@ -9,7 +9,7 @@ This page provides instructions for installing ZenML Pro - the ZenML Pro Control
 
 ## Overview
 
-ZenML Pro can be installed as an self-hosted deployment. You'll need access to the ZenML Pro container images and helm chart and you'll have to provide your own infrastructure: a Kubernetes cluster, a database server and a few other common prerequisites usually needed to expose Kubernetes services via HTTPs - a load balancer, an Ingress controller, HTTPs certificate(s) and DNS rule(s).
+ZenML Pro can be installed as an self-hosted deployment. You need to be granted access to the ZenML Pro container images and you'll have to provide your own infrastructure: a Kubernetes cluster, a database server and a few other common prerequisites usually needed to expose Kubernetes services via HTTPs - a load balancer, an Ingress controller, HTTPs certificate(s) and DNS rule(s).
 
 This document will guide you through the process.
 
