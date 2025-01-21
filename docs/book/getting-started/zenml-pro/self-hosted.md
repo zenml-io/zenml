@@ -191,24 +191,30 @@ ZENML_OSS_VERSION="<version>"  # e.g., "0.73.0"
 mkdir -p zenml-artifacts/images
 mkdir -p zenml-artifacts/charts
 
+# Set registry URLs
+ZENML_PRO_REGISTRY="715803424590.dkr.ecr.eu-west-1.amazonaws.com"
+ZENML_PRO_TENANT_REGISTRY="715803424590.dkr.ecr.eu-central-1.amazonaws.com"
+ZENML_HELM_REGISTRY="public.ecr.aws/zenml"
+ZENML_DOCKERHUB_REGISTRY="zenmldocker"
+
 # Download container images
 echo "Downloading container images..."
-docker pull 715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro-api:${ZENML_PRO_VERSION}
-docker pull 715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro-dashboard:${ZENML_PRO_VERSION}
-docker pull 715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-cloud-server:${ZENML_OSS_VERSION}
-docker pull zenmldocker/zenml:${ZENML_OSS_VERSION}
+docker pull ${ZENML_PRO_REGISTRY}/zenml-pro-api:${ZENML_PRO_VERSION}
+docker pull ${ZENML_PRO_REGISTRY}/zenml-pro-dashboard:${ZENML_PRO_VERSION}
+docker pull ${ZENML_PRO_TENANT_REGISTRY}/zenml-cloud-server:${ZENML_OSS_VERSION}
+docker pull ${ZENML_DOCKERHUB_REGISTRY}/zenml:${ZENML_OSS_VERSION}
 
 # Save images to tar files
 echo "Saving images to tar files..."
-docker save 715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro-api:${ZENML_PRO_VERSION} > zenml-artifacts/images/zenml-pro-api.tar
-docker save 715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro-dashboard:${ZENML_PRO_VERSION} > zenml-artifacts/images/zenml-pro-dashboard.tar
-docker save 715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-cloud-server:${ZENML_OSS_VERSION} > zenml-artifacts/images/zenml-cloud-server.tar
-docker save zenmldocker/zenml:${ZENML_OSS_VERSION} > zenml-artifacts/images/zenml-client.tar
+docker save ${ZENML_PRO_REGISTRY}/zenml-pro-api:${ZENML_PRO_VERSION} > zenml-artifacts/images/zenml-pro-api.tar
+docker save ${ZENML_PRO_REGISTRY}/zenml-pro-dashboard:${ZENML_PRO_VERSION} > zenml-artifacts/images/zenml-pro-dashboard.tar
+docker save ${ZENML_PRO_TENANT_REGISTRY}/zenml-cloud-server:${ZENML_OSS_VERSION} > zenml-artifacts/images/zenml-cloud-server.tar
+docker save ${ZENML_DOCKERHUB_REGISTRY}/zenml:${ZENML_OSS_VERSION} > zenml-artifacts/images/zenml-client.tar
 
 # Download Helm charts
 echo "Downloading Helm charts..."
-helm pull oci://public.ecr.aws/zenml/zenml-pro --version ${ZENML_PRO_VERSION} -d zenml-artifacts/charts
-helm pull oci://public.ecr.aws/zenml/zenml --version ${ZENML_OSS_VERSION} -d zenml-artifacts/charts
+helm pull oci://${ZENML_HELM_REGISTRY}/zenml-pro --version ${ZENML_PRO_VERSION} -d zenml-artifacts/charts
+helm pull oci://${ZENML_HELM_REGISTRY}/zenml --version ${ZENML_OSS_VERSION} -d zenml-artifacts/charts
 
 # Create a manifest file with versions
 echo "Creating manifest file..."
