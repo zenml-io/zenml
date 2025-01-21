@@ -44,6 +44,7 @@ if TYPE_CHECKING:
         ComponentResponse,
         PipelineDeploymentBase,
         PipelineDeploymentResponse,
+        PipelineRunResponse,
     )
     from zenml.service_connectors.service_connector import ServiceConnector
     from zenml.stack import Stack, StackValidator
@@ -496,6 +497,7 @@ class StackComponent:
             "StepRunInfo",
             "PipelineDeploymentBase",
             "PipelineDeploymentResponse",
+            "PipelineRunResponse",
         ],
     ) -> "BaseSettings":
         """Gets settings for this stack component.
@@ -527,7 +529,10 @@ class StackComponent:
 
         all_settings = (
             container.config.settings
-            if isinstance(container, (Step, StepRunResponse, StepRunInfo))
+            if isinstance(
+                container,
+                (Step, StepRunResponse, StepRunInfo, PipelineRunResponse),
+            )
             else container.pipeline_configuration.settings
         )
 

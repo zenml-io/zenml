@@ -722,27 +722,22 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         Returns:
             A dictionary of metadata.
         """
+        from zenml import get_step_context
+
         execution_arn = os.environ[ENV_ZENML_SAGEMAKER_RUN_ID]
-        run_metadata: Dict[str, "MetadataType"] = {
-            "pipeline_execution_arn": execution_arn,
-        }
 
-        zenml_client = Client()
+        run_metadata: Dict[str, "MetadataType"] = {}
 
-        if deployment_id := zenml_client.get_pipeline_run(
-            run_id
-        ).deployment_id:
-            deployment = zenml_client.get_deployment(deployment_id)
+        settings = cast(
+            SagemakerOrchestratorSettings,
+            self.get_settings(get_step_context().pipeline_run),
+        )
 
-            settings = cast(
-                SagemakerOrchestratorSettings, self.get_settings(deployment)
-            )
-
-            for metadata in self.compute_metadata(
-                execution_arn=execution_arn,
-                settings=settings,
-            ):
-                run_metadata.update(metadata)
+        for metadata in self.compute_metadata(
+            execution_arn=execution_arn,
+            settings=settings,
+        ):
+            run_metadata.update(metadata)
 
         return run_metadata
 
@@ -804,7 +799,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
 
     def compute_metadata(
         self,
-        execution_arn: Any,
+        execution_arn: str,
         settings: SagemakerOrchestratorSettings,
     ) -> Iterator[Dict[str, MetadataType]]:
         """Generate run metadata based on the generated Sagemaker Execution.
@@ -816,12 +811,11 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         Yields:
             A dictionary of metadata related to the pipeline run.
         """
-        # Metadata
-        metadata: Dict[str, MetadataType] = {}
-
         # Orchestrator Run ID
-        if execution_arn:
-            metadata[METADATA_ORCHESTRATOR_RUN_ID] = execution_arn
+        metadata: Dict[str, MetadataType] = {
+            "pipeline_execution_arn": execution_arn,
+            METADATA_ORCHESTRATOR_RUN_ID: execution_arn
+        }
 
         # URL to the Sagemaker's pipeline view
         if orchestrator_url := self._compute_orchestrator_url(
