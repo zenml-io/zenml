@@ -138,7 +138,7 @@ class ScheduleResponseMetadata(WorkspaceScopedResponseMetadata):
     pipeline_id: Optional[UUID]
 
     run_metadata: Dict[str, MetadataType] = Field(
-        title="Metadata associated with this step run.",
+        title="Metadata associated with this schedule.",
         default={},
     )
 
