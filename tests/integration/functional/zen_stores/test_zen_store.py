@@ -100,6 +100,7 @@ from zenml.models import (
     ModelVersionPipelineRunRequest,
     ModelVersionRequest,
     ModelVersionUpdate,
+    PipelineRequest,
     PipelineRunFilter,
     PipelineRunResponse,
     RunMetadataResource,
@@ -5447,6 +5448,13 @@ class TestRunMetadata:
 
         elif type_ == MetadataResourceTypes.SCHEDULE:
             step_name = sample_name("foo")
+            new_pipeline = client.zen_store.create_pipeline(
+                pipeline=PipelineRequest(
+                    name="foo",
+                    user=client.active_user.id,
+                    workspace=client.active_workspace.id,
+                )
+            )
             resource = client.zen_store.create_schedule(
                 ScheduleRequest(
                     name="foo",
@@ -5455,7 +5463,7 @@ class TestRunMetadata:
                     workspace=client.active_workspace.id,
                     orchestrator_id=client.active_stack.orchestrator.id,
                     active=False,
-                    pipeline_id=uuid4(),
+                    pipeline_id=new_pipeline.id,
                 )
             )
             deployment = client.zen_store.create_deployment(
@@ -5526,6 +5534,7 @@ class TestRunMetadata:
         elif type_ == MetadataResourceTypes.SCHEDULE:
             client.zen_store.delete_deployment(deployment.id)
             client.zen_store.delete_schedule(resource.id)
+            client.zen_store.delete_pipeline(new_pipeline.id)
 
         client.zen_store.delete_stack_component(sc.id)
 

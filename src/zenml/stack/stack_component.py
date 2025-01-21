@@ -29,7 +29,11 @@ from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import StackComponentType
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
-from zenml.models import ServiceConnectorRequirements, StepRunResponse
+from zenml.models import (
+    PipelineRunResponse,
+    ServiceConnectorRequirements,
+    StepRunResponse,
+)
 from zenml.utils import (
     pydantic_utils,
     secret_utils,
@@ -44,7 +48,6 @@ if TYPE_CHECKING:
         ComponentResponse,
         PipelineDeploymentBase,
         PipelineDeploymentResponse,
-        PipelineRunResponse,
     )
     from zenml.service_connectors.service_connector import ServiceConnector
     from zenml.stack import Stack, StackValidator
