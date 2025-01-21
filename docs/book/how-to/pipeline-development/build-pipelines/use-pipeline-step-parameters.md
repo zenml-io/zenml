@@ -63,7 +63,7 @@ def my_pipeline(environment: str):
     ...
 
 if __name__=="__main__":
-    my_pipeline.with_options(config_paths="config.yaml")()
+    my_pipeline.with_options(config_path="config.yaml")()
 ```
 
 {% hint style="warning" %}
