@@ -814,7 +814,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         # Orchestrator Run ID
         metadata: Dict[str, MetadataType] = {
             "pipeline_execution_arn": execution_arn,
-            METADATA_ORCHESTRATOR_RUN_ID: execution_arn
+            METADATA_ORCHESTRATOR_RUN_ID: execution_arn,
         }
 
         # URL to the Sagemaker's pipeline view
