@@ -35,7 +35,7 @@ multi-domain ZenML Pro installations.
 * Add support for new Airflow KubernetesPodOperator import by @schustmi in https://github.com/zenml-io/zenml/pull/3295
 * Updated Slack Alerter by @bcdurak in https://github.com/zenml-io/zenml/pull/3282
 * Allow non ASCII in JSON dump with env var by @Frank995 in https://github.com/zenml-io/zenml/pull/3257
-* Remove gluon from mlflow log supression list by @htahir1 in https://github.com/zenml-io/zenml/pull/3298
+* Remove gluon from mlflow log suppression list by @htahir1 in https://github.com/zenml-io/zenml/pull/3298
 * Convert reportable resources if necessary by @schustmi in https://github.com/zenml-io/zenml/pull/3296
 * Vertex AI Experiment Tracker Integration by @nkhusainov in https://github.com/zenml-io/zenml/pull/3260
 * Document on-prem ZenML Pro deployments by @stefannica in https://github.com/zenml-io/zenml/pull/3294
