@@ -2,6 +2,11 @@
 description: Storing container images in Amazon ECR.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Amazon Elastic Container Registry (ECR)
 
 The AWS container registry is a [container registry](./container-registries.md) flavor provided with the ZenML `aws` integration and uses [Amazon ECR](https://aws.amazon.com/ecr/) to store container images.

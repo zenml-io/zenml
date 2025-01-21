@@ -3,6 +3,11 @@ description: >
   Learn how to reuse builds to speed up your pipeline runs.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # How to reuse builds
 
 When you run a pipeline, ZenML will check if a build with the same pipeline and stack exists. If it does, it will reuse that build. If it doesn't, ZenML will create a new build. This guide explains what a build is and the best practices around reusing builds.

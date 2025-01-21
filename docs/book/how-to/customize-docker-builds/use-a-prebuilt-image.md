@@ -2,6 +2,11 @@
 description: "Skip building an image for your ZenML pipeline altogether."
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Use a prebuilt image for pipeline execution
 
 When running a pipeline on a remote Stack, ZenML builds a Docker image with a base ZenML image and adds all of your project dependencies to it. Optionally, if a code repository is not registered and `allow_download_from_artifact_store` is not set to `True` in your `DockerSettings`, ZenML will also add your pipeline code to the image. This process might take significant time depending on how big your dependencies are, how powerful your local system is and how fast your internet connection is. This is because Docker must pull base layers and push the final image to your container registry. Although this process only happens once and is skipped if ZenML detects no change in your environment, it might still be a bottleneck slowing down your pipeline execution.
