@@ -17,7 +17,7 @@ import base64
 import functools
 import random
 import string
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Callable, Dict, Optional, TypeVar, cast
 
 from pydantic import BaseModel
@@ -180,7 +180,7 @@ def format_name_template(
             start_time = None
 
         if start_time is None:
-            start_time = datetime.utcnow()
+            start_time = datetime.now(timezone.utc)
         substitutions.setdefault("date", start_time.strftime("%Y_%m_%d"))
         substitutions.setdefault("time", start_time.strftime("%H_%M_%S_%f"))
 

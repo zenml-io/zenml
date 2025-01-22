@@ -248,7 +248,7 @@ def wait_pod(
     Returns:
         The pod object which meets the exit condition.
     """
-    start_time = datetime.datetime.utcnow()
+    start_time = datetime.datetime.now(datetime.timezone.utc)
 
     # Link to exponential back-off algorithm used here:
     # https://cloud.google.com/storage/docs/exponential-backoff
@@ -288,7 +288,7 @@ def wait_pod(
             return resp
 
         # Check if wait timed out.
-        elapse_time = datetime.datetime.utcnow() - start_time
+        elapse_time = datetime.datetime.now(datetime.timezone.utc) - start_time
         if elapse_time.seconds >= timeout_sec and timeout_sec != 0:
             raise RuntimeError(
                 f"Waiting for pod `{namespace}:{pod_name}` timed out after "
