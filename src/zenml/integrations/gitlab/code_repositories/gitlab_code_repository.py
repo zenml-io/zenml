@@ -31,6 +31,7 @@ from zenml.code_repositories.git.local_git_repository_context import (
     LocalGitRepositoryContext,
 )
 from zenml.logger import get_logger
+from zenml.utils import deprecation_utils
 from zenml.utils.secret_utils import SecretField
 
 logger = get_logger(__name__)
@@ -40,18 +41,22 @@ class GitLabCodeRepositoryConfig(BaseCodeRepositoryConfig):
     """Config for GitLab code repositories.
 
     Args:
-        url: The full URL of the GitLab project.
+        instance_url: The URL of the GitLab instance.
         group: The group of the project.
         project: The name of the GitLab project.
         host: The host of GitLab in case it is self-hosted instance.
         token: The token to access the repository.
     """
 
-    url: Optional[str]
+    instance_url: Optional[str] = None
     group: str
     project: str
     host: Optional[str] = "gitlab.com"
     token: str = SecretField()
+
+    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
+        ("url", "instance_url")
+    )
 
 
 class GitLabCodeRepository(BaseCodeRepository):
@@ -85,7 +90,7 @@ class GitLabCodeRepository(BaseCodeRepository):
         """
         try:
             self._gitlab_session = Gitlab(
-                f"https://{self.config.host}", private_token=self.config.token
+                url=self.config.instance_url, private_token=self.config.token
             )
             self._gitlab_session.auth()
             user = self._gitlab_session.user or None

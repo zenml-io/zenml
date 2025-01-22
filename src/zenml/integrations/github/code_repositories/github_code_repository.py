@@ -30,6 +30,7 @@ from zenml.code_repositories.base_code_repository import (
 )
 from zenml.code_repositories.git import LocalGitRepositoryContext
 from zenml.logger import get_logger
+from zenml.utils import deprecation_utils
 from zenml.utils.secret_utils import SecretField
 
 logger = get_logger(__name__)
@@ -39,18 +40,22 @@ class GitHubCodeRepositoryConfig(BaseCodeRepositoryConfig):
     """Config for GitHub code repositories.
 
     Args:
-        url: The URL of the GitHub instance.
+        api_url: The GitHub API URL.
         owner: The owner of the repository.
         repository: The name of the repository.
         host: The host of the repository.
         token: The token to access the repository.
     """
 
-    url: Optional[str]
+    api_url: Optional[str] = None
     owner: str
     repository: str
     host: Optional[str] = "github.com"
     token: Optional[str] = SecretField(default=None)
+
+    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
+        ("url", "api_url")
+    )
 
 
 class GitHubCodeRepository(BaseCodeRepository):
@@ -120,7 +125,9 @@ class GitHubCodeRepository(BaseCodeRepository):
             RuntimeError: If the login fails.
         """
         try:
-            self._github_session = Github(self.config.token)
+            self._github_session = Github(
+                login_or_token=self.config.token, base_url=self.config.api_url
+            )
             if self.config.token:
                 user = self._github_session.get_user().login
                 logger.debug(f"Logged in as {user}")
