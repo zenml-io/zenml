@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """SQL Model Implementations for Pipeline Schedules."""
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, Any, Optional
 from uuid import UUID
 
@@ -153,7 +153,7 @@ class ScheduleSchema(NamedSchema, table=True):
             )
         if schedule_update.catchup is not None:
             self.catchup = schedule_update.catchup
-        self.updated = datetime.utcnow()
+        self.updated = datetime.now(timezone.utc)
         return self
 
     def to_model(

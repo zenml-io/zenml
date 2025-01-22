@@ -15,7 +15,7 @@
 
 import base64
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, List, Optional, cast
 from uuid import UUID
 
@@ -133,7 +133,7 @@ class TriggerSchema(NamedSchema, table=True):
             else:
                 setattr(self, field, value)
 
-        self.updated = datetime.utcnow()
+        self.updated = datetime.now(timezone.utc)
         return self
 
     @classmethod

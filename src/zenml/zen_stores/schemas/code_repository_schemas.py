@@ -14,7 +14,7 @@
 """SQL Model Implementations for code repositories."""
 
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Optional
 from uuid import UUID
 
@@ -154,7 +154,7 @@ class CodeRepositorySchema(NamedSchema, table=True):
         if update.config:
             self.config = json.dumps(update.config)
 
-        self.updated = datetime.utcnow()
+        self.updated = datetime.now(timezone.utc)
         return self
 
 
