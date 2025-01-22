@@ -78,7 +78,6 @@ class PipelineDockerImageBuilder:
         tag: str,
         stack: "Stack",
         include_files: bool,
-        download_files: bool,
         entrypoint: Optional[str] = None,
         extra_files: Optional[Dict[str, str]] = None,
         code_repository: Optional["BaseCodeRepository"] = None,
@@ -93,7 +92,6 @@ class PipelineDockerImageBuilder:
             tag: The tag to use for the image.
             stack: The stack on which the pipeline will be deployed.
             include_files: Whether to include files in the build context.
-            download_files: Whether to download files in the build context.
             entrypoint: Entrypoint to use for the final image. If left empty,
                 no entrypoint will be included in the image.
             extra_files: Extra files to add to the build context. Keys are the
@@ -165,7 +163,6 @@ class PipelineDockerImageBuilder:
                 docker_settings.apt_packages,
                 docker_settings.environment,
                 include_files,
-                download_files,
                 entrypoint,
                 extra_files,
             ]

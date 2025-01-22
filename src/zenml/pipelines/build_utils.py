@@ -362,6 +362,7 @@ def create_pipeline_build(
             item_key = checksums[checksum]
             image_name_or_digest = images[item_key].image
             contains_code = images[item_key].contains_code
+            requires_code_download = images[item_key].requires_code_download
             dockerfile = images[item_key].dockerfile
             requirements = images[item_key].requirements
         else:
@@ -373,7 +374,7 @@ def create_pipeline_build(
             include_files = build_config.should_include_files(
                 code_repository=code_repository,
             )
-            download_files = build_config.should_download_files(
+            requires_code_download = build_config.should_download_files(
                 code_repository=code_repository,
             )
             pass_code_repo = (
@@ -391,7 +392,6 @@ def create_pipeline_build(
                 tag=tag,
                 stack=stack,
                 include_files=include_files,
-                download_files=download_files,
                 entrypoint=build_config.entrypoint,
                 extra_files=build_config.extra_files,
                 code_repository=code_repository if pass_code_repo else None,
@@ -404,7 +404,7 @@ def create_pipeline_build(
             requirements=requirements,
             settings_checksum=checksum,
             contains_code=contains_code,
-            requires_code_download=download_files,
+            requires_code_download=requires_code_download,
         )
         checksums[checksum] = combined_key
 
@@ -536,6 +536,14 @@ def verify_local_repository_context(
             local_repo_context.code_repository_id
         )
         code_repository = BaseCodeRepository.from_model(model)
+
+        if will_download_from_code_repository(
+            deployment=deployment, local_repo_context=local_repo_context
+        ):
+            logger.info(
+                "Using code repository `%s` to download code for this run.",
+                model.name,
+            )
 
     return code_repository
 
@@ -725,6 +733,36 @@ def should_upload_code(
             continue
 
         if docker_settings.allow_download_from_artifact_store:
+            return True
+
+    return False
+
+
+def will_download_from_code_repository(
+    deployment: PipelineDeploymentBase,
+    local_repo_context: "LocalRepositoryContext",
+) -> bool:
+    """Checks whether a code repository will be used to download code.
+
+    Args:
+        deployment: The deployment.
+        local_repo_context: The local repository context.
+
+    Returns:
+        Whether a code repository will be used to download code.
+    """
+    if not build_required(deployment=deployment):
+        # TODO: This is not perfect as it doesn't cover wheel-based
+        # orchestrators
+        return False
+
+    if local_repo_context.has_local_changes:
+        return False
+
+    for step in deployment.step_configurations.values():
+        docker_settings = step.config.docker_settings
+
+        if docker_settings.allow_download_from_code_repository:
             return True
 
     return False

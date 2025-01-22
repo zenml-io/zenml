@@ -151,6 +151,9 @@ class CodeRepositorySchema(NamedSchema, table=True):
         if update.logo_url:
             self.logo_url = update.logo_url
 
+        if update.config:
+            self.config = json.dumps(update.config)
+
         self.updated = datetime.utcnow()
         return self
 

@@ -183,7 +183,11 @@ def list_code_repositories(**kwargs: Any) -> None:
         )
 
 
-@code_repository.command("update", help="Update a code repository.")
+@code_repository.command(
+    "update",
+    help="Update a code repository.",
+    context_settings={"ignore_unknown_options": True},
+)
 @click.argument("name_or_id", type=str, required=True)
 @click.option(
     "--name",

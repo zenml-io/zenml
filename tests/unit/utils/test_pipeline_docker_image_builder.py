@@ -126,7 +126,6 @@ def test_build_skipping():
         tag="tag",
         stack=Client().active_stack,
         include_files=True,
-        download_files=False,
     )
     assert image_digest
 
@@ -169,5 +168,4 @@ def test_dockerfile_needs_to_exist():
             tag="tag",
             stack=Client().active_stack,
             include_files=True,
-            download_files=False,
         )

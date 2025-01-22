@@ -85,7 +85,7 @@ class GitLabCodeRepository(BaseCodeRepository):
         """
         try:
             self._gitlab_session = Gitlab(
-                self.config.url, private_token=self.config.token
+                f"https://{self.config.host}", private_token=self.config.token
             )
             self._gitlab_session.auth()
             user = self._gitlab_session.user or None
