@@ -4,6 +4,7 @@ import re
 import sys
 from pathlib import Path
 
+
 def format_path_for_display(path):
     """Convert absolute path to relative path from repo root."""
     try:
@@ -15,6 +16,7 @@ def format_path_for_display(path):
     except ValueError:
         # If path is not relative to repo root, return as is
         return str(path)
+
 
 def find_markdown_files(directory):
     """Recursively find all markdown files in a directory."""
@@ -113,56 +115,59 @@ def main():
     if len(sys.argv) != 2:
         print("Usage: python check_and_comment.py <directory>")
         sys.exit(1)
-    
+
     directory = sys.argv[1]
     if not os.path.isdir(directory):
         print(f"Error: {directory} is not a valid directory")
         sys.exit(1)
-    
+
     print(f"Checking markdown links in {directory}...")
     broken_links = check_markdown_links(directory)
-    
+
     # If running in GitHub Actions, handle PR comment
-    if 'GITHUB_TOKEN' in os.environ:
+    if "GITHUB_TOKEN" in os.environ:
         # Only import github when needed
         from github import Github
-        
-        token = os.environ.get('GITHUB_TOKEN')
+
+        token = os.environ.get("GITHUB_TOKEN")
         if not token:
             print("Error: GITHUB_TOKEN not set")
             sys.exit(1)
 
-        with open(os.environ['GITHUB_EVENT_PATH']) as f:
+        with open(os.environ["GITHUB_EVENT_PATH"]) as f:
             event = json.load(f)
-        
-        repo_name = event['repository']['full_name']
-        pr_number = event['pull_request']['number']
+
+        repo_name = event["repository"]["full_name"]
+        pr_number = event["pull_request"]["number"]
 
         g = Github(token)
         repo = g.get_repo(repo_name)
         pr = repo.get_pull(pr_number)
 
         comment_body = create_comment_body(broken_links)
-        
+
         for comment in pr.get_issue_comments():
-            if "Broken Links Found" in comment.body or "No broken markdown links found!" in comment.body:
+            if (
+                "Broken Links Found" in comment.body
+                or "No broken markdown links found!" in comment.body
+            ):
                 comment.edit(comment_body)
                 break
         else:
             pr.create_issue_comment(comment_body)
-    
+
     # Always print results locally
     if not broken_links:
         print("✅ No broken links found!")
         sys.exit(0)
-    
+
     print("\n🔍 Broken links found:")
     for link in broken_links:
-        relative_path = format_path_for_display(link['source_file'])
+        relative_path = format_path_for_display(link["source_file"])
         print(f"\n📄 File: {relative_path}")
         print(f"📝 Link text: \"{link['link_text']}\"")
         print(f"❌ Broken path: {link['broken_path']}")
-    
+
     sys.exit(1)
 
 

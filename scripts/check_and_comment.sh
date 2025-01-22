@@ -7,7 +7,7 @@ set -e
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # Default to docs directory if no argument provided
-CHECK_DIR="${1:-docs}"
+CHECK_DIR="${1:-docs/book}"
 
 # Convert to absolute path if relative path provided
 if [[ ! "$CHECK_DIR" = /* ]]; then
