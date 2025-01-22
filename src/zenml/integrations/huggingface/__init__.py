@@ -47,7 +47,7 @@ class HuggingfaceIntegration(Integration):
             A list of requirements.
         """
         requirements = [
-            "datasets",
+            "datasets>=2.16.0",
             "huggingface_hub>0.19.0",
             "accelerate",
             "bitsandbytes>=0.41.3",
