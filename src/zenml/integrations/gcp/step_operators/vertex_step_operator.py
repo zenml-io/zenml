@@ -265,6 +265,7 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
             }
             if self.config.encryption_spec_key_name
             else {},
+            "persistent_resource_id": settings.persistent_resource_id,
         }
         logger.debug("Vertex AI Job=%s", custom_job)
 
