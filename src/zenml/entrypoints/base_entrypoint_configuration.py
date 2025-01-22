@@ -214,12 +214,14 @@ class BaseEntrypointConfiguration(ABC):
         if not should_download_code:
             return
 
-        if code_reference := deployment.code_reference:
+        if code_path := deployment.code_path:
+            code_utils.download_code_from_artifact_store(code_path=code_path)
+        elif code_reference := deployment.code_reference:
+            # TODO: This might fail if the code repository had unpushed changes
+            # at the time the pipeline run was started.
             self.download_code_from_code_repository(
                 code_reference=code_reference
             )
-        elif code_path := deployment.code_path:
-            code_utils.download_code_from_artifact_store(code_path=code_path)
         else:
             raise RuntimeError(
                 "Code download required but no code reference or path provided."

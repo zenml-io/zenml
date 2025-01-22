@@ -30,7 +30,6 @@ from zenml.code_repositories import BaseCodeRepository
 from zenml.logger import get_logger
 from zenml.models import (
     BuildItem,
-    CodeReferenceRequest,
     PipelineBuildBase,
     PipelineBuildRequest,
     PipelineBuildResponse,
@@ -703,14 +702,15 @@ def compute_stack_checksum(stack: StackResponse) -> str:
 def should_upload_code(
     deployment: PipelineDeploymentBase,
     build: Optional[PipelineBuildResponse],
-    code_reference: Optional[CodeReferenceRequest],
+    can_download_from_code_repository: bool,
 ) -> bool:
     """Checks whether the current code should be uploaded for the deployment.
 
     Args:
         deployment: The deployment.
         build: The build for the deployment.
-        code_reference: The code reference for the deployment.
+        can_download_from_code_repository: Whether the code can be downloaded
+            from a code repository.
 
     Returns:
         Whether the current code should be uploaded for the deployment.
@@ -726,7 +726,7 @@ def should_upload_code(
         docker_settings = step.config.docker_settings
 
         if (
-            code_reference
+            can_download_from_code_repository
             and docker_settings.allow_download_from_code_repository
         ):
             # No upload needed for this step
@@ -752,8 +752,6 @@ def will_download_from_code_repository(
         Whether a code repository will be used to download code.
     """
     if not build_required(deployment=deployment):
-        # TODO: This is not perfect as it doesn't cover wheel-based
-        # orchestrators
         return False
 
     if local_repo_context.has_local_changes:
