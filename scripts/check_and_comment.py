@@ -93,10 +93,14 @@ def create_comment_body(broken_links):
 
     # Add each broken link as a table row
     for link in broken_links:
-        file_name = Path(link["source_file"]).name
-        full_path = link["source_file"]
+        # Get parent folder and file name
+        path = Path(link["source_file"])
+        parent = path.parent.name
+        file_name = path.name
+        display_name = f"{parent}/{file_name}"  # Combine parent folder and filename
+        
         body.append(
-            f"| `{file_name}` | \"{link['link_text']}\" | `{link['broken_path']}` |"
+            f"| `{display_name}` | \"{link['link_text']}\" | `{link['broken_path']}` |"
         )
 
     body.append("")
@@ -145,16 +149,21 @@ def main():
         pr = repo.get_pull(pr_number)
 
         comment_body = create_comment_body(broken_links)
-
+        
+        # Find existing comment by looking for our specific header
+        existing_comment = None
         for comment in pr.get_issue_comments():
-            if (
-                "Broken Links Found" in comment.body
-                or "No broken markdown links found!" in comment.body
-            ):
-                comment.edit(comment_body)
+            if "# 🔍 Broken Links Report" in comment.body or "✅ No broken markdown links found!" in comment.body:
+                existing_comment = comment
                 break
+        
+        # Update existing comment or create new one
+        if existing_comment:
+            existing_comment.edit(comment_body)
+            print("Updated existing broken links report comment")
         else:
             pr.create_issue_comment(comment_body)
+            print("Created new broken links report comment")
 
     # Always print results locally
     if not broken_links:
