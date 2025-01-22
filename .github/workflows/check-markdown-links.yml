@@ -15,6 +15,6 @@ jobs:
       - name: Install dependencies
         run: pip install PyGithub
       - name: Run markdown link checker
-        run: python scripts/check_and_comment.py
+        run: ./scripts/check_and_comment.sh docs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
