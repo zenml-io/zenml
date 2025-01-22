@@ -2,6 +2,11 @@
 description: How to migrate your ZenML code to the newest version.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # ♻ Migration guide
 
 Migrations are necessary for ZenML releases that include breaking changes, which are currently all releases that increment the minor version of the release, e.g., `0.X` -> `0.Y`. Furthermore, all releases that increment the first non-zero digit of the version contain major breaking changes or paradigm shifts that are explained in separate migration guides below.

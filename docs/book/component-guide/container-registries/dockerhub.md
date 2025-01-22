@@ -2,6 +2,11 @@
 description: Storing container images in DockerHub.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # DockerHub
 
 The DockerHub container registry is a [container registry](./container-registries.md) flavor that comes built-in with ZenML and uses [DockerHub](https://hub.docker.com/) to store container images.

@@ -2,6 +2,11 @@
 description: Evaluate finetuned embeddings and compare to original base embeddings.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 Now that we've finetuned our embeddings, we can evaluate them and compare to the
 base embeddings. We have all the data saved and versioned already, and we will
 reuse the same MatryoshkaLoss function for evaluation.

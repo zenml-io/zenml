@@ -2,6 +2,11 @@
 description: How to handle issues with conflicting dependencies
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Handling dependencies
 
 This page documents a some of the common issues that arise when using ZenML with other libraries.
