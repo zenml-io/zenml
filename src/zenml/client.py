@@ -4952,6 +4952,38 @@ class Client(metaclass=ClientMetaClass):
 
     # --------------------------- Code repositories ---------------------------
 
+    @staticmethod
+    def _validate_code_repository_config(
+        source: Source, config: Dict[str, Any]
+    ) -> None:
+        """Validate a code repository config.
+
+        Args:
+            source: The code repository source.
+            config: The code repository config.
+
+        Raises:
+            RuntimeError: If the provided config is invalid.
+        """
+        from zenml.code_repositories import BaseCodeRepository
+
+        code_repo_class: Type[BaseCodeRepository] = (
+            source_utils.load_and_validate_class(
+                source=source, expected_class=BaseCodeRepository
+            )
+        )
+        try:
+            # This does a login to verify the credentials
+            code_repo_class(id=uuid4(), config=config)
+
+            # Explicitly access the config for pydantic validation, in case
+            # the login for some reason did not do that.
+            _ = code_repo_class.config
+        except Exception as e:
+            raise RuntimeError(
+                "Failed to validate code repository config."
+            ) from e
+
     def create_code_repository(
         self,
         name: str,
@@ -4971,25 +5003,8 @@ class Client(metaclass=ClientMetaClass):
 
         Returns:
             The created code repository.
-
-        Raises:
-            RuntimeError: If the provided config is invalid.
         """
-        from zenml.code_repositories import BaseCodeRepository
-
-        code_repo_class: Type[BaseCodeRepository] = (
-            source_utils.load_and_validate_class(
-                source=source, expected_class=BaseCodeRepository
-            )
-        )
-        try:
-            # Validate the repo config
-            code_repo_class(id=uuid4(), config=config)
-        except Exception as e:
-            raise RuntimeError(
-                "Failed to validate code repository config."
-            ) from e
-
+        self._validate_code_repository_config(source=source, config=config)
         repo_request = CodeRepositoryRequest(
             user=self.active_user.id,
             workspace=self.active_workspace.id,
@@ -5088,6 +5103,7 @@ class Client(metaclass=ClientMetaClass):
         name: Optional[str] = None,
         description: Optional[str] = None,
         logo_url: Optional[str] = None,
+        config: Optional[Dict[str, Any]] = None,
     ) -> CodeRepositoryResponse:
         """Update a code repository.
 
@@ -5097,6 +5113,10 @@ class Client(metaclass=ClientMetaClass):
             name: New name of the code repository.
             description: New description of the code repository.
             logo_url: New logo URL of the code repository.
+            config: New configuration options for the code repository. Will
+                be used to update the existing configuration values. To remove
+                values from the existing configuration, set the value for that
+                key to `None`.
 
         Returns:
             The updated code repository.
@@ -5107,6 +5127,18 @@ class Client(metaclass=ClientMetaClass):
         update = CodeRepositoryUpdate(
             name=name, description=description, logo_url=logo_url
         )
+        if config is not None:
+            combined_config = repo.config
+            combined_config.update(config)
+            combined_config = {
+                k: v for k, v in combined_config.items() if v is not None
+            }
+
+            self._validate_code_repository_config(
+                source=repo.source, config=combined_config
+            )
+            update.config = combined_config
+
         return self.zen_store.update_code_repository(
             code_repository_id=repo.id, update=update
         )
