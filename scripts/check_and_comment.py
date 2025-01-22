@@ -165,7 +165,10 @@ def main():
             pr.create_issue_comment(comment_body)
             print("Created new broken links report comment")
 
-    # Always print results locally
+        # In GitHub Actions, always exit with 0 after commenting
+        sys.exit(0)
+
+    # For local runs, print results and exit with appropriate code
     if not broken_links:
         print("✅ No broken links found!")
         sys.exit(0)
@@ -177,6 +180,7 @@ def main():
         print(f"📝 Link text: \"{link['link_text']}\"")
         print(f"❌ Broken path: {link['broken_path']}")
 
+    # Only exit with error code in local mode
     sys.exit(1)
 
 
