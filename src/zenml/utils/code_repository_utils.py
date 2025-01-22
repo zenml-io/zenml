@@ -109,11 +109,16 @@ def find_active_code_repository(
     for model in depaginate(list_method=Client().list_code_repositories):
         try:
             repo = BaseCodeRepository.from_model(model)
-        except Exception:
+        except ImportError:
             logger.debug(
-                "Failed to instantiate code repository class.", exc_info=True
+                "Failed to import code repository class.", exc_info=True
             )
             continue
+        except Exception:
+            logger.warning(
+                "Failed to instantiate or login to code repository.",
+                exc_info=True,
+            )
 
         local_context = repo.get_local_context(path)
         if local_context:
