@@ -136,3 +136,31 @@ For more information and a full list of configurable attributes of the Vertex st
 Note that if you wish to use this step operator to run steps on a GPU, you will need to follow [the instructions on this page](../../how-to/pipeline-development/training-with-gpus/README.md) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
+
+#### Using Persistent Resources for Faster Development
+
+When developing ML pipelines that use Vertex AI, the startup time for each CustomJob can be significant since Vertex needs to provision new compute resources for each run. To speed up development iterations, you can use Vertex AI's [Persistent Resources](https://cloud.google.com/vertex-ai/docs/training/persistent-resource-overview) feature, which keeps compute resources warm between runs.
+
+To use persistent resources with the Vertex step operator, you can configure it either when registering the step operator or through the step settings:
+
+```python
+from zenml.integrations.gcp.flavors.vertex_step_operator_flavor import VertexStepOperatorSettings
+
+@step(step_operator=<STEP_OPERATOR_NAME>, settings={"step_operator": VertexStepOperatorSettings(
+    persistent_resource_id="my-persistent-resource",  # specify your persistent resource ID
+    machine_type="n1-standard-4",
+    accelerator_type="NVIDIA_TESLA_T4",
+    accelerator_count=1,
+)})
+def trainer(...) -> ...:
+    """Train a model."""
+    # This step will use the persistent resource and start faster
+```
+
+This is particularly useful when:
+* You're developing locally and want to iterate quickly on steps that need GPU/TPU resources
+* You have a local orchestrator but want to leverage Vertex AI for specific compute-intensive steps
+
+{% hint style="warning" %}
+Remember that persistent resources continue to incur costs as long as they're running, even when idle. Make sure to monitor your usage and configure appropriate idle timeout periods.
+{% endhint %}
