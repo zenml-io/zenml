@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """ZenML login credentials models."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from typing import Any, Dict, Optional, Union
 from urllib.parse import urlparse
 from uuid import UUID
@@ -27,6 +27,7 @@ from zenml.models.v2.misc.server_models import ServerDeploymentType
 from zenml.services.service_status import ServiceState
 from zenml.utils.enum_utils import StrEnum
 from zenml.utils.string_utils import get_human_readable_time
+from zenml.utils.time_utils import utc_now
 
 
 class ServerType(StrEnum):
@@ -71,7 +72,7 @@ class APIToken(BaseModel):
         expires_at = self.expires_at_with_leeway
         if not expires_at:
             return False
-        return expires_at < datetime.now(timezone.utc)
+        return expires_at < utc_now(tz_aware=expires_at)
 
     model_config = ConfigDict(
         # Allow extra attributes to allow backwards compatibility
@@ -223,7 +224,7 @@ class ServerCredentials(BaseModel):
         expires_at = self.api_token.expires_at_with_leeway
         if not expires_at:
             return "never expires"
-        if expires_at < datetime.now(timezone.utc):
+        if expires_at < utc_now(tz_aware=expires_at):
             return "expired at " + self.expires_at
 
         return f"valid until {self.expires_at} (in {self.expires_in})"
@@ -259,7 +260,7 @@ class ServerCredentials(BaseModel):
             return "never"
 
         # Get the time remaining until the token expires
-        expires_in = expires_at - datetime.now(timezone.utc)
+        expires_in = expires_at - utc_now(tz_aware=expires_at)
         return get_human_readable_time(expires_in.total_seconds())
 
     @property

@@ -309,6 +309,7 @@ from zenml.utils.string_utils import (
     random_str,
     validate_name,
 )
+from zenml.utils.time_utils import utc_now
 from zenml.zen_stores import template_utils
 from zenml.zen_stores.base_zen_store import (
     BaseZenStore,
@@ -4048,7 +4049,7 @@ class SqlZenStore(BaseZenStore):
                 # Delete devices that have expired
                 if (
                     device.expires is not None
-                    and device.expires < datetime.now()
+                    and device.expires < utc_now()
                     and device.user_id is None
                 ):
                     session.delete(device)
@@ -8634,7 +8635,7 @@ class SqlZenStore(BaseZenStore):
                 ExecutionStatus.COMPLETED,
                 ExecutionStatus.FAILED,
             }:
-                run_update.end_time = datetime.now(timezone.utc)
+                run_update.end_time = utc_now()
                 if pipeline_run.start_time and isinstance(
                     pipeline_run.start_time, datetime
                 ):

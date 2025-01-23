@@ -14,31 +14,58 @@
 """Time utils."""
 
 from datetime import datetime, timedelta, timezone
-from typing import Optional
+from typing import Optional, Union
 
 
-def utc_now(tz: bool = False) -> datetime:
+def utc_now(tz_aware: Union[bool, datetime] = False) -> datetime:
     """Get the current UTC time.
 
     Args:
-        tz: Whether to return a timezone-aware datetime.
+        tz_aware: Use this flag to control whether the returned datetime is
+            timezone-aware or timezone-naive. If a datetime is provided, the
+            returned datetime will match the timezone of the input datetime.
 
     Returns:
-        The current UTC time.
+        The current UTC time. If tz_aware is a datetime, the returned datetime
+        will be timezone-aware only if the input datetime is also timezone-aware.
+        If tz_aware is a boolean, the returned datetime will be timezone-aware
+        if True, and timezone-naive if False.
     """
-    if tz:
-        return datetime.now(timezone.utc)
-    else:
-        return datetime.now(timezone.utc).replace(tzinfo=None)
+    now = datetime.now(timezone.utc)
+    if (
+        isinstance(tz_aware, bool)
+        and tz_aware is False
+        or isinstance(tz_aware, datetime)
+        and tz_aware.tzinfo is None
+    ):
+        return now.replace(tzinfo=None)
+
+    return now
 
 
-def utc_now_tz() -> datetime:
+def utc_now_tz_aware() -> datetime:
     """Get the current timezone-aware UTC time.
 
     Returns:
         The current UTC time.
     """
-    return utc_now(tz=True)
+    return utc_now(tz_aware=True)
+
+
+def to_local_tz(dt: datetime) -> datetime:
+    """Convert a datetime to the local timezone.
+
+    If the input datetime is timezone-naive, it will be assumed to be in UTC.
+
+    Args:
+        dt: datetime to convert.
+
+    Returns:
+        Datetime in the local timezone.
+    """
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone()
 
 
 def seconds_to_human_readable(time_seconds: int) -> str:
@@ -84,8 +111,7 @@ def expires_in(
     Returns:
         Human readable string.
     """
-    now = utc_now_tz()
-    expires_at = expires_at.replace(tzinfo=timezone.utc)
+    now = utc_now(tz_aware=expires_at)
     if skew_tolerance:
         expires_at -= timedelta(seconds=skew_tolerance)
     if expires_at < now:

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Pipeline configuration classes."""
 
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from pydantic import SerializeAsAny, field_validator
@@ -23,6 +23,7 @@ from zenml.config.retry_config import StepRetryConfig
 from zenml.config.source import SourceWithValidator
 from zenml.config.strict_base_model import StrictBaseModel
 from zenml.model.model import Model
+from zenml.utils.time_utils import utc_now
 
 if TYPE_CHECKING:
     from zenml.config import DockerSettings
@@ -61,7 +62,7 @@ class PipelineConfigurationUpdate(StrictBaseModel):
             The full substitutions dict including date and time.
         """
         if start_time is None:
-            start_time = datetime.now(timezone.utc)
+            start_time = utc_now()
         ret = self.substitutions.copy()
         ret.setdefault("date", start_time.strftime("%Y_%m_%d"))
         ret.setdefault("time", start_time.strftime("%H_%M_%S_%f"))

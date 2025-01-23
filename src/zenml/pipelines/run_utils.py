@@ -1,7 +1,6 @@
 """Utility functions for running pipelines."""
 
 import time
-from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set, Union
 from uuid import UUID
 
@@ -25,6 +24,7 @@ from zenml.models import (
 from zenml.orchestrators.publish_utils import publish_failed_pipeline_run
 from zenml.stack import Flavor, Stack
 from zenml.utils import code_utils, notebook_utils, source_utils, string_utils
+from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
 if TYPE_CHECKING:
@@ -65,7 +65,7 @@ def create_placeholder_run(
 
     if deployment.schedule:
         return None
-    start_time = datetime.now(timezone.utc)
+    start_time = utc_now()
     run_request = PipelineRunRequest(
         name=string_utils.format_name_template(
             name_template=deployment.run_name_template,

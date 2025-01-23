@@ -14,7 +14,6 @@
 """Utility functions for the CLI."""
 
 import contextlib
-import datetime
 import json
 import os
 import platform
@@ -1580,6 +1579,7 @@ def print_components_table(
         }
         configurations.append(component_config)
     print_table(configurations)
+
 
 def print_service_connectors_table(
     client: "Client",

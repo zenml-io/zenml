@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Utilities to publish pipeline and step runs."""
 
-from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Dict, List
 
 from zenml.client import Client
@@ -25,6 +24,7 @@ from zenml.models import (
     StepRunResponse,
     StepRunUpdate,
 )
+from zenml.utils.time_utils import utc_now
 
 if TYPE_CHECKING:
     from uuid import UUID
@@ -48,7 +48,7 @@ def publish_successful_step_run(
         step_run_id=step_run_id,
         step_run_update=StepRunUpdate(
             status=ExecutionStatus.COMPLETED,
-            end_time=datetime.now(timezone.utc),
+            end_time=utc_now(),
             outputs=output_artifact_ids,
         ),
     )
@@ -67,7 +67,7 @@ def publish_failed_step_run(step_run_id: "UUID") -> "StepRunResponse":
         step_run_id=step_run_id,
         step_run_update=StepRunUpdate(
             status=ExecutionStatus.FAILED,
-            end_time=datetime.now(timezone.utc),
+            end_time=utc_now(),
         ),
     )
 
@@ -87,7 +87,7 @@ def publish_failed_pipeline_run(
         run_id=pipeline_run_id,
         run_update=PipelineRunUpdate(
             status=ExecutionStatus.FAILED,
-            end_time=datetime.now(timezone.utc),
+            end_time=utc_now(),
         ),
     )
 

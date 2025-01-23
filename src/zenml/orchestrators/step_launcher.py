@@ -16,7 +16,6 @@
 import os
 import time
 from contextlib import nullcontext
-from datetime import datetime, timezone
 from functools import partial
 from typing import TYPE_CHECKING, Any, Callable, Dict, Tuple
 
@@ -45,6 +44,7 @@ from zenml.orchestrators import utils as orchestrator_utils
 from zenml.orchestrators.step_runner import StepRunner
 from zenml.stack import Stack
 from zenml.utils import string_utils
+from zenml.utils.time_utils import utc_now
 
 if TYPE_CHECKING:
     from zenml.step_operators import BaseStepOperator
@@ -201,7 +201,7 @@ class StepLauncher:
                         f"Failed preparing step `{self._step_name}`."
                     )
                     step_run_request.status = ExecutionStatus.FAILED
-                    step_run_request.end_time = datetime.now(timezone.utc)
+                    step_run_request.end_time = utc_now()
                     raise
                 finally:
                     step_run = Client().zen_store.create_run_step(
@@ -305,7 +305,7 @@ class StepLauncher:
             The created or existing pipeline run,
             and a boolean indicating whether the run was created or reused.
         """
-        start_time = datetime.now(timezone.utc)
+        start_time = utc_now()
         run_name = string_utils.format_name_template(
             name_template=self._deployment.run_name_template,
             substitutions=self._deployment.pipeline_configuration._get_full_substitutions(

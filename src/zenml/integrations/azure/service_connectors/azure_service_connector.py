@@ -58,6 +58,7 @@ from zenml.service_connectors.service_connector import (
 )
 from zenml.utils.enum_utils import StrEnum
 from zenml.utils.secret_utils import PlainSerializedSecretStr
+from zenml.utils.time_utils import to_local_tz, utc_now
 
 # Configure the logging level for azure.identity
 logging.getLogger("azure.identity").setLevel(logging.WARNING)
@@ -171,12 +172,7 @@ class ZenMLAzureTokenCredential(TokenCredential):
         self.token = token
 
         # Convert the expiration time from UTC to local time
-        expires_at.replace(tzinfo=datetime.timezone.utc)
-        expires_at = expires_at.astimezone(
-            datetime.datetime.now().astimezone().tzinfo
-        )
-
-        self.expires_on = int(expires_at.timestamp())
+        self.expires_on = int(to_local_tz(expires_at).timestamp())
 
     def get_token(self, *scopes: str, **kwargs: Any) -> Any:
         """Get token.
@@ -604,11 +600,9 @@ class AzureServiceConnector(ServiceConnector):
                 return session, None
 
             # Refresh expired sessions
-            now = datetime.datetime.now(datetime.timezone.utc)
-            expires_at = expires_at.replace(tzinfo=datetime.timezone.utc)
 
             # check if the token expires in the near future
-            if expires_at > now + datetime.timedelta(
+            if expires_at > utc_now(tz_aware=expires_at) + datetime.timedelta(
                 minutes=AZURE_SESSION_EXPIRATION_BUFFER
             ):
                 return session, expires_at
