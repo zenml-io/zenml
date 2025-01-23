@@ -790,15 +790,14 @@ def login(
     )
 
     if server is not None:
-        if not re.match(r"^(https?|mysql)://", server):
-            # The server argument is a ZenML Pro server name or UUID
-            connect_to_pro_server(
-                pro_server=server,
+        if re.match(r"^mysql://", server):
+            connect_to_server(
+                url=server,
                 api_key=api_key_value,
+                verify_ssl=verify_ssl,
                 refresh=refresh,
-                pro_api_url=pro_api_url,
             )
-        else:
+        elif re.match(r"^https?://", server):
             # The server argument is a server URL
 
             # First, try to discover if the server is a ZenML Pro server or not
@@ -819,6 +818,14 @@ def login(
                     verify_ssl=verify_ssl,
                     refresh=refresh,
                 )
+        else:
+            # The server argument is a ZenML Pro server name or UUID
+            connect_to_pro_server(
+                pro_server=server,
+                api_key=api_key_value,
+                refresh=refresh,
+                pro_api_url=pro_api_url,
+            )
 
     elif current_non_local_server:
         # The server argument is not provided, so we default to
