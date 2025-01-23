@@ -398,7 +398,7 @@ class MigrationUtils(BaseModel):
                     )
 
                 if "index_create_stmt" in table_dump:
-                    # execute the table creation statement
+                    # execute the index creation statement
                     connection.execute(text(table_dump["index_create_stmt"]))
                     # Reload the database metadata after creating the index
                     metadata.reflect(bind=self.engine)
