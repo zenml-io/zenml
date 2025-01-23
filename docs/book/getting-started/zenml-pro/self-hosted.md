@@ -14,7 +14,7 @@ ZenML Pro can be installed as a self-hosted deployment. You need to be granted a
 This document will guide you through the process.
 
 {% hint style="info" %}
-Please note that the SSO (Single Sign-On) and running Pipeline Templates (i.e. running pipelines from the dashboard) features are currently not available in the on-prem version of ZenML Pro. These features are on our roadmap and will be added in future releases.
+Please note that the SSO (Single Sign-On) and [Run Templates](../../how-to/pipeline-development/trigger-pipelines/README.md) (i.e. running pipelines from the dashboard) features are currently not available in the on-prem version of ZenML Pro. These features are on our roadmap and will be added in future releases.
 {% endhint %}
 
 
@@ -26,7 +26,45 @@ The ZenML Pro on-prem installation relies on a set of container images and Helm 
 
 If you haven't done so already, please [book a demo](https://www.zenml.io/book-your-demo) to get access to the private ZenML Pro container images.
 
-The following section provides instructions for how to access the private ZenML Pro container images through AWS.
+#### ZenML Pro Control Plane Artifacts
+
+The following artifacts are required to install the ZenML Pro control plane in your own Kubernetes cluster:
+
+- `715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro-api` - private container images for the ZenML Pro API server
+- `715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro-dashboard` - private container images for the ZenML Pro dashboard
+- `oci://public.ecr.aws/zenml/zenml-pro` - the public ZenML Pro helm chart (as an OCI artifact)
+
+{% hint style="info" %}
+The container image tags and the Helm chart versions are both synchronized and linked to the ZenML Pro releases. You can find the ZenML Pro Helm chart along with the available released versions in the [ZenML Pro ArtifactHub repository](https://artifacthub.io/packages/helm/zenml-pro/zenml-pro).
+
+If you're planning on copying the container images to your own private registry (recommended if your Kubernetes cluster isn't running on AWS and can't authenticate directly to the ZenML Pro container registry) make sure to include and keep the same tags.
+
+By default, the ZenML Pro Helm chart uses the same container image tags as the helm chart version. Configuring custom container image tags when setting up your Helm distribution is also possible, but not recommended because it doesn't yield reproducible results and may even cause problems if used with the wrong Helm chart version.
+{% endhint %}
+
+#### ZenML Pro Tenant Server Artifacts
+
+The following artifacts are required to install ZenML Pro tenant servers in your own Kubernetes cluster:
+
+- `715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-pro-server` - private container images for the ZenML Pro tenant server
+- `oci://public.ecr.aws/zenml/zenml` - the public open-source ZenML Helm chart (as an OCI artifact).
+
+{% hint style="info" %}
+The container image tags and the Helm chart versions are both synchronized and linked to the ZenML open-source releases. To find the latest ZenML OSS release, please check the [ZenML OSS ArtifactHub repository (Helm chart versions)](https://artifacthub.io/packages/helm/zenml/zenml) or the [ZenML release page](https://github.com/zenml-io/zenml/releases).
+
+If you're planning on copying the container images to your own private registry (recommended if your Kubernetes cluster isn't running on AWS and can't authenticated directly to the ZenML Pro container registry) make sure to include and keep the same tags.
+
+By default, the ZenML OSS Helm chart uses the same container image tags as the helm chart version. Configuring custom container image tags when setting up your Helm distribution is also possible, but not recommended because it doesn't yield reproducible results and may even cause problems if used with the wrong Helm chart version.
+{% endhint %}
+
+#### ZenML Pro Client Artifacts
+
+If you're planning on running containerized ZenML pipelines, or using other containerization related ZenML features, you'll also need to access the public ZenML client container image located [in Docker Hub at `zenmldocker/zenml`](https://hub.docker.com/r/zenmldocker/zenml). This isn't a problem unless you're deploying ZenML Pro in an air-gapped environment, in which case you'll also have to copy the client container image into your own container registry. You'll also have to configure your code to use the correct base container registry via DockerSettings (see the [DockerSettings documentation](../../how-to/customize-docker-builds/README.md) for more information).
+
+
+### Accessing the ZenML Pro Container Images
+
+This section provides instructions for how to access the private ZenML Pro container images.
 
 {% hint style="info" %}
 Currently, ZenML Pro container images are only available in AWS Elastic Container Registry (ECR). Support for Google Cloud Platform (GCP) Artifact Registry and Azure Container Registry (ACR) is on our roadmap and will be added soon.
@@ -131,48 +169,24 @@ To access the ZenML Pro container images stored in AWS ECR, you need to set up a
     aws ecr get-login-password --region eu-central-1 --profile zenml-ecr-access | docker login --username AWS --password-stdin 715803424590.dkr.ecr.eu-central-1.amazonaws.com
     ```
     
-    This will allow you to authenticate to the ZenML Pro container registries and pull images with Docker, e.g.:
+    This will allow you to authenticate to the ZenML Pro container registries and pull the necessary images with Docker, e.g.:
     
     ```bash
-    docker pull 715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro-api:<tag>
-    docker pull 715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro-dashboard:<tag>
-    docker pull 715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-pro-server:<tag>
-    ```    
-
-#### ZenML Pro Control Plane Artifacts
-
-The following artifacts are required to install the ZenML Pro control plane in your own Kubernetes cluster:
-
-- `715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro-api` - private container images for the ZenML Pro API server
-- `715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro-dashboard` - private container images for the ZenML Pro dashboard
-- `oci://public.ecr.aws/zenml/zenml-pro` - the public ZenML Pro helm chart (as an OCI artifact)
+    # Pull the ZenML Pro API image
+    docker pull 715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro-api:<zenml-pro-version>
+    # Pull the ZenML Pro Dashboard image
+    docker pull 715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro-dashboard:<zenml-pro-version>
+    # Pull the ZenML Pro Server image
+    docker pull 715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-pro-server:<zenml-oss-version>
+    ```
 
 {% hint style="info" %}
-The container image tags and the Helm chart versions are both synchronized and linked to the ZenML Pro releases. You can find the ZenML Pro Helm chart along with the available released versions in the [ZenML Pro ArtifactHub repository](https://artifacthub.io/packages/helm/zenml-pro/zenml-pro).
+To decide which tag to use, you should check:
+* for the available ZenML Pro versions: the [ZenML Pro ArtifactHub repository (Helm chart versions)](https://artifacthub.io/packages/helm/zenml-pro/zenml-pro)
+* for the available ZenML OSS versions: the [ZenML OSS ArtifactHub repository (Helm chart versions)](https://artifacthub.io/packages/helm/zenml/zenml) or the [ZenML GitHub releases page](https://github.com/zenml-io/zenml/releases)
 
-If you're planning on copying the container images to your own private registry (recommended if your Kubernetes cluster isn't running on AWS and can't authenticate directly to the ZenML Pro container registry) make sure to include and keep the same tags.
-
-By default, the ZenML Pro Helm chart uses the same container image tags as the helm chart version. Configuring custom container image tags when setting up your Helm distribution is also possible, but not recommended because it doesn't yield reproducible results and may even cause problems if used with the wrong Helm chart version.
+Note that the `zenml-pro-api` and `zenml-pro-dashboard` images are stored in the `eu-west-1` region, while the `zenml-pro-server` image is stored in the `eu-central-1` region.
 {% endhint %}
-
-#### ZenML Pro Tenant Server Artifacts
-
-The following artifacts are required to install ZenML Pro tenant servers in your own Kubernetes cluster:
-
-- `715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-pro-server` - private container images for the ZenML Pro tenant server
-- `oci://public.ecr.aws/zenml/zenml` - the public open-source ZenML Helm chart (as an OCI artifact).
-
-{% hint style="info" %}
-The container image tags and the Helm chart versions are both synchronized and linked to the ZenML open-source releases. To find the latest ZenML OSS release, please check the [ZenML release page](https://github.com/zenml-io/zenml/releases).
-
-If you're planning on copying the container images to your own private registry (recommended if your Kubernetes cluster isn't running on AWS and can't authenticated directly to the ZenML Pro container registry) make sure to include and keep the same tags.
-
-By default, the ZenML OSS Helm chart uses the same container image tags as the helm chart version. Configuring custom container image tags when setting up your Helm distribution is also possible, but not recommended because it doesn't yield reproducible results and may even cause problems if used with the wrong Helm chart version.
-{% endhint %}
-
-#### ZenML Pro Client Artifacts
-
-If you're planning on running containerized ZenML pipelines, or using other containerization related ZenML features, you'll also need to access the public ZenML client container image located [in Docker Hub at `zenmldocker/zenml`](https://hub.docker.com/r/zenmldocker/zenml). This isn't a problem unless you're deploying ZenML Pro in an air-gapped environment, in which case you'll also have to copy the client container image into your own container registry. You'll also have to configure your code to use the correct base container registry via DockerSettings (see the [DockerSettings documentation](../../how-to/customize-docker-builds/README.md) for more information).
 
 ### Air-Gapped Installation
 
