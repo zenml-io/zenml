@@ -191,6 +191,7 @@
     "sagemaker.workflow.execution_variables",
     "sagemaker.workflow.pipeline",
     "sagemaker.workflow.steps",
+    "sagemaker.workflow.triggers",
     "scipy",
     "scipy.sparse",
     "sklearn",
