@@ -13,28 +13,31 @@
 #  permissions and limitations under the License.
 import os
 import re
-import json
-from openai import OpenAI
 from pathlib import Path
-from typing import List, Dict
+
+from openai import OpenAI
 
 # Initialize OpenAI client
-client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
 
 def extract_content_blocks(md_content: str) -> str:
     """Extracts content blocks while preserving order and marking code blocks."""
-    parts = re.split(r'(```[\s\S]*?```)', md_content)
-    
+    parts = re.split(r"(```[\s\S]*?```)", md_content)
+
     processed_content = ""
     for part in parts:
-        if part.startswith('```'):
-            processed_content += "\n[CODE_BLOCK_START]\n" + part + "\n[CODE_BLOCK_END]\n"
+        if part.startswith("```"):
+            processed_content += (
+                "\n[CODE_BLOCK_START]\n" + part + "\n[CODE_BLOCK_END]\n"
+            )
         else:
-            cleaned_text = re.sub(r'\s+', ' ', part).strip()
+            cleaned_text = re.sub(r"\s+", " ", part).strip()
             if cleaned_text:
                 processed_content += "\n" + cleaned_text + "\n"
-    
+
     return processed_content
+
 
 def summarize_content(content: str, file_path: str) -> str:
     """Summarizes content using OpenAI API."""
@@ -44,7 +47,7 @@ def summarize_content(content: str, file_path: str) -> str:
             messages=[
                 {
                     "role": "system",
-                    "content": "You are a technical documentation summarizer."
+                    "content": "You are a technical documentation summarizer.",
                 },
                 {
                     "role": "user",
@@ -53,21 +56,22 @@ def summarize_content(content: str, file_path: str) -> str:
                     Make it concise but ensure NO critical information is lost and some details that you think are important are kept.
                     Make the code shorter where possible keeping only the most important parts while preserving syntax and accuracy:
 
-                    {content}"""
-                }
+                    {content}""",
+                },
             ],
             temperature=0.3,
-            max_tokens=2000
+            max_tokens=2000,
         )
         return response.choices[0].message.content
     except Exception as e:
         print(f"Error summarizing {file_path}: {e}")
         return ""
 
+
 def main():
     docs_dir = "docs/book"
     output_file = "summarized_docs.txt"
-    
+
     # Get markdown files
     exclude_files = ["toc.md"]
     md_files = list(Path(docs_dir).rglob("*.md"))
@@ -77,21 +81,22 @@ def main():
     with open(output_file, "w", encoding="utf-8") as out_f:
         for file_path in md_files:
             try:
-                with open(file_path, 'r', encoding='utf-8') as f:
+                with open(file_path, "r", encoding="utf-8") as f:
                     content = f.read()
-                
+
                 processed_content = extract_content_blocks(content)
                 summary = summarize_content(processed_content, str(file_path))
-                
+
                 if summary:
                     out_f.write(f"=== File: {file_path} ===\n\n")
                     out_f.write(summary)
-                    out_f.write("\n\n" + "="*50 + "\n\n")
-                    
+                    out_f.write("\n\n" + "=" * 50 + "\n\n")
+
                     print(f"Processed: {file_path}")
-            
+
             except Exception as e:
                 print(f"Error processing {file_path}: {e}")
 
+
 if __name__ == "__main__":
-    main() 
+    main()

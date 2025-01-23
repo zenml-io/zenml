@@ -14,11 +14,12 @@
 """SQL Model Implementations for Pipeline Schedules."""
 
 from datetime import datetime, timedelta, timezone
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
 from sqlmodel import Field, Relationship
 
+from zenml.enums import MetadataResourceTypes
 from zenml.models import (
     ScheduleRequest,
     ScheduleResponse,
@@ -31,15 +32,19 @@ from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
+from zenml.zen_stores.schemas.utils import RunMetadataInterface
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
         PipelineDeploymentSchema,
     )
+    from zenml.zen_stores.schemas.run_metadata_schemas import (
+        RunMetadataSchema,
+    )
 
 
-class ScheduleSchema(NamedSchema, table=True):
+class ScheduleSchema(NamedSchema, RunMetadataInterface, table=True):
     """SQL Model for schedules."""
 
     __tablename__ = "schedule"
@@ -87,6 +92,15 @@ class ScheduleSchema(NamedSchema, table=True):
     )
     orchestrator: "StackComponentSchema" = Relationship(
         back_populates="schedules"
+    )
+
+    run_metadata: List["RunMetadataSchema"] = Relationship(
+        sa_relationship_kwargs=dict(
+            secondary="run_metadata_resource",
+            primaryjoin=f"and_(foreign(RunMetadataResourceSchema.resource_type)=='{MetadataResourceTypes.SCHEDULE.value}', foreign(RunMetadataResourceSchema.resource_id)==ScheduleSchema.id)",
+            secondaryjoin="RunMetadataSchema.id==foreign(RunMetadataResourceSchema.run_metadata_id)",
+            overlaps="run_metadata",
+        ),
     )
 
     active: bool
@@ -196,6 +210,7 @@ class ScheduleSchema(NamedSchema, table=True):
                 workspace=self.workspace.to_model(),
                 pipeline_id=self.pipeline_id,
                 orchestrator_id=self.orchestrator_id,
+                run_metadata=self.fetch_metadata(),
             )
 
         return ScheduleResponse(
