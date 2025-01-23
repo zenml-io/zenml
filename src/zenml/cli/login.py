@@ -249,6 +249,7 @@ def connect_to_pro_server(
     from zenml.login.pro.tenant.models import TenantStatus
 
     pro_api_url = pro_api_url or ZENML_PRO_API_URL
+    pro_api_url = pro_api_url.rstrip("/")
 
     server_id, server_url, server_name = None, None, None
     login = False
@@ -434,6 +435,7 @@ def is_pro_server(
     from zenml.login.credentials_store import get_credentials_store
     from zenml.login.server_info import get_server_info
 
+    url = url.rstrip("/")
     # First, check the credentials store
     credentials_store = get_credentials_store()
     credentials = credentials_store.get_credentials(url)
