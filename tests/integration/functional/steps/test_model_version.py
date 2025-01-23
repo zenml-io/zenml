@@ -205,9 +205,9 @@ def _this_step_produces_output(
 @step
 def _this_step_tries_to_recover(run_number: int):
     mv = get_step_context().model._get_or_create_model_version()
-    assert (
-        len(mv.data_artifact_ids["data"]) == run_number
-    ), "expected AssertionError"
+    assert len(mv.data_artifact_ids["data"]) == run_number, (
+        "expected AssertionError"
+    )
 
     raise Exception("make pipeline fail")
 
@@ -492,13 +492,11 @@ def _consumer_step(a: int, b: int):
 
 
 @step(model=Model(name="step"))
-def _producer_step() -> (
-    Tuple[
-        Annotated[int, "output_0"],
-        Annotated[int, "output_1"],
-        Annotated[int, "output_2"],
-    ]
-):
+def _producer_step() -> Tuple[
+    Annotated[int, "output_0"],
+    Annotated[int, "output_1"],
+    Annotated[int, "output_2"],
+]:
     return 1, 2, 3
 
 
@@ -694,9 +692,9 @@ def _this_step_asserts_context_with_artifact(artifact: str):
 
 
 @step
-def _this_step_produces_output_model() -> (
-    Annotated[str, ArtifactConfig(name="artifact")]
-):
+def _this_step_produces_output_model() -> Annotated[
+    str, ArtifactConfig(name="artifact")
+]:
     """This step produces artifact with model number."""
     return str(get_step_context().model.id)
 

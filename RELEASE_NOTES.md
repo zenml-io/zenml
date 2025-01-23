@@ -1,5 +1,91 @@
 <!-- markdown-link-check-disable -->
 
+# 0.73.0
+
+The `0.73.0` release contains various changes and improvements, but most 
+importantly it introduces the support to deploy and enroll un-managed ZenML Pro 
+tenants in the ZenML Pro control plane (Helm deployment options, secure 
+enrollment, CSRF tokens) and other features necessary for self-hosted, 
+multi-domain ZenML Pro installations.
+
+## Other Features
+
+- Vertex AI experiment tracker integration
+- Experiment comparison tooling
+- Support for new Airflow KubernetesPodOperator import paths
+- Updated Slack alerter implementation
+- Independent memory resource configuration for migration pods in Helm charts
+
+## Improvements
+
+- Added environment variable to allow non-ASCII characters in JSON dumps
+- Removed gluon from MLflow log suppression list
+- Enhanced resource reporting with automatic conversion
+- Documentation updates for Kubeflow Pipelines and LLMs
+- Various bugfixes for the ZenML dashboard
+
+## What's Changed
+
+* On-prem Pro tenants: secure enrollment, CSRF tokens and cross-domain authorization flow by @stefannica in https://github.com/zenml-io/zenml/pull/3264
+* Fix the misc release actions by @schustmi in https://github.com/zenml-io/zenml/pull/3286
+* Add 0.72.0 to the migration tests by @schustmi in https://github.com/zenml-io/zenml/pull/3285
+* Fix links to Kubeflow Pipelines docs in `kubeflow.md` by @matemijolovic in https://github.com/zenml-io/zenml/pull/3289
+* Add experiment comparison tool docs by @strickvl in https://github.com/zenml-io/zenml/pull/3287
+* Fix broken links by @strickvl in https://github.com/zenml-io/zenml/pull/3291
+* Add support for new Airflow KubernetesPodOperator import by @schustmi in https://github.com/zenml-io/zenml/pull/3295
+* Updated Slack Alerter by @bcdurak in https://github.com/zenml-io/zenml/pull/3282
+* Allow non ASCII in JSON dump with env var by @Frank995 in https://github.com/zenml-io/zenml/pull/3257
+* Remove gluon from mlflow log suppression list by @htahir1 in https://github.com/zenml-io/zenml/pull/3298
+* Convert reportable resources if necessary by @schustmi in https://github.com/zenml-io/zenml/pull/3296
+* Vertex AI Experiment Tracker Integration by @nkhusainov in https://github.com/zenml-io/zenml/pull/3260
+* Document on-prem ZenML Pro deployments by @stefannica in https://github.com/zenml-io/zenml/pull/3294
+* generate llms.txt for our docs by @wjayesh in https://github.com/zenml-io/zenml/pull/3273
+* [helm] Independent setting of memory resources for migration pods by @wjayesh in https://github.com/zenml-io/zenml/pull/3281
+
+## New Contributors
+
+* @matemijolovic made their first contribution in https://github.com/zenml-io/zenml/pull/3289
+* @Frank995 made their first contribution in https://github.com/zenml-io/zenml/pull/3257
+* @nkhusainov made their first contribution in https://github.com/zenml-io/zenml/pull/3260
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.72.0...0.73.0
+
+
+# 0.72.0
+
+The `0.72.0` release contains various bug fixes, performance improvements and improvements to our documentation.
+
+## What's Changed
+* Fix typo in readme by @schustmi in https://github.com/zenml-io/zenml/pull/3247
+* adding 0.71.0 to migration tests by @bcdurak in https://github.com/zenml-io/zenml/pull/3250
+* Fix workload token expiration for cached steps/runs by @schustmi in https://github.com/zenml-io/zenml/pull/3243
+* Implement wandb settings conversion for latest release by @schustmi in https://github.com/zenml-io/zenml/pull/3246
+* Add CPU usage note to Modal docs by @strickvl in https://github.com/zenml-io/zenml/pull/3253
+* Re-authenticate requests that failed authentication by @stefannica in https://github.com/zenml-io/zenml/pull/3256
+* Add new toc by @htahir1 in https://github.com/zenml-io/zenml/pull/3255
+* Add step run unique constraint by @schustmi in https://github.com/zenml-io/zenml/pull/3236
+* Fix build reuse after stack updates by @schustmi in https://github.com/zenml-io/zenml/pull/3251
+* Fix fetching run template using the client by @schustmi in https://github.com/zenml-io/zenml/pull/3258
+* Improved deprecation messages for artifact configs and run metadata by @bcdurak in https://github.com/zenml-io/zenml/pull/3261
+* Filtering and sorting by @bcdurak in https://github.com/zenml-io/zenml/pull/3230
+* Fix hyperparam tuning docs by @stefannica in https://github.com/zenml-io/zenml/pull/3259
+* Include user of latest run in pipeline response by @schustmi in https://github.com/zenml-io/zenml/pull/3262
+* Create model versions server-side to avoid race conditions by @schustmi in https://github.com/zenml-io/zenml/pull/3254
+* Fix request model validation by @schustmi in https://github.com/zenml-io/zenml/pull/3245
+* Improve docs to encourage using secrets by @AlexejPenner in https://github.com/zenml-io/zenml/pull/3272
+* Include service connector requirements in custom flavor registration by @schustmi in https://github.com/zenml-io/zenml/pull/3267
+* Fix the onboarding state to account for zenml login by @stefannica in https://github.com/zenml-io/zenml/pull/3270
+* Improve the efficiency of some SQL queries by @schustmi in https://github.com/zenml-io/zenml/pull/3263
+* Fix broken link by @strickvl in https://github.com/zenml-io/zenml/pull/3276
+* Bump NLP template by @schustmi in https://github.com/zenml-io/zenml/pull/3275
+* Fixed and improved sorting by @bcdurak in https://github.com/zenml-io/zenml/pull/3266
+* Add matplotlib visualization to ZenML dashboard by @htahir1 in https://github.com/zenml-io/zenml/pull/3278
+* Fix azure integration by @schustmi in https://github.com/zenml-io/zenml/pull/3279
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.71.0...0.72.0
+
+
 # 0.71.0
 
 ZenML version 0.71.0 delivers a new Modal step operator integration as its 

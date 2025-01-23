@@ -173,7 +173,7 @@ class ZenFormatter(formatting.HelpFormatter):
 
                     for line in lines[1:]:
                         self.write(
-                            f"{'':>{second_col + self.current_indent * 4 }}{line}\n"
+                            f"{'':>{second_col + self.current_indent * 4}}{line}\n"
                         )
                 else:
                     self.write("\n")

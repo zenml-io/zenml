@@ -18,7 +18,7 @@ import os
 import re
 import sys
 import time
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional, Tuple, Union
 from uuid import UUID
 
 import click
@@ -34,7 +34,8 @@ from zenml.exceptions import (
     IllegalOperationError,
 )
 from zenml.logger import get_logger
-from zenml.login.pro.utils import is_zenml_pro_server_url
+from zenml.login.credentials import ServerType
+from zenml.login.pro.constants import ZENML_PRO_API_URL
 from zenml.login.web_login import web_login
 from zenml.zen_server.utils import (
     connected_to_local_server,
@@ -145,6 +146,7 @@ def connect_to_server(
     api_key: Optional[str] = None,
     verify_ssl: Union[str, bool] = True,
     refresh: bool = False,
+    pro_server: bool = False,
 ) -> None:
     """Connect the client to a ZenML server or a SQL database.
 
@@ -154,6 +156,7 @@ def connect_to_server(
         verify_ssl: Whether to verify the server's TLS certificate. If a string
             is passed, it is interpreted as the path to a CA bundle file.
         refresh: Whether to force a new login flow with the ZenML server.
+        pro_server: Whether the server is a ZenML Pro server.
     """
     from zenml.login.credentials_store import get_credentials_store
     from zenml.zen_stores.base_zen_store import BaseZenStore
@@ -170,7 +173,12 @@ def connect_to_server(
                 f"Authenticating to ZenML server '{url}' using an API key..."
             )
             credentials_store.set_api_key(url, api_key)
-        elif not is_zenml_pro_server_url(url):
+        elif pro_server:
+            # We don't have to do anything here assuming the user has already
+            # logged in to the ZenML Pro server using the ZenML Pro web login
+            # flow.
+            cli_utils.declare(f"Authenticating to ZenML server '{url}'...")
+        else:
             if refresh or not credentials_store.has_valid_authentication(url):
                 cli_utils.declare(
                     f"Authenticating to ZenML server '{url}' using the web "
@@ -179,11 +187,6 @@ def connect_to_server(
                 web_login(url=url, verify_ssl=verify_ssl)
             else:
                 cli_utils.declare(f"Connecting to ZenML server '{url}'...")
-        else:
-            # We don't have to do anything here assuming the user has already
-            # logged in to the ZenML Pro server using the ZenML Pro web login
-            # flow.
-            cli_utils.declare(f"Authenticating to ZenML server '{url}'...")
 
         rest_store_config = RestZenStoreConfiguration(
             url=url,
@@ -225,6 +228,7 @@ def connect_to_pro_server(
     pro_server: Optional[str] = None,
     api_key: Optional[str] = None,
     refresh: bool = False,
+    pro_api_url: Optional[str] = None,
 ) -> None:
     """Connect the client to a ZenML Pro server.
 
@@ -233,6 +237,7 @@ def connect_to_pro_server(
             If not provided, the web login flow will be initiated.
         api_key: The API key to use to authenticate with the ZenML Pro server.
         refresh: Whether to force a new login flow with the ZenML Pro server.
+        pro_api_url: The URL for the ZenML Pro API.
 
     Raises:
         ValueError: If incorrect parameters are provided.
@@ -242,6 +247,8 @@ def connect_to_pro_server(
     from zenml.login.credentials_store import get_credentials_store
     from zenml.login.pro.client import ZenMLProClient
     from zenml.login.pro.tenant.models import TenantStatus
+
+    pro_api_url = pro_api_url or ZENML_PRO_API_URL
 
     server_id, server_url, server_name = None, None, None
     login = False
@@ -264,20 +271,15 @@ def connect_to_pro_server(
             server_name = pro_server
     else:
         server_url = pro_server
-        if not is_zenml_pro_server_url(server_url):
-            raise ValueError(
-                f"The URL '{server_url}' does not seem to belong to a ZenML Pro "
-                "server. Please check the server URL and try again."
-            )
 
     credentials_store = get_credentials_store()
-    if not credentials_store.has_valid_pro_authentication():
+    if not credentials_store.has_valid_pro_authentication(pro_api_url):
         # Without valid ZenML Pro credentials, we can only connect to a ZenML
         # Pro server with an API key and we also need to know the URL of the
         # server to connect to.
         if api_key:
             if server_url:
-                connect_to_server(server_url, api_key=api_key)
+                connect_to_server(server_url, api_key=api_key, pro_server=True)
                 return
             else:
                 raise ValueError(
@@ -289,7 +291,9 @@ def connect_to_pro_server(
 
     if login or refresh:
         try:
-            token = web_login()
+            token = web_login(
+                pro_api_url=pro_api_url,
+            )
         except AuthorizationException as e:
             cli_utils.error(f"Authorization error: {e}")
 
@@ -320,7 +324,7 @@ def connect_to_pro_server(
         # server argument passed to the command.
         server_id = UUID(tenant_id)
 
-    client = ZenMLProClient()
+    client = ZenMLProClient(pro_api_url)
 
     if server_id:
         server = client.tenant.get(server_id)
@@ -405,13 +409,49 @@ def connect_to_pro_server(
         f"Connecting to ZenML Pro server: {server.name} [{str(server.id)}] "
     )
 
-    connect_to_server(server.url, api_key=api_key)
+    connect_to_server(server.url, api_key=api_key, pro_server=True)
 
     # Update the stored server info with more accurate data taken from the
     # ZenML Pro tenant object.
     credentials_store.update_server_info(server.url, server)
 
     cli_utils.declare(f"Connected to ZenML Pro server: {server.name}.")
+
+
+def is_pro_server(
+    url: str,
+) -> Tuple[Optional[bool], Optional[str]]:
+    """Check if the server at the given URL is a ZenML Pro server.
+
+    Args:
+        url: The URL of the server to check.
+
+    Returns:
+        True if the server is a ZenML Pro server, False otherwise, and the
+        extracted pro API URL if the server is a ZenML Pro server, or None if
+        no information could be extracted.
+    """
+    from zenml.login.credentials_store import get_credentials_store
+    from zenml.login.server_info import get_server_info
+
+    # First, check the credentials store
+    credentials_store = get_credentials_store()
+    credentials = credentials_store.get_credentials(url)
+    if credentials:
+        if credentials.type == ServerType.PRO:
+            return True, credentials.pro_api_url
+        else:
+            return False, None
+
+    # Next, make a request to the server itself
+    server_info = get_server_info(url)
+    if not server_info:
+        return None, None
+
+    if server_info.is_pro_server():
+        return True, server_info.pro_api_url
+
+    return False, None
 
 
 def _fail_if_authentication_environment_variables_set() -> None:
@@ -650,6 +690,13 @@ def _fail_if_authentication_environment_variables_set() -> None:
     "dashboard on a public domain. Primarily used for accessing the "
     "dashboard in Colab. Only used when running `zenml login --local`.",
 )
+@click.option(
+    "--pro-api-url",
+    type=str,
+    default=None,
+    help="Custom URL for the ZenML Pro API. Useful when connecting "
+    "to a self-hosted ZenML Pro deployment.",
+)
 def login(
     server: Optional[str] = None,
     pro: bool = False,
@@ -667,6 +714,7 @@ def login(
     blocking: bool = False,
     image: Optional[str] = None,
     ngrok_token: Optional[str] = None,
+    pro_api_url: Optional[str] = None,
 ) -> None:
     """Connect to a remote ZenML server.
 
@@ -691,6 +739,7 @@ def login(
         ngrok_token: An ngrok auth token to use for exposing the local ZenML
             dashboard on a public domain. Primarily used for accessing the
             dashboard in Colab.
+        pro_api_url: Custom URL for the ZenML Pro API.
     """
     _fail_if_authentication_environment_variables_set()
 
@@ -715,6 +764,7 @@ def login(
         connect_to_pro_server(
             pro_server=server,
             refresh=True,
+            pro_api_url=pro_api_url,
         )
         return
 
@@ -740,29 +790,45 @@ def login(
     )
 
     if server is not None:
-        if is_zenml_pro_server_url(server) or not re.match(
-            r"^(https?|mysql)://", server
-        ):
-            # The server argument is a ZenML Pro server URL, server name or UUID
+        if not re.match(r"^(https?|mysql)://", server):
+            # The server argument is a ZenML Pro server name or UUID
             connect_to_pro_server(
                 pro_server=server,
                 api_key=api_key_value,
                 refresh=refresh,
+                pro_api_url=pro_api_url,
             )
         else:
-            connect_to_server(
-                url=server,
-                api_key=api_key_value,
-                verify_ssl=verify_ssl,
-                refresh=refresh,
-            )
+            # The server argument is a server URL
+
+            # First, try to discover if the server is a ZenML Pro server or not
+            server_is_pro, server_pro_api_url = is_pro_server(server)
+            if server_is_pro:
+                connect_to_pro_server(
+                    pro_server=server,
+                    api_key=api_key_value,
+                    refresh=refresh,
+                    # Prefer the pro API URL extracted from the server info if
+                    # available
+                    pro_api_url=server_pro_api_url or pro_api_url,
+                )
+            else:
+                connect_to_server(
+                    url=server,
+                    api_key=api_key_value,
+                    verify_ssl=verify_ssl,
+                    refresh=refresh,
+                )
 
     elif current_non_local_server:
         # The server argument is not provided, so we default to
         # re-authenticating to the current non-local server that the client is
         # connected to.
         server = current_non_local_server
-        if is_zenml_pro_server_url(server):
+        # First, try to discover if the server is a ZenML Pro server or not
+        server_is_pro, server_pro_api_url = is_pro_server(server)
+
+        if server_is_pro:
             cli_utils.declare(
                 "No server argument was provided. Re-authenticating to "
                 "ZenML Pro...\n"
@@ -773,6 +839,9 @@ def login(
                 pro_server=server,
                 api_key=api_key_value,
                 refresh=True,
+                # Prefer the pro API URL extracted from the server info if
+                # available
+                pro_api_url=server_pro_api_url or pro_api_url,
             )
         else:
             cli_utils.declare(
@@ -801,6 +870,7 @@ def login(
         )
         connect_to_pro_server(
             api_key=api_key_value,
+            pro_api_url=pro_api_url,
         )
 
 
@@ -857,11 +927,19 @@ def login(
     default=False,
     type=click.BOOL,
 )
+@click.option(
+    "--pro-api-url",
+    type=str,
+    default=None,
+    help="Custom URL for the ZenML Pro API. Useful when disconnecting "
+    "from a self-hosted ZenML Pro deployment.",
+)
 def logout(
     server: Optional[str] = None,
     local: bool = False,
     clear: bool = False,
     pro: bool = False,
+    pro_api_url: Optional[str] = None,
 ) -> None:
     """Disconnect from a ZenML server.
 
@@ -870,6 +948,7 @@ def logout(
         clear: Clear all stored credentials and tokens.
         local: Disconnect from the local ZenML server.
         pro: Log out from ZenML Pro.
+        pro_api_url: Custom URL for the ZenML Pro API.
     """
     from zenml.login.credentials_store import get_credentials_store
 
@@ -885,8 +964,9 @@ def logout(
                 "The `--pro` flag cannot be used with a specific server URL."
             )
 
-        if credentials_store.has_valid_pro_authentication():
-            credentials_store.clear_pro_credentials()
+        pro_api_url = pro_api_url or ZENML_PRO_API_URL
+        if credentials_store.has_valid_pro_authentication(pro_api_url):
+            credentials_store.clear_pro_credentials(pro_api_url)
             cli_utils.declare("Logged out from ZenML Pro.")
         else:
             cli_utils.declare(
@@ -894,10 +974,13 @@ def logout(
             )
 
         if clear:
-            if is_zenml_pro_server_url(store_cfg.url):
+            # Try to determine if the client is currently connected to a ZenML
+            # Pro server with the given pro API URL
+            credentials = credentials_store.get_credentials(store_cfg.url)
+            if credentials and credentials.pro_api_url == pro_api_url:
                 gc.set_default_store()
 
-            credentials_store.clear_all_pro_tokens()
+            credentials_store.clear_all_pro_tokens(pro_api_url)
             cli_utils.declare("Logged out from all ZenML Pro servers.")
         return
 
@@ -936,10 +1019,11 @@ def logout(
 
     assert server is not None
 
-    if is_zenml_pro_server_url(server):
-        gc.set_default_store()
-        credentials = credentials_store.get_credentials(server)
-        if credentials and (clear or store_cfg.url == server):
+    gc.set_default_store()
+    credentials = credentials_store.get_credentials(server)
+
+    if credentials and (clear or store_cfg.url == server):
+        if credentials.type == ServerType.PRO:
             cli_utils.declare(
                 f"Logging out from ZenML Pro server '{credentials.server_name}'."
             )
@@ -953,14 +1037,6 @@ def logout(
                 "with 'zenml login <server-id-name-or-url>'."
             )
         else:
-            cli_utils.declare(
-                f"The client is not currently connected to the ZenML Pro server "
-                f"at '{server}'."
-            )
-    else:
-        gc.set_default_store()
-        credentials = credentials_store.get_credentials(server)
-        if credentials and (clear or store_cfg.url == server):
             cli_utils.declare(f"Logging out from {server}.")
             if clear:
                 credentials_store.clear_credentials(server_url=server)
@@ -970,8 +1046,8 @@ def logout(
                 "to the same server or 'zenml server list' to view other available "
                 "servers that you can connect to with 'zenml login <server-url>'."
             )
-        else:
-            cli_utils.declare(
-                f"The client is not currently connected to the ZenML server at "
-                f"'{server}'."
-            )
+    else:
+        cli_utils.declare(
+            f"The client is not currently connected to the ZenML server at "
+            f"'{server}'."
+        )

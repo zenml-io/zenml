@@ -124,9 +124,9 @@ from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.login.credentials import APIToken
 from zenml.login.credentials_store import get_credentials_store
+from zenml.login.pro.constants import ZENML_PRO_API_URL
 from zenml.login.pro.utils import (
     get_troubleshooting_instructions,
-    is_zenml_pro_server_url,
 )
 from zenml.models import (
     ActionFilter,
@@ -450,6 +450,7 @@ class RestZenStore(BaseZenStore):
     CONFIG_TYPE: ClassVar[Type[StoreConfiguration]] = RestZenStoreConfiguration
     _api_token: Optional[APIToken] = None
     _session: Optional[requests.Session] = None
+    _server_info: Optional[ServerModel] = None
 
     # ====================================
     # ZenML Store interface implementation
@@ -469,7 +470,7 @@ class RestZenStore(BaseZenStore):
         """
         try:
             client_version = zenml.__version__
-            server_version = self.get_store_info().version
+            server_version = self.server_info.version
 
         # Handle cases where the ZenML server is not available
         except ConnectionError as e:
@@ -500,7 +501,7 @@ class RestZenStore(BaseZenStore):
 
         except Exception as e:
             zenml_pro_extra = ""
-            if is_zenml_pro_server_url(self.url):
+            if ".zenml.io" in self.url:
                 zenml_pro_extra = (
                     "\nHINT: " + get_troubleshooting_instructions(self.url)
                 )
@@ -522,6 +523,17 @@ class RestZenStore(BaseZenStore):
                 ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
             )
 
+    @property
+    def server_info(self) -> ServerModel:
+        """Get cached information about the server.
+
+        Returns:
+            Cached information about the server.
+        """
+        if self._server_info is None:
+            return self.get_store_info()
+        return self._server_info
+
     def get_store_info(self) -> ServerModel:
         """Get information about the server.
 
@@ -529,7 +541,8 @@ class RestZenStore(BaseZenStore):
             Information about the server.
         """
         body = self.get(INFO)
-        return ServerModel.model_validate(body)
+        self._server_info = ServerModel.model_validate(body)
+        return self._server_info
 
     def get_deployment_id(self) -> UUID:
         """Get the ID of the deployment.
@@ -537,7 +550,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             The ID of the deployment.
         """
-        return self.get_store_info().id
+        return self.server_info.id
 
     # -------------------- Server Settings --------------------
 
@@ -2726,7 +2739,7 @@ class RestZenStore(BaseZenStore):
                 )
             except (ValueError, AuthorizationException) as e:
                 logger.error(
-                    f'Failed to fetch {resource_type or "available"} '
+                    f"Failed to fetch {resource_type or 'available'} "
                     f"resources from service connector {connector.name}/"
                     f"{connector.id}: {e}"
                 )
@@ -4028,19 +4041,6 @@ class RestZenStore(BaseZenStore):
             token = credentials.api_token if credentials else None
             if credentials and token and not token.expired:
                 self._api_token = token
-
-                # Populate the server info in the credentials store if it is
-                # not already present
-                if not credentials.server_id:
-                    try:
-                        server_info = self.get_store_info()
-                    except Exception as e:
-                        logger.warning(f"Failed to get server info: {e}.")
-                    else:
-                        credentials_store.update_server_info(
-                            self.url, server_info
-                        )
-
                 return self._api_token.access_token
 
             # Token is expired or not found in the cache. Time to get a new one.
@@ -4053,7 +4053,12 @@ class RestZenStore(BaseZenStore):
                 )
 
             data: Optional[Dict[str, str]] = None
-            headers: Dict[str, str] = {}
+
+            # Use a custom user agent to identify the ZenML client in the server
+            # logs.
+            headers: Dict[str, str] = {
+                "User-Agent": "zenml/" + zenml.__version__,
+            }
 
             # Check if an API key is configured
             api_key = credentials_store.get_api_key(self.url)
@@ -4084,13 +4089,23 @@ class RestZenStore(BaseZenStore):
                     "username": username,
                     "password": password,
                 }
-            elif is_zenml_pro_server_url(self.url):
+            elif self.server_info.is_pro_server():
                 # ZenML Pro tenants use a proprietary authorization grant
                 # where the ZenML Pro API session token is exchanged for a
                 # regular ZenML server access token.
 
                 # Get the ZenML Pro API session token, if cached and valid
-                pro_token = credentials_store.get_pro_token(allow_expired=True)
+
+                # We need to determine the right ZenML Pro API URL to use
+                pro_api_url = self.server_info.pro_api_url
+                if not pro_api_url and credentials and credentials.pro_api_url:
+                    pro_api_url = credentials.pro_api_url
+                if not pro_api_url:
+                    pro_api_url = ZENML_PRO_API_URL
+
+                pro_token = credentials_store.get_pro_token(
+                    pro_api_url, allow_expired=True
+                )
                 if not pro_token:
                     raise CredentialsNotValid(
                         "You need to be logged in to ZenML Pro in order to "
@@ -4218,6 +4233,11 @@ class RestZenStore(BaseZenStore):
             self._session.mount("https://", HTTPAdapter(max_retries=retries))
             self._session.mount("http://", HTTPAdapter(max_retries=retries))
             self._session.verify = self.config.verify_ssl
+            # Use a custom user agent to identify the ZenML client in the server
+            # logs.
+            self._session.headers.update(
+                {"User-Agent": "zenml/" + zenml.__version__}
+            )
 
         # Note that we return an unauthenticated session here. An API token
         # is only fetched and set in the authorization header when and if it is

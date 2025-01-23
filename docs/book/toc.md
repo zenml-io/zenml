@@ -19,6 +19,7 @@
     * [Tenants](getting-started/zenml-pro/tenants.md)
     * [Teams](getting-started/zenml-pro/teams.md)
     * [Roles & Permissions](getting-started/zenml-pro/roles.md)
+  * [Self-hosted deployment](getting-started/zenml-pro/self-hosted.md)
   * [Accessing the ZenML Pro API](getting-started/zenml-pro/pro-api.md)
 
 ## User Guide
@@ -271,6 +272,7 @@
   * [MLflow](component-guide/experiment-trackers/mlflow.md)
   * [Neptune](component-guide/experiment-trackers/neptune.md)
   * [Weights & Biases](component-guide/experiment-trackers/wandb.md)
+  * [Google Cloud VertexAI Experiment Tracker](component-guide/experiment-trackers/vertexai.md)
   * [Develop a custom experiment tracker](component-guide/experiment-trackers/custom.md)
 * [Model Deployers](component-guide/model-deployers/model-deployers.md)
   * [MLflow](component-guide/model-deployers/mlflow.md)

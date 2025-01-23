@@ -29,7 +29,11 @@ from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import StackComponentType
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
-from zenml.models import ServiceConnectorRequirements, StepRunResponse
+from zenml.models import (
+    PipelineRunResponse,
+    ServiceConnectorRequirements,
+    StepRunResponse,
+)
 from zenml.utils import (
     pydantic_utils,
     secret_utils,
@@ -452,7 +456,7 @@ class StackComponent:
                     "reinstalling the integration either through our CLI: "
                     f"`zenml integration install {flavor_model.integration} "
                     "-y` or by manually installing its requirements: "
-                    f"`pip install {integration_requirements}`. If the error"
+                    f"`pip install {integration_requirements}`. If the error "
                     "persists, please contact the ZenML team."
                 ) from e
             else:
@@ -496,6 +500,7 @@ class StackComponent:
             "StepRunInfo",
             "PipelineDeploymentBase",
             "PipelineDeploymentResponse",
+            "PipelineRunResponse",
         ],
     ) -> "BaseSettings":
         """Gets settings for this stack component.
@@ -527,7 +532,10 @@ class StackComponent:
 
         all_settings = (
             container.config.settings
-            if isinstance(container, (Step, StepRunResponse, StepRunInfo))
+            if isinstance(
+                container,
+                (Step, StepRunResponse, StepRunInfo, PipelineRunResponse),
+            )
             else container.pipeline_configuration.settings
         )
 

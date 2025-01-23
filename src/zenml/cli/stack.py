@@ -17,7 +17,7 @@ import getpass
 import re
 import time
 import webbrowser
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -1073,8 +1073,7 @@ def set_active_stack_command(stack_name_or_id: str) -> None:
             cli_utils.error(str(err))
 
         cli_utils.declare(
-            f"Active {scope} stack set to: "
-            f"'{client.active_stack_model.name}'"
+            f"Active {scope} stack set to: '{client.active_stack_model.name}'"
         )
 
 
@@ -1576,7 +1575,7 @@ def deploy(
         ):
             raise click.Abort()
 
-        date_start = datetime.utcnow()
+        date_start = datetime.now(timezone.utc)
 
         webbrowser.open(deployment_config.deployment_url)
         console.print(
@@ -1763,7 +1762,7 @@ def _get_service_connector_info(
             required = ""
             for each_req in schema["required"]:
                 field = schema["properties"][each_req]
-                required += f"[bold]{each_req}[/bold]  [italic]({field.get('title','no description')})[/italic]\n"
+                required += f"[bold]{each_req}[/bold]  [italic]({field.get('title', 'no description')})[/italic]\n"
             choices.append([value.name, required])
 
         selected_auth_idx = cli_utils.multi_choice_prompt(

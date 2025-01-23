@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """SQL Model Implementations for Pipelines and Pipeline Runs."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
@@ -43,7 +43,7 @@ if TYPE_CHECKING:
     )
     from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
     from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
-    from zenml.zen_stores.schemas.tag_schemas import TagResourceSchema
+    from zenml.zen_stores.schemas.tag_schemas import TagSchema
 
 
 class PipelineSchema(NamedSchema, table=True):
@@ -95,10 +95,12 @@ class PipelineSchema(NamedSchema, table=True):
     deployments: List["PipelineDeploymentSchema"] = Relationship(
         back_populates="pipeline",
     )
-    tags: List["TagResourceSchema"] = Relationship(
+    tags: List["TagSchema"] = Relationship(
         sa_relationship_kwargs=dict(
-            primaryjoin=f"and_(TagResourceSchema.resource_type=='{TaggableResourceTypes.PIPELINE.value}', foreign(TagResourceSchema.resource_id)==PipelineSchema.id)",
-            cascade="delete",
+            primaryjoin=f"and_(foreign(TagResourceSchema.resource_type)=='{TaggableResourceTypes.PIPELINE.value}', foreign(TagResourceSchema.resource_id)==PipelineSchema.id)",
+            secondary="tag_resource",
+            secondaryjoin="TagSchema.id == foreign(TagResourceSchema.tag_id)",
+            order_by="TagSchema.name",
             overlaps="tags",
         ),
     )
@@ -162,7 +164,7 @@ class PipelineSchema(NamedSchema, table=True):
                 latest_run_user=latest_run_user.to_model()
                 if latest_run_user
                 else None,
-                tags=[t.tag.to_model() for t in self.tags],
+                tags=[tag.to_model() for tag in self.tags],
             )
 
         return PipelineResponse(
@@ -183,5 +185,5 @@ class PipelineSchema(NamedSchema, table=True):
             The updated `PipelineSchema`.
         """
         self.description = pipeline_update.description
-        self.updated = datetime.utcnow()
+        self.updated = datetime.now(timezone.utc)
         return self

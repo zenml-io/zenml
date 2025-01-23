@@ -19,7 +19,6 @@ from uuid import UUID
 from pydantic import BaseModel
 
 from zenml.constants import (
-    REPORTABLE_RESOURCES,
     REQUIRES_CUSTOM_RESOURCE_REPORTING,
 )
 from zenml.exceptions import IllegalOperationError
@@ -43,6 +42,7 @@ from zenml.zen_server.rbac.utils import (
     verify_permission,
     verify_permission_for_model,
 )
+from zenml.zen_server.utils import server_config
 
 AnyRequest = TypeVar("AnyRequest", bound=BaseRequest)
 AnyResponse = TypeVar("AnyResponse", bound=BaseIdentifiedResponse)  # type: ignore[type-arg]
@@ -82,7 +82,7 @@ def verify_permissions_and_create_entity(
     verify_permission(resource_type=resource_type, action=Action.CREATE)
 
     needs_usage_increment = (
-        resource_type in REPORTABLE_RESOURCES
+        resource_type in server_config().reportable_resources
         and resource_type not in REQUIRES_CUSTOM_RESOURCE_REPORTING
     )
     if needs_usage_increment:
@@ -129,7 +129,7 @@ def verify_permissions_and_batch_create_entity(
 
     verify_permission(resource_type=resource_type, action=Action.CREATE)
 
-    if resource_type in REPORTABLE_RESOURCES:
+    if resource_type in server_config().reportable_resources:
         raise RuntimeError(
             "Batch requests are currently not possible with usage-tracked features."
         )

@@ -14,7 +14,7 @@
 """SQLModel implementation of step run tables."""
 
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from uuid import UUID
 
@@ -58,9 +58,7 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas.artifact_schemas import ArtifactVersionSchema
     from zenml.zen_stores.schemas.logs_schemas import LogsSchema
     from zenml.zen_stores.schemas.model_schemas import ModelVersionSchema
-    from zenml.zen_stores.schemas.run_metadata_schemas import (
-        RunMetadataResourceSchema,
-    )
+    from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
 
 
 class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
@@ -150,12 +148,12 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
     deployment: Optional["PipelineDeploymentSchema"] = Relationship(
         back_populates="step_runs"
     )
-    run_metadata_resources: List["RunMetadataResourceSchema"] = Relationship(
-        back_populates="step_runs",
+    run_metadata: List["RunMetadataSchema"] = Relationship(
         sa_relationship_kwargs=dict(
-            primaryjoin=f"and_(RunMetadataResourceSchema.resource_type=='{MetadataResourceTypes.STEP_RUN.value}', foreign(RunMetadataResourceSchema.resource_id)==StepRunSchema.id)",
-            cascade="delete",
-            overlaps="run_metadata_resources",
+            secondary="run_metadata_resource",
+            primaryjoin=f"and_(foreign(RunMetadataResourceSchema.resource_type)=='{MetadataResourceTypes.STEP_RUN.value}', foreign(RunMetadataResourceSchema.resource_id)==StepRunSchema.id)",
+            secondaryjoin="RunMetadataSchema.id==foreign(RunMetadataResourceSchema.run_metadata_id)",
+            overlaps="run_metadata",
         ),
     )
     input_artifacts: List["StepRunInputArtifactSchema"] = Relationship(
@@ -360,7 +358,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 if value and self.model_version_id is None:
                     self.model_version_id = value
 
-        self.updated = datetime.utcnow()
+        self.updated = datetime.now(timezone.utc)
 
         return self
 

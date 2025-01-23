@@ -13,35 +13,14 @@
 #  permissions and limitations under the License.
 """ZenML Pro login utils."""
 
-import re
-
 from zenml.logger import get_logger
+from zenml.login.credentials import ServerType
 from zenml.login.credentials_store import get_credentials_store
 from zenml.login.pro.client import ZenMLProClient
-from zenml.login.pro.constants import ZENML_PRO_SERVER_SUBDOMAIN
+from zenml.login.pro.constants import ZENML_PRO_API_URL
 from zenml.login.pro.tenant.models import TenantStatus
 
 logger = get_logger(__name__)
-
-
-def is_zenml_pro_server_url(url: str) -> bool:
-    """Check if a given URL is a ZenML Pro server.
-
-    Args:
-        url: URL to check
-
-    Returns:
-        True if the URL is a ZenML Pro tenant, False otherwise
-    """
-    domain_regex = ZENML_PRO_SERVER_SUBDOMAIN.replace(".", r"\.")
-    return bool(
-        re.match(
-            r"^(https://)?[a-zA-Z0-9-\.]+\.{domain}/?$".format(
-                domain=domain_regex
-            ),
-            url,
-        )
-    )
 
 
 def get_troubleshooting_instructions(url: str) -> str:
@@ -54,8 +33,15 @@ def get_troubleshooting_instructions(url: str) -> str:
         Troubleshooting instructions
     """
     credentials_store = get_credentials_store()
-    if credentials_store.has_valid_pro_authentication():
-        client = ZenMLProClient()
+
+    credentials = credentials_store.get_credentials(url)
+    if credentials and credentials.type == ServerType.PRO:
+        pro_api_url = credentials.pro_api_url or ZENML_PRO_API_URL
+
+    if pro_api_url and credentials_store.has_valid_pro_authentication(
+        pro_api_url
+    ):
+        client = ZenMLProClient(pro_api_url)
 
         try:
             servers = client.tenant.list(url=url, member_only=False)

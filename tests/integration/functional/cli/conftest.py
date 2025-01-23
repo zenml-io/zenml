@@ -86,20 +86,16 @@ def step_1() -> Annotated[int, NAME + "a"]:
 
 
 @step
-def step_2() -> (
-    Tuple[
-        Annotated[
-            int,
-            ArtifactConfig(name=NAME + "b", artifact_type=ArtifactType.MODEL),
-        ],
-        Annotated[
-            int,
-            ArtifactConfig(
-                name=NAME + "c", artifact_type=ArtifactType.SERVICE
-            ),
-        ],
-    ]
-):
+def step_2() -> Tuple[
+    Annotated[
+        int,
+        ArtifactConfig(name=NAME + "b", artifact_type=ArtifactType.MODEL),
+    ],
+    Annotated[
+        int,
+        ArtifactConfig(name=NAME + "c", artifact_type=ArtifactType.SERVICE),
+    ],
+]:
     return 2, 3
 
 

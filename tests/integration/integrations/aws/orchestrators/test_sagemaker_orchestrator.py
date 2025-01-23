@@ -12,7 +12,6 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-
 from zenml.enums import StackComponentType
 from zenml.integrations.aws.flavors import SagemakerOrchestratorFlavor
 

@@ -104,10 +104,12 @@ spec:
           envFrom:
           - secretRef:
               name: {{ include "zenml.fullname" . }}-db-migration
-          {{- with .Values.resources }}
           resources:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
+            {{- if .Values.resourcesMigrationPod }}
+            {{- toYaml .Values.resourcesMigrationPod | nindent 12 }}
+            {{- else }}
+            {{- toYaml .Values.resources | nindent 12 }}
+            {{- end }}
       {{- with .Values.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}

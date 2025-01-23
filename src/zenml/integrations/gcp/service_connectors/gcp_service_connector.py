@@ -169,7 +169,7 @@ class GCPUserAccountCredentials(AuthenticationConfig):
         if missing_fields:
             raise ValueError(
                 f"GCP user account credentials JSON is missing required "
-                f'fields: {", ".join(list(missing_fields))}'
+                f"fields: {', '.join(list(missing_fields))}"
             )
 
         if user_account_info["type"] != "authorized_user":
@@ -276,7 +276,7 @@ class GCPServiceAccountCredentials(AuthenticationConfig):
         if missing_fields:
             raise ValueError(
                 f"GCP service account credentials JSON is missing required "
-                f'fields: {", ".join(list(missing_fields))}'
+                f"fields: {', '.join(list(missing_fields))}"
             )
 
         if service_account_info["type"] != "service_account":
@@ -376,7 +376,7 @@ class GCPExternalAccountCredentials(AuthenticationConfig):
         if missing_fields:
             raise ValueError(
                 f"GCP external account credentials JSON is missing required "
-                f'fields: {", ".join(list(missing_fields))}'
+                f"fields: {', '.join(list(missing_fields))}"
             )
 
         if external_account_info["type"] != "external_account":

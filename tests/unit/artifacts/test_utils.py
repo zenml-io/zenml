@@ -158,9 +158,9 @@ def test__load_artifact(builtin_type_file_uri):
         _load_artifact_from_uri(materializer, data_type, builtin_type_file_uri)
         assert False, "Expected a ModuleNotFoundError to be raised."
     except ModuleNotFoundError as e:
-        assert (
-            str(e) == "No module named 'random_materializer_class_path'"
-        ), "Unexpected error message."
+        assert str(e) == "No module named 'random_materializer_class_path'", (
+            "Unexpected error message."
+        )
 
     # Test with invalid data type and ensure that a ModuleNotFoundError is
     # raised
@@ -171,9 +171,9 @@ def test__load_artifact(builtin_type_file_uri):
         _load_artifact_from_uri(materializer, data_type, builtin_type_file_uri)
         assert False, "Expected a ModuleNotFoundError to be raised."
     except ModuleNotFoundError as e:
-        assert (
-            str(e) == "No module named 'random_data_type_class_path'"
-        ), "Unexpected error message."
+        assert str(e) == "No module named 'random_data_type_class_path'", (
+            "Unexpected error message."
+        )
 
     # Test with valid materializer and data type and ensure that the artifact
     # is loaded correctly

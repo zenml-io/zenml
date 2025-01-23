@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of run template tables."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
@@ -41,7 +41,7 @@ if TYPE_CHECKING:
         PipelineDeploymentSchema,
     )
     from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
-    from zenml.zen_stores.schemas.tag_schemas import TagResourceSchema
+    from zenml.zen_stores.schemas.tag_schemas import TagSchema
 
 
 class RunTemplateSchema(BaseSchema, table=True):
@@ -110,10 +110,12 @@ class RunTemplateSchema(BaseSchema, table=True):
         }
     )
 
-    tags: List["TagResourceSchema"] = Relationship(
+    tags: List["TagSchema"] = Relationship(
         sa_relationship_kwargs=dict(
-            primaryjoin=f"and_(TagResourceSchema.resource_type=='{TaggableResourceTypes.RUN_TEMPLATE.value}', foreign(TagResourceSchema.resource_id)==RunTemplateSchema.id)",
-            cascade="delete",
+            primaryjoin=f"and_(foreign(TagResourceSchema.resource_type)=='{TaggableResourceTypes.RUN_TEMPLATE.value}', foreign(TagResourceSchema.resource_id)==RunTemplateSchema.id)",
+            secondary="tag_resource",
+            secondaryjoin="TagSchema.id == foreign(TagResourceSchema.tag_id)",
+            order_by="TagSchema.name",
             overlaps="tags",
         ),
     )
@@ -154,7 +156,7 @@ class RunTemplateSchema(BaseSchema, table=True):
         ).items():
             setattr(self, field, value)
 
-        self.updated = datetime.utcnow()
+        self.updated = datetime.now(timezone.utc)
         return self
 
     def to_model(
@@ -253,7 +255,7 @@ class RunTemplateSchema(BaseSchema, table=True):
                 pipeline=pipeline,
                 build=build,
                 code_reference=code_reference,
-                tags=[t.tag.to_model() for t in self.tags],
+                tags=[tag.to_model() for tag in self.tags],
             )
 
         return RunTemplateResponse(

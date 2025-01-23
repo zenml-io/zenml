@@ -34,7 +34,7 @@ from zenml.models import (
     StackDeploymentInfo,
 )
 from zenml.stack_deployments.utils import get_stack_deployment_class
-from zenml.zen_server.auth import AuthContext, authorize
+from zenml.zen_server.auth import AuthContext, authorize, generate_access_token
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import verify_permission
@@ -114,10 +114,10 @@ def get_stack_deployment_config(
     assert token is not None
 
     # A new API token is generated for the stack deployment
-    expires = datetime.datetime.utcnow() + datetime.timedelta(
-        minutes=STACK_DEPLOYMENT_API_TOKEN_EXPIRATION
-    )
-    api_token = token.encode(expires=expires)
+    api_token = generate_access_token(
+        user_id=token.user_id,
+        expires_in=STACK_DEPLOYMENT_API_TOKEN_EXPIRATION * 60,
+    ).access_token
 
     return stack_deployment_class(
         terraform=terraform,

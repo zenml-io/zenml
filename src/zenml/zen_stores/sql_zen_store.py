@@ -64,6 +64,13 @@ from sqlalchemy.exc import (
 )
 from sqlalchemy.orm import Mapped, noload
 from sqlalchemy.util import immutabledict
+
+# Important to note: The select function of SQLModel works slightly differently
+# from the select function of sqlalchemy. If you input only one entity on the
+# select function of SQLModel, it automatically maps it to a SelectOfScalar.
+# As a result, it will not return a tuple as a result, but the first entity in
+# the tuple. While this is convenient in most cases, in unique cases like using
+# the "add_columns" functionality, one might encounter unexpected results.
 from sqlmodel import (
     Session,
     SQLModel,
@@ -1362,8 +1369,7 @@ class SqlZenStore(BaseZenStore):
                     os.remove(dump_file)
                 except OSError:
                     logger.warning(
-                        f"Failed to cleanup database dump file "
-                        f"{dump_file}."
+                        f"Failed to cleanup database dump file {dump_file}."
                     )
                 else:
                     logger.info(
@@ -7392,7 +7398,7 @@ class SqlZenStore(BaseZenStore):
                     )
                 except (ValueError, AuthorizationException) as e:
                     error = (
-                        f'Failed to fetch {resource_type or "available"} '
+                        f"Failed to fetch {resource_type or 'available'} "
                         f"resources from service connector {connector.name}/"
                         f"{connector.id}: {e}"
                     )
@@ -8628,10 +8634,19 @@ class SqlZenStore(BaseZenStore):
                 ExecutionStatus.COMPLETED,
                 ExecutionStatus.FAILED,
             }:
-                run_update.end_time = datetime.utcnow()
+                run_update.end_time = datetime.now(timezone.utc)
                 if pipeline_run.start_time and isinstance(
                     pipeline_run.start_time, datetime
                 ):
+                    # We need to ensure both datetimes are timezone-aware to avoid TypeError when subtracting
+                    # Now calculate the duration time
+                    if pipeline_run.start_time.tzinfo is None:
+                        pipeline_run.start_time = (
+                            pipeline_run.start_time.replace(
+                                tzinfo=timezone.utc
+                            )
+                        )
+
                     duration_time = (
                         run_update.end_time - pipeline_run.start_time
                     )

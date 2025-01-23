@@ -1,6 +1,6 @@
 # Apache Software License 2.0
 #
-# Copyright (c) ZenML GmbH 2024. All rights reserved.
+# Copyright (c) ZenML GmbH 2025. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -34,7 +34,7 @@ def compute_metrics(
     """
     logits, labels = eval_pred
     predictions = np.argmax(logits, axis=-1)
-    # calculate the mertic using the predicted and true value
+    # calculate the metric using the predicted and true value
     accuracy = load_metric("accuracy", trust_remote_code=True).compute(
         predictions=predictions, references=labels
     )
