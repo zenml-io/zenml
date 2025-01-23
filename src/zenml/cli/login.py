@@ -791,6 +791,8 @@ def login(
 
     if server is not None:
         if re.match(r"^mysql://", server):
+            # The server argument is a MySQL URL, we can directly connect to it
+
             connect_to_server(
                 url=server,
                 api_key=api_key_value,
