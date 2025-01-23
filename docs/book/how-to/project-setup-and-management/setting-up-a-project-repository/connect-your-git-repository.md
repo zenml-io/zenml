@@ -52,9 +52,9 @@ zenml code-repository register <NAME> --type=github \
 --token=<GITHUB_TOKEN>
 ```
 
-where \<REPOSITORY> is the name of the code repository you are registering, \<OWNER> is the owner of the repository, \<NAME> is the name of the repository, \<GITHUB\_TOKEN> is your GitHub Personal Access Token.
+where `<REPOSITORY>` is the name of the code repository you are registering, `<OWNER>` is the owner of the repository, `<NAME>` is the name of the repository and `<GITHUB_TOKEN>` is your GitHub Personal Access Token.
 
-If you're using a self-hosted GitHub Enterprise instance, you'll need to also pass the `--api_url=<API_URL>` and `--host=<HOST>` options. \<API_URL> should point to where the GitHub API is reachable (defaults to `https://api.github.com/`) and \<HOST> should be the [hostname of your GitHub instance](https://docs.github.com/en/enterprise-server@3.10/admin/configuring-settings/configuring-network-settings/configuring-the-hostname-for-your-instance?learn=deploy_an_instance&learnProduct=admin).
+If you're using a self-hosted GitHub Enterprise instance, you'll need to also pass the `--api_url=<API_URL>` and `--host=<HOST>` options. `<API_URL>` should point to where the GitHub API is reachable (defaults to `https://api.github.com/`) and `<HOST>` should be the [hostname of your GitHub instance](https://docs.github.com/en/enterprise-server@3.10/admin/configuring-settings/configuring-network-settings/configuring-the-hostname-for-your-instance?learn=deploy_an_instance&learnProduct=admin).
 
 {% hint style="warning" %}
 Please refer to the section on using secrets for stack configuration in order to securely store your GitHub 
@@ -111,9 +111,9 @@ zenml code-repository register <NAME> --type=gitlab \
 --token=<GITLAB_TOKEN>
 ```
 
-where `<NAME>` is the name of the code repository you are registering, `<GROUP>` is the group of the project, `<PROJECT>` is the name of the project, \<GITLAB\_TOKEN> is your GitLab Personal Access Token.
+where `<NAME>` is the name of the code repository you are registering, `<GROUP>` is the group of the project, `<PROJECT>` is the name of the project and `<GITLAB_TOKEN>` is your GitLab Personal Access Token.
 
-If you're using a self-hosted GitLab instance, you'll need to also pass the `--instance_url=<INSTANCE_URL>` and `--host=<HOST>` options. \<INSTANCE_URL> should point to your GitLab instance (defaults to `https://gitlab.com/`) and \<HOST> should be the hostname of your GitLab instance (defaults to `gitlab.com`).
+If you're using a self-hosted GitLab instance, you'll need to also pass the `--instance_url=<INSTANCE_URL>` and `--host=<HOST>` options. `<INSTANCE_URL>` should point to your GitLab instance (defaults to `https://gitlab.com/`) and `<HOST>` should be the hostname of your GitLab instance (defaults to `gitlab.com`).
 
 
 {% hint style="warning" %}
