@@ -13,9 +13,9 @@
 #  permissions and limitations under the License.
 """Utility functions for SQLModel schemas."""
 
-from typing import Any
+from typing import Any, List
 
-from sqlalchemy import Column, ForeignKey
+from sqlalchemy import Column, ForeignKey, Index
 from sqlmodel import Field
 
 
@@ -84,3 +84,34 @@ def build_foreign_key_field(
             **sa_column_kwargs,
         ),
     )
+
+
+def get_index_name(table_name: str, column_names: List[str]) -> str:
+    """Get the name for an index.
+
+    Args:
+        table_name: The name of the table for which the index will be created.
+        column_names: Names of the columns on which the index will be created.
+
+    Returns:
+        The index name.
+    """
+    columns = "_".join(column_names)
+    return f"ix_{table_name}_{columns}"
+
+
+def build_index(
+    table_name: str, column_names: List[str], **kwargs: Any
+) -> Index:
+    """Build an index object.
+
+    Args:
+        table_name: The name of the table for which the index will be created.
+        column_names: Names of the columns on which the index will be created.
+        **kwargs: Additional keywork arguments to pass to the Index.
+
+    Returns:
+        The index.
+    """
+    name = get_index_name(table_name=table_name, column_names=column_names)
+    return Index(name, *column_names, **kwargs)
