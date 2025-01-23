@@ -1,3 +1,18 @@
+#  Copyright (c) ZenML GmbH 2025. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+"""Checks for broken markdown links in a directory and comments on a PR if found."""
+
 import json
 import os
 import re
@@ -97,8 +112,10 @@ def create_comment_body(broken_links):
         path = Path(link["source_file"])
         parent = path.parent.name
         file_name = path.name
-        display_name = f"{parent}/{file_name}"  # Combine parent folder and filename
-        
+        display_name = (
+            f"{parent}/{file_name}"  # Combine parent folder and filename
+        )
+
         body.append(
             f"| `{display_name}` | \"{link['link_text']}\" | `{link['broken_path']}` |"
         )
@@ -149,14 +166,17 @@ def main():
         pr = repo.get_pull(pr_number)
 
         comment_body = create_comment_body(broken_links)
-        
+
         # Find existing comment by looking for our specific header
         existing_comment = None
         for comment in pr.get_issue_comments():
-            if "# 🔍 Broken Links Report" in comment.body or "✅ No broken markdown links found!" in comment.body:
+            if (
+                "# 🔍 Broken Links Report" in comment.body
+                or "✅ No broken markdown links found!" in comment.body
+            ):
                 existing_comment = comment
                 break
-        
+
         # Update existing comment or create new one
         if existing_comment:
             existing_comment.edit(comment_body)
