@@ -54,7 +54,7 @@ from zenml.constants import (
 )
 from zenml.enums import AuthScheme, SourceContextTypes
 from zenml.models import ServerDeploymentType
-from zenml.utils.time_utils import utc_now_tz_aware
+from zenml.utils.time_utils import utc_now
 from zenml.zen_server.cloud_utils import send_pro_tenant_status_update
 from zenml.zen_server.exceptions import error_detail
 from zenml.zen_server.routers import (
@@ -130,7 +130,7 @@ app = FastAPI(
 )
 
 # Initialize last_user_activity
-last_user_activity: datetime = utc_now_tz_aware()
+last_user_activity: datetime = utc_now()
 last_user_activity_reported: datetime = last_user_activity + timedelta(
     seconds=-DEFAULT_ZENML_SERVER_REPORT_USER_ACTIVITY_TO_DB_SECONDS
 )
@@ -307,7 +307,7 @@ async def track_last_user_activity(request: Request, call_next: Any) -> Any:
     global last_user_activity
     global last_user_activity_reported
 
-    now = utc_now_tz_aware()
+    now = utc_now()
 
     try:
         if is_user_request(request):

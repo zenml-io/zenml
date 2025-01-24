@@ -31,8 +31,8 @@ class BaseSchema(SQLModel):
     """Base SQL Model for ZenML entities."""
 
     id: UUID = Field(default_factory=uuid4, primary_key=True)
-    created: datetime = Field(default_factory=lambda: utc_now())
-    updated: datetime = Field(default_factory=lambda: utc_now())
+    created: datetime = Field(default_factory=utc_now)
+    updated: datetime = Field(default_factory=utc_now)
 
     def to_model(
         self,

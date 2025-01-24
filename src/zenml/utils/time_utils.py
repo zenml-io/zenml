@@ -23,7 +23,8 @@ def utc_now(tz_aware: Union[bool, datetime] = False) -> datetime:
     Args:
         tz_aware: Use this flag to control whether the returned datetime is
             timezone-aware or timezone-naive. If a datetime is provided, the
-            returned datetime will match the timezone of the input datetime.
+            returned datetime will be timezone-aware if and only if the input
+            datetime is also timezone-aware.
 
     Returns:
         The current UTC time. If tz_aware is a datetime, the returned datetime

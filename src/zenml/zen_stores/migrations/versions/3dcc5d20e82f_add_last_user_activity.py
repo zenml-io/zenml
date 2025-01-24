@@ -10,7 +10,7 @@ import sqlalchemy as sa
 import sqlmodel
 from alembic import op
 
-from zenml.utils.time_utils import utc_now_tz_aware
+from zenml.utils.time_utils import utc_now
 
 # revision identifiers, used by Alembic.
 revision = "3dcc5d20e82f"
@@ -36,7 +36,7 @@ def upgrade() -> None:
             SET last_user_activity = :last_user_activity
             """
         ),
-        params=(dict(last_user_activity=utc_now_tz_aware())),
+        params=(dict(last_user_activity=utc_now())),
     )
 
     with op.batch_alter_table("server_settings", schema=None) as batch_op:
