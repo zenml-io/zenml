@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """SQL Model Implementations for Pipeline Schedules."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
@@ -27,6 +27,7 @@ from zenml.models import (
     ScheduleResponseMetadata,
     ScheduleUpdate,
 )
+from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
@@ -167,7 +168,7 @@ class ScheduleSchema(NamedSchema, RunMetadataInterface, table=True):
             )
         if schedule_update.catchup is not None:
             self.catchup = schedule_update.catchup
-        self.updated = datetime.now(timezone.utc)
+        self.updated = utc_now()
         return self
 
     def to_model(

@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """SQL Model Implementations for Workspaces."""
 
-from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, List
 
 from sqlmodel import Relationship
@@ -25,6 +24,7 @@ from zenml.models import (
     WorkspaceResponseMetadata,
     WorkspaceUpdate,
 )
+from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 
 if TYPE_CHECKING:
@@ -168,7 +168,7 @@ class WorkspaceSchema(NamedSchema, table=True):
         ).items():
             setattr(self, field, value)
 
-        self.updated = datetime.now(timezone.utc)
+        self.updated = utc_now()
         return self
 
     def to_model(

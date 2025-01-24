@@ -14,7 +14,7 @@
 """SQLModel implementation for the server settings table."""
 
 import json
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any, Optional, Set
 from uuid import UUID
 
@@ -27,6 +27,7 @@ from zenml.models import (
     ServerSettingsResponseResources,
     ServerSettingsUpdate,
 )
+from zenml.utils.time_utils import utc_now
 
 
 class ServerSettingsSchema(SQLModel, table=True):
@@ -42,12 +43,8 @@ class ServerSettingsSchema(SQLModel, table=True):
     display_announcements: Optional[bool] = Field(nullable=True)
     display_updates: Optional[bool] = Field(nullable=True)
     onboarding_state: Optional[str] = Field(nullable=True)
-    last_user_activity: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
-    updated: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
+    last_user_activity: datetime = Field(default_factory=utc_now)
+    updated: datetime = Field(default_factory=utc_now)
 
     def update(
         self, settings_update: ServerSettingsUpdate
@@ -67,7 +64,7 @@ class ServerSettingsSchema(SQLModel, table=True):
             if hasattr(self, field):
                 setattr(self, field, value)
 
-        self.updated = datetime.now(timezone.utc)
+        self.updated = utc_now()
 
         return self
 
@@ -87,7 +84,7 @@ class ServerSettingsSchema(SQLModel, table=True):
         )
         new_state = old_state.union(completed_steps)
         self.onboarding_state = json.dumps(list(new_state))
-        self.updated = datetime.now(timezone.utc)
+        self.updated = utc_now()
 
         return self
 
