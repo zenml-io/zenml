@@ -722,15 +722,13 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         Returns:
             A dictionary of metadata.
         """
-        from zenml import get_step_context
-
         execution_arn = os.environ[ENV_ZENML_SAGEMAKER_RUN_ID]
 
         run_metadata: Dict[str, "MetadataType"] = {}
 
         settings = cast(
             SagemakerOrchestratorSettings,
-            self.get_settings(get_step_context().pipeline_run),
+            self.get_settings(Client().get_pipeline_run(run_id)),
         )
 
         for metadata in self.compute_metadata(
