@@ -14,7 +14,7 @@
 """SQLModel implementation of pipeline run tables."""
 
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from uuid import UUID
 
@@ -269,6 +269,13 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             for k, v in step_metadata.items():
                 metadata_collection[f"{s.name}::{k}"] = v
 
+        # Fetch the metadata related to the schedule of this run
+        if self.deployment is not None:
+            if schedule := self.deployment.schedule:
+                schedule_metadata = schedule.fetch_metadata_collection()
+                for k, v in schedule_metadata.items():
+                    metadata_collection[f"schedule:{k}"] = v
+
         return metadata_collection
 
     def to_model(
@@ -430,7 +437,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         if run_update.model_version_id and self.model_version_id is None:
             self.model_version_id = run_update.model_version_id
 
-        self.updated = datetime.utcnow()
+        self.updated = datetime.now(timezone.utc)
         return self
 
     def update_placeholder(
@@ -471,7 +478,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         self.orchestrator_environment = orchestrator_environment
         self.status = request.status.value
 
-        self.updated = datetime.utcnow()
+        self.updated = datetime.now(timezone.utc)
 
         return self
 
