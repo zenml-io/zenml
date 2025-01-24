@@ -132,14 +132,16 @@ def deprecate_pydantic_attributes(
             if replacement_attribute is None:
                 _warn(
                     message=f"The attribute `{deprecated_attribute}` of class "
-                    f"`{cls.__name__}` will be deprecated soon.",
+                    f"`{cls.__name__}` is deprecated and will be removed in "
+                    "the future.",
                     attribute=deprecated_attribute,
                 )
                 continue
 
             _warn(
                 message=f"The attribute `{deprecated_attribute}` of class "
-                f"`{cls.__name__}` will be deprecated soon. Use the "
+                f"`{cls.__name__}` is deprecated and will be removed in the "
+                "future. Use the "
                 f"attribute `{replacement_attribute}` instead.",
                 attribute=deprecated_attribute,
             )

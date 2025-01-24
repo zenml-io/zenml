@@ -54,6 +54,7 @@ class GitLabCodeRepositoryConfig(BaseCodeRepositoryConfig):
     host: Optional[str] = "gitlab.com"
     token: str = SecretField()
 
+    url: Optional[str] = None
     _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
         ("url", "instance_url")
     )

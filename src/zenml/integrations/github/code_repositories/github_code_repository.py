@@ -53,6 +53,7 @@ class GitHubCodeRepositoryConfig(BaseCodeRepositoryConfig):
     host: Optional[str] = "github.com"
     token: Optional[str] = SecretField(default=None)
 
+    url: Optional[str] = None
     _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
         ("url", "api_url")
     )
