@@ -108,7 +108,7 @@ def build_index(
     Args:
         table_name: The name of the table for which the index will be created.
         column_names: Names of the columns on which the index will be created.
-        **kwargs: Additional keywork arguments to pass to the Index.
+        **kwargs: Additional keyword arguments to pass to the Index.
 
     Returns:
         The index.
