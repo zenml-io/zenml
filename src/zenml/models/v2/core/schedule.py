@@ -66,7 +66,6 @@ class ScheduleRequest(WorkspaceScopedRequest):
 
         Args:
             value: The datetime.
-            info: The validation info.
 
         Returns:
             The datetime in UTC time without timezone.
