@@ -42,7 +42,7 @@ In order to use an AzureML orchestrator, you need to first
 deploy [ZenML to the cloud](../../getting-started/deploying-zenml/README.md). 
 It would be recommended to deploy ZenML in the same region as you plan on 
 using for AzureML, but it is not necessary to do so. You must ensure that 
-you are [connected to the remote ZenML server](../../how-to/connecting-to-zenml/connect-in-with-your-user-interactive.md)
+you are [connected to the remote ZenML server](../../how-to/manage-zenml-server/connecting-to-zenml/connect-in-with-your-user-interactive.md)
 before using this stack component.
 
 ## How to use it

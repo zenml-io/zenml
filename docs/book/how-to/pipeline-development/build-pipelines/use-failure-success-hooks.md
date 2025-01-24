@@ -68,7 +68,7 @@ Note, that **step-level** defined hooks take **precedence** over **pipeline-leve
 
 <summary>See it in action with the E2E example</summary>
 
-_To set up the local environment used below, follow the recommendations from the_ [_Project templates_](../../project-setup-and-management/setting-up-a-project-repository/using-project-templates.md)_._
+_To set up the local environment used below, follow the recommendations from the_ [_Project templates_](../../../how-to/project-setup-and-management/collaborate-with-team/project-templates/README.md)_._
 
 In [`steps/alerts/notify_on.py`](../../../../examples/e2e/steps/alerts/notify_on.py), you will find a step to notify the user about success and a function used to notify the user about step failure using the [Alerter](../../../component-guide/alerters/alerters.md) from the active stack.
 

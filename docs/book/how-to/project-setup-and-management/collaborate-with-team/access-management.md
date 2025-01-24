@@ -59,7 +59,7 @@ Performing the upgrade itself is a task that typically falls on the MLOps Platfo
 - ensure that all data is backed up before performing the upgrade
 - no service disruption or downtime happens during the upgrade
 
-and more. Read in detail about the best practices for upgrading your ZenML server in the [Best Practices for Upgrading ZenML Servers](../../advanced-topics/manage-zenml-server/best-practices-upgrading-zenml.md) guide.
+and more. Read in detail about the best practices for upgrading your ZenML server in the [Best Practices for Upgrading ZenML Servers](../../../how-to/manage-zenml-server/best-practices-upgrading-zenml.md) guide.
 
 
 ## Who is responsible for migrating and maintaining pipelines?
@@ -68,7 +68,7 @@ When you upgrade to a new version of ZenML, you might have to test if your code 
 
 The pipeline code itself is typically owned by the Data Scientist, but the Platform Engineer is responsible for making sure that new changes can be tested in a safe environment without impacting existing workflows. This involves setting up a new server and doing a staged upgrade and other strategies.
 
-The Data Scientist should also check out the release notes, and the migration guide where applicable when upgrading the code. Read more about the best practices for upgrading your ZenML server and your code in the [Best Practices for Upgrading ZenML Servers](../../advanced-topics/manage-zenml-server/best-practices-upgrading-zenml.md) guide.
+The Data Scientist should also check out the release notes, and the migration guide where applicable when upgrading the code. Read more about the best practices for upgrading your ZenML server and your code in the [Best Practices for Upgrading ZenML Servers](../../../how-to/manage-zenml-server/best-practices-upgrading-zenml.md) guide.
 
 
 ## Best Practices for Access Management
