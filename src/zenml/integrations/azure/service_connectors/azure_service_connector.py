@@ -58,7 +58,7 @@ from zenml.service_connectors.service_connector import (
 )
 from zenml.utils.enum_utils import StrEnum
 from zenml.utils.secret_utils import PlainSerializedSecretStr
-from zenml.utils.time_utils import to_local_tz, utc_now
+from zenml.utils.time_utils import to_local_tz, to_utc_timezone, utc_now
 
 # Configure the logging level for azure.identity
 logging.getLogger("azure.identity").setLevel(logging.WARNING)
@@ -1131,7 +1131,7 @@ class AzureServiceConnector(ServiceConnector):
             # format.
             expires_at = datetime.datetime.fromtimestamp(token.expires_on)
             # Convert the expiration timestamp from local time to UTC time.
-            expires_at = expires_at.astimezone(datetime.timezone.utc)
+            expires_at = to_utc_timezone(expires_at)
 
             auth_config = AzureAccessTokenConfig(
                 token=token.token,

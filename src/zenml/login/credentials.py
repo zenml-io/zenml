@@ -27,7 +27,7 @@ from zenml.models.v2.misc.server_models import ServerDeploymentType
 from zenml.services.service_status import ServiceState
 from zenml.utils.enum_utils import StrEnum
 from zenml.utils.string_utils import get_human_readable_time
-from zenml.utils.time_utils import utc_now
+from zenml.utils.time_utils import to_local_tz, utc_now
 
 
 class ServerType(StrEnum):
@@ -243,7 +243,7 @@ class ServerCredentials(BaseModel):
             return "never"
 
         # Convert the date in the local timezone
-        local_expires_at = expires_at.astimezone()
+        local_expires_at = to_local_tz(expires_at)
         return local_expires_at.strftime("%Y-%m-%d %H:%M:%S %Z")
 
     @property

@@ -31,6 +31,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponseResources,
 )
+from zenml.utils.time_utils import to_utc_timezone
 
 logger = get_logger(__name__)
 
@@ -182,7 +183,7 @@ class ScheduleResponse(
         if not self.start_time:
             return None
 
-        return self.start_time.astimezone(datetime.timezone.utc).isoformat()
+        return to_utc_timezone(self.start_time).isoformat()
 
     @property
     def utc_end_time(self) -> Optional[str]:
@@ -194,7 +195,7 @@ class ScheduleResponse(
         if not self.end_time:
             return None
 
-        return self.end_time.astimezone(datetime.timezone.utc).isoformat()
+        return to_utc_timezone(self.end_time).isoformat()
 
     # Body and metadata properties
     @property

@@ -15,7 +15,6 @@
 
 import os
 import re
-from datetime import timezone
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -64,7 +63,7 @@ from zenml.orchestrators import ContainerizedOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
 from zenml.utils.env_utils import split_environment_variables
-from zenml.utils.time_utils import utc_now_tz_aware
+from zenml.utils.time_utils import to_utc_timezone, utc_now_tz_aware
 
 if TYPE_CHECKING:
     from zenml.models import PipelineDeploymentResponse, PipelineRunResponse
@@ -524,7 +523,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             schedule_name = orchestrator_run_name
             next_execution = None
             start_date = (
-                deployment.schedule.start_time.astimezone(timezone.utc)
+                to_utc_timezone(deployment.schedule.start_time)
                 if deployment.schedule.start_time
                 else None
             )
@@ -574,7 +573,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                     )
                 schedule = PipelineSchedule(
                     name=schedule_name,
-                    at=execution_time.astimezone(timezone.utc),
+                    at=to_utc_timezone(execution_time),
                     enabled=True,
                 )
                 next_execution = execution_time

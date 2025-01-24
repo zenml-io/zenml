@@ -18,7 +18,7 @@ from typing import Optional, Union
 
 
 def utc_now(tz_aware: Union[bool, datetime] = False) -> datetime:
-    """Get the current UTC time.
+    """Get the current time in the UTC timezone.
 
     Args:
         tz_aware: Use this flag to control whether the returned datetime is
@@ -56,7 +56,8 @@ def utc_now_tz_aware() -> datetime:
 def to_local_tz(dt: datetime) -> datetime:
     """Convert a datetime to the local timezone.
 
-    If the input datetime is timezone-naive, it will be assumed to be in UTC.
+    If the input datetime is timezone-naive, it will be assumed to be in the UTC
+    timezone.
 
     Args:
         dt: datetime to convert.
@@ -67,6 +68,23 @@ def to_local_tz(dt: datetime) -> datetime:
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=timezone.utc)
     return dt.astimezone()
+
+
+def to_utc_timezone(dt: datetime) -> datetime:
+    """Convert a datetime to the UTC timezone.
+
+    If the input datetime is timezone-naive, it will be assumed to be in the UTC
+    timezone.
+
+    Args:
+        dt: datetime to convert.
+
+    Returns:
+        Datetime in the UTC timezone.
+    """
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
 
 
 def seconds_to_human_readable(time_seconds: int) -> str:
