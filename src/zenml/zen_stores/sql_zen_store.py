@@ -22,7 +22,7 @@ import random
 import re
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import datetime
 from functools import lru_cache
 from pathlib import Path
 from typing import (
@@ -1744,7 +1744,7 @@ class SqlZenStore(BaseZenStore):
             settings = self._get_server_settings(session=session)
 
             if last_user_activity < settings.last_user_activity.replace(
-                tzinfo=timezone.utc
+                tzinfo=None
             ):
                 return
 
