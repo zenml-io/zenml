@@ -13,10 +13,15 @@
 #  permissions and limitations under the License.
 """Class for defining a pipeline schedule."""
 
-import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 
-from pydantic import BaseModel, model_validator
+from pydantic import (
+    BaseModel,
+    ValidationInfo,
+    field_validator,
+    model_validator,
+)
 
 from zenml.logger import get_logger
 
@@ -32,8 +37,12 @@ class Schedule(BaseModel):
             and time.
         cron_expression: Cron expression for the pipeline schedule. If a value
             for this is set it takes precedence over the start time + interval.
-        start_time: datetime object to indicate when to start the schedule.
-        end_time: datetime object to indicate when to end the schedule.
+        start_time: When the schedule should start. If this is a datetime object
+            without any timezone, it is treated as a datetime in the local
+            timezone.
+        end_time: When the schedule should end. If this is a datetime object
+            without any timezone, it is treated as a datetime in the local
+            timezone.
         interval_second: datetime timedelta indicating the seconds between two
             recurring runs for a periodic schedule.
         catchup: Whether the recurring run should catch up if behind schedule.
@@ -43,17 +52,44 @@ class Schedule(BaseModel):
             schedules the latest interval if more than one interval is ready to
             be scheduled. Usually, if your pipeline handles backfill
             internally, you should turn catchup off to avoid duplicate backfill.
-        run_once_start_time: datetime object to indicate when to run the
-            pipeline once. This is useful for one-off runs.
+        run_once_start_time: When to run the pipeline once. If this is a
+            datetime object without any timezone, it is treated as a datetime
+            in the local timezone.
     """
 
     name: Optional[str] = None
     cron_expression: Optional[str] = None
-    start_time: Optional[datetime.datetime] = None
-    end_time: Optional[datetime.datetime] = None
-    interval_second: Optional[datetime.timedelta] = None
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
+    interval_second: Optional[timedelta] = None
     catchup: bool = False
-    run_once_start_time: Optional[datetime.datetime] = None
+    run_once_start_time: Optional[datetime] = None
+
+    @field_validator(
+        "start_time", "end_time", "run_once_start_time", mode="after"
+    )
+    @classmethod
+    def _ensure_timezone(
+        cls, value: Optional[datetime], info: ValidationInfo
+    ) -> Optional[datetime]:
+        """Ensures that all datetimes are timezone aware.
+
+        Args:
+            value: The datetime.
+            info: The validation info.
+
+        Returns:
+            A timezone aware datetime or None.
+        """
+        if value and value.tzinfo is None:
+            assert info.field_name
+            logger.warning(
+                "Your schedule `%s` is missing a timezone. It will be treated "
+                "as a datetime in your local timezone."
+            )
+            value = value.astimezone()
+
+        return value
 
     @model_validator(mode="after")
     def _ensure_cron_or_periodic_schedule_configured(self) -> "Schedule":
