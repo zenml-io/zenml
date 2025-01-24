@@ -77,6 +77,7 @@ from zenml.models import (
 from zenml.models.v2.base.filter import FilterGenerator
 from zenml.services import BaseService, ServiceState
 from zenml.stack import StackComponent
+from zenml.stack.flavor import Flavor
 from zenml.stack.stack_component import StackComponentConfig
 from zenml.utils import secret_utils
 
@@ -2203,10 +2204,11 @@ def _scrub_secret(config: StackComponentConfig) -> Dict[str, Any]:
     config_dict = {}
     config_fields = config.__class__.model_fields
     for key, value in config_fields.items():
-        if secret_utils.is_secret_field(value):
-            config_dict[key] = "********"
-        else:
-            config_dict[key] = getattr(config, key)
+        if getattr(config, key):
+            if secret_utils.is_secret_field(value):
+                config_dict[key] = "********"
+            else:
+                config_dict[key] = getattr(config, key)
     return config_dict
 
 
@@ -2216,8 +2218,6 @@ def print_debug_stack() -> None:
 
     client = Client()
     stack = client.get_stack()
-    active_stack = client.active_stack
-    components = _get_stack_components(active_stack)
 
     declare("\nCURRENT STACK\n", bold=True)
     console.print(f"Name: {stack.name}")
@@ -2228,7 +2228,8 @@ def print_debug_stack() -> None:
         f"Workspace: {stack.workspace.name} / {str(stack.workspace.id)}"
     )
 
-    for component in components:
+    for component_type, components in stack.components.items():
+        component = components[0]
         component_response = client.get_stack_component(
             name_id_or_prefix=component.id, component_type=component.type
         )
@@ -2238,8 +2239,12 @@ def print_debug_stack() -> None:
         console.print(f"Name: {component.name}")
         console.print(f"ID: {str(component.id)}")
         console.print(f"Type: {component.type.value}")
-        console.print(f"Flavor: {component.flavor}")
-        console.print(f"Configuration: {_scrub_secret(component.config)}")
+        console.print(f"Flavor: {component.flavor_name}")
+
+        flavor = Flavor.from_model(component.flavor)
+        config = flavor.config_class(**component.configuration)
+
+        console.print(f"Configuration: {_scrub_secret(config)}")
         if (
             component_response.user
             and component_response.user.name
