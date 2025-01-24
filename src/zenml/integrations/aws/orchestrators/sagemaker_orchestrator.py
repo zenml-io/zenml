@@ -15,7 +15,7 @@
 
 import os
 import re
-from datetime import datetime, timezone
+from datetime import timezone
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -64,6 +64,7 @@ from zenml.orchestrators import ContainerizedOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
 from zenml.utils.env_utils import split_environment_variables
+from zenml.utils.time_utils import utc_now_tz_aware
 
 if TYPE_CHECKING:
     from zenml.models import PipelineDeploymentResponse, PipelineRunResponse
@@ -522,6 +523,11 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
 
             schedule_name = orchestrator_run_name
             next_execution = None
+            start_date = (
+                deployment.schedule.start_time.astimezone(timezone.utc)
+                if deployment.schedule.start_time
+                else None
+            )
 
             # Create PipelineSchedule based on schedule type
             if deployment.schedule.cron_expression:
@@ -531,7 +537,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 schedule = PipelineSchedule(
                     name=schedule_name,
                     cron=cron_exp,
-                    start_date=deployment.schedule.start_time,
+                    start_date=start_date,
                     enabled=True,
                 )
             elif deployment.schedule.interval_second:
@@ -549,12 +555,11 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 schedule = PipelineSchedule(
                     name=schedule_name,
                     rate=(minutes, "minutes"),
-                    start_date=deployment.schedule.start_time,
+                    start_date=start_date,
                     enabled=True,
                 )
                 next_execution = (
-                    deployment.schedule.start_time
-                    or datetime.now(timezone.utc)
+                    deployment.schedule.start_time or utc_now_tz_aware()
                 ) + deployment.schedule.interval_second
             else:
                 # One-time schedule
