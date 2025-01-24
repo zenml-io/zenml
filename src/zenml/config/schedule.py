@@ -85,7 +85,8 @@ class Schedule(BaseModel):
             assert info.field_name
             logger.warning(
                 "Your schedule `%s` is missing a timezone. It will be treated "
-                "as a datetime in your local timezone."
+                "as a datetime in your local timezone.",
+                info.field_name,
             )
             value = value.astimezone()
 
