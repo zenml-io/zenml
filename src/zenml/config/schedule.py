@@ -98,27 +98,3 @@ class Schedule(BaseModel):
                 "or a run once start time "
                 "need to be set for a valid schedule."
             )
-
-    @property
-    def utc_start_time(self) -> Optional[str]:
-        """Optional ISO-formatted string of the UTC start time.
-
-        Returns:
-            Optional ISO-formatted string of the UTC start time.
-        """
-        if not self.start_time:
-            return None
-
-        return self.start_time.astimezone(datetime.timezone.utc).isoformat()
-
-    @property
-    def utc_end_time(self) -> Optional[str]:
-        """Optional ISO-formatted string of the UTC end time.
-
-        Returns:
-            Optional ISO-formatted string of the UTC end time.
-        """
-        if not self.end_time:
-            return None
-
-        return self.end_time.astimezone(datetime.timezone.utc).isoformat()

@@ -15,7 +15,7 @@
 
 import base64
 import json
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 from uuid import UUID
 
@@ -29,6 +29,7 @@ from zenml.models import (
     ServiceConnectorResponseMetadata,
     ServiceConnectorUpdate,
 )
+from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
@@ -227,7 +228,7 @@ class ServiceConnectorSchema(NamedSchema, table=True):
             else:
                 setattr(self, field, value)
         self.secret_id = secret_id
-        self.updated = datetime.now(timezone.utc)
+        self.updated = utc_now()
         return self
 
     def to_model(
