@@ -64,7 +64,7 @@ class BigQueryDataset(Dataset):
 
 ## Creating Custom Materializers
 
-[Materializers](./handle-custom-data-types.md) in ZenML handle the serialization and deserialization of artifacts. Custom Materializers are essential for working with custom Dataset classes:
+[Materializers](../../../how-to/data-artifact-management/handle-data-artifacts/handle-custom-data-types.md) in ZenML handle the serialization and deserialization of artifacts. Custom Materializers are essential for working with custom Dataset classes:
 
 ```python
 from typing import Type

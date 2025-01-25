@@ -37,7 +37,7 @@ steps:
 - **finetune**: We finetune the model on the Viggo dataset.
 - **evaluate_base**: We evaluate the base model (i.e. the model before finetuning) on the Viggo dataset.
 - **evaluate_finetuned**: We evaluate the finetuned model on the Viggo dataset.
-- **promote**: We promote the best performing model to "staging" in the [Model Control Plane](../../../how-to/use-the-model-control-plane/README.md).
+- **promote**: We promote the best performing model to "staging" in the [Model Control Plane](../../../how-to/model-management-metrics/model-control-plane/README.md).
 
 If you adapt the code to your own use case, the specific logic in each step
 might differ but the overall structure should remain the same. When you're

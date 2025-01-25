@@ -19,7 +19,7 @@ These logs are stored within the respective artifact store of your stack. This m
 * In case of a local ZenML server (via `zenml login --local`), both local and remote artifact stores may be accessible, depending on configuration of the client.
 * In case of a deployed ZenML server, logs for runs on a [local artifact store](../../component-guide/artifact-stores/local.md) will not be accessible. Logs
 for runs using a [remote artifact store](../../user-guide/production-guide/remote-storage.md) **may be** accessible, if the artifact store has been configured
-with a [service connector](../../infrastructure-deployment/auth-management/service-connectors-guide.md). Please read [this chapter](../../user-guide/production-guide/remote-storage.md) of
+with a [service connector](../../how-to/infrastructure-deployment/auth-management/service-connectors-guide.md). Please read [this chapter](../../user-guide/production-guide/remote-storage.md) of
 the production guide to learn how to configure a remote artifact store with a service connector.
 
 If configured correctly, the logs are displayed in the dashboard as follows:
