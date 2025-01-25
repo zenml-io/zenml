@@ -956,6 +956,34 @@ zenml:
       generateCerts: false
       secretName: zenml-tls-certs
 
+  # Configuration for custom CA certificates
+  certificates:
+    # Direct injection of CA certificates in PEM format
+    customCAs: []
+      # - name: "my-custom-ca"
+      #   certificate: |
+      #     -----BEGIN CERTIFICATE-----
+      #     MIIDXTCCAkWgAwIBAgIJAJC1HiIAZAiIMA0GCSqGSIb3DQEBCwUAMEUxCzAJBgNV
+      #     ...
+      #     -----END CERTIFICATE-----
+    
+    # Reference existing secrets containing CA certificates
+    secretRefs: []
+      # - name: "my-secret"
+      #   key: "ca.crt"
+
+  # Proxy configuration
+  proxy:
+    # Enable proxy configuration
+    enabled: false
+    # HTTP proxy URL
+    httpProxy: ""
+    # HTTPS proxy URL
+    httpsProxy: ""
+    # Comma-separated list of hostnames/domains/IPs/CIDRs to exclude from proxying
+    noProxy: "localhost,127.0.0.1,::1,fe80::/10,.svc,.svc.cluster.local"
+    # Additional hostnames/domains/IPs/CIDRs to exclude from proxying
+    additionalNoProxy: []
 
 serviceAccount:
   # Specifies whether a service account should be created

@@ -21,6 +21,21 @@ spec:
       labels:
         {{- include "zenml.selectorLabels" . | nindent 8 }}
     spec:
+      {{- if or .Values.zenml.certificates.customCAs .Values.zenml.certificates.secretRefs }}
+      initContainers:
+        - name: update-ca-certificates
+          image: "{{ .Values.zenml.image.repository }}:{{ .Values.zenml.image.tag | default .Chart.Version }}"
+          imagePullPolicy: {{ .Values.zenml.image.pullPolicy }}
+          command: ["/bin/sh", "-c"]
+          args: ["update-ca-certificates && cp -r /etc/ssl/certs/* /updated-certs"]
+          securityContext:
+            runAsUser: 0  # Run as root
+          volumeMounts:
+            - name: custom-certs
+              mountPath: /usr/local/share/ca-certificates
+            - name: ca-certificates
+              mountPath: /updated-certs
+      {{- end }}
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -64,6 +79,10 @@ spec:
               mountPath: /backups
           {{- end }}
           env:
+            - name: REQUESTS_CA_BUNDLE
+              value: /etc/ssl/certs/ca-certificates.crt
+            - name: SSL_CERT_FILE
+              value: /etc/ssl/certs/ca-certificates.crt
             - name: ZENML_SERVER
               value: "True"
             {{- if .Values.zenml.debug }}
@@ -101,6 +120,20 @@ spec:
               value: {{ $value | quote }}
             {{- end }}
             {{- end }}
+            {{- if .Values.zenml.proxy.enabled }}
+            - name: HTTP_PROXY
+              value: {{ .Values.zenml.proxy.httpProxy | quote }}
+            - name: HTTPS_PROXY
+              value: {{ .Values.zenml.proxy.httpsProxy | quote }}
+            - name: NO_PROXY
+              value: {{ include "zenml.noProxyList" . | quote }}
+            - name: http_proxy
+              value: {{ .Values.zenml.proxy.httpProxy | quote }}
+            - name: https_proxy
+              value: {{ .Values.zenml.proxy.httpsProxy | quote }}
+            - name: no_proxy
+              value: {{ include "zenml.noProxyList" . | quote }}
+            {{- end }}
           envFrom:
           - secretRef:
               name: {{ include "zenml.fullname" . }}-db-migration
@@ -110,6 +143,35 @@ spec:
             {{- else }}
             {{- toYaml .Values.resources | nindent 12 }}
             {{- end }}
+      {{- if or .Values.zenml.certificates.customCAs .Values.zenml.certificates.secretRefs }}
+          volumeMounts:
+            - name: custom-certs
+              mountPath: /usr/local/share/ca-certificates
+              readOnly: true
+            - name: ca-certificates
+              mountPath: /etc/ssl/certs
+              readOnly: true
+      volumes:
+        - name: custom-certs
+          projected:
+            sources:
+            {{- range .Values.zenml.certificates.customCAs }}
+            - configMap:
+                name: {{ include "zenml.fullname" $ }}-custom-ca-{{ .name }}-db-migration
+                items:
+                  - key: certificate
+                    path: {{ .name }}.crt
+            {{- end }}
+            {{- range .Values.zenml.certificates.secretRefs }}
+            - secret:
+                name: {{ .name }}
+                items:
+                  - key: {{ .key }}
+                    path: {{ .name }}.crt
+            {{- end }}
+        - name: ca-certificates
+          emptyDir: {}
+      {{- end }}
       {{- with .Values.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}

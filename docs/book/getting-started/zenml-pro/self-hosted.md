@@ -499,10 +499,11 @@ To deploy the ZenML Pro control plane and one or more ZenML Pro tenant servers, 
 
 There are a variety of options that can be configured for the ZenML Pro helm chart before installation.
 
-You can take look at the [`values.yaml` file](https://artifacthub.io/packages/helm/zenml-pro/zenml-pro?modal=values) and familiarize yourself with some of the configuration settings that you can customize for your ZenML Pro deployment. Alternatively, you can unpack the `values.yaml` file included in the helm chart:
+You can take look at the [Helm chart README](https://artifacthub.io/packages/helm/zenml-pro/zenml-pro) and [`values.yaml` file](https://artifacthub.io/packages/helm/zenml-pro/zenml-pro?modal=values) and familiarize yourself with some of the configuration settings that you can customize for your ZenML Pro deployment. Alternatively, you can unpack the `README.md` and `values.yaml` files included in the helm chart:
 
 ```bash
 helm  pull --untar  oci://public.ecr.aws/zenml/zenml-pro --version <version>
+less zenml-pro/README.md
 less zenml-pro/values.yaml
 ```
 
@@ -567,6 +568,7 @@ Minimum required settings:
 
 In addition to the above, the following might also be relevant for you:
 
+- injecting custom CA certificates (and HTTP proxy settings
 - custom container image repository locations (`zenml.image.api` and `zenml.image.dashboard`)
 - the username and password used for the default admin account (`zenml.auth.password`)
 - additional Ingress settings (`zenml.ingress`)
@@ -1237,10 +1239,11 @@ resources:
     
     The ZenML Pro tenant server is nothing more than a slightly modified open-source ZenML server. The deployment even uses the official open-source helm chart.
     
-    There are a variety of options that can be configured for the ZenML Pro tenant server chart before installation. You can start by taking a look at the [`values.yaml` file](https://artifacthub.io/packages/helm/zenml/zenml?modal=values) and familiarize yourself with some of the configuration settings that you can customize for your ZenML server deployment. Alternatively, you can unpack the `values.yaml` file included in the helm chart:
+    There are a variety of options that can be configured for the ZenML Pro tenant server chart before installation. You can start by taking a look at the [Helm chart README](https://artifacthub.io/packages/helm/zenml/zenml) and [`values.yaml` file](https://artifacthub.io/packages/helm/zenml/zenml?modal=values) and familiarize yourself with some of the configuration settings that you can customize for your ZenML server deployment. Alternatively, you can unpack the `README.md` and `values.yaml` files included in the helm chart:
     
     ```bash
     helm  pull --untar  oci://public.ecr.aws/zenml/zenml --version <version>
+    less zenml/README.md
     less zenml/values.yaml
     ```
     

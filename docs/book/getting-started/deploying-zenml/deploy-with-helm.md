@@ -658,4 +658,99 @@ podSecurityContext:
   fsGroup: 1000 # if you're using a PVC for backup, this should necessarily be set.
 ```
 
+
+### Custom CA Certificates
+
+If you need to connect to services using HTTPS with certificates signed by custom Certificate Authorities (e.g., self-signed certificates), you can configure custom CA certificates. There are two ways to provide custom CA certificates:
+
+1. Direct injection in values.yaml:
+```yaml
+zenml:
+  certificates:
+    customCAs:
+      - name: "my-custom-ca"
+        certificate: |
+          -----BEGIN CERTIFICATE-----
+          MIIDXTCCAkWgAwIBAgIJAJC1HiIAZAiIMA0GCSqGSIb3DQEBCwUAMEUxCzAJBgNV
+          ...
+          -----END CERTIFICATE-----
+```
+
+2. Reference existing Kubernetes secrets:
+```yaml
+zenml:
+  certificates:
+    secretRefs:
+      - name: "my-secret"
+        key: "ca.crt"
+```
+
+The certificates will be installed in the server container, allowing it to securely connect to services using these custom CA certificates.
+
+> **⚠️ Security Note**: This implementation uses init containers that need to run as root to update the system CA store. Some Kubernetes security policies (e.g., Pod Security Standards, OpenShift SCCs) may prevent this. In such environments, you'll need to build custom container images that include the certificates, installed during the build process when root access is available.
+
+Alternative approach using custom container images:
+
+```dockerfile
+FROM python:3.10-slim-bookworm AS base
+
+# Install certificates before switching to non-root user
+COPY my-custom-ca.crt /usr/local/share/ca-certificates/
+RUN update-ca-certificates && \
+    # Ensure certificates are world-readable
+    chmod -R 0644 /etc/ssl/certs/* && \
+    chmod 0755 /etc/ssl/certs
+
+# Use the original image as the final stage
+FROM zenmldocker/zenml-server:<version>
+
+# Copy the updated certificate store from the base stage
+COPY --from=base /etc/ssl/certs /etc/ssl/certs
+COPY my-custom-ca.crt /usr/local/share/ca-certificates/
+```
+
+Then update your values.yaml to use your custom images:
+```yaml
+zenml:
+  image:
+    repository: your-registry/zenml-server-with-certs
+    tag: your-tag
+```
+
+This chart offers a multitude of configuration options. For detailed
+information, check the default [`values.yaml`](values.yaml) file.
+
+### HTTP Proxy Configuration
+
+If your environment requires a proxy for external connections, you can configure it using:
+
+```yaml
+zenml:
+  proxy:
+    enabled: true
+    httpProxy: "http://proxy.example.com:8080"
+    httpsProxy: "http://proxy.example.com:8080"
+    # Additional hostnames/domains/IPs/CIDRs to exclude from proxying
+    additionalNoProxy:
+      - "internal.example.com"
+      - "10.0.0.0/8"
+```
+
+By default, the following hostnames/domains are excluded from proxying:
+- `localhost`, `127.0.0.1`, `::1` (IPv4 and IPv6 localhost)
+- `fe80::/10` (IPv6 link-local addresses)
+- `.svc` and `.svc.cluster.local` (Kubernetes service DNS domains)
+- The hostname from `zenml.serverURL` if configured
+- The ingress hostname (`zenml.ingress.host`) if configured
+- Internal service names used for communication between components
+
+You can add additional exclusions using the `additionalNoProxy` list. The NO_PROXY environment variable accepts:
+- Hostnames (e.g., "zenml.example.com")
+- Domain names with leading dot for wildcards (e.g., ".example.com")
+- IPv4 addresses (e.g., "10.0.0.1")
+- IPv4 ranges in CIDR notation (e.g., "10.0.0.0/8")
+- IPv6 addresses (e.g., "::1")
+- IPv6 ranges in CIDR notation (e.g., "fe80::/10")
+
+
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
