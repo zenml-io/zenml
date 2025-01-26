@@ -41,7 +41,7 @@ preparation, model training, and evaluation. It's a good practice to have a
 separate pipeline for different tasks like training and inference. This makes
 your pipelines more modular and easier to manage. Here's some of the benefits:
 
-- Separation of pipelines by the nature of the task allows you to [run them independently as needed](../develop-locally/local-prod-pipeline-variants.md). For example, you might train a model in a training pipeline only once a week but run inference on new data every day.
+- Separation of pipelines by the nature of the task allows you to [run them independently as needed](../../../how-to/pipeline-development/develop-locally/local-prod-pipeline-variants.md). For example, you might train a model in a training pipeline only once a week but run inference on new data every day.
 - It becomes easier to manage and update your code as your project grows more complex.
 - Different people can work on the code for the pipelines without interfering with each other.
 - It helps you organize your runs better.
@@ -69,7 +69,7 @@ Here's how the workflow would look like with ZenML:
 - They create three pipelines: one for feature engineering, one for training the model, and one for producing predictions.
 - They set up a [repository for their project](../../project-setup-and-management/setting-up-a-project-repository/README.md) and start building their pipelines collaboratively. Let's assume Bob builds the feature engineering and training pipeline and Alice builds the inference pipeline.
 - To test their pipelines locally, they both have a `default` stack with a local orchestrator and a local artifact store. This allows them to quickly iterate on their code without deploying any infrastructure or incurring any costs.
-- While building the inference pipeline, Alice needs to make sure that the preprocessing step in her pipeline is the same as the one used while training. It might even involve the use of libraries that are not publicily available and she follows the [Shared Libraries and Logic for Teams](./shared_components_for_teams.md) guide to help with this.
+- While building the inference pipeline, Alice needs to make sure that the preprocessing step in her pipeline is the same as the one used while training. It might even involve the use of libraries that are not publicily available and she follows the [Shared Libraries and Logic for Teams](./shared-components-for-teams.md) guide to help with this.
 - Bob's training pipeline produces a model artifact, which Alice's inference pipeline requires as input. It also produces other artifacts such as metrics and a model checkpoint that are logged as artifacts in the pipeline run.
 - To allow easy access to model and data artifacts, they [use a ZenML Model](../../model-management-metrics/model-control-plane/associate-a-pipeline-with-a-model.md) which ties the pipelines, models and artifacts together. Now Alice can just [reference the right model name and find the model artifact she needs.](../../model-management-metrics/model-control-plane/load-artifacts-from-model.md)
 - It is also critical that the right model version from the training pipeline is used in the inference pipeline. The [Model Control Plane](../../model-management-metrics/model-control-plane/README.md) helps Bob to keep track of the different versions and to easily compare them. Bob can then [promote the best performing model version to the `production` stage](../../model-management-metrics/model-control-plane/promote-a-model.md) which Alice's pipeline can then consume.

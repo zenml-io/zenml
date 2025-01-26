@@ -47,7 +47,7 @@ def training_pipeline():
 ```
 
 {% hint style="info" %}
-Note that in the above example, the `train_data` and `test_data` artifacts are not [materialized](artifact-versioning.md) in memory in the `@pipeline` function, but rather the `train_data` and `test_data` objects are simply references to where this data is stored in the artifact store. Therefore, one cannot use any logic regarding the nature of this data itself during compilation time (i.e. in the `@pipeline` function).
+Note that in the above example, the `train_data` and `test_data` artifacts are not [materialized](../../../how-to/data-artifact-management/handle-data-artifacts/artifact-versioning.md) in memory in the `@pipeline` function, but rather the `train_data` and `test_data` objects are simply references to where this data is stored in the artifact store. Therefore, one cannot use any logic regarding the nature of this data itself during compilation time (i.e. in the `@pipeline` function).
 {% endhint %}
 
 ## Pattern 2: Artifact exchange between pipelines through a `Model`
