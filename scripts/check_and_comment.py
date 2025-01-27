@@ -117,7 +117,7 @@ def create_comment_body(broken_links):
         )
 
         body.append(
-            f"| `{display_name}` | \"{link['link_text']}\" | `{link['broken_path']}` |"
+            f'| `{display_name}` | "{link["link_text"]}" | `{link["broken_path"]}` |'
         )
 
     body.append("")
@@ -197,7 +197,7 @@ def main():
     for link in broken_links:
         relative_path = format_path_for_display(link["source_file"])
         print(f"\n📄 File: {relative_path}")
-        print(f"📝 Link text: \"{link['link_text']}\"")
+        print(f'📝 Link text: "{link["link_text"]}"')
         print(f"❌ Broken path: {link['broken_path']}")
 
     # Only exit with error code in local mode

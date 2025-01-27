@@ -216,11 +216,7 @@ class BaseEntrypointConfiguration(ABC):
         if not should_download_code:
             return
 
-        if code_reference := deployment.code_reference:
-            self.download_code_from_code_repository(
-                code_reference=code_reference
-            )
-        elif code_path := deployment.code_path:
+        if code_path := deployment.code_path:
             # Load the artifact store not from the active stack but separately.
             # This is required in case the stack has custom flavor components
             # (other than the artifact store) for which the flavor
@@ -228,6 +224,12 @@ class BaseEntrypointConfiguration(ABC):
             artifact_store = self._load_active_artifact_store()
             code_utils.download_code_from_artifact_store(
                 code_path=code_path, artifact_store=artifact_store
+            )
+        elif code_reference := deployment.code_reference:
+            # TODO: This might fail if the code repository had unpushed changes
+            # at the time the pipeline run was started.
+            self.download_code_from_code_repository(
+                code_reference=code_reference
             )
         else:
             raise RuntimeError(
