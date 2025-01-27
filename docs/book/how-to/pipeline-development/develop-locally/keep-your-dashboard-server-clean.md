@@ -109,7 +109,7 @@ training_pipeline()
 ```
 
 Note that pipeline names must be unique. For more information on this feature,
-see the [documentation on naming pipeline runs](../../pipeline-development/build-pipelines/name-your-pipeline-and-runs.md).
+see the [documentation on naming pipeline runs](../../../how-to/pipeline-development/build-pipelines/name-your-pipeline-runs.md).
 
 ## Models
 

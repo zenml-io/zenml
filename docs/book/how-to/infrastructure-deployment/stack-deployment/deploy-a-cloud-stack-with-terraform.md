@@ -42,7 +42,7 @@ If you prefer to host your own, you can learn about self-hosting a ZenML server
 Once you are connected to your deployed ZenML server, you need to create
 a service account and an API key for it. You will use the API key to give the
 Terraform module programmatic access to your ZenML server. You can find more
-about service accounts and API keys [here](../../project-setup-and-management/connecting-to-zenml/connect-with-a-service-account.md).
+about service accounts and API keys [here](../../../how-to/manage-zenml-server/connecting-to-zenml/connect-with-a-service-account.md).
 but the process is as simple as running the following CLI command while
 connected to your ZenML server:
 

@@ -41,7 +41,7 @@ def training_step(...) -> ...:
 Please refer to the source code and documentation of each orchestrator to find out which orchestrator supports specifying resources in what way.
 
 {% hint style="info" %}
-If you're using an orchestrator which does not support this feature or its underlying infrastructure does not cover your requirements, you can also take a look at [step operators](../../component-guide/step-operators/step-operators.md) which allow you to execute individual steps of your pipeline in environments independent of your orchestrator.
+If you're using an orchestrator which does not support this feature or its underlying infrastructure does not cover your requirements, you can also take a look at [step operators](../../../component-guide/step-operators/step-operators.md) which allow you to execute individual steps of your pipeline in environments independent of your orchestrator.
 {% endhint %}
 
 ### Ensure your container is CUDA-enabled
@@ -56,7 +56,7 @@ All steps running on GPU-backed hardware will be executed within a containerized
 
 #### 1. **Specify a CUDA-enabled parent image in your `DockerSettings`**
 
-For complete details, refer to the [containerization page](../../customize-docker-builds/README.md) that explains how to do this. As an example, if you want to use the latest CUDA-enabled official PyTorch image for your entire pipeline run, you can include the following code:
+For complete details, refer to the [containerization page](../../../how-to/customize-docker-builds/README.md) that explains how to do this. As an example, if you want to use the latest CUDA-enabled official PyTorch image for your entire pipeline run, you can include the following code:
 
 ```python
 from zenml import pipeline

@@ -22,7 +22,7 @@ import random
 import re
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import datetime
 from functools import lru_cache
 from pathlib import Path
 from typing import (
@@ -796,7 +796,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                     logger.warning(
                         f"Database SSL setting `{key}` is not a file. "
                     )
-                sqlalchemy_ssl_args[key.lstrip("ssl_")] = ssl_setting
+                sqlalchemy_ssl_args[key.removeprefix("ssl_")] = ssl_setting
             if len(sqlalchemy_ssl_args) > 0:
                 sqlalchemy_ssl_args["check_hostname"] = (
                     self.ssl_verify_server_cert
@@ -1744,7 +1744,7 @@ class SqlZenStore(BaseZenStore):
             settings = self._get_server_settings(session=session)
 
             if last_user_activity < settings.last_user_activity.replace(
-                tzinfo=timezone.utc
+                tzinfo=None
             ):
                 return
 
