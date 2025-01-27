@@ -27,7 +27,7 @@ from zenml.config.build_configuration import BuildConfiguration
 from zenml.config.step_configurations import Step
 from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import StackComponentType
-from zenml.exceptions import AuthorizationException
+from zenml.exceptions import AuthorizationException, CustomFlavorImportError
 from zenml.logger import get_logger
 from zenml.models import (
     PipelineRunResponse,
@@ -400,6 +400,7 @@ class StackComponent:
             The created StackComponent.
 
         Raises:
+            CustomFlavorImportError: If the custom flavor can't be imported.
             ImportError: If the flavor can't be imported.
         """
         flavor_model = component_model.flavor
@@ -409,9 +410,16 @@ class StackComponent:
 
             flavor = Flavor.from_model(flavor_model)
         except (ModuleNotFoundError, ImportError, NotImplementedError) as err:
-            raise ImportError(
-                f"Couldn't import flavor {flavor_model.name}: {err}"
-            )
+            if flavor_model.is_custom:
+                raise CustomFlavorImportError(
+                    f"Couldn't import custom flavor {flavor_model.name}: "
+                    f"{err}. Make sure the implementation file of the custom "
+                    f"flavor {flavor_model.source} is available."
+                )
+            else:
+                raise ImportError(
+                    f"Couldn't import flavor {flavor_model.name}: {err}"
+                )
 
         configuration = flavor.config_class(**component_model.configuration)
 

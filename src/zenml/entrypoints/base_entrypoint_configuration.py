@@ -23,6 +23,7 @@ from uuid import UUID
 from zenml.client import Client
 from zenml.code_repositories import BaseCodeRepository
 from zenml.enums import StackComponentType
+from zenml.exceptions import CustomFlavorImportError
 from zenml.logger import get_logger
 from zenml.utils import (
     code_repository_utils,
@@ -206,6 +207,8 @@ class BaseEntrypointConfiguration(ABC):
                 decision instead.
 
         Raises:
+            CustomFlavorImportError: If the artifact store flavor can't be
+                imported.
             RuntimeError: If the current environment requires code download
                 but the deployment does not have a reference to any code.
         """
@@ -221,7 +224,20 @@ class BaseEntrypointConfiguration(ABC):
             # This is required in case the stack has custom flavor components
             # (other than the artifact store) for which the flavor
             # implementations will only be available once the download finishes.
-            artifact_store = self._load_active_artifact_store()
+            try:
+                artifact_store = self._load_active_artifact_store()
+            except CustomFlavorImportError as e:
+                raise CustomFlavorImportError(
+                    "Failed to import custom artifact store flavor. The "
+                    "artifact store flavor is needed to download your code, "
+                    "but it looks like it might be part of the files "
+                    "that we're trying to download. If this is the case, you "
+                    "should disable downloading code from the artifact store "
+                    "using `DockerSettings(allow_download_from_artifact_store=False)` "
+                    "or make sure the artifact flavor files are included in "
+                    "Docker image by using a custom parent image or installing "
+                    "them as part of a pip dependency."
+                ) from e
             code_utils.download_code_from_artifact_store(
                 code_path=code_path, artifact_store=artifact_store
             )
