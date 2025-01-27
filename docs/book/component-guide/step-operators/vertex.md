@@ -145,7 +145,7 @@ To use persistent resources with the Vertex step operator, you need to do the fo
 
 **Step 1**: You create a persistent resource using the GCP Cloud UI, or by [following instructions in the GCP docs](https://cloud.google.com/vertex-ai/docs/training/persistent-resource-create).
 
-**Step 2**: Make sure your step operator is properly configured. For example, you need to have a service account specified in your step operator configuration. This service account needs to have permissions to access to persistent resource.
+**Step 2**: Make sure your step operator is properly configured. For example, you need to have a service account specified in your step operator configuration. This service account needs to have permissions to access the persistent resource.
 
 ```bash
 # You can also use `zenml step-operator update`
