@@ -22,6 +22,7 @@ from uuid import UUID
 
 from zenml.client import Client
 from zenml.code_repositories import BaseCodeRepository
+from zenml.enums import StackComponentType
 from zenml.logger import get_logger
 from zenml.utils import (
     code_repository_utils,
@@ -31,6 +32,7 @@ from zenml.utils import (
 )
 
 if TYPE_CHECKING:
+    from zenml.artifact_stores import BaseArtifactStore
     from zenml.models import CodeReferenceResponse, PipelineDeploymentResponse
 
 logger = get_logger(__name__)
@@ -219,7 +221,14 @@ class BaseEntrypointConfiguration(ABC):
                 code_reference=code_reference
             )
         elif code_path := deployment.code_path:
-            code_utils.download_code_from_artifact_store(code_path=code_path)
+            # Load the artifact store not from the active stack but separately.
+            # This is required in case the stack has custom flavor components
+            # (other than the artifact store) for which the flavor
+            # implementations will only be available once the download finishes.
+            artifact_store = self._load_active_artifact_store()
+            code_utils.download_code_from_artifact_store(
+                code_path=code_path, artifact_store=artifact_store
+            )
         else:
             raise RuntimeError(
                 "Code download required but no code reference or path provided."
@@ -297,6 +306,22 @@ class BaseEntrypointConfiguration(ABC):
             return True
 
         return False
+
+    def _load_active_artifact_store(self) -> "BaseArtifactStore":
+        """Load the active artifact store.
+
+        Returns:
+            The active artifact store.
+        """
+        from zenml.artifact_stores import BaseArtifactStore
+
+        artifact_store_model = Client().active_stack_model.components[
+            StackComponentType.ARTIFACT_STORE
+        ][0]
+        artifact_store = BaseArtifactStore.from_model(artifact_store_model)
+        assert isinstance(artifact_store, BaseArtifactStore)
+
+        return artifact_store
 
     @abstractmethod
     def run(self) -> None:
