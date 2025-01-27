@@ -273,7 +273,10 @@ def download_code_from_artifact_store(
     logger.info("Downloading code from artifact store path `%s`.", code_path)
 
     if not code_path.startswith(artifact_store.path):
-        raise RuntimeError("Code stored in different artifact store.")
+        raise RuntimeError(
+            "The code is not stored in the artifact store "
+            f"{artifact_store.name} that was passed to download it."
+        )
 
     # Make sure we register the artifact store filesystem here so the
     # fileio.copy call will pick up the right credentials
