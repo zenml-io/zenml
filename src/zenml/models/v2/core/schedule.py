@@ -13,11 +13,11 @@
 #  permissions and limitations under the License.
 """Models representing schedules."""
 
-import datetime
+from datetime import datetime, timedelta, timezone
 from typing import Dict, Optional, Union
 from uuid import UUID
 
-from pydantic import Field, model_validator
+from pydantic import Field, field_validator, model_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.logger import get_logger
@@ -46,14 +46,35 @@ class ScheduleRequest(WorkspaceScopedRequest):
     active: bool
 
     cron_expression: Optional[str] = None
-    start_time: Optional[datetime.datetime] = None
-    end_time: Optional[datetime.datetime] = None
-    interval_second: Optional[datetime.timedelta] = None
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
+    interval_second: Optional[timedelta] = None
     catchup: bool = False
-    run_once_start_time: Optional[datetime.datetime] = None
+    run_once_start_time: Optional[datetime] = None
 
     orchestrator_id: Optional[UUID]
     pipeline_id: Optional[UUID]
+
+    @field_validator(
+        "start_time", "end_time", "run_once_start_time", mode="after"
+    )
+    @classmethod
+    def _ensure_tzunaware_utc(
+        cls, value: Optional[datetime]
+    ) -> Optional[datetime]:
+        """Ensures that all datetimes are timezone unaware and in UTC time.
+
+        Args:
+            value: The datetime.
+
+        Returns:
+            The datetime in UTC time without timezone.
+        """
+        if value and value.tzinfo:
+            value = value.astimezone(timezone.utc)
+            value = value.replace(tzinfo=None)
+
+        return value
 
     @model_validator(mode="after")
     def _ensure_cron_or_periodic_schedule_configured(
@@ -108,11 +129,11 @@ class ScheduleUpdate(BaseUpdate):
     name: Optional[str] = None
     active: Optional[bool] = None
     cron_expression: Optional[str] = None
-    start_time: Optional[datetime.datetime] = None
-    end_time: Optional[datetime.datetime] = None
-    interval_second: Optional[datetime.timedelta] = None
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
+    interval_second: Optional[timedelta] = None
     catchup: Optional[bool] = None
-    run_once_start_time: Optional[datetime.datetime] = None
+    run_once_start_time: Optional[datetime] = None
     orchestrator_id: Optional[UUID] = None
     pipeline_id: Optional[UUID] = None
 
@@ -125,11 +146,11 @@ class ScheduleResponseBody(WorkspaceScopedResponseBody):
 
     active: bool
     cron_expression: Optional[str] = None
-    start_time: Optional[datetime.datetime] = None
-    end_time: Optional[datetime.datetime] = None
-    interval_second: Optional[datetime.timedelta] = None
+    start_time: Optional[datetime] = None
+    end_time: Optional[datetime] = None
+    interval_second: Optional[timedelta] = None
     catchup: bool = False
-    run_once_start_time: Optional[datetime.datetime] = None
+    run_once_start_time: Optional[datetime] = None
 
 
 class ScheduleResponseMetadata(WorkspaceScopedResponseMetadata):
@@ -217,7 +238,7 @@ class ScheduleResponse(
         return self.get_body().cron_expression
 
     @property
-    def start_time(self) -> Optional[datetime.datetime]:
+    def start_time(self) -> Optional[datetime]:
         """The `start_time` property.
 
         Returns:
@@ -226,7 +247,7 @@ class ScheduleResponse(
         return self.get_body().start_time
 
     @property
-    def end_time(self) -> Optional[datetime.datetime]:
+    def end_time(self) -> Optional[datetime]:
         """The `end_time` property.
 
         Returns:
@@ -235,7 +256,7 @@ class ScheduleResponse(
         return self.get_body().end_time
 
     @property
-    def run_once_start_time(self) -> Optional[datetime.datetime]:
+    def run_once_start_time(self) -> Optional[datetime]:
         """The `run_once_start_time` property.
 
         Returns:
@@ -244,7 +265,7 @@ class ScheduleResponse(
         return self.get_body().run_once_start_time
 
     @property
-    def interval_second(self) -> Optional[datetime.timedelta]:
+    def interval_second(self) -> Optional[timedelta]:
         """The `interval_second` property.
 
         Returns:
@@ -313,10 +334,10 @@ class ScheduleFilter(WorkspaceScopedFilter):
         default=None,
         description="The cron expression, describing the schedule",
     )
-    start_time: Optional[Union[datetime.datetime, str]] = Field(
+    start_time: Optional[Union[datetime, str]] = Field(
         default=None, description="Start time", union_mode="left_to_right"
     )
-    end_time: Optional[Union[datetime.datetime, str]] = Field(
+    end_time: Optional[Union[datetime, str]] = Field(
         default=None, description="End time", union_mode="left_to_right"
     )
     interval_second: Optional[Optional[float]] = Field(
@@ -332,7 +353,7 @@ class ScheduleFilter(WorkspaceScopedFilter):
         default=None,
         description="Name of the schedule",
     )
-    run_once_start_time: Optional[Union[datetime.datetime, str]] = Field(
+    run_once_start_time: Optional[Union[datetime, str]] = Field(
         default=None,
         description="The time at which the schedule should run once",
         union_mode="left_to_right",
