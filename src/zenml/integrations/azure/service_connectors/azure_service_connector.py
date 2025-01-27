@@ -1726,6 +1726,10 @@ class AzureServiceConnector(ServiceConnector):
             resource_id=resource_id,
         )
 
+        resource_group: str | None
+        registry_name: str
+        cluster_name: str
+
         if resource_type == DOCKER_REGISTRY_RESOURCE_TYPE:
             registry_name = self._parse_acr_resource_id(resource_id)
             registry_domain = f"{registry_name}.azurecr.io"
