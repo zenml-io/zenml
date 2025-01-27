@@ -34,6 +34,7 @@ from zenml.integrations.whylogs.secret_schemas.whylabs_secret_schema import (
 )
 from zenml.logger import get_logger
 from zenml.stack.authentication_mixin import AuthenticationMixin
+from zenml.utils.time_utils import utc_now
 
 logger = get_logger(__name__)
 
@@ -97,7 +98,7 @@ class WhylogsDataValidator(BaseDataValidator, AuthenticationMixin):
         """
         results = why.log(pandas=dataset)
         profile = results.profile()
-        dataset_timestamp = dataset_timestamp or datetime.datetime.utcnow()
+        dataset_timestamp = dataset_timestamp or utc_now()
         profile.set_dataset_timestamp(dataset_timestamp=dataset_timestamp)
         return profile.view()
 

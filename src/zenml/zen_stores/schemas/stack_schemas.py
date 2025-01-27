@@ -15,7 +15,6 @@
 
 import base64
 import json
-from datetime import datetime
 from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
@@ -27,6 +26,7 @@ from zenml.models import (
     StackResponseMetadata,
     StackUpdate,
 )
+from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
@@ -134,7 +134,7 @@ class StackSchema(NamedSchema, table=True):
             else:
                 setattr(self, field, value)
 
-        self.updated = datetime.utcnow()
+        self.updated = utc_now()
         return self
 
     def to_model(

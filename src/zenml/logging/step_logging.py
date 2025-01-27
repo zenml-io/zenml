@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """ZenML logging handler."""
 
-import datetime
 import os
 import re
 import sys
@@ -35,6 +34,7 @@ from zenml.logging import (
     STEP_LOGS_STORAGE_MAX_MESSAGES,
     STEP_LOGS_STORAGE_MERGE_INTERVAL_SECONDS,
 )
+from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
 # Get the logger
@@ -303,9 +303,9 @@ class StepLogsStorage:
                             "w",
                         ) as file:
                             for message in self.buffer:
-                                timestamp = datetime.datetime.now(
-                                    datetime.timezone.utc
-                                ).strftime("%Y-%m-%d %H:%M:%S")
+                                timestamp = utc_now().strftime(
+                                    "%Y-%m-%d %H:%M:%S"
+                                )
                                 file.write(
                                     f"[{timestamp} UTC] {remove_ansi_escape_codes(message)}\n"
                                 )
@@ -314,9 +314,9 @@ class StepLogsStorage:
                             self.logs_uri, "a"
                         ) as file:
                             for message in self.buffer:
-                                timestamp = datetime.datetime.now(
-                                    datetime.timezone.utc
-                                ).strftime("%Y-%m-%d %H:%M:%S")
+                                timestamp = utc_now().strftime(
+                                    "%Y-%m-%d %H:%M:%S"
+                                )
                                 file.write(
                                     f"[{timestamp} UTC] {remove_ansi_escape_codes(message)}\n"
                                 )

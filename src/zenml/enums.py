@@ -376,6 +376,7 @@ class MetadataResourceTypes(StrEnum):
     STEP_RUN = "step_run"
     ARTIFACT_VERSION = "artifact_version"
     MODEL_VERSION = "model_version"
+    SCHEDULE = "schedule"
 
 
 class DatabaseBackupStrategy(StrEnum):

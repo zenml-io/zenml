@@ -10,9 +10,9 @@ A code repository in ZenML refers to a remote storage location for your code. So
 
 <figure><img src="../../../.gitbook/assets/Remote_with_code_repository.png" alt=""><figcaption><p>A visual representation of how the code repository fits into the general ZenML architecture.</p></figcaption></figure>
 
-Code repositories enable ZenML to keep track of the code version that you use for your pipeline runs. Additionally, running a pipeline that is tracked in a registered code repository can [speed up the Docker image building for containerized stack components](../../infrastructure-deployment/customize-docker-builds/use-code-repositories-to-speed-up-docker-build-times.md) by eliminating the need to rebuild Docker images each time you change one of your source code files.
+Code repositories enable ZenML to keep track of the code version that you use for your pipeline runs. Additionally, running a pipeline that is tracked in a registered code repository can [speed up the Docker image building for containerized stack components](../../../how-to/customize-docker-builds/how-to-reuse-builds.md) by eliminating the need to rebuild Docker images each time you change one of your source code files.
 
-Learn more about how code repositories benefit development [here](../../customize-docker-builds/how-to-reuse-builds.md).
+Learn more about how code repositories benefit development [here](../../../how-to/customize-docker-builds/how-to-reuse-builds.md).
 
 ## Registering a code repository
 
@@ -48,11 +48,13 @@ Afterward, you can register a GitHub code repository by running the following CL
 
 ```shell
 zenml code-repository register <NAME> --type=github \
---url=<GITHUB_URL> --owner=<OWNER> --repository=<REPOSITORY> \
+--owner=<OWNER> --repository=<REPOSITORY> \
 --token=<GITHUB_TOKEN>
 ```
 
-where \<REPOSITORY> is the name of the code repository you are registering, \<OWNER> is the owner of the repository, \<NAME> is the name of the repository, \<GITHUB\_TOKEN> is your GitHub Personal Access Token and \<GITHUB\_URL> is the URL of the GitHub instance which defaults to `https://github.com.` You will need to set a URL if you are using GitHub Enterprise.
+where `<REPOSITORY>` is the name of the code repository you are registering, `<OWNER>` is the owner of the repository, `<NAME>` is the name of the repository and `<GITHUB_TOKEN>` is your GitHub Personal Access Token.
+
+If you're using a self-hosted GitHub Enterprise instance, you'll need to also pass the `--api_url=<API_URL>` and `--host=<HOST>` options. `<API_URL>` should point to where the GitHub API is reachable (defaults to `https://api.github.com/`) and `<HOST>` should be the [hostname of your GitHub instance](https://docs.github.com/en/enterprise-server@3.10/admin/configuring-settings/configuring-network-settings/configuring-the-hostname-for-your-instance?learn=deploy_an_instance&learnProduct=admin).
 
 {% hint style="warning" %}
 Please refer to the section on using secrets for stack configuration in order to securely store your GitHub 
@@ -105,11 +107,14 @@ Afterward, you can register a GitLab code repository by running the following CL
 
 ```shell
 zenml code-repository register <NAME> --type=gitlab \
---url=<GITLAB_URL> --group=<GROUP> --project=<PROJECT> \
+--group=<GROUP> --project=<PROJECT> \
 --token=<GITLAB_TOKEN>
 ```
 
-where `<NAME>` is the name of the code repository you are registering, `<GROUP>` is the group of the project, `<PROJECT>` is the name of the project, \<GITLAB\_TOKEN> is your GitLab Personal Access Token, and \<GITLAB\_URL> is the URL of the GitLab instance which defaults to `https://gitlab.com.` You will need to set a URL if you have a self-hosted GitLab instance.
+where `<NAME>` is the name of the code repository you are registering, `<GROUP>` is the group of the project, `<PROJECT>` is the name of the project and `<GITLAB_TOKEN>` is your GitLab Personal Access Token.
+
+If you're using a self-hosted GitLab instance, you'll need to also pass the `--instance_url=<INSTANCE_URL>` and `--host=<HOST>` options. `<INSTANCE_URL>` should point to your GitLab instance (defaults to `https://gitlab.com/`) and `<HOST>` should be the hostname of your GitLab instance (defaults to `gitlab.com`).
+
 
 {% hint style="warning" %}
 Please refer to the section on using secrets for stack configuration in order to securely store your GitLab

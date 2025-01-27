@@ -6,11 +6,11 @@ Create Date: 2024-08-07 14:49:07.623500
 
 """
 
-from datetime import datetime, timezone
-
 import sqlalchemy as sa
 import sqlmodel
 from alembic import op
+
+from zenml.utils.time_utils import utc_now
 
 # revision identifiers, used by Alembic.
 revision = "3dcc5d20e82f"
@@ -36,7 +36,7 @@ def upgrade() -> None:
             SET last_user_activity = :last_user_activity
             """
         ),
-        params=(dict(last_user_activity=datetime.now(timezone.utc))),
+        params=(dict(last_user_activity=utc_now())),
     )
 
     with op.batch_alter_table("server_settings", schema=None) as batch_op:

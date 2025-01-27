@@ -15,7 +15,6 @@
 
 import base64
 import json
-from datetime import datetime
 from typing import Any, Optional
 from uuid import UUID
 
@@ -32,6 +31,7 @@ from zenml.models.v2.core.service import (
     ServiceUpdate,
 )
 from zenml.utils.dict_utils import dict_to_bytes
+from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.model_schemas import ModelVersionSchema
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
@@ -210,7 +210,7 @@ class ServiceSchema(NamedSchema, table=True):
                 )
             else:
                 setattr(self, field, value)
-        self.updated = datetime.utcnow()
+        self.updated = utc_now()
         return self
 
     @classmethod

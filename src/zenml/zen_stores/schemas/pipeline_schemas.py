@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """SQL Model Implementations for Pipelines and Pipeline Runs."""
 
-from datetime import datetime
 from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
@@ -29,6 +28,7 @@ from zenml.models import (
     PipelineResponseResources,
     PipelineUpdate,
 )
+from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
@@ -185,5 +185,5 @@ class PipelineSchema(NamedSchema, table=True):
             The updated `PipelineSchema`.
         """
         self.description = pipeline_update.description
-        self.updated = datetime.utcnow()
+        self.updated = utc_now()
         return self

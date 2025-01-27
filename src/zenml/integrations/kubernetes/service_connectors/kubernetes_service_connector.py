@@ -504,13 +504,17 @@ class KubernetesServiceConnector(ServiceConnector):
                 ).decode("utf-8")
                 if kube_config.ssl_ca_cert
                 else None,
-                cluster_name=kube_config.host.strip("https://").split(":")[0],
+                cluster_name=kube_config.host.removeprefix("https://").split(
+                    ":"
+                )[0],
                 insecure=kube_config.verify_ssl is False,
             )
         else:
             token: Optional[str] = None
             if kube_config.api_key:
-                token = kube_config.api_key["authorization"].strip("Bearer ")
+                token = kube_config.api_key["authorization"].removeprefix(
+                    "Bearer "
+                )
 
             auth_method = KubernetesAuthenticationMethods.TOKEN
             auth_config = KubernetesTokenConfig(

@@ -25,7 +25,6 @@ from zenml.cli.utils import (
     is_sorted_or_filtered,
     list_options,
     print_page_info,
-    seconds_to_human_readable,
 )
 from zenml.client import Client
 from zenml.console import console
@@ -37,6 +36,7 @@ from zenml.models import (
     ServiceConnectorResourcesModel,
     ServiceConnectorResponse,
 )
+from zenml.utils.time_utils import seconds_to_human_readable, utc_now
 
 
 # Service connectors
@@ -291,7 +291,9 @@ def prompt_expires_at(
     while True:
         default_str = ""
         if default is not None:
-            seconds = int((default - datetime.utcnow()).total_seconds())
+            seconds = int(
+                (default - utc_now(tz_aware=default)).total_seconds()
+            )
             default_str = (
                 f" [{str(default)} i.e. in "
                 f"{seconds_to_human_readable(seconds)}]"
@@ -307,14 +309,16 @@ def prompt_expires_at(
 
         assert expires_at is not None
         assert isinstance(expires_at, datetime)
-        if expires_at < datetime.utcnow():
+        if expires_at < utc_now(tz_aware=expires_at):
             cli_utils.warning(
                 "The expiration time must be in the future. Please enter a "
                 "later date and time."
             )
             continue
 
-        seconds = int((expires_at - datetime.utcnow()).total_seconds())
+        seconds = int(
+            (expires_at - utc_now(tz_aware=expires_at)).total_seconds()
+        )
 
         confirm = click.confirm(
             f"Credentials will be valid until {str(expires_at)} UTC (i.e. "

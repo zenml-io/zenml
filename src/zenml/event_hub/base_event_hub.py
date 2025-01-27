@@ -28,6 +28,7 @@ from zenml.models import (
     TriggerExecutionResponse,
     TriggerResponse,
 )
+from zenml.utils.time_utils import utc_now
 from zenml.zen_server.auth import AuthContext
 from zenml.zen_server.jwt import JWTToken
 
@@ -134,9 +135,7 @@ class BaseEventHub(ABC):
         )
         expires: Optional[datetime] = None
         if trigger.action.auth_window:
-            expires = datetime.utcnow() + timedelta(
-                minutes=trigger.action.auth_window
-            )
+            expires = utc_now() + timedelta(minutes=trigger.action.auth_window)
         encoded_token = token.encode(expires=expires)
         auth_context = AuthContext(
             user=trigger.action.service_account,

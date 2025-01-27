@@ -184,7 +184,7 @@ For any runs executed on Vertex, you can get the URL to the Vertex UI in Python 
 from zenml.client import Client
 
 pipeline_run = Client().get_pipeline_run("<PIPELINE_RUN_NAME>")
-orchestrator_url = pipeline_run.run_metadata["orchestrator_url"].value
+orchestrator_url = pipeline_run.run_metadata["orchestrator_url"]
 ```
 
 ### Run pipelines on a schedule
@@ -194,24 +194,37 @@ The Vertex Pipelines orchestrator supports running pipelines on a schedule using
 **How to schedule a pipeline**
 
 ```python
+from datetime import datetime, timedelta
+
+from zenml import pipeline
 from zenml.config.schedule import Schedule
 
+@pipeline
+def first_pipeline():
+    ...
+
 # Run a pipeline every 5th minute
-pipeline_instance.run(
+first_pipeline = first_pipeline.with_options(
     schedule=Schedule(
         cron_expression="*/5 * * * *"
     )
 )
+first_pipeline()
+
+@pipeline
+def second_pipeline():
+    ...
 
 # Run a pipeline every hour
 # starting in one day from now and ending in three days from now
-pipeline_instance.run(
+second_pipeline = second_pipeline.with_options(
     schedule=Schedule(
-        cron_expression="0 * * * *"
-        start_time=datetime.datetime.now() + datetime.timedelta(days=1),
-        end_time=datetime.datetime.now() + datetime.timedelta(days=3),
+        cron_expression="0 * * * *",
+        start_time=datetime.now() + timedelta(days=1),
+        end_time=datetime.now() + timedelta(days=3),
     )
 )
+second_pipeline()
 ```
 
 {% hint style="warning" %}
@@ -233,23 +246,32 @@ In order to cancel a scheduled Vertex pipeline, you need to manually delete the 
 For additional configuration of the Vertex orchestrator, you can pass `VertexOrchestratorSettings` which allows you to configure labels for your Vertex Pipeline jobs or specify which GPU to use.
 
 ```python
-from zenml.integrations.gcp.flavors.vertex_orchestrator_flavor import VertexOrchestratorSettings
-from kubernetes.client.models import V1Toleration
-
-vertex_settings = VertexOrchestratorSettings(
-    labels={"key": "value"}
+from zenml.integrations.gcp.flavors.vertex_orchestrator_flavor import (
+   VertexOrchestratorSettings
 )
+
+vertex_settings = VertexOrchestratorSettings(labels={"key": "value"})
 ```
 
 If your pipelines steps have certain hardware requirements, you can specify them as `ResourceSettings`:
 
 ```python
+from zenml.config import ResourceSettings
+
 resource_settings = ResourceSettings(cpu_count=8, memory="16GB")
 ```
 
-To run your pipeline (or some steps of it) on a GPU, you will need to set both a node selector
-and the gpu count as follows:
+To run your pipeline (or some steps of it) on a GPU, you will need to set both 
+a node selector and the GPU count as follows:
+
 ```python
+from zenml import step, pipeline
+
+from zenml.config import ResourceSettings
+from zenml.integrations.gcp.flavors.vertex_orchestrator_flavor import (
+    VertexOrchestratorSettings
+)
+
 vertex_settings = VertexOrchestratorSettings(
     pod_settings={
         "node_selectors": {
@@ -258,23 +280,8 @@ vertex_settings = VertexOrchestratorSettings(
     }
 )
 resource_settings = ResourceSettings(gpu_count=1)
-```
-You can find available accelerator types [here](https://cloud.google.com/vertex-ai/docs/training/configure-compute#specifying_gpus).
 
-These settings can then be specified on either pipeline-level or step-level:
-
-```python
-# Either specify on pipeline-level
-@pipeline(
-    settings={
-        "orchestrator": vertex_settings,
-        "resources": resource_settings,
-    }
-)
-def my_pipeline():
-    ...
-
-# OR specify settings on step-level
+# Either specify settings on step-level
 @step(
     settings={
         "orchestrator": vertex_settings,
@@ -283,7 +290,19 @@ def my_pipeline():
 )
 def my_step():
     ...
+
+# OR specify on pipeline-level
+@pipeline(
+    settings={
+        "orchestrator": vertex_settings,
+        "resources": resource_settings,
+    }
+)
+def my_pipeline():
+    ...
 ```
+
+You can find available accelerator types [here](https://cloud.google.com/vertex-ai/docs/training/configure-compute#specifying_gpus).
 
 Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-gcp/#zenml.integrations.gcp.flavors.vertex\_orchestrator\_flavor.VertexOrchestratorSettings) for a full list of available attributes and [this docs page](../../how-to/pipeline-development/use-configuration-files/runtime-configuration.md) for more information on how to specify settings.
 

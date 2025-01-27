@@ -6,13 +6,14 @@ Create Date: 2022-10-25 23:52:25.935344
 
 """
 
-import datetime
 import uuid
 
 import sqlalchemy as sa
 import sqlmodel
 from alembic import op
 from sqlalchemy import or_, select
+
+from zenml.utils.time_utils import utc_now
 
 # revision identifiers, used by Alembic.
 revision = "5994f9ad0489"
@@ -100,6 +101,7 @@ def upgrade() -> None:
     guest_id = str(uuid.uuid4()).replace("-", "")
 
     # Prefill the roles table with the admin and guest role
+    now = utc_now()
     op.bulk_insert(
         sa.Table(
             "roleschema",
@@ -109,14 +111,14 @@ def upgrade() -> None:
             {
                 "id": admin_id,
                 "name": "admin",
-                "created": datetime.datetime.utcnow(),
-                "updated": datetime.datetime.utcnow(),
+                "created": now,
+                "updated": now,
             },
             {
                 "id": guest_id,
                 "name": "guest",
-                "created": datetime.datetime.utcnow(),
-                "updated": datetime.datetime.utcnow(),
+                "created": now,
+                "updated": now,
             },
         ],
     )
@@ -148,6 +150,7 @@ def upgrade() -> None:
     res = conn.execute(select(userschema.c.id)).fetchall()
     user_ids = [i[0] for i in res]
 
+    now = utc_now()
     for user_id in user_ids:
         op.bulk_insert(
             sa.Table(
@@ -159,8 +162,8 @@ def upgrade() -> None:
                     "id": str(uuid.uuid4()).replace("-", ""),
                     "role_id": admin_id,
                     "user_id": user_id,
-                    "created": datetime.datetime.utcnow(),
-                    "updated": datetime.datetime.utcnow(),
+                    "created": now,
+                    "updated": now,
                 }
             ],
         )

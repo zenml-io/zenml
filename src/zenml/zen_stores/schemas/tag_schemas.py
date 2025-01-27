@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of tag tables."""
 
-from datetime import datetime
 from typing import Any, List
 from uuid import UUID
 
@@ -30,6 +29,7 @@ from zenml.models import (
     TagResponseBody,
     TagUpdate,
 )
+from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 
@@ -103,7 +103,7 @@ class TagSchema(NamedSchema, table=True):
             else:
                 setattr(self, field, value)
 
-        self.updated = datetime.utcnow()
+        self.updated = utc_now()
         return self
 
 
