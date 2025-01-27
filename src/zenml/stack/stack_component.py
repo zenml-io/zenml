@@ -414,7 +414,7 @@ class StackComponent:
                 raise CustomFlavorImportError(
                     f"Couldn't import custom flavor {flavor_model.name}: "
                     f"{err}. Make sure the implementation file of the custom "
-                    f"flavor {flavor_model.source} is available."
+                    f"flavor `{flavor_model.source}` is available."
                 )
             else:
                 raise ImportError(
