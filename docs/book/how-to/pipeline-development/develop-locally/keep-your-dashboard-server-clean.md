@@ -59,7 +59,7 @@ def delete_recent_pipeline_runs():
     zc = Client()
     
     # Calculate the timestamp for 24 hours ago
-    twenty_four_hours_ago = datetime.datetime.utcnow() - datetime.timedelta(hours=24)
+    twenty_four_hours_ago = datetime.datetime.now(timezone.utc) - datetime.timedelta(hours=24)
     
     # Format the timestamp as required by ZenML
     time_filter = twenty_four_hours_ago.strftime("%Y-%m-%d %H:%M:%S")
@@ -109,7 +109,7 @@ training_pipeline()
 ```
 
 Note that pipeline names must be unique. For more information on this feature,
-see the [documentation on naming pipeline runs](../../pipeline-development/build-pipelines/name-your-pipeline-and-runs.md).
+see the [documentation on naming pipeline runs](../../../how-to/pipeline-development/build-pipelines/name-your-pipeline-runs.md).
 
 ## Models
 

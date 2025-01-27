@@ -45,11 +45,11 @@ Please read our [general information on how to compose steps + pipelines togethe
 
 * **templates**: using starter code with ZenML?
 
-[Project templates](../how-to/setting-up-a-project-repository/using-project-templates.md) allow you to get going quickly with ZenML. We recommend the Starter template (`starter`) for most use cases which gives you a basic scaffold and structure around which you can write your own code. You can also build templates for others inside a Git repository and use them with ZenML's templates functionality.
+[Project templates](../how-to/project-setup-and-management/collaborate-with-team/project-templates/README.md) allow you to get going quickly with ZenML. We recommend the Starter template (`starter`) for most use cases which gives you a basic scaffold and structure around which you can write your own code. You can also build templates for others inside a Git repository and use them with ZenML's templates functionality.
 
 * **upgrade** my ZenML client and/or server?
 
-Upgrading your ZenML client package is as simple as running `pip install --upgrade zenml` in your terminal. For upgrading your ZenML server, please refer to [the dedicated documentation section](../getting-started/deploying-zenml/manage-the-deployed-services/upgrade-the-version-of-the-zenml-server.md) which covers most of the ways you might do this as well as common troubleshooting steps.
+Upgrading your ZenML client package is as simple as running `pip install --upgrade zenml` in your terminal. For upgrading your ZenML server, please refer to [the dedicated documentation section](../how-to/manage-zenml-server/upgrade-zenml-server.md) which covers most of the ways you might do this as well as common troubleshooting steps.
 
 * use a \<YOUR\_COMPONENT\_GOES\_HERE> stack component?
 

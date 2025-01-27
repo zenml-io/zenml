@@ -17,7 +17,6 @@ import getpass
 import re
 import time
 import webbrowser
-from datetime import datetime
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -77,6 +76,7 @@ from zenml.service_connectors.service_connector_utils import (
 )
 from zenml.utils import requirements_utils
 from zenml.utils.dashboard_utils import get_component_url, get_stack_url
+from zenml.utils.time_utils import utc_now_tz_aware
 from zenml.utils.yaml_utils import read_yaml, write_yaml
 
 if TYPE_CHECKING:
@@ -1575,7 +1575,7 @@ def deploy(
         ):
             raise click.Abort()
 
-        date_start = datetime.utcnow()
+        date_start = utc_now_tz_aware()
 
         webbrowser.open(deployment_config.deployment_url)
         console.print(

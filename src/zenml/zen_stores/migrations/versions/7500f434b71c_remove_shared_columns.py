@@ -8,12 +8,13 @@ Create Date: 2023-10-16 15:15:34.865337
 
 import base64
 from collections import defaultdict
-from datetime import datetime
 from typing import Dict, Optional, Set
 from uuid import uuid4
 
 import sqlalchemy as sa
 from alembic import op
+
+from zenml.utils.time_utils import utc_now
 
 # revision identifiers, used by Alembic.
 revision = "7500f434b71c"
@@ -123,7 +124,7 @@ def resolve_duplicate_names() -> None:
     _rename_duplicate_entities(service_connector_table)
 
     workspace_query = sa.select(workspace_table.c.id)
-    utcnow = datetime.utcnow()
+    utcnow = utc_now()
 
     stack_components = []
     stacks = []

@@ -13,10 +13,7 @@
 #  permissions and limitations under the License.
 
 
-import os
-
 import pandas as pd
-from sklearn.datasets import fetch_openml
 
 from zenml import step
 
@@ -63,18 +60,25 @@ FULL_FEATURE_NAMES = [
 
 @step
 def importer() -> pd.DataFrame:
-    """Import the OpenML Steel Plates Fault Dataset.
+    """Import the Steel Plates Fault Dataset from UCI.
 
     The Steel Plates Faults Data Set is provided by Semeion, Research Center of
-    Sciences of Communication, Via Sersale 117, 00128, Rome, Italy
-    (https://www.openml.org/search?type=data&sort=runs&id=1504&status=active).
+    Sciences of Communication, Via Sersale 117, 00128, Rome, Italy.
+    Source: UCI Machine Learning Repository
+    (https://archive.ics.uci.edu/ml/datasets/Steel+Plates+Faults)
 
     Returns:
         pd.DataFrame: the steel plates fault dataset.
     """
-    plates = fetch_openml(name="steel-plates-fault", data_home=os.getcwd())
-    df = pd.DataFrame(data=plates.data, columns=plates.feature_names)
-    df["target"] = plates.target
-    plates_columns = dict(zip(plates.feature_names, FULL_FEATURE_NAMES))
-    df.rename(columns=plates_columns, inplace=True)
+    url = "https://archive.ics.uci.edu/ml/machine-learning-databases/00198/Faults.NNA"
+    df = pd.read_csv(url, header=None, sep="\t")
+
+    # The last 7 columns are the fault types (target variables)
+    target_cols = df.iloc[:, -7:].idxmax(axis=1)
+    df = df.iloc[:, :-7]  # Remove the one-hot encoded target columns
+
+    # Assign column names
+    df.columns = FULL_FEATURE_NAMES[:-7]  # Exclude the fault type names
+    df["target"] = target_cols
+
     return df

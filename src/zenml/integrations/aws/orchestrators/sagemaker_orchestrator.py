@@ -35,14 +35,20 @@ from sagemaker.processing import ProcessingInput, ProcessingOutput
 from sagemaker.workflow.execution_variables import ExecutionVariables
 from sagemaker.workflow.pipeline import Pipeline
 from sagemaker.workflow.steps import ProcessingStep, TrainingStep
+from sagemaker.workflow.triggers import PipelineSchedule
 
+from zenml.client import Client
 from zenml.config.base_settings import BaseSettings
 from zenml.constants import (
     METADATA_ORCHESTRATOR_LOGS_URL,
     METADATA_ORCHESTRATOR_RUN_ID,
     METADATA_ORCHESTRATOR_URL,
 )
-from zenml.enums import ExecutionStatus, StackComponentType
+from zenml.enums import (
+    ExecutionStatus,
+    MetadataResourceTypes,
+    StackComponentType,
+)
 from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import (
     SagemakerOrchestratorConfig,
     SagemakerOrchestratorSettings,
@@ -57,6 +63,7 @@ from zenml.orchestrators import ContainerizedOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
 from zenml.utils.env_utils import split_environment_variables
+from zenml.utils.time_utils import to_utc_timezone, utc_now_tz_aware
 
 if TYPE_CHECKING:
     from zenml.models import PipelineDeploymentResponse, PipelineRunResponse
@@ -67,6 +74,36 @@ MAX_POLLING_ATTEMPTS = 100
 POLLING_DELAY = 30
 
 logger = get_logger(__name__)
+
+
+def dissect_schedule_arn(
+    schedule_arn: str,
+) -> Tuple[Optional[str], Optional[str]]:
+    """Extracts the region and the name from an EventBridge schedule ARN.
+
+    Args:
+        schedule_arn: The ARN of the EventBridge schedule.
+
+    Returns:
+        Region Name, Schedule Name (including the group name)
+
+    Raises:
+        ValueError: If the input is not a properly formatted ARN.
+    """
+    # Split the ARN into parts
+    arn_parts = schedule_arn.split(":")
+
+    # Validate ARN structure
+    if len(arn_parts) < 6 or not arn_parts[5].startswith("schedule/"):
+        raise ValueError("Invalid EventBridge schedule ARN format.")
+
+    # Extract the region
+    region = arn_parts[3]
+
+    # Extract the group name and schedule name
+    name = arn_parts[5].split("schedule/")[1]
+
+    return region, name
 
 
 def dissect_pipeline_execution_arn(
@@ -237,21 +274,15 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 environment.
 
         Raises:
-            RuntimeError: If a connector is used that does not return a
-                `boto3.Session` object.
+            RuntimeError: If there is an error creating or scheduling the
+                pipeline.
             TypeError: If the network_config passed is not compatible with the
                 AWS SageMaker NetworkConfig class.
+            ValueError: If the schedule is not valid.
 
         Yields:
             A dictionary of metadata related to the pipeline run.
         """
-        if deployment.schedule:
-            logger.warning(
-                "The Sagemaker Orchestrator currently does not support the "
-                "use of schedules. The `schedule` will be ignored "
-                "and the pipeline will be run immediately."
-            )
-
         # sagemaker requires pipelineName to use alphanum and hyphens only
         unsanitized_orchestrator_run_name = get_orchestrator_run_name(
             pipeline_name=deployment.pipeline_configuration.name
@@ -459,7 +490,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
 
             sagemaker_steps.append(sagemaker_step)
 
-        # construct the pipeline from the sagemaker_steps
+        # Create the pipeline
         pipeline = Pipeline(
             name=orchestrator_run_name,
             steps=sagemaker_steps,
@@ -479,38 +510,210 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             if settings.pipeline_tags
             else None,
         )
-        execution = pipeline.start()
-        logger.warning(
-            "Steps can take 5-15 minutes to start running "
-            "when using the Sagemaker Orchestrator."
-        )
 
-        # Yield metadata based on the generated execution object
-        yield from self.compute_metadata(
-            execution=execution, settings=settings
-        )
+        # Handle scheduling if specified
+        if deployment.schedule:
+            if settings.synchronous:
+                logger.warning(
+                    "The 'synchronous' setting is ignored for scheduled "
+                    "pipelines since they run independently of the "
+                    "deployment process."
+                )
 
-        # mainly for testing purposes, we wait for the pipeline to finish
-        if settings.synchronous:
-            logger.info(
-                "Executing synchronously. Waiting for pipeline to finish... \n"
-                "At this point you can `Ctrl-C` out without cancelling the "
-                "execution."
+            schedule_name = orchestrator_run_name
+            next_execution = None
+            start_date = (
+                to_utc_timezone(deployment.schedule.start_time)
+                if deployment.schedule.start_time
+                else None
             )
+
+            # Create PipelineSchedule based on schedule type
+            if deployment.schedule.cron_expression:
+                cron_exp = self._validate_cron_expression(
+                    deployment.schedule.cron_expression
+                )
+                schedule = PipelineSchedule(
+                    name=schedule_name,
+                    cron=cron_exp,
+                    start_date=start_date,
+                    enabled=True,
+                )
+            elif deployment.schedule.interval_second:
+                # This is necessary because SageMaker's PipelineSchedule rate
+                # expressions require minutes as the minimum time unit.
+                # Even if a user specifies an interval of less than 60 seconds,
+                # it will be rounded up to 1 minute.
+                minutes = max(
+                    1,
+                    int(
+                        deployment.schedule.interval_second.total_seconds()
+                        / 60
+                    ),
+                )
+                schedule = PipelineSchedule(
+                    name=schedule_name,
+                    rate=(minutes, "minutes"),
+                    start_date=start_date,
+                    enabled=True,
+                )
+                next_execution = (
+                    deployment.schedule.start_time or utc_now_tz_aware()
+                ) + deployment.schedule.interval_second
+            else:
+                # One-time schedule
+                execution_time = (
+                    deployment.schedule.run_once_start_time
+                    or deployment.schedule.start_time
+                )
+                if not execution_time:
+                    raise ValueError(
+                        "A start time must be specified for one-time "
+                        "schedule execution"
+                    )
+                schedule = PipelineSchedule(
+                    name=schedule_name,
+                    at=to_utc_timezone(execution_time),
+                    enabled=True,
+                )
+                next_execution = execution_time
+
+            # Get the current role ARN if not explicitly configured
+            if self.config.scheduler_role is None:
+                logger.info(
+                    "No scheduler_role configured. Trying to extract it from "
+                    "the client side authentication."
+                )
+                sts = session.boto_session.client("sts")
+                try:
+                    scheduler_role_arn = sts.get_caller_identity()["Arn"]
+                    # If this is a user ARN, try to get the role ARN
+                    if ":user/" in scheduler_role_arn:
+                        logger.warning(
+                            f"Using IAM user credentials "
+                            f"({scheduler_role_arn}). For production "
+                            "environments, it's recommended to use IAM roles "
+                            "instead."
+                        )
+                    # If this is an assumed role, extract the role ARN
+                    elif ":assumed-role/" in scheduler_role_arn:
+                        # Convert assumed-role ARN format to role ARN format
+                        # From: arn:aws:sts::123456789012:assumed-role/role-name/session-name
+                        # To: arn:aws:iam::123456789012:role/role-name
+                        scheduler_role_arn = re.sub(
+                            r"arn:aws:sts::(\d+):assumed-role/([^/]+)/.*",
+                            r"arn:aws:iam::\1:role/\2",
+                            scheduler_role_arn,
+                        )
+                    elif ":role/" not in scheduler_role_arn:
+                        raise RuntimeError(
+                            f"Unexpected credential type "
+                            f"({scheduler_role_arn}). Please use IAM "
+                            f"roles for SageMaker pipeline scheduling."
+                        )
+                    else:
+                        raise RuntimeError(
+                            "The ARN of the caller identity "
+                            f"`{scheduler_role_arn}` does not "
+                            "include a user or a proper role."
+                        )
+                except Exception:
+                    raise RuntimeError(
+                        "Failed to get current role ARN. This means the "
+                        "your client side credentials that you are "
+                        "is not configured correctly to schedule sagemaker "
+                        "pipelines. For more information, please check:"
+                        "https://docs.zenml.io/stack-components/orchestrators/sagemaker#required-iam-permissions-for-schedules"
+                    )
+            else:
+                scheduler_role_arn = self.config.scheduler_role
+
+            # Attach schedule to pipeline
+            triggers = pipeline.put_triggers(
+                triggers=[schedule],
+                role_arn=scheduler_role_arn,
+            )
+            logger.info(f"The schedule ARN is: {triggers[0]}")
+
             try:
-                execution.wait(
-                    delay=POLLING_DELAY, max_attempts=MAX_POLLING_ATTEMPTS
+                from zenml.models import RunMetadataResource
+
+                schedule_metadata = self.generate_schedule_metadata(
+                    schedule_arn=triggers[0]
                 )
-                logger.info("Pipeline completed successfully.")
-            except WaiterError:
-                raise RuntimeError(
-                    "Timed out while waiting for pipeline execution to "
-                    "finish. For long-running pipelines we recommend "
-                    "configuring your orchestrator for asynchronous execution. "
-                    "The following command does this for you: \n"
-                    f"`zenml orchestrator update {self.name} "
-                    f"--synchronous=False`"
+
+                Client().create_run_metadata(
+                    metadata=schedule_metadata,  # type: ignore[arg-type]
+                    resources=[
+                        RunMetadataResource(
+                            id=deployment.schedule.id,
+                            type=MetadataResourceTypes.SCHEDULE,
+                        )
+                    ],
                 )
+            except Exception as e:
+                logger.debug(
+                    "There was an error attaching metadata to the "
+                    f"schedule: {e}"
+                )
+
+            logger.info(
+                f"Successfully scheduled pipeline with name: {schedule_name}\n"
+                + (
+                    f"First execution will occur at: "
+                    f"{next_execution.strftime('%Y-%m-%d %H:%M:%S UTC')}"
+                    if next_execution
+                    else f"Using cron expression: "
+                    f"{deployment.schedule.cron_expression}"
+                )
+                + (
+                    f" (and every {minutes} minutes after)"
+                    if deployment.schedule.interval_second
+                    else ""
+                )
+            )
+            logger.info(
+                "\n\nIn order to cancel the schedule, you can use execute "
+                "the following command:\n"
+            )
+            logger.info(
+                f"`aws scheduler delete-schedule --name {schedule_name}`"
+            )
+        else:
+            # Execute the pipeline immediately if no schedule is specified
+            execution = pipeline.start()
+            logger.warning(
+                "Steps can take 5-15 minutes to start running "
+                "when using the Sagemaker Orchestrator."
+            )
+
+            # Yield metadata based on the generated execution object
+            yield from self.compute_metadata(
+                execution_arn=execution.arn, settings=settings
+            )
+
+            # mainly for testing purposes, we wait for the pipeline to finish
+            if settings.synchronous:
+                logger.info(
+                    "Executing synchronously. Waiting for pipeline to "
+                    "finish... \n"
+                    "At this point you can `Ctrl-C` out without cancelling the "
+                    "execution."
+                )
+                try:
+                    execution.wait(
+                        delay=POLLING_DELAY, max_attempts=MAX_POLLING_ATTEMPTS
+                    )
+                    logger.info("Pipeline completed successfully.")
+                except WaiterError:
+                    raise RuntimeError(
+                        "Timed out while waiting for pipeline execution to "
+                        "finish. For long-running pipelines we recommend "
+                        "configuring your orchestrator for asynchronous "
+                        "execution. The following command does this for you: \n"
+                        f"`zenml orchestrator update {self.name} "
+                        f"--synchronous=False`"
+                    )
 
     def get_pipeline_run_metadata(
         self, run_id: UUID
@@ -523,10 +726,20 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         Returns:
             A dictionary of metadata.
         """
-        pipeline_execution_arn = os.environ[ENV_ZENML_SAGEMAKER_RUN_ID]
-        run_metadata: Dict[str, "MetadataType"] = {
-            "pipeline_execution_arn": pipeline_execution_arn,
-        }
+        execution_arn = os.environ[ENV_ZENML_SAGEMAKER_RUN_ID]
+
+        run_metadata: Dict[str, "MetadataType"] = {}
+
+        settings = cast(
+            SagemakerOrchestratorSettings,
+            self.get_settings(Client().get_pipeline_run(run_id)),
+        )
+
+        for metadata in self.compute_metadata(
+            execution_arn=execution_arn,
+            settings=settings,
+        ):
+            run_metadata.update(metadata)
 
         return run_metadata
 
@@ -588,56 +801,57 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
 
     def compute_metadata(
         self,
-        execution: Any,
+        execution_arn: str,
         settings: SagemakerOrchestratorSettings,
     ) -> Iterator[Dict[str, MetadataType]]:
         """Generate run metadata based on the generated Sagemaker Execution.
 
         Args:
-            execution: The corresponding _PipelineExecution object.
+            execution_arn: The ARN of the pipeline execution.
             settings: The Sagemaker orchestrator settings.
 
         Yields:
             A dictionary of metadata related to the pipeline run.
         """
-        # Metadata
-        metadata: Dict[str, MetadataType] = {}
-
         # Orchestrator Run ID
-        if run_id := self._compute_orchestrator_run_id(execution):
-            metadata[METADATA_ORCHESTRATOR_RUN_ID] = run_id
+        metadata: Dict[str, MetadataType] = {
+            "pipeline_execution_arn": execution_arn,
+            METADATA_ORCHESTRATOR_RUN_ID: execution_arn,
+        }
 
         # URL to the Sagemaker's pipeline view
-        if orchestrator_url := self._compute_orchestrator_url(execution):
+        if orchestrator_url := self._compute_orchestrator_url(
+            execution_arn=execution_arn
+        ):
             metadata[METADATA_ORCHESTRATOR_URL] = Uri(orchestrator_url)
 
         # URL to the corresponding CloudWatch page
         if logs_url := self._compute_orchestrator_logs_url(
-            execution, settings
+            execution_arn=execution_arn, settings=settings
         ):
             metadata[METADATA_ORCHESTRATOR_LOGS_URL] = Uri(logs_url)
 
         yield metadata
 
-    @staticmethod
     def _compute_orchestrator_url(
-        pipeline_execution: Any,
+        self,
+        execution_arn: Any,
     ) -> Optional[str]:
         """Generate the Orchestrator Dashboard URL upon pipeline execution.
 
         Args:
-            pipeline_execution: The corresponding _PipelineExecution object.
+            execution_arn: The ARN of the pipeline execution.
 
         Returns:
              the URL to the dashboard view in SageMaker.
         """
         try:
             region_name, pipeline_name, execution_id = (
-                dissect_pipeline_execution_arn(pipeline_execution.arn)
+                dissect_pipeline_execution_arn(execution_arn)
             )
 
             # Get the Sagemaker session
-            session = pipeline_execution.sagemaker_session
+            session = self._get_sagemaker_session()
 
             # List the Studio domains and get the Studio Domain ID
             domains_response = session.sagemaker_client.list_domains()
@@ -657,13 +871,13 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
 
     @staticmethod
     def _compute_orchestrator_logs_url(
-        pipeline_execution: Any,
+        execution_arn: Any,
         settings: SagemakerOrchestratorSettings,
     ) -> Optional[str]:
         """Generate the CloudWatch URL upon pipeline execution.
 
         Args:
-            pipeline_execution: The corresponding _PipelineExecution object.
+            execution_arn: The ARN of the pipeline execution.
             settings: The Sagemaker orchestrator settings.
 
         Returns:
@@ -671,7 +885,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         """
         try:
             region_name, _, execution_id = dissect_pipeline_execution_arn(
-                pipeline_execution.arn
+                execution_arn
             )
 
             use_training_jobs = True
@@ -693,22 +907,48 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             return None
 
     @staticmethod
-    def _compute_orchestrator_run_id(
-        pipeline_execution: Any,
-    ) -> Optional[str]:
-        """Fetch the Orchestrator Run ID upon pipeline execution.
+    def generate_schedule_metadata(schedule_arn: str) -> Dict[str, str]:
+        """Attaches metadata to the ZenML Schedules.
 
         Args:
-            pipeline_execution: The corresponding _PipelineExecution object.
+            schedule_arn: The trigger ARNs that is generated on the AWS side.
 
         Returns:
-             the Execution ID of the run in SageMaker.
+            a dictionary containing metadata related to the schedule.
         """
-        try:
-            return str(pipeline_execution.arn)
+        region, name = dissect_schedule_arn(schedule_arn=schedule_arn)
 
-        except Exception as e:
-            logger.warning(
-                f"There was an issue while extracting the pipeline run ID: {e}"
+        return {
+            "trigger_url": (
+                f"https://{region}.console.aws.amazon.com/scheduler/home"
+                f"?region={region}#schedules/{name}"
+            ),
+        }
+
+    @staticmethod
+    def _validate_cron_expression(cron_expression: str) -> str:
+        """Validates and formats a cron expression for SageMaker schedules.
+
+        Args:
+            cron_expression: The cron expression to validate
+
+        Returns:
+            The formatted cron expression
+
+        Raises:
+            ValueError: If the cron expression is invalid
+        """
+        # Strip any "cron(" prefix if it exists
+        cron_exp = cron_expression.replace("cron(", "").replace(")", "")
+
+        # Split into components
+        parts = cron_exp.split()
+        if len(parts) not in [6, 7]:  # AWS cron requires 6 or 7 fields
+            raise ValueError(
+                f"Invalid cron expression: {cron_expression}. AWS cron "
+                "expressions must have 6 or 7 fields: minute hour day-of-month "
+                "month day-of-week year(optional). Example: '15 10 ? * 6L "
+                "2022-2023'"
             )
-            return None
+
+        return cron_exp

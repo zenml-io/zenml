@@ -22,7 +22,7 @@ To run this file locally, execute:
 
 import os
 from asyncio.log import logger
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from genericpath import isfile
 from typing import Any, List, Set
 
@@ -54,6 +54,8 @@ from zenml.constants import (
 )
 from zenml.enums import AuthScheme, SourceContextTypes
 from zenml.models import ServerDeploymentType
+from zenml.utils.time_utils import utc_now
+from zenml.zen_server.cloud_utils import send_pro_tenant_status_update
 from zenml.zen_server.exceptions import error_detail
 from zenml.zen_server.routers import (
     actions_endpoints,
@@ -128,8 +130,8 @@ app = FastAPI(
 )
 
 # Initialize last_user_activity
-last_user_activity: datetime = datetime.now(timezone.utc)
-last_user_activity_reported: datetime = datetime.now(timezone.utc) + timedelta(
+last_user_activity: datetime = utc_now()
+last_user_activity_reported: datetime = last_user_activity + timedelta(
     seconds=-DEFAULT_ZENML_SERVER_REPORT_USER_ACTIVITY_TO_DB_SECONDS
 )
 
@@ -305,20 +307,20 @@ async def track_last_user_activity(request: Request, call_next: Any) -> Any:
     global last_user_activity
     global last_user_activity_reported
 
+    now = utc_now()
+
     try:
         if is_user_request(request):
-            last_user_activity = datetime.now(timezone.utc)
+            last_user_activity = now
     except Exception as e:
         logger.debug(
             f"An unexpected error occurred while checking user activity: {e}"
         )
     if (
-        (
-            datetime.now(timezone.utc) - last_user_activity_reported
-        ).total_seconds()
+        (now - last_user_activity_reported).total_seconds()
         > DEFAULT_ZENML_SERVER_REPORT_USER_ACTIVITY_TO_DB_SECONDS
     ):
-        last_user_activity_reported = datetime.now(timezone.utc)
+        last_user_activity_reported = now
         zen_store()._update_last_user_activity_timestamp(
             last_user_activity=last_user_activity
         )
@@ -389,6 +391,10 @@ def initialize() -> None:
     initialize_plugins()
     initialize_secure_headers()
     initialize_memcache(cfg.memcache_max_capacity, cfg.memcache_default_expiry)
+    if cfg.deployment_type == ServerDeploymentType.CLOUD:
+        # Send a tenant status update to the Cloud API to indicate that the
+        # ZenML server is running or to update the version and server URL.
+        send_pro_tenant_status_update()
 
 
 DASHBOARD_REDIRECT_URL = None

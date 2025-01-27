@@ -1,63 +1,17 @@
 """Utils concerning anything concerning the cloud control plane backend."""
 
-import os
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from typing import Any, Dict, Optional
 
 import requests
-from pydantic import BaseModel, ConfigDict, field_validator
 from requests.adapters import HTTPAdapter, Retry
 
+from zenml.config.server_config import ServerProConfiguration
 from zenml.exceptions import SubscriptionUpgradeRequiredError
-from zenml.zen_server.utils import server_config
-
-ZENML_CLOUD_RBAC_ENV_PREFIX = "ZENML_CLOUD_"
+from zenml.utils.time_utils import utc_now
+from zenml.zen_server.utils import get_zenml_headers, server_config
 
 _cloud_connection: Optional["ZenMLCloudConnection"] = None
-
-
-class ZenMLCloudConfiguration(BaseModel):
-    """ZenML Pro RBAC configuration."""
-
-    api_url: str
-    oauth2_client_id: str
-    oauth2_client_secret: str
-    oauth2_audience: str
-
-    @field_validator("api_url")
-    @classmethod
-    def _strip_trailing_slashes_url(cls, url: str) -> str:
-        """Strip any trailing slashes on the API URL.
-
-        Args:
-            url: The API URL.
-
-        Returns:
-            The API URL with potential trailing slashes removed.
-        """
-        return url.rstrip("/")
-
-    @classmethod
-    def from_environment(cls) -> "ZenMLCloudConfiguration":
-        """Get the RBAC configuration from environment variables.
-
-        Returns:
-            The RBAC configuration.
-        """
-        env_config: Dict[str, Any] = {}
-        for k, v in os.environ.items():
-            if v == "":
-                continue
-            if k.startswith(ZENML_CLOUD_RBAC_ENV_PREFIX):
-                env_config[k[len(ZENML_CLOUD_RBAC_ENV_PREFIX) :].lower()] = v
-
-        return ZenMLCloudConfiguration(**env_config)
-
-    model_config = ConfigDict(
-        # Allow extra attributes from configs of previous ZenML versions to
-        # permit downgrading
-        extra="allow"
-    )
 
 
 class ZenMLCloudConnection:
@@ -65,10 +19,59 @@ class ZenMLCloudConnection:
 
     def __init__(self) -> None:
         """Initialize the RBAC component."""
-        self._config = ZenMLCloudConfiguration.from_environment()
+        self._config = ServerProConfiguration.get_server_config()
         self._session: Optional[requests.Session] = None
         self._token: Optional[str] = None
         self._token_expires_at: Optional[datetime] = None
+
+    def request(
+        self,
+        method: str,
+        endpoint: str,
+        params: Optional[Dict[str, Any]] = None,
+        data: Optional[Dict[str, Any]] = None,
+    ) -> requests.Response:
+        """Send a request using the active session.
+
+        Args:
+            method: The HTTP method to use.
+            endpoint: The endpoint to send the request to. This will be appended
+                to the base URL.
+            params: Parameters to include in the request.
+            data: Data to include in the request.
+
+        Raises:
+            SubscriptionUpgradeRequiredError: If the current subscription tier
+                is insufficient for the attempted operation.
+            RuntimeError: If the request failed.
+
+        Returns:
+            The response.
+        """
+        url = self._config.api_url + endpoint
+
+        response = self.session.request(
+            method=method, url=url, params=params, json=data, timeout=7
+        )
+        if response.status_code == 401:
+            # Refresh the auth token and try again
+            self._clear_session()
+            response = self.session.request(
+                method=method, url=url, params=params, json=data, timeout=7
+            )
+
+        try:
+            response.raise_for_status()
+        except requests.HTTPError as e:
+            if response.status_code == 402:
+                raise SubscriptionUpgradeRequiredError(response.json())
+            else:
+                raise RuntimeError(
+                    f"Failed while trying to contact the central zenml pro "
+                    f"service: {e}"
+                )
+
+        return response
 
     def get(
         self, endpoint: str, params: Optional[Dict[str, Any]]
@@ -80,34 +83,10 @@ class ZenMLCloudConnection:
                 to the base URL.
             params: Parameters to include in the request.
 
-        Raises:
-            RuntimeError: If the request failed.
-            SubscriptionUpgradeRequiredError: In case the current subscription
-                tier is insufficient for the attempted operation.
-
         Returns:
             The response.
         """
-        url = self._config.api_url + endpoint
-
-        response = self.session.get(url=url, params=params, timeout=7)
-        if response.status_code == 401:
-            # If we get an Unauthorized error from the API serer, we refresh the
-            # auth token and try again
-            self._clear_session()
-            response = self.session.get(url=url, params=params, timeout=7)
-
-        try:
-            response.raise_for_status()
-        except requests.HTTPError:
-            if response.status_code == 402:
-                raise SubscriptionUpgradeRequiredError(response.json())
-            else:
-                raise RuntimeError(
-                    f"Failed with the following error {response} {response.text}"
-                )
-
-        return response
+        return self.request(method="GET", endpoint=endpoint, params=params)
 
     def post(
         self,
@@ -123,33 +102,33 @@ class ZenMLCloudConnection:
             params: Parameters to include in the request.
             data: Data to include in the request.
 
-        Raises:
-            RuntimeError: If the request failed.
+        Returns:
+            The response.
+        """
+        return self.request(
+            method="POST", endpoint=endpoint, params=params, data=data
+        )
+
+    def patch(
+        self,
+        endpoint: str,
+        params: Optional[Dict[str, Any]] = None,
+        data: Optional[Dict[str, Any]] = None,
+    ) -> requests.Response:
+        """Send a PATCH request using the active session.
+
+        Args:
+            endpoint: The endpoint to send the request to. This will be appended
+                to the base URL.
+            params: Parameters to include in the request.
+            data: Data to include in the request.
 
         Returns:
             The response.
         """
-        url = self._config.api_url + endpoint
-
-        response = self.session.post(
-            url=url, params=params, json=data, timeout=7
+        return self.request(
+            method="PATCH", endpoint=endpoint, params=params, data=data
         )
-        if response.status_code == 401:
-            # Refresh the auth token and try again
-            self._clear_session()
-            response = self.session.post(
-                url=url, params=params, json=data, timeout=7
-            )
-
-        try:
-            response.raise_for_status()
-        except requests.HTTPError as e:
-            raise RuntimeError(
-                f"Failed while trying to contact the central zenml pro "
-                f"service: {e}"
-            )
-
-        return response
 
     @property
     def session(self) -> requests.Session:
@@ -169,6 +148,8 @@ class ZenMLCloudConnection:
             self._session = requests.Session()
             token = self._fetch_auth_token()
             self._session.headers.update({"Authorization": "Bearer " + token})
+            # Add the ZenML specific headers
+            self._session.headers.update(get_zenml_headers())
 
             retries = Retry(
                 total=5, backoff_factor=0.1, status_forcelist=[502, 504]
@@ -194,7 +175,7 @@ class ZenMLCloudConnection:
         self._token_expires_at = None
 
     def _fetch_auth_token(self) -> str:
-        """Fetch an auth token for the Cloud API from auth0.
+        """Fetch an auth token from the Cloud API.
 
         Raises:
             RuntimeError: If the auth token can't be fetched.
@@ -205,16 +186,18 @@ class ZenMLCloudConnection:
         if (
             self._token is not None
             and self._token_expires_at is not None
-            and datetime.now(timezone.utc) + timedelta(minutes=5)
-            < self._token_expires_at
+            and utc_now() + timedelta(minutes=5) < self._token_expires_at
         ):
             return self._token
 
-        # Get an auth token from auth0
+        # Get an auth token from the Cloud API
         login_url = f"{self._config.api_url}/auth/login"
         headers = {"content-type": "application/x-www-form-urlencoded"}
+        # Add zenml specific headers to the request
+        headers.update(get_zenml_headers())
         payload = {
-            "client_id": self._config.oauth2_client_id,
+            # The client ID is the external server ID
+            "client_id": str(server_config().get_external_server_id()),
             "client_secret": self._config.oauth2_client_secret,
             "audience": self._config.oauth2_audience,
             "grant_type": "client_credentials",
@@ -225,7 +208,9 @@ class ZenMLCloudConnection:
             )
             response.raise_for_status()
         except Exception as e:
-            raise RuntimeError(f"Error fetching auth token from auth0: {e}")
+            raise RuntimeError(
+                f"Error fetching auth token from the Cloud API: {e}"
+            )
 
         json_response = response.json()
         access_token = json_response.get("access_token", "")
@@ -237,12 +222,12 @@ class ZenMLCloudConnection:
             or not expires_in
             or not isinstance(expires_in, int)
         ):
-            raise RuntimeError("Could not fetch auth token from auth0.")
+            raise RuntimeError(
+                "Could not fetch auth token from the Cloud API."
+            )
 
         self._token = access_token
-        self._token_expires_at = datetime.now(timezone.utc) + timedelta(
-            seconds=expires_in
-        )
+        self._token_expires_at = utc_now() + timedelta(seconds=expires_in)
 
         assert self._token is not None
         return self._token
@@ -259,3 +244,8 @@ def cloud_connection() -> ZenMLCloudConnection:
         _cloud_connection = ZenMLCloudConnection()
 
     return _cloud_connection
+
+
+def send_pro_tenant_status_update() -> None:
+    """Send a tenant status update to the Cloud API."""
+    cloud_connection().patch("/tenant_status")

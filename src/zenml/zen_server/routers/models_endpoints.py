@@ -22,7 +22,6 @@ from zenml.constants import (
     API,
     MODEL_VERSIONS,
     MODELS,
-    REPORTABLE_RESOURCES,
     VERSION_1,
 )
 from zenml.models import (
@@ -170,7 +169,7 @@ def delete_model(
     )
 
     if server_config().feature_gate_enabled:
-        if ResourceType.MODEL in REPORTABLE_RESOURCES:
+        if ResourceType.MODEL in server_config().reportable_resources:
             report_decrement(ResourceType.MODEL, resource_id=model.id)
 
 

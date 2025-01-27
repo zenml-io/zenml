@@ -182,7 +182,7 @@ def register_annotator_subcommands() -> None:
         kwargs_dict = {}
         for arg in kwargs:
             if arg.startswith("--"):
-                key, value = arg.lstrip("--").split("=", 1)
+                key, value = arg.removeprefix("--").split("=", 1)
                 kwargs_dict[key] = value
 
         if annotator.flavor == "prodigy":

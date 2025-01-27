@@ -474,7 +474,7 @@ def pipeline_(param_name: str):
     step_name()
 
 if __name__=="__main__":
-    pipeline_.with_options(config_file="config.yaml")(param_name="value2")
+    pipeline_.with_options(config_path="config.yaml")(param_name="value2")
 ```
 To avoid this consider setting pipeline parameters only in one place (config or code).
 """
@@ -701,6 +701,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         code_repository = build_utils.verify_local_repository_context(
             deployment=deployment, local_repo_context=local_repo_context
         )
+        can_download_from_code_repository = code_repository is not None
 
         if prevent_build_reuse:
             logger.warning(
@@ -737,7 +738,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         if build_utils.should_upload_code(
             deployment=deployment,
             build=build_model,
-            code_reference=code_reference,
+            can_download_from_code_repository=can_download_from_code_repository,
         ):
             code_archive = code_utils.CodeArchive(
                 root=source_utils.get_source_root()

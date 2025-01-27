@@ -4,7 +4,7 @@ description: Orchestrating your pipelines to run on Kubeflow.
 
 # Kubeflow Orchestrator
 
-The Kubeflow orchestrator is an [orchestrator](./orchestrators.md) flavor provided by the ZenML `kubeflow` integration that uses [Kubeflow Pipelines](https://www.kubeflow.org/docs/components/pipelines/introduction/) to run your pipelines.
+The Kubeflow orchestrator is an [orchestrator](./orchestrators.md) flavor provided by the ZenML `kubeflow` integration that uses [Kubeflow Pipelines](https://www.kubeflow.org/docs/components/pipelines/overview/) to run your pipelines.
 
 {% hint style="warning" %}
 This component is only meant to be used within the context of a [remote ZenML deployment scenario](../../getting-started/deploying-zenml/README.md). Usage with a local ZenML deployment may lead to unexpected behavior!
@@ -32,7 +32,7 @@ To run ZenML pipelines on Kubeflow, you'll need to set up a Kubernetes cluster a
     ```powershell
     aws eks --region REGION update-kubeconfig --name CLUSTER_NAME
     ```
-* [Install](https://www.kubeflow.org/docs/components/pipelines/installation/standalone-deployment/#deploying-kubeflow-pipelines) Kubeflow Pipelines onto your cluster.
+* [Install](https://www.kubeflow.org/docs/components/pipelines/operator-guides/installation/#deploying-kubeflow-pipelines) Kubeflow Pipelines onto your cluster.
 * ( optional) [set up an AWS Service Connector](../../how-to/infrastructure-deployment/auth-management/aws-service-connector.md) to grant ZenML Stack Components easy and secure access to the remote EKS cluster.
 {% endtab %}
 
@@ -56,7 +56,7 @@ To run ZenML pipelines on Kubeflow, you'll need to set up a Kubernetes cluster a
     ```powershell
     az aks get-credentials --resource-group RESOURCE_GROUP --name CLUSTER_NAME
     ```
-* [Install](https://www.kubeflow.org/docs/components/pipelines/installation/standalone-deployment/#deploying-kubeflow-pipelines) Kubeflow Pipelines onto your cluster.
+* [Install](https://www.kubeflow.org/docs/components/pipelines/operator-guides/installation/#deploying-kubeflow-pipelines) Kubeflow Pipelines onto your cluster.
 
 {% hint style="info" %}
 Since Kubernetes v1.19, AKS has shifted to [`containerd`](https://docs.microsoft.com/en-us/azure/aks/cluster-configuration#container-settings).
@@ -74,7 +74,7 @@ kubectl edit configmap CONFIGMAP_NAME -n kubeflow
 {% tab title="Other Kubernetes" %}
 * Have an existing Kubernetes cluster set up.
 * Download and [install](https://kubernetes.io/docs/tasks/tools/) `kubectl` and configure it to talk to your Kubernetes cluster.
-* [Install](https://www.kubeflow.org/docs/components/pipelines/installation/standalone-deployment/#deploying-kubeflow-pipelines) Kubeflow Pipelines onto your cluster.
+* [Install](https://www.kubeflow.org/docs/components/pipelines/operator-guides/installation/#deploying-kubeflow-pipelines) Kubeflow Pipelines onto your cluster.
 * ( optional) [set up a Kubernetes Service Connector](../../how-to/infrastructure-deployment/auth-management/kubernetes-service-connector.md) to grant ZenML Stack Components easy and secure access to the remote Kubernetes cluster. This is especially useful if your Kubernetes cluster is remotely accessible, as this enables other ZenML users to use it to run pipelines without needing to configure and set up `kubectl` on their local machines.
 {% endtab %}
 

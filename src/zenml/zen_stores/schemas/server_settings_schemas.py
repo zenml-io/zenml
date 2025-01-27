@@ -27,6 +27,7 @@ from zenml.models import (
     ServerSettingsResponseResources,
     ServerSettingsUpdate,
 )
+from zenml.utils.time_utils import utc_now
 
 
 class ServerSettingsSchema(SQLModel, table=True):
@@ -42,8 +43,8 @@ class ServerSettingsSchema(SQLModel, table=True):
     display_announcements: Optional[bool] = Field(nullable=True)
     display_updates: Optional[bool] = Field(nullable=True)
     onboarding_state: Optional[str] = Field(nullable=True)
-    last_user_activity: datetime = Field(default_factory=datetime.utcnow)
-    updated: datetime = Field(default_factory=datetime.utcnow)
+    last_user_activity: datetime = Field(default_factory=utc_now)
+    updated: datetime = Field(default_factory=utc_now)
 
     def update(
         self, settings_update: ServerSettingsUpdate
@@ -63,7 +64,7 @@ class ServerSettingsSchema(SQLModel, table=True):
             if hasattr(self, field):
                 setattr(self, field, value)
 
-        self.updated = datetime.utcnow()
+        self.updated = utc_now()
 
         return self
 
@@ -83,7 +84,7 @@ class ServerSettingsSchema(SQLModel, table=True):
         )
         new_state = old_state.union(completed_steps)
         self.onboarding_state = json.dumps(list(new_state))
-        self.updated = datetime.utcnow()
+        self.updated = utc_now()
 
         return self
 
