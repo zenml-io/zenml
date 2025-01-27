@@ -86,6 +86,7 @@ class SagemakerOrchestratorSettings(BaseSettings):
             input types:
                 - str: S3 location where training data is saved.
                 - Dict[str, str]: (ChannelName, S3Location) which represent
+                - Dict[str, str]: (ChannelName, S3Location) which represent
                     channels (e.g. training, validation, testing) where
                     specific parts of the data are saved in S3.
         output_data_s3_mode: How data is uploaded to the S3 bucket.
@@ -184,6 +185,10 @@ class SagemakerOrchestratorConfig(
 
     Attributes:
         execution_role: The IAM role ARN to use for the pipeline.
+        scheduler_role: The ARN of the IAM role that will be assumed by
+            the EventBridge service to launch Sagemaker pipelines
+            (For more details regarding the required permissions, please check:
+            https://docs.zenml.io/stack-components/orchestrators/sagemaker#required-iam-permissions-for-schedules)
         aws_access_key_id: The AWS access key ID to use to authenticate to AWS.
             If not provided, the value from the default AWS config will be used.
         aws_secret_access_key: The AWS secret access key to use to authenticate
@@ -203,6 +208,7 @@ class SagemakerOrchestratorConfig(
     """
 
     execution_role: str
+    scheduler_role: Optional[str] = None
     aws_access_key_id: Optional[str] = SecretField(default=None)
     aws_secret_access_key: Optional[str] = SecretField(default=None)
     aws_profile: Optional[str] = None
@@ -231,6 +237,15 @@ class SagemakerOrchestratorConfig(
             Whether the orchestrator runs synchronous or not.
         """
         return self.synchronous
+
+    @property
+    def is_schedulable(self) -> bool:
+        """Whether the orchestrator is schedulable or not.
+
+        Returns:
+            Whether the orchestrator is schedulable or not.
+        """
+        return True
 
 
 class SagemakerOrchestratorFlavor(BaseOrchestratorFlavor):

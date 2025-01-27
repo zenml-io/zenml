@@ -31,6 +31,7 @@ from zenml.models import (
     OAuthDeviceResponseMetadata,
     OAuthDeviceUpdate,
 )
+from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
@@ -115,7 +116,7 @@ class OAuthDeviceSchema(BaseSchema, table=True):
         device_code = cls._generate_device_code()
         hashed_user_code = cls._get_hashed_code(user_code)
         hashed_device_code = cls._get_hashed_code(device_code)
-        now = datetime.utcnow()
+        now = utc_now()
         return (
             cls(
                 client_id=request.client_id,
@@ -159,7 +160,7 @@ class OAuthDeviceSchema(BaseSchema, table=True):
         elif device_update.locked is False:
             self.status = OAuthDeviceStatus.ACTIVE.value
 
-        self.updated = datetime.utcnow()
+        self.updated = utc_now()
         return self
 
     def internal_update(
@@ -174,7 +175,7 @@ class OAuthDeviceSchema(BaseSchema, table=True):
             The updated `OAuthDeviceSchema` and the new user code and device
             code, if they were generated.
         """
-        now = datetime.utcnow()
+        now = utc_now()
         user_code: Optional[str] = None
         device_code: Optional[str] = None
 

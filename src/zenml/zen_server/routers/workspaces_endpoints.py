@@ -1009,6 +1009,8 @@ def create_run_metadata(
             verify_models.append(zen_store().get_artifact_version(resource.id))
         elif resource.type == MetadataResourceTypes.MODEL_VERSION:
             verify_models.append(zen_store().get_model_version(resource.id))
+        elif resource.type == MetadataResourceTypes.SCHEDULE:
+            verify_models.append(zen_store().get_schedule(resource.id))
         else:
             raise RuntimeError(f"Unknown resource type: {resource.type}")
 

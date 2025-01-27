@@ -14,7 +14,6 @@
 """SQL Model Implementations for code repositories."""
 
 import json
-from datetime import datetime
 from typing import Any, Optional
 from uuid import UUID
 
@@ -32,6 +31,7 @@ from zenml.models import (
     CodeRepositoryResponseMetadata,
     CodeRepositoryUpdate,
 )
+from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
@@ -151,7 +151,10 @@ class CodeRepositorySchema(NamedSchema, table=True):
         if update.logo_url:
             self.logo_url = update.logo_url
 
-        self.updated = datetime.utcnow()
+        if update.config:
+            self.config = json.dumps(update.config)
+
+        self.updated = utc_now()
         return self
 
 

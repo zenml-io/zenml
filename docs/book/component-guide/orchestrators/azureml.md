@@ -42,7 +42,7 @@ In order to use an AzureML orchestrator, you need to first
 deploy [ZenML to the cloud](../../getting-started/deploying-zenml/README.md). 
 It would be recommended to deploy ZenML in the same region as you plan on 
 using for AzureML, but it is not necessary to do so. You must ensure that 
-you are [connected to the remote ZenML server](../../how-to/connecting-to-zenml/connect-in-with-your-user-interactive.md)
+you are [connected to the remote ZenML server](../../how-to/manage-zenml-server/connecting-to-zenml/connect-in-with-your-user-interactive.md)
 before using this stack component.
 
 ## How to use it
@@ -195,10 +195,10 @@ def example_step() -> int:
 
 
 @pipeline(settings={"orchestrator": azureml_settings})
-def pipeline():
+def my_pipeline():
     example_step()
 
-pipeline()
+my_pipeline()
 ```
 
 {% hint style="info" %}
@@ -213,10 +213,18 @@ its [JobSchedules](https://learn.microsoft.com/en-us/azure/machine-learning/how-
 Both cron expression and intervals are supported.
 
 ```python
+from zenml import pipeline
 from zenml.config.schedule import Schedule
 
+@pipeline
+def my_pipeline():
+    ...
+    
 # Run a pipeline every 5th minute
-pipeline.run(schedule=Schedule(cron_expression="*/5 * * * *"))
+my_pipeline = my_pipeline.with_options(
+  schedule=Schedule(cron_expression="*/5 * * * *")
+)
+my_pipeline()
 ```
 
 Once you run the pipeline with a schedule, you can find the schedule and 

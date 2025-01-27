@@ -35,6 +35,7 @@ from zenml.models.v2.base.base import (
 )
 from zenml.models.v2.base.filter import AnyQuery, BaseFilter
 from zenml.utils.string_utils import b64_decode, b64_encode
+from zenml.utils.time_utils import utc_now
 
 if TYPE_CHECKING:
     from zenml.models.v2.base.filter import AnySchema
@@ -319,7 +320,9 @@ class APIKeyInternalResponse(APIKeyResponse):
             and self.retain_period_minutes > 0
         ):
             # check if the previous key is still valid
-            if datetime.utcnow() - self.last_rotated < timedelta(
+            if utc_now(
+                tz_aware=self.last_rotated
+            ) - self.last_rotated < timedelta(
                 minutes=self.retain_period_minutes
             ):
                 key_hash = self.previous_key

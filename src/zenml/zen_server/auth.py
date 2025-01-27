@@ -62,6 +62,7 @@ from zenml.models import (
     UserResponse,
     UserUpdate,
 )
+from zenml.utils.time_utils import utc_now
 from zenml.zen_server.cache import cache_result
 from zenml.zen_server.csrf import CSRFToken
 from zenml.zen_server.exceptions import http_exception_from_error
@@ -350,7 +351,8 @@ def authenticate_credentials(
 
             if (
                 device_model.expires
-                and datetime.utcnow() >= device_model.expires
+                and utc_now(tz_aware=device_model.expires)
+                >= device_model.expires
             ):
                 error = (
                     f"Authentication error: device {decoded_token.device_id} "
@@ -587,7 +589,10 @@ def authenticate_device(client_id: UUID, device_code: str) -> AuthContext:
             error_description=error,
         )
 
-    if device_model.expires and datetime.utcnow() >= device_model.expires:
+    if (
+        device_model.expires
+        and utc_now(tz_aware=device_model.expires) >= device_model.expires
+    ):
         error = (
             f"Authentication error: device for client ID {client_id} has "
             "expired"
@@ -889,17 +894,18 @@ def generate_access_token(
     if expires_in == 0:
         expires_in = None
     elif expires_in is not None:
-        expires = datetime.utcnow() + timedelta(seconds=expires_in)
+        expires = utc_now() + timedelta(seconds=expires_in)
     elif device:
         # If a device was used for authentication, the token will expire
         # at the same time as the device.
         expires = device.expires
         if expires:
             expires_in = max(
-                int(expires.timestamp() - datetime.utcnow().timestamp()), 0
+                int(expires.timestamp() - utc_now().timestamp()),
+                0,
             )
     elif config.jwt_token_expire_minutes:
-        expires = datetime.utcnow() + timedelta(
+        expires = utc_now() + timedelta(
             minutes=config.jwt_token_expire_minutes
         )
         expires_in = config.jwt_token_expire_minutes * 60
