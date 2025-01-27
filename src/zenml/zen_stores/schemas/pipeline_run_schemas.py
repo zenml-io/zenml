@@ -14,7 +14,7 @@
 """SQLModel implementation of pipeline run tables."""
 
 import json
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from uuid import UUID
 
@@ -37,6 +37,7 @@ from zenml.models import (
     RunMetadataEntry,
 )
 from zenml.models.v2.core.pipeline_run import PipelineRunResponseResources
+from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.constants import MODEL_VERSION_TABLENAME
 from zenml.zen_stores.schemas.pipeline_build_schemas import PipelineBuildSchema
@@ -437,7 +438,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         if run_update.model_version_id and self.model_version_id is None:
             self.model_version_id = run_update.model_version_id
 
-        self.updated = datetime.now(timezone.utc)
+        self.updated = utc_now()
         return self
 
     def update_placeholder(
@@ -478,7 +479,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         self.orchestrator_environment = orchestrator_environment
         self.status = request.status.value
 
-        self.updated = datetime.now(timezone.utc)
+        self.updated = utc_now()
 
         return self
 

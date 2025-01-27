@@ -10,9 +10,9 @@ A code repository in ZenML refers to a remote storage location for your code. So
 
 <figure><img src="../../../.gitbook/assets/Remote_with_code_repository.png" alt=""><figcaption><p>A visual representation of how the code repository fits into the general ZenML architecture.</p></figcaption></figure>
 
-Code repositories enable ZenML to keep track of the code version that you use for your pipeline runs. Additionally, running a pipeline that is tracked in a registered code repository can [speed up the Docker image building for containerized stack components](../../infrastructure-deployment/customize-docker-builds/use-code-repositories-to-speed-up-docker-build-times.md) by eliminating the need to rebuild Docker images each time you change one of your source code files.
+Code repositories enable ZenML to keep track of the code version that you use for your pipeline runs. Additionally, running a pipeline that is tracked in a registered code repository can [speed up the Docker image building for containerized stack components](../../../how-to/customize-docker-builds/how-to-reuse-builds.md) by eliminating the need to rebuild Docker images each time you change one of your source code files.
 
-Learn more about how code repositories benefit development [here](../../infrastructure-deployment/customize-docker-builds/use-code-repositories-to-speed-up-docker-build-times.md).
+Learn more about how code repositories benefit development [here](../../../how-to/customize-docker-builds/how-to-reuse-builds.md).
 
 ## Registering a code repository
 

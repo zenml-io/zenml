@@ -15,7 +15,6 @@
 
 import os
 import re
-from datetime import datetime, timezone
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -64,6 +63,7 @@ from zenml.orchestrators import ContainerizedOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
 from zenml.utils.env_utils import split_environment_variables
+from zenml.utils.time_utils import to_utc_timezone, utc_now_tz_aware
 
 if TYPE_CHECKING:
     from zenml.models import PipelineDeploymentResponse, PipelineRunResponse
@@ -522,6 +522,11 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
 
             schedule_name = orchestrator_run_name
             next_execution = None
+            start_date = (
+                to_utc_timezone(deployment.schedule.start_time)
+                if deployment.schedule.start_time
+                else None
+            )
 
             # Create PipelineSchedule based on schedule type
             if deployment.schedule.cron_expression:
@@ -531,7 +536,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 schedule = PipelineSchedule(
                     name=schedule_name,
                     cron=cron_exp,
-                    start_date=deployment.schedule.start_time,
+                    start_date=start_date,
                     enabled=True,
                 )
             elif deployment.schedule.interval_second:
@@ -549,12 +554,11 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 schedule = PipelineSchedule(
                     name=schedule_name,
                     rate=(minutes, "minutes"),
-                    start_date=deployment.schedule.start_time,
+                    start_date=start_date,
                     enabled=True,
                 )
                 next_execution = (
-                    deployment.schedule.start_time
-                    or datetime.now(timezone.utc)
+                    deployment.schedule.start_time or utc_now_tz_aware()
                 ) + deployment.schedule.interval_second
             else:
                 # One-time schedule
@@ -569,7 +573,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                     )
                 schedule = PipelineSchedule(
                     name=schedule_name,
-                    at=execution_time.astimezone(timezone.utc),
+                    at=to_utc_timezone(execution_time),
                     enabled=True,
                 )
                 next_execution = execution_time
@@ -722,15 +726,13 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
         Returns:
             A dictionary of metadata.
         """
-        from zenml import get_step_context
-
         execution_arn = os.environ[ENV_ZENML_SAGEMAKER_RUN_ID]
 
         run_metadata: Dict[str, "MetadataType"] = {}
 
         settings = cast(
             SagemakerOrchestratorSettings,
-            self.get_settings(get_step_context().pipeline_run),
+            self.get_settings(Client().get_pipeline_run(run_id)),
         )
 
         for metadata in self.compute_metadata(

@@ -21,7 +21,7 @@ A clean and organized repository structure is essential for any ZenML project. T
 - Clear separation of concerns between different components
 - Consistent naming conventions
 
-Learn more about setting up your repository in the [Set up repository guide](./best-practices.md).
+Learn more about setting up your repository in the [Set up repository guide](./set-up-repository.md).
 
 ### Version Control and Collaboration
 
@@ -31,7 +31,7 @@ Integrating your ZenML project with version control systems like Git is crucial 
 - Easy tracking of changes
 - Collaboration among team members
 
-Discover how to connect your Git repository in the [Set up a repository guide](./best-practices.md).
+Discover how to connect your Git repository in the [Set up a repository guide](./set-up-repository.md).
 
 ### Stacks, Pipelines, Models, and Artifacts
 
@@ -42,7 +42,7 @@ Understanding the relationship between stacks, models, and pipelines is key to d
 - Pipelines: Encapsulate your ML workflows
 - Artifacts: Track your data and model outputs
 
-Learn about organizing these components in the [Organizing Stacks, Pipelines, Models, and Artifacts guide](./stacks-pipelines-models.md).
+Learn about organizing these components in the [Organizing Stacks, Pipelines, Models, and Artifacts guide](../collaborate-with-team/stacks-pipelines-models.md).
 
 ### Access Management and Roles
 
@@ -53,7 +53,7 @@ Proper access management ensures that team members have the right permissions an
 - Establish processes for pipeline maintenance and server upgrades
 - Leverage [Teams in ZenML Pro](../../../getting-started/zenml-pro/teams.md) to assign roles and permissions to a group of users, to mimic your real-world team roles.
 
-Explore access management strategies in the [Access Management and Roles guide](./access-management-and-roles.md).
+Explore access management strategies in the [Access Management and Roles guide](../collaborate-with-team/access-management.md).
 
 ### Shared Components and Libraries
 
@@ -63,7 +63,7 @@ Leverage shared components and libraries to promote code reuse and standardizati
 - Shared private wheels for internal distribution
 - Handling authentication for specific libraries
 
-Find out more about sharing code in the [Shared Libraries and Logic for Teams guide](./shared_components_for_teams.md).
+Find out more about sharing code in the [Shared Libraries and Logic for Teams guide](../collaborate-with-team/shared-components-for-teams.md).
 
 ### Project Templates
 
@@ -72,7 +72,7 @@ Utilize project templates to kickstart your ZenML projects and ensure consistenc
 - Use pre-made templates for common use cases
 - Create custom templates tailored to your team's needs
 
-Learn about using and creating project templates in the [Project Templates guide](./project-templates.md).
+Learn about using and creating project templates in the [Project Templates guide](../collaborate-with-team/project-templates/README.md).
 
 ### Migration and Maintenance
 

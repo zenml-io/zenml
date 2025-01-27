@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of artifact table."""
 
-from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
@@ -41,6 +40,7 @@ from zenml.models import (
     ArtifactVersionUpdate,
 )
 from zenml.models.v2.core.artifact import ArtifactRequest
+from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
@@ -163,7 +163,7 @@ class ArtifactSchema(NamedSchema, table=True):
         Returns:
             The updated `ArtifactSchema`.
         """
-        self.updated = datetime.now(timezone.utc)
+        self.updated = utc_now()
         if artifact_update.name:
             self.name = artifact_update.name
             self.has_custom_name = True
@@ -401,5 +401,5 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
         Returns:
             The updated `ArtifactVersionSchema`.
         """
-        self.updated = datetime.now(timezone.utc)
+        self.updated = utc_now()
         return self

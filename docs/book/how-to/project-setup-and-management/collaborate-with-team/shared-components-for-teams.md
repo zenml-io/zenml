@@ -104,7 +104,7 @@ way, for example:
 my-simple-package==0.1.0
 ```
 
-For information on using private PyPI repositories to share your code, see our [documentation on how to use a private PyPI repository](../customize-docker-builds/how-to-use-a-private-pypi-repository.md).
+For information on using private PyPI repositories to share your code, see our [documentation on how to use a private PyPI repository](../../../how-to/customize-docker-builds/how-to-use-a-private-pypi-repository.md).
 
 ## Best Practices
 
