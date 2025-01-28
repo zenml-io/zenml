@@ -179,7 +179,7 @@ def trainer(...) -> ...:
     # This step will use the persistent resource and start faster
 ```
 
-Using a persistent resourceh is is particularly useful when you're developing locally and want to iterate quickly on steps that need cloud resources. The start up time of the job can be extremely quick.
+Using a persistent resource is is particularly useful when you're developing locally and want to iterate quickly on steps that need cloud resources. The start up time of the job can be extremely quick.
 
 {% hint style="warning" %}
 Remember that persistent resources continue to incur costs as long as they're running, even when idle. Make sure to monitor your usage and configure appropriate idle timeout periods.
