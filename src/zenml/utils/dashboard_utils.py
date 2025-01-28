@@ -157,18 +157,27 @@ def show_dashboard(url: str) -> None:
         display(IFrame(src=url, width="100%", height=720))
 
     elif environment in (EnvironmentType.NATIVE, EnvironmentType.WSL):
-        if constants.handle_bool_env_var(
-            constants.ENV_AUTO_OPEN_DASHBOARD, default=False
-        ) or constants.handle_bool_env_var(
+        open_dashboard = True
+
+        if constants.ENV_AUTO_OPEN_DASHBOARD in os.environ:
+            logger.warning(
+                "The `%s` environment variable is deprecated, use the `%s` "
+                "environment variable instead.",
+                constants.ENV_AUTO_OPEN_DASHBOARD,
+                constants.ENV_ZENML_AUTO_OPEN_DASHBOARD,
+            )
+
+        if not constants.handle_bool_env_var(
+            constants.ENV_AUTO_OPEN_DASHBOARD, default=True
+        ):
+            open_dashboard = False
+
+        if not constants.handle_bool_env_var(
             constants.ENV_ZENML_AUTO_OPEN_DASHBOARD, default=True
         ):
-            if constants.ENV_AUTO_OPEN_DASHBOARD in os.environ:
-                logger.warning(
-                    "The `%s` environment variable is deprecated, use the `%s` "
-                    "environment variable instead.",
-                    constants.ENV_AUTO_OPEN_DASHBOARD,
-                    constants.ENV_ZENML_AUTO_OPEN_DASHBOARD,
-                )
+            open_dashboard = False
+
+        if open_dashboard:
             try:
                 import webbrowser
 
