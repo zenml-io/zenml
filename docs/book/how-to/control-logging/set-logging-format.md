@@ -17,6 +17,9 @@ Note that setting this on the [client environment](../pipeline-development/confi
 If you wish to configure it also for [remote pipeline runs](../../user-guide/production-guide/cloud-orchestration.md), you can set the `ZENML_LOGGING_FORMAT` environment variable in your pipeline runs environment as follows:
 
 ```python
+from zenml import pipeline
+from zenml.config import DockerSettings
+
 docker_settings = DockerSettings(environment={"ZENML_LOGGING_FORMAT": "%(asctime)s %(message)s"})
 
 # Either add it to the decorator
