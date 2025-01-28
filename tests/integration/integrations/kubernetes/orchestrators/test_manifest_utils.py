@@ -49,8 +49,8 @@ def test_build_pod_manifest_metadata():
     metadata = manifest.metadata
     assert isinstance(metadata, V1ObjectMeta)
     assert metadata.name == "test_name"
-    assert metadata.labels["run"] == "test_run"
-    assert metadata.labels["pipeline"] == "test_pipeline"
+    assert metadata.labels["run"] == "test-run"
+    assert metadata.labels["pipeline"] == "test-pipeline"
     assert metadata.annotations["blupus_loves"] == "strawberries"
 
     container = manifest.spec.containers[0]

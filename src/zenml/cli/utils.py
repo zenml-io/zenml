@@ -711,11 +711,6 @@ def print_stack_component_configuration(
 
         console.print(rich_table)
 
-    if component.component_spec_path:
-        declare(
-            f"Component spec path for `mlstacks`: {component.component_spec_path}"
-        )
-
 
 def expand_argument_value_from_file(name: str, value: str) -> str:
     """Expands the value of an argument pointing to a file into the contents of that file.
@@ -1817,8 +1812,7 @@ def print_service_connector_configuration(
         )
     else:
         declare(
-            f"Service connector '{connector.name}' of type "
-            f"'{connector.type}'."
+            f"Service connector '{connector.name}' of type '{connector.type}'."
         )
 
     title_ = f"'{connector.name}' {connector.type} Service Connector Details"
@@ -1998,7 +1992,7 @@ def print_service_connector_resource_type(
     message = f"{title}\n" if title else ""
     emoji = replace_emojis(resource_type.emoji) if resource_type.emoji else ""
     supported_auth_methods = [
-        f'{Emoji("lock")} {a}' for a in resource_type.auth_methods
+        f"{Emoji('lock')} {a}" for a in resource_type.auth_methods
     ]
     message += (
         f"{heading} {emoji} {resource_type.name} "
@@ -2122,7 +2116,7 @@ def print_service_connector_type(
     """
     message = f"{title}\n" if title else ""
     supported_auth_methods = [
-        f'{Emoji("lock")} {a.auth_method}' for a in connector_type.auth_methods
+        f"{Emoji('lock')} {a.auth_method}" for a in connector_type.auth_methods
     ]
     supported_resource_types = [
         f"{replace_emojis(r.emoji)} {r.resource_type}"
@@ -2729,7 +2723,7 @@ def multi_choice_prompt(
             *([f"Create a new {object_type}"] * len(headers)),
         )
     for i, one_choice in enumerate(choices):
-        table.add_row(f"[{i+i_shift}]", *[str(x) for x in one_choice])
+        table.add_row(f"[{i + i_shift}]", *[str(x) for x in one_choice])
     Console().print(table)
 
     selected = Prompt.ask(

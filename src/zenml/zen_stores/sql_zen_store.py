@@ -26,6 +26,7 @@ from datetime import datetime, timezone
 from functools import lru_cache
 from pathlib import Path
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
     ClassVar,
@@ -54,7 +55,7 @@ from pydantic import (
     field_validator,
     model_validator,
 )
-from sqlalchemy import asc, case, desc, func
+from sqlalchemy import func
 from sqlalchemy.engine import URL, Engine, make_url
 from sqlalchemy.exc import (
     ArgumentError,
@@ -63,6 +64,13 @@ from sqlalchemy.exc import (
 )
 from sqlalchemy.orm import Mapped, noload
 from sqlalchemy.util import immutabledict
+
+# Important to note: The select function of SQLModel works slightly differently
+# from the select function of sqlalchemy. If you input only one entity on the
+# select function of SQLModel, it automatically maps it to a SelectOfScalar.
+# As a result, it will not return a tuple as a result, but the first entity in
+# the tuple. While this is convenient in most cases, in unique cases like using
+# the "add_columns" functionality, one might encounter unexpected results.
 from sqlmodel import (
     Session,
     SQLModel,
@@ -70,6 +78,7 @@ from sqlmodel import (
     col,
     create_engine,
     delete,
+    desc,
     or_,
     select,
 )
@@ -99,7 +108,6 @@ from zenml.constants import (
     ENV_ZENML_SERVER,
     FINISHED_ONBOARDING_SURVEY_KEY,
     MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION,
-    SORT_PIPELINES_BY_LATEST_RUN_KEY,
     SQL_STORE_BACKUP_DIRECTORY_NAME,
     TEXT_FIELD_MAX_LENGTH,
     handle_bool_env_var,
@@ -116,7 +124,6 @@ from zenml.enums import (
     OnboardingStep,
     SecretScope,
     SecretsStoreType,
-    SorterOps,
     StackComponentType,
     StackDeploymentProvider,
     StepRunInputArtifactType,
@@ -219,6 +226,7 @@ from zenml.models import (
     PipelineRunUpdate,
     PipelineUpdate,
     RunMetadataRequest,
+    RunMetadataResource,
     RunTemplateFilter,
     RunTemplateRequest,
     RunTemplateResponse,
@@ -296,7 +304,11 @@ from zenml.utils.networking_utils import (
     replace_localhost_with_internal_hostname,
 )
 from zenml.utils.pydantic_utils import before_validator_handler
-from zenml.utils.string_utils import random_str, validate_name
+from zenml.utils.string_utils import (
+    format_name_template,
+    random_str,
+    validate_name,
+)
 from zenml.zen_stores import template_utils
 from zenml.zen_stores.base_zen_store import (
     BaseZenStore,
@@ -325,6 +337,7 @@ from zenml.zen_stores.schemas import (
     PipelineDeploymentSchema,
     PipelineRunSchema,
     PipelineSchema,
+    RunMetadataResourceSchema,
     RunMetadataSchema,
     RunTemplateSchema,
     ScheduleSchema,
@@ -353,6 +366,9 @@ from zenml.zen_stores.secrets_stores.base_secrets_store import BaseSecretsStore
 from zenml.zen_stores.secrets_stores.sql_secrets_store import (
     SqlSecretsStoreConfiguration,
 )
+
+if TYPE_CHECKING:
+    from zenml.metadata.metadata_types import MetadataType, MetadataTypeEnum
 
 AnyNamedSchema = TypeVar("AnyNamedSchema", bound=NamedSchema)
 AnySchema = TypeVar("AnySchema", bound=BaseSchema)
@@ -1353,8 +1369,7 @@ class SqlZenStore(BaseZenStore):
                     os.remove(dump_file)
                 except OSError:
                     logger.warning(
-                        f"Failed to cleanup database dump file "
-                        f"{dump_file}."
+                        f"Failed to cleanup database dump file {dump_file}."
                     )
                 else:
                     logger.info(
@@ -2726,7 +2741,9 @@ class SqlZenStore(BaseZenStore):
     # -------------------- Artifact Versions --------------------
 
     def _get_or_create_artifact_for_name(
-        self, name: str, has_custom_name: bool
+        self,
+        name: str,
+        has_custom_name: bool,
     ) -> ArtifactSchema:
         """Get or create an artifact with a specific name.
 
@@ -2747,7 +2764,8 @@ class SqlZenStore(BaseZenStore):
                 try:
                     with session.begin_nested():
                         artifact_request = ArtifactRequest(
-                            name=name, has_custom_name=has_custom_name
+                            name=name,
+                            has_custom_name=has_custom_name,
                         )
                         artifact = ArtifactSchema.from_request(
                             artifact_request
@@ -2915,17 +2933,41 @@ class SqlZenStore(BaseZenStore):
 
             # Save metadata of the artifact
             if artifact_version.metadata:
+                values: Dict[str, "MetadataType"] = {}
+                types: Dict[str, "MetadataTypeEnum"] = {}
                 for key, value in artifact_version.metadata.items():
-                    run_metadata_schema = RunMetadataSchema(
-                        workspace_id=artifact_version.workspace,
-                        user_id=artifact_version.user,
-                        resource_id=artifact_version_id,
-                        resource_type=MetadataResourceTypes.ARTIFACT_VERSION,
-                        key=key,
-                        value=json.dumps(value),
-                        type=get_metadata_type(value),
+                    # Skip metadata that is too large to be stored in the DB.
+                    if len(json.dumps(value)) > TEXT_FIELD_MAX_LENGTH:
+                        logger.warning(
+                            f"Metadata value for key '{key}' is too large to be "
+                            "stored in the database. Skipping."
+                        )
+                        continue
+                    # Skip metadata that is not of a supported type.
+                    try:
+                        metadata_type = get_metadata_type(value)
+                    except ValueError as e:
+                        logger.warning(
+                            f"Metadata value for key '{key}' is not of a "
+                            f"supported type. Skipping. Full error: {e}"
+                        )
+                        continue
+                    values[key] = value
+                    types[key] = metadata_type
+                self.create_run_metadata(
+                    RunMetadataRequest(
+                        workspace=artifact_version.workspace,
+                        user=artifact_version.user,
+                        resources=[
+                            RunMetadataResource(
+                                id=artifact_version_id,
+                                type=MetadataResourceTypes.ARTIFACT_VERSION,
+                            )
+                        ],
+                        values=values,
+                        types=types,
                     )
-                    session.add(run_metadata_schema)
+                )
 
             session.commit()
             artifact_version_schema = session.exec(
@@ -4325,69 +4367,14 @@ class SqlZenStore(BaseZenStore):
         Returns:
             A list of all pipelines matching the filter criteria.
         """
-        query: Union[Select[Any], SelectOfScalar[Any]] = select(PipelineSchema)
-        _custom_conversion: Optional[Callable[[Any], PipelineResponse]] = None
-
-        column, operand = pipeline_filter_model.sorting_params
-        if column == SORT_PIPELINES_BY_LATEST_RUN_KEY:
-            with Session(self.engine) as session:
-                max_date_subquery = (
-                    # If no run exists for the pipeline yet, we use the pipeline
-                    # creation date as a fallback, otherwise newly created
-                    # pipeline would always be at the top/bottom
-                    select(
-                        PipelineSchema.id,
-                        case(
-                            (
-                                func.max(PipelineRunSchema.created).is_(None),
-                                PipelineSchema.created,
-                            ),
-                            else_=func.max(PipelineRunSchema.created),
-                        ).label("run_or_created"),
-                    )
-                    .outerjoin(
-                        PipelineRunSchema,
-                        PipelineSchema.id == PipelineRunSchema.pipeline_id,  # type: ignore[arg-type]
-                    )
-                    .group_by(col(PipelineSchema.id))
-                    .subquery()
-                )
-
-                if operand == SorterOps.DESCENDING:
-                    sort_clause = desc
-                else:
-                    sort_clause = asc
-
-                query = (
-                    # We need to include the subquery in the select here to
-                    # make this query work with the distinct statement. This
-                    # result will be removed in the custom conversion function
-                    # applied later
-                    select(PipelineSchema, max_date_subquery.c.run_or_created)
-                    .where(PipelineSchema.id == max_date_subquery.c.id)
-                    .order_by(sort_clause(max_date_subquery.c.run_or_created))
-                    # We always add the `id` column as a tiebreaker to ensure a
-                    # stable, repeatable order of items, otherwise subsequent
-                    # pages might contain the same items.
-                    .order_by(col(PipelineSchema.id))
-                )
-
-            def _custom_conversion(row: Any) -> PipelineResponse:
-                return cast(
-                    PipelineResponse,
-                    row[0].to_model(
-                        include_metadata=hydrate, include_resources=True
-                    ),
-                )
-
         with Session(self.engine) as session:
+            query = select(PipelineSchema)
             return self.filter_and_paginate(
                 session=session,
                 query=query,
                 table=PipelineSchema,
                 filter_model=pipeline_filter_model,
                 hydrate=hydrate,
-                custom_schema_to_model_conversion=_custom_conversion,
             )
 
     def count_pipelines(self, filter_model: Optional[PipelineFilter]) -> int:
@@ -5178,6 +5165,20 @@ class SqlZenStore(BaseZenStore):
                         "already exists."
                     )
 
+            if model_version_id := self._get_or_create_model_version_for_run(
+                new_run
+            ):
+                new_run.model_version_id = model_version_id
+                session.add(new_run)
+                session.commit()
+
+                self.create_model_version_pipeline_run_link(
+                    ModelVersionPipelineRunRequest(
+                        model_version=model_version_id, pipeline_run=new_run.id
+                    )
+                )
+                session.refresh(new_run)
+
             return new_run.to_model(
                 include_metadata=True, include_resources=True
             )
@@ -5328,6 +5329,19 @@ class SqlZenStore(BaseZenStore):
                 "Unable to get or create run for request with missing "
                 "orchestrator run ID."
             )
+
+        try:
+            # We first try the most likely case that the run was already
+            # created by a previous step in the same pipeline run.
+            return (
+                self._get_run_by_orchestrator_run_id(
+                    orchestrator_run_id=pipeline_run.orchestrator_run_id,
+                    deployment_id=pipeline_run.deployment,
+                ),
+                False,
+            )
+        except KeyError:
+            pass
 
         try:
             return (
@@ -5516,20 +5530,29 @@ class SqlZenStore(BaseZenStore):
             The created run metadata.
         """
         with Session(self.engine) as session:
-            for key, value in run_metadata.values.items():
-                type_ = run_metadata.types[key]
-                run_metadata_schema = RunMetadataSchema(
-                    workspace_id=run_metadata.workspace,
-                    user_id=run_metadata.user,
-                    resource_id=run_metadata.resource_id,
-                    resource_type=run_metadata.resource_type.value,
-                    stack_component_id=run_metadata.stack_component_id,
-                    key=key,
-                    value=json.dumps(value),
-                    type=type_,
-                )
-                session.add(run_metadata_schema)
-                session.commit()
+            if run_metadata.resources:
+                for key, value in run_metadata.values.items():
+                    type_ = run_metadata.types[key]
+                    run_metadata_schema = RunMetadataSchema(
+                        workspace_id=run_metadata.workspace,
+                        user_id=run_metadata.user,
+                        stack_component_id=run_metadata.stack_component_id,
+                        key=key,
+                        value=json.dumps(value),
+                        type=type_,
+                        publisher_step_id=run_metadata.publisher_step_id,
+                    )
+                    session.add(run_metadata_schema)
+                    session.commit()
+
+                    for resource in run_metadata.resources:
+                        rm_resource_link = RunMetadataResourceSchema(
+                            resource_id=resource.id,
+                            resource_type=resource.type.value,
+                            run_metadata_id=run_metadata_schema.id,
+                        )
+                        session.add(rm_resource_link)
+                        session.commit()
         return None
 
     # ----------------------------- Schedules -----------------------------
@@ -7375,7 +7398,7 @@ class SqlZenStore(BaseZenStore):
                     )
                 except (ValueError, AuthorizationException) as e:
                     error = (
-                        f'Failed to fetch {resource_type or "available"} '
+                        f"Failed to fetch {resource_type or 'available'} "
                         f"resources from service connector {connector.name}/"
                         f"{connector.id}: {e}"
                     )
@@ -8112,24 +8135,16 @@ class SqlZenStore(BaseZenStore):
                     f"with ID '{step_run.pipeline_run_id}' found."
                 )
 
-            # Check if the step name already exists in the pipeline run
-            existing_step_run = session.exec(
-                select(StepRunSchema)
-                .where(StepRunSchema.name == step_run.name)
-                .where(
-                    StepRunSchema.pipeline_run_id == step_run.pipeline_run_id
-                )
-            ).first()
-            if existing_step_run is not None:
+            step_schema = StepRunSchema.from_request(step_run)
+            session.add(step_schema)
+            try:
+                session.commit()
+            except IntegrityError:
                 raise EntityExistsError(
                     f"Unable to create step `{step_run.name}`: A step with "
                     f"this name already exists in the pipeline run with ID "
                     f"'{step_run.pipeline_run_id}'."
                 )
-
-            # Create the step
-            step_schema = StepRunSchema.from_request(step_run)
-            session.add(step_schema)
 
             # Add logs entry for the step if exists
             if step_run.logs is not None:
@@ -8139,6 +8154,46 @@ class SqlZenStore(BaseZenStore):
                     artifact_store_id=step_run.logs.artifact_store_id,
                 )
                 session.add(log_entry)
+
+            # If cached, attach metadata of the original step
+            if (
+                step_run.status == ExecutionStatus.CACHED
+                and step_run.original_step_run_id is not None
+            ):
+                original_metadata_links = session.exec(
+                    select(RunMetadataResourceSchema)
+                    .where(
+                        RunMetadataResourceSchema.run_metadata_id
+                        == RunMetadataSchema.id
+                    )
+                    .where(
+                        RunMetadataResourceSchema.resource_id
+                        == step_run.original_step_run_id
+                    )
+                    .where(
+                        RunMetadataResourceSchema.resource_type
+                        == MetadataResourceTypes.STEP_RUN
+                    )
+                    .where(
+                        RunMetadataSchema.publisher_step_id
+                        == step_run.original_step_run_id
+                    )
+                ).all()
+
+                # Create new links in a batch
+                new_links = [
+                    RunMetadataResourceSchema(
+                        resource_id=step_schema.id,
+                        resource_type=link.resource_type,
+                        run_metadata_id=link.run_metadata_id,
+                    )
+                    for link in original_metadata_links
+                ]
+                # Add all new links in a single operation
+                session.add_all(new_links)
+                # Commit the changes
+                session.commit()
+                session.refresh(step_schema)
 
             # Save parent step IDs into the database.
             for parent_step_id in step_run.parent_step_ids:
@@ -8169,12 +8224,12 @@ class SqlZenStore(BaseZenStore):
                 )
 
             # Save output artifact IDs into the database.
-            for output_name, artifact_version_ids in step_run.outputs.items():
+            for name, artifact_version_ids in step_run.outputs.items():
                 for artifact_version_id in artifact_version_ids:
                     self._set_run_step_output_artifact(
                         step_run_id=step_schema.id,
                         artifact_version_id=artifact_version_id,
-                        name=output_name,
+                        name=name,
                         session=session,
                     )
 
@@ -8185,6 +8240,21 @@ class SqlZenStore(BaseZenStore):
 
             session.commit()
             session.refresh(step_schema)
+
+            if model_version_id := self._get_or_create_model_version_for_run(
+                step_schema
+            ):
+                step_schema.model_version_id = model_version_id
+                session.add(step_schema)
+                session.commit()
+
+                self.create_model_version_pipeline_run_link(
+                    ModelVersionPipelineRunRequest(
+                        model_version=model_version_id,
+                        pipeline_run=step_schema.pipeline_run_id,
+                    )
+                )
+                session.refresh(step_schema)
 
             return step_schema.to_model(
                 include_metadata=True, include_resources=True
@@ -8278,13 +8348,14 @@ class SqlZenStore(BaseZenStore):
             session.add(existing_step_run)
 
             # Update the artifacts.
-            for name, artifact_version_id in step_run_update.outputs.items():
-                self._set_run_step_output_artifact(
-                    step_run_id=step_run_id,
-                    artifact_version_id=artifact_version_id,
-                    name=name,
-                    session=session,
-                )
+            for name, artifact_version_ids in step_run_update.outputs.items():
+                for artifact_version_id in artifact_version_ids:
+                    self._set_run_step_output_artifact(
+                        step_run_id=step_run_id,
+                        artifact_version_id=artifact_version_id,
+                        name=name,
+                        session=session,
+                    )
 
             # Update loaded artifacts.
             for (
@@ -8537,7 +8608,11 @@ class SqlZenStore(BaseZenStore):
 
         # Deployment always exists for pipeline runs of newer versions
         assert pipeline_run.deployment
-        num_steps = len(pipeline_run.deployment.to_model().step_configurations)
+        num_steps = len(
+            pipeline_run.deployment.to_model(
+                include_metadata=True
+            ).step_configurations
+        )
         new_status = get_pipeline_run_status(
             step_statuses=[
                 ExecutionStatus(step_run.status) for step_run in step_runs
@@ -8559,10 +8634,19 @@ class SqlZenStore(BaseZenStore):
                 ExecutionStatus.COMPLETED,
                 ExecutionStatus.FAILED,
             }:
-                run_update.end_time = datetime.utcnow()
+                run_update.end_time = datetime.now(timezone.utc)
                 if pipeline_run.start_time and isinstance(
                     pipeline_run.start_time, datetime
                 ):
+                    # We need to ensure both datetimes are timezone-aware to avoid TypeError when subtracting
+                    # Now calculate the duration time
+                    if pipeline_run.start_time.tzinfo is None:
+                        pipeline_run.start_time = (
+                            pipeline_run.start_time.replace(
+                                tzinfo=timezone.utc
+                            )
+                        )
+
                     duration_time = (
                         run_update.end_time - pipeline_run.start_time
                     )
@@ -10183,6 +10267,22 @@ class SqlZenStore(BaseZenStore):
 
     # ----------------------------- Model Versions -----------------------------
 
+    def _get_or_create_model(
+        self, model_request: ModelRequest
+    ) -> Tuple[bool, ModelResponse]:
+        """Get or create a model.
+
+        Args:
+            model_request: The model request.
+
+        Returns:
+            A boolean whether the model was created or not, and the model.
+        """
+        try:
+            return True, self.create_model(model_request)
+        except EntityExistsError:
+            return False, self.get_model(model_request.name)
+
     def _get_next_numeric_version_for_model(
         self, session: Session, model_id: UUID
     ) -> int:
@@ -10207,55 +10307,276 @@ class SqlZenStore(BaseZenStore):
         else:
             return int(current_max_version) + 1
 
-    def _model_version_exists(self, model_id: UUID, version: str) -> bool:
+    def _model_version_exists(
+        self,
+        model_id: UUID,
+        version: Optional[str] = None,
+        producer_run_id: Optional[UUID] = None,
+    ) -> bool:
         """Check if a model version with a certain version exists.
 
         Args:
             model_id: The model ID of the version.
             version: The version name.
+            producer_run_id: The producer run ID. If given, checks if a numeric
+                version for the producer run exists.
 
         Returns:
-            If a model version with the given version name exists.
+            If a model version for the given arguments exists.
         """
-        with Session(self.engine) as session:
-            return (
-                session.exec(
-                    select(ModelVersionSchema.id)
-                    .where(ModelVersionSchema.model_id == model_id)
-                    .where(ModelVersionSchema.name == version)
-                ).first()
-                is not None
+        query = select(ModelVersionSchema.id).where(
+            ModelVersionSchema.model_id == model_id
+        )
+
+        if version:
+            query = query.where(ModelVersionSchema.name == version)
+
+        if producer_run_id:
+            query = query.where(
+                ModelVersionSchema.producer_run_id_if_numeric
+                == producer_run_id,
             )
 
-    @track_decorator(AnalyticsEvent.CREATED_MODEL_VERSION)
-    def create_model_version(
-        self, model_version: ModelVersionRequest
+        with Session(self.engine) as session:
+            return session.exec(query).first() is not None
+
+    def _get_model_version(
+        self,
+        model_id: UUID,
+        version_name: Optional[str] = None,
+        producer_run_id: Optional[UUID] = None,
+    ) -> ModelVersionResponse:
+        """Get a model version.
+
+        Args:
+            model_id: The ID of the model.
+            version_name: The name of the model version.
+            producer_run_id: The ID of the producer pipeline run. If this is
+                set, only numeric versions created as part of the pipeline run
+                will be returned.
+
+        Raises:
+            ValueError: If no version name or producer run ID was provided.
+            KeyError: If no model version was found.
+
+        Returns:
+            The model version.
+        """
+        query = select(ModelVersionSchema).where(
+            ModelVersionSchema.model_id == model_id
+        )
+
+        if version_name:
+            if version_name.isnumeric():
+                query = query.where(
+                    ModelVersionSchema.number == int(version_name)
+                )
+                error_text = (
+                    f"No version with number {version_name} found "
+                    f"for model {model_id}."
+                )
+            elif version_name in ModelStages.values():
+                if version_name == ModelStages.LATEST:
+                    query = query.order_by(
+                        desc(col(ModelVersionSchema.number))
+                    ).limit(1)
+                else:
+                    query = query.where(
+                        ModelVersionSchema.stage == version_name
+                    )
+                error_text = (
+                    f"No {version_name} stage version found for "
+                    f"model {model_id}."
+                )
+            else:
+                query = query.where(ModelVersionSchema.name == version_name)
+                error_text = (
+                    f"No {version_name} version found for model {model_id}."
+                )
+
+        elif producer_run_id:
+            query = query.where(
+                ModelVersionSchema.producer_run_id_if_numeric
+                == producer_run_id,
+            )
+            error_text = (
+                f"No numeric model version found for model {model_id} "
+                f"and producer run {producer_run_id}."
+            )
+        else:
+            raise ValueError(
+                "Version name or producer run id need to be specified."
+            )
+
+        with Session(self.engine) as session:
+            schema = session.exec(query).one_or_none()
+
+            if not schema:
+                raise KeyError(error_text)
+
+            return schema.to_model(
+                include_metadata=True, include_resources=True
+            )
+
+    def _get_or_create_model_version(
+        self,
+        model_version_request: ModelVersionRequest,
+        producer_run_id: Optional[UUID] = None,
+    ) -> Tuple[bool, ModelVersionResponse]:
+        """Get or create a model version.
+
+        Args:
+            model_version_request: The model version request.
+            producer_run_id: ID of the producer pipeline run.
+
+        Raises:
+            EntityCreationError: If the model version creation failed.
+
+        Returns:
+            A boolean whether the model version was created or not, and the
+            model version.
+        """
+        try:
+            model_version = self._create_model_version(
+                model_version=model_version_request,
+                producer_run_id=producer_run_id,
+            )
+            track(event=AnalyticsEvent.CREATED_MODEL_VERSION)
+            return True, model_version
+        except EntityCreationError:
+            # Need to explicitly re-raise this here as otherwise the catching
+            # of the RuntimeError would include this
+            raise
+        except RuntimeError:
+            return False, self._get_model_version(
+                model_id=model_version_request.model,
+                producer_run_id=producer_run_id,
+            )
+        except EntityExistsError:
+            return False, self._get_model_version(
+                model_id=model_version_request.model,
+                version_name=model_version_request.name,
+            )
+
+    def _get_or_create_model_version_for_run(
+        self, pipeline_or_step_run: Union[PipelineRunSchema, StepRunSchema]
+    ) -> Optional[UUID]:
+        """Get or create a model version for a pipeline or step run.
+
+        Args:
+            pipeline_or_step_run: The pipeline or step run for which to create
+                the model version.
+
+        Returns:
+            The model version.
+        """
+        if isinstance(pipeline_or_step_run, PipelineRunSchema):
+            producer_run_id = pipeline_or_step_run.id
+            pipeline_run = pipeline_or_step_run.to_model(include_metadata=True)
+            configured_model = pipeline_run.config.model
+            substitutions = pipeline_run.config.substitutions
+        else:
+            producer_run_id = pipeline_or_step_run.pipeline_run_id
+            step_run = pipeline_or_step_run.to_model(include_metadata=True)
+            configured_model = step_run.config.model
+            substitutions = step_run.config.substitutions
+
+        if not configured_model:
+            return None
+
+        model_request = ModelRequest(
+            name=format_name_template(
+                configured_model.name, substitutions=substitutions
+            ),
+            license=configured_model.license,
+            description=configured_model.description,
+            audience=configured_model.audience,
+            use_cases=configured_model.use_cases,
+            limitations=configured_model.limitations,
+            trade_offs=configured_model.trade_offs,
+            ethics=configured_model.ethics,
+            save_models_to_registry=configured_model.save_models_to_registry,
+            user=pipeline_or_step_run.user_id,
+            workspace=pipeline_or_step_run.workspace_id,
+        )
+
+        _, model_response = self._get_or_create_model(
+            model_request=model_request
+        )
+
+        version_name = None
+        if configured_model.version is not None:
+            version_name = format_name_template(
+                str(configured_model.version), substitutions=substitutions
+            )
+
+            # If the model version was specified to be a numeric version or
+            # stage we don't try to create it (which will fail because it is not
+            # allowed) but try to fetch it immediately
+            if (
+                version_name.isnumeric()
+                or version_name in ModelStages.values()
+            ):
+                return self._get_model_version(
+                    model_id=model_response.id, version_name=version_name
+                ).id
+
+        model_version_request = ModelVersionRequest(
+            model=model_response.id,
+            name=version_name,
+            description=configured_model.description,
+            tags=configured_model.tags,
+            user=pipeline_or_step_run.user_id,
+            workspace=pipeline_or_step_run.workspace_id,
+        )
+
+        _, model_version_response = self._get_or_create_model_version(
+            model_version_request=model_version_request,
+            producer_run_id=producer_run_id,
+        )
+        return model_version_response.id
+
+    def _create_model_version(
+        self,
+        model_version: ModelVersionRequest,
+        producer_run_id: Optional[UUID] = None,
     ) -> ModelVersionResponse:
         """Creates a new model version.
 
         Args:
             model_version: the Model Version to be created.
+            producer_run_id: ID of the pipeline run that produced this model
+                version.
 
         Returns:
             The newly created model version.
 
         Raises:
-            ValueError: If `number` is not None during model version creation.
+            ValueError: If the requested version name is invalid.
             EntityExistsError: If a model version with the given name already
                 exists.
             EntityCreationError: If the model version creation failed.
+            RuntimeError: If an auto-incremented model version already exists
+                for the producer run.
         """
-        if model_version.number is not None:
-            raise ValueError(
-                "`number` field  must be None during model version creation."
-            )
-
-        model = self.get_model(model_version.model)
-
-        has_custom_name = model_version.name is not None
-        if has_custom_name:
+        has_custom_name = False
+        if model_version.name:
+            has_custom_name = True
             validate_name(model_version)
 
+            if model_version.name.isnumeric():
+                raise ValueError(
+                    "Can't create model version with custom numeric model "
+                    "version name."
+                )
+
+            if str(model_version.name).lower() in ModelStages.values():
+                raise ValueError(
+                    "Can't create model version with a name that is used as a "
+                    f"model version stage ({ModelStages.values()})."
+                )
+
+        model = self.get_model(model_version.model)
         model_version_id = None
 
         remaining_tries = MAX_RETRIES_FOR_VERSIONED_ENTITY_CREATION
@@ -10263,17 +10584,19 @@ class SqlZenStore(BaseZenStore):
             remaining_tries -= 1
             try:
                 with Session(self.engine) as session:
-                    model_version.number = (
+                    model_version_number = (
                         self._get_next_numeric_version_for_model(
                             session=session,
                             model_id=model.id,
                         )
                     )
                     if not has_custom_name:
-                        model_version.name = str(model_version.number)
+                        model_version.name = str(model_version_number)
 
                     model_version_schema = ModelVersionSchema.from_request(
-                        model_version
+                        model_version,
+                        model_version_number=model_version_number,
+                        producer_run_id=producer_run_id,
                     )
                     session.add(model_version_schema)
                     session.commit()
@@ -10294,6 +10617,13 @@ class SqlZenStore(BaseZenStore):
                         f"{model_version.name}): A model with the "
                         "same name and version already exists."
                     )
+                elif producer_run_id and self._model_version_exists(
+                    model_id=model.id, producer_run_id=producer_run_id
+                ):
+                    raise RuntimeError(
+                        "Auto-incremented model version already exists for "
+                        f"producer run {producer_run_id}."
+                    )
                 elif remaining_tries == 0:
                     raise EntityCreationError(
                         f"Failed to create version for model "
@@ -10312,10 +10642,9 @@ class SqlZenStore(BaseZenStore):
                     )
                     logger.debug(
                         "Failed to create model version %s "
-                        "(version %s) due to an integrity error. "
+                        "due to an integrity error. "
                         "Retrying in %f seconds.",
                         model.name,
-                        model_version.number,
                         sleep_duration,
                     )
                     time.sleep(sleep_duration)
@@ -10329,6 +10658,20 @@ class SqlZenStore(BaseZenStore):
             )
 
         return self.get_model_version(model_version_id)
+
+    @track_decorator(AnalyticsEvent.CREATED_MODEL_VERSION)
+    def create_model_version(
+        self, model_version: ModelVersionRequest
+    ) -> ModelVersionResponse:
+        """Creates a new model version.
+
+        Args:
+            model_version: the Model Version to be created.
+
+        Returns:
+            The newly created model version.
+        """
+        return self._create_model_version(model_version=model_version)
 
     def get_model_version(
         self, model_version_id: UUID, hydrate: bool = True

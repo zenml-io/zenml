@@ -20,6 +20,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
+    Dict,
     List,
     Optional,
     Tuple,
@@ -31,6 +32,7 @@ from urllib.parse import urlparse
 
 from pydantic import BaseModel, ValidationError
 
+from zenml import __version__ as zenml_version
 from zenml.config.global_config import GlobalConfiguration
 from zenml.config.server_config import ServerConfiguration
 from zenml.constants import (
@@ -43,6 +45,7 @@ from zenml.enums import StoreType
 from zenml.exceptions import IllegalOperationError, OAuthError
 from zenml.logger import get_logger
 from zenml.plugins.plugin_flavor_registry import PluginFlavorRegistry
+from zenml.zen_server.cache import MemoryCache
 from zenml.zen_server.deploy.deployment import (
     LocalServerDeployment,
 )
@@ -67,6 +70,7 @@ _rbac: Optional[RBACInterface] = None
 _feature_gate: Optional[FeatureGateInterface] = None
 _workload_manager: Optional[WorkloadManagerInterface] = None
 _plugin_flavor_registry: Optional[PluginFlavorRegistry] = None
+_memcache: Optional[MemoryCache] = None
 
 
 def zen_store() -> "SqlZenStore":
@@ -220,6 +224,31 @@ def initialize_zen_store() -> None:
 
     global _zen_store
     _zen_store = zen_store_
+
+
+def initialize_memcache(max_capacity: int, default_expiry: int) -> None:
+    """Initialize the memory cache.
+
+    Args:
+        max_capacity: The maximum capacity of the cache.
+        default_expiry: The default expiry time in seconds.
+    """
+    global _memcache
+    _memcache = MemoryCache(max_capacity, default_expiry)
+
+
+def memcache() -> MemoryCache:
+    """Return the memory cache.
+
+    Returns:
+        The memory cache.
+
+    Raises:
+        RuntimeError: If the memory cache is not initialized.
+    """
+    if _memcache is None:
+        raise RuntimeError("Memory cache not initialized")
+    return _memcache
 
 
 _server_config: Optional[ServerConfiguration] = None
@@ -394,6 +423,8 @@ def make_dependable(cls: Type[BaseModel]) -> Callable[..., Any]:
     """
     from fastapi import Query
 
+    from zenml.zen_server.exceptions import error_detail
+
     def init_cls_and_handle_errors(*args: Any, **kwargs: Any) -> BaseModel:
         from fastapi import HTTPException
 
@@ -401,9 +432,8 @@ def make_dependable(cls: Type[BaseModel]) -> Callable[..., Any]:
             inspect.signature(init_cls_and_handle_errors).bind(*args, **kwargs)
             return cls(*args, **kwargs)
         except ValidationError as e:
-            for error in e.errors():
-                error["loc"] = tuple(["query"] + list(error["loc"]))
-            raise HTTPException(422, detail=e.errors())
+            detail = error_detail(e, exception_type=ValueError)
+            raise HTTPException(422, detail=detail)
 
     params = {v.name: v for v in inspect.signature(cls).parameters.values()}
     query_params = getattr(cls, "API_MULTI_INPUT_PARAMS", [])
@@ -543,3 +573,65 @@ def is_user_request(request: "Request") -> bool:
 
     # If none of the above conditions are met, consider it a user request
     return True
+
+
+def is_same_or_subdomain(source_domain: str, target_domain: str) -> bool:
+    """Check if the source domain is the same or a subdomain of the target domain.
+
+    Examples:
+        is_same_or_subdomain("example.com", "example.com") -> True
+        is_same_or_subdomain("alpha.example.com", "example.com") -> True
+        is_same_or_subdomain("alpha.example.com", ".example.com") -> True
+        is_same_or_subdomain("example.com", "alpha.example.com") -> False
+        is_same_or_subdomain("alpha.beta.example.com", "beta.example.com") -> True
+        is_same_or_subdomain("alpha.beta.example.com", "alpha.example.com") -> False
+        is_same_or_subdomain("alphabeta.gamma.example", "beta.gamma.example") -> False
+
+    Args:
+        source_domain: The source domain to check.
+        target_domain: The target domain to compare against.
+
+    Returns:
+        True if the source domain is the same or a subdomain of the target
+        domain, False otherwise.
+    """
+    import tldextract
+
+    # Extract the registered domain and suffix for both
+    src_parts = tldextract.extract(source_domain)
+    tgt_parts = tldextract.extract(target_domain)
+
+    if src_parts == tgt_parts:
+        return True  # Same domain
+
+    # Reconstruct the base domains (e.g., example.com)
+    src_base_domain = f"{src_parts.domain}.{src_parts.suffix}"
+    tgt_base_domain = f"{tgt_parts.domain}.{tgt_parts.suffix}"
+
+    if src_base_domain != tgt_base_domain:
+        return False  # Different base domains
+
+    if tgt_parts.subdomain == "":
+        return True  # Subdomain
+
+    if src_parts.subdomain.endswith(f".{tgt_parts.subdomain.lstrip('.')}"):
+        return True  # Subdomain of subdomain
+
+    return False
+
+
+def get_zenml_headers() -> Dict[str, str]:
+    """Get the ZenML specific headers to be included in requests made by the server.
+
+    Returns:
+        The ZenML specific headers.
+    """
+    config = server_config()
+    headers = {
+        "zenml-server-id": str(config.get_external_server_id()),
+        "zenml-server-version": zenml_version,
+    }
+    if config.server_url:
+        headers["zenml-server-url"] = config.server_url
+
+    return headers

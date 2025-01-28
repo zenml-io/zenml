@@ -29,9 +29,11 @@ from zenml.constants import (
 )
 from zenml.models import (
     ModelVersionArtifactFilter,
+    ModelVersionArtifactRequest,
     ModelVersionArtifactResponse,
     ModelVersionFilter,
     ModelVersionPipelineRunFilter,
+    ModelVersionPipelineRunRequest,
     ModelVersionPipelineRunResponse,
     ModelVersionResponse,
     ModelVersionUpdate,
@@ -198,6 +200,34 @@ model_version_artifacts_router = APIRouter(
 )
 
 
+@model_version_artifacts_router.post(
+    "",
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@handle_exceptions
+def create_model_version_artifact_link(
+    model_version_artifact_link: ModelVersionArtifactRequest,
+    _: AuthContext = Security(authorize),
+) -> ModelVersionArtifactResponse:
+    """Create a new model version to artifact link.
+
+    Args:
+        model_version_artifact_link: The model version to artifact link to create.
+
+    Returns:
+        The created model version to artifact link.
+    """
+    model_version = zen_store().get_model_version(
+        model_version_artifact_link.model_version
+    )
+    verify_permission_for_model(model_version, action=Action.UPDATE)
+
+    mv = zen_store().create_model_version_artifact_link(
+        model_version_artifact_link
+    )
+    return mv
+
+
 @model_version_artifacts_router.get(
     "",
     response_model=Page[ModelVersionArtifactResponse],
@@ -289,6 +319,35 @@ model_version_pipeline_runs_router = APIRouter(
     tags=["model_version_pipeline_runs"],
     responses={401: error_response},
 )
+
+
+@model_version_pipeline_runs_router.post(
+    "",
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@handle_exceptions
+def create_model_version_pipeline_run_link(
+    model_version_pipeline_run_link: ModelVersionPipelineRunRequest,
+    _: AuthContext = Security(authorize),
+) -> ModelVersionPipelineRunResponse:
+    """Create a new model version to pipeline run link.
+
+    Args:
+        model_version_pipeline_run_link: The model version to pipeline run link to create.
+
+    Returns:
+        - If Model Version to Pipeline Run Link already exists - returns the existing link.
+        - Otherwise, returns the newly created model version to pipeline run link.
+    """
+    model_version = zen_store().get_model_version(
+        model_version_pipeline_run_link.model_version, hydrate=False
+    )
+    verify_permission_for_model(model_version, action=Action.UPDATE)
+
+    mv = zen_store().create_model_version_pipeline_run_link(
+        model_version_pipeline_run_link
+    )
+    return mv
 
 
 @model_version_pipeline_runs_router.get(

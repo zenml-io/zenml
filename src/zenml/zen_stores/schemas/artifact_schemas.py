@@ -13,8 +13,7 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of artifact table."""
 
-import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
@@ -50,6 +49,7 @@ from zenml.zen_stores.schemas.step_run_schemas import (
     StepRunOutputArtifactSchema,
 )
 from zenml.zen_stores.schemas.user_schemas import UserSchema
+from zenml.zen_stores.schemas.utils import RunMetadataInterface
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
@@ -60,7 +60,7 @@ if TYPE_CHECKING:
         ModelVersionArtifactSchema,
     )
     from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
-    from zenml.zen_stores.schemas.tag_schemas import TagResourceSchema
+    from zenml.zen_stores.schemas.tag_schemas import TagSchema
 
 
 class ArtifactSchema(NamedSchema, table=True):
@@ -80,11 +80,12 @@ class ArtifactSchema(NamedSchema, table=True):
         back_populates="artifact",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-    tags: List["TagResourceSchema"] = Relationship(
-        back_populates="artifact",
+    tags: List["TagSchema"] = Relationship(
         sa_relationship_kwargs=dict(
-            primaryjoin=f"and_(TagResourceSchema.resource_type=='{TaggableResourceTypes.ARTIFACT.value}', foreign(TagResourceSchema.resource_id)==ArtifactSchema.id)",
-            cascade="delete",
+            primaryjoin=f"and_(foreign(TagResourceSchema.resource_type)=='{TaggableResourceTypes.ARTIFACT.value}', foreign(TagResourceSchema.resource_id)==ArtifactSchema.id)",
+            secondary="tag_resource",
+            secondaryjoin="TagSchema.id == foreign(TagResourceSchema.tag_id)",
+            order_by="TagSchema.name",
             overlaps="tags",
         ),
     )
@@ -134,7 +135,7 @@ class ArtifactSchema(NamedSchema, table=True):
         body = ArtifactResponseBody(
             created=self.created,
             updated=self.updated,
-            tags=[t.tag.to_model() for t in self.tags],
+            tags=[tag.to_model() for tag in self.tags],
             latest_version_name=latest_name,
             latest_version_id=latest_id,
         )
@@ -162,7 +163,7 @@ class ArtifactSchema(NamedSchema, table=True):
         Returns:
             The updated `ArtifactSchema`.
         """
-        self.updated = datetime.utcnow()
+        self.updated = datetime.now(timezone.utc)
         if artifact_update.name:
             self.name = artifact_update.name
             self.has_custom_name = True
@@ -171,7 +172,7 @@ class ArtifactSchema(NamedSchema, table=True):
         return self
 
 
-class ArtifactVersionSchema(BaseSchema, table=True):
+class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
     """SQL Model for artifact versions."""
 
     __tablename__ = "artifact_version"
@@ -190,11 +191,12 @@ class ArtifactVersionSchema(BaseSchema, table=True):
     uri: str = Field(sa_column=Column(TEXT, nullable=False))
     materializer: str = Field(sa_column=Column(TEXT, nullable=False))
     data_type: str = Field(sa_column=Column(TEXT, nullable=False))
-    tags: List["TagResourceSchema"] = Relationship(
-        back_populates="artifact_version",
+    tags: List["TagSchema"] = Relationship(
         sa_relationship_kwargs=dict(
-            primaryjoin=f"and_(TagResourceSchema.resource_type=='{TaggableResourceTypes.ARTIFACT_VERSION.value}', foreign(TagResourceSchema.resource_id)==ArtifactVersionSchema.id)",
-            cascade="delete",
+            primaryjoin=f"and_(foreign(TagResourceSchema.resource_type)=='{TaggableResourceTypes.ARTIFACT_VERSION.value}', foreign(TagResourceSchema.resource_id)==ArtifactVersionSchema.id)",
+            secondary="tag_resource",
+            secondaryjoin="TagSchema.id == foreign(TagResourceSchema.tag_id)",
+            order_by="TagSchema.name",
             overlaps="tags",
         ),
     )
@@ -243,10 +245,10 @@ class ArtifactVersionSchema(BaseSchema, table=True):
         back_populates="artifact_versions"
     )
     run_metadata: List["RunMetadataSchema"] = Relationship(
-        back_populates="artifact_version",
         sa_relationship_kwargs=dict(
-            primaryjoin=f"and_(RunMetadataSchema.resource_type=='{MetadataResourceTypes.ARTIFACT_VERSION.value}', foreign(RunMetadataSchema.resource_id)==ArtifactVersionSchema.id)",
-            cascade="delete",
+            secondary="run_metadata_resource",
+            primaryjoin=f"and_(foreign(RunMetadataResourceSchema.resource_type)=='{MetadataResourceTypes.ARTIFACT_VERSION.value}', foreign(RunMetadataResourceSchema.resource_id)==ArtifactVersionSchema.id)",
+            secondaryjoin="RunMetadataSchema.id==foreign(RunMetadataResourceSchema.run_metadata_id)",
             overlaps="run_metadata",
         ),
     )
@@ -352,8 +354,9 @@ class ArtifactVersionSchema(BaseSchema, table=True):
                 producer_step_run_id = step_run.original_step_run_id
 
         # Create the body of the model
+        artifact = self.artifact.to_model()
         body = ArtifactVersionResponseBody(
-            artifact=self.artifact.to_model(),
+            artifact=artifact,
             version=self.version or str(self.version_number),
             user=self.user.to_model() if self.user else None,
             uri=self.uri,
@@ -362,7 +365,7 @@ class ArtifactVersionSchema(BaseSchema, table=True):
             data_type=data_type,
             created=self.created,
             updated=self.updated,
-            tags=[t.tag.to_model() for t in self.tags],
+            tags=[tag.to_model() for tag in self.tags],
             producer_pipeline_run_id=producer_pipeline_run_id,
             save_type=ArtifactSaveType(self.save_type),
             artifact_store_id=self.artifact_store_id,
@@ -375,9 +378,7 @@ class ArtifactVersionSchema(BaseSchema, table=True):
                 workspace=self.workspace.to_model(),
                 producer_step_run_id=producer_step_run_id,
                 visualizations=[v.to_model() for v in self.visualizations],
-                run_metadata={
-                    m.key: json.loads(m.value) for m in self.run_metadata
-                },
+                run_metadata=self.fetch_metadata(),
             )
 
         resources = None
@@ -400,5 +401,5 @@ class ArtifactVersionSchema(BaseSchema, table=True):
         Returns:
             The updated `ArtifactVersionSchema`.
         """
-        self.updated = datetime.utcnow()
+        self.updated = datetime.now(timezone.utc)
         return self

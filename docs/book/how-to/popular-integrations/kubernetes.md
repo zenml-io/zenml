@@ -29,7 +29,7 @@ The Kubernetes orchestrator requires a Kubernetes cluster in order to run. There
 
 There are two ways to configure the orchestrator:
 
-1. Using a [Service Connector](../../how-to/infrastructure-deployment/auth-management/service-connectors-guide.md) to connect to the remote cluster. This is the recommended approach, especially for cloud-managed clusters. No local `kubectl` context is needed.
+1. Using a [Service Connector](../../infrastructure-deployment/auth-management/service-connectors-guide.md) to connect to the remote cluster. This is the recommended approach, especially for cloud-managed clusters. No local `kubectl` context is needed.
 
 ```bash
 zenml orchestrator register <ORCHESTRATOR_NAME> --flavor kubernetes

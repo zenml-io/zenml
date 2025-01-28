@@ -107,6 +107,42 @@ class ServerModel(BaseModel):
         title="Timestamp of latest user activity traced on the server.",
     )
 
+    pro_dashboard_url: Optional[str] = Field(
+        None,
+        title="The base URL of the ZenML Pro dashboard to which the server "
+        "is connected. Only set if the server is a ZenML Pro server.",
+    )
+
+    pro_api_url: Optional[str] = Field(
+        None,
+        title="The base URL of the ZenML Pro API to which the server is "
+        "connected. Only set if the server is a ZenML Pro server.",
+    )
+
+    pro_organization_id: Optional[UUID] = Field(
+        None,
+        title="The ID of the ZenML Pro organization to which the server is "
+        "connected. Only set if the server is a ZenML Pro server.",
+    )
+
+    pro_organization_name: Optional[str] = Field(
+        None,
+        title="The name of the ZenML Pro organization to which the server is "
+        "connected. Only set if the server is a ZenML Pro server.",
+    )
+
+    pro_tenant_id: Optional[UUID] = Field(
+        None,
+        title="The ID of the ZenML Pro tenant to which the server is connected. "
+        "Only set if the server is a ZenML Pro server.",
+    )
+
+    pro_tenant_name: Optional[str] = Field(
+        None,
+        title="The name of the ZenML Pro tenant to which the server is connected. "
+        "Only set if the server is a ZenML Pro server.",
+    )
+
     def is_local(self) -> bool:
         """Return whether the server is running locally.
 
@@ -118,3 +154,34 @@ class ServerModel(BaseModel):
         # Local ZenML servers are identifiable by the fact that their
         # server ID is the same as the local client (user) ID.
         return self.id == GlobalConfiguration().user_id
+
+    def is_pro_server(self) -> bool:
+        """Return whether the server is a ZenML Pro server.
+
+        Returns:
+            True if the server is a ZenML Pro server, False otherwise.
+        """
+        return self.deployment_type == ServerDeploymentType.CLOUD
+
+
+class ServerLoadInfo(BaseModel):
+    """Domain model for ZenML server load information."""
+
+    threads: int = Field(
+        title="Number of threads that the server is currently using."
+    )
+
+    db_connections_total: int = Field(
+        title="Total number of database connections (active and idle) that the "
+        "server currently has established."
+    )
+
+    db_connections_active: int = Field(
+        title="Number of database connections that the server is currently "
+        "actively using to make queries or transactions."
+    )
+
+    db_connections_overflow: int = Field(
+        title="Number of overflow database connections that the server is "
+        "currently actively using to make queries or transactions."
+    )

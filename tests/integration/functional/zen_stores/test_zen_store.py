@@ -100,8 +100,11 @@ from zenml.models import (
     ModelVersionPipelineRunRequest,
     ModelVersionRequest,
     ModelVersionUpdate,
+    PipelineRequest,
     PipelineRunFilter,
     PipelineRunResponse,
+    RunMetadataResource,
+    ScheduleRequest,
     ServiceAccountFilter,
     ServiceAccountRequest,
     ServiceAccountUpdate,
@@ -2909,7 +2912,7 @@ def test_deleting_run_deletes_steps():
 
 @step
 def step_to_log_metadata(metadata: Union[str, int, bool]) -> int:
-    log_metadata({"blupus": metadata})
+    log_metadata(metadata={"blupus": metadata})
     return 42
 
 
@@ -2954,16 +2957,6 @@ def test_pipeline_run_filters_with_oneof_and_run_metadata(clean_client):
     with pytest.raises(ValidationError):
         PipelineRunFilter(name="oneof:random_value")
 
-    # Test metadata filtering
-    runs_filter = PipelineRunFilter(run_metadata={"blupus": "lt:30"})
-    runs = store.list_runs(runs_filter_model=runs_filter)
-    assert len(runs) == 2  # The run with 3 and 25
-
-    for r in runs:
-        assert "blupus" in r.run_metadata
-        assert isinstance(r.run_metadata["blupus"], int)
-        assert r.run_metadata["blupus"] < 30
-
 
 # .--------------------.
 # | Pipeline run steps |
@@ -2978,8 +2971,8 @@ def test_get_run_step_outputs_succeeds():
     with PipelineRunContext(1):
         steps = store.list_run_steps(StepRunFilter(name="step_2"))
 
-        for step in steps.items:
-            run_step_outputs = store.get_run_step(step.id).outputs
+        for step_item in steps.items:
+            run_step_outputs = store.get_run_step(step_item.id).outputs
             assert len(run_step_outputs) == 1
 
 
@@ -2990,8 +2983,8 @@ def test_get_run_step_inputs_succeeds():
 
     with PipelineRunContext(1):
         steps = store.list_run_steps(StepRunFilter(name="step_2"))
-        for step in steps.items:
-            run_step_inputs = store.get_run_step(step.id).inputs
+        for step_item in steps.items:
+            run_step_inputs = store.get_run_step(step_item.id).inputs
             assert len(run_step_inputs) == 1
 
 
@@ -4765,9 +4758,6 @@ class TestModelVersionArtifactLinks:
             zs = Client().zen_store
             zs.create_model_version_artifact_link(
                 ModelVersionArtifactRequest(
-                    user=model_version.user.id,
-                    workspace=model_version.workspace.id,
-                    model=model_version.model.id,
                     model_version=model_version.id,
                     artifact_version=artifacts[0].id,
                 )
@@ -4781,9 +4771,6 @@ class TestModelVersionArtifactLinks:
             zs = Client().zen_store
             al1 = zs.create_model_version_artifact_link(
                 ModelVersionArtifactRequest(
-                    user=model_version.user.id,
-                    workspace=model_version.workspace.id,
-                    model=model_version.model.id,
                     model_version=model_version.id,
                     artifact_version=artifacts[0].id,
                 )
@@ -4791,9 +4778,6 @@ class TestModelVersionArtifactLinks:
             assert al1.artifact_version.id == artifacts[0].id
             al2 = zs.create_model_version_artifact_link(
                 ModelVersionArtifactRequest(
-                    user=model_version.user.id,
-                    workspace=model_version.workspace.id,
-                    model=model_version.model.id,
                     model_version=model_version.id,
                     artifact_version=artifacts[1].id,
                 )
@@ -4809,9 +4793,6 @@ class TestModelVersionArtifactLinks:
             zs = Client().zen_store
             link1 = zs.create_model_version_artifact_link(
                 ModelVersionArtifactRequest(
-                    user=model_version.user.id,
-                    workspace=model_version.workspace.id,
-                    model=model_version.model.id,
                     model_version=model_version.id,
                     artifact_version=artifacts[0].id,
                 )
@@ -4819,9 +4800,6 @@ class TestModelVersionArtifactLinks:
 
             link2 = zs.create_model_version_artifact_link(
                 ModelVersionArtifactRequest(
-                    user=model_version.user.id,
-                    workspace=model_version.workspace.id,
-                    model=model_version.model.id,
                     model_version=model_version.id,
                     artifact_version=artifacts[0].id,
                 )
@@ -4839,18 +4817,12 @@ class TestModelVersionArtifactLinks:
             zs = Client().zen_store
             zs.create_model_version_artifact_link(
                 ModelVersionArtifactRequest(
-                    user=model_version.user.id,
-                    workspace=model_version.workspace.id,
-                    model=model_version.model.id,
                     model_version=model_version.id,
                     artifact_version=artifacts[0].id,
                 )
             )
             zs.create_model_version_artifact_link(
                 ModelVersionArtifactRequest(
-                    user=model_version.user.id,
-                    workspace=model_version.workspace.id,
-                    model=model_version.model.id,
                     model_version=model_version.id,
                     artifact_version=artifacts[1].id,
                 )
@@ -4871,9 +4843,6 @@ class TestModelVersionArtifactLinks:
             zs = Client().zen_store
             link = zs.create_model_version_artifact_link(
                 ModelVersionArtifactRequest(
-                    user=model_version.user.id,
-                    workspace=model_version.workspace.id,
-                    model=model_version.model.id,
                     model_version=model_version.id,
                     artifact_version=artifacts[0].id,
                 )
@@ -4898,9 +4867,6 @@ class TestModelVersionArtifactLinks:
             for artifact in artifacts:
                 zs.create_model_version_artifact_link(
                     ModelVersionArtifactRequest(
-                        user=model_version.user.id,
-                        workspace=model_version.workspace.id,
-                        model=model_version.model.id,
                         model_version=model_version.id,
                         artifact_version=artifact.id,
                     )
@@ -4935,32 +4901,32 @@ class TestModelVersionArtifactLinks:
             assert len(mvls) == 0
 
     def test_link_list_populated(self):
-        with ModelContext(True, create_artifacts=4) as (
+        with ModelContext(
+            True,
+            create_artifacts=4,
+            artifact_types=[
+                ArtifactType.DATA,
+                ArtifactType.MODEL,
+                ArtifactType.SERVICE,
+                ArtifactType.DATA,
+            ],
+        ) as (
             model_version,
             artifacts,
         ):
-            zs = Client().zen_store
+            client = Client()
+            zs = client.zen_store
             mvls = zs.list_model_version_artifact_links(
                 model_version_artifact_link_filter_model=ModelVersionArtifactFilter(
                     model_version_id=model_version.id
                 ),
             )
             assert len(mvls) == 0
-            for mo, dep, artifact in [
-                (False, False, artifacts[0]),
-                (True, False, artifacts[1]),
-                (False, True, artifacts[2]),
-                (False, False, artifacts[3]),
-            ]:
+            for artifact in artifacts:
                 zs.create_model_version_artifact_link(
                     ModelVersionArtifactRequest(
-                        user=model_version.user.id,
-                        workspace=model_version.workspace.id,
-                        model=model_version.model.id,
                         model_version=model_version.id,
                         artifact_version=artifact.id,
-                        is_model_artifact=mo,
-                        is_deployment_artifact=dep,
                     )
                 )
             mvls = zs.list_model_version_artifact_links(
@@ -5036,9 +5002,6 @@ class TestModelVersionPipelineRunLinks:
             zs = Client().zen_store
             zs.create_model_version_pipeline_run_link(
                 ModelVersionPipelineRunRequest(
-                    user=model_version.user.id,
-                    workspace=model_version.workspace.id,
-                    model=model_version.model.id,
                     model_version=model_version.id,
                     pipeline_run=prs[0].id,
                 )
@@ -5053,18 +5016,12 @@ class TestModelVersionPipelineRunLinks:
             zs = Client().zen_store
             link_1 = zs.create_model_version_pipeline_run_link(
                 ModelVersionPipelineRunRequest(
-                    user=model_version.user.id,
-                    workspace=model_version.workspace.id,
-                    model=model_version.model.id,
                     model_version=model_version.id,
                     pipeline_run=prs[0].id,
                 )
             )
             link_2 = zs.create_model_version_pipeline_run_link(
                 ModelVersionPipelineRunRequest(
-                    user=model_version.user.id,
-                    workspace=model_version.workspace.id,
-                    model=model_version.model.id,
                     model_version=model_version.id,
                     pipeline_run=prs[0].id,
                 )
@@ -5079,11 +5036,7 @@ class TestModelVersionPipelineRunLinks:
             zs = Client().zen_store
             link = zs.create_model_version_pipeline_run_link(
                 ModelVersionPipelineRunRequest(
-                    user=model_version.user.id,
-                    workspace=model_version.workspace.id,
-                    model=model_version.model.id,
                     model_version=model_version.id,
-                    name="link",
                     pipeline_run=prs[0].id,
                 )
             )
@@ -5131,9 +5084,6 @@ class TestModelVersionPipelineRunLinks:
             for pr in prs:
                 zs.create_model_version_pipeline_run_link(
                     ModelVersionPipelineRunRequest(
-                        user=model_version.user.id,
-                        workspace=model_version.workspace.id,
-                        model=model_version.model.id,
                         model_version=model_version.id,
                         pipeline_run=pr.id,
                     )
@@ -5496,12 +5446,60 @@ class TestRunMetadata:
                 pr if type_ == MetadataResourceTypes.PIPELINE_RUN else sr
             )
 
+        elif type_ == MetadataResourceTypes.SCHEDULE:
+            step_name = sample_name("foo")
+            new_pipeline = client.zen_store.create_pipeline(
+                pipeline=PipelineRequest(
+                    name="foo",
+                    user=client.active_user.id,
+                    workspace=client.active_workspace.id,
+                )
+            )
+            resource = client.zen_store.create_schedule(
+                ScheduleRequest(
+                    name="foo",
+                    cron_expression="*/5 * * * *",
+                    user=client.active_user.id,
+                    workspace=client.active_workspace.id,
+                    orchestrator_id=client.active_stack.orchestrator.id,
+                    active=False,
+                    pipeline_id=new_pipeline.id,
+                )
+            )
+            deployment = client.zen_store.create_deployment(
+                PipelineDeploymentRequest(
+                    user=client.active_user.id,
+                    workspace=client.active_workspace.id,
+                    run_name_template=sample_name("foo"),
+                    pipeline_configuration=PipelineConfiguration(
+                        name=sample_name("foo")
+                    ),
+                    stack=client.active_stack.id,
+                    client_version="0.1.0",
+                    server_version="0.1.0",
+                    step_configurations={
+                        step_name: Step(
+                            spec=StepSpec(
+                                source=Source(
+                                    module="acme.foo",
+                                    type=SourceType.INTERNAL,
+                                ),
+                                upstream_steps=[],
+                            ),
+                            config=StepConfiguration(name=step_name),
+                        )
+                    },
+                    schedule=resource.id,
+                )
+            )
+        else:
+            raise ValueError("Unknown/untested MetadataResourceType.")
+
         client.zen_store.create_run_metadata(
             RunMetadataRequest(
                 user=client.active_user.id,
                 workspace=client.active_workspace.id,
-                resource_id=resource.id,
-                resource_type=type_,
+                resources=[RunMetadataResource(id=resource.id, type=type_)],
                 values={"foo": "bar"},
                 types={"foo": MetadataTypeEnum.STRING},
                 stack_component_id=sc.id
@@ -5518,6 +5516,10 @@ class TestRunMetadata:
             rm = client.zen_store.get_run_step(resource.id, True).run_metadata
             assert rm["foo"] == "bar"
 
+        elif type_ == MetadataResourceTypes.SCHEDULE:
+            rm = client.zen_store.get_schedule(resource.id, True).run_metadata
+            assert rm["foo"] == "bar"
+
         if type_ == MetadataResourceTypes.ARTIFACT_VERSION:
             client.zen_store.delete_artifact_version(resource.id)
             client.zen_store.delete_artifact(artifact.id)
@@ -5529,6 +5531,10 @@ class TestRunMetadata:
         ):
             client.zen_store.delete_run(pr.id)
             client.zen_store.delete_deployment(deployment.id)
+        elif type_ == MetadataResourceTypes.SCHEDULE:
+            client.zen_store.delete_deployment(deployment.id)
+            client.zen_store.delete_schedule(resource.id)
+            client.zen_store.delete_pipeline(new_pipeline.id)
 
         client.zen_store.delete_stack_component(sc.id)
 

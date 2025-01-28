@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """SQL Model Implementations for Workspaces."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, List
 
 from sqlmodel import Relationship
@@ -35,8 +35,6 @@ if TYPE_CHECKING:
         EventSourceSchema,
         FlavorSchema,
         ModelSchema,
-        ModelVersionArtifactSchema,
-        ModelVersionPipelineRunSchema,
         ModelVersionSchema,
         PipelineBuildSchema,
         PipelineDeploymentSchema,
@@ -142,18 +140,6 @@ class WorkspaceSchema(NamedSchema, table=True):
         back_populates="workspace",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-    model_versions_artifacts_links: List["ModelVersionArtifactSchema"] = (
-        Relationship(
-            back_populates="workspace",
-            sa_relationship_kwargs={"cascade": "delete"},
-        )
-    )
-    model_versions_pipeline_runs_links: List[
-        "ModelVersionPipelineRunSchema"
-    ] = Relationship(
-        back_populates="workspace",
-        sa_relationship_kwargs={"cascade": "delete"},
-    )
 
     @classmethod
     def from_request(cls, workspace: WorkspaceRequest) -> "WorkspaceSchema":
@@ -182,7 +168,7 @@ class WorkspaceSchema(NamedSchema, table=True):
         ).items():
             setattr(self, field, value)
 
-        self.updated = datetime.utcnow()
+        self.updated = datetime.now(timezone.utc)
         return self
 
     def to_model(

@@ -63,6 +63,7 @@ from zenml.models import (
     PipelineBuildRequest,
     PipelineDeploymentRequest,
     PipelineRequest,
+    RunMetadataResource,
     StackResponse,
 )
 from zenml.utils import io_utils
@@ -484,8 +485,11 @@ def test_create_run_metadata_for_pipeline_run(clean_client_with_run: Client):
     # Assert that the created metadata is correct
     clean_client_with_run.create_run_metadata(
         metadata={"axel": "is awesome"},
-        resource_id=pipeline_run.id,
-        resource_type=MetadataResourceTypes.PIPELINE_RUN,
+        resources=[
+            RunMetadataResource(
+                id=pipeline_run.id, type=MetadataResourceTypes.PIPELINE_RUN
+            )
+        ],
     )
     rm = clean_client_with_run.get_pipeline_run(pipeline_run.id).run_metadata
 
@@ -501,8 +505,11 @@ def test_create_run_metadata_for_step_run(clean_client_with_run: Client):
     # Assert that the created metadata is correct
     clean_client_with_run.create_run_metadata(
         metadata={"axel": "is awesome"},
-        resource_id=step_run.id,
-        resource_type=MetadataResourceTypes.STEP_RUN,
+        resources=[
+            RunMetadataResource(
+                id=step_run.id, type=MetadataResourceTypes.STEP_RUN
+            )
+        ],
     )
     rm = clean_client_with_run.get_run_step(step_run.id).run_metadata
 
@@ -518,8 +525,12 @@ def test_create_run_metadata_for_artifact(clean_client_with_run: Client):
     # Assert that the created metadata is correct
     clean_client_with_run.create_run_metadata(
         metadata={"axel": "is awesome"},
-        resource_id=artifact_version.id,
-        resource_type=MetadataResourceTypes.ARTIFACT_VERSION,
+        resources=[
+            RunMetadataResource(
+                id=artifact_version.id,
+                type=MetadataResourceTypes.ARTIFACT_VERSION,
+            )
+        ],
     )
 
     rm = clean_client_with_run.get_artifact_version(
@@ -968,7 +979,8 @@ def lazy_producer_test_artifact() -> Annotated[str, "new_one"]:
     from zenml.client import Client
 
     log_metadata(
-        metadata={"some_meta": "meta_new_one"}, artifact_name="new_one"
+        metadata={"some_meta": "meta_new_one"},
+        infer_artifact=True,
     )
 
     client = Client()
@@ -1140,14 +1152,14 @@ class TestArtifact:
             artifact_name="preexisting",
             artifact_version="1.2.3",
         )
+        with pytest.raises(KeyError):
+            clean_client.get_artifact_version("new_one")
+        dummy()
         log_metadata(
             metadata={"some_meta": "meta_preexisting"},
             model_name="aria",
             model_version="model_version",
         )
-        with pytest.raises(KeyError):
-            clean_client.get_artifact_version("new_one")
-        dummy()
 
 
 class TestModel:

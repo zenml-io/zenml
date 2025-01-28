@@ -36,15 +36,18 @@ from zenml.constants import (
     DEFAULT_STACK_AND_COMPONENT_NAME,
     DEFAULT_WORKSPACE_NAME,
     ENV_ZENML_DEFAULT_WORKSPACE_NAME,
+    ENV_ZENML_SERVER,
     IS_DEBUG_ENV,
 )
 from zenml.enums import (
     SecretsStoreType,
     StoreType,
 )
+from zenml.exceptions import IllegalOperationError
 from zenml.logger import get_logger
 from zenml.models import (
     ServerDatabaseType,
+    ServerDeploymentType,
     ServerModel,
     StackFilter,
     StackResponse,
@@ -154,9 +157,16 @@ class BaseZenStore(
             TypeError: If the store type is unsupported.
         """
         if store_type == StoreType.SQL:
-            from zenml.zen_stores.sql_zen_store import SqlZenStore
+            if os.environ.get(ENV_ZENML_SERVER):
+                from zenml.zen_server.rbac.rbac_sql_zen_store import (
+                    RBACSqlZenStore,
+                )
 
-            return SqlZenStore
+                return RBACSqlZenStore
+            else:
+                from zenml.zen_stores.sql_zen_store import SqlZenStore
+
+                return SqlZenStore
         elif store_type == StoreType.REST:
             from zenml.zen_stores.rest_zen_store import RestZenStore
 
@@ -335,7 +345,7 @@ class BaseZenStore(
             # Ensure that the active stack is still valid
             try:
                 active_stack = self.get_stack(stack_id=active_stack_id)
-            except KeyError:
+            except (KeyError, IllegalOperationError):
                 logger.warning(
                     "The current %s active stack is no longer available. "
                     "Resetting the active stack to default.",
@@ -381,7 +391,7 @@ class BaseZenStore(
         secrets_store_type = SecretsStoreType.NONE
         if isinstance(self, SqlZenStore) and self.config.secrets_store:
             secrets_store_type = self.config.secrets_store.type
-        return ServerModel(
+        store_info = ServerModel(
             id=GlobalConfiguration().user_id,
             active=True,
             version=zenml.__version__,
@@ -395,6 +405,23 @@ class BaseZenStore(
             analytics_enabled=GlobalConfiguration().analytics_opt_in,
             metadata=metadata,
         )
+
+        # Add ZenML Pro specific store information to the server model, if available.
+        if store_info.deployment_type == ServerDeploymentType.CLOUD:
+            from zenml.config.server_config import ServerProConfiguration
+
+            pro_config = ServerProConfiguration.get_server_config()
+
+            store_info.pro_api_url = pro_config.api_url
+            store_info.pro_dashboard_url = pro_config.dashboard_url
+            store_info.pro_organization_id = pro_config.organization_id
+            store_info.pro_tenant_id = pro_config.tenant_id
+            if pro_config.tenant_name:
+                store_info.pro_tenant_name = pro_config.tenant_name
+            if pro_config.organization_name:
+                store_info.pro_organization_name = pro_config.organization_name
+
+        return store_info
 
     def is_local_store(self) -> bool:
         """Check if the store is local or connected to a local ZenML server.

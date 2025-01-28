@@ -19,7 +19,6 @@ from uuid import UUID
 from pydantic import BaseModel
 
 from zenml.constants import (
-    REPORTABLE_RESOURCES,
     REQUIRES_CUSTOM_RESOURCE_REPORTING,
 )
 from zenml.exceptions import IllegalOperationError
@@ -43,6 +42,7 @@ from zenml.zen_server.rbac.utils import (
     verify_permission,
     verify_permission_for_model,
 )
+from zenml.zen_server.utils import server_config
 
 AnyRequest = TypeVar("AnyRequest", bound=BaseRequest)
 AnyResponse = TypeVar("AnyResponse", bound=BaseIdentifiedResponse)  # type: ignore[type-arg]
@@ -82,7 +82,7 @@ def verify_permissions_and_create_entity(
     verify_permission(resource_type=resource_type, action=Action.CREATE)
 
     needs_usage_increment = (
-        resource_type in REPORTABLE_RESOURCES
+        resource_type in server_config().reportable_resources
         and resource_type not in REQUIRES_CUSTOM_RESOURCE_REPORTING
     )
     if needs_usage_increment:
@@ -129,7 +129,7 @@ def verify_permissions_and_batch_create_entity(
 
     verify_permission(resource_type=resource_type, action=Action.CREATE)
 
-    if resource_type in REPORTABLE_RESOURCES:
+    if resource_type in server_config().reportable_resources:
         raise RuntimeError(
             "Batch requests are currently not possible with usage-tracked features."
         )
@@ -189,7 +189,7 @@ def verify_permissions_and_list_entities(
 def verify_permissions_and_update_entity(
     id: UUIDOrStr,
     update_model: AnyUpdate,
-    get_method: Callable[[UUIDOrStr], AnyResponse],
+    get_method: Callable[[UUIDOrStr, bool], AnyResponse],
     update_method: Callable[[UUIDOrStr, AnyUpdate], AnyResponse],
 ) -> AnyResponse:
     """Verify permissions and update an entity.
@@ -203,7 +203,8 @@ def verify_permissions_and_update_entity(
     Returns:
         A model of the updated entity.
     """
-    model = get_method(id)
+    # We don't need the hydrated version here
+    model = get_method(id, False)
     verify_permission_for_model(model, action=Action.UPDATE)
     updated_model = update_method(model.id, update_model)
     return dehydrate_response_model(updated_model)
@@ -211,7 +212,7 @@ def verify_permissions_and_update_entity(
 
 def verify_permissions_and_delete_entity(
     id: UUIDOrStr,
-    get_method: Callable[[UUIDOrStr], AnyResponse],
+    get_method: Callable[[UUIDOrStr, bool], AnyResponse],
     delete_method: Callable[[UUIDOrStr], None],
 ) -> AnyResponse:
     """Verify permissions and delete an entity.
@@ -224,7 +225,8 @@ def verify_permissions_and_delete_entity(
     Returns:
         The deleted entity.
     """
-    model = get_method(id)
+    # We don't need the hydrated version here
+    model = get_method(id, False)
     verify_permission_for_model(model, action=Action.DELETE)
     delete_method(model.id)
 

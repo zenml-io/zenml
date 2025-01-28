@@ -27,19 +27,16 @@ EXAMPLE_EVENT = correct_event = {
         "events_url": "https://api.github.com/orgs/zenml-io/events",
         "hooks_url": "https://api.github.com/orgs/zenml-io/hooks",
         "issues_url": "https://api.github.com/orgs/zenml-io/issues",
-        "members_url": "https://api.github.com/orgs/zenml-io/members{"
-        "/member}",
+        "members_url": "https://api.github.com/orgs/zenml-io/members{/member}",
         "public_members_url": "https://api.github.com/orgs/zenml-io/public_members{/member}",
-        "avatar_url": "https://avatars.githubusercontent.com/u/88676955?v"
-        "=4",
+        "avatar_url": "https://avatars.githubusercontent.com/u/88676955?v=4",
         "description": "Building production MLOps tooling.",
     },
     "sender": {
         "login": "AriaTheSupercat",
         "id": 38859294,
         "node_id": "MDQ6VXNlcjM4ODU5Mjk0",
-        "avatar_url": "https://avatars.githubusercontent.com/u/38859294?v"
-        "=4",
+        "avatar_url": "https://avatars.githubusercontent.com/u/38859294?v=4",
         "url": "https://api.github.com/users/AriaTheSupercat",
         "html_url": "https://github.com/AriaTheSupercat",
     },
@@ -62,9 +59,7 @@ EXAMPLE_EVENT = correct_event = {
             },
             "added": [],
             "removed": [],
-            "modified": [
-                "src/zenml/mouse-traps" "/arias-personal-moustrap.py"
-            ],
+            "modified": ["src/zenml/mouse-traps/arias-personal-moustrap.py"],
         }
     ],
 }

@@ -13,14 +13,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
+
 import torch
 from datasets import Dataset
 from transformers import (
     T5ForConditionalGeneration,
 )
 
-from zenml import log_model_metadata, step
+from zenml import log_metadata, step
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -50,4 +50,4 @@ def evaluate_model(
     avg_loss = total_loss / num_batches
     print(f"Average loss on the dataset: {avg_loss}")
 
-    log_model_metadata({"Average Loss": avg_loss})
+    log_metadata(metadata={"Average Loss": avg_loss}, infer_model=True)

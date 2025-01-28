@@ -13,8 +13,8 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of tag tables."""
 
-from datetime import datetime
-from typing import TYPE_CHECKING, Any, List
+from datetime import datetime, timezone
+from typing import Any, List
 from uuid import UUID
 
 from sqlalchemy import VARCHAR, Column
@@ -33,16 +33,6 @@ from zenml.models import (
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 
-if TYPE_CHECKING:
-    from zenml.zen_stores.schemas.artifact_schemas import (
-        ArtifactSchema,
-        ArtifactVersionSchema,
-    )
-    from zenml.zen_stores.schemas.model_schemas import (
-        ModelSchema,
-        ModelVersionSchema,
-    )
-
 
 class TagSchema(NamedSchema, table=True):
     """SQL Model for tag."""
@@ -52,7 +42,7 @@ class TagSchema(NamedSchema, table=True):
     color: str = Field(sa_column=Column(VARCHAR(255), nullable=False))
     links: List["TagResourceSchema"] = Relationship(
         back_populates="tag",
-        sa_relationship_kwargs={"cascade": "delete"},
+        sa_relationship_kwargs={"overlaps": "tags", "cascade": "delete"},
     )
 
     @classmethod
@@ -113,7 +103,7 @@ class TagSchema(NamedSchema, table=True):
             else:
                 setattr(self, field, value)
 
-        self.updated = datetime.utcnow()
+        self.updated = datetime.now(timezone.utc)
         return self
 
 
@@ -130,37 +120,11 @@ class TagResourceSchema(BaseSchema, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
-    tag: "TagSchema" = Relationship(back_populates="links")
+    tag: "TagSchema" = Relationship(
+        back_populates="links", sa_relationship_kwargs={"overlaps": "tags"}
+    )
     resource_id: UUID
     resource_type: str = Field(sa_column=Column(VARCHAR(255), nullable=False))
-    artifact: List["ArtifactSchema"] = Relationship(
-        back_populates="tags",
-        sa_relationship_kwargs=dict(
-            primaryjoin=f"and_(TagResourceSchema.resource_type=='{TaggableResourceTypes.ARTIFACT.value}', foreign(TagResourceSchema.resource_id)==ArtifactSchema.id)",
-            overlaps="tags,model,artifact_version,model_version",
-        ),
-    )
-    artifact_version: List["ArtifactVersionSchema"] = Relationship(
-        back_populates="tags",
-        sa_relationship_kwargs=dict(
-            primaryjoin=f"and_(TagResourceSchema.resource_type=='{TaggableResourceTypes.ARTIFACT_VERSION.value}', foreign(TagResourceSchema.resource_id)==ArtifactVersionSchema.id)",
-            overlaps="tags,model,artifact,model_version",
-        ),
-    )
-    model: List["ModelSchema"] = Relationship(
-        back_populates="tags",
-        sa_relationship_kwargs=dict(
-            primaryjoin=f"and_(TagResourceSchema.resource_type=='{TaggableResourceTypes.MODEL.value}', foreign(TagResourceSchema.resource_id)==ModelSchema.id)",
-            overlaps="tags,artifact,artifact_version,model_version",
-        ),
-    )
-    model_version: List["ModelVersionSchema"] = Relationship(
-        back_populates="tags",
-        sa_relationship_kwargs=dict(
-            primaryjoin=f"and_(TagResourceSchema.resource_type=='{TaggableResourceTypes.MODEL_VERSION.value}', foreign(TagResourceSchema.resource_id)==ModelVersionSchema.id)",
-            overlaps="tags,model,artifact,artifact_version",
-        ),
-    )
 
     @classmethod
     def from_request(cls, request: TagResourceRequest) -> "TagResourceSchema":

@@ -266,6 +266,14 @@ def push_image(
     logger.info("Finished pushing Docker image.")
 
     image_name_without_tag, _ = image_name.rsplit(":", maxsplit=1)
+
+    image = docker_client.images.get(image_name)
+    repo_digests: List[str] = image.attrs["RepoDigests"]
+
+    for digest in repo_digests:
+        if digest.startswith(f"{image_name_without_tag}@"):
+            return digest
+
     for info in reversed(aux_info):
         try:
             repo_digest = info["Digest"]
@@ -304,6 +312,7 @@ def get_image_digest(image_name: str) -> Optional[str]:
 
     image = docker_client.images.get(image_name)
     repo_digests = image.attrs["RepoDigests"]
+
     if len(repo_digests) == 1:
         return cast(str, repo_digests[0])
     else:

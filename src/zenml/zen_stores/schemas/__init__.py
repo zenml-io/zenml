@@ -39,7 +39,10 @@ from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
-from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
+from zenml.zen_stores.schemas.run_metadata_schemas import (
+    RunMetadataResourceSchema,
+    RunMetadataSchema,
+)
 from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
 from zenml.zen_stores.schemas.secret_schemas import SecretSchema
 from zenml.zen_stores.schemas.service_schemas import ServiceSchema
@@ -90,6 +93,7 @@ __all__ = [
     "PipelineDeploymentSchema",
     "PipelineRunSchema",
     "PipelineSchema",
+    "RunMetadataResourceSchema",
     "RunMetadataSchema",
     "ScheduleSchema",
     "SecretSchema",

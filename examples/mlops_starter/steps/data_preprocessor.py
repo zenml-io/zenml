@@ -1,6 +1,6 @@
 # Apache Software License 2.0
 #
-# Copyright (c) ZenML GmbH 2024. All rights reserved.
+# Copyright (c) ZenML GmbH 2025. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,7 +23,7 @@ from sklearn.preprocessing import MinMaxScaler
 from typing_extensions import Annotated
 from utils.preprocess import ColumnsDropper, DataFrameCaster, NADropper
 
-from zenml import log_artifact_metadata, step
+from zenml import log_metadata, step
 
 
 @step
@@ -87,8 +87,9 @@ def data_preprocessor(
     dataset_tst = preprocess_pipeline.transform(dataset_tst)
 
     # Log metadata so we can load it in the inference pipeline
-    log_artifact_metadata(
-        artifact_name="preprocess_pipeline",
+    log_metadata(
         metadata={"random_state": random_state, "target": target},
+        artifact_name="preprocess_pipeline",
+        infer_artifact=True,
     )
     return dataset_trn, dataset_tst, preprocess_pipeline

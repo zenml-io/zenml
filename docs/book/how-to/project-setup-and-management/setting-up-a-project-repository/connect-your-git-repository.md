@@ -8,11 +8,11 @@ description: >-
 
 A code repository in ZenML refers to a remote storage location for your code. Some commonly known code repository platforms include [GitHub](https://github.com/) and [GitLab](https://gitlab.com/).
 
-<figure><img src="../../.gitbook/assets/Remote_with_code_repository.png" alt=""><figcaption><p>A visual representation of how the code repository fits into the general ZenML architecture.</p></figcaption></figure>
+<figure><img src="../../../.gitbook/assets/Remote_with_code_repository.png" alt=""><figcaption><p>A visual representation of how the code repository fits into the general ZenML architecture.</p></figcaption></figure>
 
-Code repositories enable ZenML to keep track of the code version that you use for your pipeline runs. Additionally, running a pipeline that is tracked in a registered code repository can [speed up the Docker image building for containerized stack components](../customize-docker-builds/use-code-repositories-to-speed-up-docker-build-times.md) by eliminating the need to rebuild Docker images each time you change one of your source code files.
+Code repositories enable ZenML to keep track of the code version that you use for your pipeline runs. Additionally, running a pipeline that is tracked in a registered code repository can [speed up the Docker image building for containerized stack components](../../infrastructure-deployment/customize-docker-builds/use-code-repositories-to-speed-up-docker-build-times.md) by eliminating the need to rebuild Docker images each time you change one of your source code files.
 
-Learn more about how code repositories benefit development [here](../customize-docker-builds/use-code-repositories-to-speed-up-docker-build-times.md).
+Learn more about how code repositories benefit development [here](../../infrastructure-deployment/customize-docker-builds/use-code-repositories-to-speed-up-docker-build-times.md).
 
 ## Registering a code repository
 
@@ -54,6 +54,21 @@ zenml code-repository register <NAME> --type=github \
 
 where \<REPOSITORY> is the name of the code repository you are registering, \<OWNER> is the owner of the repository, \<NAME> is the name of the repository, \<GITHUB\_TOKEN> is your GitHub Personal Access Token and \<GITHUB\_URL> is the URL of the GitHub instance which defaults to `https://github.com.` You will need to set a URL if you are using GitHub Enterprise.
 
+{% hint style="warning" %}
+Please refer to the section on using secrets for stack configuration in order to securely store your GitHub 
+Personal Access Token.
+
+```shell
+# Using central secrets management
+zenml secret create github_secret \
+    --pa_token=<GITHUB_TOKEN>
+    
+# Then reference the username and password
+zenml code-repository register ... --token={{github_secret.pa_token}}
+    ...
+```
+{% endhint %}
+
 After registering the GitHub code repository, ZenML will automatically detect if your source files are being tracked by GitHub and store the commit hash for each pipeline run.
 
 <details>
@@ -64,15 +79,15 @@ After registering the GitHub code repository, ZenML will automatically detect if
 2. Select "Personal access tokens" and click on "Generate new token".
 3.  Give your token a name and a description.
 
-    ![](../../.gitbook/assets/github-fine-grained-token-name.png)
+    ![](../../../.gitbook/assets/github-fine-grained-token-name.png)
 4.  We recommend selecting the specific repository and then giving `contents` read-only access.
 
-    ![](../../.gitbook/assets/github-token-set-permissions.png)
+    ![](../../../.gitbook/assets/github-token-set-permissions.png)
 
-    ![](../../.gitbook/assets/github-token-permissions-overview.png)
+    ![](../../../.gitbook/assets/github-token-permissions-overview.png)
 5.  Click on "Generate token" and copy the token to a safe place.
 
-    ![](../../.gitbook/assets/copy-github-fine-grained-token.png)
+    ![](../../../.gitbook/assets/copy-github-fine-grained-token.png)
 
 </details>
 
@@ -96,6 +111,21 @@ zenml code-repository register <NAME> --type=gitlab \
 
 where `<NAME>` is the name of the code repository you are registering, `<GROUP>` is the group of the project, `<PROJECT>` is the name of the project, \<GITLAB\_TOKEN> is your GitLab Personal Access Token, and \<GITLAB\_URL> is the URL of the GitLab instance which defaults to `https://gitlab.com.` You will need to set a URL if you have a self-hosted GitLab instance.
 
+{% hint style="warning" %}
+Please refer to the section on using secrets for stack configuration in order to securely store your GitLab
+Personal Access Token.
+
+```shell
+# Using central secrets management
+zenml secret create gitlab_secret \
+    --pa_token=<GITLAB_TOKEN>
+    
+# Then reference the username and password
+zenml code-repository register ... --token={{gitlab_secret.pa_token}}
+    ...
+```
+{% endhint %}
+
 After registering the GitLab code repository, ZenML will automatically detect if your source files are being tracked by GitLab and store the commit hash for each pipeline run.
 
 <details>
@@ -105,10 +135,10 @@ After registering the GitLab code repository, ZenML will automatically detect if
 1. Go to your GitLab account settings and click on [Access Tokens](https://gitlab.com/-/profile/personal\_access\_tokens).
 2.  Name the token and select the scopes that you need (e.g. `read_repository`, `read_user`, `read_api`)
 
-    ![](../../.gitbook/assets/gitlab-generate-access-token.png)
+    ![](../../../.gitbook/assets/gitlab-generate-access-token.png)
 3.  Click on "Create personal access token" and copy the token to a safe place.
 
-    ![](../../.gitbook/assets/gitlab-copy-access-token.png)
+    ![](../../../.gitbook/assets/gitlab-copy-access-token.png)
 
 </details>
 

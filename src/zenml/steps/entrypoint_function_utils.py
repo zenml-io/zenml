@@ -195,7 +195,9 @@ class EntrypointFunctionDefinition(NamedTuple):
             parameter: The function parameter for which the value was provided.
             value: The input value.
         """
-        config_dict = ConfigDict(arbitrary_types_allowed=False)
+        # We allow passing None for optional annotations that would otherwise
+        # not be allowed as a parameter
+        config_dict = ConfigDict(arbitrary_types_allowed=value is None)
 
         # Create a pydantic model with just a single required field with the
         # type annotation of the parameter to verify the input type including
@@ -209,7 +211,8 @@ class EntrypointFunctionDefinition(NamedTuple):
 
 
 def validate_entrypoint_function(
-    func: Callable[..., Any], reserved_arguments: Sequence[str] = ()
+    func: Callable[..., Any],
+    reserved_arguments: Sequence[str] = (),
 ) -> EntrypointFunctionDefinition:
     """Validates a step entrypoint function.
 
@@ -256,7 +259,8 @@ def validate_entrypoint_function(
         inputs[key] = parameter
 
     outputs = parse_return_type_annotations(
-        func=func, enforce_type_annotations=ENFORCE_TYPE_ANNOTATIONS
+        func=func,
+        enforce_type_annotations=ENFORCE_TYPE_ANNOTATIONS,
     )
 
     return EntrypointFunctionDefinition(

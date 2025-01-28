@@ -21,7 +21,7 @@ from transformers import (
     T5TokenizerFast,
 )
 
-from zenml import log_model_metadata, step
+from zenml import log_metadata, step
 from zenml.logger import get_logger
 
 from .data_loader import PROMPT
@@ -70,4 +70,7 @@ def test_model(
             sentence_without_prompt: decoded_output
         }
 
-    log_model_metadata({"Example Prompts": test_collection})
+    log_metadata(
+        metadata={"Example Prompts": test_collection},
+        infer_model=True,
+    )

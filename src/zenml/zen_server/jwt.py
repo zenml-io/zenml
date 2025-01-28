@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Authentication module for ZenML server."""
+"""JWT utilities module for ZenML server."""
 
 from datetime import datetime, timedelta
 from typing import (
@@ -40,16 +40,22 @@ class JWTToken(BaseModel):
         device_id: The id of the authenticated device.
         api_key_id: The id of the authenticated API key for which this token
             was issued.
-        pipeline_id: The id of the pipeline for which the token was issued.
         schedule_id: The id of the schedule for which the token was issued.
+        pipeline_run_id: The id of the pipeline run for which the token was
+            issued.
+        step_run_id: The id of the step run for which the token was
+            issued.
+        session_id: The id of the authenticated session (used for CSRF).
         claims: The original token claims.
     """
 
     user_id: UUID
     device_id: Optional[UUID] = None
     api_key_id: Optional[UUID] = None
-    pipeline_id: Optional[UUID] = None
     schedule_id: Optional[UUID] = None
+    pipeline_run_id: Optional[UUID] = None
+    step_run_id: Optional[UUID] = None
+    session_id: Optional[UUID] = None
     claims: Dict[str, Any] = {}
 
     @classmethod
@@ -122,16 +128,6 @@ class JWTToken(BaseModel):
                     "UUID"
                 )
 
-        pipeline_id: Optional[UUID] = None
-        if "pipeline_id" in claims:
-            try:
-                pipeline_id = UUID(claims.pop("pipeline_id"))
-            except ValueError:
-                raise CredentialsNotValid(
-                    "Invalid JWT token: the pipeline_id claim is not a valid "
-                    "UUID"
-                )
-
         schedule_id: Optional[UUID] = None
         if "schedule_id" in claims:
             try:
@@ -142,12 +138,44 @@ class JWTToken(BaseModel):
                     "UUID"
                 )
 
+        pipeline_run_id: Optional[UUID] = None
+        if "pipeline_run_id" in claims:
+            try:
+                pipeline_run_id = UUID(claims.pop("pipeline_run_id"))
+            except ValueError:
+                raise CredentialsNotValid(
+                    "Invalid JWT token: the pipeline_run_id claim is not a valid "
+                    "UUID"
+                )
+
+        step_run_id: Optional[UUID] = None
+        if "step_run_id" in claims:
+            try:
+                step_run_id = UUID(claims.pop("step_run_id"))
+            except ValueError:
+                raise CredentialsNotValid(
+                    "Invalid JWT token: the step_run_id claim is not a valid "
+                    "UUID"
+                )
+
+        session_id: Optional[UUID] = None
+        if "session_id" in claims:
+            try:
+                session_id = UUID(claims.pop("session_id"))
+            except ValueError:
+                raise CredentialsNotValid(
+                    "Invalid JWT token: the session_id claim is not a valid "
+                    "UUID"
+                )
+
         return JWTToken(
             user_id=user_id,
             device_id=device_id,
             api_key_id=api_key_id,
-            pipeline_id=pipeline_id,
             schedule_id=schedule_id,
+            pipeline_run_id=pipeline_run_id,
+            step_run_id=step_run_id,
+            session_id=session_id,
             claims=claims,
         )
 
@@ -180,10 +208,14 @@ class JWTToken(BaseModel):
             claims["device_id"] = str(self.device_id)
         if self.api_key_id:
             claims["api_key_id"] = str(self.api_key_id)
-        if self.pipeline_id:
-            claims["pipeline_id"] = str(self.pipeline_id)
         if self.schedule_id:
             claims["schedule_id"] = str(self.schedule_id)
+        if self.pipeline_run_id:
+            claims["pipeline_run_id"] = str(self.pipeline_run_id)
+        if self.step_run_id:
+            claims["step_run_id"] = str(self.step_run_id)
+        if self.session_id:
+            claims["session_id"] = str(self.session_id)
 
         return jwt.encode(
             claims,

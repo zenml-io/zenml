@@ -20,7 +20,7 @@ from zenml.client import Client
 from zenml.config.step_configurations import Step
 from zenml.enums import ArtifactSaveType, StepRunInputArtifactType
 from zenml.exceptions import InputResolutionError
-from zenml.utils import pagination_utils
+from zenml.utils import pagination_utils, string_utils
 
 if TYPE_CHECKING:
     from zenml.models import PipelineRunResponse
@@ -53,7 +53,8 @@ def resolve_step_inputs(
     current_run_steps = {
         run_step.name: run_step
         for run_step in pagination_utils.depaginate(
-            Client().list_run_steps, pipeline_run_id=pipeline_run.id
+            Client().list_run_steps,
+            pipeline_run_id=pipeline_run.id,
         )
     }
 
@@ -66,11 +67,23 @@ def resolve_step_inputs(
                 f"No step `{input_.step_name}` found in current run."
             )
 
+        # Try to get the substitutions from the pipeline run first, as we
+        # already have a hydrated version of that. In the unlikely case
+        # that the pipeline run is outdated, we fetch it from the step
+        # run instead which will costs us one hydration call.
+        substitutions = (
+            pipeline_run.step_substitutions.get(step_run.name)
+            or step_run.config.substitutions
+        )
+        output_name = string_utils.format_name_template(
+            input_.output_name, substitutions=substitutions
+        )
+
         try:
-            outputs = step_run.outputs[input_.output_name]
+            outputs = step_run.outputs[output_name]
         except KeyError:
             raise InputResolutionError(
-                f"No step output `{input_.output_name}` found for step "
+                f"No step output `{output_name}` found for step "
                 f"`{input_.step_name}`."
             )
 
@@ -83,12 +96,12 @@ def resolve_step_inputs(
             # This should never happen, there can only be a single regular step
             # output for a name
             raise InputResolutionError(
-                f"Too many step outputs for output `{input_.output_name}` of "
+                f"Too many step outputs for output `{output_name}` of "
                 f"step `{input_.step_name}`."
             )
         elif len(step_outputs) == 0:
             raise InputResolutionError(
-                f"No step output `{input_.output_name}` found for step "
+                f"No step output `{output_name}` found for step "
                 f"`{input_.step_name}`."
             )
 

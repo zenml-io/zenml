@@ -13,32 +13,24 @@
 #  permissions and limitations under the License.
 """Utilities for creating step runs."""
 
-from datetime import datetime
-from typing import TYPE_CHECKING, Dict, List, Mapping, Optional, Set, Tuple
+from datetime import datetime, timezone
+from typing import Dict, List, Optional, Set, Tuple
 
 from zenml.client import Client
-from zenml.config.step_configurations import ArtifactConfiguration, Step
+from zenml.config.step_configurations import Step
 from zenml.constants import CODE_HASH_PARAMETER_NAME, TEXT_FIELD_MAX_LENGTH
-from zenml.enums import ArtifactSaveType, ExecutionStatus
+from zenml.enums import ExecutionStatus
 from zenml.logger import get_logger
 from zenml.model.utils import link_artifact_version_to_model_version
 from zenml.models import (
     ArtifactVersionResponse,
-    ModelVersionPipelineRunRequest,
     ModelVersionResponse,
     PipelineDeploymentResponse,
     PipelineRunResponse,
-    PipelineRunUpdate,
     StepRunRequest,
-    StepRunResponse,
-    StepRunUpdate,
 )
 from zenml.orchestrators import cache_utils, input_utils, utils
 from zenml.stack import Stack
-from zenml.utils import pagination_utils, string_utils
-
-if TYPE_CHECKING:
-    from zenml.model.model import Model
 
 logger = get_logger(__name__)
 
@@ -83,7 +75,7 @@ class StepRunRequestFactory:
             pipeline_run_id=self.pipeline_run.id,
             deployment=self.deployment.id,
             status=ExecutionStatus.RUNNING,
-            start_time=datetime.utcnow(),
+            start_time=datetime.now(timezone.utc),
             user=Client().active_user.id,
             workspace=Client().active_workspace.id,
         )
@@ -293,10 +285,6 @@ def create_cached_step_runs(
         deployment=deployment, pipeline_run=pipeline_run, stack=stack
     )
 
-    pipeline_model_version, pipeline_run = prepare_pipeline_run_model_version(
-        pipeline_run=pipeline_run
-    )
-
     while (
         cache_candidates := find_cacheable_invocation_candidates(
             deployment=deployment,
@@ -309,6 +297,11 @@ def create_cached_step_runs(
         for invocation_id in cache_candidates:
             visited_invocations.add(invocation_id)
 
+            # Make sure the request factory has the most up to date pipeline
+            # run to avoid hydration calls
+            request_factory.pipeline_run = Client().get_pipeline_run(
+                pipeline_run.id
+            )
             try:
                 step_run_request = request_factory.create_request(
                     invocation_id
@@ -333,18 +326,12 @@ def create_cached_step_runs(
 
             step_run = Client().zen_store.create_run_step(step_run_request)
 
-            # Refresh the pipeline run here to make sure we have the latest
-            # state
-            pipeline_run = Client().get_pipeline_run(pipeline_run.id)
-
-            step_model_version, step_run = prepare_step_run_model_version(
-                step_run=step_run, pipeline_run=pipeline_run
-            )
-
-            if model_version := step_model_version or pipeline_model_version:
+            if (
+                model_version := step_run.model_version
+                or pipeline_run.model_version
+            ):
                 link_output_artifacts_to_model_version(
                     artifacts=step_run.outputs,
-                    output_configurations=step_run.config.outputs,
                     model_version=model_version,
                 )
 
@@ -352,160 +339,6 @@ def create_cached_step_runs(
             cached_invocations.add(invocation_id)
 
     return cached_invocations
-
-
-def get_or_create_model_version_for_pipeline_run(
-    model: "Model", pipeline_run: PipelineRunResponse
-) -> Tuple[ModelVersionResponse, bool]:
-    """Get or create a model version as part of a pipeline run.
-
-    Args:
-        model: The model to get or create.
-        pipeline_run: The pipeline run for which the model should be created.
-
-    Returns:
-        The model version and a boolean indicating whether it was newly created
-        or not.
-    """
-    # Copy the model before modifying it so we don't accidently modify
-    # configurations in which the model object is potentially referenced
-    model = model.model_copy()
-
-    if model.model_version_id:
-        return model._get_model_version(), False
-    elif model.version:
-        if isinstance(model.version, str):
-            start_time = pipeline_run.start_time or datetime.utcnow()
-            model.version = string_utils.format_name_template(
-                model.version,
-                date=start_time.strftime("%Y_%m_%d"),
-                time=start_time.strftime("%H_%M_%S_%f"),
-            )
-
-        return (
-            model._get_or_create_model_version(),
-            model._created_model_version,
-        )
-
-    # The model version should be created as part of this run
-    # -> We first check if it was already created as part of this run, and if
-    # not we do create it. If this is running in two parallel steps, we might
-    # run into issues that this will create two versions. Ideally, all model
-    # versions required for a pipeline run and its steps could be created
-    # server-side at run creation time before the first step starts.
-    if model_version := get_model_version_created_by_pipeline_run(
-        model_name=model.name, pipeline_run=pipeline_run
-    ):
-        return model_version, False
-    else:
-        return model._get_or_create_model_version(), True
-
-
-def get_model_version_created_by_pipeline_run(
-    model_name: str, pipeline_run: PipelineRunResponse
-) -> Optional[ModelVersionResponse]:
-    """Get a model version that was created by a specific pipeline run.
-
-    This function does not refresh the pipeline run, so it will only try to
-    fetch the model version from existing steps if they're already part of the
-    response.
-
-    Args:
-        model_name: The model name for which to get the version.
-        pipeline_run: The pipeline run for which to get the version.
-
-    Returns:
-        A model version with the given name created by the run, or None if such
-        a model version does not exist.
-    """
-    if pipeline_run.config.model and pipeline_run.model_version:
-        if (
-            pipeline_run.config.model.name == model_name
-            and pipeline_run.config.model.version is None
-        ):
-            return pipeline_run.model_version
-
-    # We fetch a list of hydrated step runs here in order to avoid hydration
-    # calls for each step separately.
-    candidate_step_runs = pagination_utils.depaginate(
-        Client().list_run_steps,
-        pipeline_run_id=pipeline_run.id,
-        model=model_name,
-        hydrate=True,
-    )
-    for step_run in candidate_step_runs:
-        if step_run.config.model and step_run.model_version:
-            if (
-                step_run.config.model.name == model_name
-                and step_run.config.model.version is None
-            ):
-                return step_run.model_version
-
-    return None
-
-
-def prepare_pipeline_run_model_version(
-    pipeline_run: PipelineRunResponse,
-) -> Tuple[Optional[ModelVersionResponse], PipelineRunResponse]:
-    """Prepare the model version for a pipeline run.
-
-    Args:
-        pipeline_run: The pipeline run for which to prepare the model version.
-
-    Returns:
-        The prepared model version and the updated pipeline run.
-    """
-    model_version = None
-
-    if pipeline_run.model_version:
-        model_version = pipeline_run.model_version
-    elif config_model := pipeline_run.config.model:
-        model_version, _ = get_or_create_model_version_for_pipeline_run(
-            model=config_model, pipeline_run=pipeline_run
-        )
-        pipeline_run = Client().zen_store.update_run(
-            run_id=pipeline_run.id,
-            run_update=PipelineRunUpdate(model_version_id=model_version.id),
-        )
-        link_pipeline_run_to_model_version(
-            pipeline_run=pipeline_run, model_version=model_version
-        )
-        log_model_version_dashboard_url(model_version)
-
-    return model_version, pipeline_run
-
-
-def prepare_step_run_model_version(
-    step_run: StepRunResponse, pipeline_run: PipelineRunResponse
-) -> Tuple[Optional[ModelVersionResponse], StepRunResponse]:
-    """Prepare the model version for a step run.
-
-    Args:
-        step_run: The step run for which to prepare the model version.
-        pipeline_run: The pipeline run of the step.
-
-    Returns:
-        The prepared model version and the updated step run.
-    """
-    model_version = None
-
-    if step_run.model_version:
-        model_version = step_run.model_version
-    elif config_model := step_run.config.model:
-        model_version, created = get_or_create_model_version_for_pipeline_run(
-            model=config_model, pipeline_run=pipeline_run
-        )
-        step_run = Client().zen_store.update_run_step(
-            step_run_id=step_run.id,
-            step_run_update=StepRunUpdate(model_version_id=model_version.id),
-        )
-        link_pipeline_run_to_model_version(
-            pipeline_run=pipeline_run, model_version=model_version
-        )
-        if created:
-            log_model_version_dashboard_url(model_version)
-
-    return model_version, step_run
 
 
 def log_model_version_dashboard_url(
@@ -519,10 +352,15 @@ def log_model_version_dashboard_url(
     Args:
         model_version: The model version for which to log the dashboard URL.
     """
-    from zenml.utils.cloud_utils import try_get_model_version_url
+    from zenml.utils.dashboard_utils import get_model_version_url
 
-    if model_version_url_logs := try_get_model_version_url(model_version):
-        logger.info(model_version_url_logs)
+    if model_version_url := get_model_version_url(model_version.id):
+        logger.info(
+            "Dashboard URL for Model Version `%s (%s)`:\n%s",
+            model_version.model.name,
+            model_version.name,
+            model_version_url,
+        )
     else:
         logger.info(
             "Models can be viewed in the dashboard using ZenML Pro. Sign up "
@@ -530,49 +368,19 @@ def log_model_version_dashboard_url(
         )
 
 
-def link_pipeline_run_to_model_version(
-    pipeline_run: PipelineRunResponse, model_version: ModelVersionResponse
-) -> None:
-    """Link a pipeline run to a model version.
-
-    Args:
-        pipeline_run: The pipeline run to link.
-        model_version: The model version to link.
-    """
-    client = Client()
-    client.zen_store.create_model_version_pipeline_run_link(
-        ModelVersionPipelineRunRequest(
-            user=client.active_user.id,
-            workspace=client.active_workspace.id,
-            pipeline_run=pipeline_run.id,
-            model=model_version.model.id,
-            model_version=model_version.id,
-        )
-    )
-
-
 def link_output_artifacts_to_model_version(
     artifacts: Dict[str, List[ArtifactVersionResponse]],
-    output_configurations: Mapping[str, ArtifactConfiguration],
     model_version: ModelVersionResponse,
 ) -> None:
     """Link the outputs of a step run to a model version.
 
     Args:
         artifacts: The step output artifacts.
-        output_configurations: The output configurations for the step.
         model_version: The model version to link.
     """
-    for output_name, output_artifacts in artifacts.items():
+    for output_artifacts in artifacts.values():
         for output_artifact in output_artifacts:
-            artifact_config = None
-            if output_artifact.save_type == ArtifactSaveType.STEP_OUTPUT and (
-                output_config := output_configurations.get(output_name, None)
-            ):
-                artifact_config = output_config.artifact_config
-
             link_artifact_version_to_model_version(
                 artifact_version=output_artifact,
                 model_version=model_version,
-                artifact_config=artifact_config,
             )

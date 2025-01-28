@@ -17,7 +17,7 @@ import getpass
 import re
 import time
 import webbrowser
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -1073,8 +1073,7 @@ def set_active_stack_command(stack_name_or_id: str) -> None:
             cli_utils.error(str(err))
 
         cli_utils.declare(
-            f"Active {scope} stack set to: "
-            f"'{client.active_stack_model.name}'"
+            f"Active {scope} stack set to: '{client.active_stack_model.name}'"
         )
 
 
@@ -1129,14 +1128,12 @@ def export_stack(
 def _import_stack_component(
     component_type: StackComponentType,
     component_dict: Dict[str, Any],
-    component_spec_path: Optional[str] = None,
 ) -> UUID:
     """Import a single stack component with given type/config.
 
     Args:
         component_type: The type of component to import.
         component_dict: Dict representation of the component to import.
-        component_spec_path: Path to the component spec file.
 
     Returns:
         The ID of the imported component.
@@ -1172,7 +1169,6 @@ def _import_stack_component(
         component_type=component_type,
         flavor=flavor,
         configuration=config,
-        component_spec_path=component_spec_path,
     )
     return component.id
 
@@ -1579,7 +1575,7 @@ def deploy(
         ):
             raise click.Abort()
 
-        date_start = datetime.utcnow()
+        date_start = datetime.now(timezone.utc)
 
         webbrowser.open(deployment_config.deployment_url)
         console.print(
@@ -1766,7 +1762,7 @@ def _get_service_connector_info(
             required = ""
             for each_req in schema["required"]:
                 field = schema["properties"][each_req]
-                required += f"[bold]{each_req}[/bold]  [italic]({field.get('title','no description')})[/italic]\n"
+                required += f"[bold]{each_req}[/bold]  [italic]({field.get('title', 'no description')})[/italic]\n"
             choices.append([value.name, required])
 
         selected_auth_idx = cli_utils.multi_choice_prompt(

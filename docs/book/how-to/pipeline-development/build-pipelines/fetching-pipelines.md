@@ -36,7 +36,7 @@ pipeline_model = Client().get_pipeline("first_pipeline")
 ```
 
 {% hint style="info" %}
-Check out the [ZenML Client Documentation](../../reference/python-client.md) for more information on the `Client` class and its purpose.
+Check out the [ZenML Client Documentation](../../../reference/python-client.md) for more information on the `Client` class and its purpose.
 {% endhint %}
 
 ### Discover and list all pipelines
@@ -78,7 +78,7 @@ runs = pipeline_model.runs
 The result will be a list of the most recent runs of this pipeline, ordered from newest to oldest.
 
 {% hint style="info" %}
-Alternatively, you can also use the `pipeline_model.get_runs()` method which allows you to specify detailed parameters for filtering or pagination. See the [ZenML SDK Docs](../../reference/python-client.md#list-of-resources) for more information.
+Alternatively, you can also use the `pipeline_model.get_runs()` method which allows you to specify detailed parameters for filtering or pagination. See the [ZenML SDK Docs](../../../reference/python-client.md#list-of-resources) for more information.
 {% endhint %}
 
 ### Get the last run of a pipeline
@@ -139,7 +139,7 @@ status = run.status
 
 #### Configuration
 
-The `pipeline_configuration` is an object that contains all configurations of the pipeline and pipeline run, including the [pipeline-level settings](../../user-guide/production-guide/configure-pipeline.md), which we will learn more about later:
+The `pipeline_configuration` is an object that contains all configurations of the pipeline and pipeline run, including the [pipeline-level settings](../../../user-guide/production-guide/configure-pipeline.md), which we will learn more about later:
 
 ```python
 pipeline_config = run.config
@@ -168,12 +168,12 @@ step = run.steps["first_step"]
 ````
 
 {% hint style="info" %}
-If you're only calling each step once inside your pipeline, the **invocation ID** will be the same as the name of your step. For more complex pipelines, check out [this page](../build-pipelines/using-a-custom-step-invocation-id.md) to learn more about the invocation ID.
+If you're only calling each step once inside your pipeline, the **invocation ID** will be the same as the name of your step. For more complex pipelines, check out [this page](../../pipeline-development/build-pipelines/using-a-custom-step-invocation-id.md) to learn more about the invocation ID.
 {% endhint %}
 
 ### Inspect pipeline runs with our VS Code extension
 
-![GIF of our VS code extension, showing some of the uses of the sidebar](../../.gitbook/assets/zenml-extension-shortened.gif)
+![GIF of our VS code extension, showing some of the uses of the sidebar](../../../.gitbook/assets/zenml-extension-shortened.gif)
 
 If you are using [our VS Code extension](https://marketplace.visualstudio.com/items?itemName=ZenML.zenml-vscode), you can easily view your pipeline runs by opening the sidebar (click on the ZenML icon). You can then click on any particular pipeline run to see its status and some other metadata. If you want to delete a run, you can also do so from the same sidebar view.
 
@@ -207,7 +207,7 @@ my_pytorch_model = output.load()
 Similarly, you can use the `inputs` and `input` properties to get the input artifacts of a step instead.
 
 {% hint style="info" %}
-Check out [this page](../../user-guide/starter-guide/manage-artifacts.md#giving-names-to-your-artifacts) to see what the output names of your steps are and how to customize them.
+Check out [this page](../../../user-guide/starter-guide/manage-artifacts.md#giving-names-to-your-artifacts) to see what the output names of your steps are and how to customize them.
 {% endhint %}
 
 Note that the output of a step corresponds to a specific artifact version.
@@ -247,7 +247,7 @@ output_metadata = output.run_metadata
 storage_size_in_bytes = output_metadata["storage_size"].value
 ```
 
-We will talk more about metadata [in the next section](../../user-guide/starter-guide/manage-artifacts.md#logging-metadata-for-an-artifact).
+We will talk more about metadata [in the next section](../../../user-guide/starter-guide/manage-artifacts.md#logging-metadata-for-an-artifact).
 
 #### Visualizations
 
@@ -257,10 +257,10 @@ ZenML automatically saves visualizations for many common data types. Using the `
 output.visualize()
 ```
 
-![output.visualize() Output](../../.gitbook/assets/artifact\_visualization\_evidently.png)
+![output.visualize() Output](../../../.gitbook/assets/artifact\_visualization\_evidently.png)
 
 {% hint style="info" %}
-If you're not in a Jupyter notebook, you can simply view the visualizations in the ZenML dashboard by running `zenml login --local` and clicking on the respective artifact in the pipeline run DAG instead. Check out the [artifact visualization page](../visualize-artifacts/README.md) to learn more about how to build and view artifact visualizations in ZenML!
+If you're not in a Jupyter notebook, you can simply view the visualizations in the ZenML dashboard by running `zenml login --local` and clicking on the respective artifact in the pipeline run DAG instead. Check out the [artifact visualization page](../../handle-data-artifacts/visualize-artifacts.md) to learn more about how to build and view artifact visualizations in ZenML!
 {% endhint %}
 
 ## Fetching information during run execution
@@ -288,7 +288,7 @@ def my_step():
 ```
 
 {% hint style="info" %}
-As shown in the example, we can get additional information about the current run using the `StepContext`, which is explained in more detail in the [advanced docs](../track-metrics-metadata/fetch-metadata-within-steps.md).
+As shown in the example, we can get additional information about the current run using the `StepContext`, which is explained in more detail in the [advanced docs](../../model-management-metrics/track-metrics-metadata/fetch-metadata-within-steps.md).
 {% endhint %}
 
 ## Code example

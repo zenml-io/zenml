@@ -31,7 +31,7 @@ class FeastIntegration(Integration):
 
     NAME = FEAST
     # click is added to keep the feast click version in sync with ZenML's click
-    REQUIREMENTS = ["feast", "click>=8.0.1,<8.1.4"]
+    REQUIREMENTS = ["feast>=0.12.0", "click>=8.0.1,<8.1.4"]
     REQUIREMENTS_IGNORED_ON_UNINSTALL = ["click", "pandas"]
 
     @classmethod

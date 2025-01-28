@@ -13,11 +13,11 @@ We suggest going through the following checklist before asking for help:
 
 *   Search on Slack using the built-in Slack search function at the top of the page.
 
-    ![Searching on Slack.](../.gitbook/assets/slack\_search\_bar.png)
+    ![Searching on Slack.](../.gitbook/assets/slack_search_bar.png)
 * Search on [GitHub issues](https://github.com/zenml-io/zenml/issues).
 *   Search the [docs](https://docs.zenml.io) using the search bar in the top right corner of the page.
 
-    ![Searching on docs page.](../.gitbook/assets/doc\_search\_bar.png)
+    ![Searching on docs page.](../.gitbook/assets/doc_search_bar.png)
 * Check out the [common errors](debug-and-solve-issues.md#most-common-errors) section below.
 * Understand the problem by studying the [additional logs](debug-and-solve-issues.md#41-additional-logs) and [client/server logs](debug-and-solve-issues.md#client-and-server-logs).
 

@@ -18,7 +18,7 @@ from typing_extensions import Annotated
 from zenml import pipeline, step
 from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.client import Client
-from zenml.enums import ModelStages
+from zenml.enums import ArtifactType, ModelStages
 from zenml.model.model import Model
 
 MODEL_NAME = "foo"
@@ -31,17 +31,17 @@ def single_output_step_from_context() -> Annotated[int, ArtifactConfig()]:
 
 
 @step(model=Model(name=MODEL_NAME, version=ModelStages.LATEST))
-def single_output_step_from_context_model() -> (
-    Annotated[int, ArtifactConfig(is_model_artifact=True)]
-):
+def single_output_step_from_context_model() -> Annotated[
+    int, ArtifactConfig(artifact_type=ArtifactType.MODEL)
+]:
     """Untyped single output linked as a model artifact from step context."""
     return 1
 
 
 @step(model=Model(name=MODEL_NAME, version=ModelStages.LATEST))
-def single_output_step_from_context_endpoint() -> (
-    Annotated[int, ArtifactConfig(is_deployment_artifact=True)]
-):
+def single_output_step_from_context_endpoint() -> Annotated[
+    int, ArtifactConfig(artifact_type=ArtifactType.SERVICE)
+]:
     """Untyped single output linked as endpoint artifact from step context."""
     return 1
 
@@ -60,9 +60,6 @@ def simple_pipeline():
 
 def test_link_minimalistic(clean_client: "Client"):
     """Test simple explicit linking from step context for 3 artifact types."""
-    user = clean_client.active_user.id
-    ws = clean_client.active_workspace.id
-
     # warm-up
     Model(name=MODEL_NAME)._get_or_create_model_version()
 
@@ -73,8 +70,6 @@ def test_link_minimalistic(clean_client: "Client"):
     assert mv.number == 1 and mv.name == "1"
     links = clean_client.list_model_version_artifact_links(
         model_version_id=mv.id,
-        user_id=user,
-        workspace_id=ws,
     )
     assert links.size == 3
 
@@ -83,27 +78,23 @@ def test_link_minimalistic(clean_client: "Client"):
     one_is_data_artifact = False
     for link in links:
         one_is_endpoint_artifact ^= (
-            link.is_deployment_artifact and not link.is_model_artifact
+            link.artifact_version.type == ArtifactType.SERVICE
         )
         one_is_model_artifact ^= (
-            not link.is_deployment_artifact and link.is_model_artifact
+            link.artifact_version.type == ArtifactType.MODEL
         )
-        one_is_data_artifact ^= (
-            not link.is_deployment_artifact and not link.is_model_artifact
-        )
+        one_is_data_artifact ^= link.artifact_version.type == ArtifactType.DATA
     assert one_is_endpoint_artifact
     assert one_is_model_artifact
     assert one_is_data_artifact
 
 
 @step(model=Model(name=MODEL_NAME))
-def multi_named_output_step_from_context() -> (
-    Tuple[
-        Annotated[int, "1"],
-        Annotated[int, "2"],
-        Annotated[int, "3"],
-    ]
-):
+def multi_named_output_step_from_context() -> Tuple[
+    Annotated[int, "1"],
+    Annotated[int, "2"],
+    Annotated[int, "3"],
+]:
     """3 typed output step with explicit linking from step context."""
     return 1, 2, 3
 
@@ -116,9 +107,6 @@ def multi_named_pipeline():
 
 def test_link_multiple_named_outputs(clean_client: "Client"):
     """Test multiple typed output step with explicit linking from step context."""
-    user = clean_client.active_user.id
-    ws = clean_client.active_workspace.id
-
     multi_named_pipeline()
 
     mv = clean_client.get_model_version(MODEL_NAME, ModelStages.LATEST)
@@ -126,20 +114,16 @@ def test_link_multiple_named_outputs(clean_client: "Client"):
     assert mv.number == 1 and mv.name == "1"
     al = clean_client.list_model_version_artifact_links(
         model_version_id=mv.id,
-        user_id=user,
-        workspace_id=ws,
     )
     assert al.size == 3
 
 
 @step(model=Model(name=MODEL_NAME))
-def multi_named_output_step_not_tracked() -> (
-    Tuple[
-        Annotated[int, "1"],
-        Annotated[int, "2"],
-        Annotated[int, "3"],
-    ]
-):
+def multi_named_output_step_not_tracked() -> Tuple[
+    Annotated[int, "1"],
+    Annotated[int, "2"],
+    Annotated[int, "3"],
+]:
     """Here links would be implicitly created based on step Model."""
     return 1, 2, 3
 
@@ -152,9 +136,6 @@ def multi_named_pipeline_not_tracked():
 
 def test_link_multiple_named_outputs_without_links(clean_client: "Client"):
     """Test multi output step implicit linking based on step context."""
-    user = clean_client.active_user.id
-    ws = clean_client.active_workspace.id
-
     multi_named_pipeline_not_tracked()
 
     mv = clean_client.get_model_version(MODEL_NAME, ModelStages.LATEST)
@@ -162,36 +143,30 @@ def test_link_multiple_named_outputs_without_links(clean_client: "Client"):
     assert mv.model.name == MODEL_NAME
     artifact_links = clean_client.list_model_version_artifact_links(
         model_version_id=mv.id,
-        user_id=user,
-        workspace_id=ws,
     )
     assert artifact_links.size == 3
 
 
 @step(model=Model(name="step", version="step"))
-def multi_named_output_step_mixed_linkage() -> (
-    Tuple[
-        Annotated[
-            int,
-            "2",
-        ],
-        Annotated[
-            int,
-            "3",
-        ],
-    ]
-):
+def multi_named_output_step_mixed_linkage() -> Tuple[
+    Annotated[
+        int,
+        "2",
+    ],
+    Annotated[
+        int,
+        "3",
+    ],
+]:
     """Artifact 2 and 3 will get step context."""
     return 2, 3
 
 
 @step
-def pipeline_configuration_is_used_here() -> (
-    Tuple[
-        Annotated[int, ArtifactConfig(name="custom_name")],
-        Annotated[str, "4"],
-    ]
-):
+def pipeline_configuration_is_used_here() -> Tuple[
+    Annotated[int, ArtifactConfig(name="custom_name")],
+    Annotated[str, "4"],
+]:
     """Artifact "1" has own config and overrides name, but "4" will be implicitly tracked with pipeline config."""
     return 1, "foo"
 
@@ -224,9 +199,6 @@ def test_link_multiple_named_outputs_with_mixed_linkage(
     clean_client: "Client",
 ):
     """In this test a mixed linkage of artifacts is verified. See steps description."""
-    user = clean_client.active_user.id
-    ws = clean_client.active_workspace.id
-
     # manual creation needed, as we work with specific versions
     models = []
     mvs = []
@@ -250,8 +222,6 @@ def test_link_multiple_named_outputs_with_mixed_linkage(
         artifact_links.append(
             clean_client.list_model_version_artifact_links(
                 model_version_id=mv.id,
-                user_id=user,
-                workspace_id=ws,
             )
         )
 
@@ -260,9 +230,9 @@ def test_link_multiple_named_outputs_with_mixed_linkage(
 
 
 @step(enable_cache=True)
-def _cacheable_step_annotated() -> (
-    Annotated[str, ArtifactConfig(name="cacheable", is_model_artifact=True)]
-):
+def _cacheable_step_annotated() -> Annotated[
+    str, ArtifactConfig(name="cacheable", artifact_type=ArtifactType.MODEL)
+]:
     return "cacheable"
 
 
@@ -315,9 +285,9 @@ def standard_name_producer() -> str:
 
 
 @step
-def custom_name_producer() -> (
-    Annotated[str, "pipeline_::standard_name_producer::output"]
-):
+def custom_name_producer() -> Annotated[
+    str, "pipeline_::standard_name_producer::output"
+]:
     return "custom"
 
 

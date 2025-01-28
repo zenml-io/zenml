@@ -33,7 +33,6 @@ from zenml.stack import Stack, StackValidator
 from zenml.step_operators import BaseStepOperator
 
 if TYPE_CHECKING:
-    from zenml.config.base_settings import BaseSettings
     from zenml.config.step_run_info import StepRunInfo
     from zenml.models import PipelineDeploymentBase
 
@@ -197,7 +196,9 @@ class KubernetesStepOperator(BaseStepOperator):
         )
 
         pod_name = f"{info.run_name}_{info.pipeline_step_name}"
-        pod_name = kube_utils.sanitize_pod_name(pod_name)
+        pod_name = kube_utils.sanitize_pod_name(
+            pod_name, namespace=self.config.kubernetes_namespace
+        )
 
         command = entrypoint_command[:3]
         args = entrypoint_command[3:]

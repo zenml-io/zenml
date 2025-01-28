@@ -13,12 +13,16 @@
 #  permissions and limitations under the License.
 """Models representing models."""
 
-from typing import TYPE_CHECKING, ClassVar, List, Optional, Union
+from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Type, TypeVar
 from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
+from zenml.constants import (
+    SORT_BY_LATEST_VERSION_KEY,
+    STR_FIELD_MAX_LENGTH,
+    TEXT_FIELD_MAX_LENGTH,
+)
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
@@ -30,10 +34,13 @@ from zenml.models.v2.base.scoped import (
 from zenml.utils.pagination_utils import depaginate
 
 if TYPE_CHECKING:
-    from sqlalchemy.sql.elements import ColumnElement
-
     from zenml.model.model import Model
     from zenml.models.v2.core.tag import TagResponse
+    from zenml.zen_stores.schemas import BaseSchema
+
+    AnySchema = TypeVar("AnySchema", bound=BaseSchema)
+
+AnyQuery = TypeVar("AnyQuery", bound=Any)
 
 # ------------------ Request Model ------------------
 
@@ -318,61 +325,77 @@ class ModelResponse(
 class ModelFilter(WorkspaceScopedTaggableFilter):
     """Model to enable advanced filtering of all Workspaces."""
 
-    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *WorkspaceScopedTaggableFilter.CLI_EXCLUDE_FIELDS,
-        "workspace_id",
-        "user_id",
-    ]
-    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *WorkspaceScopedTaggableFilter.FILTER_EXCLUDE_FIELDS,
-        "user",
-    ]
-
     name: Optional[str] = Field(
         default=None,
         description="Name of the Model",
     )
-    workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="Workspace of the Model",
-        union_mode="left_to_right",
-    )
-    user_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="User of the Model",
-        union_mode="left_to_right",
-    )
-    user: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="Name/ID of the user that created the model.",
-    )
 
-    def get_custom_filters(
+    CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
+        *WorkspaceScopedTaggableFilter.CUSTOM_SORTING_OPTIONS,
+        SORT_BY_LATEST_VERSION_KEY,
+    ]
+
+    def apply_sorting(
         self,
-    ) -> List["ColumnElement[bool]"]:
-        """Get custom filters.
+        query: AnyQuery,
+        table: Type["AnySchema"],
+    ) -> AnyQuery:
+        """Apply sorting to the query for Models.
+
+        Args:
+            query: The query to which to apply the sorting.
+            table: The query table.
 
         Returns:
-            A list of custom filters.
+            The query with sorting applied.
         """
-        custom_filters = super().get_custom_filters()
+        from sqlmodel import asc, case, col, desc, func, select
 
-        from sqlmodel import and_
-
+        from zenml.enums import SorterOps
         from zenml.zen_stores.schemas import (
             ModelSchema,
-            UserSchema,
+            ModelVersionSchema,
         )
 
-        if self.user:
-            user_filter = and_(
-                ModelSchema.user_id == UserSchema.id,
-                self.generate_name_or_id_query_conditions(
-                    value=self.user,
-                    table=UserSchema,
-                    additional_columns=["full_name"],
-                ),
-            )
-            custom_filters.append(user_filter)
+        sort_by, operand = self.sorting_params
 
-        return custom_filters
+        if sort_by == SORT_BY_LATEST_VERSION_KEY:
+            # Subquery to find the latest version per model
+            latest_version_subquery = (
+                select(
+                    ModelSchema.id,
+                    case(
+                        (
+                            func.max(ModelVersionSchema.created).is_(None),
+                            ModelSchema.created,
+                        ),
+                        else_=func.max(ModelVersionSchema.created),
+                    ).label("latest_version_created"),
+                )
+                .outerjoin(
+                    ModelVersionSchema,
+                    ModelSchema.id == ModelVersionSchema.model_id,  # type: ignore[arg-type]
+                )
+                .group_by(col(ModelSchema.id))
+                .subquery()
+            )
+
+            query = query.add_columns(
+                latest_version_subquery.c.latest_version_created,
+            ).where(ModelSchema.id == latest_version_subquery.c.id)
+
+            # Apply sorting based on the operand
+            if operand == SorterOps.ASCENDING:
+                query = query.order_by(
+                    asc(latest_version_subquery.c.latest_version_created),
+                    asc(ModelSchema.id),
+                )
+            else:
+                query = query.order_by(
+                    desc(latest_version_subquery.c.latest_version_created),
+                    desc(ModelSchema.id),
+                )
+            return query
+
+        # For other sorting cases, delegate to the parent class
+        return super().apply_sorting(query=query, table=table)

@@ -22,7 +22,7 @@ from tests.integration.functional.utils import random_str
 from zenml import get_step_context, log_metadata, pipeline, step
 from zenml.artifacts.utils import save_artifact
 from zenml.client import Client
-from zenml.enums import ModelStages
+from zenml.enums import ArtifactType, ModelStages
 from zenml.model.model import Model
 from zenml.model.utils import link_artifact_to_model
 from zenml.models import TagRequest
@@ -107,10 +107,18 @@ class TagContext:
 @step
 def step_metadata_logging_functional(mdl_name: str):
     """Functional logging using implicit Model from context."""
-    log_metadata({"foo": "bar"})
+    model = get_step_context().model
+
+    log_metadata(
+        metadata={"foo": "bar"},
+        model_name=model.name,
+        model_version=model.version,
+    )
     assert get_step_context().model.run_metadata["foo"] == "bar"
     log_metadata(
-        metadata={"foo": "bar"}, model_name=mdl_name, model_version="other"
+        metadata={"foo": "bar"},
+        model_name=mdl_name,
+        model_version="other",
     )
 
 
@@ -124,24 +132,18 @@ def simple_producer() -> str:
 def artifact_linker(
     artifact_name: str,
     model: Optional[Model] = None,
-    is_model_artifact: bool = False,
-    is_deployment_artifact: bool = False,
+    artifact_type: Optional[ArtifactType] = None,
 ) -> None:
     """Step linking an artifact to a model via function or implicit."""
 
     artifact = save_artifact(
-        data="Hello, World!",
-        name=artifact_name,
-        is_model_artifact=is_model_artifact,
-        is_deployment_artifact=is_deployment_artifact,
+        data="Hello, World!", name=artifact_name, artifact_type=artifact_type
     )
 
     if model:
         link_artifact_to_model(
             artifact_version=artifact,
             model=model,
-            is_model_artifact=is_model_artifact,
-            is_deployment_artifact=is_deployment_artifact,
         )
 
 
@@ -266,13 +268,11 @@ class TestModel:
     def test_init_stage_logic(self):
         """Test that if version is set to string contained in ModelStages user is informed about it."""
         with ModelContext(create_model=False) as (mdl_name, _, _):
-            with mock.patch("zenml.model.model.logger.info") as logger:
-                mv = Model(
-                    name=mdl_name,
-                    version=ModelStages.PRODUCTION.value,
-                )
-                logger.assert_called_once()
-                assert mv.version == ModelStages.PRODUCTION.value
+            mv = Model(
+                name=mdl_name,
+                version=ModelStages.PRODUCTION.value,
+            )
+            assert mv.version == ModelStages.PRODUCTION.value
 
             mv = Model(name=mdl_name, version=ModelStages.PRODUCTION)
             assert mv.version == ModelStages.PRODUCTION
@@ -564,14 +564,12 @@ class TestModel:
                     @pipeline
                     def _inner_pipeline(
                         model: Model = None,
-                        is_model_artifact: bool = False,
-                        is_deployment_artifact: bool = False,
+                        artifact_type: Optional[ArtifactType] = None,
                     ):
                         artifact_linker(
                             artifact_name=artifact_name,
                             model=model,
-                            is_model_artifact=is_model_artifact,
-                            is_deployment_artifact=is_deployment_artifact,
+                            artifact_type=artifact_type,
                         )
 
                     mv_in_pipe = Model(
@@ -603,7 +601,7 @@ class TestModel:
 
                     # use context + model (cache invalidated)
                     _inner_pipeline.with_options(model=mv_in_pipe)(
-                        is_model_artifact=True
+                        artifact_type=ArtifactType.MODEL
                     )
 
                     mv = Model(name=mdl_name, version="latest")
@@ -614,7 +612,7 @@ class TestModel:
 
                     # use context + deployment (cache invalidated)
                     _inner_pipeline.with_options(model=mv_in_pipe)(
-                        is_deployment_artifact=True
+                        artifact_type=ArtifactType.SERVICE
                     )
 
                     mv = Model(name=mdl_name, version="latest")
@@ -654,13 +652,11 @@ class TestModel:
                     enable_cache=False,
                 )
                 def _inner_pipeline(
-                    is_model_artifact: bool = False,
-                    is_deployment_artifact: bool = False,
+                    artifact_type: Optional[ArtifactType] = None,
                 ):
                     artifact_linker(
                         artifact_name=artifact_name,
-                        is_model_artifact=is_model_artifact,
-                        is_deployment_artifact=is_deployment_artifact,
+                        artifact_type=artifact_type,
                     )
 
                 mv_in_pipe = Model(
@@ -676,7 +672,7 @@ class TestModel:
 
                 # use context + model
                 _inner_pipeline.with_options(model=mv_in_pipe)(
-                    is_model_artifact=True
+                    artifact_type=ArtifactType.MODEL
                 )
 
                 mv = Model(name=mdl_name, version="latest")
@@ -688,7 +684,7 @@ class TestModel:
 
                 # use context + deployment
                 _inner_pipeline.with_options(model=mv_in_pipe)(
-                    is_deployment_artifact=True
+                    artifact_type=ArtifactType.SERVICE
                 )
 
                 mv = Model(name=mdl_name, version="latest")

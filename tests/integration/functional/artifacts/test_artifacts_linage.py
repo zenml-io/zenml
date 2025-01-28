@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 
 import random
-from typing import Callable
+from typing import Callable, Optional
 from uuid import UUID
 
 import pytest
@@ -27,7 +27,7 @@ from zenml import (
     step,
 )
 from zenml.client import Client
-from zenml.enums import ModelStages, StepRunInputArtifactType
+from zenml.enums import ArtifactType, ModelStages, StepRunInputArtifactType
 from zenml.model.model import Model
 from zenml.models.v2.core.pipeline_run import PipelineRunResponse
 
@@ -44,17 +44,10 @@ def keep_pipeline_alive() -> None:
 
 @step(enable_cache=True)
 def cacheable_multiple_versioned_producer(
-    versions_count: int,
-    is_model_artifact: bool = False,
-    is_deployment_artifact: bool = False,
+    versions_count: int, artifact_type: Optional[ArtifactType] = None
 ) -> Annotated[int, "trackable_artifact"]:
     for _ in range(versions_count):
-        save_artifact(
-            42,
-            name="manual_artifact",
-            is_model_artifact=is_model_artifact,
-            is_deployment_artifact=is_deployment_artifact,
-        )
+        save_artifact(42, name="manual_artifact", artifact_type=artifact_type)
     return 42
 
 
@@ -77,20 +70,16 @@ def cacheable_pipeline_where_second_step_is_cached():
 
 @pipeline
 def cacheable_pipeline_with_multiple_versions_producer_where_second_step_is_cached(
-    version_count: int,
-    is_model_artifact: bool = False,
-    is_deployment_artifact: bool = False,
+    version_count: int, artifact_type: Optional[ArtifactType] = None
 ):
     cacheable_multiple_versioned_producer(
         versions_count=version_count,
-        is_model_artifact=is_model_artifact,
-        is_deployment_artifact=is_deployment_artifact,
+        artifact_type=artifact_type,
         id="cacheable_multiple_versioned_producer_1",
     )
     cacheable_multiple_versioned_producer(
         versions_count=version_count,
-        is_model_artifact=is_model_artifact,
-        is_deployment_artifact=is_deployment_artifact,
+        artifact_type=artifact_type,
         id="cacheable_multiple_versioned_producer_2",
         after=["cacheable_multiple_versioned_producer_1"],
     )
@@ -349,17 +338,15 @@ def test_input_artifacts_typing(clean_client: Client):
 def test_that_cached_manual_artifact_has_proper_type_on_second_run(
     clean_client: Client,
 ):
-    for is_ma, is_da in zip([True, False], [False, True]):
+    for artifact_type in [ArtifactType.MODEL, ArtifactType.SERVICE]:
         for _ in range(2):
             cacheable_pipeline_with_multiple_versions_producer_where_second_step_is_cached.with_options(
                 model=Model(name="foo")
-            )(
-                version_count=1,
-                is_model_artifact=is_ma,
-                is_deployment_artifact=is_da,
-            )
+            )(version_count=1, artifact_type=artifact_type)
 
             mv = clean_client.get_model_version("foo", ModelStages.LATEST)
             assert len(mv.data_artifacts) == 1
-            assert len(mv.model_artifacts) == int(is_ma)
-            assert len(mv.deployment_artifacts) == int(is_da)
+            if artifact_type == ArtifactType.MODEL:
+                assert len(mv.model_artifacts) == 1
+            if artifact_type == ArtifactType.SERVICE:
+                assert len(mv.deployment_artifacts) == 1

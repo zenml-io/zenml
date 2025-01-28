@@ -175,3 +175,32 @@ def test_loading_unmaterialized_input_artifact(local_stack, clean_client):
         artifact=artifact_response, data_type=UnmaterializedArtifact
     )
     assert artifact.model_dump() == artifact_response.model_dump()
+
+
+def test_loading_input_artifact_without_specified_data_type(
+    local_stack, clean_client
+):
+    """Tests that loading an artifact without a specified data type falls
+    back to the data type of the artifact response."""
+
+    artifact_response = save_artifact(
+        42, "main_answer", save_type=ArtifactSaveType.STEP_OUTPUT
+    )
+
+    step = Step.model_validate(
+        {
+            "spec": {
+                "source": "module.step_class",
+                "upstream_steps": [],
+            },
+            "config": {
+                "name": "step_name",
+            },
+        }
+    )
+    runner = StepRunner(step=step, stack=local_stack)
+    data = runner._load_input_artifact(
+        artifact=artifact_response, data_type=None
+    )
+    assert isinstance(data, int)
+    assert data == 42

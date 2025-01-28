@@ -19,23 +19,23 @@ def assert_pipeline_context_in_step():
         get_pipeline_context()
 
     context = get_step_context()
-    assert (
-        context.pipeline.name == "assert_pipeline_context_in_pipeline"
-    ), "Not accessible inside running step"
-    assert (
-        context.pipeline_run.config.enable_cache is False
-    ), "Not accessible inside running step"
-    assert context.pipeline_run.config.extra == {
-        "foo": "bar"
-    }, "Not accessible inside running step"
+    assert context.pipeline.name == "assert_pipeline_context_in_pipeline", (
+        "Not accessible inside running step"
+    )
+    assert context.pipeline_run.config.enable_cache is False, (
+        "Not accessible inside running step"
+    )
+    assert context.pipeline_run.config.extra == {"foo": "bar"}, (
+        "Not accessible inside running step"
+    )
 
 
 @pipeline(enable_cache=False)
 def assert_pipeline_context_in_pipeline():
     context = get_pipeline_context()
-    assert (
-        context.name == "assert_pipeline_context_in_pipeline"
-    ), "Not accessible inside pipeline"
+    assert context.name == "assert_pipeline_context_in_pipeline", (
+        "Not accessible inside pipeline"
+    )
     assert context.enable_cache is False, "Not accessible inside pipeline"
     assert context.extra == {"foo": "bar"}, "Not accessible inside pipeline"
     assert_pipeline_context_in_step()
@@ -93,7 +93,7 @@ def test_that_argument_as_get_artifact_of_model_in_pipeline_context_fails_if_not
     clean_client: "Client",
 ):
     producer_pipe(False)
-    with pytest.raises(RuntimeError):
+    with pytest.raises(KeyError):
         consumer_pipe()
 
 
@@ -109,7 +109,7 @@ def producer() -> Annotated[str, "bar"]:
     )
     log_metadata(
         metadata={"foobar": "artifact_meta_" + model.version},
-        artifact_name="bar",
+        infer_artifact=True,
     )
     return "artifact_data_" + model.version
 

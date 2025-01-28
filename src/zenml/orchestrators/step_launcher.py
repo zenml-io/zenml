@@ -16,7 +16,7 @@
 import os
 import time
 from contextlib import nullcontext
-from datetime import datetime
+from datetime import datetime, timezone
 from functools import partial
 from typing import TYPE_CHECKING, Any, Callable, Dict, Tuple
 
@@ -179,12 +179,10 @@ class StepLauncher:
                         pipeline_run_id=pipeline_run.id,
                         pipeline_run_metadata=pipeline_run_metadata,
                     )
-
-                pipeline_model_version, pipeline_run = (
-                    step_run_utils.prepare_pipeline_run_model_version(
-                        pipeline_run
-                    )
-                )
+                    if model_version := pipeline_run.model_version:
+                        step_run_utils.log_model_version_dashboard_url(
+                            model_version=model_version
+                        )
 
                 request_factory = step_run_utils.StepRunRequestFactory(
                     deployment=self._deployment,
@@ -203,18 +201,16 @@ class StepLauncher:
                         f"Failed preparing step `{self._step_name}`."
                     )
                     step_run_request.status = ExecutionStatus.FAILED
-                    step_run_request.end_time = datetime.utcnow()
+                    step_run_request.end_time = datetime.now(timezone.utc)
                     raise
                 finally:
                     step_run = Client().zen_store.create_run_step(
                         step_run_request
                     )
-
-                    step_model_version, step_run = (
-                        step_run_utils.prepare_step_run_model_version(
-                            step_run=step_run, pipeline_run=pipeline_run
+                    if model_version := step_run.model_version:
+                        step_run_utils.log_model_version_dashboard_url(
+                            model_version=model_version
                         )
-                    )
 
                 if not step_run.status.is_finished:
                     logger.info(f"Step `{self._step_name}` has started.")
@@ -289,12 +285,11 @@ class StepLauncher:
                         f"Using cached version of step `{self._step_name}`."
                     )
                     if (
-                        model_version := step_model_version
-                        or pipeline_model_version
+                        model_version := step_run.model_version
+                        or pipeline_run.model_version
                     ):
                         step_run_utils.link_output_artifacts_to_model_version(
                             artifacts=step_run.outputs,
-                            output_configurations=step_run.config.outputs,
                             model_version=model_version,
                         )
 
@@ -310,8 +305,12 @@ class StepLauncher:
             The created or existing pipeline run,
             and a boolean indicating whether the run was created or reused.
         """
-        run_name = orchestrator_utils.get_run_name(
-            run_name_template=self._deployment.run_name_template
+        start_time = datetime.now(timezone.utc)
+        run_name = string_utils.format_name_template(
+            name_template=self._deployment.run_name_template,
+            substitutions=self._deployment.pipeline_configuration._get_full_substitutions(
+                start_time
+            ),
         )
 
         logger.debug("Creating pipeline run %s", run_name)
@@ -330,7 +329,7 @@ class StepLauncher:
             ),
             status=ExecutionStatus.RUNNING,
             orchestrator_environment=get_run_environment_dict(),
-            start_time=datetime.utcnow(),
+            start_time=start_time,
             tags=self._deployment.pipeline_configuration.tags,
         )
         return client.zen_store.get_or_create_run(pipeline_run)
@@ -422,7 +421,8 @@ class StepLauncher:
             )
         )
         environment = orchestrator_utils.get_config_environment_vars(
-            deployment=self._deployment
+            pipeline_run_id=step_run_info.run_id,
+            step_run_id=step_run_info.step_run_id,
         )
         if last_retry:
             environment[ENV_ZENML_IGNORE_FAILURE_HOOK] = str(False)

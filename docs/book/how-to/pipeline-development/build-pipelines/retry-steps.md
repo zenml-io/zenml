@@ -42,6 +42,6 @@ Note that infinite retries are not supported at the moment. If you set `max_retr
 
 ### See Also:
 
-<table data-view="cards"><thead><tr><th></th><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td>Failure/Success Hooks</td><td></td><td></td><td><a href="use-failure-success-hooks.md">use-failure-success-hooks.md</a></td></tr><tr><td>Configure pipelines</td><td></td><td></td><td><a href="../use-configuration-files/how-to-use-config.md">./use-configuration-files/how-to-use-config.md</a></td></tr></tbody></table>
+<table data-view="cards"><thead><tr><th></th><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td>Failure/Success Hooks</td><td></td><td></td><td><a href="use-failure-success-hooks.md">use-failure-success-hooks.md</a></td></tr><tr><td>Configure pipelines</td><td></td><td></td><td><a href="../../pipeline-development/use-configuration-files/how-to-use-config.md">./use-configuration-files/how-to-use-config.md</a></td></tr></tbody></table>
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

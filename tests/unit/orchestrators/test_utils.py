@@ -13,8 +13,11 @@
 #  permissions and limitations under the License.
 from unittest import mock
 
+import pytest
+
 from zenml.enums import StackComponentType
 from zenml.orchestrators.utils import (
+    get_orchestrator_run_name,
     is_setting_enabled,
     register_artifact_store_filesystem,
 )
@@ -126,3 +129,19 @@ def test_register_artifact_store_filesystem(clean_client):
 
         # Exiting the context manager will set it back by calling register again
         assert register.call_count == 3
+
+
+def test_get_orchestrator_run_name():
+    """Tests the orchestrator run name computation."""
+    pipeline_name = "pipeline"
+    assert len(get_orchestrator_run_name(pipeline_name)) == 8 + 1 + 32
+    assert len(get_orchestrator_run_name(pipeline_name, max_length=16)) == 16
+    assert get_orchestrator_run_name(pipeline_name, max_length=16).startswith(
+        pipeline_name
+    )
+    assert get_orchestrator_run_name(pipeline_name, max_length=17).startswith(
+        f"{pipeline_name}_"
+    )
+
+    with pytest.raises(ValueError):
+        get_orchestrator_run_name(pipeline_name, max_length=7)

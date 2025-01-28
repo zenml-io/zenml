@@ -16,7 +16,7 @@
 import itertools
 import json
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import (
     TYPE_CHECKING,
     AbstractSet,
@@ -751,8 +751,8 @@ class Stack:
                 config=LocalImageBuilderConfig(),
                 user=Client().active_user.id,
                 workspace=Client().active_workspace.id,
-                created=datetime.utcnow(),
-                updated=datetime.utcnow(),
+                created=datetime.now(timezone.utc),
+                updated=datetime.now(timezone.utc),
             )
 
             self._image_builder = image_builder

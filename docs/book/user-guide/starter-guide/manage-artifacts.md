@@ -167,7 +167,84 @@ def annotation_approach() -> (
     return "string"
 ```
 
-### Consuming external artifacts within a pipeline
+## Comparing metadata across runs (Pro)
+
+The [ZenML Pro](https://www.zenml.io/pro) dashboard includes an Experiment Comparison tool that allows you to visualize and analyze metadata across different pipeline runs. This feature helps you understand patterns and changes in your pipeline's behavior over time.
+
+### Using the comparison views
+
+The tool offers two complementary views for analyzing your metadata:
+
+#### Table View
+The tabular view provides a structured comparison of metadata across runs:
+
+![Comparing metadata values across different pipeline runs in table view.](../../../book/.gitbook/assets/table-view.png)
+
+This view automatically calculates changes between runs and allows you to:
+
+* Sort and filter metadata values
+* Track changes over time
+* Compare up to 20 runs simultaneously
+
+#### Parallel Coordinates View
+The parallel coordinates visualization helps identify relationships between different metadata parameters:
+
+![Comparing metadata values across different pipeline runs in parallel coordinates view.](../../../book/.gitbook/assets/coordinates-view.png)
+
+This view is particularly useful for:
+
+* Discovering correlations between different metrics
+* Identifying patterns across pipeline runs
+* Filtering and focusing on specific parameter ranges
+
+### Accessing the comparison tool
+
+To compare metadata across runs:
+
+1. Navigate to any pipeline in your dashboard
+2. Click the "Compare" button in the top navigation
+3. Select the runs you want to compare
+4. Switch between table and parallel coordinates views using the tabs
+
+{% hint style="info" %}
+The comparison tool works with any numerical metadata (`float` or `int`) that you've logged in your pipelines. Make sure to log meaningful metrics in your steps to make the most of this feature.
+{% endhint %}
+
+### Sharing comparisons
+
+The tool preserves your comparison configuration in the URL, making it easy to share specific views with team members. Simply copy and share the URL to allow others to see the same comparison with identical settings and filters.
+
+{% hint style="warning" %}
+This feature is currently in Alpha Preview. We encourage you to share feedback about your use cases and requirements through our Slack community.
+{% endhint %}
+
+## Specify a type for your artifacts
+
+Assigning a type to an artifact allows ZenML to highlight them differently in the dashboard and also lets you filter your artifacts better.
+
+{% hint style="info" %}
+If you don't specify a type for your artifact, ZenML will use the default artifact type provided by the materializer that is used to
+save the artifact.
+{% endhint %}
+
+
+```python
+from typing_extensions import Annotated
+from zenml import ArtifactConfig, save_artifact, step
+from zenml.enums import ArtifactType
+
+# Assign an artifact type to a step output
+@step
+def trainer() -> Annotated[MyCustomModel, ArtifactConfig(artifact_type=ArtifactType.MODEL)]:
+    return MyCustomModel(...)
+
+
+# Assign an artifact type when manually saving artifacts
+model = ...
+save_artifact(model, name="model", artifact_type=ArtifactType.MODEL)
+```
+
+## Consuming external artifacts within a pipeline
 
 While most pipelines start with a step that produces an artifact, it is often the case to want to consume artifacts external from the pipeline. The `ExternalArtifact` class can be used to initialize an artifact within ZenML with any arbitrary data type.
 
@@ -200,7 +277,7 @@ Optionally, you can configure the `ExternalArtifact` to use a custom [materializ
 Using an `ExternalArtifact` for your step automatically disables caching for the step.
 {% endhint %}
 
-### Consuming artifacts produced by other pipelines
+## Consuming artifacts produced by other pipelines
 
 It is also common to consume an artifact downstream after producing it in an upstream pipeline or step. As we have learned in the [previous section](../../how-to/pipeline-development/build-pipelines/fetching-pipelines.md#fetching-artifacts-directly), the `Client` can be used to fetch artifacts directly inside the pipeline code:
 
@@ -344,7 +421,7 @@ The artifact produced from the preexisting data will have a `pathlib.Path` type,
 
 Even if an artifact is created and stored externally, it can be treated like any other artifact produced by ZenML steps - with all the functionalities described above!
 
-For more details and use-cases check-out detailed docs page [Register Existing Data as a ZenML Artifact](../../how-to/data-artifact-management/handle-data-artifacts/registering-existing-data.md).
+For more details and use-cases check-out detailed docs page [Register Existing Data as a ZenML Artifact](../../how-to/data-artifact-management/complex-usecases/registering-existing-data.md).
 
 ## Logging metadata for an artifact
 
@@ -456,7 +533,7 @@ def model_finetuner_step(
     model: ClassifierMixin, dataset: Tuple[np.ndarray, np.ndarray]
 ) -> Annotated[
     ClassifierMixin,
-    ArtifactConfig(name="my_model", is_model_artifact=True, tags=["SVC", "trained"]),
+    ArtifactConfig(name="my_model", tags=["SVC", "trained"]),
 ]:
     """Finetunes a given model on a given dataset."""
     model.fit(dataset[0], dataset[1])

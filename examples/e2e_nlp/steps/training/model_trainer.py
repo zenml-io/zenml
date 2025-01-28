@@ -1,6 +1,6 @@
 # Apache Software License 2.0
 #
-# Copyright (c) ZenML GmbH 2024. All rights reserved.
+# Copyright (c) ZenML GmbH 2025. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ from transformers import (
 from typing_extensions import Annotated
 from utils.misc import compute_metrics
 
-from zenml import ArtifactConfig, log_artifact_metadata, step
+from zenml import ArtifactConfig, log_metadata, step
 from zenml.client import Client
 from zenml.integrations.mlflow.experiment_trackers import (
     MLFlowExperimentTracker,
@@ -157,9 +157,10 @@ def model_trainer(
     eval_results = trainer.evaluate(metric_key_prefix="")
 
     # Log the evaluation results in model control plane
-    log_artifact_metadata(
+    log_metadata(
         metadata={"metrics": eval_results},
         artifact_name="model",
+        infer_artifact=True,
     )
     ### YOUR CODE ENDS HERE ###
 

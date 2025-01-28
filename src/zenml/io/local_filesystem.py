@@ -55,18 +55,18 @@ class LocalFilesystem(BaseFilesystem):
     SUPPORTED_SCHEMES: ClassVar[Set[str]] = {""}
 
     @staticmethod
-    def open(name: PathType, mode: str = "r") -> Any:
+    def open(path: PathType, mode: str = "r") -> Any:
         """Open a file at the given path.
 
         Args:
-            name: The path to the file.
+            path: The path to the file.
             mode: The mode to open the file.
 
         Returns:
             Any: The file object.
         """
         encoding = "utf-8" if "b" not in mode else None
-        return open(name, mode=mode, encoding=encoding)
+        return open(path, mode=mode, encoding=encoding)
 
     @staticmethod
     def copyfile(

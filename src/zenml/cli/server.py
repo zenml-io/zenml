@@ -187,6 +187,7 @@ def status() -> None:
     """Show details about the current configuration."""
     from zenml.login.credentials_store import get_credentials_store
     from zenml.login.pro.client import ZenMLProClient
+    from zenml.login.pro.constants import ZENML_PRO_API_URL
 
     gc = GlobalConfiguration()
     client = Client()
@@ -214,10 +215,11 @@ def status() -> None:
             if server.type == ServerType.PRO:
                 # If connected to a ZenML Pro server, refresh the server info
                 pro_credentials = credentials_store.get_pro_credentials(
-                    allow_expired=False
+                    pro_api_url=server.pro_api_url or ZENML_PRO_API_URL,
+                    allow_expired=False,
                 )
                 if pro_credentials:
-                    pro_client = ZenMLProClient()
+                    pro_client = ZenMLProClient(pro_credentials.url)
                     pro_servers = pro_client.tenant.list(
                         url=store_cfg.url, member_only=True
                     )
@@ -469,7 +471,7 @@ def logs(
     if server is None:
         cli_utils.error(
             "The local ZenML dashboard is not running. Please call `zenml "
-            "up` first to start the ZenML dashboard locally."
+            "login --local` first to start the ZenML dashboard locally."
         )
 
     from zenml.zen_server.deploy.deployer import LocalServerDeployer
@@ -551,19 +553,36 @@ def server() -> None:
     help="Show all ZenML servers, including those that are not running "
     "and those with an expired authentication.",
 )
-def server_list(verbose: bool = False, all: bool = False) -> None:
+@click.option(
+    "--pro-api-url",
+    type=str,
+    default=None,
+    help="Custom URL for the ZenML Pro API. Useful when disconnecting "
+    "from a self-hosted ZenML Pro deployment.",
+)
+def server_list(
+    verbose: bool = False,
+    all: bool = False,
+    pro_api_url: Optional[str] = None,
+) -> None:
     """List all ZenML servers that this client is authorized to access.
 
     Args:
         verbose: Whether to show verbose output.
         all: Whether to show all ZenML servers.
+        pro_api_url: Custom URL for the ZenML Pro API.
     """
     from zenml.login.credentials_store import get_credentials_store
     from zenml.login.pro.client import ZenMLProClient
+    from zenml.login.pro.constants import ZENML_PRO_API_URL
     from zenml.login.pro.tenant.models import TenantRead, TenantStatus
 
+    pro_api_url = pro_api_url or ZENML_PRO_API_URL
+
     credentials_store = get_credentials_store()
-    pro_token = credentials_store.get_pro_token(allow_expired=True)
+    pro_token = credentials_store.get_pro_token(
+        allow_expired=True, pro_api_url=pro_api_url
+    )
     current_store_config = GlobalConfiguration().store_configuration
 
     # The list of ZenML Pro servers kept in the credentials store
@@ -583,29 +602,10 @@ def server_list(verbose: bool = False, all: bool = False) -> None:
 
         accessible_pro_servers: List[TenantRead] = []
         try:
-            client = ZenMLProClient()
+            client = ZenMLProClient(pro_api_url)
             accessible_pro_servers = client.tenant.list(member_only=not all)
         except AuthorizationException as e:
             cli_utils.warning(f"ZenML Pro authorization error: {e}")
-        else:
-            if not all:
-                accessible_pro_servers = [
-                    s
-                    for s in accessible_pro_servers
-                    if s.status == TenantStatus.AVAILABLE
-                ]
-
-            if not accessible_pro_servers:
-                cli_utils.declare(
-                    "No ZenML Pro servers that are accessible to the current "
-                    "user could be found."
-                )
-                if not all:
-                    cli_utils.declare(
-                        "Hint: use the `--all` flag to show all ZenML servers, "
-                        "including those that the client is not currently "
-                        "authorized to access or are not running."
-                    )
 
         # We update the list of stored ZenML Pro servers with the ones that the
         # client is a member of
@@ -632,6 +632,25 @@ def server_list(verbose: bool = False, all: bool = False) -> None:
                 )
                 stored_server.update_server_info(accessible_server)
                 pro_servers.append(stored_server)
+
+        if not all:
+            accessible_pro_servers = [
+                s
+                for s in accessible_pro_servers
+                if s.status == TenantStatus.AVAILABLE
+            ]
+
+        if not accessible_pro_servers:
+            cli_utils.declare(
+                "No ZenML Pro servers that are accessible to the current "
+                "user could be found."
+            )
+            if not all:
+                cli_utils.declare(
+                    "Hint: use the `--all` flag to show all ZenML servers, "
+                    "including those that the client is not currently "
+                    "authorized to access or are not running."
+                )
 
     elif pro_servers:
         cli_utils.warning(

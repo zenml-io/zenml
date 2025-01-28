@@ -15,6 +15,7 @@
 
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, Iterator, Optional, Type, cast
+from uuid import UUID
 
 from pydantic import model_validator
 
@@ -60,7 +61,7 @@ class BaseOrchestratorConfig(StackComponentConfig):
                     "The 'custom_docker_base_image_name' field has been "
                     "deprecated. To use a custom base container image with your "
                     "orchestrators, please use the DockerSettings in your "
-                    "pipeline (see https://docs.zenml.io/how-to/customize-docker-builds)."
+                    "pipeline (see https://docs.zenml.io/how-to/infrastructure-deployment/customize-docker-builds)."
                 )
 
         return data
@@ -82,6 +83,15 @@ class BaseOrchestratorConfig(StackComponentConfig):
             Whether the orchestrator is schedulable or not.
         """
         return False
+
+    @property
+    def supports_client_side_caching(self) -> bool:
+        """Whether the orchestrator supports client side caching.
+
+        Returns:
+            Whether the orchestrator supports client side caching.
+        """
+        return True
 
 
 class BaseOrchestrator(StackComponent, ABC):
@@ -186,7 +196,17 @@ class BaseOrchestrator(StackComponent, ABC):
         """
         self._prepare_run(deployment=deployment)
 
-        environment = get_config_environment_vars(deployment=deployment)
+        pipeline_run_id: Optional[UUID] = None
+        schedule_id: Optional[UUID] = None
+        if deployment.schedule:
+            schedule_id = deployment.schedule.id
+        if placeholder_run:
+            pipeline_run_id = placeholder_run.id
+
+        environment = get_config_environment_vars(
+            schedule_id=schedule_id,
+            pipeline_run_id=pipeline_run_id,
+        )
 
         prevent_client_side_caching = handle_bool_env_var(
             ENV_ZENML_PREVENT_CLIENT_SIDE_CACHING, default=False
@@ -194,6 +214,7 @@ class BaseOrchestrator(StackComponent, ABC):
 
         if (
             placeholder_run
+            and self.config.supports_client_side_caching
             and not deployment.schedule
             and not prevent_client_side_caching
         ):
@@ -221,6 +242,8 @@ class BaseOrchestrator(StackComponent, ABC):
                 self._cleanup_run()
                 logger.info("All steps of the pipeline run were cached.")
                 return
+        else:
+            logger.debug("Skipping client-side caching.")
 
         try:
             if metadata_iterator := self.prepare_or_run_pipeline(

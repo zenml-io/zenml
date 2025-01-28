@@ -23,6 +23,7 @@ from pydantic import BaseModel, ConfigDict
 from zenml.login.pro.constants import ZENML_PRO_API_URL, ZENML_PRO_URL
 from zenml.login.pro.tenant.models import TenantRead, TenantStatus
 from zenml.models import ServerModel
+from zenml.models.v2.misc.server_models import ServerDeploymentType
 from zenml.services.service_status import ServiceState
 from zenml.utils.enum_utils import StrEnum
 from zenml.utils.string_utils import get_human_readable_time
@@ -44,7 +45,6 @@ class APIToken(BaseModel):
     expires_in: Optional[int] = None
     expires_at: Optional[datetime] = None
     leeway: Optional[int] = None
-    cookie_name: Optional[str] = None
     device_id: Optional[UUID] = None
     device_metadata: Optional[Dict[str, Any]] = None
 
@@ -89,12 +89,19 @@ class ServerCredentials(BaseModel):
     password: Optional[str] = None
 
     # Extra server attributes
+    deployment_type: Optional[ServerDeploymentType] = None
     server_id: Optional[UUID] = None
     server_name: Optional[str] = None
-    organization_name: Optional[str] = None
-    organization_id: Optional[UUID] = None
     status: Optional[str] = None
     version: Optional[str] = None
+
+    # Pro server attributes
+    organization_name: Optional[str] = None
+    organization_id: Optional[UUID] = None
+    tenant_name: Optional[str] = None
+    tenant_id: Optional[UUID] = None
+    pro_api_url: Optional[str] = None
+    pro_dashboard_url: Optional[str] = None
 
     @property
     def id(self) -> str:
@@ -114,11 +121,13 @@ class ServerCredentials(BaseModel):
         Returns:
             The server type.
         """
-        from zenml.login.pro.utils import is_zenml_pro_server_url
-
+        if self.deployment_type == ServerDeploymentType.CLOUD:
+            return ServerType.PRO
         if self.url == ZENML_PRO_API_URL:
             return ServerType.PRO_API
-        if self.organization_id or is_zenml_pro_server_url(self.url):
+        if self.url == self.pro_api_url:
+            return ServerType.PRO_API
+        if self.organization_id or self.tenant_id:
             return ServerType.PRO
         if urlparse(self.url).hostname in [
             "localhost",
@@ -139,25 +148,39 @@ class ServerCredentials(BaseModel):
         if isinstance(server_info, ServerModel):
             # The server ID doesn't change during the lifetime of the server
             self.server_id = self.server_id or server_info.id
-
             # All other attributes can change during the lifetime of the server
+            self.deployment_type = server_info.deployment_type
             server_name = (
-                server_info.metadata.get("tenant_name") or server_info.name
+                server_info.pro_tenant_name
+                or server_info.metadata.get("tenant_name")
+                or server_info.name
             )
             if server_name:
                 self.server_name = server_name
-            organization_id = server_info.metadata.get("organization_id")
-            if organization_id:
-                self.organization_id = UUID(organization_id)
+            if server_info.pro_organization_id:
+                self.organization_id = server_info.pro_organization_id
+            if server_info.pro_tenant_id:
+                self.server_id = server_info.pro_tenant_id
+            if server_info.pro_organization_name:
+                self.organization_name = server_info.pro_organization_name
+            if server_info.pro_tenant_name:
+                self.tenant_name = server_info.pro_tenant_name
+            if server_info.pro_api_url:
+                self.pro_api_url = server_info.pro_api_url
+            if server_info.pro_dashboard_url:
+                self.pro_dashboard_url = server_info.pro_dashboard_url
             self.version = server_info.version or self.version
             # The server information was retrieved from the server itself, so we
             # can assume that the server is available
             self.status = "available"
         else:
+            self.deployment_type = ServerDeploymentType.CLOUD
             self.server_id = server_info.id
             self.server_name = server_info.name
             self.organization_name = server_info.organization_name
             self.organization_id = server_info.organization_id
+            self.tenant_name = server_info.name
+            self.tenant_id = server_info.id
             self.status = server_info.status
             self.version = server_info.version
 
@@ -248,9 +271,10 @@ class ServerCredentials(BaseModel):
         """
         if self.organization_id and self.server_id:
             return (
-                ZENML_PRO_URL
+                (self.pro_dashboard_url or ZENML_PRO_URL)
                 + f"/organizations/{str(self.organization_id)}/tenants/{str(self.server_id)}"
             )
+
         return self.url
 
     @property
@@ -262,8 +286,8 @@ class ServerCredentials(BaseModel):
         """
         if self.organization_id:
             return (
-                ZENML_PRO_URL + f"/organizations/{str(self.organization_id)}"
-            )
+                self.pro_dashboard_url or ZENML_PRO_URL
+            ) + f"/organizations/{str(self.organization_id)}"
         return ""
 
     @property

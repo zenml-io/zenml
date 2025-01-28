@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zenml"
-version = "0.70.0"
+version = "0.73.0"
 packages = [{ include = "zenml", from = "src" }]
 description = "ZenML: Write production-ready ML code."
 authors = ["ZenML GmbH <info@zenml.io>"]
@@ -73,6 +73,8 @@ orjson = { version = "~3.10.0", optional = true }
 Jinja2 = { version = "*", optional = true }
 ipinfo = { version = ">=4.4.3", optional = true }
 secure = { version = "~0.3.0", optional = true }
+tldextract = { version = "~5.1.0", optional = true }
+itsdangerous = { version = "~2.2.0", optional = true }
 
 # Optional dependencies for project templates
 copier = { version = ">=8.1.0", optional = true }
@@ -114,7 +116,7 @@ azure-mgmt-resource = { version = ">=21.0.0", optional = true }
 s3fs = { version = ">=2022.11.0", optional = true }
 
 # Optional dependencies for the Sagemaker orchestrator
-sagemaker = { version = ">=2.117.0", optional = true }
+sagemaker = { version = ">=2.199.0", optional = true }
 
 # Optional dependencies for the GCS artifact store
 gcsfs = { version = ">=2022.11.0", optional = true }
@@ -127,7 +129,7 @@ google-cloud-aiplatform = { version = ">=1.34.0", optional = true }
 adlfs = { version = ">=2021.10.0", optional = true }
 
 # Optional dependencies for the AzureML orchestrator
-azure-ai-ml = { version = "1.18.0", optional = true }
+azure-ai-ml = { version = "1.23.1", optional = true }
 
 # Optional development dependencies
 bandit = { version = "^1.7.5", optional = true }
@@ -189,6 +191,8 @@ server = [
     "Jinja2",
     "ipinfo",
     "secure",
+    "tldextract",
+    "itsdangerous",
 ]
 templates = ["copier", "jinja2-time", "ruff", "pyyaml-include"]
 terraform = ["python-terraform"]

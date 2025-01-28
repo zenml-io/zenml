@@ -25,7 +25,7 @@ from zenml.client import Client
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils import source_utils, string_utils
-from zenml.utils.archivable import Archivable
+from zenml.utils.archivable import Archivable, ArchiveType
 
 if TYPE_CHECKING:
     from git.repo.base import Repo
@@ -152,15 +152,19 @@ class CodeArchive(Archivable):
         return all_files
 
     def write_archive(
-        self, output_file: IO[bytes], use_gzip: bool = True
+        self,
+        output_file: IO[bytes],
+        archive_type: ArchiveType = ArchiveType.TAR_GZ,
     ) -> None:
         """Writes an archive of the build context to the given file.
 
         Args:
             output_file: The file to write the archive to.
-            use_gzip: Whether to use `gzip` to compress the file.
+            archive_type: The type of archive to create.
         """
-        super().write_archive(output_file=output_file, use_gzip=use_gzip)
+        super().write_archive(
+            output_file=output_file, archive_type=archive_type
+        )
         archive_size = os.path.getsize(output_file.name)
         if archive_size > 20 * 1024 * 1024:
             logger.warning(

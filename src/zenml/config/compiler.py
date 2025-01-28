@@ -99,7 +99,10 @@ class Compiler:
 
         self._apply_stack_default_settings(pipeline=pipeline, stack=stack)
         if run_configuration.run_name:
-            self._verify_run_name(run_configuration.run_name)
+            self._verify_run_name(
+                run_configuration.run_name,
+                pipeline.configuration.substitutions,
+            )
 
         pipeline_settings = self._filter_and_validate_settings(
             settings=pipeline.configuration.settings,
@@ -305,16 +308,22 @@ class Compiler:
         return default_settings
 
     @staticmethod
-    def _verify_run_name(run_name: str) -> None:
+    def _verify_run_name(
+        run_name: str,
+        substitutions: Dict[str, str],
+    ) -> None:
         """Verifies that the run name contains only valid placeholders.
 
         Args:
             run_name: The run name to verify.
+            substitutions: The substitutions to be used in the run name.
 
         Raises:
             ValueError: If the run name contains invalid placeholders.
         """
-        valid_placeholder_names = {"date", "time"}
+        valid_placeholder_names = {"date", "time"}.union(
+            set(substitutions.keys())
+        )
         placeholders = {
             v[1] for v in string.Formatter().parse(run_name) if v[1]
         }

@@ -1987,7 +1987,7 @@ Secrets management
 ------------------
 
 ZenML offers a way to [securely store secrets associated with your other
-stack components and infrastructure](https://docs.zenml.io/getting-started/deploying-zenml/manage-the-deployed-services/secret-management).
+stack components and infrastructure](https://docs.zenml.io/getting-started/deploying-zenml/secret-management).
 A ZenML Secret is a collection or grouping of key-value pairs stored by the
 ZenML secrets store. ZenML Secrets are identified by a unique name which
 allows you to fetch or reference them in your pipelines and stacks.
@@ -2083,7 +2083,7 @@ challenge in configuring uninterrupted, secure access to infrastructure
 resources. In ZenML, Service Connectors streamline this process by abstracting
 away the complexity of authentication and help you connect your stack to your
 resources. You can find the full docs on the ZenML service connectors
-[here](https://docs.zenml.io/how-to/auth-management).
+[here](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management).
 
 The ZenML CLI features a variety of commands to help you manage your service
 connectors. First of all, to explore all the types of service connectors
@@ -2113,7 +2113,7 @@ zenml service-connector register SERVICE_CONNECTOR_NAME \
 ```
 
 For more details on how to create a service connector, please refer to our
-[docs](https://docs.zenml.io/how-to/auth-management).
+[docs](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management).
 
 To check if your service connector is registered properly, you can `verify` it.
 By doing this, you can both check if it is configured correctly and also, you
@@ -2242,6 +2242,9 @@ export ZENML_STORE_URL=https://...
 export ZENML_STORE_API_KEY=<API_KEY>
 ```
 
+You don't need to run `zenml login` after setting these two environment
+variables and can start interacting with your server right away.
+
 To see all the service accounts you've created and their API keys, use the
 following commands:
 
@@ -2364,7 +2367,7 @@ defining the pipeline is not in your current directory, the module path consists
 of the full path to the file, separated by dots, e.g.
 `some_directory.some_file.my_pipeline`.
 
-To [build Docker images for your pipeline](https://docs.zenml.io/how-to/customize-docker-builds)
+To [build Docker images for your pipeline](https://docs.zenml.io/how-to/infrastructure-deployment/customize-docker-builds)
 without actually running the pipeline, use:
 
 ```bash
@@ -2405,6 +2408,21 @@ stack, use the `--stack` option.
 
 ```bash
 zenml pipeline run <PIPELINE_SOURCE_PATH> --stack=<STACK_ID_OR_NAME>
+```
+
+If you want to create a run template based on your pipeline that can later be used to trigger a run either from the dashboard or through an HTTP request:
+
+```bash
+zenml pipeline create-run-template <PIPELINE_SOURCE_PATH> \
+   --name=<TEMPLATE_NAME>
+
+To specify a config file, use the `--config/-c` option. If you would like to use a different stack than the active one, use the `--stack` option.
+
+```bash
+zenml pipeline create-run-template <PIPELINE_SOURCE_PATH> \
+   --name=<TEMPLATE_NAME> \
+   --config=<PATH_TO_CONFIG_YAML> \
+   --stack=<STACK_ID_OR_NAME>
 ```
 
 Tagging your resources with ZenML

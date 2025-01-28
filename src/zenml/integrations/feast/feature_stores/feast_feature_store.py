@@ -16,7 +16,7 @@
 from typing import Any, Dict, List, Union, cast
 
 import pandas as pd
-from feast import FeatureStore  # type: ignore
+from feast import FeatureService, FeatureStore  # type: ignore
 from feast.infra.registry.base_registry import BaseRegistry  # type: ignore
 
 from zenml.feature_stores.base_feature_store import BaseFeatureStore
@@ -43,14 +43,14 @@ class FeastFeatureStore(BaseFeatureStore):
     def get_historical_features(
         self,
         entity_df: Union[pd.DataFrame, str],
-        features: List[str],
+        features: Union[List[str], FeatureService],
         full_feature_names: bool = False,
     ) -> pd.DataFrame:
         """Returns the historical features for training or batch scoring.
 
         Args:
             entity_df: The entity DataFrame or entity name.
-            features: The features to retrieve.
+            features: The features to retrieve or a FeatureService.
             full_feature_names: Whether to return the full feature names.
 
         Raise:
@@ -70,14 +70,14 @@ class FeastFeatureStore(BaseFeatureStore):
     def get_online_features(
         self,
         entity_rows: List[Dict[str, Any]],
-        features: List[str],
+        features: Union[List[str], FeatureService],
         full_feature_names: bool = False,
     ) -> Dict[str, Any]:
         """Returns the latest online feature data.
 
         Args:
             entity_rows: The entity rows to retrieve.
-            features: The features to retrieve.
+            features: The features to retrieve or a FeatureService.
             full_feature_names: Whether to return the full feature names.
 
         Raise:
@@ -118,17 +118,21 @@ class FeastFeatureStore(BaseFeatureStore):
         fs = FeatureStore(repo_path=self.config.feast_repo)
         return [ds.name for ds in fs.list_entities()]
 
-    def get_feature_services(self) -> List[str]:
-        """Returns the feature service names.
+    def get_feature_services(self) -> List[FeatureService]:
+        """Returns the feature services.
 
         Raise:
             ConnectionError: If the online component (Redis) is not available.
 
         Returns:
-            The feature service names.
+            The feature services.
         """
         fs = FeatureStore(repo_path=self.config.feast_repo)
-        return [ds.name for ds in fs.list_feature_services()]
+        feature_services: List[FeatureService] = list(
+            fs.list_feature_services()
+        )
+
+        return feature_services
 
     def get_feature_views(self) -> List[str]:
         """Returns the feature view names.

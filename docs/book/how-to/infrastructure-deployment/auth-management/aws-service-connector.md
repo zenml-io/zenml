@@ -1350,7 +1350,7 @@ aws --profile zenml-c0f8e857 s3 ls
 
 ## Stack Components use
 
-The [S3 Artifact Store Stack Component](../../component-guide/artifact-stores/s3.md) can be connected to a remote AWS S3 bucket through an AWS Service Connector.
+The [S3 Artifact Store Stack Component](../../../component-guide/artifact-stores/s3.md) can be connected to a remote AWS S3 bucket through an AWS Service Connector.
 
 The AWS Service Connector can also be used with any Orchestrator or Model Deployer stack component flavor that relies on Kubernetes clusters to manage workloads. This allows EKS Kubernetes container workloads to be managed without the need to configure and maintain explicit AWS or Kubernetes `kubectl` configuration contexts and credentials in the target environment and in the Stack Component.
 
@@ -1364,10 +1364,10 @@ Similarly, Container Registry Stack Components can be connected to an ECR Contai
 
 This is an example of an end-to-end workflow involving Service Connectors that use a single multi-type AWS Service Connector to give access to multiple resources for multiple Stack Components. A complete ZenML Stack is registered and composed of the following Stack Components, all connected through the same Service Connector:
 
-* a [Kubernetes Orchestrator](../../component-guide/orchestrators/kubernetes.md) connected to an EKS Kubernetes cluster
-* an [S3 Artifact Store](../../component-guide/artifact-stores/s3.md) connected to an S3 bucket
-* an [ECR Container Registry](../../component-guide/container-registries/aws.md) stack component connected to an ECR container registry
-* a local [Image Builder](../../component-guide/image-builders/local.md)
+* a [Kubernetes Orchestrator](../../../component-guide/orchestrators/kubernetes.md) connected to an EKS Kubernetes cluster
+* an [S3 Artifact Store](../../../component-guide/artifact-stores/s3.md) connected to an S3 bucket
+* an [ECR Container Registry](../../../component-guide/container-registries/aws.md) stack component connected to an ECR container registry
+* a local [Image Builder](../../../component-guide/image-builders/local.md)
 
 As a last step, a simple pipeline is run on the resulting Stack.
 

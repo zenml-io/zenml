@@ -15,7 +15,7 @@
 
 import base64
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 from uuid import UUID
 
@@ -227,7 +227,7 @@ class ServiceConnectorSchema(NamedSchema, table=True):
             else:
                 setattr(self, field, value)
         self.secret_id = secret_id
-        self.updated = datetime.utcnow()
+        self.updated = datetime.now(timezone.utc)
         return self
 
     def to_model(

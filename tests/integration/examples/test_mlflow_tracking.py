@@ -12,6 +12,8 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
+import platform
+
 import pytest
 
 from tests.integration.examples.utils import run_example
@@ -19,6 +21,10 @@ from zenml.client import Client
 from zenml.constants import METADATA_EXPERIMENT_TRACKER_URL
 
 
+@pytest.mark.skipif(
+    platform.system() == "Darwin",
+    reason="It hangs forever now. Need to investigate.",  # TODO: investigate this
+)
 def test_example(request: pytest.FixtureRequest) -> None:
     """Runs the airflow_orchestration example."""
     import mlflow

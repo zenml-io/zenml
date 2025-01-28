@@ -144,3 +144,15 @@ class SkypilotBaseOrchestratorConfig(
             True if this config is for a local component, False otherwise.
         """
         return False
+
+    @property
+    def supports_client_side_caching(self) -> bool:
+        """Whether the orchestrator supports client side caching.
+
+        Returns:
+            Whether the orchestrator supports client side caching.
+        """
+        # The Skypilot orchestrator runs the entire pipeline in a single VM, or
+        # starts additional VMs from the root VM. Both of those cases are
+        # currently not supported when using client-side caching.
+        return False

@@ -23,6 +23,7 @@ from typing import (
     Optional,
     Type,
     TypeVar,
+    Union,
 )
 from uuid import UUID
 
@@ -151,15 +152,31 @@ class UserScopedFilter(BaseFilter):
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *BaseFilter.FILTER_EXCLUDE_FIELDS,
+        "user",
         "scope_user",
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *BaseFilter.CLI_EXCLUDE_FIELDS,
+        "user_id",
         "scope_user",
     ]
+    CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
+        *BaseFilter.CUSTOM_SORTING_OPTIONS,
+        "user",
+    ]
+
     scope_user: Optional[UUID] = Field(
         default=None,
         description="The user to scope this query to.",
+    )
+    user_id: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="UUID of the user that created the entity.",
+        union_mode="left_to_right",
+    )
+    user: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="Name/ID of the user that created the entity.",
     )
 
     def set_scope_user(self, user_id: UUID) -> None:
@@ -169,6 +186,75 @@ class UserScopedFilter(BaseFilter):
             user_id: The user ID to scope the response to.
         """
         self.scope_user = user_id
+
+    def get_custom_filters(
+        self, table: Type["AnySchema"]
+    ) -> List["ColumnElement[bool]"]:
+        """Get custom filters.
+
+        Args:
+            table: The query table.
+
+        Returns:
+            A list of custom filters.
+        """
+        custom_filters = super().get_custom_filters(table)
+
+        from sqlmodel import and_
+
+        from zenml.zen_stores.schemas import UserSchema
+
+        if self.user:
+            user_filter = and_(
+                getattr(table, "user_id") == UserSchema.id,
+                self.generate_name_or_id_query_conditions(
+                    value=self.user,
+                    table=UserSchema,
+                    additional_columns=["full_name"],
+                ),
+            )
+            custom_filters.append(user_filter)
+
+        return custom_filters
+
+    def apply_sorting(
+        self,
+        query: AnyQuery,
+        table: Type["AnySchema"],
+    ) -> AnyQuery:
+        """Apply sorting to the query.
+
+        Args:
+            query: The query to which to apply the sorting.
+            table: The query table.
+
+        Returns:
+            The query with sorting applied.
+        """
+        from sqlmodel import asc, desc
+
+        from zenml.enums import SorterOps
+        from zenml.zen_stores.schemas import UserSchema
+
+        sort_by, operand = self.sorting_params
+
+        if sort_by == "user":
+            column = UserSchema.name
+
+            query = query.join(
+                UserSchema, getattr(table, "user_id") == UserSchema.id
+            )
+
+            query = query.add_columns(UserSchema.name)
+
+            if operand == SorterOps.ASCENDING:
+                query = query.order_by(asc(column))
+            else:
+                query = query.order_by(desc(column))
+
+            return query
+
+        return super().apply_sorting(query=query, table=table)
 
     def apply_filter(
         self,
@@ -240,20 +326,36 @@ class WorkspaceScopedResponse(
         return self.get_metadata().workspace
 
 
-class WorkspaceScopedFilter(BaseFilter):
+class WorkspaceScopedFilter(UserScopedFilter):
     """Model to enable advanced scoping with workspace."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *BaseFilter.FILTER_EXCLUDE_FIELDS,
+        *UserScopedFilter.FILTER_EXCLUDE_FIELDS,
+        "workspace",
         "scope_workspace",
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *BaseFilter.CLI_EXCLUDE_FIELDS,
+        *UserScopedFilter.CLI_EXCLUDE_FIELDS,
+        "workspace_id",
+        "workspace",
         "scope_workspace",
+    ]
+    CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
+        *UserScopedFilter.CUSTOM_SORTING_OPTIONS,
+        "workspace",
     ]
     scope_workspace: Optional[UUID] = Field(
         default=None,
         description="The workspace to scope this query to.",
+    )
+    workspace_id: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="UUID of the workspace that this entity belongs to.",
+        union_mode="left_to_right",
+    )
+    workspace: Optional[Union[UUID, str]] = Field(
+        default=None,
+        description="Name/ID of the workspace that this entity belongs to.",
     )
 
     def set_scope_workspace(self, workspace_id: UUID) -> None:
@@ -263,6 +365,35 @@ class WorkspaceScopedFilter(BaseFilter):
             workspace_id: The workspace to scope this response to.
         """
         self.scope_workspace = workspace_id
+
+    def get_custom_filters(
+        self, table: Type["AnySchema"]
+    ) -> List["ColumnElement[bool]"]:
+        """Get custom filters.
+
+        Args:
+            table: The query table.
+
+        Returns:
+            A list of custom filters.
+        """
+        custom_filters = super().get_custom_filters(table)
+
+        from sqlmodel import and_
+
+        from zenml.zen_stores.schemas import WorkspaceSchema
+
+        if self.workspace:
+            workspace_filter = and_(
+                getattr(table, "workspace_id") == WorkspaceSchema.id,
+                self.generate_name_or_id_query_conditions(
+                    value=self.workspace,
+                    table=WorkspaceSchema,
+                ),
+            )
+            custom_filters.append(workspace_filter)
+
+        return custom_filters
 
     def apply_filter(
         self,
@@ -291,6 +422,46 @@ class WorkspaceScopedFilter(BaseFilter):
 
         return query
 
+    def apply_sorting(
+        self,
+        query: AnyQuery,
+        table: Type["AnySchema"],
+    ) -> AnyQuery:
+        """Apply sorting to the query.
+
+        Args:
+            query: The query to which to apply the sorting.
+            table: The query table.
+
+        Returns:
+            The query with sorting applied.
+        """
+        from sqlmodel import asc, desc
+
+        from zenml.enums import SorterOps
+        from zenml.zen_stores.schemas import WorkspaceSchema
+
+        sort_by, operand = self.sorting_params
+
+        if sort_by == "workspace":
+            column = WorkspaceSchema.name
+
+            query = query.join(
+                WorkspaceSchema,
+                getattr(table, "workspace_id") == WorkspaceSchema.id,
+            )
+
+            query = query.add_columns(WorkspaceSchema.name)
+
+            if operand == SorterOps.ASCENDING:
+                query = query.order_by(asc(column))
+            else:
+                query = query.order_by(desc(column))
+
+            return query
+
+        return super().apply_sorting(query=query, table=table)
+
 
 class WorkspaceScopedTaggableFilter(WorkspaceScopedFilter):
     """Model to enable advanced scoping with workspace and tagging."""
@@ -302,6 +473,10 @@ class WorkspaceScopedTaggableFilter(WorkspaceScopedFilter):
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
         "tag",
+    ]
+    CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
+        *WorkspaceScopedFilter.CUSTOM_SORTING_OPTIONS,
+        "tags",
     ]
 
     def apply_filter(
@@ -318,27 +493,31 @@ class WorkspaceScopedTaggableFilter(WorkspaceScopedFilter):
         Returns:
             The query with filter applied.
         """
-        from zenml.zen_stores.schemas import TagResourceSchema
+        from zenml.zen_stores.schemas import TagResourceSchema, TagSchema
 
         query = super().apply_filter(query=query, table=table)
         if self.tag:
-            query = (
-                query.join(getattr(table, "tags"))
-                .join(TagResourceSchema.tag)
-                .distinct()
-            )
+            query = query.join(
+                TagResourceSchema,
+                TagResourceSchema.resource_id == getattr(table, "id"),
+            ).join(TagSchema, TagSchema.id == TagResourceSchema.tag_id)
 
         return query
 
-    def get_custom_filters(self) -> List["ColumnElement[bool]"]:
+    def get_custom_filters(
+        self, table: Type["AnySchema"]
+    ) -> List["ColumnElement[bool]"]:
         """Get custom tag filters.
+
+        Args:
+            table: The query table.
 
         Returns:
             A list of custom filters.
         """
         from zenml.zen_stores.schemas import TagSchema
 
-        custom_filters = super().get_custom_filters()
+        custom_filters = super().get_custom_filters(table)
         if self.tag:
             custom_filters.append(
                 self.generate_custom_query_conditions_for_column(
@@ -347,3 +526,80 @@ class WorkspaceScopedTaggableFilter(WorkspaceScopedFilter):
             )
 
         return custom_filters
+
+    def apply_sorting(
+        self,
+        query: AnyQuery,
+        table: Type["AnySchema"],
+    ) -> AnyQuery:
+        """Apply sorting to the query.
+
+        Args:
+            query: The query to which to apply the sorting.
+            table: The query table.
+
+        Returns:
+            The query with sorting applied.
+        """
+        sort_by, operand = self.sorting_params
+
+        if sort_by == "tags":
+            from sqlmodel import asc, desc, func, select
+
+            from zenml.enums import SorterOps, TaggableResourceTypes
+            from zenml.zen_stores.schemas import (
+                ArtifactSchema,
+                ArtifactVersionSchema,
+                ModelSchema,
+                ModelVersionSchema,
+                PipelineRunSchema,
+                PipelineSchema,
+                RunTemplateSchema,
+                TagResourceSchema,
+                TagSchema,
+            )
+
+            resource_type_mapping = {
+                ArtifactSchema: TaggableResourceTypes.ARTIFACT,
+                ArtifactVersionSchema: TaggableResourceTypes.ARTIFACT_VERSION,
+                ModelSchema: TaggableResourceTypes.MODEL,
+                ModelVersionSchema: TaggableResourceTypes.MODEL_VERSION,
+                PipelineSchema: TaggableResourceTypes.PIPELINE,
+                PipelineRunSchema: TaggableResourceTypes.PIPELINE_RUN,
+                RunTemplateSchema: TaggableResourceTypes.RUN_TEMPLATE,
+            }
+
+            sorted_tags = (
+                select(TagResourceSchema.resource_id, TagSchema.name)
+                .join(TagSchema, TagResourceSchema.tag_id == TagSchema.id)  # type: ignore[arg-type]
+                .filter(
+                    TagResourceSchema.resource_type  # type: ignore[arg-type]
+                    == resource_type_mapping[table]
+                )
+                .order_by(
+                    asc(TagResourceSchema.resource_id), asc(TagSchema.name)
+                )
+            ).alias("sorted_tags")
+
+            tags_subquery = (
+                select(
+                    sorted_tags.c.resource_id,
+                    func.group_concat(sorted_tags.c.name, ", ").label(
+                        "tags_list"
+                    ),
+                ).group_by(sorted_tags.c.resource_id)
+            ).alias("tags_subquery")
+
+            query = query.add_columns(tags_subquery.c.tags_list).outerjoin(
+                tags_subquery, table.id == tags_subquery.c.resource_id
+            )
+
+            # Apply ordering based on the tags list
+            if operand == SorterOps.ASCENDING:
+                query = query.order_by(asc("tags_list"))
+            else:
+                query = query.order_by(desc("tags_list"))
+
+            return query
+
+        return super().apply_sorting(query=query, table=table)

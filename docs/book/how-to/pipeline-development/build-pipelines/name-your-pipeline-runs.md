@@ -15,14 +15,21 @@ training_pipeline = training_pipeline.with_options(
 training_pipeline()
 ```
 
-Pipeline run names must be unique, so if you plan to run your pipelines multiple times or run them on a schedule, make sure to either compute the run name dynamically or include one of the following placeholders that ZenML will replace:
+Pipeline run names must be unique, so if you plan to run your pipelines multiple times or run them on a schedule, make sure to either compute the run name dynamically or include one of the placeholders that ZenML will replace.
 
-* `{date}` will resolve to the current date, e.g. `2023_02_19`
-* `{time}` will resolve to the current time, e.g. `11_07_09_326492`
+{% hint style="info" %}
+The substitutions for the custom placeholders like `experiment_name` can be set in:
+- `@pipeline` decorator, so they are effective for all steps in this pipeline
+- `pipeline.with_options` function, so they are effective for all steps in this pipeline run
+
+Standard substitutions always available and consistent in all steps of the pipeline are:
+- `{date}`: current date, e.g. `2024_11_27`
+- `{time}`: current time in UTC format, e.g. `11_07_09_326492`
+{% endhint %}
 
 ```python
 training_pipeline = training_pipeline.with_options(
-    run_name="custom_pipeline_run_name_{date}_{time}"
+    run_name="custom_pipeline_run_name_{experiment_name}_{date}_{time}"
 )
 training_pipeline()
 ```

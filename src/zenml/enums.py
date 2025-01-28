@@ -60,6 +60,7 @@ class VisualizationType(StrEnum):
     HTML = "html"
     IMAGE = "image"
     MARKDOWN = "markdown"
+    JSON = "json"
 
 
 class ZenMLServiceType(StrEnum):
@@ -245,6 +246,13 @@ class OAuthDeviceStatus(StrEnum):
     LOCKED = "locked"
 
 
+class APITokenType(StrEnum):
+    """The API token type."""
+
+    GENERIC = "generic"
+    WORKLOAD = "workload"
+
+
 class GenericFilterOps(StrEnum):
     """Ops for all filters for string values on list methods."""
 
@@ -368,6 +376,7 @@ class MetadataResourceTypes(StrEnum):
     STEP_RUN = "step_run"
     ARTIFACT_VERSION = "artifact_version"
     MODEL_VERSION = "model_version"
+    SCHEDULE = "schedule"
 
 
 class DatabaseBackupStrategy(StrEnum):

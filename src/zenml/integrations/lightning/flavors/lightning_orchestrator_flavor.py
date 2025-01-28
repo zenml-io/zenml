@@ -94,6 +94,17 @@ class LightningOrchestratorConfig(
         """
         return False
 
+    @property
+    def supports_client_side_caching(self) -> bool:
+        """Whether the orchestrator supports client side caching.
+
+        Returns:
+            Whether the orchestrator supports client side caching.
+        """
+        # The Lightning orchestrator starts step studios from a pipeline studio.
+        # This is currently not supported when using client-side caching.
+        return False
+
 
 class LightningOrchestratorFlavor(BaseOrchestratorFlavor):
     """Lightning orchestrator flavor."""

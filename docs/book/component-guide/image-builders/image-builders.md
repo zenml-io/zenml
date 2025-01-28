@@ -26,6 +26,7 @@ image builders are provided by integrations:
 | [LocalImageBuilder](local.md)      | `local`  | _built-in_  | Builds your Docker images locally.                                       |
 | [KanikoImageBuilder](kaniko.md)    | `kaniko` | `kaniko`    | Builds your Docker images in Kubernetes using Kaniko.                    |
 | [GCPImageBuilder](gcp.md)          | `gcp`    | `gcp`       | Builds your Docker images using Google Cloud Build.                      |
+| [AWSImageBuilder](aws.md)          | `aws`    | `aws`       | Builds your Docker images using AWS Code Build.                          |
 | [Custom Implementation](custom.md) | _custom_ |             | Extend the image builder abstraction and provide your own implementation |
 
 If you would like to see the available flavors of image builders, you can use the command:

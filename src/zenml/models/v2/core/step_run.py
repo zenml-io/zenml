@@ -14,7 +14,16 @@
 """Models representing steps runs."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, ClassVar, Dict, List, Optional, Union
+from typing import (
+    TYPE_CHECKING,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+)
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -41,6 +50,9 @@ if TYPE_CHECKING:
         LogsRequest,
         LogsResponse,
     )
+    from zenml.zen_stores.schemas import BaseSchema
+
+    AnySchema = TypeVar("AnySchema", bound=BaseSchema)
 
 
 class StepRunInputResponse(ArtifactVersionResponse):
@@ -142,7 +154,7 @@ class StepRunRequest(WorkspaceScopedRequest):
 class StepRunUpdate(BaseModel):
     """Update model for step runs."""
 
-    outputs: Dict[str, UUID] = Field(
+    outputs: Dict[str, List[UUID]] = Field(
         title="The IDs of the output artifact versions of the step run.",
         default={},
     )
@@ -553,16 +565,6 @@ class StepRunFilter(WorkspaceScopedFilter):
         description="Original id for this step run",
         union_mode="left_to_right",
     )
-    user_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="User that produced this step run",
-        union_mode="left_to_right",
-    )
-    workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="Workspace of this step run",
-        union_mode="left_to_right",
-    )
     model_version_id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Model version associated with the step run.",
@@ -576,24 +578,27 @@ class StepRunFilter(WorkspaceScopedFilter):
         default=None,
         description="The run_metadata to filter the step runs by.",
     )
-
     model_config = ConfigDict(protected_namespaces=())
 
     def get_custom_filters(
-        self,
+        self, table: Type["AnySchema"]
     ) -> List["ColumnElement[bool]"]:
         """Get custom filters.
+
+        Args:
+            table: The query table.
 
         Returns:
             A list of custom filters.
         """
-        custom_filters = super().get_custom_filters()
+        custom_filters = super().get_custom_filters(table)
 
         from sqlmodel import and_
 
         from zenml.zen_stores.schemas import (
             ModelSchema,
             ModelVersionSchema,
+            RunMetadataResourceSchema,
             RunMetadataSchema,
             StepRunSchema,
         )
@@ -612,10 +617,11 @@ class StepRunFilter(WorkspaceScopedFilter):
 
             for key, value in self.run_metadata.items():
                 additional_filter = and_(
-                    RunMetadataSchema.resource_id == StepRunSchema.id,
-                    RunMetadataSchema.resource_type
+                    RunMetadataResourceSchema.resource_id == StepRunSchema.id,
+                    RunMetadataResourceSchema.resource_type
                     == MetadataResourceTypes.STEP_RUN,
-                    RunMetadataSchema.key == key,
+                    RunMetadataResourceSchema.run_metadata_id
+                    == RunMetadataSchema.id,
                     self.generate_custom_query_conditions_for_column(
                         value=value,
                         table=RunMetadataSchema,

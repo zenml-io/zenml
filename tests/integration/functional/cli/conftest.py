@@ -26,6 +26,7 @@ from tests.integration.functional.zen_stores.utils import (
 from zenml import pipeline, step
 from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.config.schedule import Schedule
+from zenml.enums import ArtifactType
 from zenml.model.model import Model
 
 if TYPE_CHECKING:
@@ -85,16 +86,16 @@ def step_1() -> Annotated[int, NAME + "a"]:
 
 
 @step
-def step_2() -> (
-    Tuple[
-        Annotated[
-            int, ArtifactConfig(name=NAME + "b", is_model_artifact=True)
-        ],
-        Annotated[
-            int, ArtifactConfig(name=NAME + "c", is_deployment_artifact=True)
-        ],
-    ]
-):
+def step_2() -> Tuple[
+    Annotated[
+        int,
+        ArtifactConfig(name=NAME + "b", artifact_type=ArtifactType.MODEL),
+    ],
+    Annotated[
+        int,
+        ArtifactConfig(name=NAME + "c", artifact_type=ArtifactType.SERVICE),
+    ],
+]:
     return 2, 3
 
 
@@ -102,7 +103,7 @@ def step_2() -> (
     model=Model(name=NAME),
     name=NAME,
 )
-def pipeline():
+def pipeline_():
     step_1()
     step_2()
 
@@ -110,5 +111,5 @@ def pipeline():
 @pytest.fixture
 def clean_client_with_models(clean_client: "Client"):
     """Fixture to get a clean workspace with an existing pipeline run in it."""
-    pipeline.with_options(run_name=NAME)()
+    pipeline_.with_options(run_name=NAME)()
     return clean_client

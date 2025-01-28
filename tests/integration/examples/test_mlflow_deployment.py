@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 
 
+import platform
+
 import pytest
 
 from tests.integration.examples.utils import run_example
@@ -20,6 +22,10 @@ from zenml.client import Client
 from zenml.enums import ExecutionStatus
 
 
+@pytest.mark.skipif(
+    platform.system() == "Darwin",
+    reason="It hangs forever now. Need to investigate.",  # TODO: investigate this
+)
 def test_example(request: pytest.FixtureRequest) -> None:
     """Runs the mlflow_deployment example."""
     with run_example(

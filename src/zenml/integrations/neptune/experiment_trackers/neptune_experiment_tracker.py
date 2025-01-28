@@ -77,10 +77,12 @@ class NeptuneExperimentTracker(BaseExperimentTracker):
             NeptuneExperimentTrackerSettings, self.get_settings(info)
         )
 
-        self.run_state.token = self.config.api_token
-        self.run_state.project = self.config.project
-        self.run_state.run_name = info.run_name
-        self.run_state.tags = list(settings.tags)
+        self.run_state.initialize(
+            project=self.config.project,
+            token=self.config.api_token,
+            run_name=info.run_name,
+            tags=list(settings.tags),
+        )
 
     def get_step_run_metadata(
         self, info: "StepRunInfo"
@@ -107,4 +109,4 @@ class NeptuneExperimentTracker(BaseExperimentTracker):
         """
         self.run_state.active_run.sync()
         self.run_state.active_run.stop()
-        self.run_state.reset_active_run()
+        self.run_state.reset()

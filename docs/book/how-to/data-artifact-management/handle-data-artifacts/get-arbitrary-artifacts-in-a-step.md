@@ -6,7 +6,7 @@ description: >-
 
 # Get arbitrary artifacts in a step
 
-As described in [the metadata guide](../track-metrics-metadata/logging-metadata.md), the metadata can be fetched with the client, and this is how you would use it to fetch it within a step. This allows you to fetch artifacts from other upstream steps or even completely different pipelines.
+As described in [the metadata guide](../../model-management-metrics/track-metrics-metadata/logging-metadata.md), the metadata can be fetched with the client, and this is how you would use it to fetch it within a step. This allows you to fetch artifacts from other upstream steps or even completely different pipelines.
 
 ```python
 from zenml.client import Client
@@ -26,7 +26,7 @@ artifacts from other pipelines or steps that are not directly upstream.
 
 ## See Also
 
-- [Managing artifacts](../../user-guide/starter-guide/manage-artifacts.md) -
+- [Managing artifacts](../../../user-guide/starter-guide/manage-artifacts.md) -
   learn about the `ExternalArtifact` type and how to pass artifacts between steps.
 
 <!-- For scarf -->

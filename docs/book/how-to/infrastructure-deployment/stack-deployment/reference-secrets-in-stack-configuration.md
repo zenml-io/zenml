@@ -42,7 +42,7 @@ You can use the environment variable `ZENML_SECRET_VALIDATION_LEVEL` to disable 
 
 ### Fetch secret values in a step
 
-If you are using [centralized secrets management](../interact-with-secrets.md), you can access secrets directly from within your steps through the ZenML `Client` API. This allows you to use your secrets for querying APIs from within your step without hard-coding your access keys:
+If you are using [centralized secrets management](../../interact-with-secrets.md), you can access secrets directly from within your steps through the ZenML `Client` API. This allows you to use your secrets for querying APIs from within your step without hard-coding your access keys:
 
 ```python
 from zenml import step
@@ -66,7 +66,7 @@ def secret_loader() -> None:
 
 ## See Also
 
-- [Interact with secrets](../interact-with-secrets.md): Learn how to create,
+- [Interact with secrets](../../interact-with-secrets.md): Learn how to create,
   list, and delete secrets using the ZenML CLI and Python SDK.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

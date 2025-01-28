@@ -52,3 +52,4 @@ class PipelineRunConfiguration(
     retry: Optional[StepRetryConfig] = None
     failure_hook_source: Optional[SourceWithValidator] = None
     success_hook_source: Optional[SourceWithValidator] = None
+    substitutions: Dict[str, str] = {}

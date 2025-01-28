@@ -73,6 +73,7 @@ of any potential costs:
 - An ECR repository registered as a [ZenML container registry](https://docs.zenml.io/stack-components/container-registries/aws).
 - Sagemaker registered as a [ZenML orchestrator](https://docs.zenml.io/stack-components/orchestrators/sagemaker)
 as well as a [ZenML step operator](https://docs.zenml.io/stack-components/step-operators/sagemaker).
+- A CodeBuild project registered as a [ZenML image builder](https://docs.zenml.io/stack-components/image-builder/aws).
 - An IAM user and IAM role with the minimum necessary permissions to access the
 above resources.
 - An AWS access key used to give access to ZenML to connect to the above
@@ -148,6 +149,26 @@ console.
                 "ecr:DescribeRepositories",
                 "ecr:ListRepositories",
                 "ecr:DescribeRegistry",
+                "ecr:BatchGetImage",
+                "ecr:DescribeImages",
+                "ecr:BatchCheckLayerAvailability",
+                "ecr:GetDownloadUrlForLayer",
+                "ecr:InitiateLayerUpload",
+                "ecr:UploadLayerPart",
+                "ecr:CompleteLayerUpload",
+                "ecr:PutImage",
+                "ecr:GetAuthorizationToken",
+            ],
+            "CloudBuild (Client)": [
+                "codebuild:CreateProject",
+                "codebuild:BatchGetBuilds",
+            ],
+            "CloudBuild (Service)": [
+                "s3:GetObject",
+                "s3:GetObjectVersion",
+                "logs:CreateLogGroup",
+                "logs:CreateLogStream",
+                "logs:PutLogEvents",
                 "ecr:BatchGetImage",
                 "ecr:DescribeImages",
                 "ecr:BatchCheckLayerAvailability",
@@ -243,6 +264,7 @@ console.
             param_ResourceName=f"zenml-{random_str(6).lower()}",
             param_ZenMLServerURL=self.zenml_server_url,
             param_ZenMLServerAPIToken=self.zenml_server_api_token,
+            param_CodeBuild="true",
         )
         # Encode the parameters as URL query parameters
         query_params = "&".join([f"{k}={v}" for k, v in params.items()])

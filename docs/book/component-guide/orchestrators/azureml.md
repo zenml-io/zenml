@@ -80,7 +80,7 @@ assign it the correct permissions and use it to [register a ZenML Azure Service 
 For each pipeline run, ZenML will build a Docker image called 
 `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code 
 and use it to run your pipeline steps in AzureML. Check out 
-[this page](../../how-to/infrastructure-deployment/customize-docker-builds/README.md) if you want to 
+[this page](../../how-to/customize-docker-builds/README.md) if you want to 
 learn more about how ZenML builds these images and how you can customize them.
 
 ## AzureML UI
@@ -195,10 +195,10 @@ def example_step() -> int:
 
 
 @pipeline(settings={"orchestrator": azureml_settings})
-def pipeline():
+def my_pipeline():
     example_step()
 
-pipeline()
+my_pipeline()
 ```
 
 {% hint style="info" %}
@@ -213,10 +213,18 @@ its [JobSchedules](https://learn.microsoft.com/en-us/azure/machine-learning/how-
 Both cron expression and intervals are supported.
 
 ```python
+from zenml import pipeline
 from zenml.config.schedule import Schedule
 
+@pipeline
+def my_pipeline():
+    ...
+    
 # Run a pipeline every 5th minute
-pipeline.run(schedule=Schedule(cron_expression="*/5 * * * *"))
+my_pipeline = my_pipeline.with_options(
+  schedule=Schedule(cron_expression="*/5 * * * *")
+)
+my_pipeline()
 ```
 
 Once you run the pipeline with a schedule, you can find the schedule and 

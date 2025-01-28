@@ -16,10 +16,13 @@
 from datetime import datetime
 from typing import (
     TYPE_CHECKING,
+    Any,
     ClassVar,
     Dict,
     List,
     Optional,
+    Type,
+    TypeVar,
     Union,
     cast,
 )
@@ -55,6 +58,11 @@ if TYPE_CHECKING:
     from zenml.models.v2.core.schedule import ScheduleResponse
     from zenml.models.v2.core.stack import StackResponse
     from zenml.models.v2.core.step_run import StepRunResponse
+    from zenml.zen_stores.schemas.base_schemas import BaseSchema
+
+    AnySchema = TypeVar("AnySchema", bound=BaseSchema)
+
+AnyQuery = TypeVar("AnyQuery", bound=Any)
 
 
 # ------------------ Request Model ------------------
@@ -236,6 +244,10 @@ class PipelineRunResponseMetadata(WorkspaceScopedResponseMetadata):
     is_templatable: bool = Field(
         default=False,
         description="Whether a template can be created from this run.",
+    )
+    step_substitutions: Dict[str, Dict[str, str]] = Field(
+        title="Substitutions used in the step runs of this pipeline run.",
+        default_factory=dict,
     )
 
 
@@ -547,6 +559,15 @@ class PipelineRunResponse(
         return self.get_metadata().is_templatable
 
     @property
+    def step_substitutions(self) -> Dict[str, Dict[str, str]]:
+        """The `step_substitutions` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().step_substitutions
+
+    @property
     def model_version(self) -> Optional[ModelVersionResponse]:
         """The `model_version` property.
 
@@ -571,6 +592,15 @@ class PipelineRunResponse(
 class PipelineRunFilter(WorkspaceScopedTaggableFilter):
     """Model to enable advanced filtering of all Workspaces."""
 
+    CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
+        *WorkspaceScopedTaggableFilter.CUSTOM_SORTING_OPTIONS,
+        "tag",
+        "stack",
+        "pipeline",
+        "model",
+        "model_version",
+    ]
+
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *WorkspaceScopedTaggableFilter.FILTER_EXCLUDE_FIELDS,
         "unlisted",
@@ -579,7 +609,6 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
         "schedule_id",
         "stack_id",
         "template_id",
-        "user",
         "pipeline",
         "stack",
         "code_repository",
@@ -600,16 +629,6 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
     pipeline_id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Pipeline associated with the Pipeline Run",
-        union_mode="left_to_right",
-    )
-    workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="Workspace of the Pipeline Run",
-        union_mode="left_to_right",
-    )
-    user_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="User that created the Pipeline Run",
         union_mode="left_to_right",
     )
     stack_id: Optional[Union[UUID, str]] = Field(
@@ -662,16 +681,12 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
         union_mode="left_to_right",
     )
     unlisted: Optional[bool] = None
-    user: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="Name/ID of the user that created the run.",
-    )
     run_metadata: Optional[Dict[str, str]] = Field(
         default=None,
         description="The run_metadata to filter the pipeline runs by.",
     )
     # TODO: Remove once frontend is ready for it. This is replaced by the more
-    # generic `pipeline` filter below.
+    #   generic `pipeline` filter below.
     pipeline_name: Optional[str] = Field(
         default=None,
         description="Name of the pipeline associated with the run",
@@ -703,13 +718,17 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
 
     def get_custom_filters(
         self,
+        table: Type["AnySchema"],
     ) -> List["ColumnElement[bool]"]:
         """Get custom filters.
+
+        Args:
+            table: The query table.
 
         Returns:
             A list of custom filters.
         """
-        custom_filters = super().get_custom_filters()
+        custom_filters = super().get_custom_filters(table)
 
         from sqlmodel import and_, col, or_
 
@@ -722,12 +741,12 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
             PipelineDeploymentSchema,
             PipelineRunSchema,
             PipelineSchema,
+            RunMetadataResourceSchema,
             RunMetadataSchema,
             ScheduleSchema,
             StackComponentSchema,
             StackCompositionSchema,
             StackSchema,
-            UserSchema,
         )
 
         if self.unlisted is not None:
@@ -777,17 +796,6 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
                 PipelineDeploymentSchema.template_id == self.template_id,
             )
             custom_filters.append(run_template_filter)
-
-        if self.user:
-            user_filter = and_(
-                PipelineRunSchema.user_id == UserSchema.id,
-                self.generate_name_or_id_query_conditions(
-                    value=self.user,
-                    table=UserSchema,
-                    additional_columns=["full_name"],
-                ),
-            )
-            custom_filters.append(user_filter)
 
         if self.pipeline:
             pipeline_filter = and_(
@@ -897,10 +905,12 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
 
             for key, value in self.run_metadata.items():
                 additional_filter = and_(
-                    RunMetadataSchema.resource_id == PipelineRunSchema.id,
-                    RunMetadataSchema.resource_type
+                    RunMetadataResourceSchema.resource_id
+                    == PipelineRunSchema.id,
+                    RunMetadataResourceSchema.resource_type
                     == MetadataResourceTypes.PIPELINE_RUN,
-                    RunMetadataSchema.key == key,
+                    RunMetadataResourceSchema.run_metadata_id
+                    == RunMetadataSchema.id,
                     self.generate_custom_query_conditions_for_column(
                         value=value,
                         table=RunMetadataSchema,
@@ -910,3 +920,73 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
                 custom_filters.append(additional_filter)
 
         return custom_filters
+
+    def apply_sorting(
+        self,
+        query: AnyQuery,
+        table: Type["AnySchema"],
+    ) -> AnyQuery:
+        """Apply sorting to the query.
+
+        Args:
+            query: The query to which to apply the sorting.
+            table: The query table.
+
+        Returns:
+            The query with sorting applied.
+        """
+        from sqlmodel import asc, desc
+
+        from zenml.enums import SorterOps
+        from zenml.zen_stores.schemas import (
+            ModelSchema,
+            ModelVersionSchema,
+            PipelineDeploymentSchema,
+            PipelineRunSchema,
+            PipelineSchema,
+            StackSchema,
+        )
+
+        sort_by, operand = self.sorting_params
+
+        if sort_by == "pipeline":
+            query = query.join(
+                PipelineSchema,
+                PipelineRunSchema.pipeline_id == PipelineSchema.id,
+            )
+            column = PipelineSchema.name
+        elif sort_by == "stack":
+            query = query.join(
+                PipelineDeploymentSchema,
+                PipelineRunSchema.deployment_id == PipelineDeploymentSchema.id,
+            ).join(
+                StackSchema,
+                PipelineDeploymentSchema.stack_id == StackSchema.id,
+            )
+            column = StackSchema.name
+        elif sort_by == "model":
+            query = query.join(
+                ModelVersionSchema,
+                PipelineRunSchema.model_version_id == ModelVersionSchema.id,
+            ).join(
+                ModelSchema,
+                ModelVersionSchema.model_id == ModelSchema.id,
+            )
+            column = ModelSchema.name
+        elif sort_by == "model_version":
+            query = query.join(
+                ModelVersionSchema,
+                PipelineRunSchema.model_version_id == ModelVersionSchema.id,
+            )
+            column = ModelVersionSchema.name
+        else:
+            return super().apply_sorting(query=query, table=table)
+
+        query = query.add_columns(column)
+
+        if operand == SorterOps.ASCENDING:
+            query = query.order_by(asc(column))
+        else:
+            query = query.order_by(desc(column))
+
+        return query

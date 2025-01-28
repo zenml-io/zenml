@@ -1,6 +1,6 @@
 # Apache Software License 2.0
 #
-# Copyright (c) ZenML GmbH 2024. All rights reserved.
+# Copyright (c) ZenML GmbH 2025. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -47,7 +47,7 @@ def hp_tuning_select_best_model(
     best_metric = -1
     # consume artifacts attached to current model version in Model Control Plane
     for step_name in step_names:
-        hp_output = model.get_data_artifact("hp_result")
+        hp_output = model.get_artifact("hp_result")
         model_: ClassifierMixin = hp_output.load()
         # fetch metadata we attached earlier
         metric = float(hp_output.run_metadata["metric"])

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Utilities to publish pipeline and step runs."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Dict, List
 
 from zenml.client import Client
@@ -21,6 +21,7 @@ from zenml.enums import ExecutionStatus, MetadataResourceTypes
 from zenml.models import (
     PipelineRunResponse,
     PipelineRunUpdate,
+    RunMetadataResource,
     StepRunResponse,
     StepRunUpdate,
 )
@@ -32,7 +33,7 @@ if TYPE_CHECKING:
 
 
 def publish_successful_step_run(
-    step_run_id: "UUID", output_artifact_ids: Dict[str, "UUID"]
+    step_run_id: "UUID", output_artifact_ids: Dict[str, List["UUID"]]
 ) -> "StepRunResponse":
     """Publishes a successful step run.
 
@@ -47,7 +48,7 @@ def publish_successful_step_run(
         step_run_id=step_run_id,
         step_run_update=StepRunUpdate(
             status=ExecutionStatus.COMPLETED,
-            end_time=datetime.utcnow(),
+            end_time=datetime.now(timezone.utc),
             outputs=output_artifact_ids,
         ),
     )
@@ -66,7 +67,7 @@ def publish_failed_step_run(step_run_id: "UUID") -> "StepRunResponse":
         step_run_id=step_run_id,
         step_run_update=StepRunUpdate(
             status=ExecutionStatus.FAILED,
-            end_time=datetime.utcnow(),
+            end_time=datetime.now(timezone.utc),
         ),
     )
 
@@ -86,7 +87,7 @@ def publish_failed_pipeline_run(
         run_id=pipeline_run_id,
         run_update=PipelineRunUpdate(
             status=ExecutionStatus.FAILED,
-            end_time=datetime.utcnow(),
+            end_time=datetime.now(timezone.utc),
         ),
     )
 
@@ -129,8 +130,11 @@ def publish_pipeline_run_metadata(
     for stack_component_id, metadata in pipeline_run_metadata.items():
         client.create_run_metadata(
             metadata=metadata,
-            resource_id=pipeline_run_id,
-            resource_type=MetadataResourceTypes.PIPELINE_RUN,
+            resources=[
+                RunMetadataResource(
+                    id=pipeline_run_id, type=MetadataResourceTypes.PIPELINE_RUN
+                )
+            ],
             stack_component_id=stack_component_id,
         )
 
@@ -150,7 +154,10 @@ def publish_step_run_metadata(
     for stack_component_id, metadata in step_run_metadata.items():
         client.create_run_metadata(
             metadata=metadata,
-            resource_id=step_run_id,
-            resource_type=MetadataResourceTypes.STEP_RUN,
+            resources=[
+                RunMetadataResource(
+                    id=step_run_id, type=MetadataResourceTypes.STEP_RUN
+                )
+            ],
             stack_component_id=stack_component_id,
         )

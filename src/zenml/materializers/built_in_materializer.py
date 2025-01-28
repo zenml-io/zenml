@@ -28,7 +28,11 @@ from typing import (
 )
 
 from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
-from zenml.enums import ArtifactType
+from zenml.constants import (
+    ENV_ZENML_MATERIALIZER_ALLOW_NON_ASCII_JSON_DUMPS,
+    handle_bool_env_var,
+)
+from zenml.enums import ArtifactType, VisualizationType
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.materializer_registry import materializer_registry
@@ -48,6 +52,9 @@ BASIC_TYPES = (
     str,
     type(None),
 )  # complex/bytes are not JSON serializable
+ZENML_MATERIALIZER_ALLOW_NON_ASCII_JSON_DUMPS = handle_bool_env_var(
+    ENV_ZENML_MATERIALIZER_ALLOW_NON_ASCII_JSON_DUMPS, False
+)
 
 
 class BuiltInMaterializer(BaseMaterializer):
@@ -94,7 +101,11 @@ class BuiltInMaterializer(BaseMaterializer):
         Args:
             data: The data to store.
         """
-        yaml_utils.write_json(self.data_path, data)
+        yaml_utils.write_json(
+            self.data_path,
+            data,
+            ensure_ascii=not ZENML_MATERIALIZER_ALLOW_NON_ASCII_JSON_DUMPS,
+        )
 
     def extract_metadata(
         self, data: Union[bool, float, int, str]
@@ -371,7 +382,11 @@ class BuiltInContainerMaterializer(BaseMaterializer):
 
         # If the data is serializable, just write it into a single JSON file.
         if _is_serializable(data):
-            yaml_utils.write_json(self.data_path, data)
+            yaml_utils.write_json(
+                self.data_path,
+                data,
+                ensure_ascii=not ZENML_MATERIALIZER_ALLOW_NON_ASCII_JSON_DUMPS,
+            )
             return
 
         # non-serializable dict: Handle as non-serializable list of lists.
@@ -414,6 +429,23 @@ class BuiltInContainerMaterializer(BaseMaterializer):
             for entry in metadata:
                 self.artifact_store.rmtree(entry["path"])
             raise e
+
+    # save dict type objects to JSON file with JSON visualization type
+    def save_visualizations(self, data: Any) -> Dict[str, "VisualizationType"]:
+        """Save visualizations for the given data.
+
+        Args:
+            data: The data to save visualizations for.
+
+        Returns:
+            A dictionary of visualization URIs and their types.
+        """
+        # dict/list type objects are always saved as JSON files
+        # doesn't work for non-serializable types as they
+        # are saved as list of lists in different files
+        if _is_serializable(data):
+            return {self.data_path.replace("\\", "/"): VisualizationType.JSON}
+        return {}
 
     def extract_metadata(self, data: Any) -> Dict[str, "MetadataType"]:
         """Extract metadata from the given built-in container object.

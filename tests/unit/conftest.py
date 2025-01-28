@@ -11,6 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
+from collections import defaultdict
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional
 from uuid import uuid4
@@ -416,6 +417,12 @@ def sample_pipeline_run(
     sample_workspace_model: WorkspaceResponse,
 ) -> PipelineRunResponse:
     """Return sample pipeline run view for testing purposes."""
+    now = datetime.utcnow()
+    substitutions = {
+        "date": now.strftime("%Y_%m_%d"),
+        "time": now.strftime("%H_%M_%S_%f"),
+    }
+
     return PipelineRunResponse(
         id=uuid4(),
         name="sample_run_name",
@@ -430,6 +437,7 @@ def sample_pipeline_run(
             workspace=sample_workspace_model,
             config=PipelineConfiguration(name="aria_pipeline"),
             is_templatable=False,
+            steps_substitutions=defaultdict(lambda: substitutions.copy()),
         ),
         resources=PipelineRunResponseResources(tags=[]),
     )
@@ -543,10 +551,15 @@ def create_step_run(
         spec = StepSpec.model_validate(
             {"source": "module.step_class", "upstream_steps": []}
         )
+        now = datetime.utcnow()
         config = StepConfiguration.model_validate(
             {
                 "name": step_name,
                 "outputs": outputs or {},
+                "substitutions": {
+                    "date": now.strftime("%Y_%m_%d"),
+                    "time": now.strftime("%H_%M_%S_%f"),
+                },
             }
         )
         return StepRunResponse(

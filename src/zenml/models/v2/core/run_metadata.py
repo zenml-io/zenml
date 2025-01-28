@@ -13,16 +13,16 @@
 #  permissions and limitations under the License.
 """Models representing run metadata."""
 
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 from uuid import UUID
 
-from pydantic import Field
+from pydantic import Field, model_validator
 
-from zenml.enums import MetadataResourceTypes
 from zenml.metadata.metadata_types import MetadataType, MetadataTypeEnum
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedRequest,
 )
+from zenml.models.v2.misc.run_metadata import RunMetadataResource
 
 # ------------------ Request Model ------------------
 
@@ -30,14 +30,12 @@ from zenml.models.v2.base.scoped import (
 class RunMetadataRequest(WorkspaceScopedRequest):
     """Request model for run metadata."""
 
-    resource_id: UUID = Field(
-        title="The ID of the resource that this metadata belongs to.",
-    )
-    resource_type: MetadataResourceTypes = Field(
-        title="The type of the resource that this metadata belongs to.",
+    resources: List[RunMetadataResource] = Field(
+        title="The list of resources that this metadata belongs to."
     )
     stack_component_id: Optional[UUID] = Field(
-        title="The ID of the stack component that this metadata belongs to."
+        title="The ID of the stack component that this metadata belongs to.",
+        default=None,
     )
     values: Dict[str, "MetadataType"] = Field(
         title="The metadata to be created.",
@@ -45,3 +43,26 @@ class RunMetadataRequest(WorkspaceScopedRequest):
     types: Dict[str, "MetadataTypeEnum"] = Field(
         title="The types of the metadata to be created.",
     )
+    publisher_step_id: Optional[UUID] = Field(
+        title="The ID of the step execution that published this metadata.",
+        default=None,
+    )
+
+    @model_validator(mode="after")
+    def validate_values_keys(self) -> "RunMetadataRequest":
+        """Validates if the keys in the metadata are properly defined.
+
+        Returns:
+            self
+
+        Raises:
+            ValueError: if one of the key in the metadata contains `:`
+        """
+        invalid_keys = [key for key in self.values.keys() if ":" in key]
+        if invalid_keys:
+            raise ValueError(
+                "You can not use colons (`:`) in the key names when you "
+                "are creating metadata for your ZenML objects. Please change "
+                f"the following keys: {invalid_keys}"
+            )
+        return self

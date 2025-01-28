@@ -14,7 +14,7 @@
 """SQLModel implementation of user tables."""
 
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
@@ -44,8 +44,6 @@ if TYPE_CHECKING:
         EventSourceSchema,
         FlavorSchema,
         ModelSchema,
-        ModelVersionArtifactSchema,
-        ModelVersionPipelineRunSchema,
         ModelVersionSchema,
         OAuthDeviceSchema,
         PipelineBuildSchema,
@@ -144,12 +142,6 @@ class UserSchema(NamedSchema, table=True):
     model_versions: List["ModelVersionSchema"] = Relationship(
         back_populates="user",
     )
-    model_versions_artifacts_links: List["ModelVersionArtifactSchema"] = (
-        Relationship(back_populates="user")
-    )
-    model_versions_pipeline_runs_links: List[
-        "ModelVersionPipelineRunSchema"
-    ] = Relationship(back_populates="user")
     auth_devices: List["OAuthDeviceSchema"] = Relationship(
         back_populates="user",
         sa_relationship_kwargs={"cascade": "delete"},
@@ -233,7 +225,7 @@ class UserSchema(NamedSchema, table=True):
             else:
                 setattr(self, field, value)
 
-        self.updated = datetime.utcnow()
+        self.updated = datetime.now(timezone.utc)
         return self
 
     def update_service_account(
@@ -253,7 +245,7 @@ class UserSchema(NamedSchema, table=True):
         ).items():
             setattr(self, field, value)
 
-        self.updated = datetime.utcnow()
+        self.updated = datetime.now(timezone.utc)
         return self
 
     def to_model(

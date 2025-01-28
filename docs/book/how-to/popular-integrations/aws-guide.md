@@ -10,9 +10,9 @@ This page aims to quickly set up a minimal production stack on AWS. With just a 
 Would you like to skip ahead and deploy a full AWS ZenML cloud stack already?
 
 Check out the
-[in-browser stack deployment wizard](../../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack.md),
-the [stack registration wizard](../../how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack.md),
-or [the ZenML AWS Terraform module](../../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform.md)
+[in-browser stack deployment wizard](../../infrastructure-deployment/stack-deployment/deploy-a-cloud-stack.md),
+the [stack registration wizard](../../infrastructure-deployment/stack-deployment/register-a-cloud-stack.md),
+or [the ZenML AWS Terraform module](../../infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform.md)
 for a shortcut on how to deploy & register this stack.
 {% endhint %}
 
@@ -22,7 +22,7 @@ for a shortcut on how to deploy & register this stack.
 To follow this guide, you need:
 
 * An active AWS account with necessary permissions for AWS S3, SageMaker, ECR, and ECS.
-* ZenML [installed](../../getting-started/installation.md)
+* ZenML [installed](../../../getting-started/installation.md)
 * AWS CLI installed and configured with your AWS credentials. You can follow the instructions [here](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html).
 
 Once ready, navigate to the AWS console:
@@ -110,7 +110,7 @@ Replace `<ROLE_ARN>` with the ARN of the IAM role you created in the previous st
 
 ### Artifact Store (S3)
 
-An [artifact store](../../user-guide/production-guide/remote-storage.md) is used for storing and versioning data flowing through your pipelines.
+An [artifact store](../../../user-guide/production-guide/remote-storage.md) is used for storing and versioning data flowing through your pipelines.
 
 1. Before you run anything within the ZenML CLI, create an AWS S3 bucket. If you already have one, you can skip this step. (Note: the bucket name should be unique, so you might need to try a few times to find a unique name.)
 
@@ -126,11 +126,11 @@ Once this is done, you can create the ZenML stack component as follows:
 zenml artifact-store register cloud_artifact_store -f s3 --path=s3://bucket-name --connector aws_connector
 ```
 
-More details [here](../../component-guide/artifact-stores/s3.md).
+More details [here](../../../component-guide/artifact-stores/s3.md).
 
 ### Orchestrator (SageMaker Pipelines)
 
-An [orchestrator](../../user-guide/production-guide/cloud-orchestration.md) is the compute backend to run your pipelines.
+An [orchestrator](../../../user-guide/production-guide/cloud-orchestration.md) is the compute backend to run your pipelines.
 
 1. Before you run anything within the ZenML CLI, head on over to AWS and create a SageMaker domain (Skip this if you already have one). The instructions for creating a domain can be found [in the AWS core documentation](https://docs.aws.amazon.com/sagemaker/latest/dg/onboard-quick-start.html).
 
@@ -154,11 +154,11 @@ zenml orchestrator register sagemaker-orchestrator --flavor=sagemaker --region=<
 
 **Note**: The SageMaker orchestrator utilizes the AWS configuration for operation and does not require direct connection via a service connector for authentication, as it relies on your AWS CLI configurations or environment variables.
 
-More details [here](../../component-guide/orchestrators/sagemaker.md).
+More details [here](../../../component-guide/orchestrators/sagemaker.md).
 
 ### Container Registry (ECR)
 
-A [container registry](../../component-guide/container-registries/container-registries.md) is used to store Docker images for your pipelines.
+A [container registry](../../../component-guide/container-registries/container-registries.md) is used to store Docker images for your pipelines.
 
 1. You'll need to create a repository in ECR. If you already have one, you can skip this step.
 
@@ -174,7 +174,7 @@ Once this is done, you can create the ZenML stack component as follows:
 zenml container-registry register ecr-registry --flavor=aws --uri=<ACCOUNT_ID>.dkr.ecr.<YOUR_REGION>.amazonaws.com --connector aws-connector
 ```
 
-More details [here](../../component-guide/container-registries/aws.md).
+More details [here](../../../component-guide/container-registries/aws.md).
 
 ## 4) Create stack
 
@@ -226,7 +226,7 @@ python run.py
 
 <figure><img src="../../.gitbook/assets/run_with_repository.png" alt=""><figcaption><p>Sequence of events that happen when running a pipeline on a remote stack with a code repository</p></figcaption></figure>
 
-Read more in the [production guide](../../user-guide/production-guide/production-guide.md).
+Read more in the [production guide](../../../user-guide/production-guide/production-guide.md).
 
 ## Cleanup
 
@@ -282,7 +282,7 @@ The benefits of using an AWS stack with ZenML include:
 
 Now that you have a functional AWS stack set up with ZenML, you can explore more advanced features and capabilities offered by ZenML. Some next steps to consider:
 
-* Dive deeper into ZenML's [production guide](../../user-guide/production-guide/production-guide.md) to learn best practices for deploying and managing production-ready pipelines.
+* Dive deeper into ZenML's [production guide](../../user-guide/production-guide/README.md) to learn best practices for deploying and managing production-ready pipelines.
 * Explore ZenML's [integrations](../../component-guide/README.md) with other popular tools and frameworks in the machine learning ecosystem.
 * Join the [ZenML community](https://zenml.io/slack) to connect with other users, ask questions, and get support.
 

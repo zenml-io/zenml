@@ -16,7 +16,7 @@ def my_pipeline(step_count: int) -> None:
     data = load_data_step()
     after = []
     for i in range(step_count):
-        train_step(data, learning_rate=i * 0.0001, name=f"train_step_{i}")
+        train_step(data, learning_rate=i * 0.0001, id=f"train_step_{i}")
         after.append(f"train_step_{i}")
     model = select_model_step(..., after=after)
 ```
@@ -27,7 +27,7 @@ This is an implementation of a basic grid search (across a single dimension) tha
 
 <summary>See it in action with the E2E example</summary>
 
-_To set up the local environment used below, follow the recommendations from the_ [_Project templates_](../setting-up-a-project-repository/using-project-templates.md)_._
+_To set up the local environment used below, follow the recommendations from the_ [_Project templates_](../../project-setup-and-management/setting-up-a-project-repository/using-project-templates.md)_._
 
 In [`pipelines/training.py`](../../../../examples/e2e/pipelines/training.py), you will find a training pipeline with a `Hyperparameter tuning stage` section. It contains a `for` loop that runs the `hp_tuning_single_search` over the configured model search spaces, followed by the `hp_tuning_select_best_model` being executed after all search steps are completed. As a result, we are getting `best_model_config` to be used to train the best possible model later on.
 
@@ -88,7 +88,7 @@ def select_model_step():
 
 <summary>See it in action with the E2E example</summary>
 
-_To set up the local environment used below, follow the recommendations from the_ [_Project templates_](../setting-up-a-project-repository/using-project-templates.md)_._
+_To set up the local environment used below, follow the recommendations from the_ [_Project templates_](../../project-setup-and-management/setting-up-a-project-repository/using-project-templates.md)_._
 
 In the `steps/hp_tuning` folder, you will find two step files, which can be used as a starting point for building your own hyperparameter search tailored specifically to your use case:
 

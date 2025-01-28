@@ -2,7 +2,7 @@
 description: Seamlessly register a cloud stack by using existing infrastructure
 ---
 
-In ZenML, the [stack](../../user-guide/production-guide/understand-stacks.md) 
+In ZenML, the [stack](../../../user-guide/production-guide/understand-stacks.md) 
 is a fundamental concept that represents the configuration of your 
 infrastructure. In a normal workflow, creating a stack requires you to first 
 deploy the necessary pieces of infrastructure and then define them as stack 
@@ -34,20 +34,20 @@ The stack wizard is available to you by both our CLI and our dashboard.
 If you are using the dashboard, the stack wizard is available through 
 the stacks page. 
 
-![The new stacks page](../../.gitbook/assets/stack-wizard-new-stack.png)
+![The new stacks page](../../../.gitbook/assets/stack-wizard-new-stack.png)
 
 Here you can click on "+ New Stack" and choose the option "Use existing Cloud".
 
-![New stack options](../../.gitbook/assets/stack-wizard-options.png)
+![New stack options](../../../.gitbook/assets/stack-wizard-options.png)
 
 Next, you have to select the cloud provider that you want to work with.
 
-![Stack Wizard Cloud Selection](../../.gitbook/assets/stack-wizard-cloud-selection.png)
+![Stack Wizard Cloud Selection](../../../.gitbook/assets/stack-wizard-cloud-selection.png)
 
 Choose one of the possible authentication methods based on your provider and
 fill in the required fields.
 
-![Wizard Example](../../.gitbook/assets/stack-wizard-example.png)
+![Wizard Example](../../../.gitbook/assets/stack-wizard-example.png)
 
 <details>
 
@@ -201,7 +201,7 @@ zenml stack register <STACK_NAME> -p {aws|gcp|azure}
 ```
 
 To register the cloud stack, the first thing that the wizard needs is a [service 
-connector](../auth-management/service-connectors-guide.md). You can either use 
+connector](../../infrastructure-deployment/auth-management/service-connectors-guide.md). You can either use 
 an existing connector by providing its ID or name 
 `-sc <SERVICE_CONNECTOR_ID_OR_NAME>` (CLI-Only) or the wizard will create one 
 for you.

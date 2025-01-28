@@ -9,9 +9,9 @@ description: >
 
 ## What is a stack?
 
-The [stack](../../user-guide/production-guide/understand-stacks.md) is a fundamental component of the ZenML framework. Put simply, a stack represents the configuration of the infrastructure and tooling that defines where and how a pipeline executes.
+The [stack](../../../user-guide/production-guide/understand-stacks.md) is a fundamental component of the ZenML framework. Put simply, a stack represents the configuration of the infrastructure and tooling that defines where and how a pipeline executes.
 
-A stack comprises different stack components, where each component is responsible for a specific task. For example, a stack might have a [container registry](../../component-guide/container-registries/container-registries.md), a [Kubernetes cluster](../../component-guide/orchestrators/kubernetes.md) as an [orchestrator](../../component-guide/orchestrators/orchestrators.md), an [artifact store](../../component-guide/artifact-stores/artifact-stores.md), an [experiment tracker](../../component-guide/experiment-trackers/experiment-trackers.md) like MLflow and so on.
+A stack comprises different stack components, where each component is responsible for a specific task. For example, a stack might have a [container registry](../../../component-guide/container-registries/container-registries.md), a [Kubernetes cluster](../../../component-guide/orchestrators/kubernetes.md) as an [orchestrator](../../../component-guide/orchestrators/orchestrators.md), an [artifact store](../../../component-guide/artifact-stores/artifact-stores.md), an [experiment tracker](../../../component-guide/experiment-trackers/experiment-trackers.md) like MLflow and so on.
 
 ## Stacks as a way to organize your execution environment
 
@@ -19,7 +19,7 @@ With ZenML, you can run your pipelines on more than one stacks with ease. This p
 
 This enables a case like this: a data scientist starts experimentation locally on their system and then once they are satisfied, move to a cloud environment on your staging cloud account to test more advanced features of your pipeline. Finally, when all looks good, they can mark the pipeline ready for production and have it run on a production-grade stack in your production cloud account.
 
-![Stacks as a way to organize your execution environment](../../../../docs/book/.gitbook/assets/stack_envs.png)
+![Stacks as a way to organize your execution environment](../../../.gitbook/assets/stack_envs.png)
 
 Having separate stacks for these environments helps:
 - avoid wrongfully deploying your staging pipeline to production
@@ -30,9 +30,9 @@ Having separate stacks for these environments helps:
 
 Most stack components require some form of credentials to interact with the underlying infrastructure. For example, a container registry needs to be authenticated to push and pull images, a Kubernetes cluster needs to be authenticated to deploy models as a web service, and so on.
 
-The preferred way to handle credentials in ZenML is to use [Service Connectors](../../../../docs/book/how-to/infrastructure-deployment/auth-management/service-connectors-guide.md). Service connectors are a powerful feature of ZenML that allow you to abstract away credentials and sensitive information from your team.
+The preferred way to handle credentials in ZenML is to use [Service Connectors](../../infrastructure-deployment/auth-management/service-connectors-guide.md). Service connectors are a powerful feature of ZenML that allow you to abstract away credentials and sensitive information from your team.
 
-![Service Connectors abstract away complexity and implement security best practices](../../.gitbook/assets/ConnectorsDiagram.png)
+![Service Connectors abstract away complexity and implement security best practices](../../../.gitbook/assets/ConnectorsDiagram.png)
 
 ### Recommended roles
 
@@ -44,7 +44,7 @@ Ideally, you would want that only the people who deal with and have direct acces
 
 ### Recommended workflow
 
-![Recommended workflow for managing credentials](../../../../docs/book/.gitbook/assets/service_con_workflow.png)
+![Recommended workflow for managing credentials](../../../.gitbook/assets/service_con_workflow.png)
 
 Here's an approach you can take that is a good balance between convenience and security:
 - Have a limited set of people that have permissions to create Service Connectors. These are ideally people that have access to your cloud accounts and know what credentials to use.
@@ -55,7 +55,7 @@ If you follow this approach, you can keep your data scientists free from the has
 
 {% hint style="info" %}
 
-Please note that restricting permissions for users through roles is a ZenML Pro feature. You can read more about it [here](../../../../docs/book/getting-started/zenml-pro/roles.md). Sign up for a free trial here: https://cloud.zenml.io/.
+Please note that restricting permissions for users through roles is a ZenML Pro feature. You can read more about it [here](../../../getting-started/zenml-pro/roles.md). Sign up for a free trial here: https://cloud.zenml.io/.
 
 {% endhint %}
 

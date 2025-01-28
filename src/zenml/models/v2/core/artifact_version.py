@@ -20,6 +20,8 @@ from typing import (
     Dict,
     List,
     Optional,
+    Type,
+    TypeVar,
     Union,
 )
 from uuid import UUID
@@ -37,7 +39,7 @@ from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ArtifactSaveType, ArtifactType, GenericFilterOps
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
-from zenml.models.v2.base.filter import StrFilter
+from zenml.models.v2.base.filter import FilterGenerator, StrFilter
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
@@ -58,6 +60,10 @@ if TYPE_CHECKING:
     )
     from zenml.models.v2.core.pipeline_run import PipelineRunResponse
     from zenml.models.v2.core.step_run import StepRunResponse
+    from zenml.zen_stores.schemas.base_schemas import BaseSchema
+
+    AnySchema = TypeVar("AnySchema", bound=BaseSchema)
+
 
 logger = get_logger(__name__)
 
@@ -471,9 +477,9 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
         "name",
         "only_unused",
         "has_custom_name",
-        "user",
         "model",
         "pipeline_run",
+        "model_version_id",
         "run_metadata",
     ]
     artifact_id: Optional[Union[UUID, str]] = Field(
@@ -515,14 +521,10 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
         description="Artifact store for this artifact",
         union_mode="left_to_right",
     )
-    workspace_id: Optional[Union[UUID, str]] = Field(
+    model_version_id: Optional[Union[UUID, str]] = Field(
         default=None,
-        description="Workspace for this artifact",
-        union_mode="left_to_right",
-    )
-    user_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="User that produced this artifact",
+        description="ID of the model version that is associated with this "
+        "artifact version.",
         union_mode="left_to_right",
     )
     only_unused: Optional[bool] = Field(
@@ -553,13 +555,18 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
 
     model_config = ConfigDict(protected_namespaces=())
 
-    def get_custom_filters(self) -> List[Union["ColumnElement[bool]"]]:
+    def get_custom_filters(
+        self, table: Type["AnySchema"]
+    ) -> List[Union["ColumnElement[bool]"]]:
         """Get custom filters.
+
+        Args:
+            table: The query table.
 
         Returns:
             A list of custom filters.
         """
-        custom_filters = super().get_custom_filters()
+        custom_filters = super().get_custom_filters(table)
 
         from sqlmodel import and_, or_, select
 
@@ -568,12 +575,13 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
             ArtifactVersionSchema,
             ModelSchema,
             ModelVersionArtifactSchema,
+            ModelVersionSchema,
             PipelineRunSchema,
+            RunMetadataResourceSchema,
             RunMetadataSchema,
             StepRunInputArtifactSchema,
             StepRunOutputArtifactSchema,
             StepRunSchema,
-            UserSchema,
         )
 
         if self.name:
@@ -600,6 +608,20 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
             )
             custom_filters.append(unused_filter)
 
+        if self.model_version_id:
+            value, operator = self._resolve_operator(self.model_version_id)
+
+            model_version_filter = and_(
+                ArtifactVersionSchema.id
+                == ModelVersionArtifactSchema.artifact_version_id,
+                ModelVersionArtifactSchema.model_version_id
+                == ModelVersionSchema.id,
+                FilterGenerator(ModelVersionSchema)
+                .define_filter(column="id", value=value, operator=operator)
+                .generate_query_conditions(ModelVersionSchema),
+            )
+            custom_filters.append(model_version_filter)
+
         if self.has_custom_name is not None:
             custom_name_filter = and_(
                 ArtifactVersionSchema.artifact_id == ArtifactSchema.id,
@@ -607,22 +629,13 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
             )
             custom_filters.append(custom_name_filter)
 
-        if self.user:
-            user_filter = and_(
-                ArtifactVersionSchema.user_id == UserSchema.id,
-                self.generate_name_or_id_query_conditions(
-                    value=self.user,
-                    table=UserSchema,
-                    additional_columns=["full_name"],
-                ),
-            )
-            custom_filters.append(user_filter)
-
         if self.model:
             model_filter = and_(
                 ArtifactVersionSchema.id
                 == ModelVersionArtifactSchema.artifact_version_id,
-                ModelVersionArtifactSchema.model_id == ModelSchema.id,
+                ModelVersionArtifactSchema.model_version_id
+                == ModelVersionSchema.id,
+                ModelVersionSchema.model_id == ModelSchema.id,
                 self.generate_name_or_id_query_conditions(
                     value=self.model, table=ModelSchema
                 ),
@@ -656,10 +669,12 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
 
             for key, value in self.run_metadata.items():
                 additional_filter = and_(
-                    RunMetadataSchema.resource_id == ArtifactVersionSchema.id,
-                    RunMetadataSchema.resource_type
+                    RunMetadataResourceSchema.resource_id
+                    == ArtifactVersionSchema.id,
+                    RunMetadataResourceSchema.resource_type
                     == MetadataResourceTypes.ARTIFACT_VERSION,
-                    RunMetadataSchema.key == key,
+                    RunMetadataResourceSchema.run_metadata_id
+                    == RunMetadataSchema.id,
                     self.generate_custom_query_conditions_for_column(
                         value=value,
                         table=RunMetadataSchema,

@@ -55,6 +55,7 @@ def pipeline(
     on_failure: Optional["HookSpecification"] = None,
     on_success: Optional["HookSpecification"] = None,
     model: Optional["Model"] = None,
+    substitutions: Optional[Dict[str, str]] = None,
 ) -> Callable[["F"], "Pipeline"]: ...
 
 
@@ -71,6 +72,7 @@ def pipeline(
     on_failure: Optional["HookSpecification"] = None,
     on_success: Optional["HookSpecification"] = None,
     model: Optional["Model"] = None,
+    substitutions: Optional[Dict[str, str]] = None,
 ) -> Union["Pipeline", Callable[["F"], "Pipeline"]]:
     """Decorator to create a pipeline.
 
@@ -91,6 +93,7 @@ def pipeline(
             function with no arguments, or a source path to such a function
             (e.g. `module.my_function`).
         model: configuration of the model in the Model Control Plane.
+        substitutions: Extra placeholders to use in the name templates.
 
     Returns:
         A pipeline instance.
@@ -111,6 +114,7 @@ def pipeline(
             on_success=on_success,
             model=model,
             entrypoint=func,
+            substitutions=substitutions,
         )
 
         p.__doc__ = func.__doc__

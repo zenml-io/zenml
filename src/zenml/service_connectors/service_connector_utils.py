@@ -60,15 +60,9 @@ def _raise_specific_cloud_exception_if_needed(
     orchestrators: List[ResourcesInfo],
     container_registries: List[ResourcesInfo],
 ) -> None:
-    AWS_DOCS = (
-        "https://docs.zenml.io/how-to/auth-management/aws-service-connector"
-    )
-    GCP_DOCS = (
-        "https://docs.zenml.io/how-to/auth-management/gcp-service-connector"
-    )
-    AZURE_DOCS = (
-        "https://docs.zenml.io/how-to/auth-management/azure-service-connector"
-    )
+    AWS_DOCS = "https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/aws-service-connector"
+    GCP_DOCS = "https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/gcp-service-connector"
+    AZURE_DOCS = "https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/azure-service-connector"
 
     if not artifact_stores:
         error_msg = (
