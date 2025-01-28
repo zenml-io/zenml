@@ -18,7 +18,7 @@ Choose from `INFO`, `WARN`, `ERROR`, `CRITICAL`, `DEBUG`.
 ## Logging format
 
 ```bash
-export ZENML_LOGGING_FORMAT=%(asctime)s %(message)s
+export ZENML_LOGGING_FORMAT='%(asctime)s %(message)s'
 ```
 
 See [this page](../how-to/control-logging/set-logging-format.md) for more information.
