@@ -139,7 +139,7 @@ Note that if you wish to use this step operator to run steps on a GPU, you will 
 
 #### Using Persistent Resources for Faster Development
 
-When developing ML pipelines that use Vertex AI, the startup time for each CustomJob can be significant since Vertex needs to provision new compute resources for each run. To speed up development iterations, you can use Vertex AI's [Persistent Resources](https://cloud.google.com/vertex-ai/docs/training/persistent-resource-overview) feature, which keeps compute resources warm between runs. 
+When developing ML pipelines that use Vertex AI, the startup time for each `CustomJob` can be significant since Vertex needs to provision new compute resources for each run. To speed up development iterations, you can use Vertex AI's [Persistent Resources](https://cloud.google.com/vertex-ai/docs/training/persistent-resource-overview) feature, which keeps compute resources warm between runs. 
 
 To use persistent resources with the Vertex step operator, you need to do the following:
 
