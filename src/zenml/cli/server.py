@@ -578,6 +578,7 @@ def server_list(
     from zenml.login.pro.tenant.models import TenantRead, TenantStatus
 
     pro_api_url = pro_api_url or ZENML_PRO_API_URL
+    pro_api_url = pro_api_url.rstrip("/")
 
     credentials_store = get_credentials_store()
     pro_token = credentials_store.get_pro_token(

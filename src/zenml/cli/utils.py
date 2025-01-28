@@ -14,7 +14,6 @@
 """Utility functions for the CLI."""
 
 import contextlib
-import datetime
 import json
 import os
 import platform
@@ -80,6 +79,7 @@ from zenml.stack import StackComponent
 from zenml.stack.flavor import Flavor
 from zenml.stack.stack_component import StackComponentConfig
 from zenml.utils import secret_utils
+from zenml.utils.time_utils import expires_in
 
 if TYPE_CHECKING:
     from uuid import UUID
@@ -1582,58 +1582,6 @@ def print_components_table(
     print_table(configurations)
 
 
-def seconds_to_human_readable(time_seconds: int) -> str:
-    """Converts seconds to human-readable format.
-
-    Args:
-        time_seconds: Seconds to convert.
-
-    Returns:
-        Human readable string.
-    """
-    seconds = time_seconds % 60
-    minutes = (time_seconds // 60) % 60
-    hours = (time_seconds // 3600) % 24
-    days = time_seconds // 86400
-    tokens = []
-    if days:
-        tokens.append(f"{days}d")
-    if hours:
-        tokens.append(f"{hours}h")
-    if minutes:
-        tokens.append(f"{minutes}m")
-    if seconds:
-        tokens.append(f"{seconds}s")
-
-    return "".join(tokens)
-
-
-def expires_in(
-    expires_at: datetime.datetime,
-    expired_str: str,
-    skew_tolerance: Optional[int] = None,
-) -> str:
-    """Returns a human-readable string of the time until the token expires.
-
-    Args:
-        expires_at: Datetime object of the token expiration.
-        expired_str: String to return if the token is expired.
-        skew_tolerance: Seconds of skew tolerance to subtract from the
-            expiration time. If the token expires within this time, it will be
-            considered expired.
-
-    Returns:
-        Human readable string.
-    """
-    now = datetime.datetime.now(datetime.timezone.utc)
-    expires_at = expires_at.replace(tzinfo=datetime.timezone.utc)
-    if skew_tolerance:
-        expires_at -= datetime.timedelta(seconds=skew_tolerance)
-    if expires_at < now:
-        return expired_str
-    return seconds_to_human_readable(int((expires_at - now).total_seconds()))
-
-
 def print_service_connectors_table(
     client: "Client",
     connectors: Sequence["ServiceConnectorResponse"],
@@ -2665,7 +2613,7 @@ def print_model_url(url: Optional[str]) -> None:
         warning(
             "You can display various ZenML entities including pipelines, "
             "runs, stacks and much more on the ZenML Dashboard. "
-            "You can try it locally, by running `zenml local --local`, or "
+            "You can try it locally, by running `zenml login --local`, or "
             "remotely, by deploying ZenML on the infrastructure of your choice."
         )
 

@@ -193,7 +193,6 @@ def test_build_uses_correct_settings(mocker, empty_pipeline):  # noqa: F811
         entrypoint=build_config.entrypoint,
         extra_files=build_config.extra_files,
         include_files=True,
-        download_files=False,
         code_repository=None,
     )
     assert build.pipeline.id == pipeline_id

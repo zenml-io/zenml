@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for code repositories."""
 
-from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID
 
@@ -36,6 +35,7 @@ from zenml.models import (
     OAuthDeviceVerificationRequest,
     Page,
 )
+from zenml.utils.time_utils import utc_now
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (
@@ -219,9 +219,7 @@ def verify_authorized_device(
             )
 
         # Check if the device verification has expired.
-        if device_model.expires and device_model.expires < datetime.now(
-            timezone.utc
-        ):
+        if device_model.expires and device_model.expires < utc_now():
             raise ValueError(
                 "Invalid request: device verification expired.",
             )

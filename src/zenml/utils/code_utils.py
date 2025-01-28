@@ -249,16 +249,7 @@ def download_and_extract_code(code_path: str, extract_dir: str) -> None:
     Args:
         code_path: Path where the code is uploaded.
         extract_dir: Directory where to code should be extracted to.
-
-    Raises:
-        RuntimeError: If the code is stored in an artifact store which is
-            not active.
     """
-    artifact_store = Client().active_stack.artifact_store
-
-    if not code_path.startswith(artifact_store.path):
-        raise RuntimeError("Code stored in different artifact store.")
-
     download_path = os.path.basename(code_path)
     fileio.copy(code_path, download_path)
 
@@ -266,17 +257,30 @@ def download_and_extract_code(code_path: str, extract_dir: str) -> None:
     os.remove(download_path)
 
 
-def download_code_from_artifact_store(code_path: str) -> None:
+def download_code_from_artifact_store(
+    code_path: str, artifact_store: "BaseArtifactStore"
+) -> None:
     """Download code from the artifact store.
 
     Args:
         code_path: Path where the code is stored.
+        artifact_store: The artifact store to use for the download.
+
+    Raises:
+        RuntimeError: If the code is stored in an artifact store which is
+            not active.
     """
     logger.info("Downloading code from artifact store path `%s`.", code_path)
 
-    # Do not remove this line, we need to instantiate the artifact store to
-    # register the filesystem needed for the file download
-    _ = Client().active_stack.artifact_store
+    if not code_path.startswith(artifact_store.path):
+        raise RuntimeError(
+            "The code is not stored in the artifact store "
+            f"{artifact_store.name} that was passed to download it."
+        )
+
+    # Make sure we register the artifact store filesystem here so the
+    # fileio.copy call will pick up the right credentials
+    artifact_store._register()
 
     extract_dir = os.path.abspath("code")
     os.makedirs(extract_dir)

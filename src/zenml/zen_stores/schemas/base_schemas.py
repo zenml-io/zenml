@@ -13,11 +13,13 @@
 #  permissions and limitations under the License.
 """Base classes for SQLModel schemas."""
 
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import TYPE_CHECKING, Any, TypeVar
 from uuid import UUID, uuid4
 
 from sqlmodel import Field, SQLModel
+
+from zenml.utils.time_utils import utc_now
 
 if TYPE_CHECKING:
     from zenml.models.v2.base.base import BaseResponse
@@ -29,12 +31,8 @@ class BaseSchema(SQLModel):
     """Base SQL Model for ZenML entities."""
 
     id: UUID = Field(default_factory=uuid4, primary_key=True)
-    created: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
-    updated: datetime = Field(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
+    created: datetime = Field(default_factory=utc_now)
+    updated: datetime = Field(default_factory=utc_now)
 
     def to_model(
         self,

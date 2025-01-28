@@ -22,7 +22,7 @@ import random
 import re
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import datetime
 from functools import lru_cache
 from pathlib import Path
 from typing import (
@@ -310,6 +310,7 @@ from zenml.utils.string_utils import (
     random_str,
     validate_name,
 )
+from zenml.utils.time_utils import utc_now
 from zenml.zen_stores import template_utils
 from zenml.zen_stores.base_zen_store import (
     BaseZenStore,
@@ -799,6 +800,10 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                 sqlalchemy_ssl_args[key.lstrip("ssl_")] = (
                     ssl_setting.get_secret_value()
                 )
+                sqlalchemy_ssl_args[key.removeprefix("ssl_")] = (
+                    ssl_setting.get_secret_value()
+                )
+
             if len(sqlalchemy_ssl_args) > 0:
                 sqlalchemy_ssl_args["check_hostname"] = (
                     self.ssl_verify_server_cert
@@ -1746,7 +1751,7 @@ class SqlZenStore(BaseZenStore):
             settings = self._get_server_settings(session=session)
 
             if last_user_activity < settings.last_user_activity.replace(
-                tzinfo=timezone.utc
+                tzinfo=None
             ):
                 return
 
@@ -4051,7 +4056,7 @@ class SqlZenStore(BaseZenStore):
                 # Delete devices that have expired
                 if (
                     device.expires is not None
-                    and device.expires < datetime.now()
+                    and device.expires < utc_now()
                     and device.user_id is None
                 ):
                     session.delete(device)
@@ -8637,19 +8642,10 @@ class SqlZenStore(BaseZenStore):
                 ExecutionStatus.COMPLETED,
                 ExecutionStatus.FAILED,
             }:
-                run_update.end_time = datetime.now(timezone.utc)
+                run_update.end_time = utc_now()
                 if pipeline_run.start_time and isinstance(
                     pipeline_run.start_time, datetime
                 ):
-                    # We need to ensure both datetimes are timezone-aware to avoid TypeError when subtracting
-                    # Now calculate the duration time
-                    if pipeline_run.start_time.tzinfo is None:
-                        pipeline_run.start_time = (
-                            pipeline_run.start_time.replace(
-                                tzinfo=timezone.utc
-                            )
-                        )
-
                     duration_time = (
                         run_update.end_time - pipeline_run.start_time
                     )

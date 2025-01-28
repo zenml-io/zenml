@@ -22,7 +22,7 @@ If you are using the ZenML server API using the above pages, it is enough to be 
 account in the same browser session. However, in order to do this programmatically, the following steps
 need to be followed:
 
-1. Create a [service account](../how-to/connecting-to-zenml/connect-with-a-service-account.md):
+1. Create a [service account](../how-to/manage-zenml-server/connecting-to-zenml/connect-with-a-service-account.md):
 
 ```shell
 zenml service-account create myserviceaccount

@@ -42,6 +42,7 @@ from zenml.orchestrators import ContainerizedOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
 from zenml.utils import io_utils
+from zenml.utils.time_utils import utc_now
 
 if TYPE_CHECKING:
     from zenml.config import ResourceSettings
@@ -408,8 +409,7 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
         if schedule:
             if schedule.cron_expression:
                 start_time = schedule.start_time or (
-                    datetime.datetime.now(datetime.timezone.utc)
-                    - datetime.timedelta(7)
+                    utc_now() - datetime.timedelta(7)
                 )
                 return {
                     "schedule": schedule.cron_expression,
@@ -429,7 +429,6 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
             "schedule": "@once",
             # set a start time in the past and disable catchup so airflow
             # runs the dag immediately
-            "start_date": datetime.datetime.now(datetime.timezone.utc)
-            - datetime.timedelta(7),
+            "start_date": utc_now() - datetime.timedelta(7),
             "catchup": False,
         }

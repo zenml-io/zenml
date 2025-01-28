@@ -17,12 +17,12 @@ import base64
 import functools
 import random
 import string
-from datetime import datetime, timezone
 from typing import Any, Callable, Dict, Optional, TypeVar, cast
 
 from pydantic import BaseModel
 
 from zenml.constants import BANNED_NAME_CHARACTERS
+from zenml.utils.time_utils import utc_now
 
 V = TypeVar("V", bound=Any)
 
@@ -180,7 +180,7 @@ def format_name_template(
             start_time = None
 
         if start_time is None:
-            start_time = datetime.now(timezone.utc)
+            start_time = utc_now()
         substitutions.setdefault("date", start_time.strftime("%Y_%m_%d"))
         substitutions.setdefault("time", start_time.strftime("%H_%M_%S_%f"))
 

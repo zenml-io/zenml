@@ -17,7 +17,6 @@ This module is based on the 'analytics-python' package created by Segment.
 The base functionalities are adapted to work with the ZenML analytics server.
 """
 
-import datetime
 import locale
 from types import TracebackType
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union
@@ -32,6 +31,7 @@ from zenml.constants import (
 )
 from zenml.environment import Environment, get_environment
 from zenml.logger import get_logger
+from zenml.utils.time_utils import utc_now_tz_aware
 
 if TYPE_CHECKING:
     from zenml.analytics.enums import AnalyticsEvent
@@ -284,11 +284,7 @@ class AnalyticsContext:
 
         try:
             # Timezone as tzdata
-            tz = (
-                datetime.datetime.now(datetime.timezone.utc)
-                .astimezone()
-                .tzname()
-            )
+            tz = utc_now_tz_aware().astimezone().tzname()
             if tz is not None:
                 properties.update({"timezone": tz})
 

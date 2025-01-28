@@ -26,6 +26,7 @@ from zenml.models import (
     StackDeploymentConfig,
     StackDeploymentInfo,
 )
+from zenml.utils.time_utils import to_utc_timezone
 
 STACK_DEPLOYMENT_TERRAFORM = "terraform"
 
@@ -199,9 +200,7 @@ class ZenMLCloudStackDeployment(BaseModel):
         # Get all stacks created after the start date
 
         if date_start and date_start.tzinfo:
-            date_start = date_start.astimezone(datetime.timezone.utc).replace(
-                tzinfo=None
-            )
+            date_start = to_utc_timezone(date_start).replace(tzinfo=None)
         stacks = client.list_stacks(
             created=f"gt:{str(date_start.replace(microsecond=0))}"
             if date_start
