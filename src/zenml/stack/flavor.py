@@ -13,11 +13,13 @@
 #  permissions and limitations under the License.
 """Base ZenML Flavor implementation."""
 
+import os
 from abc import abstractmethod
 from typing import Any, Dict, Optional, Type, cast
 
 from zenml.client import Client
 from zenml.enums import StackComponentType
+from zenml.exceptions import CustomFlavorImportError
 from zenml.models import (
     FlavorRequest,
     FlavorResponse,
@@ -126,10 +128,34 @@ class Flavor:
         Args:
             flavor_model: The model to load from.
 
+        Raises:
+            CustomFlavorImportError: If the custom flavor can't be imported.
+            ImportError: If the flavor can't be imported.
+
         Returns:
             The loaded flavor.
         """
-        flavor = source_utils.load(flavor_model.source)()
+        try:
+            flavor = source_utils.load(flavor_model.source)()
+        except (ModuleNotFoundError, ImportError, NotImplementedError) as err:
+            if flavor_model.is_custom:
+                flavor_module, _ = flavor_model.source.rsplit(".")
+                expected_file_path = os.path.join(
+                    source_utils.get_source_root(),
+                    flavor_module.replace(".", os.path.sep),
+                )
+                raise CustomFlavorImportError(
+                    f"Couldn't import custom flavor {flavor_model.name}: "
+                    f"{err}. Make sure the custom flavor class "
+                    f"`{flavor_model.source}` is importable. If it is part of "
+                    "a library, make sure it is installed. If "
+                    "it is a local code file, make sure it exists at "
+                    f"`{expected_file_path}.py`."
+                )
+            else:
+                raise ImportError(
+                    f"Couldn't import flavor {flavor_model.name}: {err}"
+                )
         return cast(Flavor, flavor)
 
     def to_model(
