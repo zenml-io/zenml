@@ -18,6 +18,9 @@ Note that setting this on the [client environment](../pipeline-development/confi
 If you wish to control for [remote pipeline runs](../../user-guide/production-guide/cloud-orchestration.md), you can set the `ZENML_LOGGING_VERBOSITY` environment variable in your pipeline runs environment as follows:
 
 ```python
+from zenml import pipeline
+from zenml.config import DockerSettings
+
 docker_settings = DockerSettings(environment={"ZENML_LOGGING_VERBOSITY": "DEBUG"})
 
 # Either add it to the decorator
