@@ -587,7 +587,7 @@ class PipelineDockerImageBuilder:
             f"ENV {ENV_ZENML_LOGGING_COLORS_DISABLED}={str(handle_bool_env_var(ENV_ZENML_LOGGING_COLORS_DISABLED, False))}"
         )
         for key, value in docker_settings.environment.items():
-            lines.append(f"ENV {key.upper()}={value}")
+            lines.append(f"ENV {key.upper()}='{value}'")
 
         if apt_packages:
             apt_packages = " ".join(f"'{p}'" for p in apt_packages)
