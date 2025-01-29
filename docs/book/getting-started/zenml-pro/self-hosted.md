@@ -495,6 +495,17 @@ To deploy the ZenML Pro control plane and one or more ZenML Pro tenant servers, 
 
 ## Stage 1/2: Install the ZenML Pro Control Plane
 
+### Set up Credentials
+
+```
+kubectl create ns zenml-pro
+kubectl -n zenml-pro create secret docker-registry gar-pull-secret \
+    --docker-server=europe-west3-docker.pkg.dev \
+    --docker-username=_json_key_base64 \
+    --docker-password="$(cat key.base64)" \
+    --docker-email=unused
+```
+
 ### Configure the Helm Chart
 
 There are a variety of options that can be configured for the ZenML Pro helm chart before installation.
@@ -510,16 +521,24 @@ less zenml-pro/values.yaml
 This is an example Helm values YAML file that covers the most common configuration options: 
 
 ```yaml
+# Set up imagePullSecrets to access the ZenML Pro container images, if necessary
+imagePullSecrets:
+  - name: gar-pull-secret
+
 # ZenML Pro server related options.
 zenml:
 
   image:
     api:
-      # Change this to point to your own container repository
+      # Change this to point to your own container repository or use this for direct ECR access
       repository: 715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro-api
+      # Use this for direct GAR access
+      # repository: europe-west3-docker.pkg.dev/zenml-cloud/zenml-pro/zenml-pro-api
     dashboard:
-      # Change this to point to your own container repository
+      # Change this to point to your own container repository or use this for direct ECR access
       repository: 715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro-dashboard
+      # Use this for direct GAR access
+      # repository: europe-west3-docker.pkg.dev/zenml-cloud/zenml-pro/zenml-pro-dashboard
 
   # The external URL where the ZenML Pro server API and dashboard are reachable.
   #
@@ -1235,8 +1254,15 @@ resources:
 
 ```
 
-1. deploy the ZenML Pro tenant server with Helm:
-    
+2. deploy the ZenML Pro tenant server with Helm:
+
+
+    WARNINGS:
+        - don't use the same database name for multiple tenants/control plane
+        - don't use a simple host name for the servers (like e.g. `https://zenml.cluster`), especially if you use self-signed certificates. Always use a fully qualified domain name (FQDN) for the host e.g. `https://zenml.ml.cluster`. The certificate will not be accepted by some browsers otherwise (e.g. Chrome).
+        - make sure to install the self-signed certificates on every machine that needs to access the ZenML server (Firefox will fail otherwise). In Chrome, in addition, you need to import the certificate into the browser.
+        - for Python, you have to set 
+
     The ZenML Pro tenant server is nothing more than a slightly modified open-source ZenML server. The deployment even uses the official open-source helm chart.
     
     There are a variety of options that can be configured for the ZenML Pro tenant server chart before installation. You can start by taking a look at the [Helm chart README](https://artifacthub.io/packages/helm/zenml/zenml) and [`values.yaml` file](https://artifacthub.io/packages/helm/zenml/zenml?modal=values) and familiarize yourself with some of the configuration settings that you can customize for your ZenML server deployment. Alternatively, you can unpack the `README.md` and `values.yaml` files included in the helm chart:
