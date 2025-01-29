@@ -60,12 +60,12 @@ Once you have registered one or more code repositories, ZenML will check whether
 
 If a [local code repository checkout](#detecting-local-code-repository-checkouts) is detected when running a pipeline, ZenML will store a reference to the current commit for the pipeline run, so you'll be able to know exactly which code was used. Note that this reference is only tracked if your local checkout is clean (i.e. it does not contain any untracked or uncommitted files). This is to ensure that your pipeline is actually running with the exact code stored at the specific code repository commit.
 
-When using [code repositories](../how-to/project-setup-and-management/setting-up-a-project-repository/connect-your-git-repository.md),
+When using [code repositories](../../how-to/project-setup-and-management/setting-up-a-project-repository/connect-your-git-repository.md),
 ZenML will by default require the local checkout to have no uncommitted or untracked files
 in order to use the code repository to track the commit and download files.
 
 {% hint style="info" %}
- If you want to ignore untracked files, you can set
+If you want to ignore untracked files, you can set
 the `ZENML_CODE_REPOSITORY_IGNORE_UNTRACKED_FILES` environment variable to `True`. When doing this, you're responsible that
 the files committed to the repository includes everything necessary to run your pipeline.
 {% endhint %}
