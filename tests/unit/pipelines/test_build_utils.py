@@ -74,13 +74,13 @@ class StubCodeRepository(BaseCodeRepository):
 class StubLocalRepositoryContext(LocalRepositoryContext):
     def __init__(
         self,
-        code_repository_id: UUID = uuid4(),
+        code_repository: "BaseCodeRepository" = StubCodeRepository(),
         root: str = ".",
         is_dirty: bool = False,
         has_local_changes: bool = False,
         commit: str = "",
     ) -> None:
-        super().__init__(code_repository_id=code_repository_id)
+        super().__init__(code_repository=code_repository)
         self._root = root
         self._is_dirty = is_dirty
         self._has_local_changes = has_local_changes
