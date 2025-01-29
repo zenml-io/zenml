@@ -14,7 +14,7 @@ ZenML Pro can be installed as a self-hosted deployment. You need to be granted a
 This document will guide you through the process.
 
 {% hint style="info" %}
-Please note that the SSO (Single Sign-On) and [Run Templates](../../how-to/pipeline-development/trigger-pipelines/README.md) (i.e. running pipelines from the dashboard) features are currently not available in the on-prem version of ZenML Pro. These features are on our roadmap and will be added in future releases.
+Please note that the SSO (Single Sign-On) and [Run Templates](../../how-to/trigger-pipelines/README.md) (i.e. running pipelines from the dashboard) features are currently not available in the on-prem version of ZenML Pro. These features are on our roadmap and will be added in future releases.
 {% endhint %}
 
 
