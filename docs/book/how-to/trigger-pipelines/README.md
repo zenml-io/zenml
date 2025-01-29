@@ -3,7 +3,7 @@ icon: bell-concierge
 description: There are numerous ways to trigger a pipeline
 ---
 
-# Trigger a pipeline
+# Trigger a pipeline (Run Templates)
 
 In ZenML, the simplest way to execute a run is to use your pipeline function:
 
