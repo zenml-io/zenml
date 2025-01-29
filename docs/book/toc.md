@@ -112,6 +112,7 @@
     * [Name your pipeline runs](how-to/pipeline-development/build-pipelines/name-your-pipeline-runs.md)
     * [Tag your pipeline runs](how-to/pipeline-development/build-pipelines/tag-your-pipeline-runs.md)
     * [Use failure/success hooks](how-to/pipeline-development/build-pipelines/use-failure-success-hooks.md)
+    * [Fan in, fan out](how-to/pipeline-development/build-pipelines/fan-in-fan-out.md)
     * [Hyperparameter tuning](how-to/pipeline-development/build-pipelines/hyper-parameter-tuning.md)
     * [Access secrets in a step](how-to/pipeline-development/build-pipelines/access-secrets-in-a-step.md)
     * [Run an individual step](how-to/pipeline-development/build-pipelines/run-an-individual-step.md)

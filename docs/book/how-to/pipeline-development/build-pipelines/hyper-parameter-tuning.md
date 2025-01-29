@@ -4,10 +4,6 @@ description: Running a hyperparameter tuning trial with ZenML.
 
 # Hyperparameter tuning
 
-{% hint style="warning" %}
-Hyperparameter tuning is not yet a first-class citizen in ZenML, but it is [(high up) on our roadmap of features](https://zenml.featureos.app/p/enable-hyper-parameter-tuning) and will likely receive first-class ZenML support soon. In the meanwhile, the following example shows how hyperparameter tuning can currently be implemented within a ZenML run.
-{% endhint %}
-
 A basic iteration through a number of hyperparameters can be achieved with ZenML by using a simple pipeline like this:
 
 ```python
@@ -21,7 +17,7 @@ def my_pipeline(step_count: int) -> None:
     model = select_model_step(..., after=after)
 ```
 
-This is an implementation of a basic grid search (across a single dimension) that would allow for a different learning rate to be used across the same `train_step`. Once that step has been run for all the different learning rates, the `select_model_step` finds which hyperparameters gave the best results or performance.
+This is an implementation of a basic grid search (across a single dimension) that would allow for a different learning rate to be used across the same `train_step`. Once that step has been run for all the different learning rates, the `select_model_step` finds which hyperparameters gave the best results or performance. It utlizes the [fan-in, fan-out method of building a pipeline.](./fan-in-fan-out.md).
 
 <details>
 
