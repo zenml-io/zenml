@@ -19,6 +19,10 @@ from uuid import UUID
 from zenml.code_repositories import (
     LocalRepositoryContext,
 )
+from zenml.constants import (
+    ENV_ZENML_CODE_REPOSITORY_IGNORE_UNTRACKED_FILES,
+    handle_bool_env_var,
+)
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
@@ -124,13 +128,19 @@ class LocalGitRepositoryContext(LocalRepositoryContext):
     def is_dirty(self) -> bool:
         """Whether the git repo is dirty.
 
-        A repository counts as dirty if it has any untracked or uncommitted
-        changes.
+        By defauly, a repository counts as dirty if it has any untracked or
+        uncommitted changes. Users can use an environment variable to ignore
+        untracked files.
 
         Returns:
             True if the git repo is dirty, False otherwise.
         """
-        return self.git_repo.is_dirty(untracked_files=True)
+        ignore_untracked_files = handle_bool_env_var(
+            ENV_ZENML_CODE_REPOSITORY_IGNORE_UNTRACKED_FILES, default=False
+        )
+        return self.git_repo.is_dirty(
+            untracked_files=not ignore_untracked_files
+        )
 
     @property
     def has_local_changes(self) -> bool:
