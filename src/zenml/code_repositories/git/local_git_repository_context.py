@@ -130,7 +130,7 @@ class LocalGitRepositoryContext(LocalRepositoryContext):
     def is_dirty(self) -> bool:
         """Whether the git repo is dirty.
 
-        By defauly, a repository counts as dirty if it has any untracked or
+        By default, a repository counts as dirty if it has any untracked or
         uncommitted changes. Users can use an environment variable to ignore
         untracked files.
 
