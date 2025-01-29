@@ -68,3 +68,32 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+Build the complete NO_PROXY list
+*/}}
+{{- define "zenml.noProxyList" -}}
+{{- $noProxy := .Values.zenml.proxy.noProxy -}}
+{{- /* Add the server URL hostname */ -}}
+{{- if .Values.zenml.serverURL -}}
+{{- $serverURL := urlParse .Values.zenml.serverURL -}}
+{{- if not (contains $serverURL.host $noProxy) -}}
+{{- $noProxy = printf "%s,%s" $noProxy $serverURL.host -}}
+{{- end -}}
+{{- end -}}
+{{- /* Add the ingress hostname if specified */ -}}
+{{- if .Values.zenml.ingress.host -}}
+{{- if not (contains .Values.zenml.ingress.host $noProxy) -}}
+{{- $noProxy = printf "%s,%s" $noProxy .Values.zenml.ingress.host -}}
+{{- end -}}
+{{- end -}}
+{{- range .Values.zenml.proxy.additionalNoProxy -}}
+{{- $noProxy = printf "%s,%s" $noProxy . -}}
+{{- end -}}
+{{- /* Add service hostnames if they're not already included */ -}}
+{{- if not (contains ".svc" $noProxy) -}}
+{{- $noProxy = printf "%s,%s" $noProxy (include "zenml.fullname" .) -}}
+{{- $noProxy = printf "%s,%s-dashboard" $noProxy (include "zenml.fullname" .) -}}
+{{- end -}}
+{{- $noProxy -}}
+{{- end -}}
