@@ -15,7 +15,8 @@
 
 import os
 import re
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
+from uuid import uuid4
 
 import requests
 from github import Consts, Github, GithubException
@@ -61,6 +62,20 @@ class GitHubCodeRepositoryConfig(BaseCodeRepositoryConfig):
 
 class GitHubCodeRepository(BaseCodeRepository):
     """GitHub code repository."""
+
+    @classmethod
+    def validate_config(cls, config: Dict[str, Any]) -> None:
+        """Validate the code repository config.
+
+        This method should check that the config/credentials are valid and
+        the configured repository exists.
+
+        Args:
+            config: The configuration.
+        """
+        code_repo = cls(id=uuid4(), config=config)
+        # Try to access the project to make sure it exists
+        _ = code_repo.github_repo
 
     @property
     def config(self) -> GitHubCodeRepositoryConfig:

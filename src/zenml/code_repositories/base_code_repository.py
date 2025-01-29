@@ -15,7 +15,7 @@
 
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Dict, Optional, Set, Type
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from zenml.config.secret_reference_mixin import SecretReferenceMixin
 from zenml.logger import get_logger
@@ -81,6 +81,22 @@ class BaseCodeRepository(ABC):
             )
         )
         return class_(id=model.id, config=model.config)
+
+    @classmethod
+    def validate_config(cls, config: Dict[str, Any]) -> None:
+        """Validate the code repository config.
+
+        This method should check that the config/credentials are valid and
+        the configured repository exists.
+
+        Args:
+            config: The configuration.
+        """
+        # The initialization calls the login to verify the credentials
+        code_repo = cls(id=uuid4(), config=config)
+
+        # Explicitly access the config for pydantic validation
+        _ = code_repo.config
 
     @property
     def id(self) -> UUID:

@@ -15,7 +15,8 @@
 
 import os
 import re
-from typing import Optional
+from typing import Any, Dict, Optional
+from uuid import uuid4
 
 from gitlab import Gitlab
 from gitlab.v4.objects import Project
@@ -62,6 +63,20 @@ class GitLabCodeRepositoryConfig(BaseCodeRepositoryConfig):
 
 class GitLabCodeRepository(BaseCodeRepository):
     """GitLab code repository."""
+
+    @classmethod
+    def validate_config(cls, config: Dict[str, Any]) -> None:
+        """Validate the code repository config.
+
+        This method should check that the config/credentials are valid and
+        the configured repository exists.
+
+        Args:
+            config: The configuration.
+        """
+        code_repo = cls(id=uuid4(), config=config)
+        # Try to access the project to make sure it exists
+        _ = code_repo.gitlab_project
 
     @property
     def config(self) -> GitLabCodeRepositoryConfig:
