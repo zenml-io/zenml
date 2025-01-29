@@ -74,11 +74,13 @@ class LocalGitRepositoryContext(LocalRepositoryContext):
             from git.exc import InvalidGitRepositoryError
             from git.repo.base import Repo
         except ImportError:
+            logger.debug("Failed to import git library.")
             return None
 
         try:
             git_repo = Repo(path=path, search_parent_directories=True)
         except InvalidGitRepositoryError:
+            logger.debug("No git repository exists at path %s.", path)
             return None
 
         remote_name = None
