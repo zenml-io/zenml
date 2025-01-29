@@ -105,6 +105,14 @@ my_pipeline = my_pipeline.with_options(
 )
 ```
 
+## Ignore untracked code repository files
+
+When using [code repositories](../how-to/project-setup-and-management/setting-up-a-project-repository/connect-your-git-repository.md),
+ZenML will by default require the local checkout to have no uncommitted or untracked files
+in order to use the code repository to track the commit and download files. If you want to ignore untracked files, you can set
+the `ZENML_CODE_REPOSITORY_IGNORE_UNTRACKED_FILES` environment variable to `True`. When doing this, you're responsible that
+the files committed to the repository includes everything necessary to run your pipeline.
+
 ## ZenML global config path
 
 To set the path to the global config file, used by ZenML to manage and store the state for a number of settings, set the environment variable as follows:
