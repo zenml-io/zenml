@@ -643,7 +643,6 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         pipeline_id = None
         if register_pipeline:
             pipeline_id = self._register().id
-
         else:
             logger.debug(f"Pipeline {self.name} is unlisted.")
 
@@ -720,19 +719,25 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         build_id = build_model.id if build_model else None
 
         code_reference = None
-        if local_repo_context and not local_repo_context.is_dirty:
-            source_root = source_utils.get_source_root()
-            subdirectory = (
-                Path(source_root)
-                .resolve()
-                .relative_to(local_repo_context.root)
-            )
+        if local_repo_context:
+            if local_repo_context.is_dirty:
+                logger.info(
+                    "Not storing code repository commit because the local "
+                    "checkout contains uncommitted or untracked files."
+                )
+            else:
+                source_root = source_utils.get_source_root()
+                subdirectory = (
+                    Path(source_root)
+                    .resolve()
+                    .relative_to(local_repo_context.root)
+                )
 
-            code_reference = CodeReferenceRequest(
-                commit=local_repo_context.current_commit,
-                subdirectory=subdirectory.as_posix(),
-                code_repository=local_repo_context.code_repository_id,
-            )
+                code_reference = CodeReferenceRequest(
+                    commit=local_repo_context.current_commit,
+                    subdirectory=subdirectory.as_posix(),
+                    code_repository=local_repo_context.code_repository_id,
+                )
 
         code_path = None
         if build_utils.should_upload_code(
