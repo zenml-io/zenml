@@ -162,6 +162,32 @@ def register_code_repository(
         cli_utils.declare(f"Successfully registered code repository `{name}`.")
 
 
+@code_repository.command("describe", help="Describe a code repository.")
+@click.argument(
+    "name_id_or_prefix",
+    type=str,
+    required=True,
+)
+def describe_code_repository(name_id_or_prefix: str) -> None:
+    """Describe a code repository.
+
+    Args:
+        name_id_or_prefix: Name, ID or prefix of the code repository.
+    """
+    client = Client()
+    try:
+        code_repository = client.get_code_repository(
+            name_id_or_prefix=name_id_or_prefix,
+        )
+    except KeyError as err:
+        cli_utils.error(str(err))
+    else:
+        cli_utils.print_pydantic_model(
+            title=f"Code repository '{code_repository.name}'",
+            model=code_repository,
+        )
+
+
 @code_repository.command("list", help="List all connected code repositories.")
 @list_options(CodeRepositoryFilter)
 def list_code_repositories(**kwargs: Any) -> None:
