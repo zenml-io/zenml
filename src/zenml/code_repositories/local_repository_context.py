@@ -14,9 +14,12 @@
 """Base class for local code repository contexts."""
 
 from abc import ABC, abstractmethod
-from uuid import UUID
+from typing import TYPE_CHECKING
 
 from zenml.logger import get_logger
+
+if TYPE_CHECKING:
+    from zenml.code_repositories import BaseCodeRepository
 
 logger = get_logger(__name__)
 
@@ -30,22 +33,22 @@ class LocalRepositoryContext(ABC):
     commit, and whether the repository is dirty.
     """
 
-    def __init__(self, code_repository_id: UUID) -> None:
+    def __init__(self, code_repository: "BaseCodeRepository") -> None:
         """Initializes a local repository context.
 
         Args:
-            code_repository_id: The ID of the code repository.
+            code_repository: The code repository.
         """
-        self._code_repository_id = code_repository_id
+        self._code_repository = code_repository
 
     @property
-    def code_repository_id(self) -> UUID:
-        """Returns the ID of the code repository.
+    def code_repository(self) -> "BaseCodeRepository":
+        """Returns the code repository.
 
         Returns:
-            The ID of the code repository.
+            The code repository.
         """
-        return self._code_repository_id
+        return self._code_repository
 
     @property
     @abstractmethod

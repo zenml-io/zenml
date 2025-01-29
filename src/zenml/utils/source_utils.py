@@ -226,7 +226,7 @@ def resolve(
             subdir = PurePath(source_root).relative_to(local_repo_context.root)
 
             return CodeRepositorySource(
-                repository_id=local_repo_context.code_repository_id,
+                repository_id=local_repo_context.code_repository.id,
                 commit=local_repo_context.current_commit,
                 subdirectory=subdir.as_posix(),
                 module=module_name,
@@ -482,7 +482,7 @@ def _warn_about_potential_source_loading_issues(
             source.repository_id,
             get_source_root(),
         )
-    elif local_repo.code_repository_id != source.repository_id:
+    elif local_repo.code_repository.id != source.repository_id:
         logger.warning(
             "Potential issue when loading the source `%s`: The source "
             "references the code repository `%s` but there is a different "
@@ -492,7 +492,7 @@ def _warn_about_potential_source_loading_issues(
             "source was originally stored.",
             source.import_path,
             source.repository_id,
-            local_repo.code_repository_id,
+            local_repo.code_repository.id,
             get_source_root(),
         )
     elif local_repo.current_commit != source.commit:

@@ -74,7 +74,7 @@ class GitLabCodeRepository(BaseCodeRepository):
         Args:
             config: The configuration.
         """
-        code_repo = cls(id=uuid4(), config=config)
+        code_repo = cls(id=uuid4(), name="", config=config)
         # Try to access the project to make sure it exists
         _ = code_repo.gitlab_project
 
@@ -162,7 +162,7 @@ class GitLabCodeRepository(BaseCodeRepository):
         """
         return LocalGitRepositoryContext.at(
             path=path,
-            code_repository_id=self.id,
+            code_repository=self,
             remote_url_validation_callback=self.check_remote_url,
         )
 

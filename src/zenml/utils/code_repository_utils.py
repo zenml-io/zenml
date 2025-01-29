@@ -79,20 +79,18 @@ def set_custom_local_repository(
 
     path = os.path.abspath(source_utils.get_source_root())
     _CODE_REPOSITORY_CACHE[path] = _DownloadedRepositoryContext(
-        code_repository_id=repo.id, root=root, commit=commit
+        code_repository=repo, root=root, commit=commit
     )
 
 
 def find_active_code_repository(
     path: Optional[str] = None,
-    log: bool = False,
 ) -> Optional["LocalRepositoryContext"]:
     """Find the active code repository for a given path.
 
     Args:
         path: Path at which to look for the code repository. If not given, the
             source root will be used.
-        log: Log a message if there was no matching code repository.
 
     Returns:
         The local repository context active at that path or None.
@@ -129,11 +127,13 @@ def find_active_code_repository(
         if local_context:
             break
     else:
-        if code_repositories and log:
+        if code_repositories:
             # There are registered code repositories, but none was matching the
             # current path -> We log the path to help in debugging issues
             # related to the source root.
-            logger.info("No matching code repository found at path %s.", path)
+            logger.info(
+                "No matching code repository found for path `%s`.", path
+            )
 
     _CODE_REPOSITORY_CACHE[path] = local_context
     return local_context

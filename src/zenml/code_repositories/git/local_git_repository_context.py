@@ -14,7 +14,6 @@
 """Implementation of the Local git repository context."""
 
 from typing import TYPE_CHECKING, Callable, Optional, cast
-from uuid import UUID
 
 from zenml.code_repositories import (
     LocalRepositoryContext,
@@ -30,6 +29,8 @@ if TYPE_CHECKING:
     from git.remote import Remote
     from git.repo.base import Repo
 
+    from zenml.code_repositories import BaseCodeRepository
+
 logger = get_logger(__name__)
 
 
@@ -37,16 +38,19 @@ class LocalGitRepositoryContext(LocalRepositoryContext):
     """Local git repository context."""
 
     def __init__(
-        self, code_repository_id: UUID, git_repo: "Repo", remote_name: str
+        self,
+        code_repository: "BaseCodeRepository",
+        git_repo: "Repo",
+        remote_name: str,
     ):
         """Initializes a local git repository context.
 
         Args:
-            code_repository_id: The ID of the code repository.
+            code_repository: The code repository.
             git_repo: The git repo.
             remote_name: Name of the remote.
         """
-        super().__init__(code_repository_id=code_repository_id)
+        super().__init__(code_repository=code_repository)
         self._git_repo = git_repo
         self._remote = git_repo.remote(name=remote_name)
 
@@ -54,14 +58,14 @@ class LocalGitRepositoryContext(LocalRepositoryContext):
     def at(
         cls,
         path: str,
-        code_repository_id: UUID,
+        code_repository: "BaseCodeRepository",
         remote_url_validation_callback: Callable[[str], bool],
     ) -> Optional["LocalGitRepositoryContext"]:
         """Returns a local git repository at the given path.
 
         Args:
             path: The path to the local git repository.
-            code_repository_id: The ID of the code repository.
+            code_repository: The code repository.
             remote_url_validation_callback: A callback that validates the
                 remote URL of the git repository.
 
@@ -93,7 +97,7 @@ class LocalGitRepositoryContext(LocalRepositoryContext):
             return None
 
         return LocalGitRepositoryContext(
-            code_repository_id=code_repository_id,
+            code_repository=code_repository,
             git_repo=git_repo,
             remote_name=remote_name,
         )

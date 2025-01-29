@@ -694,13 +694,17 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             deployment=deployment, stack=stack
         )
 
-        local_repo_context = code_repository_utils.find_active_code_repository(
-            log=True
+        local_repo_context = (
+            code_repository_utils.find_active_code_repository()
         )
         code_repository = build_utils.verify_local_repository_context(
             deployment=deployment, local_repo_context=local_repo_context
         )
         can_download_from_code_repository = code_repository is not None
+        if local_repo_context:
+            build_utils.log_code_repository_usage(
+                deployment=deployment, local_repo_context=local_repo_context
+            )
 
         if prevent_build_reuse:
             logger.warning(
@@ -719,25 +723,19 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         build_id = build_model.id if build_model else None
 
         code_reference = None
-        if local_repo_context:
-            if local_repo_context.is_dirty:
-                logger.info(
-                    "Not storing code repository commit because the local "
-                    "checkout contains uncommitted or untracked files."
-                )
-            else:
-                source_root = source_utils.get_source_root()
-                subdirectory = (
-                    Path(source_root)
-                    .resolve()
-                    .relative_to(local_repo_context.root)
-                )
+        if local_repo_context and not local_repo_context.is_dirty:
+            source_root = source_utils.get_source_root()
+            subdirectory = (
+                Path(source_root)
+                .resolve()
+                .relative_to(local_repo_context.root)
+            )
 
-                code_reference = CodeReferenceRequest(
-                    commit=local_repo_context.current_commit,
-                    subdirectory=subdirectory.as_posix(),
-                    code_repository=local_repo_context.code_repository_id,
-                )
+            code_reference = CodeReferenceRequest(
+                commit=local_repo_context.current_commit,
+                subdirectory=subdirectory.as_posix(),
+                code_repository=local_repo_context.code_repository.id,
+            )
 
         code_path = None
         if build_utils.should_upload_code(

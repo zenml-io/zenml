@@ -47,10 +47,14 @@ from zenml.utils.pipeline_docker_image_builder import (
 
 class StubCodeRepository(BaseCodeRepository):
     def __init__(
-        self, id: UUID = uuid4(), config=None, local_context=None
+        self,
+        id: UUID = uuid4(),
+        name: str = "",
+        config=None,
+        local_context=None,
     ) -> None:
         config = config or {}
-        super().__init__(id, config)
+        super().__init__(id, name, config)
         self._local_context = local_context
 
     def login(self) -> None:

@@ -44,15 +44,18 @@ class BaseCodeRepository(ABC):
     def __init__(
         self,
         id: UUID,
+        name: str,
         config: Dict[str, Any],
     ) -> None:
         """Initializes a code repository.
 
         Args:
             id: The ID of the code repository.
+            name: The name of the code repository.
             config: The config of the code repository.
         """
         self._id = id
+        self._name = name
         self._config = config
         self.login()
 
@@ -80,7 +83,7 @@ class BaseCodeRepository(ABC):
                 source=model.source, expected_class=BaseCodeRepository
             )
         )
-        return class_(id=model.id, config=model.config)
+        return class_(id=model.id, name=model.name, config=model.config)
 
     @classmethod
     def validate_config(cls, config: Dict[str, Any]) -> None:
@@ -93,7 +96,7 @@ class BaseCodeRepository(ABC):
             config: The configuration.
         """
         # The initialization calls the login to verify the credentials
-        code_repo = cls(id=uuid4(), config=config)
+        code_repo = cls(id=uuid4(), name="", config=config)
 
         # Explicitly access the config for pydantic validation
         _ = code_repo.config
@@ -106,6 +109,15 @@ class BaseCodeRepository(ABC):
             The ID of the code repository.
         """
         return self._id
+
+    @property
+    def name(self) -> str:
+        """Name of the code repository.
+
+        Returns:
+            The name of the code repository.
+        """
+        return self._name
 
     @property
     def requirements(self) -> Set[str]:
