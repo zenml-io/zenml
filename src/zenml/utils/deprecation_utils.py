@@ -109,13 +109,13 @@ def deprecate_pydantic_attributes(
             else:
                 deprecated_attribute, replacement_attribute = attribute
 
-                assert replacement_attribute in cls.model_fields, (
-                    f"Unable to find attribute {replacement_attribute}."
-                )
+                assert (
+                    replacement_attribute in cls.model_fields
+                ), f"Unable to find attribute {replacement_attribute}."
 
-            assert deprecated_attribute in cls.model_fields, (
-                f"Unable to find attribute {deprecated_attribute}."
-            )
+            assert (
+                deprecated_attribute in cls.model_fields
+            ), f"Unable to find attribute {deprecated_attribute}."
 
             if cls.model_fields[deprecated_attribute].is_required():
                 raise TypeError(

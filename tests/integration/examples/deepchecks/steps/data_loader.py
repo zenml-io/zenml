@@ -22,10 +22,12 @@ from zenml import step
 
 
 @step
-def data_loader() -> Tuple[
-    Annotated[pd.DataFrame, "reference_dataset"],
-    Annotated[pd.DataFrame, "comparison_dataset"],
-]:
+def data_loader() -> (
+    Tuple[
+        Annotated[pd.DataFrame, "reference_dataset"],
+        Annotated[pd.DataFrame, "comparison_dataset"],
+    ]
+):
     """Load the iris dataset."""
     iris_df = iris.load_data(data_format="Dataframe", as_train_test=False)
     label_col = "target"

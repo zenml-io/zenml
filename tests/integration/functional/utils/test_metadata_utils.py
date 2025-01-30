@@ -38,9 +38,9 @@ def step_single_output() -> Annotated[int, "first"]:
 
 
 @step
-def step_multiple_outputs() -> Tuple[
-    Annotated[int, "second"], Annotated[int, "third"]
-]:
+def step_multiple_outputs() -> (
+    Tuple[Annotated[int, "second"], Annotated[int, "third"]]
+):
     """Step that tests infer_artifact flag with multiple outputs."""
     log_metadata(
         metadata={"axl": 1}, infer_artifact=True, artifact_name="second"

@@ -327,9 +327,9 @@ class BitbucketWebhookEventSourceHandler(BaseWebhookEventSourceHandler):
             config: Event source configuration instantiated from the response.
         """
         assert isinstance(config, BitbucketWebhookEventSourceConfiguration)
-        assert event_source.user is not None, (
-            "User is not set for event source"
-        )
+        assert (
+            event_source.user is not None
+        ), "User is not set for event source"
 
         secret_key_value = random_str(12)
         webhook_secret = SecretRequest(

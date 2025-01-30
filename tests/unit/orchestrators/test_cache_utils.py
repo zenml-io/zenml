@@ -62,9 +62,9 @@ def _compile_step(step: BaseStep) -> Step:
 
 
 @step
-def _cache_test_step() -> Tuple[
-    Annotated[str, "output_1"], Annotated[str, "output_2"]
-]:
+def _cache_test_step() -> (
+    Tuple[Annotated[str, "output_1"], Annotated[str, "output_2"]]
+):
     return "Hello World", 42
 
 

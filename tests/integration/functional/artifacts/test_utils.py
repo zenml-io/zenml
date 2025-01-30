@@ -208,9 +208,9 @@ def test_log_metadata_single_output(clean_client):
 
 
 @step
-def artifact_multi_output_metadata_logging_step() -> Tuple[
-    Annotated[str, "str_output"], Annotated[int, "int_output"]
-]:
+def artifact_multi_output_metadata_logging_step() -> (
+    Tuple[Annotated[str, "str_output"], Annotated[int, "int_output"]]
+):
     """A step that logs artifact metadata and has multiple outputs."""
     output_metadata = {
         "description": "Blupus is great!",
@@ -245,9 +245,9 @@ def test_log_metadata_multi_output(clean_client):
 
 
 @step
-def wrong_artifact_multi_output_metadata_logging_step() -> Tuple[
-    Annotated[str, "str_output"], Annotated[int, "int_output"]
-]:
+def wrong_artifact_multi_output_metadata_logging_step() -> (
+    Tuple[Annotated[str, "str_output"], Annotated[int, "int_output"]]
+):
     """A step that logs artifact metadata and has multiple outputs."""
     output_metadata = {
         "description": "Axl is great!",
