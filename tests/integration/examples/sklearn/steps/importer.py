@@ -23,14 +23,12 @@ from zenml import step
 
 
 @step
-def digits_data_loader() -> (
-    Tuple[
-        Annotated[np.ndarray, "X_train"],
-        Annotated[np.ndarray, "X_test"],
-        Annotated[np.ndarray, "y_train"],
-        Annotated[np.ndarray, "y_test"],
-    ]
-):
+def digits_data_loader() -> Tuple[
+    Annotated[np.ndarray, "X_train"],
+    Annotated[np.ndarray, "X_test"],
+    Annotated[np.ndarray, "y_train"],
+    Annotated[np.ndarray, "y_test"],
+]:
     """Loads the digits dataset as a tuple of flattened numpy arrays."""
     digits = load_digits()
     data = digits.images.reshape((len(digits.images), -1))

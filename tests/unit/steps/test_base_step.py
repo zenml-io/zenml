@@ -234,9 +234,9 @@ def wrong_int_output_step_2() -> Annotated[int, "output_name"]:
 
 
 @step
-def wrong_int_output_step_3() -> (
-    Tuple[Annotated[int, "out_1"], Annotated[int, "out_2"]]
-):
+def wrong_int_output_step_3() -> Tuple[
+    Annotated[int, "out_1"], Annotated[int, "out_2"]
+]:
     return 1, "not_an_int"
 
 
@@ -275,34 +275,32 @@ def wrong_num_outputs_step_3() -> Annotated[list, "out1"]:
 
 
 @step
-def wrong_num_outputs_step_4() -> (
-    Tuple[Annotated[int, "out_1"], Annotated[int, "out_2"]]
-):
+def wrong_num_outputs_step_4() -> Tuple[
+    Annotated[int, "out_1"], Annotated[int, "out_2"]
+]:
     return 1, 2, 3
 
 
 @step
-def wrong_num_outputs_step_5() -> (
-    Tuple[
-        Annotated[int, "out_1"],
-        Annotated[int, "out_2"],
-        Annotated[int, "out_3"],
-    ]
-):
+def wrong_num_outputs_step_5() -> Tuple[
+    Annotated[int, "out_1"],
+    Annotated[int, "out_2"],
+    Annotated[int, "out_3"],
+]:
     return 1, 2
 
 
 @step
-def wrong_num_outputs_step_6() -> (
-    Tuple[Annotated[tuple, "out_1"], Annotated[tuple, "out_2"]]
-):
+def wrong_num_outputs_step_6() -> Tuple[
+    Annotated[tuple, "out_1"], Annotated[tuple, "out_2"]
+]:
     return (1, 2), (3, 4), (5, 6)
 
 
 @step
-def wrong_num_outputs_step_7() -> (
-    Tuple[Annotated[list, "a"], Annotated[int, "b"]]
-):
+def wrong_num_outputs_step_7() -> Tuple[
+    Annotated[list, "a"], Annotated[int, "b"]
+]:
     return [2, 1]
 
 
@@ -359,11 +357,9 @@ def list_of_str_output_step() -> List[str]:
 
 
 @step
-def dict_of_str_output_step() -> (
-    Tuple[
-        Annotated[str, "str_output"], Annotated[Dict[str, int], "dict_output"]
-    ]
-):
+def dict_of_str_output_step() -> Tuple[
+    Annotated[str, "str_output"], Annotated[Dict[str, int], "dict_output"]
+]:
     return "", {}
 
 
@@ -385,9 +381,9 @@ def test_step_can_output_subscripted_generic_types(
 
 
 @step
-def list_dict_output_step() -> (
-    Tuple[Annotated[Dict, "dict_output"], Annotated[List, "list_output"]]
-):
+def list_dict_output_step() -> Tuple[
+    Annotated[Dict, "dict_output"], Annotated[List, "list_output"]
+]:
     return {}, []
 
 
@@ -408,12 +404,10 @@ def test_step_can_have_generic_input_types():
 
 
 @step
-def subscripted_generic_output_step() -> (
-    Tuple[
-        Annotated[Dict[str, int], "dict_output"],
-        Annotated[List[str], "list_output"],
-    ]
-):
+def subscripted_generic_output_step() -> Tuple[
+    Annotated[Dict[str, int], "dict_output"],
+    Annotated[List[str], "list_output"],
+]:
     return {}, []
 
 
@@ -436,16 +430,16 @@ def test_step_can_have_subscripted_generic_input_types():
 
 
 @step
-def raw_artifact_test_step_1() -> (
-    Tuple[Annotated[Dict, "dict_"], Annotated[List, "list_"]]
-):
+def raw_artifact_test_step_1() -> Tuple[
+    Annotated[Dict, "dict_"], Annotated[List, "list_"]
+]:
     return {"some": "data"}, []
 
 
 @step
-def raw_artifact_test_step_2() -> (
-    Tuple[Annotated[Dict, "dict_"], Annotated[List, "list_"]]
-):
+def raw_artifact_test_step_2() -> Tuple[
+    Annotated[Dict, "dict_"], Annotated[List, "list_"]
+]:
     return {"some": "data"}, []
 
 
@@ -510,9 +504,9 @@ def test_upstream_step_computation():
 
 
 @step
-def step_with_two_letter_string_output() -> (
-    Tuple[Annotated[str, "a"], Annotated[str, "b"]]
-):
+def step_with_two_letter_string_output() -> Tuple[
+    Annotated[str, "a"], Annotated[str, "b"]
+]:
     return "ab"
 
 
