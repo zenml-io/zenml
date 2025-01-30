@@ -6,7 +6,6 @@ description: Running steps in parallel.
 
 The fan-out/fan-in pattern is a common pipeline architecture where a single step splits into multiple parallel operations (fan-out) and then consolidates the results back into a single step (fan-in). This pattern is particularly useful for parallel processing, distributed workloads, or when you need to process data through different transformations and then aggregate the results. For example, you might want to process different chunks of data in parallel and then aggregate the results:
 
-
 ```python
 from zenml import step, get_step_context, pipeline
 from zenml.client import Client
@@ -54,6 +53,7 @@ def fan_out_fan_in_pipeline(parallel_count: int) -> None:
 
 
 fan_out_fan_in_pipeline(parallel_count=8)
+```
 
 The fan-out pattern allows for parallel processing and better resource utilization, while the fan-in pattern enables aggregation and consolidation of results. This is particularly useful for:
 
