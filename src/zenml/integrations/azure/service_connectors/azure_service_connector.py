@@ -1720,7 +1720,7 @@ class AzureServiceConnector(ServiceConnector):
             resource_id=resource_id,
         )
 
-        resource_group: str | None
+        resource_group: Optional[str]
         registry_name: str
         cluster_name: str
 
