@@ -241,8 +241,9 @@ class UserScopedFilter(BaseFilter):
         if sort_by == "user":
             column = UserSchema.name
 
-            query = query.join(
-                UserSchema, getattr(table, "user_id") == UserSchema.id
+            query = query.outerjoin(
+                UserSchema,
+                getattr(table, "user_id") == UserSchema.id,
             )
 
             query = query.add_columns(UserSchema.name)

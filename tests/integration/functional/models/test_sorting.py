@@ -108,14 +108,16 @@ def test_sorting_entities(clean_client):
 
     # Sorting runs by model name
     results = clean_client.list_pipeline_runs(sort_by="asc:model")
-    assert results[0].model_version.model.name == "Model1"
+    assert results[0].model_version is None
+    assert results[1].model_version.model.name == "Model1"
     assert results[-1].model_version.model.name == "Model2"
     clean_client.list_pipeline_runs(sort_by="desc:model")
 
     # Sorting runs by model version
     results = clean_client.list_pipeline_runs(sort_by="asc:model_version")
 
-    assert results[0].model_version.name == "1"
+    assert results[0].model_version is None
+    assert results[1].model_version.name == "1"
     assert results[-1].model_version.name == "second"
 
     clean_client.list_pipeline_runs(sort_by="desc:model")

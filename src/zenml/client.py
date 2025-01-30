@@ -34,7 +34,7 @@ from typing import (
     Union,
     cast,
 )
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from pydantic import ConfigDict, SecretStr
 
@@ -2453,7 +2453,9 @@ class Client(metaclass=ClientMetaClass):
     def trigger_pipeline(
         self,
         pipeline_name_or_id: Union[str, UUID, None] = None,
-        run_configuration: Optional[PipelineRunConfiguration] = None,
+        run_configuration: Union[
+            PipelineRunConfiguration, Dict[str, Any], None
+        ] = None,
         config_path: Optional[str] = None,
         template_id: Optional[UUID] = None,
         stack_name_or_id: Union[str, UUID, None] = None,
@@ -2523,6 +2525,11 @@ class Client(metaclass=ClientMetaClass):
 
         if config_path:
             run_configuration = PipelineRunConfiguration.from_yaml(config_path)
+
+        if isinstance(run_configuration, Dict):
+            run_configuration = PipelineRunConfiguration.model_validate(
+                run_configuration
+            )
 
         if run_configuration:
             validate_run_config_is_runnable_from_server(run_configuration)
@@ -4973,12 +4980,7 @@ class Client(metaclass=ClientMetaClass):
             )
         )
         try:
-            # This does a login to verify the credentials
-            code_repo_class(id=uuid4(), config=config)
-
-            # Explicitly access the config for pydantic validation, in case
-            # the login for some reason did not do that.
-            _ = code_repo_class.config
+            code_repo_class.validate_config(config)
         except Exception as e:
             raise RuntimeError(
                 "Failed to validate code repository config."

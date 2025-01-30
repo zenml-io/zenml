@@ -365,17 +365,16 @@ class RestZenStoreConfiguration(StoreConfiguration):
 
         if os.path.isfile(verify_ssl):
             with open(verify_ssl, "r") as f:
-                verify_ssl = f.read()
+                cert_content = f.read()
 
         fileio.makedirs(str(secret_folder))
         file_path = Path(secret_folder, "ca_bundle.pem")
         with os.fdopen(
             os.open(file_path, flags=os.O_RDWR | os.O_CREAT, mode=0o600), "w"
         ) as f:
-            f.write(verify_ssl)
-        verify_ssl = str(file_path)
+            f.write(cert_content)
 
-        return verify_ssl
+        return str(file_path)
 
     @classmethod
     def supports_url_scheme(cls, url: str) -> bool:
@@ -388,15 +387,6 @@ class RestZenStoreConfiguration(StoreConfiguration):
             True if the URL scheme is supported, False otherwise.
         """
         return urlparse(url).scheme in ("http", "https")
-
-    def expand_certificates(self) -> None:
-        """Expands the certificates in the verify_ssl field."""
-        # Load the certificate values back into the configuration
-        if isinstance(self.verify_ssl, str) and os.path.isfile(
-            self.verify_ssl
-        ):
-            with open(self.verify_ssl, "r") as f:
-                self.verify_ssl = f.read()
 
     @model_validator(mode="before")
     @classmethod

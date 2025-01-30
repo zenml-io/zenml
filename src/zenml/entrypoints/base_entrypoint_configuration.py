@@ -22,6 +22,8 @@ from uuid import UUID
 
 from zenml.client import Client
 from zenml.code_repositories import BaseCodeRepository
+from zenml.enums import StackComponentType
+from zenml.exceptions import CustomFlavorImportError
 from zenml.logger import get_logger
 from zenml.utils import (
     code_repository_utils,
@@ -31,6 +33,7 @@ from zenml.utils import (
 )
 
 if TYPE_CHECKING:
+    from zenml.artifact_stores import BaseArtifactStore
     from zenml.models import CodeReferenceResponse, PipelineDeploymentResponse
 
 logger = get_logger(__name__)
@@ -204,6 +207,8 @@ class BaseEntrypointConfiguration(ABC):
                 decision instead.
 
         Raises:
+            CustomFlavorImportError: If the artifact store flavor can't be
+                imported.
             RuntimeError: If the current environment requires code download
                 but the deployment does not have a reference to any code.
         """
@@ -215,7 +220,27 @@ class BaseEntrypointConfiguration(ABC):
             return
 
         if code_path := deployment.code_path:
-            code_utils.download_code_from_artifact_store(code_path=code_path)
+            # Load the artifact store not from the active stack but separately.
+            # This is required in case the stack has custom flavor components
+            # (other than the artifact store) for which the flavor
+            # implementations will only be available once the download finishes.
+            try:
+                artifact_store = self._load_active_artifact_store()
+            except CustomFlavorImportError as e:
+                raise CustomFlavorImportError(
+                    "Failed to import custom artifact store flavor. The "
+                    "artifact store flavor is needed to download your code, "
+                    "but it looks like it might be part of the files "
+                    "that we're trying to download. If this is the case, you "
+                    "should disable downloading code from the artifact store "
+                    "using `DockerSettings(allow_download_from_artifact_store=False)` "
+                    "or make sure the artifact flavor files are included in "
+                    "Docker image by using a custom parent image or installing "
+                    "them as part of a pip dependency."
+                ) from e
+            code_utils.download_code_from_artifact_store(
+                code_path=code_path, artifact_store=artifact_store
+            )
         elif code_reference := deployment.code_reference:
             # TODO: This might fail if the code repository had unpushed changes
             # at the time the pipeline run was started.
@@ -299,6 +324,22 @@ class BaseEntrypointConfiguration(ABC):
             return True
 
         return False
+
+    def _load_active_artifact_store(self) -> "BaseArtifactStore":
+        """Load the active artifact store.
+
+        Returns:
+            The active artifact store.
+        """
+        from zenml.artifact_stores import BaseArtifactStore
+
+        artifact_store_model = Client().active_stack_model.components[
+            StackComponentType.ARTIFACT_STORE
+        ][0]
+        artifact_store = BaseArtifactStore.from_model(artifact_store_model)
+        assert isinstance(artifact_store, BaseArtifactStore)
+
+        return artifact_store
 
     @abstractmethod
     def run(self) -> None:
