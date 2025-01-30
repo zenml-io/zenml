@@ -192,7 +192,6 @@ class GitHubCodeRepository(BaseCodeRepository):
             elif content.raw_data["type"] == "symlink":
                 try:
                     os.symlink(src=content.raw_data["target"], dst=local_path)
-                    raise ValueError()
                 except Exception as e:
                     logger.error(
                         "Failed to create symlink `%s` (%s): %s",
