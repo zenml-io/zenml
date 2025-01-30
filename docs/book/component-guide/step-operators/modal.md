@@ -63,7 +63,7 @@ ZenML will build a Docker image which includes your code and use it to run your 
 #### Additional configuration
 
 You can specify the hardware requirements for each step using the
-`ResourceSettings` class as described in our documentation on [resource settings](../../how-to/training-with-gpus/training-with-gpus.md):
+`ResourceSettings` class as described in our documentation on [resource settings](../../how-to/pipeline-development/training-with-gpus/README.md):
 
 ```python
 from zenml.config import ResourceSettings

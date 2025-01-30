@@ -71,12 +71,12 @@ zenml service-account create <SERVICE_ACCOUNT_NAME>
 ```
 
 You can learn more about how to generate a `ZENML_API_KEY` via service accounts
-[here](../../project-setup-and-management/connecting-to-zenml/connect-with-a-service-account.md).
+[here](../../../how-to/manage-zenml-server/connecting-to-zenml/connect-with-a-service-account.md).
 
 ### Create the service connectors
 
 The key to successful registration is proper authentication between the components.
-[Service connectors](../auth-management/README.md) are ZenML's way of managing this:
+[Service connectors](../../../how-to/infrastructure-deployment/auth-management/README.md) are ZenML's way of managing this:
 
 ```hcl
 # First, create a service connector

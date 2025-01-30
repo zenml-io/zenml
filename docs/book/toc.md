@@ -215,6 +215,7 @@
   * [View logs on the dashboard](how-to/control-logging/view-logs-on-the-dasbhoard.md)
   * [Enable or disable logs storage](how-to/control-logging/enable-or-disable-logs-storing.md)
   * [Set logging verbosity](how-to/control-logging/set-logging-verbosity.md)
+  * [Set logging format](how-to/control-logging/set-logging-format.md)
   * [Disable `rich` traceback output](how-to/control-logging/disable-rich-traceback.md)
   * [Disable colorful logging](how-to/control-logging/disable-colorful-logging.md)
 * [Popular integrations](how-to/popular-integrations/README.md)

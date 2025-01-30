@@ -22,7 +22,7 @@ import random
 import re
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import datetime
 from functools import lru_cache
 from pathlib import Path
 from typing import (
@@ -304,11 +304,13 @@ from zenml.utils.networking_utils import (
     replace_localhost_with_internal_hostname,
 )
 from zenml.utils.pydantic_utils import before_validator_handler
+from zenml.utils.secret_utils import PlainSerializedSecretStr
 from zenml.utils.string_utils import (
     format_name_template,
     random_str,
     validate_name,
 )
+from zenml.utils.time_utils import utc_now
 from zenml.zen_stores import template_utils
 from zenml.zen_stores.base_zen_store import (
     BaseZenStore,
@@ -459,11 +461,11 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
     driver: Optional[SQLDatabaseDriver] = None
     database: Optional[str] = None
-    username: Optional[str] = None
-    password: Optional[str] = None
-    ssl_ca: Optional[str] = None
-    ssl_cert: Optional[str] = None
-    ssl_key: Optional[str] = None
+    username: Optional[PlainSerializedSecretStr] = None
+    password: Optional[PlainSerializedSecretStr] = None
+    ssl_ca: Optional[PlainSerializedSecretStr] = None
+    ssl_cert: Optional[PlainSerializedSecretStr] = None
+    ssl_key: Optional[PlainSerializedSecretStr] = None
     ssl_verify_server_cert: bool = False
     pool_size: int = 20
     max_overflow: int = 20
@@ -610,10 +612,10 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             self.database = sql_url.database
         elif sql_url.drivername == SQLDatabaseDriver.MYSQL:
             if sql_url.username:
-                self.username = sql_url.username
+                self.username = PlainSerializedSecretStr(sql_url.username)
                 sql_url = sql_url._replace(username=None)
             if sql_url.password:
-                self.password = sql_url.password
+                self.password = PlainSerializedSecretStr(sql_url.password)
                 sql_url = sql_url._replace(password=None)
             if sql_url.database:
                 self.database = sql_url.database
@@ -641,13 +643,13 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                 for k, v in sql_url.query.items():
                     if k == "ssl_ca":
                         if r := _get_query_result(v):
-                            self.ssl_ca = r
+                            self.ssl_ca = PlainSerializedSecretStr(r)
                     elif k == "ssl_cert":
                         if r := _get_query_result(v):
-                            self.ssl_cert = r
+                            self.ssl_cert = PlainSerializedSecretStr(r)
                     elif k == "ssl_key":
                         if r := _get_query_result(v):
-                            self.ssl_key = r
+                            self.ssl_key = PlainSerializedSecretStr(r)
                     elif k == "ssl_verify_server_cert":
                         if r := _get_query_result(v):
                             if is_true_string_value(r):
@@ -687,7 +689,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             )
             for key in ["ssl_key", "ssl_ca", "ssl_cert"]:
                 content = getattr(self, key)
-                if content and not os.path.isfile(content):
+                if content and not os.path.isfile(content.get_secret_value()):
                     fileio.makedirs(str(secret_folder))
                     file_path = Path(secret_folder, f"{key}.pem")
                     with os.fdopen(
@@ -696,7 +698,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                         ),
                         "w",
                     ) as f:
-                        f.write(content)
+                        f.write(content.get_secret_value())
                     setattr(self, key, str(file_path))
 
         self.url = str(sql_url)
@@ -731,7 +733,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
         # Load the certificate values back into the configuration
         for key in ["ssl_key", "ssl_ca", "ssl_cert"]:
             file_path = getattr(self, key, None)
-            if file_path and os.path.isfile(file_path):
+            if file_path and os.path.isfile(file_path.get_secret_value()):
                 with open(file_path, "r") as f:
                     setattr(self, key, f.read())
 
@@ -779,8 +781,8 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
             sql_url = sql_url._replace(
                 drivername="mysql+pymysql",
-                username=self.username,
-                password=self.password,
+                username=self.username.get_secret_value(),
+                password=self.password.get_secret_value(),
                 database=database,
             )
 
@@ -791,11 +793,17 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                 ssl_setting = getattr(self, key)
                 if not ssl_setting:
                     continue
-                if not os.path.isfile(ssl_setting):
+                if not os.path.isfile(ssl_setting.get_secret_value()):
                     logger.warning(
                         f"Database SSL setting `{key}` is not a file. "
                     )
-                sqlalchemy_ssl_args[key.lstrip("ssl_")] = ssl_setting
+                sqlalchemy_ssl_args[key.lstrip("ssl_")] = (
+                    ssl_setting.get_secret_value()
+                )
+                sqlalchemy_ssl_args[key.removeprefix("ssl_")] = (
+                    ssl_setting.get_secret_value()
+                )
+
             if len(sqlalchemy_ssl_args) > 0:
                 sqlalchemy_ssl_args["check_hostname"] = (
                     self.ssl_verify_server_cert
@@ -1743,7 +1751,7 @@ class SqlZenStore(BaseZenStore):
             settings = self._get_server_settings(session=session)
 
             if last_user_activity < settings.last_user_activity.replace(
-                tzinfo=timezone.utc
+                tzinfo=None
             ):
                 return
 
@@ -4048,7 +4056,7 @@ class SqlZenStore(BaseZenStore):
                 # Delete devices that have expired
                 if (
                     device.expires is not None
-                    and device.expires < datetime.now()
+                    and device.expires < utc_now()
                     and device.user_id is None
                 ):
                     session.delete(device)
@@ -8634,19 +8642,10 @@ class SqlZenStore(BaseZenStore):
                 ExecutionStatus.COMPLETED,
                 ExecutionStatus.FAILED,
             }:
-                run_update.end_time = datetime.now(timezone.utc)
+                run_update.end_time = utc_now()
                 if pipeline_run.start_time and isinstance(
                     pipeline_run.start_time, datetime
                 ):
-                    # We need to ensure both datetimes are timezone-aware to avoid TypeError when subtracting
-                    # Now calculate the duration time
-                    if pipeline_run.start_time.tzinfo is None:
-                        pipeline_run.start_time = (
-                            pipeline_run.start_time.replace(
-                                tzinfo=timezone.utc
-                            )
-                        )
-
                     duration_time = (
                         run_update.end_time - pipeline_run.start_time
                     )

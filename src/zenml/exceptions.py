@@ -314,3 +314,7 @@ class SecretsStoreNotConfiguredError(NotImplementedError):
 
 class BackupSecretsStoreNotConfiguredError(NotImplementedError):
     """Raised when a backup secrets store is not configured."""
+
+
+class CustomFlavorImportError(ImportError):
+    """Raised when failing to import a custom flavor."""

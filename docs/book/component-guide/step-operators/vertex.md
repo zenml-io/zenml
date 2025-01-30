@@ -136,3 +136,51 @@ For more information and a full list of configurable attributes of the Vertex st
 Note that if you wish to use this step operator to run steps on a GPU, you will need to follow [the instructions on this page](../../how-to/pipeline-development/training-with-gpus/README.md) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
+
+#### Using Persistent Resources for Faster Development
+
+When developing ML pipelines that use Vertex AI, the startup time for each `CustomJob` can be significant since Vertex needs to provision new compute resources for each run. To speed up development iterations, you can use Vertex AI's [Persistent Resources](https://cloud.google.com/vertex-ai/docs/training/persistent-resource-overview) feature, which keeps compute resources warm between runs. 
+
+To use persistent resources with the Vertex step operator, you need to do the following:
+
+**Step 1**: You create a persistent resource using the GCP Cloud UI, or by [following instructions in the GCP docs](https://cloud.google.com/vertex-ai/docs/training/persistent-resource-create).
+
+**Step 2**: Make sure your step operator is properly configured. For example, you need to have a service account specified in your step operator configuration. This service account needs to have permissions to access the persistent resource.
+
+```bash
+# You can also use `zenml step-operator update`
+zenml step-operator register <STEP_OPERATOR_NAME> -f vertex --service_account=<A_SERVICE_ACCOUNT_THAT_HAS_THE_RIGHT_PERMISSIONS_TO_ACCESS_PERSISTENT_STORAGE>
+```
+
+{% hint style="warning" %}
+Please note that by default, ZenML step operators are registered with `boot_disk_type=pd-ssd` and persistent storages usually come with `boot_disk_type=pd-standard`. To avoid confusion, execute the following:
+
+```shell
+zenml step-operator update <STEP_OPERATOR_NAME> --boot_disk_type=pd-standard
+```
+
+Or ensure that your worker pool configuration in your persistent storage matches that of your ZenML step operator.
+{% endhint %}
+
+
+**Step 3**: Configure your code to use the persistent resource:
+
+```python
+from zenml.integrations.gcp.flavors.vertex_step_operator_flavor import VertexStepOperatorSettings
+
+@step(step_operator=<STEP_OPERATOR_NAME>, settings={"step_operator": VertexStepOperatorSettings(
+    persistent_resource_id="my-persistent-resource",  # specify your persistent resource ID
+    machine_type="n1-standard-4",
+    accelerator_type="NVIDIA_TESLA_T4",
+    accelerator_count=1,
+)})
+def trainer(...) -> ...:
+    """Train a model."""
+    # This step will use the persistent resource and start faster
+```
+
+Using a persistent resource is particularly useful when you're developing locally and want to iterate quickly on steps that need cloud resources. The startup time of the job can be extremely quick.
+
+{% hint style="warning" %}
+Remember that persistent resources continue to incur costs as long as they're running, even when idle. Make sure to monitor your usage and configure appropriate idle timeout periods.
+{% endhint %}

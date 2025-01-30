@@ -31,7 +31,6 @@ Internal interface: no backwards compatibility guarantees.
 Adjusted from https://github.com/tensorflow/tfx/blob/master/tfx/utils/kube_utils.py.
 """
 
-import datetime
 import enum
 import re
 import time
@@ -47,6 +46,7 @@ from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
     build_service_account_manifest,
 )
 from zenml.logger import get_logger
+from zenml.utils.time_utils import utc_now
 
 logger = get_logger(__name__)
 
@@ -248,7 +248,7 @@ def wait_pod(
     Returns:
         The pod object which meets the exit condition.
     """
-    start_time = datetime.datetime.now(datetime.timezone.utc)
+    start_time = utc_now()
 
     # Link to exponential back-off algorithm used here:
     # https://cloud.google.com/storage/docs/exponential-backoff
@@ -288,7 +288,7 @@ def wait_pod(
             return resp
 
         # Check if wait timed out.
-        elapse_time = datetime.datetime.now(datetime.timezone.utc) - start_time
+        elapse_time = utc_now() - start_time
         if elapse_time.seconds >= timeout_sec and timeout_sec != 0:
             raise RuntimeError(
                 f"Waiting for pod `{namespace}:{pod_name}` timed out after "

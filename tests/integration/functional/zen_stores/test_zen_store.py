@@ -52,6 +52,7 @@ from zenml.artifacts.utils import (
     _load_artifact_store,
 )
 from zenml.client import Client
+from zenml.code_repositories import BaseCodeRepository
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.source import Source, SourceType
 from zenml.config.step_configurations import Step, StepConfiguration, StepSpec
@@ -2882,7 +2883,9 @@ def test_filter_runs_by_code_repo(mocker):
 
     with CodeRepositoryContext() as repo:
         clean_local_context = StubLocalRepositoryContext(
-            code_repository_id=repo.id, root=os.getcwd(), commit="commit"
+            code_repository=BaseCodeRepository.from_model(repo),
+            root=os.getcwd(),
+            commit="commit",
         )
         mocker.patch.object(
             code_repository_utils,

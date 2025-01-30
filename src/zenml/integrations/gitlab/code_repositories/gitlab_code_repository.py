@@ -15,7 +15,8 @@
 
 import os
 import re
-from typing import Optional
+from typing import Any, Dict, Optional
+from uuid import uuid4
 
 from gitlab import Gitlab
 from gitlab.v4.objects import Project
@@ -31,6 +32,7 @@ from zenml.code_repositories.git.local_git_repository_context import (
     LocalGitRepositoryContext,
 )
 from zenml.logger import get_logger
+from zenml.utils import deprecation_utils
 from zenml.utils.secret_utils import SecretField
 
 logger = get_logger(__name__)
@@ -40,22 +42,41 @@ class GitLabCodeRepositoryConfig(BaseCodeRepositoryConfig):
     """Config for GitLab code repositories.
 
     Args:
-        url: The full URL of the GitLab project.
+        instance_url: The URL of the GitLab instance.
         group: The group of the project.
         project: The name of the GitLab project.
         host: The host of GitLab in case it is self-hosted instance.
         token: The token to access the repository.
     """
 
-    url: Optional[str]
+    instance_url: Optional[str] = None
     group: str
     project: str
     host: Optional[str] = "gitlab.com"
     token: str = SecretField()
 
+    url: Optional[str] = None
+    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
+        ("url", "instance_url")
+    )
+
 
 class GitLabCodeRepository(BaseCodeRepository):
     """GitLab code repository."""
+
+    @classmethod
+    def validate_config(cls, config: Dict[str, Any]) -> None:
+        """Validate the code repository config.
+
+        This method should check that the config/credentials are valid and
+        the configured repository exists.
+
+        Args:
+            config: The configuration.
+        """
+        code_repo = cls(id=uuid4(), name="", config=config)
+        # Try to access the project to make sure it exists
+        _ = code_repo.gitlab_project
 
     @property
     def config(self) -> GitLabCodeRepositoryConfig:
@@ -85,7 +106,7 @@ class GitLabCodeRepository(BaseCodeRepository):
         """
         try:
             self._gitlab_session = Gitlab(
-                self.config.url, private_token=self.config.token
+                url=self.config.instance_url, private_token=self.config.token
             )
             self._gitlab_session.auth()
             user = self._gitlab_session.user or None
@@ -141,7 +162,7 @@ class GitLabCodeRepository(BaseCodeRepository):
         """
         return LocalGitRepositoryContext.at(
             path=path,
-            code_repository_id=self.id,
+            code_repository=self,
             remote_url_validation_callback=self.check_remote_url,
         )
 

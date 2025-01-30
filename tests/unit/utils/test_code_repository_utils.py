@@ -101,7 +101,7 @@ def test_setting_a_custom_active_code_repo(mocker):
         root=".", commit="commit", repo=repo
     )
     local_repo = code_repository_utils.find_active_code_repository()
-    assert local_repo.code_repository_id == repo.id
+    assert local_repo.code_repository.id == repo.id
     assert local_repo.root == "."
     assert local_repo.current_commit == "commit"
 

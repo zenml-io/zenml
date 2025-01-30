@@ -14,7 +14,7 @@
 """ZenML login credentials store support."""
 
 import os
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 from typing import Dict, List, Optional, Tuple, Union, cast
 
 from zenml.config.global_config import GlobalConfiguration
@@ -29,6 +29,7 @@ from zenml.login.pro.tenant.models import TenantRead
 from zenml.models import OAuthTokenResponse, ServerModel
 from zenml.utils import yaml_utils
 from zenml.utils.singleton import SingletonMetaClass
+from zenml.utils.time_utils import utc_now_tz_aware
 
 logger = get_logger(__name__)
 
@@ -190,7 +191,7 @@ class CredentialsStore(metaclass=SingletonMetaClass):
                 not credential.api_token.expires_at
                 or credential.api_token.expires_at
                 + timedelta(seconds=TOKEN_STORE_EVICTION_TIME)
-                > datetime.now(timezone.utc)
+                > utc_now_tz_aware()
             )
         }
         yaml_utils.write_yaml(credentials_file, credentials_store)
@@ -477,7 +478,7 @@ class CredentialsStore(metaclass=SingletonMetaClass):
         """
         self.check_and_reload_from_file()
         if token_response.expires_in:
-            expires_at = datetime.now(timezone.utc) + timedelta(
+            expires_at = utc_now_tz_aware() + timedelta(
                 seconds=token_response.expires_in
             )
             # Best practice to calculate the leeway depending on the token

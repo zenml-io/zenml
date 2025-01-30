@@ -14,7 +14,7 @@
 """SQLModel implementation of step run tables."""
 
 import json
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from uuid import UUID
 
@@ -43,6 +43,7 @@ from zenml.models.v2.core.step_run import (
     StepRunInputResponse,
     StepRunResponseResources,
 )
+from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.constants import MODEL_VERSION_TABLENAME
 from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
@@ -358,7 +359,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 if value and self.model_version_id is None:
                     self.model_version_id = value
 
-        self.updated = datetime.now(timezone.utc)
+        self.updated = utc_now()
 
         return self
 

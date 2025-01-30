@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Service connector CLI commands."""
 
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any, Dict, List, Optional, Union, cast
 from uuid import UUID
 
@@ -25,7 +25,6 @@ from zenml.cli.utils import (
     is_sorted_or_filtered,
     list_options,
     print_page_info,
-    seconds_to_human_readable,
 )
 from zenml.client import Client
 from zenml.console import console
@@ -37,6 +36,7 @@ from zenml.models import (
     ServiceConnectorResourcesModel,
     ServiceConnectorResponse,
 )
+from zenml.utils.time_utils import seconds_to_human_readable, utc_now
 
 
 # Service connectors
@@ -292,7 +292,7 @@ def prompt_expires_at(
         default_str = ""
         if default is not None:
             seconds = int(
-                (default - datetime.now(timezone.utc)).total_seconds()
+                (default - utc_now(tz_aware=default)).total_seconds()
             )
             default_str = (
                 f" [{str(default)} i.e. in "
@@ -309,7 +309,7 @@ def prompt_expires_at(
 
         assert expires_at is not None
         assert isinstance(expires_at, datetime)
-        if expires_at < datetime.now(timezone.utc):
+        if expires_at < utc_now(tz_aware=expires_at):
             cli_utils.warning(
                 "The expiration time must be in the future. Please enter a "
                 "later date and time."
@@ -317,7 +317,7 @@ def prompt_expires_at(
             continue
 
         seconds = int(
-            (expires_at - datetime.now(timezone.utc)).total_seconds()
+            (expires_at - utc_now(tz_aware=expires_at)).total_seconds()
         )
 
         confirm = click.confirm(

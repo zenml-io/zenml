@@ -950,31 +950,31 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
         sort_by, operand = self.sorting_params
 
         if sort_by == "pipeline":
-            query = query.join(
+            query = query.outerjoin(
                 PipelineSchema,
                 PipelineRunSchema.pipeline_id == PipelineSchema.id,
             )
             column = PipelineSchema.name
         elif sort_by == "stack":
-            query = query.join(
+            query = query.outerjoin(
                 PipelineDeploymentSchema,
                 PipelineRunSchema.deployment_id == PipelineDeploymentSchema.id,
-            ).join(
+            ).outerjoin(
                 StackSchema,
                 PipelineDeploymentSchema.stack_id == StackSchema.id,
             )
             column = StackSchema.name
         elif sort_by == "model":
-            query = query.join(
+            query = query.outerjoin(
                 ModelVersionSchema,
                 PipelineRunSchema.model_version_id == ModelVersionSchema.id,
-            ).join(
+            ).outerjoin(
                 ModelSchema,
                 ModelVersionSchema.model_id == ModelSchema.id,
             )
             column = ModelSchema.name
         elif sort_by == "model_version":
-            query = query.join(
+            query = query.outerjoin(
                 ModelVersionSchema,
                 PipelineRunSchema.model_version_id == ModelVersionSchema.id,
             )
