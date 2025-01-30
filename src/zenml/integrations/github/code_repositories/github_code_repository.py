@@ -187,7 +187,7 @@ class GitHubCodeRepository(BaseCodeRepository):
                     directory=local_path,
                     repo_sub_directory=content.path,
                 )
-            # For symlinks, content.type is initially wronly set to "file",
+            # For symlinks, content.type is initially wrongly set to "file",
             # which is why we need to read it from the raw data instead.
             elif content.raw_data["type"] == "symlink":
                 try:
