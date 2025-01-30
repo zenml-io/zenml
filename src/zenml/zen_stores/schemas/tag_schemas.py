@@ -31,7 +31,10 @@ from zenml.models import (
 )
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
-from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
+from zenml.zen_stores.schemas.schema_utils import (
+    build_foreign_key_field,
+    build_index,
+)
 
 
 class TagSchema(NamedSchema, table=True):
@@ -111,6 +114,16 @@ class TagResourceSchema(BaseSchema, table=True):
     """SQL Model for tag resource relationship."""
 
     __tablename__ = "tag_resource"
+    __table_args__ = (
+        build_index(
+            table_name=__tablename__,
+            column_names=[
+                "resource_id",
+                "resource_type",
+                "tag_id",
+            ],
+        ),
+    )
 
     tag_id: UUID = build_foreign_key_field(
         source=__tablename__,

@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""SQLModel implementation of pipeline run metadata tables."""
+"""SQLModel implementation of run metadata tables."""
 
 from typing import Optional
 from uuid import UUID, uuid4
@@ -21,7 +21,10 @@ from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
-from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
+from zenml.zen_stores.schemas.schema_utils import (
+    build_foreign_key_field,
+    build_index,
+)
 from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
@@ -82,6 +85,16 @@ class RunMetadataResourceSchema(SQLModel, table=True):
     """Table for linking resources to run metadata entries."""
 
     __tablename__ = "run_metadata_resource"
+    __table_args__ = (
+        build_index(
+            table_name=__tablename__,
+            column_names=[
+                "resource_id",
+                "resource_type",
+                "run_metadata_id",
+            ],
+        ),
+    )
 
     id: UUID = Field(default_factory=uuid4, primary_key=True)
     resource_id: UUID

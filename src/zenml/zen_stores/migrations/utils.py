@@ -34,7 +34,7 @@ from sqlalchemy.engine import URL, Engine
 from sqlalchemy.exc import (
     OperationalError,
 )
-from sqlalchemy.schema import CreateTable
+from sqlalchemy.schema import CreateIndex, CreateTable
 from sqlmodel import (
     create_engine,
     select,
@@ -249,6 +249,7 @@ class MigrationUtils(BaseModel):
                 # them to the create table statement.
 
                 # Extract the unique constraints from the table schema
+                index_create_statements = []
                 unique_constraints = []
                 for index in table.indexes:
                     if index.unique:
@@ -258,6 +259,38 @@ class MigrationUtils(BaseModel):
                         unique_constraints.append(
                             f"UNIQUE KEY `{index.name}` ({', '.join(unique_columns)})"
                         )
+                    else:
+                        if index.name in {
+                            fk.name for fk in table.foreign_key_constraints
+                        }:
+                            # Foreign key indices are already handled by the
+                            # table creation statement.
+                            continue
+
+                        index_create = str(CreateIndex(index)).strip()  # type: ignore[no-untyped-call]
+                        index_create = index_create.replace(
+                            f"CREATE INDEX {index.name}",
+                            f"CREATE INDEX `{index.name}`",
+                        )
+                        index_create = index_create.replace(
+                            f"ON {table.name}", f"ON `{table.name}`"
+                        )
+
+                        for column_name in index.columns.keys():
+                            # We need this logic here to avoid the column names
+                            # inside the index name
+                            index_create = index_create.replace(
+                                f"({column_name}", f"(`{column_name}`"
+                            )
+                            index_create = index_create.replace(
+                                f"{column_name},", f"`{column_name}`,"
+                            )
+                            index_create = index_create.replace(
+                                f"{column_name})", f"`{column_name}`)"
+                            )
+
+                        index_create = index_create.replace('"', "") + ";"
+                        index_create_statements.append(index_create)
 
                 # Add the unique constraints to the create table statement
                 if unique_constraints:
@@ -289,6 +322,14 @@ class MigrationUtils(BaseModel):
                         self_references=has_self_referential_foreign_keys,
                     )
                 )
+
+                for stmt in index_create_statements:
+                    store_db_info(
+                        dict(
+                            table=table.name,
+                            index_create_stmt=stmt,
+                        )
+                    )
 
                 # 2. extract the table data in batches
                 order_by = [col for col in table.primary_key]
@@ -355,6 +396,12 @@ class MigrationUtils(BaseModel):
                     self_references[table_name] = table_dump.get(
                         "self_references", False
                     )
+
+                if "index_create_stmt" in table_dump:
+                    # execute the index creation statement
+                    connection.execute(text(table_dump["index_create_stmt"]))
+                    # Reload the database metadata after creating the index
+                    metadata.reflect(bind=self.engine)
 
                 if "data" in table_dump:
                     # insert the data into the database
