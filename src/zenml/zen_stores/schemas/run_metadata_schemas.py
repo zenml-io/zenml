@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""SQLModel implementation of pipeline run metadata tables."""
+"""SQLModel implementation of run metadata tables."""
 
 from typing import Optional
 from uuid import UUID, uuid4
