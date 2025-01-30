@@ -517,32 +517,9 @@ def verify_local_repository_context(
                     "changes."
                 )
 
-        if local_repo_context:
-            if local_repo_context.is_dirty:
-                logger.warning(
-                    "Unable to use code repository to download code for this "
-                    "run as there are uncommitted changes."
-                )
-            elif local_repo_context.has_local_changes:
-                logger.warning(
-                    "Unable to use code repository to download code for this "
-                    "run as there are unpushed changes."
-                )
-
     code_repository = None
     if local_repo_context and not local_repo_context.has_local_changes:
-        model = Client().get_code_repository(
-            local_repo_context.code_repository_id
-        )
-        code_repository = BaseCodeRepository.from_model(model)
-
-        if will_download_from_code_repository(
-            deployment=deployment, local_repo_context=local_repo_context
-        ):
-            logger.info(
-                "Using code repository `%s` to download code for this run.",
-                model.name,
-            )
+        code_repository = local_repo_context.code_repository
 
     return code_repository
 
@@ -738,25 +715,17 @@ def should_upload_code(
     return False
 
 
-def will_download_from_code_repository(
+def allows_download_from_code_repository(
     deployment: PipelineDeploymentBase,
-    local_repo_context: "LocalRepositoryContext",
 ) -> bool:
-    """Checks whether a code repository will be used to download code.
+    """Checks whether a code repository can be used to download code.
 
     Args:
         deployment: The deployment.
-        local_repo_context: The local repository context.
 
     Returns:
-        Whether a code repository will be used to download code.
+        Whether a code repository can be used to download code.
     """
-    if not build_required(deployment=deployment):
-        return False
-
-    if local_repo_context.has_local_changes:
-        return False
-
     for step in deployment.step_configurations.values():
         docker_settings = step.config.docker_settings
 
@@ -764,3 +733,41 @@ def will_download_from_code_repository(
             return True
 
     return False
+
+
+def log_code_repository_usage(
+    deployment: PipelineDeploymentBase,
+    local_repo_context: "LocalRepositoryContext",
+) -> None:
+    """Log what the code repository can (not) be used for given a deployment.
+
+    Args:
+        deployment: The deployment.
+        local_repo_context: The local repository context.
+    """
+    if build_required(deployment) and allows_download_from_code_repository(
+        deployment
+    ):
+        if local_repo_context.is_dirty:
+            logger.warning(
+                "Unable to use code repository `%s` to download code or track "
+                "the commit hash as there are uncommitted or untracked files.",
+                local_repo_context.code_repository.name,
+            )
+        elif local_repo_context.has_local_changes:
+            logger.warning(
+                "Unable to use code repository `%s` to download code as there "
+                "are unpushed commits.",
+                local_repo_context.code_repository.name,
+            )
+        else:
+            logger.info(
+                "Using code repository `%s` to download code for this run.",
+                local_repo_context.code_repository.name,
+            )
+    elif local_repo_context.is_dirty:
+        logger.warning(
+            "Unable to use code repository `%s` to track the commit hash as "
+            "there are uncommitted or untracked files.",
+            local_repo_context.code_repository.name,
+        )

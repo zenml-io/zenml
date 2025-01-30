@@ -79,7 +79,7 @@ def set_custom_local_repository(
 
     path = os.path.abspath(source_utils.get_source_root())
     _CODE_REPOSITORY_CACHE[path] = _DownloadedRepositoryContext(
-        code_repository_id=repo.id, root=root, commit=commit
+        code_repository=repo, root=root, commit=commit
     )
 
 
@@ -106,7 +106,8 @@ def find_active_code_repository(
         return _CODE_REPOSITORY_CACHE[path]
 
     local_context: Optional["LocalRepositoryContext"] = None
-    for model in depaginate(list_method=Client().list_code_repositories):
+    code_repositories = depaginate(list_method=Client().list_code_repositories)
+    for model in code_repositories:
         try:
             repo = BaseCodeRepository.from_model(model)
         except ImportError:
@@ -125,6 +126,14 @@ def find_active_code_repository(
         local_context = repo.get_local_context(path)
         if local_context:
             break
+    else:
+        if code_repositories:
+            # There are registered code repositories, but none was matching the
+            # current path -> We log the path to help in debugging issues
+            # related to the source root.
+            logger.info(
+                "No matching code repository found for path `%s`.", path
+            )
 
     _CODE_REPOSITORY_CACHE[path] = local_context
     return local_context
