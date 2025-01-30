@@ -8,8 +8,7 @@
 #
 #  Unless required by applicable law or agreed to in writing, software
 #  distributed under the License is distributed on an "AS IS" BASIS,
-#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
-#  or implied. See the License for the specific language governing
+#  OR implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 """Implementation of the Azure Artifact Store integration."""
 
@@ -26,6 +25,7 @@ from typing import (
 )
 
 import adlfs
+from azure.identity import DefaultAzureCredential
 
 from zenml.artifact_stores import BaseArtifactStore
 from zenml.integrations.azure.flavors.azure_artifact_store_flavor import (
@@ -77,18 +77,21 @@ class AzureArtifactStore(BaseArtifactStore, AuthenticationMixin):
                 )
             # Get the credentials from the client
             credentials = client.credential
-            if not isinstance(credentials, ClientSecretCredential):
+            if isinstance(credentials, ClientSecretCredential):
+                return AzureSecretSchema(
+                    client_id=credentials._client_id,
+                    client_secret=credentials._client_credential,
+                    tenant_id=credentials._tenant_id,
+                    account_name=client.account_name,
+                )
+            elif isinstance(credentials, DefaultAzureCredential):
+                return None
+            else:
                 raise RuntimeError(
                     "The Azure Artifact Store connector can only be used "
                     "with a service connector that is configured with "
-                    "Azure service principal credentials."
+                    "Azure service principal credentials or DefaultAzureCredential."
                 )
-            return AzureSecretSchema(
-                client_id=credentials._client_id,
-                client_secret=credentials._client_credential,
-                tenant_id=credentials._tenant_id,
-                account_name=client.account_name,
-            )
 
         secret = self.get_typed_authentication_secret(
             expected_schema_type=AzureSecretSchema
@@ -104,7 +107,10 @@ class AzureArtifactStore(BaseArtifactStore, AuthenticationMixin):
         """
         if not self._filesystem:
             secret = self.get_credentials()
-            credentials = secret.get_values() if secret else {}
+            if secret:
+                credentials = secret.get_values()
+            else:
+                credentials = {"account_name": self.config.account_name}
 
             self._filesystem = adlfs.AzureBlobFileSystem(
                 **credentials,
