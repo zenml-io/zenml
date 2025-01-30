@@ -34,7 +34,7 @@ from typing import (
     Union,
     cast,
 )
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from pydantic import ConfigDict, SecretStr
 
@@ -4980,12 +4980,7 @@ class Client(metaclass=ClientMetaClass):
             )
         )
         try:
-            # This does a login to verify the credentials
-            code_repo_class(id=uuid4(), config=config)
-
-            # Explicitly access the config for pydantic validation, in case
-            # the login for some reason did not do that.
-            _ = code_repo_class.config
+            code_repo_class.validate_config(config)
         except Exception as e:
             raise RuntimeError(
                 "Failed to validate code repository config."

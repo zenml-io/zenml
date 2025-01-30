@@ -128,6 +128,7 @@
     "hvac",
     "hvac.exceptions",
     "huggingface_hub",
+    "huggingface_hub.errors",
     "huggingface_hub.utils",
     "keras",
     "kfp",
