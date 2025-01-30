@@ -97,7 +97,7 @@ def get_index_name(table_name: str, column_names: List[str]) -> str:
         The index name.
     """
     columns = "_".join(column_names)
-    return f"ix_{table_name}_{columns}"
+    return f"ix_{table_name}_{columns}"[:64]
 
 
 def build_index(

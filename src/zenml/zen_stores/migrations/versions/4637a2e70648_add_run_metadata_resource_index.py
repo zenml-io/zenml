@@ -28,7 +28,7 @@ def upgrade() -> None:
         # don't continue with the migration.
         if (
             index["name"]
-            == "ix_run_metadata_resource_resource_id_resource_type_run_metadata_id"
+            == "ix_run_metadata_resource_resource_id_resource_type_run_metadata_"
         ):
             return
 
@@ -36,7 +36,7 @@ def upgrade() -> None:
         "run_metadata_resource", schema=None
     ) as batch_op:
         batch_op.create_index(
-            "ix_run_metadata_resource_resource_id_resource_type_run_metadata_id",
+            "ix_run_metadata_resource_resource_id_resource_type_run_metadata_",
             ["resource_id", "resource_type", "run_metadata_id"],
             unique=False,
         )
@@ -51,7 +51,7 @@ def downgrade() -> None:
         "run_metadata_resource", schema=None
     ) as batch_op:
         batch_op.drop_index(
-            "ix_run_metadata_resource_resource_id_resource_type_run_metadata_id"
+            "ix_run_metadata_resource_resource_id_resource_type_run_metadata_"
         )
 
     # ### end Alembic commands ###
