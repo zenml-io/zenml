@@ -15,6 +15,14 @@ export ZENML_LOGGING_VERBOSITY=INFO
 
 Choose from `INFO`, `WARN`, `ERROR`, `CRITICAL`, `DEBUG`.
 
+## Logging format
+
+```bash
+export ZENML_LOGGING_FORMAT='%(asctime)s %(message)s'
+```
+
+See [this page](../how-to/control-logging/set-logging-format.md) for more information.
+
 ## Disable step logs
 
 Usually, ZenML [stores step logs in the artifact store](../how-to/control-logging/enable-or-disable-logs-storing.md), but this can sometimes cause performance bottlenecks, especially if the code utilizes progress bars.
@@ -96,6 +104,14 @@ my_pipeline = my_pipeline.with_options(
     settings={"docker": docker_settings}
 )
 ```
+
+## Ignore untracked code repository files
+
+When using [code repositories](../how-to/project-setup-and-management/setting-up-a-project-repository/connect-your-git-repository.md),
+ZenML will by default require the local checkout to have no uncommitted or untracked files
+in order to use the code repository to track the commit and download files. If you want to ignore untracked files, you can set
+the `ZENML_CODE_REPOSITORY_IGNORE_UNTRACKED_FILES` environment variable to `True`. When doing this, you're responsible that
+the files committed to the repository includes everything necessary to run your pipeline.
 
 ## ZenML global config path
 

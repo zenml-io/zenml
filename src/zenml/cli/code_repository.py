@@ -42,7 +42,7 @@ def code_repository() -> None:
     context_settings={"ignore_unknown_options": True},
     help="Register a code repository.",
 )
-@click.argument("name", type=click.STRING)
+@click.argument("name", type=str)
 @click.option(
     "--type",
     "-t",
@@ -162,6 +162,32 @@ def register_code_repository(
         cli_utils.declare(f"Successfully registered code repository `{name}`.")
 
 
+@code_repository.command("describe", help="Describe a code repository.")
+@click.argument(
+    "name_id_or_prefix",
+    type=str,
+    required=True,
+)
+def describe_code_repository(name_id_or_prefix: str) -> None:
+    """Describe a code repository.
+
+    Args:
+        name_id_or_prefix: Name, ID or prefix of the code repository.
+    """
+    client = Client()
+    try:
+        code_repository = client.get_code_repository(
+            name_id_or_prefix=name_id_or_prefix,
+        )
+    except KeyError as err:
+        cli_utils.error(str(err))
+    else:
+        cli_utils.print_pydantic_model(
+            title=f"Code repository '{code_repository.name}'",
+            model=code_repository,
+        )
+
+
 @code_repository.command("list", help="List all connected code repositories.")
 @list_options(CodeRepositoryFilter)
 def list_code_repositories(**kwargs: Any) -> None:
@@ -180,6 +206,74 @@ def list_code_repositories(**kwargs: Any) -> None:
         cli_utils.print_pydantic_models(
             repos,
             exclude_columns=["created", "updated", "user", "workspace"],
+        )
+
+
+@code_repository.command(
+    "update",
+    help="Update a code repository.",
+    context_settings={"ignore_unknown_options": True},
+)
+@click.argument("name_or_id", type=str, required=True)
+@click.option(
+    "--name",
+    "-n",
+    type=str,
+    required=False,
+    help="The new code repository name.",
+)
+@click.option(
+    "--description",
+    "-d",
+    type=str,
+    required=False,
+    help="The new code repository description.",
+)
+@click.option(
+    "--logo-url",
+    "-l",
+    type=str,
+    required=False,
+    help="New URL of a logo (png, jpg or svg) for the code repository.",
+)
+@click.argument(
+    "args",
+    nargs=-1,
+    type=click.UNPROCESSED,
+)
+def update_code_repository(
+    name_or_id: str,
+    name: Optional[str],
+    description: Optional[str],
+    logo_url: Optional[str],
+    args: List[str],
+) -> None:
+    """Update a code repository.
+
+    Args:
+        name_or_id: Name or ID of the code repository to update.
+        name: New name of the code repository.
+        description: New description of the code repository.
+        logo_url: New logo URL of the code repository.
+        args: Code repository configurations.
+    """
+    parsed_name_or_id, parsed_args = cli_utils.parse_name_and_extra_arguments(
+        list(args) + [name_or_id], expand_args=True, name_mandatory=True
+    )
+    assert parsed_name_or_id
+
+    with console.status(
+        f"Updating code repository '{parsed_name_or_id}'...\n"
+    ):
+        Client().update_code_repository(
+            name_id_or_prefix=parsed_name_or_id,
+            name=name,
+            description=description,
+            logo_url=logo_url,
+            config=parsed_args,
+        )
+        cli_utils.declare(
+            f"Successfully updated code repository `{parsed_name_or_id}`."
         )
 
 

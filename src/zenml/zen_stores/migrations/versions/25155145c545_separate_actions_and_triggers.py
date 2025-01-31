@@ -6,12 +6,13 @@ Create Date: 2024-05-16 11:29:53.341275
 
 """
 
-from datetime import datetime
 from uuid import uuid4
 
 import sqlalchemy as sa
 import sqlmodel
 from alembic import op
+
+from zenml.utils.time_utils import utc_now
 
 # revision identifiers, used by Alembic.
 revision = "25155145c545"
@@ -42,7 +43,7 @@ def migrate_actions() -> None:
         )
     ).fetchall()
 
-    now = datetime.utcnow()
+    now = utc_now()
 
     actions_to_insert = []
     trigger_updates = {}

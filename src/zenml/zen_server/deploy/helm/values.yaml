@@ -990,6 +990,10 @@ resources: {}
   #   cpu: 100m
   #   memory: 128Mi
 
+resourcesMigrationPod: {}
+  # Resource requests and limits for the database migration pod.
+  # If not set, falls back to the global resources configuration defined in .Values.resources
+
 autoscaling:
   enabled: false
   minReplicas: 1

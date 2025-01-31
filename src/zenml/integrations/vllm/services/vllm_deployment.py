@@ -152,9 +152,14 @@ class VLLMDeploymentService(LocalDaemonService, BaseDeploymentService):
             parser: argparse.ArgumentParser = make_arg_parser(
                 FlexibleArgumentParser()
             )
-            args: argparse.Namespace = parser.parse_args()
+            # pass in empty list to get default args
+            # otherwise it will try to get the args from sys.argv
+            # and if there's a --config in there, it will want to use
+            # that file for vLLM configuration, which is not what we want
+            args: argparse.Namespace = parser.parse_args(args=[])
             # Override port with the available port
             self.config.port = self.endpoint.status.port or self.config.port
+
             # Update the arguments in place
             args.__dict__.update(self.config.model_dump())
             uvloop.run(run_server(args=args))

@@ -15,10 +15,11 @@
 
 import os
 import re
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
+from uuid import uuid4
 
 import requests
-from github import Github, GithubException
+from github import Consts, Github, GithubException
 from github.Repository import Repository
 
 from zenml.code_repositories import (
@@ -30,6 +31,7 @@ from zenml.code_repositories.base_code_repository import (
 )
 from zenml.code_repositories.git import LocalGitRepositoryContext
 from zenml.logger import get_logger
+from zenml.utils import deprecation_utils
 from zenml.utils.secret_utils import SecretField
 
 logger = get_logger(__name__)
@@ -39,22 +41,41 @@ class GitHubCodeRepositoryConfig(BaseCodeRepositoryConfig):
     """Config for GitHub code repositories.
 
     Args:
-        url: The URL of the GitHub instance.
+        api_url: The GitHub API URL.
         owner: The owner of the repository.
         repository: The name of the repository.
         host: The host of the repository.
         token: The token to access the repository.
     """
 
-    url: Optional[str]
+    api_url: Optional[str] = None
     owner: str
     repository: str
     host: Optional[str] = "github.com"
     token: Optional[str] = SecretField(default=None)
 
+    url: Optional[str] = None
+    _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
+        ("url", "api_url")
+    )
+
 
 class GitHubCodeRepository(BaseCodeRepository):
     """GitHub code repository."""
+
+    @classmethod
+    def validate_config(cls, config: Dict[str, Any]) -> None:
+        """Validate the code repository config.
+
+        This method should check that the config/credentials are valid and
+        the configured repository exists.
+
+        Args:
+            config: The configuration.
+        """
+        code_repo = cls(id=uuid4(), name="", config=config)
+        # Try to access the project to make sure it exists
+        _ = code_repo.github_repo
 
     @property
     def config(self) -> GitHubCodeRepositoryConfig:
@@ -95,7 +116,7 @@ class GitHubCodeRepository(BaseCodeRepository):
         Raises:
             RuntimeError: If the repository is not public.
         """
-        url = f"https://api.github.com/repos/{owner}/{repo}"
+        url = f"{Consts.DEFAULT_BASE_URL}/repos/{owner}/{repo}"
         response = requests.get(url, timeout=7)
 
         try:
@@ -103,12 +124,15 @@ class GitHubCodeRepository(BaseCodeRepository):
                 pass
             else:
                 raise RuntimeError(
-                    "It is not possible to access this repository as it does not appear to be public."
-                    "Access to private repositories is only possible when a token is provided. Please provide a token and try again"
+                    "It is not possible to access this repository as it does "
+                    "not appear to be public. Access to private repositories "
+                    "is only possible when a token is provided. Please provide "
+                    "a token and try again"
                 )
         except Exception as e:
             raise RuntimeError(
-                f"An error occurred while checking if repository is public: {str(e)}"
+                "An error occurred while checking if repository is public: "
+                f"{str(e)}"
             )
 
     def login(
@@ -120,7 +144,10 @@ class GitHubCodeRepository(BaseCodeRepository):
             RuntimeError: If the login fails.
         """
         try:
-            self._github_session = Github(self.config.token)
+            self._github_session = Github(
+                login_or_token=self.config.token,
+                base_url=self.config.api_url or Consts.DEFAULT_BASE_URL,
+            )
             if self.config.token:
                 user = self._github_session.get_user().login
                 logger.debug(f"Logged in as {user}")
@@ -178,7 +205,7 @@ class GitHubCodeRepository(BaseCodeRepository):
         """
         return LocalGitRepositoryContext.at(
             path=path,
-            code_repository_id=self.id,
+            code_repository=self,
             remote_url_validation_callback=self.check_remote_url,
         )
 

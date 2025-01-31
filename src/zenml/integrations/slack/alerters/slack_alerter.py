@@ -14,12 +14,12 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-from typing import Any, Dict, List, Optional, Type, cast
+import time
+from typing import Dict, List, Optional, Type, cast
 
 from pydantic import BaseModel
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
-from slack_sdk.rtm import RTMClient
 
 from zenml import get_step_context
 from zenml.alerter.base_alerter import BaseAlerter, BaseAlerterStepParameters
@@ -58,7 +58,7 @@ class SlackAlerterParameters(BaseAlerterStepParameters):
     payload: Optional[SlackAlerterPayload] = None
     include_format_blocks: Optional[bool] = True
 
-    # Allowing user to use their own custom blocks in the slack post message
+    # Allowing user to use their own custom blocks in the Slack post message
     blocks: Optional[List[Dict]] = None  # type: ignore
 
 
@@ -96,7 +96,7 @@ class SlackAlerter(BaseAlerter):
 
         Raises:
             RuntimeError: if config is not of type `BaseAlerterStepConfig`.
-            ValueError: if a slack channel was neither defined in the config
+            ValueError: if a Slack channel was neither defined in the config
                 nor in the slack alerter component.
         """
         if params and not isinstance(params, BaseAlerterStepParameters):
@@ -111,24 +111,48 @@ class SlackAlerter(BaseAlerter):
         ):
             return params.slack_channel_id
 
-        settings = cast(
-            SlackAlerterSettings,
-            self.get_settings(get_step_context().step_run),
-        )
-        if settings.slack_channel_id is not None:
+        try:
+            settings = cast(
+                SlackAlerterSettings,
+                self.get_settings(get_step_context().step_run),
+            )
+        except RuntimeError:
+            settings = None
+
+        if settings is not None and settings.slack_channel_id is not None:
             return settings.slack_channel_id
 
-        if self.config.default_slack_channel_id is not None:
-            return self.config.default_slack_channel_id
+        if self.config.slack_channel_id is not None:
+            return self.config.slack_channel_id
 
         raise ValueError(
-            "Neither the `slack_channel_id` in the runtime "
-            "configuration, nor the `default_slack_channel_id` in the alerter "
-            "stack component is specified. Please specify at least one."
+            "The `slack_channel_id` is not set either in the runtime settings, "
+            "or the component configuration of the alerter. Please specify at "
+            "least one."
         )
 
+    def _get_timeout_duration(self) -> int:
+        """Gets the timeout duration used by the ask method .
+
+        Returns:
+            number of seconds for the timeout to happen.
+        """
+        try:
+            settings = cast(
+                SlackAlerterSettings,
+                self.get_settings(get_step_context().step_run),
+            )
+        except RuntimeError:
+            settings = None
+
+        if settings is not None:
+            return settings.timeout
+
+        return self.config.timeout
+
+    @staticmethod
     def _get_approve_msg_options(
-        self, params: Optional[BaseAlerterStepParameters]
+        params: Optional[BaseAlerterStepParameters],
     ) -> List[str]:
         """Define which messages will lead to approval during ask().
 
@@ -146,8 +170,9 @@ class SlackAlerter(BaseAlerter):
             return params.approve_msg_options
         return DEFAULT_APPROVE_MSG_OPTIONS
 
+    @staticmethod
     def _get_disapprove_msg_options(
-        self, params: Optional[BaseAlerterStepParameters]
+        params: Optional[BaseAlerterStepParameters],
     ) -> List[str]:
         """Define which messages will lead to disapproval during ask().
 
@@ -165,8 +190,8 @@ class SlackAlerter(BaseAlerter):
             return params.disapprove_msg_options
         return DEFAULT_DISAPPROVE_MSG_OPTIONS
 
+    @staticmethod
     def _create_blocks(
-        self,
         message: Optional[str],
         params: Optional[BaseAlerterStepParameters],
     ) -> List[Dict]:  # type: ignore
@@ -185,7 +210,8 @@ class SlackAlerter(BaseAlerter):
                 return params.blocks
             elif hasattr(params, "payload") and params.payload is not None:
                 logger.info(
-                    "No custom blocks set. Using default blocks for Slack alerter"
+                    "No custom blocks set. Using default blocks for Slack "
+                    "alerter."
                 )
                 payload = params.payload
                 return [
@@ -228,7 +254,8 @@ class SlackAlerter(BaseAlerter):
                 return []
         else:
             logger.info(
-                "params is not of type SlackAlerterParameters. Returning empty blocks."
+                "params is not of type SlackAlerterParameters. Returning empty "
+                "blocks."
             )
             return []
 
@@ -253,64 +280,95 @@ class SlackAlerter(BaseAlerter):
             response = client.chat_postMessage(
                 channel=slack_channel_id, text=message, blocks=blocks
             )
+            if not response.get("ok", False):
+                error_details = response.get("error", "Unknown error")
+                logger.error(
+                    f"Failed to send message to Slack channel. "
+                    f"Error: {error_details}. Full response: {response}"
+                )
+                return False
             return True
         except SlackApiError as error:
-            response = error.response["error"]
-            logger.error(f"SlackAlerter.post() failed: {response}")
+            error_message = error.response.get("error", "Unknown error")
+            logger.error(
+                "SlackAlerter.post() failed with Slack API error: "
+                f"{error_message}. Full response: {error.response}"
+            )
+            return False
+        except Exception as e:
+            logger.error(f"Unexpected error in SlackAlerter.post(): {str(e)}")
             return False
 
     def ask(
-        self, message: str, params: Optional[BaseAlerterStepParameters] = None
+        self, question: str, params: Optional[BaseAlerterStepParameters] = None
     ) -> bool:
         """Post a message to a Slack channel and wait for approval.
 
         Args:
-            message: Initial message to be posted.
+            question: Initial message to be posted.
             params: Optional parameters.
 
         Returns:
             True if a user approved the operation, else False
         """
-        rtm = RTMClient(token=self.config.slack_token)
         slack_channel_id = self._get_channel_id(params=params)
 
-        approved = False  # will be modified by handle()
+        client = WebClient(token=self.config.slack_token)
+        approve_options = self._get_approve_msg_options(params)
+        disapprove_options = self._get_disapprove_msg_options(params)
 
-        @RTMClient.run_on(event="hello")  # type: ignore
-        def post_initial_message(**payload: Any) -> None:
-            """Post an initial message in a channel and start listening.
-
-            Args:
-                payload: payload of the received Slack event.
-            """
-            web_client = payload["web_client"]
-            blocks = self._create_blocks(message, params)
-            web_client.chat_postMessage(
-                channel=slack_channel_id, text=message, blocks=blocks
+        try:
+            # Send message to the Slack channel
+            response = client.chat_postMessage(
+                channel=slack_channel_id,
+                text=question,
+                blocks=self._create_blocks(question, params),
             )
 
-        @RTMClient.run_on(event="message")  # type: ignore
-        def handle(**payload: Any) -> None:
-            """Listen / handle messages posted in the channel.
+            if not response.get("ok", False):
+                error_details = response.get("error", "Unknown error")
+                logger.error(
+                    f"Failed to send the initial message to the Slack channel. "
+                    f"Error: {error_details}. Full response: {response}"
+                )
+                return False
 
-            Args:
-                payload: payload of the received Slack event.
-            """
-            event = payload["data"]
-            if event["channel"] == slack_channel_id:
-                # approve request (return True)
-                if event["text"] in self._get_approve_msg_options(params):
-                    print(f"User {event['user']} approved on slack.")
-                    nonlocal approved
-                    approved = True
-                    rtm.stop()  # type: ignore[no-untyped-call]
+            # Retrieve timestamp of sent message
+            timestamp = response["ts"]
 
-                # disapprove request (return False)
-                elif event["text"] in self._get_disapprove_msg_options(params):
-                    print(f"User {event['user']} disapproved on slack.")
-                    rtm.stop()  # type: ignore[no-untyped-call]
+            # Wait for a response
+            start_time = time.time()
 
-        # start another thread until `rtm.stop()` is called in handle()
-        rtm.start()
+            while time.time() - start_time < self._get_timeout_duration():
+                history = client.conversations_history(
+                    channel=slack_channel_id, oldest=timestamp
+                )
+                for msg in history["messages"]:
+                    if "ts" in msg and "user" in msg:
+                        user_message = msg["text"].strip().lower()
+                        if user_message in [
+                            opt.lower() for opt in approve_options
+                        ]:
+                            logger.info("User approved the operation.")
+                            return True
+                        elif user_message in [
+                            opt.lower() for opt in disapprove_options
+                        ]:
+                            logger.info("User disapproved the operation.")
+                            return False
 
-        return approved
+                time.sleep(1)  # Polling interval
+
+            logger.warning("No response received within the timeout period.")
+            return False
+
+        except SlackApiError as error:
+            error_message = error.response.get("error", "Unknown error")
+            logger.error(
+                f"SlackAlerter.ask() failed with Slack API error: "
+                f"{error_message}. Full response: {error.response}"
+            )
+            return False
+        except Exception as e:
+            logger.error(f"Unexpected error in SlackAlerter.ask(): {str(e)}")
+            return False

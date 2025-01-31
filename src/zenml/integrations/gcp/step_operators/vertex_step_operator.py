@@ -258,6 +258,7 @@ class VertexStepOperator(BaseStepOperator, GoogleCredentialsMixin):
                     if self.config.reserved_ip_ranges
                     else []
                 ),
+                "persistent_resource_id": settings.persistent_resource_id,
             },
             "labels": job_labels,
             "encryption_spec": {

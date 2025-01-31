@@ -14,7 +14,6 @@
 """SQLModel implementation of user tables."""
 
 import json
-from datetime import datetime
 from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
@@ -33,6 +32,7 @@ from zenml.models import (
     UserResponseMetadata,
     UserUpdate,
 )
+from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 
 if TYPE_CHECKING:
@@ -225,7 +225,7 @@ class UserSchema(NamedSchema, table=True):
             else:
                 setattr(self, field, value)
 
-        self.updated = datetime.utcnow()
+        self.updated = utc_now()
         return self
 
     def update_service_account(
@@ -245,7 +245,7 @@ class UserSchema(NamedSchema, table=True):
         ).items():
             setattr(self, field, value)
 
-        self.updated = datetime.utcnow()
+        self.updated = utc_now()
         return self
 
     def to_model(

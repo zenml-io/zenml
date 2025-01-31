@@ -6,12 +6,13 @@ Create Date: 2023-11-25 11:01:09.217299
 
 """
 
-from datetime import datetime
 from uuid import uuid4
 
 import sqlalchemy as sa
 import sqlmodel
 from alembic import op
+
+from zenml.utils.time_utils import utc_now
 
 # revision identifiers, used by Alembic.
 revision = "a91762e6be36"
@@ -58,12 +59,13 @@ def upgrade() -> None:
     unique_artifact_names = {
         name: has_custom_name for name, has_custom_name in artifact_names
     }
+    now = utc_now()
     for name, has_custom_name in unique_artifact_names.items():
         conn.execute(
             artifacts.insert().values(
                 id=uuid4().hex,
-                created=datetime.utcnow(),
-                updated=datetime.utcnow(),
+                created=now,
+                updated=now,
                 name=name,
                 has_custom_name=has_custom_name,
             )

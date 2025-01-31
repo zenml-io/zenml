@@ -51,7 +51,8 @@ class VertexStepOperatorSettings(BaseSettings):
             https://cloud.google.com/vertex-ai/docs/training/configure-compute#boot_disk_options
         boot_disk_type: Type of the boot disk. (Default: pd-ssd)
             https://cloud.google.com/vertex-ai/docs/training/configure-compute#boot_disk_options
-
+        persistent_resource_id: The ID of the persistent resource to use for the job.
+            https://cloud.google.com/vertex-ai/docs/training/persistent-resource-overview
     """
 
     accelerator_type: Optional[str] = None
@@ -59,6 +60,7 @@ class VertexStepOperatorSettings(BaseSettings):
     machine_type: str = "n1-standard-4"
     boot_disk_size_gb: int = 100
     boot_disk_type: str = "pd-ssd"
+    persistent_resource_id: Optional[str] = None
 
 
 class VertexStepOperatorConfig(

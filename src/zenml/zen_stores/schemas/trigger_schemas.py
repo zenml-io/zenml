@@ -15,7 +15,6 @@
 
 import base64
 import json
-from datetime import datetime
 from typing import Any, List, Optional, cast
 from uuid import UUID
 
@@ -38,6 +37,7 @@ from zenml.models import (
     TriggerUpdate,
 )
 from zenml.utils.json_utils import pydantic_encoder
+from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.action_schemas import ActionSchema
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.event_source_schemas import EventSourceSchema
@@ -133,7 +133,7 @@ class TriggerSchema(NamedSchema, table=True):
             else:
                 setattr(self, field, value)
 
-        self.updated = datetime.utcnow()
+        self.updated = utc_now()
         return self
 
     @classmethod

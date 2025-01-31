@@ -6,12 +6,13 @@ Create Date: 2024-04-17 14:17:08.142652
 
 """
 
-from datetime import datetime
 from uuid import UUID
 
 import sqlalchemy as sa
 import sqlmodel
 from alembic import op
+
+from zenml.utils.time_utils import utc_now
 
 # revision identifiers, used by Alembic.
 revision = "46506f72f0ed"
@@ -76,7 +77,7 @@ def upgrade() -> None:
                 "display_announcements": True,
                 "display_updates": True,
                 # Set the updated timestamp to the current time
-                "updated": datetime.utcnow(),
+                "updated": utc_now(),
             },
         ],
     )

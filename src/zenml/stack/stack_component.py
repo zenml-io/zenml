@@ -29,7 +29,11 @@ from zenml.config.step_run_info import StepRunInfo
 from zenml.enums import StackComponentType
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
-from zenml.models import ServiceConnectorRequirements, StepRunResponse
+from zenml.models import (
+    PipelineRunResponse,
+    ServiceConnectorRequirements,
+    StepRunResponse,
+)
 from zenml.utils import (
     pydantic_utils,
     secret_utils,
@@ -398,16 +402,10 @@ class StackComponent:
         Raises:
             ImportError: If the flavor can't be imported.
         """
+        from zenml.stack import Flavor
+
         flavor_model = component_model.flavor
-
-        try:
-            from zenml.stack import Flavor
-
-            flavor = Flavor.from_model(flavor_model)
-        except (ModuleNotFoundError, ImportError, NotImplementedError) as err:
-            raise ImportError(
-                f"Couldn't import flavor {flavor_model.name}: {err}"
-            )
+        flavor = Flavor.from_model(flavor_model)
 
         configuration = flavor.config_class(**component_model.configuration)
 
@@ -496,6 +494,7 @@ class StackComponent:
             "StepRunInfo",
             "PipelineDeploymentBase",
             "PipelineDeploymentResponse",
+            "PipelineRunResponse",
         ],
     ) -> "BaseSettings":
         """Gets settings for this stack component.
@@ -527,7 +526,10 @@ class StackComponent:
 
         all_settings = (
             container.config.settings
-            if isinstance(container, (Step, StepRunResponse, StepRunInfo))
+            if isinstance(
+                container,
+                (Step, StepRunResponse, StepRunInfo, PipelineRunResponse),
+            )
             else container.pipeline_configuration.settings
         )
 

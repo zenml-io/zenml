@@ -199,7 +199,7 @@ These configuration options are only relevant if you're using Hashicorp Vault as
 {% endtab %}
 
 {% tab title="Custom" %}
-These configuration options are only relevant if you're using a custom secrets store backend implementation. For this to work, you must have [a custom implementation of the secrets store API](manage-the-deployed-services/custom-secret-stores.md) in the form of a class derived from `zenml.zen_stores.secrets_stores.base_secrets_store.BaseSecretsStore`. This class must be importable from within the ZenML server container, which means you most likely need to mount the directory containing the class into the container or build a custom container image that contains the class.
+These configuration options are only relevant if you're using a custom secrets store backend implementation. For this to work, you must have [a custom implementation of the secrets store API](custom-secret-stores.md) in the form of a class derived from `zenml.zen_stores.secrets_stores.base_secrets_store.BaseSecretsStore`. This class must be importable from within the ZenML server container, which means you most likely need to mount the directory containing the class into the container or build a custom container image that contains the class.
 
 The following configuration option is required:
 
