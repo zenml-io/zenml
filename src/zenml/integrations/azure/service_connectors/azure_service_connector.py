@@ -1895,7 +1895,7 @@ class _ACRTokenExchangeClient:
                 f"https://{acr_url}/oauth2/exchange",
                 headers=headers,
                 data=data,
-                timeout=5
+                timeout=5,
             )
 
             if response.status_code != 200:
@@ -1941,7 +1941,7 @@ class _ACRTokenExchangeClient:
                 f"https://{acr_url}/oauth2/token",
                 headers=headers,
                 data=data,
-                timeout=5
+                timeout=5,
             )
 
             if response.status_code != 200:
