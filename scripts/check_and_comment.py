@@ -146,14 +146,9 @@ def main():
     broken_links = check_markdown_links(directory)
 
     # If running in GitHub Actions, handle PR comment
-    if "GITHUB_TOKEN" in os.environ:
+    if token := os.environ.get("GITHUB_TOKEN"):
         # Only import github when needed
         from github import Github
-
-        token = os.environ.get("GITHUB_TOKEN")
-        if not token:
-            print("Error: GITHUB_TOKEN not set")
-            sys.exit(1)
 
         with open(os.environ["GITHUB_EVENT_PATH"]) as f:
             event = json.load(f)
@@ -181,7 +176,7 @@ def main():
         if existing_comment:
             existing_comment.edit(comment_body)
             print("Updated existing broken links report comment")
-        else:
+        elif broken_links:
             pr.create_issue_comment(comment_body)
             print("Created new broken links report comment")
 

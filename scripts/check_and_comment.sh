@@ -20,10 +20,5 @@ if [ ! -d "$CHECK_DIR" ]; then
     exit 1
 fi
 
-# Only install PyGithub if we're running in GitHub Actions
-if [ -n "$GITHUB_TOKEN" ]; then
-    pip install PyGithub
-fi
-
 # Run the Python script
 python "$SCRIPT_DIR/check_and_comment.py" "$CHECK_DIR" 
