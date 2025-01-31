@@ -91,13 +91,11 @@ In most cases, you’ll need to change the following configuration values in `cu
 
 * the database configuration, if you mean to use an external database:
   * the database URL, formatted as `mysql://<username>:<password>@<hostname>:<port>/<database>`
-  * CA and/or client TLS certificates, if you’re using SSL to secure the connection to the database
+  * CA and/or client TLS certificates, if you’re using SSL to secure the connection to the database can be provided in the `database.sslCa`, `database.sslCert` and `database.sslKey` fields as either an inline value or a secret reference (in the latter case, the secret(s) must be created in the same namespace as the ZenML server before the deployment).
 * the Ingress configuration, if enabled:
   * enabling TLS
   * enabling self-signed certificates
   * configuring the hostname that will be used to access the ZenML server, if different from the IP address or hostname associated with the Ingress service installed in your cluster
-
-> **Note** All the file paths that you use in your helm chart (e.g. for certificates like `database.sslCa`) must be relative to the `./zenml` helm chart directory, meaning that you also have to copy these files there.
 
 ### Install the Helm chart
 
@@ -686,39 +684,6 @@ zenml:
 ```
 
 The certificates will be installed in the server container, allowing it to securely connect to services using these custom CA certificates.
-
-> **⚠️ Security Note**: This implementation uses init containers that need to run as root to update the system CA store. Some Kubernetes security policies (e.g., Pod Security Standards, OpenShift SCCs) may prevent this. In such environments, you'll need to build custom container images that include the certificates, installed during the build process when root access is available.
-
-Alternative approach using custom container images:
-
-```dockerfile
-FROM python:3.10-slim-bookworm AS base
-
-# Install certificates before switching to non-root user
-COPY my-custom-ca.crt /usr/local/share/ca-certificates/
-RUN update-ca-certificates && \
-    # Ensure certificates are world-readable
-    chmod -R 0644 /etc/ssl/certs/* && \
-    chmod 0755 /etc/ssl/certs
-
-# Use the original image as the final stage
-FROM zenmldocker/zenml-server:<version>
-
-# Copy the updated certificate store from the base stage
-COPY --from=base /etc/ssl/certs /etc/ssl/certs
-COPY my-custom-ca.crt /usr/local/share/ca-certificates/
-```
-
-Then update your values.yaml to use your custom images:
-```yaml
-zenml:
-  image:
-    repository: your-registry/zenml-server-with-certs
-    tag: your-tag
-```
-
-This chart offers a multitude of configuration options. For detailed
-information, check the default [`values.yaml`](values.yaml) file.
 
 ### HTTP Proxy Configuration
 

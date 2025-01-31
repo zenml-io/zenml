@@ -272,11 +272,62 @@ zenml:
   # NOTE: the certificate files need to be copied in the helm chart folder and
   # the paths configured here need to be relative to the root of the helm chart.
   database:
-    # url: "mysql://admin:password@zenml-mysql:3306/database"
-    # sslCa: /path/to/ca.pem
-    # sslCert: /path/to/client-cert.pem
-    # sslKey: /path/to/client-key.pem
-    # sslVerifyServerCert: True
+
+    # The database URL. If not set, a local sqlite database will be used, which
+    # will not be persisted across pod restarts.
+    # E.g.: "mysql://admin:password@zenml-mysql:3306/database"
+    url:
+    
+    # Set to true to enable SSL for the MySQL database. Defaults to false.
+    # NOTE: setting any of the SSL certificate options (sslCa, sslCert, sslKey)
+    # will automatically set this option to true.
+    ssl: false
+
+    # The MySQL SSL CA certificate. Required for SSL enabled authentication if
+    # the CA certificate is not part of the certificates shipped with the
+    # container image. Can be provided as an inline value or as a Kubernetes
+    # secret reference.
+    #
+    # NOTE: it is recommended to use the `zenml.certificates` option instead.
+    sslCa:
+      # value: |
+      #   -----BEGIN CERTIFICATE-----
+      #   ...
+      #   -----END CERTIFICATE-----
+      #
+      # secretRef:
+      #   name: ca-certificate
+      #   key: ca.pem
+
+    # The MySQL SSL client certificate. Required for SSL enabled authentication
+    # if client certificates are used. Can be provided as an inline value or as
+    # a Kubernetes secret reference.
+    sslCert:
+      # value: |
+      #   -----BEGIN CERTIFICATE-----
+      #   ...
+      #   -----END CERTIFICATE-----
+      #
+      # secretRef:
+      #   name: client-certificate
+      #   key: client-cert.pem
+
+    # The MySQL SSL client key. Required for SSL enabled authentication if
+    # client certificates are used. Can be provided as an inline value or as
+    # a Kubernetes secret reference.
+    sslKey:
+      # value: |
+      #   -----BEGIN PRIVATE KEY-----
+      #   ...
+      #   -----END PRIVATE KEY-----
+      #
+      # secretRef:
+      #   name: client-key
+      #   key: client-key.pem
+
+    # Set to true to verify the identity of the server against the provided
+    # server certificate. Defaults to false.
+    sslVerifyServerCert: false
 
     # Connection pool settings (only relevant for MySQL databases).
     #
@@ -956,8 +1007,9 @@ zenml:
       generateCerts: false
       secretName: zenml-tls-certs
 
-  # Configuration for custom CA certificates
+  # Configuration for custom CA certificates.
   certificates:
+
     # Direct injection of CA certificates in PEM format
     customCAs: []
       # - name: "my-custom-ca"

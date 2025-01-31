@@ -31,12 +31,20 @@ spec:
           image: "{{ .Values.zenml.image.repository }}:{{ .Values.zenml.image.tag | default .Chart.Version }}"
           imagePullPolicy: {{ .Values.zenml.image.pullPolicy }}
           command: ["/bin/sh", "-c"]
-          args: ["update-ca-certificates && cp -r /etc/ssl/certs/* /updated-certs"]
-          securityContext:
-            runAsUser: 0  # Run as root
+          args:
+            - |
+              # Copy the system CA bundle
+              cp /etc/ssl/certs/ca-certificates.crt /updated-certs/ca-certificates.crt
+              # Append all custom certificates
+              for cert in /custom-certs/*.crt; do
+                if [ -f "$cert" ]; then
+                  cat "$cert" >> /updated-certs/ca-certificates.crt
+                fi
+              done
           volumeMounts:
             - name: custom-certs
-              mountPath: /usr/local/share/ca-certificates
+              mountPath: /custom-certs
+              readOnly: true
             - name: ca-certificates
               mountPath: /updated-certs
       {{- end }}
@@ -50,6 +58,53 @@ spec:
       volumes:
         - name: zenml-config
           emptyDir: {}
+      {{- if or .Values.zenml.certificates.customCAs .Values.zenml.certificates.secretRefs }}
+        - name: custom-certs
+          projected:
+            sources:
+            {{- range .Values.zenml.certificates.customCAs }}
+            - secret:
+                name: {{ include "zenml.fullname" $ }}-custom-ca-{{ .name }}
+                items:
+                  - key: certificate
+                    path: {{ .name }}.crt
+            {{- end }}
+            {{- range .Values.zenml.certificates.secretRefs }}
+            - secret:
+                name: {{ .name }}
+                items:
+                  - key: {{ .key }}
+                    path: {{ .name }}.crt
+            {{- end }}
+        - name: ca-certificates
+          emptyDir: {}
+      {{- end }}
+      {{- if or (and .Values.zenml.database.sslCa .Values.zenml.database.sslCa.secretRef) (and .Values.zenml.database.sslCert .Values.zenml.database.sslCert.secretRef) (and .Values.zenml.database.sslKey .Values.zenml.database.sslKey.secretRef) }}
+        - name: db-certs
+          projected:
+            sources:
+              {{- if and .Values.zenml.database.sslCa .Values.zenml.database.sslCa.secretRef }}
+              - secret:
+                  name: {{ .Values.zenml.database.sslCa.secretRef.name }}
+                  items:
+                    - key: {{ .Values.zenml.database.sslCa.secretRef.key }}
+                      path: {{ .Values.zenml.database.sslCa.secretRef.key }}
+              {{- end }}
+              {{- if and .Values.zenml.database.sslCert .Values.zenml.database.sslCert.secretRef }}
+              - secret:
+                  name: {{ .Values.zenml.database.sslCert.secretRef.name }}
+                  items:
+                    - key: {{ .Values.zenml.database.sslCert.secretRef.key }}
+                      path: {{ .Values.zenml.database.sslCert.secretRef.key }}
+              {{- end }}
+              {{- if and .Values.zenml.database.sslKey .Values.zenml.database.sslKey.secretRef }}
+              - secret:
+                  name: {{ .Values.zenml.database.sslKey.secretRef.name }}
+                  items:
+                    - key: {{ .Values.zenml.database.sslKey.secretRef.key }}
+                      path: {{ .Values.zenml.database.sslKey.secretRef.key }}
+              {{- end }}
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
@@ -59,11 +114,23 @@ spec:
           volumeMounts:
             - name: zenml-config
               mountPath: /zenml/.zenconfig
+          {{- if or .Values.zenml.certificates.customCAs .Values.zenml.certificates.secretRefs }}
+            - name: ca-certificates
+              mountPath: /updated-certs
+              readOnly: true
+          {{- end }}
+          {{- if or (and .Values.zenml.database.sslCa .Values.zenml.database.sslCa.secretRef) (and .Values.zenml.database.sslCert .Values.zenml.database.sslCert.secretRef) (and .Values.zenml.database.sslKey .Values.zenml.database.sslKey.secretRef) }}
+            - name: db-certs
+              mountPath: /dbcerts
+              readOnly: true
+          {{- end }}
           env:
+          {{- if or .Values.zenml.certificates.customCAs .Values.zenml.certificates.secretRefs }}
             - name: REQUESTS_CA_BUNDLE
-              value: /etc/ssl/certs/ca-certificates.crt
+              value: /updated-certs/ca-certificates.crt
             - name: SSL_CERT_FILE
-              value: /etc/ssl/certs/ca-certificates.crt
+              value: /updated-certs/ca-certificates.crt
+          {{- end }}
             # Force Node.js to use system CAs
             - name: NODE_OPTIONS
               value: --use-openssl-ca
@@ -154,15 +221,6 @@ spec:
                 command: ["sleep", "15"]
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-          {{- if or .Values.zenml.certificates.customCAs .Values.zenml.certificates.secretRefs }}
-          volumeMounts:
-            - name: custom-certs
-              mountPath: /usr/local/share/ca-certificates
-              readOnly: true
-            - name: ca-certificates
-              mountPath: /etc/ssl/certs
-              readOnly: true
-          {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -174,26 +232,4 @@ spec:
       {{- with .Values.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
-      {{- end }}
-      {{- if or .Values.zenml.certificates.customCAs .Values.zenml.certificates.secretRefs }}
-      volumes:
-        - name: custom-certs
-          projected:
-            sources:
-            {{- range .Values.zenml.certificates.customCAs }}
-            - configMap:
-                name: {{ include "zenml.fullname" $ }}-custom-ca-{{ .name }}
-                items:
-                  - key: certificate
-                    path: {{ .name }}.crt
-            {{- end }}
-            {{- range .Values.zenml.certificates.secretRefs }}
-            - secret:
-                name: {{ .name }}
-                items:
-                  - key: {{ .key }}
-                    path: {{ .name }}.crt
-            {{- end }}
-        - name: ca-certificates
-          emptyDir: {}
       {{- end }}
