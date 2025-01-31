@@ -21,4 +21,4 @@ if [ ! -d "$CHECK_DIR" ]; then
 fi
 
 # Run the Python script
-python "$SCRIPT_DIR/check_and_comment.py" "$CHECK_DIR" 
+python "$SCRIPT_DIR/check_broken_links.py" "$CHECK_DIR" 
