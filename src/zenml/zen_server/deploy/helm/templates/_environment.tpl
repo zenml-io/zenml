@@ -25,7 +25,19 @@ Returns:
 {{- define "zenml.storeConfigurationAttrs" -}}
 {{- if .ZenML.database.url }}
 type: sql
-ssl_verify_server_cert: {{ .ZenML.database.sslVerifyServerCert | default "false" | quote }}
+{{- if .ZenML.database.ssl }}
+ssl: {{ .ZenML.database.ssl | quote }}
+{{- end }}
+{{- if and .ZenML.database.sslCa .ZenML.database.sslCa.secretRef }}
+ssl_ca: /dbcerts/{{ .ZenML.database.sslCa.secretRef.key }}
+{{- end }}
+{{- if and .ZenML.database.sslCert .ZenML.database.sslCert.secretRef }}
+ssl_cert: /dbcerts/{{ .ZenML.database.sslCert.secretRef.key }}
+{{- end }}
+{{- if and .ZenML.database.sslKey .ZenML.database.sslKey.secretRef }}
+ssl_key: /dbcerts/{{ .ZenML.database.sslKey.secretRef.key }}
+{{- end }}
+ssl_verify_server_cert: {{ .ZenML.database.sslVerifyServerCert | quote }}
 {{- if .ZenML.database.backupStrategy }}
 backup_strategy: {{ .ZenML.database.backupStrategy | quote }}
 {{- if eq .ZenML.database.backupStrategy "database" }}
@@ -66,14 +78,14 @@ Returns:
 {{- define "zenml.storeSecretConfigurationAttrs" -}}
 {{- if .ZenML.database.url }}
 url: {{ .ZenML.database.url | quote }}
-{{- if .ZenML.database.sslCa }}
-ssl_ca: {{ .Files.Get .ZenML.database.sslCa }}
+{{- if and .ZenML.database.sslCa .ZenML.database.sslCa.value }}
+ssl_ca: {{ .ZenML.database.sslCa.value | quote }}
 {{- end }}
-{{- if .ZenML.database.sslCert }}
-ssl_cert: {{ .Files.Get .ZenML.database.sslCert }}
+{{- if and .ZenML.database.sslCert .ZenML.database.sslCert.value }}
+ssl_cert: {{ .ZenML.database.sslCert.value | quote }}
 {{- end }}
-{{- if .ZenML.database.sslKey }}
-ssl_key: {{ .Files.Get .ZenML.database.sslKey }}
+{{- if and .ZenML.database.sslKey .ZenML.database.sslKey.value }}
+ssl_key: {{ .ZenML.database.sslKey.value | quote }}
 {{- end }}
 {{- end }}
 {{- end }}
