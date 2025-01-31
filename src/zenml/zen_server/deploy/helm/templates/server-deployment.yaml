@@ -172,12 +172,6 @@ spec:
             - name: {{ $k }}
               value: {{ $v | quote }}
             {{- end }}
-            {{- if .Values.zenml.environment }}
-            {{- range $key, $value := .Values.zenml.environment }}
-            - name: {{ $key }}
-              value: {{ $value | quote }}
-            {{- end }}
-            {{- end }}
             {{- if .Values.zenml.proxy.enabled }}
             - name: HTTP_PROXY
               value: {{ .Values.zenml.proxy.httpProxy | quote }}
@@ -191,6 +185,19 @@ spec:
               value: {{ .Values.zenml.proxy.httpsProxy | quote }}
             - name: no_proxy
               value: {{ include "zenml.noProxyList" . | quote }}
+            {{- end }}
+            {{- if and .Values.zenml.database.url .Values.zenml.database.passwordSecretRef }}
+            - name: ZENML_STORE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.zenml.database.passwordSecretRef.name }}
+                  key: {{ .Values.zenml.database.passwordSecretRef.key }}
+            {{- end }}
+            {{- if .Values.zenml.environment }}
+            {{- range $key, $value := .Values.zenml.environment }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
             {{- end }}
           envFrom:
           - secretRef:

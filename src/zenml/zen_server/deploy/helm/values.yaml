@@ -274,10 +274,19 @@ zenml:
   database:
 
     # The database URL. If not set, a local sqlite database will be used, which
-    # will not be persisted across pod restarts.
+    # will not be persisted across pod restarts. The URL can contain the
+    # password or it can be provided in a secret using the `passwordSecretRef`
+    # option.
+    #
     # E.g.: "mysql://admin:password@zenml-mysql:3306/database"
     url:
-    
+
+    # The Kubernetes secret containing the MySQL password. If not set, the
+    # password provided in the `url` option will be used.
+    passwordSecretRef:
+      # name:
+      # key:
+
     # Set to true to enable SSL for the MySQL database. Defaults to false.
     # NOTE: setting any of the SSL certificate options (sslCa, sslCert, sslKey)
     # will automatically set this option to true.
