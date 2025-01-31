@@ -123,8 +123,8 @@ Depending on the options specified in your Docker settings, ZenML installs the r
 * The packages installed in your local python environment
 * The packages required by the stack unless this is disabled by setting `install_stack_requirements=False`.
 * The packages specified via the `required_integrations`
-* The packages specified via the `requirements` attribute
 * The packages defined in the pyproject.toml file specified by the `pyproject_path` attribute
+* The packages specified via the `requirements` attribute
 * You can specify additional arguments for the installer used to install your Python packages as follows:
 ```python
 # This will result in a `pip install --timeout=1000 ...` call when installing packages in the
