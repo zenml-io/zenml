@@ -14,12 +14,14 @@
 """Azure Service Connector."""
 
 import datetime
+import json
 import logging
 import re
 import subprocess
 from typing import Any, Dict, List, Optional, Tuple
 from uuid import UUID
 
+import requests
 import yaml
 from azure.core.credentials import AccessToken, TokenCredential
 from azure.core.exceptions import AzureError
@@ -69,6 +71,7 @@ logger = get_logger(__name__)
 AZURE_MANAGEMENT_TOKEN_SCOPE = "https://management.azure.com/.default"
 AZURE_SESSION_TOKEN_DEFAULT_EXPIRATION_TIME = 60 * 60  # 1 hour
 AZURE_SESSION_EXPIRATION_BUFFER = 15  # 15 minutes
+AZURE_ACR_OAUTH_SCOPE = "repository:*:*"
 
 
 class AzureBaseConfig(AuthenticationConfig):
@@ -362,8 +365,8 @@ neither a storage account nor a resource group is configured in the connector,
 all blob storage containers in all accessible storage accounts will be
 accessible.
 
-The only Azure authentication method that works with Azure blob storage
-resources is the service principal authentication method.
+The only Azure authentication methods that work with Azure blob storage resources are the implicit 
+authentication and the service principal authentication method.
 """,
             auth_methods=AzureAuthenticationMethods.values(),
             # Request a blob container to be configured in the
@@ -435,12 +438,10 @@ following formats:
 If a resource group is configured in the connector, only ACR registries in that
 resource group will be accessible.
 
-If an authentication method other than the Azure service principal is used for
-authentication, the admin account must be enabled for the registry, otherwise
-clients will not be able to authenticate to the registry. See the official Azure
-[documentation on the admin account](https://docs.microsoft.com/en-us/azure/container-registry/container-registry-authentication#admin-account
-)
-for more information.
+If an authentication method other than the Azure service principal is used, Entra ID authentication is used.
+This requires the configured identity to have the `AcrPush` role to be configured.
+If this fails, admin account authentication is tried. For this the admin account must be enabled for the registry.
+See the official Azure[documentation on the admin account](https://docs.microsoft.com/en-us/azure/container-registry/container-registry-authentication#admin-account) for more information. 
 """,
             auth_methods=AzureAuthenticationMethods.values(),
             supports_instances=True,
@@ -1718,10 +1719,14 @@ class AzureServiceConnector(ServiceConnector):
             resource_type=resource_type,
             resource_id=resource_id,
         )
-        resource_group: Optional[str] = None
+
+        resource_group: Optional[str]
+        registry_name: str
+        cluster_name: str
 
         if resource_type == DOCKER_REGISTRY_RESOURCE_TYPE:
             registry_name = self._parse_acr_resource_id(resource_id)
+            registry_domain = f"{registry_name}.azurecr.io"
 
             # If a service principal is used for authentication, the client ID
             # and client secret can be used to authenticate to the registry, if
@@ -1733,13 +1738,12 @@ class AzureServiceConnector(ServiceConnector):
             ):
                 assert isinstance(self.config, AzureServicePrincipalConfig)
                 username = str(self.config.client_id)
-                password = self.config.client_secret
+                password = str(self.config.client_secret)
 
-            # Without a service principal, this only works if the admin account
-            # is enabled for the registry, but this is not recommended and
-            # disabled by default.
+            # Without a service principal, we try to use the AzureDefaultCredentials to authenticate against the ACR.
+            # If this fails, we try to use the admin account.
+            # This has to be enabled for the registry, but this is not recommended and disabled by default.
             # https://docs.microsoft.com/en-us/azure/container-registry/container-registry-authentication#admin-account
-
             else:
                 registries = self._list_acr_registries(
                     credential,
@@ -1748,22 +1752,35 @@ class AzureServiceConnector(ServiceConnector):
                 registry_name, resource_group = registries.popitem()
 
                 try:
-                    client = ContainerRegistryManagementClient(
-                        credential, subscription_id
+                    username = "00000000-0000-0000-0000-000000000000"
+                    password = _ACRTokenExchangeClient(
+                        credential
+                    ).get_acr_access_token(
+                        registry_domain, AZURE_ACR_OAUTH_SCOPE
                     )
+                except AuthorizationException:
+                    logger.warning(
+                        "Falling back to admin credentials for ACR authentication. Be sure to assign AcrPush role to the configured identity."
+                    )
+                    try:
+                        client = ContainerRegistryManagementClient(
+                            credential, subscription_id
+                        )
 
-                    registry_credentials = client.registries.list_credentials(
-                        resource_group, registry_name
-                    )
-                    username = registry_credentials.username
-                    password = registry_credentials.passwords[0].value
-                except AzureError as e:
-                    raise AuthorizationException(
-                        f"failed to list admin credentials for Azure Container "
-                        f"Registry '{registry_name}' in resource group "
-                        f"'{resource_group}'. Make sure the registry is "
-                        f"configured with an admin account: {e}"
-                    ) from e
+                        registry_credentials = (
+                            client.registries.list_credentials(
+                                resource_group, registry_name
+                            )
+                        )
+                        username = registry_credentials.username
+                        password = registry_credentials.passwords[0].value
+                    except AzureError as e:
+                        raise AuthorizationException(
+                            f"failed to list admin credentials for Azure Container "
+                            f"Registry '{registry_name}' in resource group "
+                            f"'{resource_group}'. Make sure the registry is "
+                            f"configured with an admin account: {e}"
+                        ) from e
 
             # Create a client-side Docker connector instance with the temporary
             # Docker credentials
@@ -1775,7 +1792,7 @@ class AzureServiceConnector(ServiceConnector):
                 config=DockerConfiguration(
                     username=username,
                     password=password,
-                    registry=f"{registry_name}.azurecr.io",
+                    registry=registry_domain,
                 ),
                 expires_at=expires_at,
             )
@@ -1847,3 +1864,103 @@ class AzureServiceConnector(ServiceConnector):
             )
 
         raise ValueError(f"Unsupported resource type: {resource_type}")
+
+
+class _ACRTokenExchangeClient:
+    def __init__(self, credential: TokenCredential):
+        self._credential = credential
+
+    def _get_aad_access_token(self) -> str:
+        aad_access_token: str = self._credential.get_token(
+            AZURE_MANAGEMENT_TOKEN_SCOPE
+        ).token
+        return aad_access_token
+
+    # https://github.com/Azure/acr/blob/main/docs/AAD-OAuth.md#authenticating-docker-with-an-acr-refresh-token
+    def get_acr_refresh_token(self, acr_url: str) -> str:
+        try:
+            aad_access_token = self._get_aad_access_token()
+
+            headers = {
+                "Content-Type": "application/x-www-form-urlencoded",
+            }
+
+            data = {
+                "grant_type": "access_token",
+                "service": acr_url,
+                "access_token": aad_access_token,
+            }
+
+            response = requests.post(
+                f"https://{acr_url}/oauth2/exchange",
+                headers=headers,
+                data=data,
+                timeout=5,
+            )
+
+            if response.status_code != 200:
+                raise AuthorizationException(
+                    f"failed to get refresh token for Azure Container "
+                    f"Registry '{acr_url}' in resource group. "
+                    f"Be sure to assign AcrPush to the configured principal. "
+                    f"The token exchange returned status {response.status_code} "
+                    f"with body '{response.content.decode()}'"
+                )
+
+            acr_refresh_token_response = json.loads(response.content)
+            acr_refresh_token: str = acr_refresh_token_response[
+                "refresh_token"
+            ]
+            return acr_refresh_token
+
+        except (AzureError, requests.exceptions.RequestException) as e:
+            raise AuthorizationException(
+                f"failed to get refresh token for Azure Container "
+                f"Registry '{acr_url}' in resource group. "
+                f"Make sure the implicit authentication identity "
+                f"has access to the configured registry: {e}"
+            ) from e
+
+    # https://github.com/Azure/acr/blob/main/docs/AAD-OAuth.md#calling-post-oauth2token-to-get-an-acr-access-token
+    def get_acr_access_token(self, acr_url: str, scope: str) -> str:
+        acr_refresh_token = self.get_acr_refresh_token(acr_url)
+
+        headers = {
+            "Content-Type": "application/x-www-form-urlencoded",
+        }
+
+        data = {
+            "grant_type": "refresh_token",
+            "service": acr_url,
+            "scope": scope,
+            "refresh_token": acr_refresh_token,
+        }
+
+        try:
+            response = requests.post(
+                f"https://{acr_url}/oauth2/token",
+                headers=headers,
+                data=data,
+                timeout=5,
+            )
+
+            if response.status_code != 200:
+                raise AuthorizationException(
+                    f"failed to get access token for Azure Container "
+                    f"Registry '{acr_url}' in resource group. "
+                    f"Be sure to assign AcrPush to the configured principal. "
+                    f"The token exchange returned status {response.status_code} "
+                    f"with body '{response.content.decode()}'"
+                )
+
+            acr_access_token_response = json.loads(response.content)
+            acr_access_token: str = acr_access_token_response["access_token"]
+            return acr_access_token
+
+        except (AzureError, requests.exceptions.RequestException) as e:
+            raise AuthorizationException(
+                f"failed to get access token for Azure Container "
+                f"Registry '{acr_url}' in resource group. "
+                f"Make sure the implicit authentication identity "
+                f"has access to the configured registry: {e}"
+            ) from e
