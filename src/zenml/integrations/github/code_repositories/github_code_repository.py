@@ -187,12 +187,29 @@ class GitHubCodeRepository(BaseCodeRepository):
                     directory=local_path,
                     repo_sub_directory=content.path,
                 )
+            # For symlinks, content.type is initially wrongly set to "file",
+            # which is why we need to read it from the raw data instead.
+            elif content.raw_data["type"] == "symlink":
+                try:
+                    os.symlink(src=content.raw_data["target"], dst=local_path)
+                except Exception as e:
+                    logger.error(
+                        "Failed to create symlink `%s` (%s): %s",
+                        content.path,
+                        content.html_url,
+                        e,
+                    )
             else:
                 try:
                     with open(local_path, "wb") as f:
                         f.write(content.decoded_content)
                 except (GithubException, IOError, AssertionError) as e:
-                    logger.error("Error processing %s: %s", content.path, e)
+                    logger.error(
+                        "Error processing `%s` (%s): %s",
+                        content.path,
+                        content.html_url,
+                        e,
+                    )
 
     def get_local_context(self, path: str) -> Optional[LocalRepositoryContext]:
         """Gets the local repository context.
