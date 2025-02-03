@@ -501,9 +501,7 @@ To deploy the ZenML Pro control plane and one or more ZenML Pro tenant servers, 
         
         - A commercial SSL certificate provider (e.g., DigiCert, Sectigo).
         - Free services like [Let's Encrypt](https://letsencrypt.org/) for domain validation and issuance.
-        - Self-signed certificates (not recommended for production environments).
-
-        {% hint style="warning" %}If you are using self-signed certificates, it is highly recommended to use the same self-signed CA certificate for all the ZenML Pro services (control plane and tenant servers), otherwise it will be difficult to manage the certificates on the client machines. With only one CA certificate, you can install it system-wide on all the client machines only once and then use it to sign all the TLS certificates for the ZenML Pro services.{% endhint %}
+        - Self-signed certificates (not recommended for production environments). **IMPORTANT**: If you are using self-signed certificates, it is highly recommended to use the same self-signed CA certificate for all the ZenML Pro services (control plane and tenant servers), otherwise it will be difficult to manage the certificates on the client machines. With only one CA certificate, you can install it system-wide on all the client machines only once and then use it to sign all the TLS certificates for the ZenML Pro services.
         
     - **Configuring SSL Termination**
         
