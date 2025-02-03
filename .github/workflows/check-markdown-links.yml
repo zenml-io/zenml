@@ -1,0 +1,20 @@
+---
+name: Check Markdown Links
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+jobs:
+  check-links:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.x
+      - name: Install dependencies
+        run: pip install PyGithub
+      - name: Run markdown link checker
+        run: ./scripts/check_broken_links.sh docs
+        env:
+          GITHUB_TOKEN: ${{ github.event.pull_request.head.repo.fork == false && secrets.GITHUB_TOKEN ||  '' }}

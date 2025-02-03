@@ -64,7 +64,10 @@ class AzureArtifactStore(BaseArtifactStore, AuthenticationMixin):
         """
         connector = self.get_connector()
         if connector:
-            from azure.identity import ClientSecretCredential
+            from azure.identity import (
+                ClientSecretCredential,
+                DefaultAzureCredential,
+            )
             from azure.storage.blob import BlobServiceClient
 
             client = connector.connect()
@@ -77,18 +80,24 @@ class AzureArtifactStore(BaseArtifactStore, AuthenticationMixin):
                 )
             # Get the credentials from the client
             credentials = client.credential
-            if not isinstance(credentials, ClientSecretCredential):
+
+            if isinstance(credentials, ClientSecretCredential):
+                return AzureSecretSchema(
+                    client_id=credentials._client_id,
+                    client_secret=credentials._client_credential,
+                    tenant_id=credentials._tenant_id,
+                    account_name=client.account_name,
+                )
+
+            elif isinstance(credentials, DefaultAzureCredential):
+                return AzureSecretSchema(account_name=client.account_name)
+
+            else:
                 raise RuntimeError(
                     "The Azure Artifact Store connector can only be used "
                     "with a service connector that is configured with "
-                    "Azure service principal credentials."
+                    "Azure service principal credentials or implicit authentication"
                 )
-            return AzureSecretSchema(
-                client_id=credentials._client_id,
-                client_secret=credentials._client_credential,
-                tenant_id=credentials._tenant_id,
-                account_name=client.account_name,
-            )
 
         secret = self.get_typed_authentication_secret(
             expected_schema_type=AzureSecretSchema

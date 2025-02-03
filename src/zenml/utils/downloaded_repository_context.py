@@ -13,9 +13,7 @@
 #  permissions and limitations under the License.
 """Downloaded code repository."""
 
-from uuid import UUID
-
-from zenml.code_repositories import LocalRepositoryContext
+from zenml.code_repositories import BaseCodeRepository, LocalRepositoryContext
 
 
 class _DownloadedRepositoryContext(LocalRepositoryContext):
@@ -27,11 +25,11 @@ class _DownloadedRepositoryContext(LocalRepositoryContext):
 
     def __init__(
         self,
-        code_repository_id: UUID,
+        code_repository: BaseCodeRepository,
         root: str,
         commit: str,
     ):
-        super().__init__(code_repository_id=code_repository_id)
+        super().__init__(code_repository=code_repository)
         self._root = root
         self._commit = commit
 

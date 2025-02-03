@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of run template tables."""
 
-from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
@@ -31,6 +30,7 @@ from zenml.models import (
     RunTemplateResponseResources,
     RunTemplateUpdate,
 )
+from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
@@ -156,7 +156,7 @@ class RunTemplateSchema(BaseSchema, table=True):
         ).items():
             setattr(self, field, value)
 
-        self.updated = datetime.now(timezone.utc)
+        self.updated = utc_now()
         return self
 
     def to_model(

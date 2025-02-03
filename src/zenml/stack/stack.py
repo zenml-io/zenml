@@ -16,7 +16,7 @@
 import itertools
 import json
 import os
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import (
     TYPE_CHECKING,
     AbstractSet,
@@ -45,6 +45,7 @@ from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models import StackResponse
 from zenml.utils import pagination_utils, settings_utils
+from zenml.utils.time_utils import utc_now
 
 if TYPE_CHECKING:
     from zenml.alerter import BaseAlerter
@@ -732,7 +733,6 @@ class Stack:
             and not skip_default_image_builder
             and not self.image_builder
         ):
-            from datetime import datetime
             from uuid import uuid4
 
             from zenml.image_builders import (
@@ -743,6 +743,7 @@ class Stack:
 
             flavor = LocalImageBuilderFlavor()
 
+            now = utc_now()
             image_builder = LocalImageBuilder(
                 id=uuid4(),
                 name="temporary_default",
@@ -751,8 +752,8 @@ class Stack:
                 config=LocalImageBuilderConfig(),
                 user=Client().active_user.id,
                 workspace=Client().active_workspace.id,
-                created=datetime.now(timezone.utc),
-                updated=datetime.now(timezone.utc),
+                created=now,
+                updated=now,
             )
 
             self._image_builder = image_builder

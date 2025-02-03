@@ -44,7 +44,7 @@ class BasePyTorchMaterializer(BaseMaterializer):
             # NOTE (security): The `torch.load` function uses `pickle` as
             # the default unpickler, which is NOT secure. This materializer
             # is intended for use with trusted data sources.
-            return torch.load(f)  # nosec
+            return torch.load(f, weights_only=False)  # nosec
 
     def save(self, obj: Any) -> None:
         """Uses `torch.save` to save a PyTorch object.

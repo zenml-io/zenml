@@ -382,14 +382,14 @@ from datetime import datetime, timedelta
 from zenml import pipeline
 from zenml.config.schedule import Schedule
 
-# Using a cron expression (runs daily at 2 AM UTC)
+# Using a cron expression (runs every 5 minutes)
 @pipeline
 def my_scheduled_pipeline():
     # Your pipeline steps here
     pass
 
 my_scheduled_pipeline.with_options(
-    schedule=Schedule(cron_expression="0 2 * * *")
+    schedule=Schedule(cron_expression="0/5 * * * ? *")
 )()
 
 # Using an interval (runs every 2 hours)

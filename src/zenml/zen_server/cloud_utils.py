@@ -1,6 +1,6 @@
 """Utils concerning anything concerning the cloud control plane backend."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from typing import Any, Dict, Optional
 
 import requests
@@ -8,6 +8,7 @@ from requests.adapters import HTTPAdapter, Retry
 
 from zenml.config.server_config import ServerProConfiguration
 from zenml.exceptions import SubscriptionUpgradeRequiredError
+from zenml.utils.time_utils import utc_now
 from zenml.zen_server.utils import get_zenml_headers, server_config
 
 _cloud_connection: Optional["ZenMLCloudConnection"] = None
@@ -185,8 +186,7 @@ class ZenMLCloudConnection:
         if (
             self._token is not None
             and self._token_expires_at is not None
-            and datetime.now(timezone.utc) + timedelta(minutes=5)
-            < self._token_expires_at
+            and utc_now() + timedelta(minutes=5) < self._token_expires_at
         ):
             return self._token
 
@@ -227,9 +227,7 @@ class ZenMLCloudConnection:
             )
 
         self._token = access_token
-        self._token_expires_at = datetime.now(timezone.utc) + timedelta(
-            seconds=expires_in
-        )
+        self._token_expires_at = utc_now() + timedelta(seconds=expires_in)
 
         assert self._token is not None
         return self._token

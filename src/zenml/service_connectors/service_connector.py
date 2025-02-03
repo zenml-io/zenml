@@ -55,6 +55,7 @@ from zenml.models import (
     UserResponse,
     WorkspaceResponse,
 )
+from zenml.utils.time_utils import utc_now
 
 logger = get_logger(__name__)
 
@@ -794,13 +795,14 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
                 "connector configuration is not valid: name and ID must be set"
             )
 
+        now = utc_now()
         model = ServiceConnectorResponse(
             id=id,
             name=name,
             body=ServiceConnectorResponseBody(
                 user=user,
-                created=datetime.now(timezone.utc),
-                updated=datetime.now(timezone.utc),
+                created=now,
+                updated=now,
                 description=description,
                 connector_type=self.get_type(),
                 auth_method=self.auth_method,
@@ -845,14 +847,15 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
             if self.expires_skew_tolerance is not None
             else SERVICE_CONNECTOR_SKEW_TOLERANCE_SECONDS
         )
-        delta = expires_at - datetime.now(timezone.utc)
+        now = utc_now(tz_aware=expires_at)
+        delta = expires_at - now
         result = delta < timedelta(seconds=0)
 
         logger.debug(
             f"Checking if connector {self.name} has expired.\n"
             f"Expires at: {self.expires_at}\n"
             f"Expires at (+skew): {expires_at}\n"
-            f"Current UTC time: {datetime.now(timezone.utc)}\n"
+            f"Current UTC time: {now}\n"
             f"Delta: {delta}\n"
             f"Result: {result}\n"
         )

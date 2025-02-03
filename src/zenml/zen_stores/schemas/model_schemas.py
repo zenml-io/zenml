@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of model tables."""
 
-from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 from uuid import UUID, uuid4
 
@@ -52,6 +51,7 @@ from zenml.models import (
     ModelVersionResponseResources,
     Page,
 )
+from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.artifact_schemas import ArtifactVersionSchema
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.constants import MODEL_VERSION_TABLENAME
@@ -224,7 +224,7 @@ class ModelSchema(NamedSchema, table=True):
             exclude_unset=True, exclude_none=True
         ).items():
             setattr(self, field, value)
-        self.updated = datetime.now(timezone.utc)
+        self.updated = utc_now()
         return self
 
 
@@ -504,7 +504,7 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
             self.name = target_name
         if target_description is not None:
             self.description = target_description
-        self.updated = datetime.now(timezone.utc)
+        self.updated = utc_now()
         return self
 
 

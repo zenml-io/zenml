@@ -14,7 +14,6 @@
 """Utility functions for the CLI."""
 
 import contextlib
-import datetime
 import json
 import os
 import platform
@@ -77,8 +76,10 @@ from zenml.models import (
 from zenml.models.v2.base.filter import FilterGenerator
 from zenml.services import BaseService, ServiceState
 from zenml.stack import StackComponent
+from zenml.stack.flavor import Flavor
 from zenml.stack.stack_component import StackComponentConfig
 from zenml.utils import secret_utils
+from zenml.utils.time_utils import expires_in
 
 if TYPE_CHECKING:
     from uuid import UUID
@@ -1581,58 +1582,6 @@ def print_components_table(
     print_table(configurations)
 
 
-def seconds_to_human_readable(time_seconds: int) -> str:
-    """Converts seconds to human-readable format.
-
-    Args:
-        time_seconds: Seconds to convert.
-
-    Returns:
-        Human readable string.
-    """
-    seconds = time_seconds % 60
-    minutes = (time_seconds // 60) % 60
-    hours = (time_seconds // 3600) % 24
-    days = time_seconds // 86400
-    tokens = []
-    if days:
-        tokens.append(f"{days}d")
-    if hours:
-        tokens.append(f"{hours}h")
-    if minutes:
-        tokens.append(f"{minutes}m")
-    if seconds:
-        tokens.append(f"{seconds}s")
-
-    return "".join(tokens)
-
-
-def expires_in(
-    expires_at: datetime.datetime,
-    expired_str: str,
-    skew_tolerance: Optional[int] = None,
-) -> str:
-    """Returns a human-readable string of the time until the token expires.
-
-    Args:
-        expires_at: Datetime object of the token expiration.
-        expired_str: String to return if the token is expired.
-        skew_tolerance: Seconds of skew tolerance to subtract from the
-            expiration time. If the token expires within this time, it will be
-            considered expired.
-
-    Returns:
-        Human readable string.
-    """
-    now = datetime.datetime.now(datetime.timezone.utc)
-    expires_at = expires_at.replace(tzinfo=datetime.timezone.utc)
-    if skew_tolerance:
-        expires_at -= datetime.timedelta(seconds=skew_tolerance)
-    if expires_at < now:
-        return expired_str
-    return seconds_to_human_readable(int((expires_at - now).total_seconds()))
-
-
 def print_service_connectors_table(
     client: "Client",
     connectors: Sequence["ServiceConnectorResponse"],
@@ -2203,10 +2152,11 @@ def _scrub_secret(config: StackComponentConfig) -> Dict[str, Any]:
     config_dict = {}
     config_fields = config.__class__.model_fields
     for key, value in config_fields.items():
-        if secret_utils.is_secret_field(value):
-            config_dict[key] = "********"
-        else:
-            config_dict[key] = getattr(config, key)
+        if getattr(config, key):
+            if secret_utils.is_secret_field(value):
+                config_dict[key] = "********"
+            else:
+                config_dict[key] = getattr(config, key)
     return config_dict
 
 
@@ -2216,8 +2166,6 @@ def print_debug_stack() -> None:
 
     client = Client()
     stack = client.get_stack()
-    active_stack = client.active_stack
-    components = _get_stack_components(active_stack)
 
     declare("\nCURRENT STACK\n", bold=True)
     console.print(f"Name: {stack.name}")
@@ -2228,7 +2176,8 @@ def print_debug_stack() -> None:
         f"Workspace: {stack.workspace.name} / {str(stack.workspace.id)}"
     )
 
-    for component in components:
+    for component_type, components in stack.components.items():
+        component = components[0]
         component_response = client.get_stack_component(
             name_id_or_prefix=component.id, component_type=component.type
         )
@@ -2238,8 +2187,12 @@ def print_debug_stack() -> None:
         console.print(f"Name: {component.name}")
         console.print(f"ID: {str(component.id)}")
         console.print(f"Type: {component.type.value}")
-        console.print(f"Flavor: {component.flavor}")
-        console.print(f"Configuration: {_scrub_secret(component.config)}")
+        console.print(f"Flavor: {component.flavor_name}")
+
+        flavor = Flavor.from_model(component.flavor)
+        config = flavor.config_class(**component.configuration)
+
+        console.print(f"Configuration: {_scrub_secret(config)}")
         if (
             component_response.user
             and component_response.user.name
@@ -2660,7 +2613,7 @@ def print_model_url(url: Optional[str]) -> None:
         warning(
             "You can display various ZenML entities including pipelines, "
             "runs, stacks and much more on the ZenML Dashboard. "
-            "You can try it locally, by running `zenml local --local`, or "
+            "You can try it locally, by running `zenml login --local`, or "
             "remotely, by deploying ZenML on the infrastructure of your choice."
         )
 

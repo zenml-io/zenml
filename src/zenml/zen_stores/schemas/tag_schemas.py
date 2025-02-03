@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of tag tables."""
 
-from datetime import datetime, timezone
 from typing import Any, List
 from uuid import UUID
 
@@ -30,8 +29,12 @@ from zenml.models import (
     TagResponseBody,
     TagUpdate,
 )
+from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
-from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
+from zenml.zen_stores.schemas.schema_utils import (
+    build_foreign_key_field,
+    build_index,
+)
 
 
 class TagSchema(NamedSchema, table=True):
@@ -103,7 +106,7 @@ class TagSchema(NamedSchema, table=True):
             else:
                 setattr(self, field, value)
 
-        self.updated = datetime.now(timezone.utc)
+        self.updated = utc_now()
         return self
 
 
@@ -111,6 +114,16 @@ class TagResourceSchema(BaseSchema, table=True):
     """SQL Model for tag resource relationship."""
 
     __tablename__ = "tag_resource"
+    __table_args__ = (
+        build_index(
+            table_name=__tablename__,
+            column_names=[
+                "resource_id",
+                "resource_type",
+                "tag_id",
+            ],
+        ),
+    )
 
     tag_id: UUID = build_foreign_key_field(
         source=__tablename__,

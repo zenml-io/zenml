@@ -196,7 +196,7 @@ def test_basic_source_resolving(mocker):
         module=expected_module_name,
         attribute=empty_function.__name__,
         type=SourceType.CODE_REPOSITORY,
-        repository_id=clean_local_context.code_repository_id,
+        repository_id=clean_local_context.code_repository.id,
         commit=clean_local_context.current_commit,
         subdirectory=".",
     )
