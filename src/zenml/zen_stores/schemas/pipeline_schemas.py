@@ -16,7 +16,8 @@
 from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
-from sqlalchemy import TEXT, Column, UniqueConstraint
+from sqlalchemy import TEXT, Column, UniqueConstraint, desc, select
+from sqlalchemy.orm import object_session
 from sqlmodel import Field, Relationship
 
 from zenml.enums import TaggableResourceTypes
@@ -85,10 +86,6 @@ class PipelineSchema(NamedSchema, table=True):
     schedules: List["ScheduleSchema"] = Relationship(
         back_populates="pipeline",
     )
-    runs: List["PipelineRunSchema"] = Relationship(
-        back_populates="pipeline",
-        sa_relationship_kwargs={"order_by": "PipelineRunSchema.created"},
-    )
     builds: List["PipelineBuildSchema"] = Relationship(
         back_populates="pipeline"
     )
@@ -104,6 +101,34 @@ class PipelineSchema(NamedSchema, table=True):
             overlaps="tags",
         ),
     )
+
+    @property
+    def latest_run(self) -> Optional["PipelineRunSchema"]:
+        """Fetch the latest run for this pipeline.
+
+        Raises:
+            RuntimeError: If no session for the schema exists.
+
+        Returns:
+            The latest run for this pipeline.
+        """
+        from zenml.zen_stores.schemas import PipelineRunSchema
+
+        if session := object_session(self):
+            return (
+                session.exec(
+                    select(PipelineRunSchema)
+                    .where(PipelineRunSchema.pipeline_id == self.id)
+                    .order_by(desc(PipelineRunSchema.created))
+                    .limit(1)
+                )
+                .scalars()
+                .one_or_none()
+            )
+        else:
+            raise RuntimeError(
+                "Missing DB session to fetch latest run for pipeline."
+            )
 
     @classmethod
     def from_request(
@@ -141,10 +166,12 @@ class PipelineSchema(NamedSchema, table=True):
         Returns:
             The created PipelineResponse.
         """
+        latest_run = self.latest_run
+
         body = PipelineResponseBody(
             user=self.user.to_model() if self.user else None,
-            latest_run_id=self.runs[-1].id if self.runs else None,
-            latest_run_status=self.runs[-1].status if self.runs else None,
+            latest_run_id=latest_run.id if latest_run else None,
+            latest_run_status=latest_run.status if latest_run else None,
             created=self.created,
             updated=self.updated,
         )
@@ -158,7 +185,7 @@ class PipelineSchema(NamedSchema, table=True):
 
         resources = None
         if include_resources:
-            latest_run_user = self.runs[-1].user if self.runs else None
+            latest_run_user = latest_run.user if latest_run else None
 
             resources = PipelineResponseResources(
                 latest_run_user=latest_run_user.to_model()
