@@ -297,7 +297,9 @@ zenml:
     # container image. Can be provided as an inline value or as a Kubernetes
     # secret reference.
     #
-    # NOTE: it is recommended to use the `zenml.certificates` option instead.
+    # NOTE: it is recommended to use the `zenml.certificates` option instead to
+    # configure the CA certificate globally. This option only applies to the
+    # MySQL database.
     sslCa:
       # value: |
       #   -----BEGIN CERTIFICATE-----
