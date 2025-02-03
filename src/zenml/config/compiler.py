@@ -14,6 +14,7 @@
 """Class for compiling ZenML pipelines into a serializable format."""
 
 import copy
+import os
 import string
 from typing import (
     TYPE_CHECKING,
@@ -36,6 +37,11 @@ from zenml.config.step_configurations import (
     StepConfigurationUpdate,
     StepSpec,
 )
+from zenml.constants import (
+    ENV_ZENML_ACTIVE_STACK_ID,
+    ENV_ZENML_ACTIVE_WORKSPACE_ID,
+    ENV_ZENML_STORE_PREFIX,
+)
 from zenml.environment import get_run_environment_dict
 from zenml.exceptions import StackValidationError
 from zenml.models import PipelineDeploymentBase
@@ -49,6 +55,8 @@ if TYPE_CHECKING:
     from zenml.steps.step_invocation import StepInvocation
 
 from zenml.logger import get_logger
+
+ENVIRONMENT_VARIABLE_PREFIX = "__ZENML__"
 
 logger = get_logger(__file__)
 
@@ -104,13 +112,20 @@ class Compiler:
                 pipeline.configuration.substitutions,
             )
 
+        pipeline_environment = finalize_environment_variables(
+            pipeline.configuration.environment
+        )
         pipeline_settings = self._filter_and_validate_settings(
             settings=pipeline.configuration.settings,
             configuration_level=ConfigurationLevel.PIPELINE,
             stack=stack,
         )
         with pipeline.__suppress_configure_warnings__():
-            pipeline.configure(settings=pipeline_settings, merge=False)
+            pipeline.configure(
+                environment=pipeline_environment,
+                settings=pipeline_settings,
+                merge=False,
+            )
 
         settings_to_passdown = {
             key: settings
@@ -121,6 +136,7 @@ class Compiler:
         steps = {
             invocation_id: self._compile_step_invocation(
                 invocation=invocation,
+                pipeline_environment=pipeline_environment,
                 pipeline_settings=settings_to_passdown,
                 pipeline_extra=pipeline.configuration.extra,
                 stack=stack,
@@ -210,6 +226,7 @@ class Compiler:
                 enable_artifact_metadata=config.enable_artifact_metadata,
                 enable_artifact_visualization=config.enable_artifact_visualization,
                 enable_step_logs=config.enable_step_logs,
+                environment=config.environment,
                 settings=config.settings,
                 tags=config.tags,
                 extra=config.extra,
@@ -427,6 +444,7 @@ class Compiler:
     def _compile_step_invocation(
         self,
         invocation: "StepInvocation",
+        pipeline_environment: Optional[Dict[str, Any]],
         pipeline_settings: Dict[str, "BaseSettings"],
         pipeline_extra: Dict[str, Any],
         stack: "Stack",
@@ -438,7 +456,9 @@ class Compiler:
 
         Args:
             invocation: The step invocation to compile.
-            pipeline_settings: settings configured on the
+            pipeline_environment: Environment variables configured for the
+                pipeline.
+            pipeline_settings: Settings configured on the
                 pipeline of the step.
             pipeline_extra: Extra values configured on the pipeline of the step.
             stack: The stack on which the pipeline will be run.
@@ -463,6 +483,9 @@ class Compiler:
             step.configuration.settings, stack=stack
         )
         step_spec = self._get_step_spec(invocation=invocation)
+        step_environment = finalize_environment_variables(
+            step.configuration.environment
+        )
         step_settings = self._filter_and_validate_settings(
             settings=step.configuration.settings,
             configuration_level=ConfigurationLevel.STEP,
@@ -473,6 +496,7 @@ class Compiler:
         step_on_success_hook_source = step.configuration.success_hook_source
 
         step.configure(
+            environment=pipeline_environment,
             settings=pipeline_settings,
             extra=pipeline_extra,
             on_failure=pipeline_failure_hook_source,
@@ -480,6 +504,7 @@ class Compiler:
             merge=False,
         )
         step.configure(
+            environment=step_environment,
             settings=step_settings,
             extra=step_extra,
             on_failure=step_on_failure_hook_source,
@@ -635,3 +660,50 @@ def convert_component_shortcut_settings_keys(
                 )
 
             settings[key] = component_settings
+
+
+def finalize_environment_variables(
+    environment: Dict[str, Any],
+) -> Dict[str, str]:
+    """Finalize the user environment variables.
+
+    This function adds all __ZENML__ prefixed environment variables from the
+    local client environment to the explicit user-defined variables.
+
+    Args:
+        environment: The explicit user-defined environment variables.
+
+    Returns:
+        The finalized user environment variables.
+    """
+    environment = {key: str(value) for key, value in environment.items()}
+
+    for key, value in os.environ.items():
+        if key.startswith(ENVIRONMENT_VARIABLE_PREFIX):
+            key_without_prefix = key[len(ENVIRONMENT_VARIABLE_PREFIX) :]
+
+            if (
+                key_without_prefix in environment
+                and value != environment[key_without_prefix]
+            ):
+                logger.warning(
+                    "Got multiple values for environment variable `%s`.",
+                    key_without_prefix,
+                )
+            else:
+                environment[key_without_prefix] = value
+
+    finalized_env = {}
+
+    for key, value in environment.items():
+        if key.upper().startswith(ENV_ZENML_STORE_PREFIX) or key.upper() in [
+            ENV_ZENML_ACTIVE_WORKSPACE_ID,
+            ENV_ZENML_ACTIVE_STACK_ID,
+        ]:
+            logger.warning(
+                "Not allowed to set `%s` config environment variable.", key
+            )
+            continue
+        finalized_env[key] = str(value)
+
+    return finalized_env
