@@ -15,10 +15,12 @@
 
 from typing import TYPE_CHECKING, Optional, Type
 
-from zenml.config.base_settings import BaseSettings
 from zenml.integrations.gcp import (
     GCP_RESOURCE_TYPE,
     VERTEX_MODEL_REGISTRY_FLAVOR,
+)
+from zenml.integrations.gcp.flavors.vertex_base_config import (
+    VertexAIModelConfig,
 )
 from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsConfigMixin,
@@ -35,18 +37,18 @@ if TYPE_CHECKING:
     )
 
 
-class VertexAIModelRegistrySettings(BaseSettings):
-    """Settings for the VertexAI model registry."""
-
-    location: str
-
-
 class VertexAIModelRegistryConfig(
     BaseModelRegistryConfig,
     GoogleCredentialsConfigMixin,
-    VertexAIModelRegistrySettings,
+    VertexAIModelConfig,
 ):
-    """Configuration for the VertexAI model registry."""
+    """Configuration for the VertexAI model registry.
+
+    This configuration combines:
+    - Base model registry configuration
+    - Google Cloud authentication
+    - Vertex AI model configuration
+    """
 
 
 class VertexModelRegistryFlavor(BaseModelRegistryFlavor):

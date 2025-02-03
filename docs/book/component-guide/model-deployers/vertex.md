@@ -12,15 +12,18 @@ You should use the Vertex AI Model Deployer when:
 * You need to handle high-throughput prediction requests
 * You want to deploy models with GPU acceleration
 * You need to monitor and track your model deployments
+* You want to integrate with other GCP services like Cloud Logging, IAM, and VPC
 
 This is particularly useful in the following scenarios:
 * Deploying models to production with high availability requirements
 * Serving models that need GPU acceleration
 * Handling varying prediction workloads with autoscaling
-* Integrating model serving with other GCP services
+* Building end-to-end ML pipelines on GCP
 
-{% hint style="warning" %}
-The Vertex AI Model Deployer requires a Vertex AI Model Registry to be present in your stack. Make sure you have configured both components properly.
+{% hint style="info" %}
+The Vertex AI Model Deployer works best with a Vertex AI Model Registry in your stack, as this enables seamless model versioning and deployment. However, it can also work with other model registries or directly with model artifacts.
+
+The deployer can be used with both local and remote orchestrators, making it flexible for different development and production scenarios.
 {% endhint %}
 
 ## How to deploy it?
@@ -44,19 +47,18 @@ zenml service-connector register vertex_deployer_connector \
     --service_account_json=@vertex-deployer-sa.json \
     --resource-type gcp-generic
 
-# Register the model deployer
+# Register the model deployer and connect it to the service connector
 zenml model-deployer register vertex_deployer \
     --flavor=vertex \
-    --location=us-central1
-
-# Connect the model deployer to the service connector
-zenml model-deployer connect vertex_deployer --connector vertex_deployer_connector
+    --location=us-central1 \
+    --connector vertex_deployer_connector
 ```
 
 {% hint style="info" %}
 The service account needs the following permissions:
 - `Vertex AI User` role for deploying models
 - `Vertex AI Service Agent` role for managing model endpoints
+- `Storage Object Viewer` role if accessing models stored in Google Cloud Storage
 {% endhint %}
 
 ## How to use it
@@ -85,7 +87,7 @@ def model_deployer(
     """Model deployer step."""
     zenml_client = Client()
     current_model = get_step_context().model
-    model_registry_uri = current_model.get_model_artifact("THE_MODEL_ARTIFACT_NAME_GIVEN_IN_TRAINING_STEP").uri
+    model_registry_uri = current_model.get_model_artifact("model").uri
     model_deployer = zenml_client.active_stack.model_deployer
 
     # Configure the deployment
@@ -95,9 +97,23 @@ def model_deployer(
         model_name=current_model.name,
         description="Vertex AI model deployment example",
         model_id=model_registry_uri,
-        machine_type="n1-standard-4",  # Optional: specify machine type
-        min_replica_count=1,  # Optional: minimum number of replicas
-        max_replica_count=3,  # Optional: maximum number of replicas
+        machine_type="n1-standard-4",
+        min_replica_count=1,
+        max_replica_count=3,
+        # Optional advanced settings
+        container=VertexAIContainerSpec(
+            image_uri="your-custom-image:latest",
+            ports=[8080],
+            env={"ENV_VAR": "value"}
+        ),
+        resources=VertexAIResourceSpec(
+            accelerator_type="NVIDIA_TESLA_T4",
+            accelerator_count=1
+        ),
+        explanation=VertexAIExplanationSpec(
+            metadata={"method": "integrated-gradients"},
+            parameters={"num_integral_steps": 50}
+        )
     )
     
     # Deploy the model
@@ -111,7 +127,7 @@ def model_deployer(
 
 ### Configuration Options
 
-The Vertex AI Model Deployer accepts a rich set of configuration options through `VertexDeploymentConfig`:
+The Vertex AI Model Deployer uses a comprehensive configuration system that includes:
 
 * Basic Configuration:
   * `location`: GCP region for deployment (e.g., "us-central1")
@@ -119,9 +135,16 @@ The Vertex AI Model Deployer accepts a rich set of configuration options through
   * `model_name`: Name of the model being deployed
   * `model_id`: Model ID from the Vertex AI Model Registry
 
-* Infrastructure Configuration:
+* Container Configuration (`VertexAIContainerSpec`):
+  * `image_uri`: Custom serving container image
+  * `ports`: Container ports to expose
+  * `env`: Environment variables
+  * `predict_route`: Custom prediction HTTP path
+  * `health_route`: Custom health check path
+
+* Resource Configuration (`VertexAIResourceSpec`):
   * `machine_type`: Type of machine to use (e.g., "n1-standard-4")
-  * `accelerator_type`: GPU accelerator type if needed
+  * `accelerator_type`: GPU accelerator type
   * `accelerator_count`: Number of GPUs per replica
   * `min_replica_count`: Minimum number of serving replicas
   * `max_replica_count`: Maximum number of serving replicas
@@ -131,8 +154,8 @@ The Vertex AI Model Deployer accepts a rich set of configuration options through
   * `network`: VPC network configuration
   * `encryption_spec_key_name`: Customer-managed encryption key
   * `enable_access_logging`: Enable detailed access logging
-  * `explanation_metadata`: Model explanation configuration
-  * `autoscaling_target_cpu_utilization`: Target CPU utilization for autoscaling
+  * `explanation`: Model explanation configuration
+  * `labels`: Custom resource labels
 
 ### Running Predictions
 
@@ -163,19 +186,23 @@ if services:
 ### Limitations and Considerations
 
 1. **Stack Requirements**: 
-   - Requires a Vertex AI Model Registry in the stack
-   - All stack components must be non-local
+   - Works best with a Vertex AI Model Registry but can function without it
+   - Compatible with both local and remote orchestrators
+   - Requires valid GCP credentials and permissions
 
 2. **Authentication**: 
    - Requires proper GCP credentials with Vertex AI permissions
    - Best practice is to use service connectors for authentication
+   - Supports multiple authentication methods (service account, user account, workload identity)
 
 3. **Costs**: 
    - Vertex AI endpoints incur costs based on machine type and uptime
    - Consider using autoscaling to optimize costs
+   - Monitor usage through GCP Cloud Monitoring
 
 4. **Region Availability**:
    - Service availability depends on Vertex AI regional availability
    - Model and endpoint must be in the same region
+   - Consider data residency requirements when choosing regions
 
 Check out the [SDK docs](https://sdkdocs.zenml.io) for more detailed information about the implementation.

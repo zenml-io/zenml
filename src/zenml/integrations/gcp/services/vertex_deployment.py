@@ -14,17 +14,16 @@
 """Implementation of the Vertex AI Deployment service."""
 
 import re
-import time
-from typing import Any, Dict, Generator, List, Optional, Tuple
+from datetime import datetime
+from typing import Any, Dict, Generator, List, Optional, cast
 
-from google.api_core import exceptions
+from google.api_core import exceptions, retry
 from google.cloud import aiplatform
-from google.cloud import logging as vertex_logging
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, PrivateAttr
 
 from zenml.client import Client
-from zenml.integrations.gcp.flavors.vertex_model_deployer_flavor import (
-    VertexBaseConfig,
+from zenml.integrations.gcp.flavors.vertex_base_config import (
+    VertexAIEndpointConfig,
 )
 from zenml.logger import get_logger
 from zenml.services import ServiceState, ServiceStatus, ServiceType
@@ -32,11 +31,19 @@ from zenml.services.service import BaseDeploymentService, ServiceConfig
 
 logger = get_logger(__name__)
 
-# Increase timeout for long-running operations
-POLLING_TIMEOUT = (
-    1800  # Increased from 1200 to allow for longer deployment times
-)
+# Constants
+POLLING_TIMEOUT = 1800  # 30 minutes
+RETRY_DEADLINE = 600  # 10 minutes
 UUID_SLICE_LENGTH: int = 8
+
+# Retry configuration for transient errors
+retry_config = retry.Retry(
+    initial=1.0,  # Initial delay in seconds
+    maximum=60.0,  # Maximum delay
+    multiplier=2.0,  # Delay multiplier
+    deadline=RETRY_DEADLINE,
+    predicate=retry.if_transient_error,
+)
 
 
 def sanitize_vertex_label(value: str) -> str:
@@ -48,7 +55,6 @@ def sanitize_vertex_label(value: str) -> str:
     Returns:
         Sanitized label value
     """
-    # Handle empty string
     if not value:
         return ""
 
@@ -63,7 +69,7 @@ def sanitize_vertex_label(value: str) -> str:
     return value[:63]
 
 
-class VertexDeploymentConfig(VertexBaseConfig, ServiceConfig):
+class VertexDeploymentConfig(VertexAIEndpointConfig, ServiceConfig):
     """Vertex AI service configurations."""
 
     def get_vertex_deployment_labels(self) -> Dict[str, str]:
@@ -89,6 +95,9 @@ class VertexPredictionServiceEndpoint(BaseModel):
     endpoint_name: str
     deployed_model_id: str
     endpoint_url: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    state: Optional[str] = None
 
 
 class VertexServiceStatus(ServiceStatus):
@@ -110,34 +119,22 @@ class VertexDeploymentService(BaseDeploymentService):
     status: VertexServiceStatus = Field(
         default_factory=lambda: VertexServiceStatus()
     )
+    _project_id: Optional[str] = PrivateAttr(default=None)
+    _credentials: Optional[Any] = PrivateAttr(default=None)
 
     def _initialize_gcp_clients(self) -> None:
         """Initialize GCP clients with consistent credentials."""
-        # Initialize aiplatform with project and location
         from zenml.integrations.gcp.model_deployers.vertex_model_deployer import (
             VertexModelDeployer,
         )
 
-        zenml_client = Client()
-        model_deployer = zenml_client.active_stack.model_deployer
-        if not isinstance(model_deployer, VertexModelDeployer):
-            raise RuntimeError(
-                "Active model deployer must be Vertex AI Model Deployer"
-            )
-
-        # get credentials from model deployer
-        credentials, project_id = model_deployer._get_authentication()
-
-        # Initialize aiplatform
-        aiplatform.init(
-            project=project_id,
-            location=self.config.location,
-            credentials=credentials,
+        model_deployer = cast(
+            VertexModelDeployer, Client().active_stack.model_deployer
         )
 
-        # Initialize logging client
-        self.logging_client = vertex_logging.Client(
-            project=project_id, credentials=credentials
+        # Get credentials from model deployer
+        self._credentials, self._project_id = (
+            model_deployer._get_authentication()
         )
 
     def __init__(self, config: VertexDeploymentConfig, **attrs: Any):
@@ -151,17 +148,21 @@ class VertexDeploymentService(BaseDeploymentService):
         if not self.status.endpoint or not self.status.endpoint.endpoint_url:
             return None
 
-        # Construct proper prediction URL
         return f"https://{self.config.location}-aiplatform.googleapis.com/v1/{self.status.endpoint.endpoint_url}"
 
     def get_endpoints(self) -> List[aiplatform.Endpoint]:
-        """Get all endpoints for the current project and location."""
+        """Get all endpoints for the current project and location.
+
+        Returns:
+            List of Vertex AI endpoints
+        """
         try:
             # Use proper filtering and pagination
             return list(
                 aiplatform.Endpoint.list(
                     filter='labels.managed_by="zenml"',
                     location=self.config.location,
+                    credentials=self._credentials,
                 )
             )
         except Exception as e:
@@ -169,260 +170,295 @@ class VertexDeploymentService(BaseDeploymentService):
             return []
 
     def _generate_endpoint_name(self) -> str:
-        """Generate a unique name for the Vertex AI Inference Endpoint."""
-        # Make name more descriptive and conformant to Vertex AI naming rules
-        sanitized_model_name = re.sub(
-            r"[^a-zA-Z0-9-]", "-", self.config.model_name.lower()
+        """Generate a unique name for the Vertex AI Inference Endpoint.
+
+        Returns:
+            Generated endpoint name
+        """
+        from zenml.integrations.gcp.model_deployers.vertex_model_deployer import (
+            VertexModelDeployer,
         )
-        return f"{sanitized_model_name}-{str(self.uuid)[:UUID_SLICE_LENGTH]}"
+
+        # Include tenant ID in name for multi-tenancy support
+        model_deployer = cast(
+            VertexModelDeployer, Client().active_stack.model_deployer
+        )
+
+        # Make name more descriptive and conformant
+        sanitized_model_name = sanitize_vertex_label(self.config.model_name)
+        return f"{sanitized_model_name}-{model_deployer.id}-{str(self.uuid)[:UUID_SLICE_LENGTH]}"
+
+    def _get_model_id(self, name: str) -> str:
+        """Helper to construct a full model ID from a given model name."""
+        return f"projects/{self._project_id}/locations/{self.config.location}/models/{name}"
+
+    def _verify_model_exists(self) -> aiplatform.Model:
+        """Verify the model exists and return it.
+
+        Returns:
+            Vertex AI Model instance
+
+        Raises:
+            RuntimeError: If model not found
+        """
+        try:
+            model = aiplatform.Model(
+                model_name=self._get_model_id(self.config.model_name),
+                location=self.config.location,
+                credentials=self._credentials,
+            )
+            logger.info(f"Found model to deploy: {model.resource_name}")
+            return model
+        except exceptions.NotFound:
+            raise RuntimeError(
+                f"Model {self._get_model_id(self.config.model_name)} not found in project {self._project_id}"
+            )
+
+    def _deploy_model(self) -> Any:
+        """Deploy model to Vertex AI endpoint."""
+        # Initialize endpoint
+        if self.config.existing_endpoint:
+            endpoint = aiplatform.Endpoint(
+                endpoint_name=self.config.existing_endpoint,
+                project=self._project_id,
+                location=self.config.location,
+                credentials=self._credentials,
+            )
+        else:
+            endpoint = aiplatform.Endpoint.create(
+                display_name=self.config.name,
+                project=self._project_id,
+                location=self.config.location,
+                credentials=self._credentials,
+                labels=self.config.get_vertex_deployment_labels(),
+            )
+
+        # Prepare deployment configuration
+        deploy_kwargs = {
+            "model_display_name": self.config.model_name,
+            "deployed_model_display_name": self.config.name,
+            "sync": False,
+        }
+
+        # Add container configuration if specified
+        if self.config.container:
+            deploy_kwargs.update(
+                {
+                    "container_image_uri": self.config.container.image_uri,
+                    "container_ports": self.config.container.ports,
+                    "container_predict_route": self.config.container.predict_route,
+                    "container_health_route": self.config.container.health_route,
+                    "container_env": self.config.container.env,
+                }
+            )
+
+        # Add resource configuration if specified
+        if self.config.resources:
+            deploy_kwargs.update(
+                {
+                    "machine_type": self.config.resources.machine_type,
+                    "min_replica_count": self.config.resources.min_replica_count,
+                    "max_replica_count": self.config.resources.max_replica_count,
+                    "accelerator_type": self.config.resources.accelerator_type,
+                    "accelerator_count": self.config.resources.accelerator_count,
+                }
+            )
+
+        # Add explanation configuration if specified
+        if self.config.explanation:
+            deploy_kwargs.update(
+                {
+                    "explanation_metadata": self.config.explanation.metadata,
+                    "explanation_parameters": self.config.explanation.parameters,
+                }
+            )
+
+        # Add service account if specified
+        if self.config.service_account:
+            deploy_kwargs["service_account"] = self.config.service_account
+
+        # Add network configuration if specified
+        if self.config.network:
+            deploy_kwargs["network"] = self.config.network
+
+        # Add encryption key if specified
+        if self.config.encryption_spec_key_name:
+            deploy_kwargs["encryption_spec_key_name"] = (
+                self.config.encryption_spec_key_name
+            )
+
+        # Deploy model
+        operation = endpoint.deploy(**deploy_kwargs)
+        return operation
 
     def provision(self) -> None:
         """Provision or update remote Vertex AI deployment instance."""
         try:
+            # First verify model exists
+            model = self._verify_model_exists()
+
+            # Get or create endpoint
             if self.config.existing_endpoint:
-                # Use the existing endpoint
                 endpoint = aiplatform.Endpoint(
                     endpoint_name=self.config.existing_endpoint,
                     location=self.config.location,
+                    credentials=self._credentials,
                 )
                 logger.info(
-                    f"Using existing Vertex AI inference endpoint: {endpoint.resource_name}"
+                    f"Using existing endpoint: {endpoint.resource_name}"
                 )
             else:
-                # Create the endpoint
                 endpoint_name = self._generate_endpoint_name()
                 endpoint = aiplatform.Endpoint.create(
                     display_name=endpoint_name,
                     location=self.config.location,
                     encryption_spec_key_name=self.config.encryption_spec_key_name,
                     labels=self.config.get_vertex_deployment_labels(),
+                    credentials=self._credentials,
                 )
+                logger.info(f"Created new endpoint: {endpoint.resource_name}")
+
+            # Deploy model with retries for transient errors
+            try:
+                deploy_op = self._deploy_model()
+
+                # Wait for deployment
+                deploy_op.result(timeout=POLLING_TIMEOUT)
+
                 logger.info(
-                    f"Vertex AI inference endpoint created: {endpoint.resource_name}"
+                    f"Model {model.resource_name} deployed to endpoint {endpoint.resource_name}"
                 )
-
-            # Then get the model
-            model = aiplatform.Model(
-                model_name=self.config.model_id,
-                location=self.config.location,
-            )
-            logger.info(
-                f"Found existing model to deploy: {model.resource_name} to the endpoint."
-            )
-            if not model:
-                raise RuntimeError(
-                    f"Model {self.config.model_id} not found in the project."
+            except Exception as e:
+                self.status.update_state(
+                    ServiceState.ERROR, f"Deployment failed: {str(e)}"
                 )
+                raise
 
-            # Deploy the model to the endpoint
-            endpoint.deploy(
-                model=model,
-                deployed_model_display_name=f"{endpoint_name}-deployment",
-                machine_type=self.config.machine_type,
-                min_replica_count=self.config.min_replica_count,
-                max_replica_count=self.config.max_replica_count,
-                accelerator_type=self.config.accelerator_type,
-                accelerator_count=self.config.accelerator_count,
-                service_account=self.config.service_account,
-                explanation_metadata=self.config.explanation_metadata,
-                explanation_parameters=self.config.explanation_parameters,
-                sync=self.config.sync,
-            )
-            logger.info(
-                f"Model {model.resource_name} successfully deployed to endpoint {endpoint.resource_name}"
-            )
-
-            # Store both endpoint and deployment information
+            # Update status
             self.status.endpoint = VertexPredictionServiceEndpoint(
                 endpoint_name=endpoint.resource_name,
                 endpoint_url=endpoint.resource_name,
                 deployed_model_id=model.resource_name,
+                created_at=datetime.utcnow(),
+                updated_at=datetime.utcnow(),
+                state="DEPLOYED",
             )
-            self.status.update_state(ServiceState.PENDING_STARTUP)
+            self.status.update_state(ServiceState.ACTIVE)
 
             logger.info(
-                f"Vertex AI inference endpoint successfully deployed. Pending startup"
-                f"Endpoint: {endpoint.resource_name}, "
+                f"Deployment completed successfully. "
+                f"Endpoint: {endpoint.resource_name}"
             )
 
         except Exception as e:
-            self.status.update_state(
-                new_state=ServiceState.ERROR,
-                error=f"Deployment failed: {str(e)}",
-            )
-            raise RuntimeError(
-                f"An error occurred while provisioning the Vertex AI inference endpoint: {e}"
-            )
+            error_msg = f"Failed to provision deployment: {str(e)}"
+            logger.error(error_msg)
+            self.status.update_state(ServiceState.ERROR, error_msg)
+            raise RuntimeError(error_msg)
 
     def deprovision(self, force: bool = False) -> None:
-        """Deprovision the remote Vertex AI deployment instance."""
+        """Deprovision the Vertex AI deployment.
+
+        Args:
+            force: Whether to force deprovision
+        """
         if not self.status.endpoint:
+            logger.warning("No endpoint to deprovision")
             return
 
         try:
             endpoint = aiplatform.Endpoint(
                 endpoint_name=self.status.endpoint.endpoint_name,
                 location=self.config.location,
+                credentials=self._credentials,
             )
 
-            # First undeploy the specific model if we have its ID
-            if self.status.endpoint.deployed_model_id:
-                try:
-                    endpoint.undeploy(
-                        deployed_model_id=self.status.endpoint.deployed_model_id,
-                        sync=self.config.sync,
-                    )
-                except exceptions.NotFound:
-                    logger.warning("Deployed model already undeployed")
+            # Undeploy model
+            endpoint.undeploy_all()
 
-            # Then delete the endpoint
-            endpoint.delete(force=force, sync=self.config.sync)
+            # Delete endpoint if we created it
+            if not self.config.existing_endpoint:
+                endpoint.delete()
+
+            logger.info(f"Deprovisioned endpoint: {endpoint.resource_name}")
 
             self.status.endpoint = None
             self.status.update_state(ServiceState.INACTIVE)
 
-            logger.info("Vertex AI Inference Endpoint has been deprovisioned.")
-
-        except exceptions.NotFound:
-            logger.warning(
-                "Vertex AI Inference Endpoint not found. It may have been already deleted."
-            )
-            self.status.update_state(ServiceState.INACTIVE)
         except Exception as e:
-            error_msg = (
-                f"Failed to deprovision Vertex AI Inference Endpoint: {e}"
-            )
-            logger.error(error_msg)
+            error_msg = f"Failed to deprovision deployment: {str(e)}"
             if not force:
+                logger.error(error_msg)
+                self.status.update_state(ServiceState.ERROR, error_msg)
                 raise RuntimeError(error_msg)
-
-    def check_status(self) -> Tuple[ServiceState, str]:
-        """Check the current operational state of the Vertex AI deployment."""
-        if not self.status.endpoint:
-            return ServiceState.INACTIVE, "Endpoint not provisioned"
-        try:
-            logger.info(
-                f"Checking status of Vertex AI Inference Endpoint: {self.status.endpoint.endpoint_name}"
-            )
-            endpoint = aiplatform.Endpoint(
-                endpoint_name=self.status.endpoint.endpoint_name,
-                location=self.config.location,
-            )
-
-            # Get detailed deployment status
-            deployment = None
-            if self.status.endpoint.deployed_model_id:
-                deployments = [
-                    d
-                    for d in endpoint.list_models()
-                    if d.model == self.status.endpoint.deployed_model_id
-                ]
-                if deployments:
-                    deployment = deployments[0]
-                    logger.info(
-                        f"Model {self.status.endpoint.deployed_model_id} was deployed to the endpoint"
-                    )
-
-            if not deployment:
+            else:
                 logger.warning(
-                    "No matching deployment found, endpoint may be inactive or failed to deploy"
+                    f"Error during forced deprovision (ignoring): {error_msg}"
                 )
-                return ServiceState.INACTIVE, "No matching deployment found"
+                self.status.update_state(ServiceState.INACTIVE)
 
-            return ServiceState.ACTIVE, "Deployment is ready"
+    def start_deployment(
+        self, timeout: int = POLLING_TIMEOUT
+    ) -> aiplatform.Endpoint:
+        """Start the Vertex AI deployment and wait until it's ready.
 
-        except exceptions.NotFound:
-            return ServiceState.INACTIVE, "Endpoint not found"
-        except Exception as e:
-            return ServiceState.ERROR, f"Error checking status: {str(e)}"
-
-    def predict(self, instances: List[Any]) -> List[Any]:
-        """Make a prediction using the service."""
-        if not self.is_running:
-            raise Exception(
-                "Vertex AI endpoint inference service is not running. "
-                "Please start the service before making predictions."
-            )
-
-        if not self.status.endpoint:
-            raise Exception("Endpoint information is missing.")
-
-        try:
-            endpoint = aiplatform.Endpoint(
-                endpoint_name=self.status.endpoint.endpoint_name,
-                location=self.config.location,
-            )
-
-            # Add proper prediction parameters and handle sync/async
-            predictions = endpoint.predict(
-                instances=instances,
-                deployed_model_id=self.status.endpoint.deployed_model_id.split(
-                    "/"
-                )[-1]
-                if self.status.endpoint.deployed_model_id
-                else None,
-                timeout=30,  # Add reasonable timeout
-            )
-
-            if not predictions:
-                raise RuntimeError("No predictions returned")
-
-        except Exception as e:
-            logger.error(f"Prediction failed: {e}")
-            raise RuntimeError(f"Prediction failed: {str(e)}")
-
-        return [predictions]
-
-    def get_logs(
-        self, follow: bool = False, tail: Optional[int] = None
-    ) -> Generator[str, bool, None]:
-        """Retrieve the service logs from Cloud Logging.
+        This method initiates the deployment (via a helper, e.g. _deploy_model()) and then
+        blocks until the underlying operation is completed using wait().
 
         Args:
-            follow: If True, continuously yield new logs
-            tail: Number of most recent logs to return
+            timeout: Maximum time (in seconds) to wait for deployment readiness.
+
+        Returns:
+            The deployed Vertex AI Endpoint object.
+
+        Raises:
+            RuntimeError: If the deployment operation fails.
         """
-        if not self.status.endpoint:
-            yield "No endpoint deployed yet"
-            return
-
         try:
-            # Create filter for Vertex AI endpoint logs
-            endpoint_id = self.status.endpoint.endpoint_name.split("/")[-1]
-            filter_str = (
-                f'resource.type="aiplatform.googleapis.com/Endpoint" '
-                f'resource.labels.endpoint_id="{endpoint_id}" '
-                f'resource.labels.location="{self.config.location}"'
+            # _deploy_model() is assumed to initiate deployment and return an operation object.
+            # The operation object has a wait() method.
+            operation = (
+                self._deploy_model()
+            )  # <-- your deployment call; adjust as needed
+            logger.info(
+                "Deployment operation initiated. Waiting for deployment to be ready..."
+            )
+            operation.wait(timeout=timeout)
+
+            # After waiting, retrieve the endpoint object.
+            endpoint = aiplatform.Endpoint(
+                endpoint_name=operation.resource.name,
+                location=self.config.location,
+                credentials=self._credentials,
             )
 
-            # Set time range for logs
-            if tail:
-                filter_str += f" limit {tail}"
-
-            # Get log iterator
-            iterator = self.logging_client.list_entries(
-                filter_=filter_str, order_by=vertex_logging.DESCENDING
+            self.status.endpoint = endpoint
+            self.status.update_state(ServiceState.ACTIVE)
+            logger.info(
+                f"Deployment is ready at endpoint: {endpoint.resource_name}"
             )
-
-            # Yield historical logs
-            for entry in iterator:
-                yield f"[{entry.timestamp}] {entry.severity}: {entry.payload.get('message', '')}"
-
-            # If following logs, continue to stream new entries
-            if follow:
-                while True:
-                    time.sleep(2)  # Poll every 2 seconds
-                    for entry in self.logging_client.list_entries(
-                        filter_=filter_str,
-                        order_by=vertex_logging.DESCENDING,
-                        page_size=1,
-                    ):
-                        yield f"[{entry.timestamp}] {entry.severity}: {entry.payload.get('message', '')}"
-
+            return endpoint
         except Exception as e:
-            error_msg = f"Failed to retrieve logs: {str(e)}"
-            logger.error(error_msg)
-            yield error_msg
+            logger.error(f"Deployment failed: {e}")
+            self.status.update_state(ServiceState.ERROR, str(e))
+            raise RuntimeError(f"Deployment failed: {e}")
+
+    def get_logs(
+        self,
+        follow: bool = False,
+        tail: Optional[int] = None,
+    ) -> Generator[str, bool, None]:
+        """Retrieve logs for the Vertex AI deployment (not supported).
+
+        Yields:
+            Log entries as strings, but logs are not supported for Vertex AI.
+        """
+        logger.warning("Logs are not supported for Vertex AI")
+        yield from ()
+
+    def check_status(self) -> None:
+        """Check the status of the deployment (no-op implementation)."""
+        return
 
     @property
     def is_running(self) -> bool:

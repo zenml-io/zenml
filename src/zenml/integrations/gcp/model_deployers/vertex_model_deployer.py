@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the Vertex AI Model Deployer."""
 
-from typing import ClassVar, Dict, Optional, Tuple, Type, cast
+from typing import Any, ClassVar, Dict, Optional, Tuple, Type, cast
 from uuid import UUID
 
 from google.cloud import aiplatform
@@ -66,9 +66,19 @@ class VertexModelDeployer(BaseModelDeployer, GoogleCredentialsMixin):
         """
         return cast(VertexModelDeployerConfig, self._config)
 
-    def setup_aiplatform(self) -> None:
-        """Setup the Vertex AI platform."""
-        credentials, project_id = self._get_authentication()
+    def _init_vertex_client(
+        self,
+        credentials: Optional[Any] = None,
+    ) -> None:
+        """Initialize Vertex AI client with proper credentials.
+
+        Args:
+            credentials: Optional credentials to use
+        """
+        if not credentials:
+            credentials, project_id = self._get_authentication()
+
+        # Initialize with per-instance credentials
         aiplatform.init(
             project=project_id,
             location=self.config.location,
@@ -77,16 +87,14 @@ class VertexModelDeployer(BaseModelDeployer, GoogleCredentialsMixin):
 
     @property
     def validator(self) -> Optional[StackValidator]:
-        """Validates that the stack contains a model registry.
-
-        Also validates that the artifact store is not local.
+        """Validates that the stack contains a Vertex AI model registry.
 
         Returns:
             A StackValidator instance.
         """
 
         def _validate_stack_requirements(stack: "Stack") -> Tuple[bool, str]:
-            """Validates that all the stack components are not local.
+            """Validates stack requirements.
 
             Args:
                 stack: The stack to validate.
@@ -100,22 +108,6 @@ class VertexModelDeployer(BaseModelDeployer, GoogleCredentialsMixin):
                     "The Vertex AI model deployer requires a Vertex AI model "
                     "registry to be present in the stack. Please add a Vertex AI "
                     "model registry to the stack."
-                )
-
-            # Validate that the rest of the components are not local.
-            for stack_comp in stack.components.values():
-                local_path = stack_comp.local_path
-                if not local_path:
-                    continue
-                return False, (
-                    f"The '{stack_comp.name}' {stack_comp.type.value} is a "
-                    f"local stack component. The Vertex AI Pipelines "
-                    f"orchestrator requires that all the components in the "
-                    f"stack used to execute the pipeline have to be not local, "
-                    f"because there is no way for Vertex to connect to your "
-                    f"local machine. You should use a flavor of "
-                    f"{stack_comp.type.value} other than '"
-                    f"{stack_comp.flavor}'."
                 )
 
             return True, ""
@@ -133,22 +125,21 @@ class VertexModelDeployer(BaseModelDeployer, GoogleCredentialsMixin):
         """Creates a new VertexAIDeploymentService.
 
         Args:
-            id: the UUID of the model to be deployed with Vertex model deployer.
-            timeout: the timeout in seconds to wait for the Vertex inference endpoint
-                to be provisioned and successfully started or updated.
-            config: the configuration of the model to be deployed with Vertex model deployer.
+            id: the UUID of the model to be deployed
+            timeout: timeout in seconds for deployment operations
+            config: deployment configuration
 
         Returns:
-            The VertexDeploymentService object that can be used to interact
-            with the Vertex inference endpoint.
+            The VertexDeploymentService instance
         """
-        # create a new service for the new model
+        # Initialize client with fresh credentials
+        self._init_vertex_client()
+
+        # Create service instance
         service = VertexDeploymentService(uuid=id, config=config)
-        logger.info(
-            "Creating an artifact %s with service instance attached as metadata.",
-            "attached as metadata. If there's an active pipeline and/or model, "
-            "this artifact will be associated with it.",
-        )
+        logger.info("Creating Vertex AI deployment service with ID %s", id)
+
+        # Start the service
         service.start(timeout=timeout)
         return service
 
@@ -161,22 +152,22 @@ class VertexModelDeployer(BaseModelDeployer, GoogleCredentialsMixin):
         """Deploy a model to Vertex AI.
 
         Args:
-            id: the UUID of the service to be created.
-            config: the configuration of the model to be deployed.
-            timeout: the timeout for the deployment operation.
+            id: the UUID of the service to be created
+            config: deployment configuration
+            timeout: timeout for deployment operations
 
         Returns:
-            The ZenML Vertex AI deployment service object.
+            The deployment service instance
         """
         with track_handler(AnalyticsEvent.MODEL_DEPLOYED) as analytics_handler:
             config = cast(VertexDeploymentConfig, config)
+
+            # Create and start deployment service
             service = self._create_deployment_service(
                 id=id, config=config, timeout=timeout
             )
-            logger.info(
-                f"Creating a new Vertex AI deployment service: {service}"
-            )
 
+            # Track analytics
             client = Client()
             stack = client.active_stack
             stack_metadata = {
@@ -187,7 +178,8 @@ class VertexModelDeployer(BaseModelDeployer, GoogleCredentialsMixin):
                 "store_type": client.zen_store.type.value,
                 **stack_metadata,
             }
-        return service
+
+            return service
 
     def perform_stop_model(
         self,
@@ -198,13 +190,16 @@ class VertexModelDeployer(BaseModelDeployer, GoogleCredentialsMixin):
         """Stop a Vertex AI deployment service.
 
         Args:
-            service: The service to stop.
-            timeout: Timeout in seconds to wait for the service to stop.
-            force: If True, force the service to stop.
+            service: The service to stop
+            timeout: Timeout for stop operation
+            force: Whether to force stop
 
         Returns:
-            The stopped service.
+            The stopped service
         """
+        # Initialize client with fresh credentials
+        self._init_vertex_client()
+
         service.stop(timeout=timeout, force=force)
         return service
 
@@ -216,12 +211,15 @@ class VertexModelDeployer(BaseModelDeployer, GoogleCredentialsMixin):
         """Start a Vertex AI deployment service.
 
         Args:
-            service: The service to start.
-            timeout: Timeout in seconds to wait for the service to start.
+            service: The service to start
+            timeout: Timeout for start operation
 
         Returns:
-            The started service.
+            The started service
         """
+        # Initialize client with fresh credentials
+        self._init_vertex_client()
+
         service.start(timeout=timeout)
         return service
 
@@ -234,10 +232,13 @@ class VertexModelDeployer(BaseModelDeployer, GoogleCredentialsMixin):
         """Delete a Vertex AI deployment service.
 
         Args:
-            service: The service to delete.
-            timeout: Timeout in seconds to wait for the service to stop.
-            force: If True, force the service to stop.
+            service: The service to delete
+            timeout: Timeout for delete operation
+            force: Whether to force delete
         """
+        # Initialize client with fresh credentials
+        self._init_vertex_client()
+
         service = cast(VertexDeploymentService, service)
         service.stop(timeout=timeout, force=force)
 
@@ -248,12 +249,15 @@ class VertexModelDeployer(BaseModelDeployer, GoogleCredentialsMixin):
         """Get information about the deployed model server.
 
         Args:
-            service_instance: The VertexDeploymentService instance.
+            service_instance: The deployment service instance
 
         Returns:
-            A dictionary containing information about the model server.
+            Dict containing server information
         """
         return {
-            "PREDICTION_URL": service_instance.prediction_url,
-            "HEALTH_CHECK_URL": service_instance.get_healthcheck_url(),
+            "prediction_url": service_instance.get_prediction_url(),
+            "status": service_instance.status.state.value,
+            "endpoint_id": service_instance.status.endpoint.endpoint_name
+            if service_instance.status.endpoint
+            else None,
         }

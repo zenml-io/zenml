@@ -13,13 +13,14 @@
 #  permissions and limitations under the License.
 """Vertex AI model deployer flavor."""
 
-from typing import TYPE_CHECKING, Dict, Optional, Sequence, Type
-
-from pydantic import BaseModel
+from typing import TYPE_CHECKING, Optional, Type
 
 from zenml.integrations.gcp import (
     GCP_RESOURCE_TYPE,
     VERTEX_MODEL_DEPLOYER_FLAVOR,
+)
+from zenml.integrations.gcp.flavors.vertex_base_config import (
+    VertexAIEndpointConfig,
 )
 from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsConfigMixin,
@@ -38,48 +39,18 @@ if TYPE_CHECKING:
     )
 
 
-class VertexBaseConfig(BaseModel):
-    """Vertex AI Inference Endpoint configuration."""
-
-    location: Optional[str] = None
-    version: Optional[str] = None
-    serving_container_image_uri: Optional[str] = None
-    artifact_uri: Optional[str] = None
-    model_id: Optional[str] = None
-    is_default_version: Optional[bool] = None
-    serving_container_command: Optional[Sequence[str]] = None
-    serving_container_args: Optional[Sequence[str]] = None
-    serving_container_environment_variables: Optional[Dict[str, str]] = None
-    serving_container_ports: Optional[Sequence[int]] = None
-    serving_container_grpc_ports: Optional[Sequence[int]] = None
-    deployed_model_display_name: Optional[str] = None
-    traffic_percentage: Optional[int] = 0
-    traffic_split: Optional[Dict[str, int]] = None
-    machine_type: Optional[str] = None
-    accelerator_type: Optional[str] = None
-    accelerator_count: Optional[int] = None
-    min_replica_count: Optional[int] = 1
-    max_replica_count: Optional[int] = 1
-    service_account: Optional[str] = None
-    metadata: Optional[Dict[str, str]] = None
-    network: Optional[str] = None
-    encryption_spec_key_name: Optional[str] = None
-    sync: Optional[bool] = False
-    deploy_request_timeout: Optional[int] = None
-    autoscaling_target_cpu_utilization: Optional[float] = None
-    autoscaling_target_accelerator_duty_cycle: Optional[float] = None
-    enable_access_logging: Optional[bool] = None
-    disable_container_logging: Optional[bool] = None
-    explanation_metadata: Optional[Dict[str, str]] = None
-    explanation_parameters: Optional[Dict[str, str]] = None
-    existing_endpoint: Optional[str] = None
-    labels: Optional[Dict[str, str]] = None
-
-
 class VertexModelDeployerConfig(
-    BaseModelDeployerConfig, VertexBaseConfig, GoogleCredentialsConfigMixin
+    BaseModelDeployerConfig,
+    GoogleCredentialsConfigMixin,
+    VertexAIEndpointConfig,
 ):
-    """Configuration for the Vertex AI model deployer."""
+    """Configuration for the Vertex AI model deployer.
+
+    This configuration combines:
+    - Base model deployer configuration
+    - Google Cloud authentication
+    - Vertex AI endpoint configuration
+    """
 
 
 class VertexModelDeployerFlavor(BaseModelDeployerFlavor):
