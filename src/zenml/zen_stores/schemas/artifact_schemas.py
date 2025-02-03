@@ -114,7 +114,7 @@ class ArtifactSchema(NamedSchema, table=True):
             )
         else:
             raise RuntimeError(
-                "Missing DB session to fetch latest run for pipeline."
+                "Missing DB session to fetch latest version for artifact."
             )
 
     @classmethod
