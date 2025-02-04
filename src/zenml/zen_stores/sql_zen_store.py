@@ -303,7 +303,6 @@ from zenml.utils.enum_utils import StrEnum
 from zenml.utils.networking_utils import (
     replace_localhost_with_internal_hostname,
 )
-from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.utils.secret_utils import PlainSerializedSecretStr
 from zenml.utils.string_utils import (
     format_name_template,
@@ -434,6 +433,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             be created automatically on first access.
         username: The database username.
         password: The database password.
+        ssl: Whether to use SSL.
         ssl_ca: certificate authority certificate. Required for SSL
             enabled authentication if the CA certificate is not part of the
             certificates shipped by the operating system.
@@ -463,6 +463,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
     database: Optional[str] = None
     username: Optional[PlainSerializedSecretStr] = None
     password: Optional[PlainSerializedSecretStr] = None
+    ssl: bool = False
     ssl_ca: Optional[PlainSerializedSecretStr] = None
     ssl_cert: Optional[PlainSerializedSecretStr] = None
     ssl_key: Optional[PlainSerializedSecretStr] = None
@@ -498,35 +499,6 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             secrets_store = SqlSecretsStoreConfiguration()
 
         return secrets_store
-
-    @model_validator(mode="before")
-    @classmethod
-    @before_validator_handler
-    def _remove_grpc_attributes(cls, data: Dict[str, Any]) -> Dict[str, Any]:
-        """Removes old GRPC attributes.
-
-        Args:
-            data: All model attribute values.
-
-        Returns:
-            The model attribute values
-        """
-        grpc_attribute_keys = [
-            "grpc_metadata_host",
-            "grpc_metadata_port",
-            "grpc_metadata_ssl_ca",
-            "grpc_metadata_ssl_key",
-            "grpc_metadata_ssl_cert",
-        ]
-        grpc_values = [data.pop(key, None) for key in grpc_attribute_keys]
-        if any(grpc_values):
-            logger.warning(
-                "The GRPC attributes %s are unused and will be removed soon. "
-                "Please remove them from SQLZenStore configuration. This will "
-                "become an error in future versions of ZenML."
-            )
-
-        return data
 
     @model_validator(mode="after")
     def _validate_backup_strategy(self) -> "SqlZenStoreConfiguration":
@@ -641,15 +613,21 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                         return None
 
                 for k, v in sql_url.query.items():
-                    if k == "ssl_ca":
+                    if k == "ssl":
+                        if r := _get_query_result(v):
+                            self.ssl = is_true_string_value(r)
+                    elif k == "ssl_ca":
                         if r := _get_query_result(v):
                             self.ssl_ca = PlainSerializedSecretStr(r)
+                            self.ssl = True
                     elif k == "ssl_cert":
                         if r := _get_query_result(v):
                             self.ssl_cert = PlainSerializedSecretStr(r)
+                            self.ssl = True
                     elif k == "ssl_key":
                         if r := _get_query_result(v):
                             self.ssl_key = PlainSerializedSecretStr(r)
+                            self.ssl = True
                     elif k == "ssl_verify_server_cert":
                         if r := _get_query_result(v):
                             if is_true_string_value(r):
@@ -659,7 +637,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                     else:
                         raise ValueError(
                             "Invalid MySQL URL query parameter `%s`: The "
-                            "parameter must be one of: ssl_ca, ssl_cert, "
+                            "parameter must be one of: ssl, ssl_ca, ssl_cert, "
                             "ssl_key, or ssl_verify_server_cert.",
                             k,
                         )
@@ -728,15 +706,6 @@ class SqlZenStoreConfiguration(StoreConfiguration):
         """
         return make_url(url).drivername in SQLDatabaseDriver.values()
 
-    def expand_certificates(self) -> None:
-        """Expands the certificates in the verify_ssl field."""
-        # Load the certificate values back into the configuration
-        for key in ["ssl_key", "ssl_ca", "ssl_cert"]:
-            file_path = getattr(self, key, None)
-            if file_path and os.path.isfile(file_path.get_secret_value()):
-                with open(file_path, "r") as f:
-                    setattr(self, key, f.read())
-
     def get_sqlalchemy_config(
         self,
         database: Optional[str] = None,
@@ -789,22 +758,19 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             sqlalchemy_ssl_args: Dict[str, Any] = {}
 
             # Handle SSL params
-            for key in ["ssl_key", "ssl_ca", "ssl_cert"]:
-                ssl_setting = getattr(self, key)
-                if not ssl_setting:
-                    continue
-                if not os.path.isfile(ssl_setting.get_secret_value()):
-                    logger.warning(
-                        f"Database SSL setting `{key}` is not a file. "
+            if self.ssl:
+                sqlalchemy_ssl_args["ssl"] = True
+                for key in ["ssl_key", "ssl_ca", "ssl_cert"]:
+                    ssl_setting = getattr(self, key)
+                    if not ssl_setting:
+                        continue
+                    if not os.path.isfile(ssl_setting.get_secret_value()):
+                        logger.warning(
+                            f"Database SSL setting `{key}` is not a file. "
+                        )
+                    sqlalchemy_ssl_args[key.removeprefix("ssl_")] = (
+                        ssl_setting.get_secret_value()
                     )
-                sqlalchemy_ssl_args[key.lstrip("ssl_")] = (
-                    ssl_setting.get_secret_value()
-                )
-                sqlalchemy_ssl_args[key.removeprefix("ssl_")] = (
-                    ssl_setting.get_secret_value()
-                )
-
-            if len(sqlalchemy_ssl_args) > 0:
                 sqlalchemy_ssl_args["check_hostname"] = (
                     self.ssl_verify_server_cert
                 )

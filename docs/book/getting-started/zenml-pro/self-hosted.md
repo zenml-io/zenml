@@ -30,9 +30,13 @@ If you haven't done so already, please [book a demo](https://www.zenml.io/book-y
 
 The following artifacts are required to install the ZenML Pro control plane in your own Kubernetes cluster:
 
-- `715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro-api` - private container images for the ZenML Pro API server
-- `715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro-dashboard` - private container images for the ZenML Pro dashboard
-- `oci://public.ecr.aws/zenml/zenml-pro` - the public ZenML Pro helm chart (as an OCI artifact)
+- private container images for the ZenML Pro API server:
+  - `715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro-api` in AWS
+  - `europe-west3-docker.pkg.dev/zenml-cloud/zenml-pro/zenml-pro-api` in GCP
+- private container images for the ZenML Pro dashboard:
+  - `715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro-dashboard` in AWS
+  - `europe-west3-docker.pkg.dev/zenml-cloud/zenml-pro/zenml-pro-dashboard` in GCP
+- the public ZenML Pro helm chart (as an OCI artifact): `oci://public.ecr.aws/zenml/zenml-pro`
 
 {% hint style="info" %}
 The container image tags and the Helm chart versions are both synchronized and linked to the ZenML Pro releases. You can find the ZenML Pro Helm chart along with the available released versions in the [ZenML Pro ArtifactHub repository](https://artifacthub.io/packages/helm/zenml-pro/zenml-pro).
@@ -46,8 +50,10 @@ By default, the ZenML Pro Helm chart uses the same container image tags as the h
 
 The following artifacts are required to install ZenML Pro tenant servers in your own Kubernetes cluster:
 
-- `715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-pro-server` - private container images for the ZenML Pro tenant server
-- `oci://public.ecr.aws/zenml/zenml` - the public open-source ZenML Helm chart (as an OCI artifact).
+- private container images for the ZenML Pro tenant server:
+  - `715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-pro-server` in AWS
+  - `europe-west3-docker.pkg.dev/zenml-cloud/zenml-pro/zenml-pro-server` in GCP
+- the public open-source ZenML Helm chart (as an OCI artifact): `oci://public.ecr.aws/zenml/zenml`
 
 {% hint style="info" %}
 The container image tags and the Helm chart versions are both synchronized and linked to the ZenML open-source releases. To find the latest ZenML OSS release, please check the [ZenML OSS ArtifactHub repository (Helm chart versions)](https://artifacthub.io/packages/helm/zenml/zenml) or the [ZenML release page](https://github.com/zenml-io/zenml/releases).
@@ -61,15 +67,14 @@ By default, the ZenML OSS Helm chart uses the same container image tags as the h
 
 If you're planning on running containerized ZenML pipelines, or using other containerization related ZenML features, you'll also need to access the public ZenML client container image located [in Docker Hub at `zenmldocker/zenml`](https://hub.docker.com/r/zenmldocker/zenml). This isn't a problem unless you're deploying ZenML Pro in an air-gapped environment, in which case you'll also have to copy the client container image into your own container registry. You'll also have to configure your code to use the correct base container registry via DockerSettings (see the [DockerSettings documentation](../../how-to/customize-docker-builds/README.md) for more information).
 
-
 ### Accessing the ZenML Pro Container Images
 
 This section provides instructions for how to access the private ZenML Pro container images.
 
 {% hint style="info" %}
-Currently, ZenML Pro container images are only available in AWS Elastic Container Registry (ECR). Support for Google Cloud Platform (GCP) Artifact Registry and Azure Container Registry (ACR) is on our roadmap and will be added soon.
+Currently, ZenML Pro container images are only available in AWS Elastic Container Registry (ECR) and Google Cloud Platform (GCP) Artifact Registry. Support for Azure Container Registry (ACR) is on our roadmap and will be added soon.
 
-The ZenML support team can provide temporary credentials upon request, which can be used to pull these images without the need to set up any cloud provider resources. Contact support if you'd prefer this option.
+The ZenML support team can provide credentials upon request, which can be used to pull these images without the need to set up any cloud provider accounts or resources. Contact support if you'd prefer this option.
 {% endhint %}
 
 #### AWS
@@ -188,6 +193,84 @@ To decide which tag to use, you should check:
 Note that the `zenml-pro-api` and `zenml-pro-dashboard` images are stored in the `eu-west-1` region, while the `zenml-pro-server` image is stored in the `eu-central-1` region.
 {% endhint %}
 
+#### GCP
+
+To access the ZenML Pro container images stored in Google Cloud Platform (GCP) Artifact Registry, you need to set up a GCP account and configure the necessary permissions. The steps below outline how to create a GCP account, configure authentication, and pull images from the private repositories. If you're familiar with GCP or plan on using a GKE cluster to deploy ZenML Pro, you can use your existing GCP account and skip step 1.
+
+---
+
+- **Step 1: Create a GCP Account**
+    1. Visit the [Google Cloud Console](https://console.cloud.google.com/).
+    2. Click **Get Started for Free** or sign in with an existing Google account.
+    3. Follow the on-screen instructions to set up your account and create a project.
+    4. Set up billing information (required for using GCP services).
+    
+    ---
+    
+- **Step 2: Create a Service Account**
+    
+    1. Navigate to the [IAM & Admin > Service Accounts](https://console.cloud.google.com/iam-admin/serviceaccounts) page in the Google Cloud Console.
+    2. Click **Create Service Account**.
+    3. Enter a service account name (e.g., `zenml-gar-access`).
+    4. Add a description (optional) and click **Create and Continue**.
+    5. No additional permissions are needed as access will be granted directly to the Artifact Registry.
+    6. Click **Done**.
+    7. After creation, click on the service account to view its details.
+    8. Go to the **Keys** tab and click **Add Key > Create new key**.
+    9. Choose **JSON** as the key type and click **Create**.
+    10. Save the downloaded JSON key file securely - you'll need it later.
+    
+    ---
+    
+- **Step 3: Provide the Service Account Email**
+    1. In the service account details page, copy the service account email address (it should look like `zenml-gar-access@your-project.iam.gserviceaccount.com`).
+    2. Send this email address to ZenML Support so it can be granted permission to access the ZenML Pro container images.
+
+    ---
+    
+- **Step 4: Authenticate your Docker Client**
+    
+    Run these steps on the machine that you'll use to pull the ZenML Pro images. It is recommended that you copy the container images into your own container registry that will be accessible from the Kubernetes cluster where ZenML Pro will be stored.
+    
+    **A. Install Google Cloud CLI**
+    
+    1. Follow the instructions to install the [Google Cloud CLI](https://cloud.google.com/sdk/docs/install).
+    2. Initialize the CLI by running:
+        ```bash
+        gcloud init
+        ```
+    
+    **B. Configure Authentication**
+    
+    1. Activate the service account using the JSON key file you downloaded:
+        ```bash
+        gcloud auth activate-service-account --key-file=/path/to/your-key-file.json
+        ```
+    
+    2. Configure Docker authentication for Artifact Registry:
+        ```bash
+        gcloud auth configure-docker europe-west3-docker.pkg.dev
+        ```
+    
+    **C. Pull the Container Images**
+    
+    You can now pull the ZenML Pro images:
+    
+    ```bash
+    # Pull the ZenML Pro API image
+    docker pull europe-west3-docker.pkg.dev/zenml-cloud/zenml-pro/zenml-pro-api:<zenml-pro-version>
+    # Pull the ZenML Pro Dashboard image
+    docker pull europe-west3-docker.pkg.dev/zenml-cloud/zenml-pro/zenml-pro-dashboard:<zenml-pro-version>
+    # Pull the ZenML Pro Server image
+    docker pull europe-west3-docker.pkg.dev/zenml-cloud/zenml-pro/zenml-pro-server:<zenml-oss-version>
+    ```
+
+{% hint style="info" %}
+To decide which tag to use, you should check:
+* for the available ZenML Pro versions: the [ZenML Pro ArtifactHub repository (Helm chart versions)](https://artifacthub.io/packages/helm/zenml-pro/zenml-pro)
+* for the available ZenML OSS versions: the [ZenML OSS ArtifactHub repository (Helm chart versions)](https://artifacthub.io/packages/helm/zenml/zenml) or the [ZenML GitHub releases page](https://github.com/zenml-io/zenml/releases)
+{% endhint %}
+
 ### Air-Gapped Installation
 
 If you need to install ZenML Pro in an air-gapped environment (a network with no direct internet access), you'll need to transfer all required artifacts to your internal infrastructure. Here's a step-by-step process:
@@ -199,9 +282,7 @@ First, you'll need a machine with both internet access and sufficient storage sp
 1. Follow the authentication steps described above to gain access to the private repositories
 2. Install the required tools:
    - Docker
-   - AWS CLI
    - Helm
-   - A tool like `skopeo` for copying container images (optional but recommended)
 
 **2. Download All Required Artifacts**
 
@@ -221,8 +302,12 @@ mkdir -p zenml-artifacts/images
 mkdir -p zenml-artifacts/charts
 
 # Set registry URLs
+# Use the following if you're pulling from the ZenML private ECR registry
 ZENML_PRO_REGISTRY="715803424590.dkr.ecr.eu-west-1.amazonaws.com"
 ZENML_PRO_SERVER_REGISTRY="715803424590.dkr.ecr.eu-central-1.amazonaws.com"
+# Use the following if you're pulling from the ZenML private GCP Artifact Registry
+# ZENML_PRO_REGISTRY="europe-west3-docker.pkg.dev/zenml-cloud/zenml-pro"
+# ZENML_PRO_SERVER_REGISTRY=$ZENML_PRO_REGISTRY
 ZENML_HELM_REGISTRY="public.ecr.aws/zenml"
 ZENML_DOCKERHUB_REGISTRY="zenmldocker"
 
@@ -403,6 +488,9 @@ To deploy the ZenML Pro control plane and one or more ZenML Pro tenant servers, 
             - Type: `A`
             - Value: `<Load Balancer IP>`
         - Use a DNS propagation checker to confirm that the DNS record is resolving correctly.
+
+        {% hint style="warning" %}Make sure you don't use a simple DNS prefix for the servers (e.g. `https://zenml.cluster` is not recommended). This is especially relevant for the TLS certificates that you have to prepare for these endpoints. Always use a fully qualified domain name (FQDN) (e.g. `https://zenml.ml.cluster`). The TLS certificates will not be accepted by some browsers otherwise (e.g. Chrome).{% endhint %}
+
 5. **SSL Certificate**
     
     The ZenML Pro services do not terminate SSL traffic. It is your responsibility to generate and configure the necessary SSL certificates for the ZenML Pro Control Plane as well as all the ZenML Pro tenants that you will deploy (see the previous point on how to use a DNS prefix to make the process easier).
@@ -413,6 +501,8 @@ To deploy the ZenML Pro control plane and one or more ZenML Pro tenant servers, 
         
         - A commercial SSL certificate provider (e.g., DigiCert, Sectigo).
         - Free services like [Let's Encrypt](https://letsencrypt.org/) for domain validation and issuance.
+        - Self-signed certificates (not recommended for production environments). **IMPORTANT**: If you are using self-signed certificates, it is highly recommended to use the same self-signed CA certificate for all the ZenML Pro services (control plane and tenant servers), otherwise it will be difficult to manage the certificates on the client machines. With only one CA certificate, you can install it system-wide on all the client machines only once and then use it to sign all the TLS certificates for the ZenML Pro services.
+        
     - **Configuring SSL Termination**
         
         Once the SSL certificate is obtained, configure your load balancer or Ingress controller to terminate HTTPS traffic:
@@ -493,32 +583,67 @@ To deploy the ZenML Pro control plane and one or more ZenML Pro tenant servers, 
             
         - Reference the domain in your IngressRoute or Middleware configuration.
 
+        {% hint style="warning" %}If you used a custom CA certificate to sign the TLS certificates for the ZenML Pro services, you will need to install the CA certificates on every client machine, as covered in the [Install CA Certificates](#install-ca-certificates) section.{% endhint %}
+
+
+The above are infrastructure requirements for ZenML Pro. If, in addition to ZenML, you would also like to reuse the same Kubernetes cluster to run machine learning workloads with ZenML, you will require the following additional infrastructure resources and services to be able to set up [a remote ZenML Stack](../../user-guide/production-guide/understand-stacks.md):
+
+- [a Kubernetes ZenML Orchestrator](../../component-guide/orchestrators/kubernetes.md) can be set up to run on the same cluster as ZenML Pro. For authentication, you will be able to configure [a ZenML Kubernetes Service Connector using service account tokens](../../how-to/infrastructure-deployment/auth-management/kubernetes-service-connector.md)
+- you'll need a container registry to store the container images built by ZenML. If you don't have one already, you can install [Docker registry](https://github.com/twuni/docker-registry.helm) on the same cluster as ZenML Pro.
+- you'll also need some form of centralized object storage to store the artifacts generated by ZenML. If you don't have one already, you can install [MinIO](https://artifacthub.io/packages/helm/bitnami/minio) on the same cluster as ZenML Pro and then configure the [ZenML S3 Artifact Store](../../component-guide/artifact-stores/s3.md) to use it.
+- (optional) you can install [Kaniko](https://bitnami.com/stack/kaniko) in your Kubernetes cluster to build the container images for your ZenML pipelines and then configure it as a [ZenML Kaniko Image Builder](../../component-guide//image-builders/kaniko.md) in your ZenML Stack.
+
 ## Stage 1/2: Install the ZenML Pro Control Plane
+
+### Set up Credentials
+
+If your Kubernetes cluster is not set to be authenticated to the container registry where the ZenML Pro container images are hosted, you will need to create a secret to allow the ZenML Pro server to pull the images. The following is an example of how to do this if you're received a private access key for the ZenML GCP Artifact Registry, but you can use the same approach for your own private container registry:
+
+```
+kubectl create ns zenml-pro
+kubectl -n zenml-pro create secret docker-registry image-pull-secret \
+    --docker-server=europe-west3-docker.pkg.dev \
+    --docker-username=_json_key_base64 \
+    --docker-password="$(cat key.base64)" \
+    --docker-email=unused
+```
+
+The `key.base64` file should contain the base64 encoded JSON key for the GCP service account as received from the ZenML support team. The `image-pull-secret` secret will be used in the next step when installing the ZenML Pro helm chart.
 
 ### Configure the Helm Chart
 
 There are a variety of options that can be configured for the ZenML Pro helm chart before installation.
 
-You can take look at the [`values.yaml` file](https://artifacthub.io/packages/helm/zenml-pro/zenml-pro?modal=values) and familiarize yourself with some of the configuration settings that you can customize for your ZenML Pro deployment. Alternatively, you can unpack the `values.yaml` file included in the helm chart:
+You can take look at the [Helm chart README](https://artifacthub.io/packages/helm/zenml-pro/zenml-pro) and [`values.yaml` file](https://artifacthub.io/packages/helm/zenml-pro/zenml-pro?modal=values) and familiarize yourself with some of the configuration settings that you can customize for your ZenML Pro deployment. Alternatively, you can unpack the `README.md` and `values.yaml` files included in the helm chart:
 
 ```bash
 helm  pull --untar  oci://public.ecr.aws/zenml/zenml-pro --version <version>
+less zenml-pro/README.md
 less zenml-pro/values.yaml
 ```
 
 This is an example Helm values YAML file that covers the most common configuration options: 
 
 ```yaml
+# Set up imagePullSecrets to authenticate to the container registry where the
+# ZenML Pro container images are hosted, if necessary (see the previous step)
+imagePullSecrets:
+  - name: image-pull-secret
+
 # ZenML Pro server related options.
 zenml:
 
   image:
     api:
-      # Change this to point to your own container repository
+      # Change this to point to your own container repository or use this for direct ECR access
       repository: 715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro-api
+      # Use this for direct GAR access
+      # repository: europe-west3-docker.pkg.dev/zenml-cloud/zenml-pro/zenml-pro-api
     dashboard:
-      # Change this to point to your own container repository
+      # Change this to point to your own container repository or use this for direct ECR access
       repository: 715803424590.dkr.ecr.eu-west-1.amazonaws.com/zenml-pro-dashboard
+      # Use this for direct GAR access
+      # repository: europe-west3-docker.pkg.dev/zenml-cloud/zenml-pro/zenml-pro-dashboard
 
   # The external URL where the ZenML Pro server API and dashboard are reachable.
   #
@@ -567,6 +692,9 @@ Minimum required settings:
 
 In addition to the above, the following might also be relevant for you:
 
+- configure container registry credentials (`imagePullSecrets`)
+- injecting custom CA certificates (`zenml.certificates`), especially important if the TLS certificates used by the ZenML Pro services are signed by a custom Certificate Authority
+- configure HTTP proxy settings (`zenml.proxy`)
 - custom container image repository locations (`zenml.image.api` and `zenml.image.dashboard`)
 - the username and password used for the default admin account (`zenml.auth.password`)
 - additional Ingress settings (`zenml.ingress`)
@@ -620,6 +748,55 @@ Use the following credentials:
 ```
 
 The credentials are for the default administrator user account provisioned on installation. With these on-hand, you can proceed to the next step and on-board additional users.
+
+### Install CA Certificates
+
+If the TLS certificates used by the ZenML Pro services are signed by a custom Certificate Authority, you need to install the CA certificates on every machine that needs to access the ZenML server:
+
+* installing the CA certificates system-wide is usually the easiest solution. For example, on Ubuntu and Debian-based systems, you can install the CA certificates system-wide by copying the CA certificates into the `/usr/local/share/ca-certificates` directory and running `update-ca-certificates`.
+* for some browsers (e.g. Chrome), updating the system's CA certificates is not enough. You will also need to import the CA certificates into the browser.
+* for Python, you also need to set the `REQUESTS_CA_BUNDLE` environment variable to the path to the system's CA certificates bundle file (e.g. `export REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt`)
+* later on, when you're running containerized pipelines with ZenML, you'll also want to install those same CA certificates into the container images built by ZenML by customizing the build process via [DockerSettings](../../how-to/customize-docker-builds/README.md). For example:
+  
+  * customize the ZenML client container image using a Dockerfile like this:
+
+    ```dockerfile
+    # Use the original ZenML client image as a base image. The ZenML version
+    # should match the version of the ZenML server you're using (e.g. 0.73.0).
+    FROM zenmldocker/zenml:<zenml-version>
+
+    # Install certificates
+    COPY my-custom-ca.crt /usr/local/share/ca-certificates/
+    RUN update-ca-certificates
+
+    ENV REQUESTS_CA_BUNDLE=/etc/ssl/certs/ca-certificates.crt
+    ```
+
+  * then build and push that image to your private container registry:
+
+    ```bash
+    docker build -t my.docker.registry/my-custom-zenml-image:<zenml-version> .
+    docker push my.docker.registry/my-custom-zenml-image:<zenml-version>
+    ```
+
+  * and finally update your ZenML pipeline code to use the custom ZenML client image by using the `DockerSettings` class:
+
+    ```python
+    from zenml.config import DockerSettings
+    from zenml import __version__
+
+    # Define the custom base image
+    CUSTOM_BASE_IMAGE = f"my.docker.registry/my-custom-zenml-image:{__version__}"
+
+    docker_settings = DockerSettings(
+        parent_image=CUSTOM_BASE_IMAGE,
+    )
+
+    @pipeline(settings={"docker": docker_settings})
+    def my_pipeline() -> None:
+        ...
+
+    ```
 
 ### Onboard Additional Users
 
@@ -1178,80 +1355,95 @@ Installing and updating on-prem ZenML Pro tenant servers is not automated, as it
         main()
     
     ```
+
+    Running the script does two things:
+
+    - it creates a tenant entry in the ZenML Pro database. The tenant will remain in a "provisioning" state and won't be accessible until you actually install it using Helm.
+    - it outputs a YAML file with Helm chart configuration values that you can use to deploy the ZenML Pro tenant server in your Kubernetes cluster.
+
+    This is an example of a generated Helm YAML file:
+
+    ```yaml
+    zenml:
+        analyticsOptIn: false
+        threadPoolSize: 20
+        database:
+            maxOverflow: "-1"
+            poolSize: "10"
+            # TODO: use the actual database host and credentials
+            url: mysql://root:password@mysql.example.com:3306/zenmlf8e306ef90e74b2f99db28298834feed
+        image:
+            # TODO: use your actual image repository (omit the tag, which is
+            # assumed to be the same as the helm chart version)
+            repository: 715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-pro-server
+        # TODO: use your actual server domain here
+        serverURL: https://zenml.f8e306ef90e74b2f99db28298834feed.example.com
+        ingress:
+            enabled: true
+            # TODO: use your actual domain here
+            host: zenml.f8e306ef90e74b2f99db28298834feed.example.com
+        pro:
+            apiURL: https://zenml-pro.staging.cloudinfra.zenml.io/api/v1
+            dashboardURL: https://zenml-pro.staging.cloudinfra.zenml.io
+            enabled: true
+            enrollmentKey: Mt9Rw-Cdjlumel7GTCrbLpCQ5KhhtfmiDt43mVOYYsDKEjboGg9R46wWu53WQ20OzAC45u-ZmxVqQkMGj-0hWQ
+            organizationID: 0e99e236-0aeb-44cc-aff7-590e41c9a702
+            organizationName: MyOrg
+            tenantID: f8e306ef-90e7-4b2f-99db-28298834feed
+            tenantName: zenml-eab14ff8
+        replicaCount: 1
+        secretsStore:
+            sql:
+                encryptionKey: 155b20a388064423b1943d64f1686dd0d0aa6454be0a46839b1ee830f6565904
+            type: sql
+
+    # TODO: these are the minimum resources required for the ZenML server. You can
+    # adjust them to your needs.
+    resources:
+        limits:
+            memory: 800Mi
+        requests:
+            cpu: 100m
+            memory: 450Mi
+    ```
+
+2. configure the ZenML Pro tenant Helm chart:
+
+    {% hint style="warning" %}
+    In configuring the ZenML Pro tenant Helm chart, keep the following in mind:
     
+    - don't use the same database name for multiple tenants
+    - don't reuse the control plane database name for the tenant server database
+    {% endhint %}
 
-Running the script does two things:
-
-- it creates a tenant entry in the ZenML Pro database. The tenant will remain in a "provisioning" state and won't be accessible until you actually install it using Helm.
-- it outputs a YAML file with Helm chart configuration values that you can use to deploy the ZenML Pro tenant server in your Kubernetes cluster.
-
-This is an example of a generated Helm YAML file:
-
-```yaml
- 
-zenml:
-    analyticsOptIn: false
-    threadPoolSize: 20
-    database:
-        maxOverflow: "-1"
-        poolSize: "10"
-        # TODO: use the actual database host and credentials
-        url: mysql://root:password@mysql.example.com:3306/zenmlf8e306ef90e74b2f99db28298834feed
-    image:
-        # TODO: use your actual image repository (omit the tag, which is
-        # assumed to be the same as the helm chart version)
-        repository: 715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-pro-server
-    # TODO: use your actual server domain here
-    serverURL: https://zenml.f8e306ef90e74b2f99db28298834feed.example.com
-    ingress:
-        enabled: true
-        # TODO: use your actual domain here
-        host: zenml.f8e306ef90e74b2f99db28298834feed.example.com
-    pro:
-        apiURL: https://zenml-pro.staging.cloudinfra.zenml.io/api/v1
-        dashboardURL: https://zenml-pro.staging.cloudinfra.zenml.io
-        enabled: true
-        enrollmentKey: Mt9Rw-Cdjlumel7GTCrbLpCQ5KhhtfmiDt43mVOYYsDKEjboGg9R46wWu53WQ20OzAC45u-ZmxVqQkMGj-0hWQ
-        organizationID: 0e99e236-0aeb-44cc-aff7-590e41c9a702
-        organizationName: MyOrg
-        tenantID: f8e306ef-90e7-4b2f-99db-28298834feed
-        tenantName: zenml-eab14ff8
-    replicaCount: 1
-    secretsStore:
-        sql:
-            encryptionKey: 155b20a388064423b1943d64f1686dd0d0aa6454be0a46839b1ee830f6565904
-        type: sql
-
-# TODO: these are the minimum resources required for the ZenML server. You can
-# adjust them to your needs.
-resources:
-    limits:
-        memory: 800Mi
-    requests:
-        cpu: 100m
-        memory: 450Mi
-
-```
-
-1. deploy the ZenML Pro tenant server with Helm:
-    
     The ZenML Pro tenant server is nothing more than a slightly modified open-source ZenML server. The deployment even uses the official open-source helm chart.
     
-    There are a variety of options that can be configured for the ZenML Pro tenant server chart before installation. You can start by taking a look at the [`values.yaml` file](https://artifacthub.io/packages/helm/zenml/zenml?modal=values) and familiarize yourself with some of the configuration settings that you can customize for your ZenML server deployment. Alternatively, you can unpack the `values.yaml` file included in the helm chart:
+    There are a variety of options that can be configured for the ZenML Pro tenant server chart before installation. You can start by taking a look at the [Helm chart README](https://artifacthub.io/packages/helm/zenml/zenml) and [`values.yaml` file](https://artifacthub.io/packages/helm/zenml/zenml?modal=values) and familiarize yourself with some of the configuration settings that you can customize for your ZenML server deployment. Alternatively, you can unpack the `README.md` and `values.yaml` files included in the helm chart:
     
     ```bash
     helm  pull --untar  oci://public.ecr.aws/zenml/zenml --version <version>
+    less zenml/README.md
     less zenml/values.yaml
     ```
     
     To configure the Helm chart, use the generated YAML file generated at the previous step as a template and fill in the necessary values marked by `TODO` comments. At a minimum, you'll need to configure the following:
     
+    - configure container registry credentials (`imagePullSecrets`, same as [described for the control plane](#set-up-credentials))
     - the MySQL database credentials (`zenml.database.url`)
     - the container image repository where the ZenML Pro tenant server container images are stored (`zenml.image.repository`)
     - the hostname where the ZenML Pro tenant server will be reachable (`zenml.ingress.host` and `zenml.serverURL`)
     
-    You may also choose to configure additional features, if you need them, such as secrets stores, and database backup and restore, Kubernetes resources and so on. These are documented in [the official OSS ZenML Helm deployment documentation pages](https://docs.zenml.io/getting-started/deploying-zenml/deploy-with-helm).
+    You may also choose to configure additional features documented in [the official OSS ZenML Helm deployment documentation pages](https://docs.zenml.io/getting-started/deploying-zenml/deploy-with-helm), if you need them:
     
+    - injecting custom CA certificates (`zenml.certificates`), especially important if the TLS certificate used for the ZenML Pro control plane is signed by a custom Certificate Authority
+    - configure HTTP proxy settings (`zenml.proxy`)
+    - set up secrets stores
+    - configure database backup and restore
+    - customize Kubernetes resources
+    - etc.
+    
+3. deploy the ZenML Pro tenant server with Helm:
+
     To install the helm chart (assuming the customized configuration values are in the generated `zenml-f8e306ef-90e7-4b2f-99db-28298834feed-values.yaml` file), run e.g.:
     
     ```python
@@ -1282,6 +1474,10 @@ If you need to deploy multiple tenants, simply run the enrollment script again w
 
 ### Accessing the Tenant
 
+If you use TLS certificates for the ZenML Pro control plane or tenant server signed by a custom Certificate Authority, remember to [install them on the client machines](#install-ca-certificates).
+
+#### Accessing the Tenant Dashboard
+
 The newly enrolled tenant should be accessible in the ZenML Pro tenant dashboard and the CLI now. You need to login as an organization member and add yourself as a tenant member first):
 
 ![](../../.gitbook/assets/on-prem-08.png)
@@ -1295,6 +1491,21 @@ Then follow the instructions in the checklist to unlock the full dashboard:
 ![](../../.gitbook/assets/on-prem-11.png)
 
 ![](../../.gitbook/assets/on-prem-12.png)
+
+#### Accessing the Tenant from the ZenML CLI
+
+To login to the tenant with the ZenML CLI, you need to pass the custom ZenML Pro API URL to the `zenml login` command:
+
+```bash
+zenml login --pro-api-url https://zenml-pro.staging.cloudinfra.zenml.io/api/v1
+```
+
+Alternatively, you can set the `ZENML_PRO_API_URL` environment variable:
+
+```bash
+export ZENML_PRO_API_URL=https://zenml-pro.staging.cloudinfra.zenml.io/api/v1
+zenml login
+```
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
