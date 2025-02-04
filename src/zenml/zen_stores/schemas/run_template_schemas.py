@@ -16,10 +16,10 @@
 from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
-from sqlalchemy import Column, String, UniqueConstraint, desc, select
+from sqlalchemy import Column, String, UniqueConstraint
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
 from sqlalchemy.orm import object_session
-from sqlmodel import Field, Relationship
+from sqlmodel import Field, Relationship, col, desc, select
 
 from zenml.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.enums import TaggableResourceTypes
@@ -127,12 +127,12 @@ class RunTemplateSchema(BaseSchema, table=True):
 
         if session := object_session(self):
             return (
-                session.exec(
+                session.execute(
                     select(PipelineRunSchema)
                     .join(
                         PipelineDeploymentSchema,
-                        PipelineDeploymentSchema.id
-                        == PipelineRunSchema.deployment_id,
+                        col(PipelineDeploymentSchema.id)
+                        == col(PipelineRunSchema.deployment_id),
                     )
                     .where(PipelineDeploymentSchema.template_id == self.id)
                     .order_by(desc(PipelineRunSchema.created))

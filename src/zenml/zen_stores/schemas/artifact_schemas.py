@@ -17,9 +17,9 @@ from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
 from pydantic import ValidationError
-from sqlalchemy import TEXT, Column, UniqueConstraint, desc, select
+from sqlalchemy import TEXT, Column, UniqueConstraint
 from sqlalchemy.orm import object_session
-from sqlmodel import Field, Relationship
+from sqlmodel import Field, Relationship, desc, select
 
 from zenml.config.source import Source
 from zenml.enums import (
@@ -103,7 +103,7 @@ class ArtifactSchema(NamedSchema, table=True):
         """
         if session := object_session(self):
             return (
-                session.exec(
+                session.execute(
                     select(ArtifactVersionSchema)
                     .where(ArtifactVersionSchema.artifact_id == self.id)
                     .order_by(desc(ArtifactVersionSchema.created))

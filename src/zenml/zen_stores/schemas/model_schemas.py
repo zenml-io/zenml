@@ -23,11 +23,9 @@ from sqlalchemy import (
     TEXT,
     Column,
     UniqueConstraint,
-    desc,
-    select,
 )
 from sqlalchemy.orm import object_session
-from sqlmodel import Field, Relationship
+from sqlmodel import Field, Relationship, desc, select
 
 from zenml.enums import (
     ArtifactType,
@@ -141,7 +139,7 @@ class ModelSchema(NamedSchema, table=True):
         """
         if session := object_session(self):
             return (
-                session.exec(
+                session.execute(
                     select(ModelVersionSchema)
                     .where(ModelVersionSchema.model_id == self.id)
                     .order_by(desc(ModelVersionSchema.number))
