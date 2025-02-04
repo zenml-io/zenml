@@ -407,17 +407,31 @@ class Pipeline:
         return self
 
     @property
-    def requires_parameters(self) -> bool:
-        """If the pipeline entrypoint requires parameters.
+    def required_parameters(self) -> List[str]:
+        """List of required parameters for the pipeline entrypoint.
 
         Returns:
-            If the pipeline entrypoint requires parameters.
+            List of required parameters for the pipeline entrypoint.
         """
         signature = inspect.signature(self.entrypoint, follow_wrapped=True)
-        return any(
-            parameter.default is inspect.Parameter.empty
+        return [
+            parameter.name
             for parameter in signature.parameters.values()
-        )
+            if parameter.default is inspect.Parameter.empty
+        ]
+
+    @property
+    def missing_parameters(self) -> List[str]:
+        """List of missing parameters for the pipeline entrypoint.
+
+        Returns:
+            List of missing parameters for the pipeline entrypoint.
+        """
+        available_parameters = set(self.configuration.parameters or {})
+        if params_from_file := self._from_config_file.get("parameters", None):
+            available_parameters.update(params_from_file)
+
+        return list(set(self.required_parameters) - available_parameters)
 
     @property
     def is_prepared(self) -> bool:
@@ -1412,7 +1426,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         except ValidationError as e:
             raise ValueError(
                 "Invalid or missing pipeline function entrypoint arguments. "
-                "Only JSON serializable inputs are allowed as pipeline inputs."
+                "Only JSON serializable inputs are allowed as pipeline inputs. "
                 "Check out the pydantic error above for more details."
             ) from e
 
@@ -1427,15 +1441,17 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 requires parameters.
         """
         if not self.is_prepared:
-            if self.requires_parameters:
+            if missing_parameters := self.missing_parameters:
                 raise RuntimeError(
                     f"Failed while trying to prepare pipeline {self.name}. "
                     "The entrypoint function of the pipeline requires "
-                    "arguments. Please prepare the pipeline by calling "
-                    "`pipeline_instance.prepare(...)` and try again."
+                    "arguments which have not been configured yet: "
+                    f"{missing_parameters}. Please provide those parameters by "
+                    "calling `pipeline_instance.configure(parameters=...)` or "
+                    "by calling `pipeline_instance.prepare(...)` and try again."
                 )
-            else:
-                self.prepare()
+
+            self.prepare()
 
     def create_run_template(
         self, name: str, **kwargs: Any
