@@ -105,6 +105,14 @@ my_pipeline = my_pipeline.with_options(
 )
 ```
 
+## Disable stack validation
+
+If you wish to disable stack validation, set the following environment variable:
+
+```bash
+ZENML_SKIP_STACK_VALIDATION=true
+```
+
 ## Ignore untracked code repository files
 
 When using [code repositories](../how-to/project-setup-and-management/setting-up-a-project-repository/connect-your-git-repository.md),

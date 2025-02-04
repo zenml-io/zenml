@@ -1,0 +1,242 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "zenml.fullname" . }}
+  labels:
+    {{- include "zenml.labels" . | nindent 4 }}
+spec:
+  {{- if .Values.zenml.database.url }}
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.zenml.replicaCount }}
+  {{- end }}
+  {{- else }}
+  replicas: 1
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "zenml.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/secret: {{ include (print $.Template.BasePath "/server-secret.yaml") . | sha256sum }}
+      {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "zenml.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- if or .Values.zenml.certificates.customCAs .Values.zenml.certificates.secretRefs }}
+      initContainers:
+        - name: update-ca-certificates
+          image: "{{ .Values.zenml.image.repository }}:{{ .Values.zenml.image.tag | default .Chart.Version }}"
+          imagePullPolicy: {{ .Values.zenml.image.pullPolicy }}
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              # Copy the system CA bundle
+              cp /etc/ssl/certs/ca-certificates.crt /updated-certs/ca-certificates.crt
+              # Append all custom certificates
+              for cert in /custom-certs/*.crt; do
+                if [ -f "$cert" ]; then
+                  cat "$cert" >> /updated-certs/ca-certificates.crt
+                fi
+              done
+          volumeMounts:
+            - name: custom-certs
+              mountPath: /custom-certs
+              readOnly: true
+            - name: ca-certificates
+              mountPath: /updated-certs
+      {{- end }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "zenml.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      volumes:
+        - name: zenml-config
+          emptyDir: {}
+      {{- if or .Values.zenml.certificates.customCAs .Values.zenml.certificates.secretRefs }}
+        - name: custom-certs
+          projected:
+            sources:
+            {{- range .Values.zenml.certificates.customCAs }}
+            - secret:
+                name: {{ include "zenml.fullname" $ }}-custom-ca-{{ .name }}
+                items:
+                  - key: certificate
+                    path: {{ .name }}.crt
+            {{- end }}
+            {{- range .Values.zenml.certificates.secretRefs }}
+            - secret:
+                name: {{ .name }}
+                items:
+                  - key: {{ .key }}
+                    path: {{ .name }}.crt
+            {{- end }}
+        - name: ca-certificates
+          emptyDir: {}
+      {{- end }}
+      {{- if or (and .Values.zenml.database.sslCa .Values.zenml.database.sslCa.secretRef) (and .Values.zenml.database.sslCert .Values.zenml.database.sslCert.secretRef) (and .Values.zenml.database.sslKey .Values.zenml.database.sslKey.secretRef) }}
+        - name: db-certs
+          projected:
+            sources:
+              {{- if and .Values.zenml.database.sslCa .Values.zenml.database.sslCa.secretRef }}
+              - secret:
+                  name: {{ .Values.zenml.database.sslCa.secretRef.name }}
+                  items:
+                    - key: {{ .Values.zenml.database.sslCa.secretRef.key }}
+                      path: {{ .Values.zenml.database.sslCa.secretRef.key }}
+              {{- end }}
+              {{- if and .Values.zenml.database.sslCert .Values.zenml.database.sslCert.secretRef }}
+              - secret:
+                  name: {{ .Values.zenml.database.sslCert.secretRef.name }}
+                  items:
+                    - key: {{ .Values.zenml.database.sslCert.secretRef.key }}
+                      path: {{ .Values.zenml.database.sslCert.secretRef.key }}
+              {{- end }}
+              {{- if and .Values.zenml.database.sslKey .Values.zenml.database.sslKey.secretRef }}
+              - secret:
+                  name: {{ .Values.zenml.database.sslKey.secretRef.name }}
+                  items:
+                    - key: {{ .Values.zenml.database.sslKey.secretRef.key }}
+                      path: {{ .Values.zenml.database.sslKey.secretRef.key }}
+              {{- end }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.zenml.image.repository }}:{{ .Values.zenml.image.tag | default .Chart.Version }}"
+          imagePullPolicy: {{ .Values.zenml.image.pullPolicy }}
+          volumeMounts:
+            - name: zenml-config
+              mountPath: /zenml/.zenconfig
+          {{- if or .Values.zenml.certificates.customCAs .Values.zenml.certificates.secretRefs }}
+            - name: ca-certificates
+              mountPath: /updated-certs
+              readOnly: true
+          {{- end }}
+          {{- if or (and .Values.zenml.database.sslCa .Values.zenml.database.sslCa.secretRef) (and .Values.zenml.database.sslCert .Values.zenml.database.sslCert.secretRef) (and .Values.zenml.database.sslKey .Values.zenml.database.sslKey.secretRef) }}
+            - name: db-certs
+              mountPath: /dbcerts
+              readOnly: true
+          {{- end }}
+          env:
+          {{- if or .Values.zenml.certificates.customCAs .Values.zenml.certificates.secretRefs }}
+            - name: REQUESTS_CA_BUNDLE
+              value: /updated-certs/ca-certificates.crt
+            - name: SSL_CERT_FILE
+              value: /updated-certs/ca-certificates.crt
+          {{- end }}
+            # Force Node.js to use system CAs
+            - name: NODE_OPTIONS
+              value: --use-openssl-ca
+            {{- if .Values.zenml.debug }}
+            - name: ZENML_LOGGING_VERBOSITY
+              value: "DEBUG"
+            {{- end }}
+            {{- if .Values.zenml.analyticsOptIn }}
+            - name: ZENML_ANALYTICS_OPT_IN
+              value: "True"
+            {{- else if not .Values.zenml.analyticsOptIn }}
+            - name: ZENML_ANALYTICS_OPT_IN
+              value: "False"
+            {{- end }}
+            - name: ZENML_DEFAULT_PROJECT_NAME
+              value: {{ .Values.zenml.defaultProject | quote }}
+            {{- if .Values.zenml.enableImplicitAuthMethods }}
+            - name: ZENML_ENABLE_IMPLICIT_AUTH_METHODS
+              value: "True"
+            {{- end }}
+            {{- if .Values.zenml.database.url }}
+            - name: DISABLE_DATABASE_MIGRATION
+              value: "True"
+            {{- end }}
+
+            {{- range $k, $v := include "zenml.storeEnvVariables" . | fromYaml }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
+            {{- range $k, $v := include "zenml.serverEnvVariables" . | fromYaml }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
+            {{- range $k, $v := include "zenml.secretsStoreEnvVariables" . | fromYaml }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
+            {{- range $k, $v := include "zenml.backupSecretsStoreEnvVariables" . | fromYaml }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
+            {{- if .Values.zenml.proxy.enabled }}
+            - name: HTTP_PROXY
+              value: {{ .Values.zenml.proxy.httpProxy | quote }}
+            - name: HTTPS_PROXY
+              value: {{ .Values.zenml.proxy.httpsProxy | quote }}
+            - name: NO_PROXY
+              value: {{ include "zenml.noProxyList" . | quote }}
+            - name: http_proxy
+              value: {{ .Values.zenml.proxy.httpProxy | quote }}
+            - name: https_proxy
+              value: {{ .Values.zenml.proxy.httpsProxy | quote }}
+            - name: no_proxy
+              value: {{ include "zenml.noProxyList" . | quote }}
+            {{- end }}
+            {{- if and .Values.zenml.database.url .Values.zenml.database.passwordSecretRef }}
+            - name: ZENML_STORE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.zenml.database.passwordSecretRef.name }}
+                  key: {{ .Values.zenml.database.passwordSecretRef.key }}
+            {{- end }}
+            {{- if .Values.zenml.environment }}
+            {{- range $key, $value := .Values.zenml.environment }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            {{- end }}
+          envFrom:
+          - secretRef:
+              name: {{ include "zenml.fullname" . }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+          lifecycle:
+            preStop:
+              exec:
+                # Give the process 15 more seconds before the SIGTERM signal is
+                # sent. This allows the endpoint removal to reach the ingress
+                # controller in time and for traffic to be routed away from the
+                # pod before it is shut down. This eliminates the number of 502
+                # errors returned to the user.
+                #
+                # See https://learnk8s.io/graceful-shutdown for more information.
+                #
+                command: ["sleep", "15"]
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

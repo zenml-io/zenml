@@ -37,6 +37,7 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.constants import (
     ENV_ZENML_SECRET_VALIDATION_LEVEL,
     ENV_ZENML_SKIP_IMAGE_BUILDER_DEFAULT,
+    ENV_ZENML_SKIP_STACK_VALIDATION,
     handle_bool_env_var,
 )
 from zenml.enums import SecretValidationLevel, StackComponentType
@@ -706,6 +707,10 @@ class Stack:
                 if a secret for a component is missing. Otherwise, only a
                 warning will be logged.
         """
+        if handle_bool_env_var(ENV_ZENML_SKIP_STACK_VALIDATION, default=False):
+            logger.debug("Skipping stack validation.")
+            return
+
         self.validate_image_builder()
         for component in self.components.values():
             if component.validator:
