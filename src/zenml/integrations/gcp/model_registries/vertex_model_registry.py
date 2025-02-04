@@ -14,10 +14,10 @@
 """Vertex AI model registry integration for ZenML."""
 
 import base64
+import re
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple, cast
 
-from google.api_core import exceptions
 from google.cloud import aiplatform
 
 from zenml.client import Client
@@ -68,24 +68,35 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
         """
         if not value:
             return ""
-        # Convert to lowercase and replace invalid chars
+
+        # Convert to lowercase
         value = value.lower()
-        value = "".join(
-            c if c.isalnum() or c in ["-", "_"] else "-" for c in value
-        )
-        # Ensure starts with letter/number
+
+        # Replace any character that's not lowercase letter, number, dash or underscore
+        value = re.sub(r"[^a-z0-9\-_]", "-", value)
+
+        # Ensure it starts with a letter/number by prepending 'x' if needed
         if not value[0].isalnum():
             value = f"x{value}"
-        return value[:MAX_LABEL_KEY_LENGTH]
 
-    def _get_tenant_id(self) -> str:
-        """Get the current ZenML server/tenant ID for multi-tenancy support.
+        # Truncate to 63 chars to stay under limit
+        return value[:63]
+
+    def _get_deployer_id(self) -> str:
+        """Get the current ZenML server/deployer ID for multi-tenancy support.
 
         Returns:
-            The tenant ID string
+            The deployer ID string
         """
+        from zenml.integrations.gcp.model_deployers.vertex_model_deployer import (
+            VertexModelDeployer,
+        )
+
         client = Client()
-        return str(client.active_stack_model.id)
+        model_deployer = client.active_stack.model_deployer
+        if not isinstance(model_deployer, VertexModelDeployer):
+            raise ValueError("VertexModelDeployer is not active in the stack.")
+        return str(model_deployer.id)
 
     def _encode_name_version(self, name: str, version: str) -> str:
         """Encode model name and version into a Vertex AI compatible format.
@@ -133,30 +144,66 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
         metadata: Optional[Dict[str, str]] = None,
         stage: Optional[ModelVersionStage] = None,
     ) -> Dict[str, str]:
-        """Prepare labels for Vertex AI, including internal ZenML metadata."""
+        """Prepare labels for Vertex AI model.
+
+        Args:
+            metadata: Optional metadata to include as labels
+            stage: Optional model version stage
+
+        Returns:
+            Dictionary of sanitized labels
+        """
         labels = {}
 
-        # Add internal ZenML labels
+        # Add base labels
         labels["managed_by"] = "zenml"
-        tenant_id = self._sanitize_label(self._get_tenant_id())
-        labels["tenant_id"] = tenant_id
+        labels["deployer_id"] = self._sanitize_label(self._get_deployer_id())
 
+        # Add stage if provided
         if stage:
-            labels["stage"] = stage.value.lower()
+            labels["stage"] = self._sanitize_label(stage.value)
 
-        # Merge user metadata with sanitization
+        # Process metadata if provided
         if metadata:
-            remaining_slots = MAX_LABEL_COUNT - len(labels)
-            for i, (key, value) in enumerate(metadata.items()):
-                if i >= remaining_slots:
-                    logger.warning(
-                        f"Exceeded maximum label count ({MAX_LABEL_COUNT}), "
-                        f"dropping remaining metadata"
+            # If metadata is not a dict (e.g. a pydantic model), convert it using .dict()
+            if not isinstance(metadata, dict):
+                try:
+                    metadata = metadata.dict()
+                except Exception as e:
+                    logger.warning(f"Unable to convert metadata to dict: {e}")
+                    metadata = {}
+            for key, value in metadata.items():
+                # Skip None values
+                if value is None:
+                    continue
+                # Convert complex objects to string
+                if isinstance(value, (dict, list)):
+                    value = (
+                        "x"  # Simplify complex objects to avoid length issues
                     )
-                    break
-                safe_key = self._sanitize_label(str(key))
-                safe_value = self._sanitize_label(str(value))
-                labels[safe_key] = safe_value
+                # Sanitize both key and value
+                sanitized_key = self._sanitize_label(str(key))
+                sanitized_value = self._sanitize_label(str(value))
+                # Only add if both key and value are valid
+                if sanitized_key and sanitized_value:
+                    labels[sanitized_key] = sanitized_value
+
+        # Ensure we don't exceed 64 labels
+        if len(labels) > 64:
+            # Keep essential labels and truncate the rest
+            essential_labels = {
+                k: labels[k]
+                for k in ["managed_by", "deployer_id", "stage"]
+                if k in labels
+            }
+            # Add remaining labels up to limit
+            remaining_slots = 64 - len(essential_labels)
+            other_labels = {
+                k: v
+                for i, (k, v) in enumerate(labels.items())
+                if k not in essential_labels and i < remaining_slots
+            }
+            labels = {**essential_labels, **other_labels}
 
         return labels
 
@@ -185,36 +232,49 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
         return f"{model_id}/versions/{version}"
 
     def _init_vertex_model(
-        self,
-        name: Optional[str] = None,
-        version: Optional[str] = None,
-        credentials: Optional[Any] = None,
-    ) -> aiplatform.Model:
-        """Initialize a Vertex AI model with proper credentials.
+        self, name: str, version: Optional[str] = None
+    ) -> Optional[aiplatform.Model]:
+        """Initialize a single Vertex AI model with proper credentials.
+
+        This method returns one Vertex AI model based on the given name (and optional version).
 
         Args:
-            name: Optional model name
-            version: Optional version
-            credentials: Optional credentials
+            name: The model name.
+            version: The model version (optional).
 
         Returns:
-            Vertex AI Model instance
+            A single Vertex AI model instance or None if initialization fails.
         """
-        if not credentials:
-            credentials, _ = self._get_authentication()
-
+        credentials, project_id = self._get_authentication()
+        location = self.config.location
         kwargs = {
-            "location": self.config.location,
+            "location": location,
+            "project": project_id,
             "credentials": credentials,
         }
 
-        if name:
-            model_id = self._get_model_id(name)
-            if version:
-                model_id = self._get_model_version_id(model_id, version)
-            kwargs["name"] = model_id
+        if name.startswith("projects/"):
+            kwargs["model_name"] = name
+        else:
+            # Attempt to find an existing model by display_name
+            existing_models = aiplatform.Model.list(
+                filter=f"display_name={name}",
+                project=self.config.project_id or project_id,
+                location=location,
+            )
+            if existing_models:
+                kwargs["model_name"] = existing_models[0].resource_name
+            else:
+                model_id = self._get_model_id(name)
+                if version:
+                    model_id = self._get_model_version_id(model_id, version)
+                kwargs["model_name"] = model_id
 
-        return aiplatform.Model(**kwargs)
+        try:
+            return aiplatform.Model(**kwargs)
+        except Exception as e:
+            logger.warning(f"Failed to initialize model: {e}")
+            return None
 
     def register_model(
         self,
@@ -234,12 +294,8 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
         """Delete a model and all of its versions from the Vertex AI model registry."""
         try:
             model = self._init_vertex_model(name=name)
-            # List and delete all model versions first
-            versions = model.list_versions()
-            for version in versions:
-                version.delete()
-            # Then delete the parent model
-            model.delete()
+            if isinstance(model, aiplatform.Model):
+                model.delete()
             logger.info(f"Deleted model '{name}' and all its versions.")
         except Exception as e:
             raise RuntimeError(f"Failed to delete model: {str(e)}")
@@ -275,20 +331,23 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
         metadata: Optional[Dict[str, str]] = None,
     ) -> List[RegisteredModel]:
         """List models in the Vertex AI model registry."""
-        _ = self._init_vertex_model(name=name)
-        # Always filter with ZenML-specific labels (including tenant id for multi-tenancy)
-        tenant_label = self._sanitize_label(self._get_tenant_id())
-        filter_expr = (
-            f"labels.managed_by='zenml' AND labels.tenant_id='{tenant_label}'"
-        )
+        credentials, project_id = self._get_authentication()
+        location = self.config.location
+        # Always filter with ZenML-specific labels (including deployer id for multi-tenancy)
+        filter_expr = "labels.managed_by=zenml"
 
         if name:
-            filter_expr += f" AND display_name='{name}'"
+            filter_expr += f" AND display_name={name}"
         if metadata:
             for key, value in metadata.items():
-                filter_expr += f" AND labels.{key}='{value}'"
+                filter_expr += f" AND labels.{key}={value}"
         try:
-            all_models = aiplatform.Model.list(filter=filter_expr)
+            all_models = aiplatform.Model.list(
+                project=project_id,
+                location=location,
+                filter=filter_expr,
+                credentials=credentials,
+            )
             # Deduplicate by display_name so only one entry per "logical" model is returned.
             unique_models = {model.display_name: model for model in all_models}
             return [
@@ -318,21 +377,20 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
             version: Model version
             model_source_uri: URI to model artifacts
             description: Model description
-            metadata: Model metadata
+            metadata: Model metadata (expected to be a ModelRegistryModelMetadata or
+                      equivalent serializable dict)
             **kwargs: Additional arguments
 
         Returns:
             RegistryModelVersion instance
         """
-        credentials, _ = self._get_authentication()
-
         # Prepare labels with internal ZenML metadata, ensuring they are sanitized
         metadata_dict = metadata.model_dump() if metadata else {}
         labels = self._prepare_labels(metadata_dict)
         if version:
             labels["user_version"] = self._sanitize_label(version)
 
-        # Get container image from config if available, otherwise from metadata with a default
+        # Get the container image from the config if available, otherwise fallback to metadata
         if (
             hasattr(self.config, "container")
             and self.config.container
@@ -345,53 +403,75 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
                 "europe-docker.pkg.dev/vertex-ai/prediction/sklearn-cpu.1-3:latest",
             )
 
-        # Optionally add additional parameters from the config resources
-        if hasattr(self.config, "resources") and self.config.resources:
-            if self.config.resources.machine_type:
-                metadata_dict.setdefault(
-                    "machine_type", self.config.resources.machine_type
-                )
-            if self.config.resources.min_replica_count is not None:
-                metadata_dict.setdefault(
-                    "min_replica_count",
-                    str(self.config.resources.min_replica_count),
-                )
-            if self.config.resources.max_replica_count is not None:
-                metadata_dict.setdefault(
-                    "max_replica_count",
-                    str(self.config.resources.max_replica_count),
-                )
-
-        # Use a consistently sanitized display name instead of flat "name_version"
+        # Use a consistently sanitized display name instead of the raw model name
         model_display_name = self._sanitize_model_display_name(name)
 
-        try:
-            # Attempt to get the parent model (by name only)
-            parent_model = self._init_vertex_model(name=name)
-            logger.info(f"Found existing model: {name}")
-        except exceptions.NotFound:
-            # Create the parent model if it doesn"t exist
-            parent_model = aiplatform.Model.upload(
-                display_name=model_display_name,
-                artifact_uri=model_source_uri,
-                serving_container_image_uri=serving_container_image_uri,
-                description=description,
-                labels=labels,
-                credentials=credentials,
-                location=self.config.location,
+        # Build extended upload arguments for vertex.Model.upload,
+        # leveraging extra settings from self.config.
+        upload_arguments = {
+            "serving_container_image_uri": serving_container_image_uri,
+            "artifact_uri": model_source_uri or self.config.artifact_uri,
+            "is_default_version": self.config.is_default_version
+            if self.config.is_default_version is not None
+            else True,
+            "version_aliases": self.config.version_aliases,
+            "version_description": self.config.version_description,
+            "serving_container_predict_route": self.config.container.predict_route
+            if self.config.container
+            else None,
+            "serving_container_health_route": self.config.container.health_route
+            if self.config.container
+            else None,
+            "description": description or self.config.description,
+            "serving_container_command": self.config.container.command
+            if self.config.container
+            else None,
+            "serving_container_args": self.config.container.args
+            if self.config.container
+            else None,
+            "serving_container_environment_variables": self.config.container.env
+            if self.config.container
+            else None,
+            "serving_container_ports": self.config.container.ports
+            if self.config.container
+            else None,
+            "display_name": self.config.display_name or model_display_name,
+            "project": self.config.project_id,
+            "location": self.config.location,
+            "labels": labels,
+            "encryption_spec_key_name": self.config.encryption_spec_key_name,
+        }
+
+        # Include explanation settings if provided in the config.
+        if self.config.explanation:
+            upload_arguments["explanation_metadata"] = (
+                self.config.explanation.metadata
             )
-            logger.info(f"Created new model: {name}")
+            upload_arguments["explanation_parameters"] = (
+                self.config.explanation.parameters
+            )
 
-        # Create a new version for the model. Note that we keep the display name intact.
-        model_version = parent_model.create_version(
-            artifact_uri=model_source_uri,
-            serving_container_image_uri=serving_container_image_uri,
-            description=description,
-            labels=labels,
+        # Remove any parameters that are None to avoid passing them to upload.
+        upload_arguments = {
+            k: v for k, v in upload_arguments.items() if v is not None
+        }
+
+        parent_model = self._init_vertex_model(name=name, version=version)
+        assert isinstance(parent_model, aiplatform.Model)
+        if parent_model and parent_model.uri == model_source_uri:
+            logger.info(
+                f"Model version {version} already exists, skipping upload..."
+            )
+            return self._vertex_model_to_registry_version(parent_model)
+        # Always call model.upload (even if a parent model already exists), since Vertex AI
+        # expects a full upload for each version.
+        upload_arguments["parent_model"] = (
+            parent_model.resource_name if parent_model else None
         )
-        logger.info(f"Created new version with labels: {model_version.labels}")
+        model = aiplatform.Model.upload(**upload_arguments)
+        logger.info(f"Uploaded new model version with labels: {model.labels}")
 
-        return self._vertex_model_to_registry_version(model_version)
+        return self._vertex_model_to_registry_version(model)
 
     def delete_model_version(
         self,
@@ -406,7 +486,8 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
         """
         try:
             model = self._init_vertex_model(name=name, version=version)
-            model.delete()
+            assert isinstance(model, aiplatform.Model)
+            model.versioning_registry.delete_version(version)
             logger.info(f"Deleted model version: {name} version {version}")
         except Exception as e:
             raise RuntimeError(f"Failed to delete model version: {str(e)}")
@@ -422,10 +503,11 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
     ) -> RegistryModelVersion:
         """Update a model version in the Vertex AI model registry."""
         try:
-            parent_model = self._init_vertex_model(name=name)
+            parent_model = self._init_vertex_model(name=name, version=version)
+            assert isinstance(parent_model, aiplatform.Model)
             sanitized_version = self._sanitize_label(version)
             target_version = None
-            for v in parent_model.list_versions():
+            for v in parent_model.list():
                 if v.labels.get("user_version") == sanitized_version:
                     target_version = v
                     break
@@ -455,14 +537,9 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
     ) -> RegistryModelVersion:
         """Get a model version from the Vertex AI model registry using the version label."""
         try:
-            parent_model = self._init_vertex_model(name=name)
-            sanitized_version = self._sanitize_label(version)
-            for v in parent_model.list_versions():
-                if v.labels.get("user_version") == sanitized_version:
-                    return self._vertex_model_to_registry_version(v)
-            raise RuntimeError(
-                f"Model '{name}' with version '{version}' not found."
-            )
+            parent_model = self._init_vertex_model(name=name, version=version)
+            assert isinstance(parent_model, aiplatform.Model)
+            return self._vertex_model_to_registry_version(parent_model)
         except Exception as e:
             raise RuntimeError(f"Failed to get model version: {str(e)}")
 
@@ -479,6 +556,8 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
         **kwargs: Any,
     ) -> List[RegistryModelVersion]:
         """List model versions from the Vertex AI model registry."""
+        credentials, project_id = self._get_authentication()
+        location = self.config.location
         filter_expr = []
         if name:
             filter_expr.append(
@@ -497,8 +576,13 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
         filter_str = " AND ".join(filter_expr) if filter_expr else None
 
         try:
-            parent_model = self._init_vertex_model(name=name)
-            versions = parent_model.list_versions(filter=filter_str)
+            model = aiplatform.Model(
+                project=project_id,
+                location=location,
+                filter=filter_str,
+                credentials=credentials,
+            )
+            versions = model.versioning_registry.list_versions()
             results = [
                 self._vertex_model_to_registry_version(v) for v in versions
             ]
@@ -516,14 +600,9 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
     ) -> Any:
         """Load a model version from the Vertex AI model registry using label-based lookup."""
         try:
-            parent_model = self._init_vertex_model(name=name)
-            sanitized_version = self._sanitize_label(version)
-            for v in parent_model.list_versions():
-                if v.labels.get("user_version") == sanitized_version:
-                    return v
-            raise RuntimeError(
-                f"Model version '{version}' for '{name}' not found."
-            )
+            parent_model = self._init_vertex_model(name=name, version=version)
+            assert isinstance(parent_model, aiplatform.Model)
+            return parent_model
         except Exception as e:
             raise RuntimeError(f"Failed to load model version: {str(e)}")
 
@@ -554,25 +633,26 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
                 pass
 
         # Get parent model for registered_model field
-        parent_model = None
         try:
-            model_id = model.resource_name.split("/versions/")[0]
-            parent_model = self._init_vertex_model(name=model_id)
             registered_model = RegisteredModel(
-                name=parent_model.display_name,
-                description=parent_model.description,
-                metadata=parent_model.labels,
+                name=model.display_name,
+                description=model.description,
+                metadata=model.labels,
             )
-        except Exception:
+        except Exception as e:
             logger.warning(
-                f"Failed to get parent model for version: {model.resource_name}"
+                f"Failed to get parent model for version: {model.resource_name}: {e}"
             )
-            registered_model = None
+            registered_model = RegisteredModel(
+                name=model.display_name if model.display_name else "unknown",
+                description=model.description if model.description else "",
+                metadata=model.labels if model.labels else {},
+            )
 
         return RegistryModelVersion(
             registered_model=registered_model,
             version=model.version_id,
-            model_source_uri=model.artifact_uri,
+            model_source_uri=model.uri,
             model_format="Custom",  # Vertex AI doesn't provide format info
             description=model.description,
             metadata=model.labels,

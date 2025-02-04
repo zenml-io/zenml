@@ -257,7 +257,4 @@ class VertexModelDeployer(BaseModelDeployer, GoogleCredentialsMixin):
         return {
             "prediction_url": service_instance.get_prediction_url(),
             "status": service_instance.status.state.value,
-            "endpoint_id": service_instance.status.endpoint.endpoint_name
-            if service_instance.status.endpoint
-            else None,
         }
