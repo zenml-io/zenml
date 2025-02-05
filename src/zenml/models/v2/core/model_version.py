@@ -453,6 +453,7 @@ class ModelVersionResponse(
             version=version,
             model_version_id=self.id,
             type=type,
+            hydrate=True,
         )
 
         if not artifact_versions.items:
