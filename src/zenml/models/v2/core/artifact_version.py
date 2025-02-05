@@ -34,7 +34,6 @@ from pydantic import (
     model_validator,
 )
 
-from zenml import TaggableFilter
 from zenml.config.source import Source, SourceWithValidator
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ArtifactSaveType, ArtifactType, GenericFilterOps
@@ -42,6 +41,7 @@ from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.base.filter import FilterGenerator, StrFilter
 from zenml.models.v2.base.scoped import (
+    TaggableFilter,
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
