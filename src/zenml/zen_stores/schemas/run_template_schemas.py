@@ -18,7 +18,8 @@ from uuid import UUID
 
 from sqlalchemy import Column, String, UniqueConstraint
 from sqlalchemy.dialects.mysql import MEDIUMTEXT
-from sqlmodel import Field, Relationship
+from sqlalchemy.orm import object_session
+from sqlmodel import Field, Relationship, col, desc, select
 
 from zenml.constants import MEDIUMTEXT_MAX_LENGTH
 from zenml.enums import TaggableResourceTypes
@@ -99,17 +100,6 @@ class RunTemplateSchema(BaseSchema, table=True):
         }
     )
 
-    runs: List["PipelineRunSchema"] = Relationship(
-        sa_relationship_kwargs={
-            "primaryjoin": "RunTemplateSchema.id==PipelineDeploymentSchema.template_id",
-            "secondaryjoin": "PipelineDeploymentSchema.id==PipelineRunSchema.deployment_id",
-            "secondary": "pipeline_deployment",
-            "cascade": "delete",
-            "viewonly": True,
-            "order_by": "PipelineRunSchema.created",
-        }
-    )
-
     tags: List["TagSchema"] = Relationship(
         sa_relationship_kwargs=dict(
             primaryjoin=f"and_(foreign(TagResourceSchema.resource_type)=='{TaggableResourceTypes.RUN_TEMPLATE.value}', foreign(TagResourceSchema.resource_id)==RunTemplateSchema.id)",
@@ -119,6 +109,42 @@ class RunTemplateSchema(BaseSchema, table=True):
             overlaps="tags",
         ),
     )
+
+    @property
+    def latest_run(self) -> Optional["PipelineRunSchema"]:
+        """Fetch the latest run for this template.
+
+        Raises:
+            RuntimeError: If no session for the schema exists.
+
+        Returns:
+            The latest run for this template.
+        """
+        from zenml.zen_stores.schemas import (
+            PipelineDeploymentSchema,
+            PipelineRunSchema,
+        )
+
+        if session := object_session(self):
+            return (
+                session.execute(
+                    select(PipelineRunSchema)
+                    .join(
+                        PipelineDeploymentSchema,
+                        col(PipelineDeploymentSchema.id)
+                        == col(PipelineRunSchema.deployment_id),
+                    )
+                    .where(PipelineDeploymentSchema.template_id == self.id)
+                    .order_by(desc(PipelineRunSchema.created))
+                    .limit(1)
+                )
+                .scalars()
+                .one_or_none()
+            )
+        else:
+            raise RuntimeError(
+                "Missing DB session to fetch latest run for template."
+            )
 
     @classmethod
     def from_request(
@@ -184,13 +210,15 @@ class RunTemplateSchema(BaseSchema, table=True):
         ):
             runnable = True
 
+        latest_run = self.latest_run
+
         body = RunTemplateResponseBody(
             user=self.user.to_model() if self.user else None,
             created=self.created,
             updated=self.updated,
             runnable=runnable,
-            latest_run_id=self.runs[-1].id if self.runs else None,
-            latest_run_status=self.runs[-1].status if self.runs else None,
+            latest_run_id=latest_run.id if latest_run else None,
+            latest_run_status=latest_run.status if latest_run else None,
         )
 
         metadata = None

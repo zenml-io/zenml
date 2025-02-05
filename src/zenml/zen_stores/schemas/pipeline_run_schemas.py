@@ -208,7 +208,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
     stack: Optional["StackSchema"] = Relationship()
     build: Optional["PipelineBuildSchema"] = Relationship()
     schedule: Optional["ScheduleSchema"] = Relationship()
-    pipeline: Optional["PipelineSchema"] = Relationship(back_populates="runs")
+    pipeline: Optional["PipelineSchema"] = Relationship()
     trigger_execution: Optional["TriggerExecutionSchema"] = Relationship()
 
     services: List["ServiceSchema"] = Relationship(

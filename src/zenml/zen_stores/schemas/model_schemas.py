@@ -24,7 +24,8 @@ from sqlalchemy import (
     Column,
     UniqueConstraint,
 )
-from sqlmodel import Field, Relationship
+from sqlalchemy.orm import object_session
+from sqlmodel import Field, Relationship, desc, select
 
 from zenml.enums import (
     ArtifactType,
@@ -126,6 +127,32 @@ class ModelSchema(NamedSchema, table=True):
         sa_relationship_kwargs={"cascade": "delete"},
     )
 
+    @property
+    def latest_version(self) -> Optional["ModelVersionSchema"]:
+        """Fetch the latest version for this model.
+
+        Raises:
+            RuntimeError: If no session for the schema exists.
+
+        Returns:
+            The latest version for this model.
+        """
+        if session := object_session(self):
+            return (
+                session.execute(
+                    select(ModelVersionSchema)
+                    .where(ModelVersionSchema.model_id == self.id)
+                    .order_by(desc(ModelVersionSchema.number))
+                    .limit(1)
+                )
+                .scalars()
+                .one_or_none()
+            )
+        else:
+            raise RuntimeError(
+                "Missing DB session to fetch latest version for model."
+            )
+
     @classmethod
     def from_request(cls, model_request: ModelRequest) -> "ModelSchema":
         """Convert an `ModelRequest` to an `ModelSchema`.
@@ -169,11 +196,9 @@ class ModelSchema(NamedSchema, table=True):
         """
         tags = [tag.to_model() for tag in self.tags]
 
-        if self.model_versions:
-            version_numbers = [mv.number for mv in self.model_versions]
-            latest_version_idx = version_numbers.index(max(version_numbers))
-            latest_version_name = self.model_versions[latest_version_idx].name
-            latest_version_id = self.model_versions[latest_version_idx].id
+        if latest_version := self.latest_version:
+            latest_version_name = latest_version.name
+            latest_version_id = latest_version.id
         else:
             latest_version_name = None
             latest_version_id = None
