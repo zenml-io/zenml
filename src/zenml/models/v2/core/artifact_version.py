@@ -41,12 +41,13 @@ from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.base.filter import FilterGenerator, StrFilter
 from zenml.models.v2.base.scoped import (
+    TaggableFilter,
+    WorkspaceScopedFilter,
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponseResources,
-    WorkspaceScopedTaggableFilter,
 )
 from zenml.models.v2.core.artifact import ArtifactResponse
 from zenml.models.v2.core.tag import TagResponse
@@ -469,11 +470,12 @@ class ArtifactVersionResponse(
 # ------------------ Filter Model ------------------
 
 
-class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
+class ArtifactVersionFilter(WorkspaceScopedFilter, TaggableFilter):
     """Model to enable advanced filtering of artifact versions."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *WorkspaceScopedTaggableFilter.FILTER_EXCLUDE_FIELDS,
+        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
+        *TaggableFilter.FILTER_EXCLUDE_FIELDS,
         "name",
         "only_unused",
         "has_custom_name",
@@ -482,6 +484,15 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
         "model_version_id",
         "run_metadata",
     ]
+    CUSTOM_SORTING_OPTIONS = [
+        *WorkspaceScopedFilter.CUSTOM_SORTING_OPTIONS,
+        *TaggableFilter.CUSTOM_SORTING_OPTIONS,
+    ]
+    CLI_EXCLUDE_FIELDS = [
+        *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
+        *TaggableFilter.CLI_EXCLUDE_FIELDS,
+    ]
+
     artifact_id: Optional[Union[UUID, str]] = Field(
         default=None,
         description="ID of the artifact to which this version belongs.",
