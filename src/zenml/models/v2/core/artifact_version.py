@@ -559,7 +559,7 @@ class ArtifactVersionFilter(WorkspaceScopedFilter, TaggableFilter):
         description="Name/ID of a pipeline run that is associated with this "
         "artifact version.",
     )
-    run_metadata: Optional[Dict[str, str]] = Field(
+    run_metadata: Optional[Dict[str, Any]] = Field(
         default=None,
         description="The run_metadata to filter the artifact versions by.",
     )
@@ -683,13 +683,19 @@ class ArtifactVersionFilter(WorkspaceScopedFilter, TaggableFilter):
                     RunMetadataResourceSchema.resource_id
                     == ArtifactVersionSchema.id,
                     RunMetadataResourceSchema.resource_type
-                    == MetadataResourceTypes.ARTIFACT_VERSION,
+                    == MetadataResourceTypes.ARTIFACT_VERSION.value,
                     RunMetadataResourceSchema.run_metadata_id
                     == RunMetadataSchema.id,
+                    self.generate_custom_query_conditions_for_column(
+                        value=key,
+                        table=RunMetadataSchema,
+                        column="key",
+                    ),
                     self.generate_custom_query_conditions_for_column(
                         value=value,
                         table=RunMetadataSchema,
                         column="value",
+                        json_encode_value=True,
                     ),
                 )
                 custom_filters.append(additional_filter)
