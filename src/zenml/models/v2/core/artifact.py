@@ -35,7 +35,7 @@ from zenml.models.v2.base.base import (
     BaseResponseMetadata,
     BaseResponseResources,
 )
-from zenml.models.v2.base.filter import BaseFilter
+from zenml.models.v2.base.scoped import TaggableFilter
 from zenml.models.v2.core.tag import TagResponse
 
 if TYPE_CHECKING:
@@ -183,14 +183,14 @@ class ArtifactResponse(
 # ------------------ Filter Model ------------------
 
 
-class ArtifactFilter(BaseFilter):
+class ArtifactFilter(TaggableFilter):
     """Model to enable advanced filtering of artifacts."""
 
     name: Optional[str] = None
     has_custom_name: Optional[bool] = None
 
     CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
-        *BaseFilter.CUSTOM_SORTING_OPTIONS,
+        *TaggableFilter.CUSTOM_SORTING_OPTIONS,
         SORT_BY_LATEST_VERSION_KEY,
     ]
 
