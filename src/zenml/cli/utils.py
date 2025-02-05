@@ -18,6 +18,7 @@ import json
 import os
 import platform
 import re
+import shutil
 import subprocess
 import sys
 from typing import (
@@ -1048,22 +1049,18 @@ def install_packages(
         # just return without doing anything
         return
 
-    pip_command = ["uv", "pip"] if use_uv else ["pip"]
-    if upgrade:
-        command = (
-            [
-                sys.executable,
-                "-m",
-            ]
-            + pip_command
-            + [
-                "install",
-                "--upgrade",
-            ]
-            + packages
-        )
+    if use_uv and not is_installed_in_python_environment("uv"):
+        # If uv is installed globally, don't run as a python module
+        command = []
     else:
-        command = [sys.executable, "-m"] + pip_command + ["install"] + packages
+        command = [sys.executable, "-m"]
+
+    command += ["uv", "pip", "install"] if use_uv else ["pip", "install"]
+
+    if upgrade:
+        command += ["--upgrade"]
+
+    command += packages
 
     if not IS_DEBUG_ENV:
         quiet_flag = "-q" if use_uv else "-qqq"
@@ -1094,49 +1091,45 @@ def uninstall_package(package: str, use_uv: bool = False) -> None:
         package: The package to uninstall.
         use_uv: Whether to use uv for package uninstallation.
     """
-    pip_command = ["uv", "pip"] if use_uv else ["pip"]
-    quiet_flag = "-q" if use_uv else "-qqq"
-
-    if use_uv:
-        subprocess.check_call(
-            [
-                sys.executable,
-                "-m",
-            ]
-            + pip_command
-            + [
-                "uninstall",
-                quiet_flag,
-                package,
-            ]
-        )
+    if use_uv and not is_installed_in_python_environment("uv"):
+        # If uv is installed globally, don't run as a python module
+        command = []
     else:
-        subprocess.check_call(
-            [
-                sys.executable,
-                "-m",
-            ]
-            + pip_command
-            + [
-                "uninstall",
-                quiet_flag,
-                "-y",
-                package,
-            ]
-        )
+        command = [sys.executable, "-m"]
+
+    command += (
+        ["uv", "pip", "uninstall", "-q"]
+        if use_uv
+        else ["pip", "uninstall", "-y", "-qqq"]
+    )
+    command += [package]
+
+    subprocess.check_call(command)
+
+
+def is_installed_in_python_environment(package: str) -> bool:
+    """Check if a package is installed in the current python environment.
+
+    Args:
+        package: The package to check.
+
+    Returns:
+        True if the package is installed, False otherwise.
+    """
+    try:
+        pkg_resources.get_distribution(package)
+        return True
+    except pkg_resources.DistributionNotFound:
+        return False
 
 
 def is_uv_installed() -> bool:
-    """Check if uv is installed in the current environment.
+    """Check if uv is installed.
 
     Returns:
         True if uv is installed, False otherwise.
     """
-    try:
-        pkg_resources.get_distribution("uv")
-        return True
-    except pkg_resources.DistributionNotFound:
-        return False
+    return shutil.which("uv") is not None
 
 
 def is_pip_installed() -> bool:
@@ -1145,11 +1138,7 @@ def is_pip_installed() -> bool:
     Returns:
         True if pip is installed, False otherwise.
     """
-    try:
-        pkg_resources.get_distribution("pip")
-        return True
-    except pkg_resources.DistributionNotFound:
-        return False
+    return is_installed_in_python_environment("pip")
 
 
 def pretty_print_secret(
