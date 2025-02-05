@@ -11,47 +11,37 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Initialization of the Baseten integration for ZenML.
+"""Baseten integration for ZenML."""
 
-The Baseten integration allows you to use the Baseten model serving
-to implement continuous model deployment.
-"""
 from typing import List, Type
-
 from zenml.integrations.constants import BASETEN
 from zenml.integrations.integration import Integration
 from zenml.stack import Flavor
 
-BASETEN_MODEL_DEPLOYER_FLAVOR = "baseten"
-
+from zenml.integrations.baseten.flavors import (
+    BasetenModelDeployerConfig,
+    BasetenModelDeployerFlavor,
+)
+from zenml.integrations.baseten.constants import BASETEN_MODEL_DEPLOYER_FLAVOR
 
 class BasetenIntegration(Integration):
     """Definition of Baseten integration for ZenML."""
 
-    NAME = BENTOML
-    REQUIREMENTS = [
-        "baseten>=0.8.2,<1.0.0",
-    ]
-
-    @classmethod
-    def activate(cls) -> None:
-        """Activate the Baseten integration."""
-        from zenml.integrations.baseten import materializers  # noqa
-        from zenml.integrations.baseten import model_deployers  # noqa
-        from zenml.integrations.baseten import services  # noqa
+    NAME = BASETEN
+    REQUIREMENTS = ["truss", "requests"]
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
-        """Declare the stack component flavors for BentoML.
-
+        """List of flavors for the Baseten integration.
+        
         Returns:
-            List of stack component flavors for this integration.
+            List of flavors.
         """
-        from zenml.integrations.baseten.flavors import (
-            BasetenModelDeployerFlavor,
-        )
-
         return [BasetenModelDeployerFlavor]
 
-
-BasetenIntegration.check_installation()
+__all__ = [
+    "BasetenIntegration",
+    "BasetenModelDeployerConfig",
+    "BasetenModelDeployerFlavor",
+    "BASETEN_MODEL_DEPLOYER_FLAVOR",
+]

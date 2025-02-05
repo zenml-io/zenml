@@ -15,7 +15,7 @@
 
 from typing import TYPE_CHECKING, Optional, Type
 
-from zenml.integrations.baseten import BASETEN_MODEL_DEPLOYER_FLAVOR
+from zenml.integrations.baseten.constants import BASETEN_MODEL_DEPLOYER_FLAVOR
 from zenml.model_deployers.base_model_deployer import (
     BaseModelDeployerConfig,
     BaseModelDeployerFlavor,
@@ -26,9 +26,21 @@ if TYPE_CHECKING:
 
 
 class BasetenModelDeployerConfig(BaseModelDeployerConfig):
-    """Configuration for the BasetenModelDeployer."""
+    """Configuration for the Baseten model deployer.
 
-    service_path: str = ""
+    Attributes:
+        baseten_api_key: The API key for Baseten authentication.
+        model_name: Optional name for the model in Baseten.
+        gpu_type: Optional GPU type to use for the deployment.
+        environment_variables: Optional environment variables for the deployment.
+        service_path: Optional path to store service information.
+    """
+
+    baseten_api_key: Optional[str] = None
+    model_name: Optional[str] = None
+    gpu_type: Optional[str] = None
+    environment_variables: Optional[dict] = None
+    service_path: Optional[str] = "./baseten_services"
 
 
 class BasetenModelDeployerFlavor(BaseModelDeployerFlavor):
@@ -39,7 +51,7 @@ class BasetenModelDeployerFlavor(BaseModelDeployerFlavor):
         """Name of the flavor.
 
         Returns:
-            Name of the flavor.
+            The name of the flavor.
         """
         return BASETEN_MODEL_DEPLOYER_FLAVOR
 
@@ -72,16 +84,16 @@ class BasetenModelDeployerFlavor(BaseModelDeployerFlavor):
 
     @property
     def config_class(self) -> Type[BasetenModelDeployerConfig]:
-        """Returns `BasetenModelDeployerConfig` config class.
+        """Config class for the Baseten model deployer.
 
         Returns:
-                The config class.
+            The config class.
         """
         return BasetenModelDeployerConfig
 
     @property
     def implementation_class(self) -> Type["BasetenModelDeployer"]:
-        """Implementation class for this flavor.
+        """Implementation class for the Baseten model deployer.
 
         Returns:
             The implementation class.
