@@ -465,7 +465,7 @@ class WorkspaceScopedFilter(UserScopedFilter):
 
 
 class TaggableFilter(BaseFilter):
-    """Model to enable advanced scoping with workspace and tagging."""
+    """Model to enable filtering and sorting by tags."""
 
     tag: Optional[str] = Field(
         description="Tag to apply to the filter query.", default=None
