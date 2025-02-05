@@ -247,6 +247,7 @@ class StrFilter(Filter):
                 )
 
         if self.operation == GenericFilterOps.ONEOF:
+            assert isinstance(self.value, list)
             # Convert the list of values to a list of json strings
             value = (
                 [json.dumps(v) for v in self.value]
