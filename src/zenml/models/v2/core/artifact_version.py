@@ -548,7 +548,7 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
         description="Name/ID of a pipeline run that is associated with this "
         "artifact version.",
     )
-    run_metadata: Optional[Dict[str, str]] = Field(
+    run_metadata: Optional[Dict[str, Any]] = Field(
         default=None,
         description="The run_metadata to filter the artifact versions by.",
     )
@@ -665,6 +665,8 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
             custom_filters.append(pipeline_run_filter)
 
         if self.run_metadata is not None:
+            import json
+
             from zenml.enums import MetadataResourceTypes
 
             for key, value in self.run_metadata.items():
@@ -672,11 +674,16 @@ class ArtifactVersionFilter(WorkspaceScopedTaggableFilter):
                     RunMetadataResourceSchema.resource_id
                     == ArtifactVersionSchema.id,
                     RunMetadataResourceSchema.resource_type
-                    == MetadataResourceTypes.ARTIFACT_VERSION,
+                    == MetadataResourceTypes.ARTIFACT_VERSION.value,
                     RunMetadataResourceSchema.run_metadata_id
                     == RunMetadataSchema.id,
                     self.generate_custom_query_conditions_for_column(
-                        value=value,
+                        value=key,
+                        table=RunMetadataSchema,
+                        column="key",
+                    ),
+                    self.generate_custom_query_conditions_for_column(
+                        value=json.dumps(value),
                         table=RunMetadataSchema,
                         column="value",
                     ),

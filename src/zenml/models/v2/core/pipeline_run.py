@@ -681,7 +681,7 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
         union_mode="left_to_right",
     )
     unlisted: Optional[bool] = None
-    run_metadata: Optional[Dict[str, str]] = Field(
+    run_metadata: Optional[Dict[str, Any]] = Field(
         default=None,
         description="The run_metadata to filter the pipeline runs by.",
     )
@@ -901,6 +901,8 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
 
             custom_filters.append(templatable_filter)
         if self.run_metadata is not None:
+            import json
+
             from zenml.enums import MetadataResourceTypes
 
             for key, value in self.run_metadata.items():
@@ -908,11 +910,16 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
                     RunMetadataResourceSchema.resource_id
                     == PipelineRunSchema.id,
                     RunMetadataResourceSchema.resource_type
-                    == MetadataResourceTypes.PIPELINE_RUN,
+                    == MetadataResourceTypes.PIPELINE_RUN.value,
                     RunMetadataResourceSchema.run_metadata_id
                     == RunMetadataSchema.id,
                     self.generate_custom_query_conditions_for_column(
-                        value=value,
+                        value=key,
+                        table=RunMetadataSchema,
+                        column="key",
+                    ),
+                    self.generate_custom_query_conditions_for_column(
+                        value=json.dumps(value),
                         table=RunMetadataSchema,
                         column="value",
                     ),

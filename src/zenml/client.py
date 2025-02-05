@@ -3821,7 +3821,7 @@ class Client(metaclass=ClientMetaClass):
         templatable: Optional[bool] = None,
         tag: Optional[str] = None,
         user: Optional[Union[UUID, str]] = None,
-        run_metadata: Optional[Dict[str, str]] = None,
+        run_metadata: Optional[Dict[str, Any]] = None,
         pipeline: Optional[Union[UUID, str]] = None,
         code_repository: Optional[Union[UUID, str]] = None,
         model: Optional[Union[UUID, str]] = None,
@@ -4254,7 +4254,7 @@ class Client(metaclass=ClientMetaClass):
         user: Optional[Union[UUID, str]] = None,
         model: Optional[Union[UUID, str]] = None,
         pipeline_run: Optional[Union[UUID, str]] = None,
-        run_metadata: Optional[Dict[str, str]] = None,
+        run_metadata: Optional[Dict[str, Any]] = None,
         tag: Optional[str] = None,
         hydrate: bool = False,
     ) -> Page[ArtifactVersionResponse]:
