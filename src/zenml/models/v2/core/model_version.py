@@ -446,22 +446,18 @@ class ModelVersionResponse(
         """
         from zenml.client import Client
 
-        artifact_versions = (
-            Client()
-            .list_artifact_versions(
-                sort_by="desc:created",
-                size=1,
-                name=name,
-                version=version,
-                model_version_id=self.id,
-                type=type,
-            )
-            .items
+        artifact_versions = Client().list_artifact_versions(
+            sort_by="desc:created",
+            size=1,
+            name=name,
+            version=version,
+            model_version_id=self.id,
+            type=type,
         )
 
-        if not artifact_versions:
+        if not artifact_versions.items:
             return None
-        return artifact_versions[0]
+        return artifact_versions.items[0]
 
     def get_artifact(
         self,
