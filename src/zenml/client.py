@@ -3974,6 +3974,7 @@ class Client(metaclass=ClientMetaClass):
         user: Optional[Union[UUID, str]] = None,
         model_version_id: Optional[Union[str, UUID]] = None,
         model: Optional[Union[UUID, str]] = None,
+        run_metadata: Optional[Dict[str, Any]] = None,
         hydrate: bool = False,
     ) -> Page[StepRunResponse]:
         """List all pipelines.
@@ -4000,6 +4001,7 @@ class Client(metaclass=ClientMetaClass):
             cache_key: The cache key of the step run to filter by.
             code_hash: The code hash of the step run to filter by.
             status: The name of the run to filter by.
+            run_metadata: Filter by run metadata.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -4028,6 +4030,7 @@ class Client(metaclass=ClientMetaClass):
             user=user,
             model_version_id=model_version_id,
             model=model,
+            run_metadata=run_metadata,
         )
         step_run_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_run_steps(

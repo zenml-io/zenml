@@ -171,6 +171,8 @@ class BoolFilter(Filter):
 class StrFilter(Filter):
     """Filter for all string fields."""
 
+    json_encode_value: bool = False
+
     ALLOWED_OPS: ClassVar[List[str]] = [
         GenericFilterOps.EQUALS,
         GenericFilterOps.NOT_EQUALS,
@@ -211,16 +213,6 @@ class StrFilter(Filter):
         Raises:
             ValueError: the comparison of the column to a numeric value fails.
         """
-        if self.operation == GenericFilterOps.CONTAINS:
-            return column.like(f"%{self.value}%")
-        if self.operation == GenericFilterOps.STARTSWITH:
-            return column.startswith(f"{self.value}")
-        if self.operation == GenericFilterOps.ENDSWITH:
-            return column.endswith(f"{self.value}")
-        if self.operation == GenericFilterOps.NOT_EQUALS:
-            return column != self.value
-        if self.operation == GenericFilterOps.ONEOF:
-            return column.in_(self.value)
         if self.operation in {
             GenericFilterOps.GT,
             GenericFilterOps.LT,
@@ -254,7 +246,29 @@ class StrFilter(Filter):
                     f"value '{self.value}' (must be numeric): {e}"
                 )
 
-        return column == self.value
+        if self.operation == GenericFilterOps.ONEOF:
+            # Convert the list of values to a list of json strings
+            value = (
+                [json.dumps(v) for v in self.value]
+                if self.json_encode_value
+                else self.value
+            )
+            return column.in_(value)
+
+        value = (
+            json.dumps(self.value) if self.json_encode_value else self.value
+        )
+
+        if self.operation == GenericFilterOps.CONTAINS:
+            return column.like(f"%{value}%")
+        if self.operation == GenericFilterOps.STARTSWITH:
+            return column.startswith(f"{value}")
+        if self.operation == GenericFilterOps.ENDSWITH:
+            return column.endswith(f"{value}")
+        if self.operation == GenericFilterOps.NOT_EQUALS:
+            return column != value
+
+        return column == value
 
 
 class UUIDFilter(StrFilter):
@@ -747,11 +761,12 @@ class BaseFilter(BaseModel):
             The query conditions.
         """
         value, operator = BaseFilter._resolve_operator(value)
-        if json_encode_value:
-            value = json.dumps(value)
         filter_ = FilterGenerator(table).define_filter(
             column=column, value=value, operator=operator
         )
+        if isinstance(filter_, StrFilter):
+            filter_.json_encode_value = json_encode_value
+
         return filter_.generate_query_conditions(table=table)
 
     @property
