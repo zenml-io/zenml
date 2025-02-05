@@ -4320,6 +4320,7 @@ class Client(metaclass=ClientMetaClass):
             user=user,
             model=model,
             pipeline_run=pipeline_run,
+            run_metadata=run_metadata,
         )
         artifact_version_filter_model.set_scope_workspace(
             self.active_workspace.id
