@@ -34,12 +34,13 @@ from zenml.constants import (
 from zenml.enums import ExecutionStatus
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
+    TaggableFilter,
+    WorkspaceScopedFilter,
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponseResources,
-    WorkspaceScopedTaggableFilter,
 )
 from zenml.models.v2.core.tag import TagResponse
 
@@ -256,16 +257,22 @@ class PipelineResponse(
 # ------------------ Filter Model ------------------
 
 
-class PipelineFilter(WorkspaceScopedTaggableFilter):
+class PipelineFilter(WorkspaceScopedFilter, TaggableFilter):
     """Pipeline filter model."""
 
     CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
-        *WorkspaceScopedTaggableFilter.CUSTOM_SORTING_OPTIONS,
+        *WorkspaceScopedFilter.CUSTOM_SORTING_OPTIONS,
+        *TaggableFilter.CUSTOM_SORTING_OPTIONS,
         SORT_PIPELINES_BY_LATEST_RUN_KEY,
     ]
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *WorkspaceScopedTaggableFilter.FILTER_EXCLUDE_FIELDS,
+        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
+        *TaggableFilter.FILTER_EXCLUDE_FIELDS,
         "latest_run_status",
+    ]
+    CLI_EXCLUDE_FIELDS = [
+        *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
+        *TaggableFilter.CLI_EXCLUDE_FIELDS,
     ]
 
     name: Optional[str] = Field(

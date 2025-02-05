@@ -33,12 +33,13 @@ from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
+    TaggableFilter,
+    WorkspaceScopedFilter,
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponseResources,
-    WorkspaceScopedTaggableFilter,
 )
 from zenml.models.v2.core.code_reference import (
     CodeReferenceResponse,
@@ -307,11 +308,12 @@ class RunTemplateResponse(
 # ------------------ Filter Model ------------------
 
 
-class RunTemplateFilter(WorkspaceScopedTaggableFilter):
+class RunTemplateFilter(WorkspaceScopedFilter, TaggableFilter):
     """Model for filtering of run templates."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *WorkspaceScopedTaggableFilter.FILTER_EXCLUDE_FIELDS,
+        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
+        *TaggableFilter.FILTER_EXCLUDE_FIELDS,
         "code_repository_id",
         "stack_id",
         "build_id",
@@ -319,6 +321,14 @@ class RunTemplateFilter(WorkspaceScopedTaggableFilter):
         "user",
         "pipeline",
         "stack",
+    ]
+    CUSTOM_SORTING_OPTIONS = [
+        *WorkspaceScopedFilter.CUSTOM_SORTING_OPTIONS,
+        *TaggableFilter.CUSTOM_SORTING_OPTIONS,
+    ]
+    CLI_EXCLUDE_FIELDS = [
+        *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
+        *TaggableFilter.CLI_EXCLUDE_FIELDS,
     ]
 
     name: Optional[str] = Field(
