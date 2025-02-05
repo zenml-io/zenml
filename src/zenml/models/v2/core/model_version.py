@@ -127,9 +127,7 @@ class ModelVersionUpdate(BaseModel):
     @classmethod
     def _validate_stage(cls, stage: str) -> str:
         stage = getattr(stage, "value", stage)
-        if stage is not None and stage not in [
-            stage.value for stage in ModelStages
-        ]:
+        if stage is not None and stage not in [stage.value for stage in ModelStages]:
             raise ValueError(f"`{stage}` is not a valid model stage.")
         return stage
 
@@ -433,9 +431,6 @@ class ModelVersionResponse(
         """Get the artifact linked to this model version given type.
 
         Args:
-            collection: The collection to search in (one of
-                self.model_artifact_ids, self.data_artifact_ids,
-                self.deployment_artifact_ids)
             name: The name of the artifact to retrieve.
             version: The version of the artifact to retrieve (None for
                 latest/non-versioned)
@@ -541,9 +536,7 @@ class ModelVersionResponse(
 
         return Client().get_pipeline_run(self.pipeline_run_ids[name])
 
-    def set_stage(
-        self, stage: Union[str, ModelStages], force: bool = False
-    ) -> None:
+    def set_stage(self, stage: Union[str, ModelStages], force: bool = False) -> None:
         """Sets this Model Version to a desired stage.
 
         Args:
@@ -649,12 +642,10 @@ class ModelVersionFilter(WorkspaceScopedFilter, TaggableFilter):
 
             for key, value in self.run_metadata.items():
                 additional_filter = and_(
-                    RunMetadataResourceSchema.resource_id
-                    == ModelVersionSchema.id,
+                    RunMetadataResourceSchema.resource_id == ModelVersionSchema.id,
                     RunMetadataResourceSchema.resource_type
                     == MetadataResourceTypes.MODEL_VERSION,
-                    RunMetadataResourceSchema.run_metadata_id
-                    == RunMetadataSchema.id,
+                    RunMetadataResourceSchema.run_metadata_id == RunMetadataSchema.id,
                     self.generate_custom_query_conditions_for_column(
                         value=value,
                         table=RunMetadataSchema,
