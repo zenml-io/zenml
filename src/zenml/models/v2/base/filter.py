@@ -249,27 +249,30 @@ class StrFilter(Filter):
         if self.operation == GenericFilterOps.ONEOF:
             assert isinstance(self.value, list)
             # Convert the list of values to a list of json strings
-            value = (
+            json_list = (
                 [json.dumps(v) for v in self.value]
                 if self.json_encode_value
                 else self.value
             )
-            return column.in_(value)
+            return column.in_(json_list)
 
-        value = (
+        # Don't convert the value to a json string if the operation is contains
+        # because the quotes around strings will mess with the comparison
+        if self.operation == GenericFilterOps.CONTAINS:
+            return column.like(f"%{self.value}%")
+
+        json_value = (
             json.dumps(self.value) if self.json_encode_value else self.value
         )
 
-        if self.operation == GenericFilterOps.CONTAINS:
-            return column.like(f"%{value}%")
         if self.operation == GenericFilterOps.STARTSWITH:
-            return column.startswith(f"{value}")
+            return column.startswith(f"{json_value}")
         if self.operation == GenericFilterOps.ENDSWITH:
-            return column.endswith(f"{value}")
+            return column.endswith(f"{json_value}")
         if self.operation == GenericFilterOps.NOT_EQUALS:
-            return column != value
+            return column != json_value
 
-        return column == value
+        return column == json_value
 
 
 class UUIDFilter(StrFilter):
