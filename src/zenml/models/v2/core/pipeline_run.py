@@ -901,8 +901,6 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
 
             custom_filters.append(templatable_filter)
         if self.run_metadata is not None:
-            import json
-
             from zenml.enums import MetadataResourceTypes
 
             for key, value in self.run_metadata.items():
@@ -919,9 +917,10 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
                         column="key",
                     ),
                     self.generate_custom_query_conditions_for_column(
-                        value=json.dumps(value),
+                        value=value,
                         table=RunMetadataSchema,
                         column="value",
+                        json_encode_value=True,
                     ),
                 )
                 custom_filters.append(additional_filter)
