@@ -257,14 +257,14 @@ class Model:
         # Create Truss config.yaml
         self._create_truss_config_yaml(truss_dir, config.model_name)
 
+        # temporarily consider adding `unset AWS_PROFILE`
+
         # Push to Baseten
         cmd = [
             "truss",
             "push",
             truss_dir,
-            "--publish",  # Push as a published deployment
             "--wait",  # Wait for deployment to complete
-            "--trusted",  # Allow access to secrets
             "--model-name",
             config.model_name,  # Set the model name
         ]
