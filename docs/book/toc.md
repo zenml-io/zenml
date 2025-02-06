@@ -165,6 +165,7 @@
     * [Datasets in ZenML](how-to/data-artifact-management/complex-usecases/datasets.md)
     * [Manage big data](how-to/data-artifact-management/complex-usecases/manage-big-data.md)
     * [Skipping materialization](how-to/data-artifact-management/complex-usecases/unmaterialized-artifacts.md)
+    * [Return existing artifacts from steps](how-to/data-artifact-management/complex-usecases/return-existing-artifacts-from-steps.md)
     * [Passing artifacts between pipelines](how-to/data-artifact-management/complex-usecases/passing-artifacts-between-pipelines.md)
     * [Register Existing Data as a ZenML Artifact](how-to/data-artifact-management/complex-usecases/registering-existing-data.md)
   * [Visualizing artifacts](how-to/data-artifact-management/visualize-artifacts/README.md)

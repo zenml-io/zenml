@@ -18,12 +18,13 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import pytest
 from pydantic import BaseModel
 from typing_extensions import Annotated
+
+from zenml import pipeline, save_artifact, step
 from zenml.client import Client
-from zenml import pipeline, step, save_artifact
 from zenml.exceptions import StepInterfaceError
 from zenml.materializers import BuiltInMaterializer
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.models import ArtifactVersionResponse, ArtifactVersionRequest
+from zenml.models import ArtifactVersionResponse
 from zenml.steps import BaseStep
 
 
@@ -1055,7 +1056,9 @@ def test_artifact_version_as_step_input(clean_client):
 
 
 @step
-def step_that_returns_artifact_response(artifact_name: str, artifact_version: Optional[str] = None) -> int:
+def step_that_returns_artifact_response(
+    artifact_name: str, artifact_version: Optional[str] = None
+) -> int:
     return Client().get_artifact_version(artifact_name, artifact_version)
 
 
