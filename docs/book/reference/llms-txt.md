@@ -51,8 +51,8 @@ Below are some tips and recommendations for using the `llms.txt` files.
 
 - Choose the file that pertains to the part of ZenML you want answers for.
 - In every file, the text comes prefixed with the filename which means you can ask your LLM to return file references when answering questions. This is particularly helpful when using the how-to guides which don't the full text, but rather a summary of it.
-- You can mix two files, as your context window allows to get more accurate results.
-- While prompting, make sure you tell the LLM to not return an answer that it can't infer from the given text file, to avoid getting hallucinated answers.
+- You can mix two files, if your context window allows, to get more accurate results.
+- While prompting, make sure you tell the LLM to not return an answer that it can't directly source to context within the given text file, to avoid getting hallucinated answers.
 - Use a model with a large context window, like the Gemini models as the token count is high.
 
 
