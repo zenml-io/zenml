@@ -1,6 +1,6 @@
 ---
 icon: robot
-description: The llms.txt file for ZenML
+description: The llms.txt file(s) for ZenML
 ---
 
 # The llms.txt file(s) for ZenML
