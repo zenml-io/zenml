@@ -1512,5 +1512,65 @@ export ZENML_PRO_API_URL=https://zenml-pro.staging.cloudinfra.zenml.io/api/v1
 zenml login
 ```
 
+## Day 2 Operations: Upgrades and Updates
+
+This section covers how to upgrade or update your ZenML Pro deployment. The process involves updating both the ZenML Pro Control Plane and the ZenML Pro tenant servers.
+
+{% hint style="warning" %}
+Always upgrade the ZenML Pro Control Plane first, then upgrade the tenant servers. This ensures compatibility and prevents potential issues.
+{% endhint %}
+
+### Upgrade Checklist
+
+1. **Check Available Versions and Release Notes**
+   * For ZenML Pro Control Plane:
+     * Check available versions in the [ZenML Pro ArtifactHub repository](https://artifacthub.io/packages/helm/zenml-pro/zenml-pro)
+   * For ZenML Pro Tenant Servers:
+     * Check available versions in the [ZenML OSS ArtifactHub repository](https://artifacthub.io/packages/helm/zenml/zenml)
+     * Review the [ZenML GitHub releases page](https://github.com/zenml-io/zenml/releases) for release notes and breaking changes
+
+2. **Fetch and Prepare New Software Artifacts**
+   * Follow the [Software Artifacts](#software-artifacts) section to get access to the new versions of:
+     * ZenML Pro Control Plane container images and Helm chart
+     * ZenML Pro tenant server container images and Helm chart
+   * If using a private registry, copy the new container images to your private registry
+   * If you are using an air-gapped installation, follow the [Air-Gapped Installation](#air-gapped-installation) instructions
+
+3. **Upgrade the ZenML Pro Control Plane**
+   * Option A - In-place upgrade with existing values. Use this if you don't need to change any configuration values as part of the upgrade:
+     ```bash
+     helm --namespace zenml-pro upgrade zenml-pro oci://public.ecr.aws/zenml/zenml-pro \
+       --version <new-version> --reuse-values
+     ```
+   * Option B - Retrieve, modify and reapply values, if necessary. Use this if you need to change any configuration values as part of the upgrade or if you are performing a configuration update without upgrading the ZenML Pro Control Plane.
+     ```bash
+     # Get the current values
+     helm --namespace zenml-pro get values zenml-pro > current-values.yaml
+     
+     # Edit current-values.yaml if needed, then upgrade
+     helm --namespace zenml-pro upgrade zenml-pro oci://public.ecr.aws/zenml/zenml-pro \
+       --version <new-or-existing-version> --values current-values.yaml
+     ```
+
+4. **Upgrade ZenML Pro Tenant Servers**
+   * For each tenant, perform either:
+   * Option A - In-place upgrade with existing values. Use this if you don't need to change any configuration values as part of the upgrade:
+     ```bash
+     helm --namespace zenml-pro-<tenant-id> upgrade zenml oci://public.ecr.aws/zenml/zenml \
+       --version <new-version> --reuse-values
+     ```
+   * Option B - Retrieve, modify and reapply values, if necessary. Use this if you need to change any configuration values as part of the upgrade or if you are performing a configuration update without upgrading the ZenML Pro Tenant Server.
+     ```bash
+     # Get the current values
+     helm --namespace zenml-pro-<tenant-id> get values zenml > current-tenant-values.yaml
+     
+     # Edit current-tenant-values.yaml if needed, then upgrade
+     helm --namespace zenml-pro-<tenant-id> upgrade zenml oci://public.ecr.aws/zenml/zenml \
+       --version <new-version> --values current-tenant-values.yaml
+     ```
+
+
+
+
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
