@@ -489,7 +489,9 @@ To deploy the ZenML Pro control plane and one or more ZenML Pro tenant servers, 
             - Value: `<Load Balancer IP>`
         - Use a DNS propagation checker to confirm that the DNS record is resolving correctly.
 
-        {% hint style="warning" %}Make sure you don't use a simple DNS prefix for the servers (e.g. `https://zenml.cluster` is not recommended). This is especially relevant for the TLS certificates that you have to prepare for these endpoints. Always use a fully qualified domain name (FQDN) (e.g. `https://zenml.ml.cluster`). The TLS certificates will not be accepted by some browsers otherwise (e.g. Chrome).{% endhint %}
+{% hint style="warning" %}
+Make sure you don't use a simple DNS prefix for the servers (e.g. `https://zenml.cluster` is not recommended). This is especially relevant for the TLS certificates that you have to prepare for these endpoints. Always use a fully qualified domain name (FQDN) (e.g. `https://zenml.ml.cluster`). The TLS certificates will not be accepted by some browsers otherwise (e.g. Chrome).
+{% endhint %}
 
 5. **SSL Certificate**
     
@@ -583,7 +585,9 @@ To deploy the ZenML Pro control plane and one or more ZenML Pro tenant servers, 
             
         - Reference the domain in your IngressRoute or Middleware configuration.
 
-        {% hint style="warning" %}If you used a custom CA certificate to sign the TLS certificates for the ZenML Pro services, you will need to install the CA certificates on every client machine, as covered in the [Install CA Certificates](#install-ca-certificates) section.{% endhint %}
+{% hint style="warning" %}
+If you used a custom CA certificate to sign the TLS certificates for the ZenML Pro services, you will need to install the CA certificates on every client machine, as covered in the [Install CA Certificates](#install-ca-certificates) section.
+{% endhint %}
 
 
 The above are infrastructure requirements for ZenML Pro. If, in addition to ZenML, you would also like to reuse the same Kubernetes cluster to run machine learning workloads with ZenML, you will require the following additional infrastructure resources and services to be able to set up [a remote ZenML Stack](../../user-guide/production-guide/understand-stacks.md):
@@ -966,7 +970,9 @@ Installing and updating on-prem ZenML Pro tenant servers is not automated, as it
 
 ### Enrolling a Tenant
 
-1. run the `enroll-tenant.py` script below. This will collect all the necessary data, then enroll the tenant in the organization and generate a Helm `values.yaml` file template that you can use to install the tenant server:
+1. **Run the `enroll-tenant.py` script below**
+
+This will collect all the necessary data, then enroll the tenant in the organization and generate a Helm `values.yaml` file template that you can use to install the tenant server:
     
     **[file: enroll-tenant.py]**
     
@@ -1407,66 +1413,65 @@ Installing and updating on-prem ZenML Pro tenant servers is not automated, as it
             memory: 450Mi
     ```
 
-2. configure the ZenML Pro tenant Helm chart:
+2. **Configure the ZenML Pro tenant Helm chart**
 
-    {% hint style="warning" %}
-    In configuring the ZenML Pro tenant Helm chart, keep the following in mind:
-    
-    - don't use the same database name for multiple tenants
-    - don't reuse the control plane database name for the tenant server database
-    {% endhint %}
+{% hint style="warning" %}
+In configuring the ZenML Pro tenant Helm chart, keep the following in mind:
 
-    The ZenML Pro tenant server is nothing more than a slightly modified open-source ZenML server. The deployment even uses the official open-source helm chart.
-    
-    There are a variety of options that can be configured for the ZenML Pro tenant server chart before installation. You can start by taking a look at the [Helm chart README](https://artifacthub.io/packages/helm/zenml/zenml) and [`values.yaml` file](https://artifacthub.io/packages/helm/zenml/zenml?modal=values) and familiarize yourself with some of the configuration settings that you can customize for your ZenML server deployment. Alternatively, you can unpack the `README.md` and `values.yaml` files included in the helm chart:
-    
-    ```bash
-    helm  pull --untar  oci://public.ecr.aws/zenml/zenml --version <version>
-    less zenml/README.md
-    less zenml/values.yaml
-    ```
-    
-    To configure the Helm chart, use the generated YAML file generated at the previous step as a template and fill in the necessary values marked by `TODO` comments. At a minimum, you'll need to configure the following:
-    
-    - configure container registry credentials (`imagePullSecrets`, same as [described for the control plane](#set-up-credentials))
-    - the MySQL database credentials (`zenml.database.url`)
-    - the container image repository where the ZenML Pro tenant server container images are stored (`zenml.image.repository`)
-    - the hostname where the ZenML Pro tenant server will be reachable (`zenml.ingress.host` and `zenml.serverURL`)
-    
-    You may also choose to configure additional features documented in [the official OSS ZenML Helm deployment documentation pages](https://docs.zenml.io/getting-started/deploying-zenml/deploy-with-helm), if you need them:
-    
-    - injecting custom CA certificates (`zenml.certificates`), especially important if the TLS certificate used for the ZenML Pro control plane is signed by a custom Certificate Authority
-    - configure HTTP proxy settings (`zenml.proxy`)
-    - set up secrets stores
-    - configure database backup and restore
-    - customize Kubernetes resources
-    - etc.
-    
-3. deploy the ZenML Pro tenant server with Helm:
+- don't use the same database name for multiple tenants
+- don't reuse the control plane database name for the tenant server database
+{% endhint %}
 
-    To install the helm chart (assuming the customized configuration values are in the generated `zenml-f8e306ef-90e7-4b2f-99db-28298834feed-values.yaml` file), run e.g.:
-    
-    ```python
-    helm --namespace zenml-pro-f8e306ef-90e7-4b2f-99db-28298834feed upgrade --install --create-namespace zenml oci://public.ecr.aws/zenml/zenml --version <version> --values zenml-f8e306ef-90e7-4b2f-99db-28298834feed-values.yaml
-    ```
-    
-    The deployment is ready when the ZenML server pod is running and healthy:
-    
-    ```python
-    $ kubectl -n zenml-pro-f8e306ef-90e7-4b2f-99db-28298834feed get all
-    NAME                           READY   STATUS      RESTARTS   AGE
-    pod/zenml-5c4b6d9dcd-7bhfp     1/1     Running     0          85m
-    
-    NAME            TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE
-    service/zenml   ClusterIP   172.20.43.140   <none>        80/TCP    85m
-    
-    NAME                    READY   UP-TO-DATE   AVAILABLE   AGE
-    deployment.apps/zenml   1/1     1            1           85m
-    
-    NAME                               DESIRED   CURRENT   READY   AGE
-    replicaset.apps/zenml-5c4b6d9dcd   1         1         1       85m
-    ```
-    
+The ZenML Pro tenant server is nothing more than a slightly modified open-source ZenML server. The deployment even uses the official open-source helm chart.
+
+There are a variety of options that can be configured for the ZenML Pro tenant server chart before installation. You can start by taking a look at the [Helm chart README](https://artifacthub.io/packages/helm/zenml/zenml) and [`values.yaml` file](https://artifacthub.io/packages/helm/zenml/zenml?modal=values) and familiarize yourself with some of the configuration settings that you can customize for your ZenML server deployment. Alternatively, you can unpack the `README.md` and `values.yaml` files included in the helm chart:
+
+```bash
+helm  pull --untar  oci://public.ecr.aws/zenml/zenml --version <version>
+less zenml/README.md
+less zenml/values.yaml
+```
+
+To configure the Helm chart, use the generated YAML file generated at the previous step as a template and fill in the necessary values marked by `TODO` comments. At a minimum, you'll need to configure the following:
+
+- configure container registry credentials (`imagePullSecrets`, same as [described for the control plane](#set-up-credentials))
+- the MySQL database credentials (`zenml.database.url`)
+- the container image repository where the ZenML Pro tenant server container images are stored (`zenml.image.repository`)
+- the hostname where the ZenML Pro tenant server will be reachable (`zenml.ingress.host` and `zenml.serverURL`)
+
+You may also choose to configure additional features documented in [the official OSS ZenML Helm deployment documentation pages](https://docs.zenml.io/getting-started/deploying-zenml/deploy-with-helm), if you need them:
+
+- injecting custom CA certificates (`zenml.certificates`), especially important if the TLS certificate used for the ZenML Pro control plane is signed by a custom Certificate Authority
+- configure HTTP proxy settings (`zenml.proxy`)
+- set up secrets stores
+- configure database backup and restore
+- customize Kubernetes resources
+- etc.
+
+3. **Deploy the ZenML Pro tenant server with Helm**
+
+To install the helm chart (assuming the customized configuration values are in the generated `zenml-f8e306ef-90e7-4b2f-99db-28298834feed-values.yaml` file), run e.g.:
+
+```python
+helm --namespace zenml-pro-f8e306ef-90e7-4b2f-99db-28298834feed upgrade --install --create-namespace zenml oci://public.ecr.aws/zenml/zenml --version <version> --values zenml-f8e306ef-90e7-4b2f-99db-28298834feed-values.yaml
+```
+
+The deployment is ready when the ZenML server pod is running and healthy:
+
+```python
+$ kubectl -n zenml-pro-f8e306ef-90e7-4b2f-99db-28298834feed get all
+NAME                           READY   STATUS      RESTARTS   AGE
+pod/zenml-5c4b6d9dcd-7bhfp     1/1     Running     0          85m
+
+NAME            TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE
+service/zenml   ClusterIP   172.20.43.140   <none>        80/TCP    85m
+
+NAME                    READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/zenml   1/1     1            1           85m
+
+NAME                               DESIRED   CURRENT   READY   AGE
+replicaset.apps/zenml-5c4b6d9dcd   1         1         1       85m
+```
 
 After deployment, your tenant should show up as running in the ZenML Pro dashboard and can be accessed at the next step.
 
