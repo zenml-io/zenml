@@ -2,7 +2,53 @@
 
 # 0.74.0
 
+The `0.74.0` release introduces several major features including [SageMaker 
+pipeline scheduling capabilities](https://docs.zenml.io/stack-components/orchestrators/sagemaker#scheduling-pipelines), 
+[Azure Container Registry (ACR) implicit authentication support](https://docs.zenml.io/stack-components/container-registries/azure#authentication-methods), 
+and [Vertex AI persistent resource handling for step operators](https://docs.zenml.io/stack-components/step-operators/vertex#using-persistent-resources-for-faster-development). 
+Additionally, this release includes comprehensive improvements 
+to timezone handling and significant enhancements to database performance.
+
+## Features
+
+- API Tokens support in the dashboard for time-boxed API authentication
+- [SageMaker pipeline scheduling capabilities](https://docs.zenml.io/stack-components/orchestrators/sagemaker#scheduling-pipelines)
+- [Azure Container Registry (ACR) and Storage Account implicit authentication](https://docs.zenml.io/stack-components/container-registries/azure#authentication-methods)
+- [Vertex AI persistent resource support](https://docs.zenml.io/stack-components/step-operators/vertex#using-persistent-resources-for-faster-development) for step operators
+- Support for [custom log formats](https://docs.zenml.io/how-to/control-logging/set-logging-format)
+- Run metadata and tag indices for improved performance
+- [Core concepts video added to documentation](https://docs.zenml.io/getting-started/core-concepts)
+
+## Improvements
+
+- Comprehensive timezone consistency improvements across the platform
+- Enhanced database query performance for pipelines, run templates, models, 
+and artifacts
+- Better handling of configured parameters during pipeline preparation
+- Support for passing run configurations as dictionaries when triggering 
+pipelines
+- Enhanced sorting capabilities for columns with empty values in the dashboard
+- Improved queries for pipelines, run templates, models, and artifacts
+- Better filtering functionality for run metadata
+- More efficient artifact filtering
+- Various Helm chart improvements and reorganization
+- Updated materializer support for newer PyTorch versions
+- Improved code repository management and downloading
+- Better handling of `SecretStr` values in store configurations
+
+## Fixes
+
+- Kubernetes service connector issues resolved
+- Fixed sorting for columns with potentially empty values
+- Corrected timestamp utilization for better timezone consistency
+- Resolved issues with vLLM pipeline config file usage
+- Fixed code download functionality for custom flavor components
+- Addressed various documentation and broken links
+- Corrected MySQL database connection warnings
+- Fixed issues with Vertex AI experiment tracker documentation
+
 ## What's Changed
+
 * Fix some docs by @htahir1 in https://github.com/zenml-io/zenml/pull/3302
 * Replace deprecated `datetime.utcnow()` with `datetime.now(timezone.utc)`  by @aiakide in https://github.com/zenml-io/zenml/pull/3265
 * Adding the missing VertexAI experiment tracker docs by @bcdurak in https://github.com/zenml-io/zenml/pull/3308
@@ -44,10 +90,10 @@
 * Fix filtering by run metadata by @schustmi in https://github.com/zenml-io/zenml/pull/3344
 
 ## New Contributors
+
 * @lukas-reining made their first contribution in https://github.com/zenml-io/zenml/pull/3274
 
 **Full Changelog**: https://github.com/zenml-io/zenml/compare/0.73.0...0.74.0
-
 
 # 0.73.0
 
