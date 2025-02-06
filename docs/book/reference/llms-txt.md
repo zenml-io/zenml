@@ -8,7 +8,7 @@ The llms.txt file format was proposed by [llmstxt.org](https://llmstxt.org/) as 
 
 > We propose adding a /llms.txt markdown file to websites to provide LLM-friendly content. This file offers brief background information, guidance, and links to detailed markdown files. llms.txt markdown is human and LLM readable, but is also in a precise format allowing fixed processing methods (i.e. classical programming techniques such as parsers and regex).
 
-Our `llms.txt` file is a summary of the ZenML documentation that can be used to answer basic questions about ZenML. It is available at https://zenml.io/llms.txt. Read on to learn about additional files, where they are hosted and how to use them.
+Our `llms.txt` file is a summary of the ZenML documentation that can be used to answer basic questions about ZenML. The base version is available at https://zenml.io/llms.txt. Read on to learn about additional files, where they are hosted and how to use them.
 
 ## Available llms.txt files
 
