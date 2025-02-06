@@ -326,6 +326,7 @@
 
 ## Reference
 
+* [llms.txt](reference/llms-txt.md)
 * [Python Client](reference/python-client.md)
 * [Global settings](reference/global-settings.md)
 * [Environment Variables](reference/environment-variables.md)
