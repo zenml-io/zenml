@@ -1,5 +1,54 @@
 <!-- markdown-link-check-disable -->
 
+# 0.74.0
+
+## What's Changed
+* Fix some docs by @htahir1 in https://github.com/zenml-io/zenml/pull/3302
+* Replace deprecated `datetime.utcnow()` with `datetime.now(timezone.utc)`  by @aiakide in https://github.com/zenml-io/zenml/pull/3265
+* Adding the missing VertexAI experiment tracker docs by @bcdurak in https://github.com/zenml-io/zenml/pull/3308
+* Create Sagemaker pipeline schedules if specified by @htahir1 in https://github.com/zenml-io/zenml/pull/3271
+* Formatting by @schustmi in https://github.com/zenml-io/zenml/pull/3307
+* Remove trailing slashes from zenml login URLs by @stefannica in https://github.com/zenml-io/zenml/pull/3312
+* Fix Kubernetes service connector by @stefannica in https://github.com/zenml-io/zenml/pull/3313
+* Add notes on missing features for on-prem ZenML Pro deployments by @stefannica in https://github.com/zenml-io/zenml/pull/3301
+* Fix wrong warning log when directly connecting to MySQL DB by @schustmi in https://github.com/zenml-io/zenml/pull/3311
+* Fix typo by @schustmi in https://github.com/zenml-io/zenml/pull/3316
+* Minor fix for Sagemaker by @bcdurak in https://github.com/zenml-io/zenml/pull/3318
+* Rework timestamp utilization for timezone consistency by @stefannica in https://github.com/zenml-io/zenml/pull/3314
+* Add broken links checker by @htahir1 in https://github.com/zenml-io/zenml/pull/3305
+* Schedule timezone fixes by @schustmi in https://github.com/zenml-io/zenml/pull/3315
+* Misc code repository improvements by @schustmi in https://github.com/zenml-io/zenml/pull/3306
+* Add core concepts video by @htahir1 in https://github.com/zenml-io/zenml/pull/3324
+* Fix code download for custom flavor components by @schustmi in https://github.com/zenml-io/zenml/pull/3323
+* Allow passing run configuration as dict when triggering pipelines by @schustmi in https://github.com/zenml-io/zenml/pull/3326
+* Fix sorting by columns with potentially empty values by @schustmi in https://github.com/zenml-io/zenml/pull/3325
+* Allow custom log formats by @schustmi in https://github.com/zenml-io/zenml/pull/3288
+* Add vertex persistent resource to settings for step operator by @htahir1 in https://github.com/zenml-io/zenml/pull/3304
+* Fix use of config file in vLLM pipelines by @wjayesh in https://github.com/zenml-io/zenml/pull/3322
+* Fixing the CI with the new `huggingface-hub` version by @bcdurak in https://github.com/zenml-io/zenml/pull/3329
+* Handling string values as SecretStrs in store configurations by @bcdurak in https://github.com/zenml-io/zenml/pull/3319
+* More code repository improvements by @schustmi in https://github.com/zenml-io/zenml/pull/3327
+* Fix materializer for new pytorch version by @schustmi in https://github.com/zenml-io/zenml/pull/3331
+* Add some nicer docs by @htahir1 in https://github.com/zenml-io/zenml/pull/3328
+* Add run metadata and tag indices by @schustmi in https://github.com/zenml-io/zenml/pull/3310
+* Fix markdown link checker for external PRs by @schustmi in https://github.com/zenml-io/zenml/pull/3333
+* feat: implement implicit authentication for ACR and Storage Account by @lukas-reining in https://github.com/zenml-io/zenml/pull/3274
+* Add support for symlinks in GH download by @schustmi in https://github.com/zenml-io/zenml/pull/3332
+* ZenML Helm chart improvements by @stefannica in https://github.com/zenml-io/zenml/pull/3320
+* Move helm chart out of the source tree by @stefannica in https://github.com/zenml-io/zenml/pull/3338
+* Add option to skip stack validation by @schustmi in https://github.com/zenml-io/zenml/pull/3337
+* Improve queries for pipelines, run templates, models and artifacts by @schustmi in https://github.com/zenml-io/zenml/pull/3335
+* Improve configured parameter detection when preparing pipeline by @schustmi in https://github.com/zenml-io/zenml/pull/3339
+* Minor fix for the Artifact filter model by @bcdurak in https://github.com/zenml-io/zenml/pull/3334
+* Allow (un)installing integrations with system-wide uv installations by @schustmi in https://github.com/zenml-io/zenml/pull/3342
+* Fix filtering by run metadata by @schustmi in https://github.com/zenml-io/zenml/pull/3344
+
+## New Contributors
+* @lukas-reining made their first contribution in https://github.com/zenml-io/zenml/pull/3274
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.73.0...0.74.0
+
+
 # 0.73.0
 
 The `0.73.0` release contains various changes and improvements, but most 
