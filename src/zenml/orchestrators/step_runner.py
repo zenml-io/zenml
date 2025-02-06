@@ -42,6 +42,11 @@ from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
 from zenml.logging.step_logging import StepLogsStorageContext, redirected
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.models import (
+    ArtifactVersionResponse,
+    PipelineRunResponse,
+    StepRunResponse,
+)
 from zenml.models.v2.core.step_run import StepRunInputResponse
 from zenml.orchestrators.publish_utils import (
     publish_step_run_metadata,
@@ -536,6 +541,8 @@ class StepRunner:
             output_type = output_annotation.resolved_annotation
             if output_type is Any:
                 pass
+            elif isinstance(return_value, ArtifactVersionResponse):
+                pass
             else:
                 if is_union(get_origin(output_type)):
                     output_type = get_args(output_type)
@@ -575,9 +582,15 @@ class StepRunner:
             The IDs of the published output artifacts.
         """
         step_context = get_step_context()
-        artifact_requests = []
+        artifact_requests = {}
+
+        artifacts = {}
 
         for output_name, return_value in output_data.items():
+            if isinstance(return_value, ArtifactVersionResponse):
+                artifacts[output_name] = return_value
+                continue
+
             data_type = type(return_value)
             materializer_classes = output_materializers[output_name]
             if materializer_classes:
@@ -652,12 +665,13 @@ class StepRunner:
                 save_type=ArtifactSaveType.STEP_OUTPUT,
                 metadata=user_metadata,
             )
-            artifact_requests.append(artifact_request)
+            artifact_requests[output_name] = artifact_request
 
         responses = Client().zen_store.batch_create_artifact_versions(
-            artifact_requests
+            list(artifact_requests.values())
         )
-        return dict(zip(output_data.keys(), responses))
+        artifacts.update(dict(zip(artifact_requests.keys(), responses)))
+        return artifacts
 
     def load_and_run_hook(
         self,
