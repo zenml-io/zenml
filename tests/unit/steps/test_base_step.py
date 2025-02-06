@@ -18,12 +18,12 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import pytest
 from pydantic import BaseModel
 from typing_extensions import Annotated
-
-from zenml import pipeline, step
+from zenml.client import Client
+from zenml import pipeline, step, save_artifact
 from zenml.exceptions import StepInterfaceError
 from zenml.materializers import BuiltInMaterializer
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.models import ArtifactVersionResponse
+from zenml.models import ArtifactVersionResponse, ArtifactVersionRequest
 from zenml.steps import BaseStep
 
 
@@ -1052,3 +1052,27 @@ def test_artifact_version_as_step_input(clean_client):
 
     with does_not_raise():
         test_pipeline()
+
+
+@step
+def step_that_returns_artifact_response(artifact_name: str, artifact_version: Optional[str] = None) -> int:
+    return Client().get_artifact_version(artifact_name, artifact_version)
+
+
+def test_artifact_version_as_step_output(clean_client):
+    """Test passing an artifact version as step output."""
+    int_artifact_name = "int_artifact"
+    save_artifact(1, name=int_artifact_name)
+
+    str_artifact_name = "str_artifact"
+    save_artifact("asd", name=str_artifact_name)
+
+    @pipeline
+    def test_pipeline(artifact_name: str):
+        step_that_returns_artifact_response(artifact_name=artifact_name)
+
+    with does_not_raise():
+        test_pipeline(artifact_name=int_artifact_name)
+
+    with pytest.raises(StepInterfaceError):
+        test_pipeline(artifact_name=str_artifact_name)
