@@ -78,6 +78,11 @@ To access the ZenML Pro container images stored in AWS ECR, you need to set up a
 
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 - **Step 1: Create a Free AWS Account**
     1. Visit the [AWS Free Tier page](https://aws.amazon.com/free/).
     2. Click **Create a Free Account**.

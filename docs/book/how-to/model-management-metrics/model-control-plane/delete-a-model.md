@@ -2,6 +2,11 @@
 description: Learn how to delete models.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Delete a model
 
 Deleting a model or a specific model version means removing all links between the Model entity
