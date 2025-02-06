@@ -22,7 +22,7 @@ from typing import Annotated
 @step(enable_cache=False)
 def compute_cache() -> Annotated[int, "cache_key"]:
     # Replace this with your custom logic, for example compute a key
-    # from the date of the latest avaialable data point
+    # from the date of the latest available data point
     cache_key = 27
 
     artifact_versions = Client().list_artifact_versions(
