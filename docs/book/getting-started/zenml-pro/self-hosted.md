@@ -974,444 +974,444 @@ Installing and updating on-prem ZenML Pro tenant servers is not automated, as it
 
 This will collect all the necessary data, then enroll the tenant in the organization and generate a Helm `values.yaml` file template that you can use to install the tenant server:
     
-    **[file: enroll-tenant.py]**
-    
-    ```python
-    import getpass
-    import sys
-    import uuid
-    from typing import List, Optional, Tuple
-    
-    import requests
-    
-    DEFAULT_API_ROOT_PATH = "/api/v1"
-    DEFAULT_REPOSITORY = (
-        "715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-pro-server"
+**[file: enroll-tenant.py]**
+
+```python
+import getpass
+import sys
+import uuid
+from typing import List, Optional, Tuple
+
+import requests
+
+DEFAULT_API_ROOT_PATH = "/api/v1"
+DEFAULT_REPOSITORY = (
+    "715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-pro-server"
+)
+
+# Configuration
+LOGIN_ENDPOINT = "/api/v1/auth/login"
+TENANT_ENDPOINT = "/api/v1/tenants"
+ORGANIZATION_ENDPOINT = "/api/v1/organizations"
+
+def login(base_url: str, username: str, password: str) -> str:
+    """Log in and return the authentication token."""
+    # Define the headers
+    headers = {
+        "accept": "application/json",
+        "Content-Type": "application/x-www-form-urlencoded",
+    }
+
+    # Define the data payload
+    data = {
+        "grant_type": "",
+        "username": username,
+        "password": password,
+        "client_id": "",
+        "client_secret": "",
+        "device_code": "",
+        "audience": "",
+    }
+
+    login_url = f"{base_url}{LOGIN_ENDPOINT}"
+    response = requests.post(login_url, headers=headers, data=data)
+
+    if response.status_code == 200:
+        return response.json().get("access_token")
+    else:
+        print(f"Login failed. Status code: {response.status_code}")
+        print(f"Response: {response.text}")
+        sys.exit(1)
+
+def tenant_exists(
+    token: str,
+    base_url: str,
+    org_id: str,
+    tenant_name: Optional[str] = None,
+) -> Optional[str]:
+    """Get a tenant with a given name or url."""
+    tenant_url = f"{base_url}{TENANT_ENDPOINT}"
+
+    # Define the headers
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {token}",
+    }
+    params = {
+        "organization_id": org_id,
+    }
+    if tenant_name:
+        params["tenant_name"] = tenant_name
+
+    # Create the tenant
+    response = requests.get(
+        tenant_url,
+        params=params,
+        headers=headers,
     )
-    
-    # Configuration
-    LOGIN_ENDPOINT = "/api/v1/auth/login"
-    TENANT_ENDPOINT = "/api/v1/tenants"
-    ORGANIZATION_ENDPOINT = "/api/v1/organizations"
-    
-    def login(base_url: str, username: str, password: str) -> str:
-        """Log in and return the authentication token."""
-        # Define the headers
-        headers = {
-            "accept": "application/json",
-            "Content-Type": "application/x-www-form-urlencoded",
-        }
-    
-        # Define the data payload
-        data = {
-            "grant_type": "",
-            "username": username,
-            "password": password,
-            "client_id": "",
-            "client_secret": "",
-            "device_code": "",
-            "audience": "",
-        }
-    
-        login_url = f"{base_url}{LOGIN_ENDPOINT}"
-        response = requests.post(login_url, headers=headers, data=data)
-    
+
+    if response.status_code == 200:
+        json_response = response.json()
+        if len(json_response) > 0:
+            return json_response[0]["id"]
+    else:
+        print(f"Failed to fetch tenants for organization: {org_id}")
+        print(f"Status code: {response.status_code}")
+        print(f"Response: {response.text}")
+        sys.exit(1)
+
+    return None
+
+def list_organizations(
+    token: str,
+    base_url: str,
+) -> List[Tuple[str, str]]:
+    """Get a list of organizations."""
+    organization_url = f"{base_url}{ORGANIZATION_ENDPOINT}"
+
+    # Define the headers
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {token}",
+    }
+
+    # Create the tenant
+    response = requests.get(
+        organization_url,
+        headers=headers,
+    )
+
+    if response.status_code == 200:
+        json_response = response.json()
+        return [(org["id"], org["name"]) for org in json_response]
+    else:
+        print("Failed to fetch organizations")
+        print(f"Status code: {response.status_code}")
+        print(f"Response: {response.text}")
+        sys.exit(1)
+
+def enroll_tenant(
+    token: str,
+    base_url: str,
+    org_id: str,
+    tenant_name: str,
+    delete_existing: Optional[str] = None,
+) -> dict:
+    """Enroll a tenant."""
+    tenant_url = f"{base_url}{TENANT_ENDPOINT}"
+
+    # Define the headers
+    headers = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {token}",
+    }
+
+    if delete_existing:
+        # Delete the tenant
+        response = requests.delete(
+            f"{tenant_url}/{delete_existing}",
+            headers=headers,
+        )
+
         if response.status_code == 200:
-            return response.json().get("access_token")
+            print(f"Tenant deleted successfully: {delete_existing}")
         else:
-            print(f"Login failed. Status code: {response.status_code}")
+            print(f"Failed to delete tenant: {delete_existing}")
+            print(f"Status code: {response.status_code}")
             print(f"Response: {response.text}")
             sys.exit(1)
-    
-    def tenant_exists(
-        token: str,
-        base_url: str,
-        org_id: str,
-        tenant_name: Optional[str] = None,
-    ) -> Optional[str]:
-        """Get a tenant with a given name or url."""
-        tenant_url = f"{base_url}{TENANT_ENDPOINT}"
-    
-        # Define the headers
-        headers = {
-            "accept": "application/json",
-            "Authorization": f"Bearer {token}",
-        }
-        params = {
+
+    # Enroll the tenant
+    response = requests.post(
+        tenant_url,
+        json={
+            "name": tenant_name,
             "organization_id": org_id,
-        }
-        if tenant_name:
-            params["tenant_name"] = tenant_name
-    
-        # Create the tenant
-        response = requests.get(
-            tenant_url,
-            params=params,
-            headers=headers,
-        )
-    
-        if response.status_code == 200:
-            json_response = response.json()
-            if len(json_response) > 0:
-                return json_response[0]["id"]
-        else:
-            print(f"Failed to fetch tenants for organization: {org_id}")
-            print(f"Status code: {response.status_code}")
-            print(f"Response: {response.text}")
-            sys.exit(1)
-    
-        return None
-    
-    def list_organizations(
-        token: str,
-        base_url: str,
-    ) -> List[Tuple[str, str]]:
-        """Get a list of organizations."""
-        organization_url = f"{base_url}{ORGANIZATION_ENDPOINT}"
-    
-        # Define the headers
-        headers = {
-            "accept": "application/json",
-            "Authorization": f"Bearer {token}",
-        }
-    
-        # Create the tenant
-        response = requests.get(
-            organization_url,
-            headers=headers,
-        )
-    
-        if response.status_code == 200:
-            json_response = response.json()
-            return [(org["id"], org["name"]) for org in json_response]
-        else:
-            print("Failed to fetch organizations")
-            print(f"Status code: {response.status_code}")
-            print(f"Response: {response.text}")
-            sys.exit(1)
-    
-    def enroll_tenant(
-        token: str,
-        base_url: str,
-        org_id: str,
-        tenant_name: str,
-        delete_existing: Optional[str] = None,
-    ) -> dict:
-        """Enroll a tenant."""
-        tenant_url = f"{base_url}{TENANT_ENDPOINT}"
-    
-        # Define the headers
-        headers = {
-            "accept": "application/json",
-            "Authorization": f"Bearer {token}",
-        }
-    
-        if delete_existing:
-            # Delete the tenant
-            response = requests.delete(
-                f"{tenant_url}/{delete_existing}",
-                headers=headers,
-            )
-    
-            if response.status_code == 200:
-                print(f"Tenant deleted successfully: {delete_existing}")
-            else:
-                print(f"Failed to delete tenant: {delete_existing}")
-                print(f"Status code: {response.status_code}")
-                print(f"Response: {response.text}")
-                sys.exit(1)
-    
-        # Enroll the tenant
-        response = requests.post(
-            tenant_url,
-            json={
-                "name": tenant_name,
-                "organization_id": org_id,
-            },
-            params={
-                "enroll": True,
-            },
-            headers=headers,
-        )
-    
-        if response.status_code == 200:
-            tenant = response.json()
-            tenant_id = tenant.get("id")
-            print(f"Tenant enrolled successfully: {tenant_name} [{tenant_id}]")
-    
-            return tenant
-        else:
-            print(f"Failed to enroll tenant: {tenant_name}")
-            print(f"Status code: {response.status_code}")
-            print(f"Response: {response.text}")
-            sys.exit(1)
-    
-    def prompt(
-        prompt_text: str,
-        default_value: Optional[str] = None,
-        password: bool = False,
-    ) -> str:
-        """Prompt the user with a default value."""
-    
-        while True:
-            if default_value:
-                text = f"{prompt_text} [{default_value}]: "
-            else:
-                text = f"{prompt_text}: "
-    
-            if password:
-                user_input = getpass.getpass(text)
-            else:
-                user_input = input(text)
-    
-            if user_input.strip() == "":
-                if default_value:
-                    return default_value
-                print("Please provide a value.")
-                continue
-            return user_input
-    
-    def get_tenant_config(
-        zenml_pro_url: str,
-        organization_id: str,
-        organization_name: str,
-        tenant_id: str,
-        tenant_name: str,
-        enrollment_key: str,
-        repository: str = DEFAULT_REPOSITORY,
-    ) -> str:
-        """Get the tenant configuration.
-    
-        Args:
-            tenant_id: Tenant ID.
-            tenant_name: Tenant name.
-            organization_name: Organization name.
-            enrollment_key: Enrollment key.
-            repository: Tenant docker image repository.
-    
-        Returns:
-            The tenant configuration.
-        """
-        # Generate a secret key to encrypt the SQL database secrets
-        encryption_key = f"{uuid.uuid4().hex}{uuid.uuid4().hex}"
-    
-        # Generate a hostname and database name from the tenant ID
-        short_tenant_id = tenant_id.replace("-", "")
-    
-        return f"""
-    zenml:
-        analyticsOptIn: false
-        threadPoolSize: 20
-        database:
-            maxOverflow: "-1"
-            poolSize: "10"
-            # TODO: use the actual database host and credentials
-            url: mysql://root:password@mysql.example.com:3306/zenml{short_tenant_id}
-        image:
-            # TODO: use your actual image repository (omit the tag, which is
-            # assumed to be the same as the helm chart version)
-            repository: { repository }
-        # TODO: use your actual server domain here
-        serverURL: https://zenml.{ short_tenant_id }.example.com
-        ingress:
-            enabled: true
-            # TODO: use your actual domain here
-            host: zenml.{ short_tenant_id }.example.com
-        pro:
-            apiURL: { zenml_pro_url }/api/v1
-            dashboardURL: { zenml_pro_url }
-            enabled: true
-            enrollmentKey: { enrollment_key }
-            organizationID: { organization_id }
-            organizationName: { organization_name }
-            tenantID: { tenant_id }
-            tenantName: { tenant_name }
-        replicaCount: 1
-        secretsStore:
-            sql:
-                encryptionKey: { encryption_key }
-            type: sql
-    
-    # TODO: these are the minimum resources required for the ZenML server. You can
-    # adjust them to your needs.
-    resources:
-        limits:
-            memory: 800Mi
-        requests:
-            cpu: 100m
-            memory: 450Mi
-    """
-    
-    def main() -> None:
-        zenml_pro_url = prompt(
-            "What is the URL of your ZenML Pro instance? (e.g. https://zenml-pro.mydomain.com)",
-        )
-        username = prompt(
-            "Enter the ZenML Pro admin account username",
-            default_value="admin@zenml.pro",
-        )
-        password = prompt(
-            "Enter the ZenML Pro admin account password", password=True
-        )
-    
-        # Login and get token
-        token = login(zenml_pro_url, username, password)
-        print("Login successful.")
-    
-        organizations = list_organizations(
-            token=token,
-            base_url=zenml_pro_url,
-        )
-        if len(organizations) == 0:
-            print("No organizations found. Please create an organization first.")
-            sys.exit(1)
-        elif len(organizations) == 1:
-            organization_id, organization_name = organizations[0]
-            confirm = prompt(
-                f"The following organization was found: {organization_name} [{organization_id}]. "
-                f"Use this organization? (y/n)",
-                default_value="n",
-            )
-            if confirm.lower() != "y":
-                print("Exiting.")
-                sys.exit(0)
-        else:
-            while True:
-                organizations = "\n".join(
-                    [f"{name} [{id}]" for id, name in organizations]
-                )
-                print(f"The following organizations are available:\n{organizations}")
-                organization_id = prompt(
-                    "Which organization ID should the tenant be enrolled in?",
-                )
-                if organization_id in [id for id, _ in organizations]:
-                    break
-                print("Invalid organization ID. Please try again.")
-    
-        # Generate a default tenant name
-        tenant_name = f"zenml-{str(uuid.uuid4())[:8]}"
-        tenant_name = prompt(
-            "Choose a name for the tenant, or press enter to use a generated name",
-            default_value=tenant_name,
-        )
-    
-        existing_tenant_id = tenant_exists(
-            token=token,
-            base_url=zenml_pro_url,
-            org_id=organization_id,
-            tenant_name=tenant_name,
-        )
-    
-        if existing_tenant_id:
-            confirm = prompt(
-                f"A tenant with name {tenant_name} already exists in the "
-                f"organization {organization_id}. Overwrite ? (y/n)",
-                default_value="n",
-            )
-            if confirm.lower() != "y":
-                print("Exiting.")
-                sys.exit(0)
-    
-        tenant = enroll_tenant(
-            token=token,
-            base_url=zenml_pro_url,
-            org_id=organization_id,
-            tenant_name=tenant_name,
-            delete_existing=existing_tenant_id,
-        )
-    
+        },
+        params={
+            "enroll": True,
+        },
+        headers=headers,
+    )
+
+    if response.status_code == 200:
+        tenant = response.json()
         tenant_id = tenant.get("id")
-        organization_name = tenant.get("organization").get("name")
-        enrollment_key = tenant.get("enrollment_key")
-    
-        tenant_config = get_tenant_config(
-            zenml_pro_url=zenml_pro_url,
-            tenant_name=tenant_name,
-            tenant_id=tenant_id,
-            organization_id=organization_id,
-            organization_name=organization_name,
-            enrollment_key=enrollment_key,
-        )
-    
-        # Write the tenant configuration to a file
-        values_file = f"zenml-{tenant_id}-values.yaml"
-        with open(values_file, "w") as file:
-            file.write(tenant_config)
-    
-        print(
-            f"""
-    The tenant was enrolled successfully. It can be accessed at:
-    
-    {zenml_pro_url}/organizations/{organization_id}/tenants/{tenant_id}
-    
-    The tenant server Helm values were written to: {values_file}
-    
-    Please note the TODOs in the file and adjust them to your needs.
-    
-    To install the tenant, run e.g.:
-    
-        helm --namespace zenml-pro-{tenant_id} upgrade --install --create-namespace \
-            zenml oci://public.ecr.aws/zenml/zenml --version <version> \
-            --values {values_file}
-    
+        print(f"Tenant enrolled successfully: {tenant_name} [{tenant_id}]")
+
+        return tenant
+    else:
+        print(f"Failed to enroll tenant: {tenant_name}")
+        print(f"Status code: {response.status_code}")
+        print(f"Response: {response.text}")
+        sys.exit(1)
+
+def prompt(
+    prompt_text: str,
+    default_value: Optional[str] = None,
+    password: bool = False,
+) -> str:
+    """Prompt the user with a default value."""
+
+    while True:
+        if default_value:
+            text = f"{prompt_text} [{default_value}]: "
+        else:
+            text = f"{prompt_text}: "
+
+        if password:
+            user_input = getpass.getpass(text)
+        else:
+            user_input = input(text)
+
+        if user_input.strip() == "":
+            if default_value:
+                return default_value
+            print("Please provide a value.")
+            continue
+        return user_input
+
+def get_tenant_config(
+    zenml_pro_url: str,
+    organization_id: str,
+    organization_name: str,
+    tenant_id: str,
+    tenant_name: str,
+    enrollment_key: str,
+    repository: str = DEFAULT_REPOSITORY,
+) -> str:
+    """Get the tenant configuration.
+
+    Args:
+        tenant_id: Tenant ID.
+        tenant_name: Tenant name.
+        organization_name: Organization name.
+        enrollment_key: Enrollment key.
+        repository: Tenant docker image repository.
+
+    Returns:
+        The tenant configuration.
     """
+    # Generate a secret key to encrypt the SQL database secrets
+    encryption_key = f"{uuid.uuid4().hex}{uuid.uuid4().hex}"
+
+    # Generate a hostname and database name from the tenant ID
+    short_tenant_id = tenant_id.replace("-", "")
+
+    return f"""
+zenml:
+    analyticsOptIn: false
+    threadPoolSize: 20
+    database:
+        maxOverflow: "-1"
+        poolSize: "10"
+        # TODO: use the actual database host and credentials
+        url: mysql://root:password@mysql.example.com:3306/zenml{short_tenant_id}
+    image:
+        # TODO: use your actual image repository (omit the tag, which is
+        # assumed to be the same as the helm chart version)
+        repository: { repository }
+    # TODO: use your actual server domain here
+    serverURL: https://zenml.{ short_tenant_id }.example.com
+    ingress:
+        enabled: true
+        # TODO: use your actual domain here
+        host: zenml.{ short_tenant_id }.example.com
+    pro:
+        apiURL: { zenml_pro_url }/api/v1
+        dashboardURL: { zenml_pro_url }
+        enabled: true
+        enrollmentKey: { enrollment_key }
+        organizationID: { organization_id }
+        organizationName: { organization_name }
+        tenantID: { tenant_id }
+        tenantName: { tenant_name }
+    replicaCount: 1
+    secretsStore:
+        sql:
+            encryptionKey: { encryption_key }
+        type: sql
+
+# TODO: these are the minimum resources required for the ZenML server. You can
+# adjust them to your needs.
+resources:
+    limits:
+        memory: 800Mi
+    requests:
+        cpu: 100m
+        memory: 450Mi
+"""
+
+def main() -> None:
+    zenml_pro_url = prompt(
+        "What is the URL of your ZenML Pro instance? (e.g. https://zenml-pro.mydomain.com)",
+    )
+    username = prompt(
+        "Enter the ZenML Pro admin account username",
+        default_value="admin@zenml.pro",
+    )
+    password = prompt(
+        "Enter the ZenML Pro admin account password", password=True
+    )
+
+    # Login and get token
+    token = login(zenml_pro_url, username, password)
+    print("Login successful.")
+
+    organizations = list_organizations(
+        token=token,
+        base_url=zenml_pro_url,
+    )
+    if len(organizations) == 0:
+        print("No organizations found. Please create an organization first.")
+        sys.exit(1)
+    elif len(organizations) == 1:
+        organization_id, organization_name = organizations[0]
+        confirm = prompt(
+            f"The following organization was found: {organization_name} [{organization_id}]. "
+            f"Use this organization? (y/n)",
+            default_value="n",
         )
-    
-    if __name__ == "__main__":
-        main()
-    
-    ```
+        if confirm.lower() != "y":
+            print("Exiting.")
+            sys.exit(0)
+    else:
+        while True:
+            organizations = "\n".join(
+                [f"{name} [{id}]" for id, name in organizations]
+            )
+            print(f"The following organizations are available:\n{organizations}")
+            organization_id = prompt(
+                "Which organization ID should the tenant be enrolled in?",
+            )
+            if organization_id in [id for id, _ in organizations]:
+                break
+            print("Invalid organization ID. Please try again.")
 
-    Running the script does two things:
+    # Generate a default tenant name
+    tenant_name = f"zenml-{str(uuid.uuid4())[:8]}"
+    tenant_name = prompt(
+        "Choose a name for the tenant, or press enter to use a generated name",
+        default_value=tenant_name,
+    )
 
-    - it creates a tenant entry in the ZenML Pro database. The tenant will remain in a "provisioning" state and won't be accessible until you actually install it using Helm.
-    - it outputs a YAML file with Helm chart configuration values that you can use to deploy the ZenML Pro tenant server in your Kubernetes cluster.
+    existing_tenant_id = tenant_exists(
+        token=token,
+        base_url=zenml_pro_url,
+        org_id=organization_id,
+        tenant_name=tenant_name,
+    )
 
-    This is an example of a generated Helm YAML file:
+    if existing_tenant_id:
+        confirm = prompt(
+            f"A tenant with name {tenant_name} already exists in the "
+            f"organization {organization_id}. Overwrite ? (y/n)",
+            default_value="n",
+        )
+        if confirm.lower() != "y":
+            print("Exiting.")
+            sys.exit(0)
 
-    ```yaml
-    zenml:
-        analyticsOptIn: false
-        threadPoolSize: 20
-        database:
-            maxOverflow: "-1"
-            poolSize: "10"
-            # TODO: use the actual database host and credentials
-            url: mysql://root:password@mysql.example.com:3306/zenmlf8e306ef90e74b2f99db28298834feed
-        image:
-            # TODO: use your actual image repository (omit the tag, which is
-            # assumed to be the same as the helm chart version)
-            repository: 715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-pro-server
-        # TODO: use your actual server domain here
-        serverURL: https://zenml.f8e306ef90e74b2f99db28298834feed.example.com
-        ingress:
-            enabled: true
-            # TODO: use your actual domain here
-            host: zenml.f8e306ef90e74b2f99db28298834feed.example.com
-        pro:
-            apiURL: https://zenml-pro.staging.cloudinfra.zenml.io/api/v1
-            dashboardURL: https://zenml-pro.staging.cloudinfra.zenml.io
-            enabled: true
-            enrollmentKey: Mt9Rw-Cdjlumel7GTCrbLpCQ5KhhtfmiDt43mVOYYsDKEjboGg9R46wWu53WQ20OzAC45u-ZmxVqQkMGj-0hWQ
-            organizationID: 0e99e236-0aeb-44cc-aff7-590e41c9a702
-            organizationName: MyOrg
-            tenantID: f8e306ef-90e7-4b2f-99db-28298834feed
-            tenantName: zenml-eab14ff8
-        replicaCount: 1
-        secretsStore:
-            sql:
-                encryptionKey: 155b20a388064423b1943d64f1686dd0d0aa6454be0a46839b1ee830f6565904
-            type: sql
+    tenant = enroll_tenant(
+        token=token,
+        base_url=zenml_pro_url,
+        org_id=organization_id,
+        tenant_name=tenant_name,
+        delete_existing=existing_tenant_id,
+    )
 
-    # TODO: these are the minimum resources required for the ZenML server. You can
-    # adjust them to your needs.
-    resources:
-        limits:
-            memory: 800Mi
-        requests:
-            cpu: 100m
-            memory: 450Mi
-    ```
+    tenant_id = tenant.get("id")
+    organization_name = tenant.get("organization").get("name")
+    enrollment_key = tenant.get("enrollment_key")
+
+    tenant_config = get_tenant_config(
+        zenml_pro_url=zenml_pro_url,
+        tenant_name=tenant_name,
+        tenant_id=tenant_id,
+        organization_id=organization_id,
+        organization_name=organization_name,
+        enrollment_key=enrollment_key,
+    )
+
+    # Write the tenant configuration to a file
+    values_file = f"zenml-{tenant_id}-values.yaml"
+    with open(values_file, "w") as file:
+        file.write(tenant_config)
+
+    print(
+        f"""
+The tenant was enrolled successfully. It can be accessed at:
+
+{zenml_pro_url}/organizations/{organization_id}/tenants/{tenant_id}
+
+The tenant server Helm values were written to: {values_file}
+
+Please note the TODOs in the file and adjust them to your needs.
+
+To install the tenant, run e.g.:
+
+    helm --namespace zenml-pro-{tenant_id} upgrade --install --create-namespace \
+        zenml oci://public.ecr.aws/zenml/zenml --version <version> \
+        --values {values_file}
+
+"""
+    )
+
+if __name__ == "__main__":
+    main()
+
+```
+
+Running the script does two things:
+
+- it creates a tenant entry in the ZenML Pro database. The tenant will remain in a "provisioning" state and won't be accessible until you actually install it using Helm.
+- it outputs a YAML file with Helm chart configuration values that you can use to deploy the ZenML Pro tenant server in your Kubernetes cluster.
+
+This is an example of a generated Helm YAML file:
+
+```yaml
+zenml:
+    analyticsOptIn: false
+    threadPoolSize: 20
+    database:
+        maxOverflow: "-1"
+        poolSize: "10"
+        # TODO: use the actual database host and credentials
+        url: mysql://root:password@mysql.example.com:3306/zenmlf8e306ef90e74b2f99db28298834feed
+    image:
+        # TODO: use your actual image repository (omit the tag, which is
+        # assumed to be the same as the helm chart version)
+        repository: 715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-pro-server
+    # TODO: use your actual server domain here
+    serverURL: https://zenml.f8e306ef90e74b2f99db28298834feed.example.com
+    ingress:
+        enabled: true
+        # TODO: use your actual domain here
+        host: zenml.f8e306ef90e74b2f99db28298834feed.example.com
+    pro:
+        apiURL: https://zenml-pro.staging.cloudinfra.zenml.io/api/v1
+        dashboardURL: https://zenml-pro.staging.cloudinfra.zenml.io
+        enabled: true
+        enrollmentKey: Mt9Rw-Cdjlumel7GTCrbLpCQ5KhhtfmiDt43mVOYYsDKEjboGg9R46wWu53WQ20OzAC45u-ZmxVqQkMGj-0hWQ
+        organizationID: 0e99e236-0aeb-44cc-aff7-590e41c9a702
+        organizationName: MyOrg
+        tenantID: f8e306ef-90e7-4b2f-99db-28298834feed
+        tenantName: zenml-eab14ff8
+    replicaCount: 1
+    secretsStore:
+        sql:
+            encryptionKey: 155b20a388064423b1943d64f1686dd0d0aa6454be0a46839b1ee830f6565904
+        type: sql
+
+# TODO: these are the minimum resources required for the ZenML server. You can
+# adjust them to your needs.
+resources:
+    limits:
+        memory: 800Mi
+    requests:
+        cpu: 100m
+        memory: 450Mi
+```
 
 2. **Configure the ZenML Pro tenant Helm chart**
 
@@ -1554,20 +1554,20 @@ Always upgrade the ZenML Pro Control Plane first, then upgrade the tenant server
 
 4. **Upgrade ZenML Pro Tenant Servers**
    * For each tenant, perform either:
-   * Option A - In-place upgrade with existing values. Use this if you don't need to change any configuration values as part of the upgrade:
-     ```bash
-     helm --namespace zenml-pro-<tenant-id> upgrade zenml oci://public.ecr.aws/zenml/zenml \
-       --version <new-version> --reuse-values
-     ```
-   * Option B - Retrieve, modify and reapply values, if necessary. Use this if you need to change any configuration values as part of the upgrade or if you are performing a configuration update without upgrading the ZenML Pro Tenant Server.
-     ```bash
-     # Get the current values
-     helm --namespace zenml-pro-<tenant-id> get values zenml > current-tenant-values.yaml
-     
-     # Edit current-tenant-values.yaml if needed, then upgrade
-     helm --namespace zenml-pro-<tenant-id> upgrade zenml oci://public.ecr.aws/zenml/zenml \
-       --version <new-version> --values current-tenant-values.yaml
-     ```
+       * Option A - In-place upgrade with existing values. Use this if you don't need to change any configuration values as part of the upgrade:
+           ```bash
+           helm --namespace zenml-pro-<tenant-id> upgrade zenml oci://public.ecr.aws/zenml/zenml \
+           --version <new-version> --reuse-values
+           ```
+       * Option B - Retrieve, modify and reapply values, if necessary. Use this if you need to change any configuration values as part of the upgrade or if you are performing a configuration update without upgrading the ZenML Pro Tenant Server.
+           ```bash
+           # Get the current values
+           helm --namespace zenml-pro-<tenant-id> get values zenml > current-tenant-values.yaml
+           
+           # Edit current-tenant-values.yaml if needed, then upgrade
+           helm --namespace zenml-pro-<tenant-id> upgrade zenml oci://public.ecr.aws/zenml/zenml \
+           --version <new-version> --values current-tenant-values.yaml
+           ```
 
 
 
