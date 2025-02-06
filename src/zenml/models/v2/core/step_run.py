@@ -16,6 +16,7 @@
 from datetime import datetime
 from typing import (
     TYPE_CHECKING,
+    Any,
     ClassVar,
     Dict,
     List,
@@ -574,7 +575,7 @@ class StepRunFilter(WorkspaceScopedFilter):
         default=None,
         description="Name/ID of the model associated with the step run.",
     )
-    run_metadata: Optional[Dict[str, str]] = Field(
+    run_metadata: Optional[Dict[str, Any]] = Field(
         default=None,
         description="The run_metadata to filter the step runs by.",
     )
@@ -619,13 +620,19 @@ class StepRunFilter(WorkspaceScopedFilter):
                 additional_filter = and_(
                     RunMetadataResourceSchema.resource_id == StepRunSchema.id,
                     RunMetadataResourceSchema.resource_type
-                    == MetadataResourceTypes.STEP_RUN,
+                    == MetadataResourceTypes.STEP_RUN.value,
                     RunMetadataResourceSchema.run_metadata_id
                     == RunMetadataSchema.id,
+                    self.generate_custom_query_conditions_for_column(
+                        value=key,
+                        table=RunMetadataSchema,
+                        column="key",
+                    ),
                     self.generate_custom_query_conditions_for_column(
                         value=value,
                         table=RunMetadataSchema,
                         column="value",
+                        json_encode_value=True,
                     ),
                 )
                 custom_filters.append(additional_filter)

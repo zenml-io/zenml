@@ -18,7 +18,8 @@ from uuid import UUID
 
 from pydantic import ValidationError
 from sqlalchemy import TEXT, Column, UniqueConstraint
-from sqlmodel import Field, Relationship
+from sqlalchemy.orm import object_session
+from sqlmodel import Field, Relationship, desc, select
 
 from zenml.config.source import Source
 from zenml.enums import (
@@ -90,6 +91,32 @@ class ArtifactSchema(NamedSchema, table=True):
         ),
     )
 
+    @property
+    def latest_version(self) -> Optional["ArtifactVersionSchema"]:
+        """Fetch the latest version for this artifact.
+
+        Raises:
+            RuntimeError: If no session for the schema exists.
+
+        Returns:
+            The latest version for this artifact.
+        """
+        if session := object_session(self):
+            return (
+                session.execute(
+                    select(ArtifactVersionSchema)
+                    .where(ArtifactVersionSchema.artifact_id == self.id)
+                    .order_by(desc(ArtifactVersionSchema.created))
+                    .limit(1)
+                )
+                .scalars()
+                .one_or_none()
+            )
+        else:
+            raise RuntimeError(
+                "Missing DB session to fetch latest version for artifact."
+            )
+
     @classmethod
     def from_request(
         cls,
@@ -127,9 +154,9 @@ class ArtifactSchema(NamedSchema, table=True):
             The created `ArtifactResponse`.
         """
         latest_id, latest_name = None, None
-        if self.versions:
-            latest_version = max(self.versions, key=lambda x: x.created)
-            latest_id, latest_name = latest_version.id, latest_version.version
+        if latest_version := self.latest_version:
+            latest_id = latest_version.id
+            latest_name = latest_version.version
 
         # Create the body of the model
         body = ArtifactResponseBody(
