@@ -74,6 +74,7 @@
 * [Manage your ZenML server](how-to/manage-zenml-server/README.md)
   * [Connect to a server](how-to/manage-zenml-server/connecting-to-zenml/README.md)
     * [Connect in with your User (interactive)](how-to/manage-zenml-server/connecting-to-zenml/connect-in-with-your-user-interactive.md)
+    * [Connect with an API Token](how-to/manage-zenml-server/connecting-to-zenml/connect-with-an-api-token.md)
     * [Connect with a Service Account](how-to/manage-zenml-server/connecting-to-zenml/connect-with-a-service-account.md)
   * [Upgrade your ZenML server](how-to/manage-zenml-server/upgrade-zenml-server.md)
   * [Best practices for upgrading ZenML](how-to/manage-zenml-server/best-practices-upgrading-zenml.md)

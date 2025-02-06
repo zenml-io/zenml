@@ -27,7 +27,50 @@ you can use the same browser window to authenticate requests to your ZenML Pro A
 For example, for the SaaS variant, you can access the docs here: [https://cloudapi.zenml.io](https://cloudapi.zenml.io). You can make requests
 by being logged into ZenML Pro at [https://cloud.zenml.io](https://cloud.zenml.io).
 
-Programmatic access is not possible at the moment.
+### Programmatic access with API tokens
+
+API tokens provide a way to authenticate with the ZenML Pro API for temporary automation tasks. These tokens are scoped to your user account and are valid for a maximum of 1 hour. You can use the generated API tokens for programmatic access to the ZenML Pro REST API. This is the quickest way to access the ZenML Pro API programmatically.
+
+To generate a new API token for the ZenML Pro API:
+
+1. Navigate to the OrganizationSettings page in your ZenML Pro dashboard
+2. Select "API Tokens" from the left sidebar
+
+    ![API Tokens](../../.gitbook/assets/zenml-pro-api-token-01.png)
+
+3. Click the "Create new token" button. Once generated, you'll see a dialog showing your new API token. 
+
+    ![API Tokens](../../.gitbook/assets/zenml-pro-api-token-02.png)
+
+4. Simply use the API token as the bearer token in your HTTP requests. For example, you can use the following command to check your current user:
+
+  * using curl:
+
+  ```bash
+  curl -H "Authorization: Bearer YOUR_API_TOKEN" https://cloudapi.zenml.io/users/me
+  ```
+
+  * using wget:
+
+  ```bash
+  wget -qO- --header="Authorization: Bearer YOUR_API_TOKEN" https://cloudapi.zenml.io/users/me
+  ```
+
+{% hint style="info" %}
+**Important Notes**
+
+- API tokens expire after 1 hour and cannot be retrieved after initial generation
+- Tokens are scoped to your user account and inherit your permissions
+{% endhint %}
+
+### Tenant programmatic access
+
+Programmatic access to the ZenML Pro tenant API is done essentially the same as for the ZenML OSS server API. You can use one of two methods:
+
+* [Generate and use temporary API tokens](../../reference/api-reference.md#using-a-short-lived-api-token)
+* [Create a service account and use its API key](../../reference/api-reference.md#using-a-service-account-and-an-api-key)
+
+Please consult the indicated sections for more information.
 
 ## Key API Endpoints
 
