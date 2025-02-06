@@ -15,7 +15,7 @@ def upload_to_huggingface():
     )
 
     # Upload repomix outputs
-    for filename in ["component-guide.txt", "basics.txt", "llms-full.txt"]:
+    for filename in ["component-guide.txt", "llms.txt", "llms-full.txt"]:
         api.upload_file(
             path_or_fileobj=f"repomix-outputs/{filename}",
             path_in_repo=filename,
