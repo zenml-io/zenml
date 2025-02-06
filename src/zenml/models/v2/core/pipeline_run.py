@@ -35,12 +35,13 @@ from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.base.scoped import (
+    TaggableFilter,
+    WorkspaceScopedFilter,
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponseResources,
-    WorkspaceScopedTaggableFilter,
 )
 from zenml.models.v2.core.model_version import ModelVersionResponse
 from zenml.models.v2.core.tag import TagResponse
@@ -589,20 +590,21 @@ class PipelineRunResponse(
 # ------------------ Filter Model ------------------
 
 
-class PipelineRunFilter(WorkspaceScopedTaggableFilter):
+class PipelineRunFilter(WorkspaceScopedFilter, TaggableFilter):
     """Model to enable advanced filtering of all Workspaces."""
 
     CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
-        *WorkspaceScopedTaggableFilter.CUSTOM_SORTING_OPTIONS,
+        *WorkspaceScopedFilter.CUSTOM_SORTING_OPTIONS,
+        *TaggableFilter.CUSTOM_SORTING_OPTIONS,
         "tag",
         "stack",
         "pipeline",
         "model",
         "model_version",
     ]
-
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *WorkspaceScopedTaggableFilter.FILTER_EXCLUDE_FIELDS,
+        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
+        *TaggableFilter.FILTER_EXCLUDE_FIELDS,
         "unlisted",
         "code_repository_id",
         "build_id",
@@ -618,6 +620,11 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
         "templatable",
         "run_metadata",
     ]
+    CLI_EXCLUDE_FIELDS = [
+        *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
+        *TaggableFilter.CLI_EXCLUDE_FIELDS,
+    ]
+
     name: Optional[str] = Field(
         default=None,
         description="Name of the Pipeline Run",
@@ -681,7 +688,7 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
         union_mode="left_to_right",
     )
     unlisted: Optional[bool] = None
-    run_metadata: Optional[Dict[str, str]] = Field(
+    run_metadata: Optional[Dict[str, Any]] = Field(
         default=None,
         description="The run_metadata to filter the pipeline runs by.",
     )
@@ -908,13 +915,19 @@ class PipelineRunFilter(WorkspaceScopedTaggableFilter):
                     RunMetadataResourceSchema.resource_id
                     == PipelineRunSchema.id,
                     RunMetadataResourceSchema.resource_type
-                    == MetadataResourceTypes.PIPELINE_RUN,
+                    == MetadataResourceTypes.PIPELINE_RUN.value,
                     RunMetadataResourceSchema.run_metadata_id
                     == RunMetadataSchema.id,
+                    self.generate_custom_query_conditions_for_column(
+                        value=key,
+                        table=RunMetadataSchema,
+                        column="key",
+                    ),
                     self.generate_custom_query_conditions_for_column(
                         value=value,
                         table=RunMetadataSchema,
                         column="value",
+                        json_encode_value=True,
                     ),
                 )
                 custom_filters.append(additional_filter)

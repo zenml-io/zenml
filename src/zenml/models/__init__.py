@@ -28,6 +28,7 @@ from zenml.models.v2.base.base import (
     BaseDatedResponseBody,
 )
 from zenml.models.v2.base.scoped import (
+    TaggableFilter,
     UserScopedRequest,
     UserScopedFilter,
     UserScopedResponse,
@@ -39,7 +40,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseBody,
     WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponseResources,
-    WorkspaceScopedTaggableFilter,
+    WorkspaceScopedFilter,
 )
 from zenml.models.v2.base.filter import (
     BaseFilter,
@@ -497,12 +498,13 @@ __all__ = [
     "WorkspaceScopedResponseBody",
     "WorkspaceScopedResponseMetadata",
     "WorkspaceScopedResponseResources",
-    "WorkspaceScopedTaggableFilter",
+    "WorkspaceScopedFilter",
     "BaseFilter",
     "StrFilter",
     "BoolFilter",
     "NumericFilter",
     "UUIDFilter",
+    "TaggableFilter",
     "Page",
     # V2 Core
     "ActionFilter",

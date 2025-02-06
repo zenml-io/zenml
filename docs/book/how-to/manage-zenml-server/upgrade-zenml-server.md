@@ -43,30 +43,32 @@ Optionally also perform a backup before the upgrade.
 {% endtab %}
 
 {% tab title="Kubernetes with Helm" %}
-To upgrade your ZenML server Helm release to a new version, follow the steps below:
+To upgrade your ZenML server Helm release to a new version, follow the steps below.
 
-* Pull the latest version of the Helm chart from the ZenML GitHub repository, or a version of your choice, e.g.:
+## Simple in-place upgrade
+
+If you don't need to change any configuration values, you can perform a simple in-place upgrade that reuses your existing configuration:
 
 ```bash
-# If you haven't cloned the ZenML repository yet
-git clone https://github.com/zenml-io/zenml.git
-# Optional: checkout an explicit release tag
-# git checkout 0.21.1
-git pull
-# Switch to the directory that hosts the helm chart
-cd src/zenml/zen_server/deploy/helm/
+helm -n <namespace> upgrade zenml-server oci://public.ecr.aws/zenml/zenml --version <VERSION> --reuse-values
 ```
 
-* Simply reuse the `custom-values.yaml` file that you used during the previous installation or upgrade. If you don't
-  have it handy, you can extract the values from the ZenML Helm deployment using the following command:
+## Upgrade with configuration changes
+
+If you need to modify your ZenML server configuration during the upgrade, follow these steps instead:
+
+* Extract your current configuration values to a file:
 
   ```bash
   helm -n <namespace> get values zenml-server > custom-values.yaml
   ```
-* Upgrade the release using your modified values file. Make sure you are in the directory that hosts the helm chart:
+
+* Make the necessary changes to your `custom-values.yaml` file (make sure they are compatible with the new version)
+
+* Upgrade the release using your modified values file:
 
   ```bash
-  helm -n <namespace> upgrade zenml-server . -f custom-values.yaml
+  helm -n <namespace> upgrade zenml-server oci://public.ecr.aws/zenml/zenml --version <VERSION> -f custom-values.yaml
   ```
 
 {% hint style="info" %}
