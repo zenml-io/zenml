@@ -13,13 +13,16 @@
 #  permissions and limitations under the License.
 """Implementation of the Baseten model deployer pipeline step."""
 
-from typing import cast
+from typing import cast, Optional
 
 from zenml import get_step_context, step
 from zenml.integrations.baseten.model_deployers import BasetenModelDeployer
-from zenml.integrations.baseten.services import BasetenDeploymentService
+from zenml.integrations.baseten.services import (
+    BasetenDeploymentConfig,
+    BasetenDeploymentService,
+)
 from zenml.logger import get_logger
-from zenml.services.service import BaseService
+from zenml.services import BaseService
 
 logger = get_logger(__name__)
 
@@ -28,8 +31,10 @@ logger = get_logger(__name__)
 def baseten_model_deployer_step(
     truss_dir: str,
     model_name: str,
+    framework: str = "sklearn",
     deploy_decision: bool = True,
     timeout: int = 300,
+    replace: bool = True,
 ) -> BaseService:
     """Model deployer pipeline step for Baseten.
 
@@ -38,66 +43,61 @@ def baseten_model_deployer_step(
     Args:
         truss_dir: The path to the Truss directory.
         model_name: The name of the model.
+        framework: The framework/type of the model (e.g., sklearn).
         deploy_decision: Whether to deploy the model or not.
         timeout: The timeout in seconds.
+        replace: Whether to replace an existing deployment.
 
     Returns:
         The Baseten deployment service.
     """
-    # get the current active model deployer
+    if not deploy_decision:
+        logger.info("Skipping deployment due to deploy_decision=False")
+        return None
+
+    # Get the current active model deployer
     model_deployer = cast(
         BasetenModelDeployer, BasetenModelDeployer.get_active_model_deployer()
     )
 
-    # get pipeline name, step name and run id
+    # Get pipeline name, step name and run id
     step_context = get_step_context()
     pipeline_name = step_context.pipeline.name
     step_name = step_context.step_run.name
 
-    # Create a config dict
-    config = {
-        "model_name": model_name,
-        "model_uri": truss_dir,
-        "pipeline_name": pipeline_name,
-        "run_name": step_context.run_name,
-        "pipeline_step_name": step_name,
-    }
-
-    # fetch existing services with same pipeline name, step name and model name
-    existing_services = model_deployer.find_model_server(
-        pipeline_name=pipeline_name,
-        pipeline_step_name=step_name,
-        model_name=model_name,
-    )
-    # create a new model deployment and replace an old one if it exists
-    if not deploy_decision:
+    # If replace=False, check for existing deployments
+    if not replace:
+        existing_services = model_deployer.find_model_server(
+            pipeline_name=pipeline_name,
+            pipeline_step_name=step_name,
+            model_name=model_name,
+        )
         if existing_services:
             logger.info(
-                f"Skipping model deployment because the model quality does not "
-                f"meet the criteria. Reusing last model server deployed by step "
-                f"'{step_name}' and pipeline '{pipeline_name}' for model "
-                f"'{model_name}'..."
+                f"Found existing deployment for model '{model_name}' and "
+                f"pipeline step '{step_name}'. Skipping deployment."
             )
-            assert isinstance(existing_services[0], BasetenDeploymentService)
-            if not existing_services[0].is_running:
-                existing_services[0].start(timeout=timeout)
             return existing_services[0]
-        else:
-            logger.info(
-                f"Skipping model deployment because the model quality does not "
-                f"meet the criteria and no existing service was found."
-            )
-            return None
 
+    # Create deployment config
+    config = BasetenDeploymentConfig(
+        name=model_name,
+        uri=truss_dir,
+        framework=framework,
+        pipeline_name=pipeline_name,
+        run_name=step_context.run_name,
+        pipeline_step_name=step_name,
+    )
+
+    # Deploy the model
+    logger.info(f"Deploying model '{model_name}' to Baseten...")
     service = model_deployer.deploy_model(
-        replace=True,
         config=config,
         timeout=timeout,
     )
 
     logger.info(
-        f"Baseten deployment service started and reachable at:\n"
-        f"   {service.prediction_url}\n"
+        f"Model '{model_name}' successfully deployed to Baseten. "
+        f"Service ID: {service.id}"
     )
-
     return service

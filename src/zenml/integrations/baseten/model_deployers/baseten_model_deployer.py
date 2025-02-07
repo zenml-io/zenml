@@ -3,9 +3,10 @@
 import os
 import subprocess
 import time
-from typing import Any, ClassVar, Dict, Optional, Type, cast
-from uuid import UUID, uuid4
+from typing import Any, ClassVar, Dict, Optional, Type, cast, List
+from uuid import UUID
 
+import requests
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.integrations.baseten.constants import BASETEN_MODEL_DEPLOYER_FLAVOR
@@ -16,13 +17,19 @@ from zenml.integrations.baseten.flavors.baseten_model_deployer_flavor import (
 from zenml.integrations.baseten.services.baseten_deployment import (
     BasetenDeploymentConfig,
     BasetenDeploymentService,
+    BasetenEndpoint,
+    BasetenEndpointConfig,
+    BasetenEndpointStatus,
 )
 from zenml.logger import get_logger
 from zenml.model_deployers import BaseModelDeployer, BaseModelDeployerFlavor
-from zenml.models import ServiceRequest
-from zenml.services import BaseService
+from zenml.services import (
+    ServiceEndpointProtocol,
+    ServiceState,
+    ServiceStatus,
+    ServiceType,
+)
 from zenml.utils import source_utils
-from zenml.utils.io_utils import create_dir_recursive_if_not_exists
 
 logger = get_logger(__name__)
 
@@ -36,55 +43,20 @@ class BasetenModelDeployer(BaseModelDeployer):
     FLAVOR: ClassVar[Type[BaseModelDeployerFlavor]] = (
         BasetenModelDeployerFlavor
     )
-
-    _service_path: Optional[str] = None
+    SERVICE_TYPE: ClassVar[ServiceType] = ServiceType(
+        name="baseten",
+        type="model-serving",
+        flavor="baseten",
+        description="Baseten model deployment service",
+    )
 
     @property
     def config(self) -> BasetenModelDeployerConfig:
-        """Returns the config for this model deployer.
-
-        Returns:
-            The config for this model deployer.
-        """
+        """Returns the config for this model deployer."""
         return cast(BasetenModelDeployerConfig, self._config)
 
-    @staticmethod
-    def get_service_path(id_: UUID) -> str:
-        """Get the path where local Baseten service information is stored.
-
-        Args:
-            id_: The ID of the Baseten model deployer.
-
-        Returns:
-            The service path.
-        """
-        service_path = os.path.join(
-            GlobalConfiguration().local_stores_path,
-            str(id_),
-        )
-        create_dir_recursive_if_not_exists(service_path)
-        return service_path
-
-    @property
-    def local_path(self) -> str:
-        """Returns the path to the root directory.
-
-        Returns:
-            The path to the local service root directory.
-        """
-        if self._service_path is not None:
-            return self._service_path
-
-        if self.config.service_path:
-            self._service_path = self.config.service_path
-        else:
-            self._service_path = self.get_service_path(self.id)
-
-        create_dir_recursive_if_not_exists(self._service_path)
-        return self._service_path
-
-    def _setup_truss_config(self, api_key: str) -> None:
-        """Set up the Truss configuration file.
+    def _setup_truss_auth(self, api_key: str) -> None:
+        """Set up Truss authentication.
 
         Args:
             api_key: The Baseten API key.
@@ -99,271 +71,176 @@ remote_url = https://app.baseten.co
         with open(truss_config_path, "w") as f:
             f.write(truss_config)
 
-        logger.info("Created Truss configuration file")
+        logger.info("Set up Truss authentication")
 
-    def _create_truss_config_yaml(
-        self, truss_dir: str, model_name: str
-    ) -> None:
-        """Create the config.yaml file for the Truss.
+    def _create_deployment_service(
+        self,
+        id: UUID,
+        config: BasetenDeploymentConfig,
+        model_id: str,
+        endpoint_url: str,
+    ) -> BasetenDeploymentService:
+        """Create a new deployment service.
 
         Args:
-            truss_dir: The Truss directory.
-            model_name: The name of the model.
+            id: The UUID for the service.
+            config: The deployment configuration.
+            model_id: The Baseten model ID.
+            endpoint_url: The deployment endpoint URL.
+
+        Returns:
+            The created deployment service.
         """
-        config = {
-            "model_name": model_name,
-            "description": f"ZenML deployed model: {model_name}",
-            "python_version": "py39",  # Use Python 3.9 as it's stable and widely supported
-            "model_class_name": "Model",  # Default model class name
-            "requirements": [
-                "scikit-learn",  # Add sklearn as a requirement
-                "numpy",
-            ],
-            "resources": {
-                "cpu": "1",
-                "memory": "2Gi",
-                "use_gpu": False,
-            },
-            "external_package_dirs": [],
-        }
+        # Update config with model ID
+        config.baseten_id = model_id
+        config.baseten_deployment_id = (
+            model_id  # In Baseten, these are the same
+        )
 
-        config_path = os.path.join(truss_dir, "config.yaml")
-        with open(config_path, "w") as f:
-            import yaml
+        # Create endpoint
+        endpoint = BasetenEndpoint(
+            config=BasetenEndpointConfig(),
+            status=BasetenEndpointStatus(),
+        )
+        endpoint.prepare_for_deployment(endpoint_url)
 
-            yaml.dump(config, f, default_flow_style=False)
+        # Create service status
+        status = ServiceStatus(
+            state=ServiceState.ACTIVE,
+            last_error="",
+            last_update=None,
+        )
 
-        logger.info(f"Created Truss config.yaml at {config_path}")
+        # Create service
+        service = BasetenDeploymentService(
+            id=id,
+            config=config,
+            endpoint=endpoint,
+            status=status,
+        )
 
-        # Also ensure we have a model.py file with the predict method
-        model_dir = os.path.join(truss_dir, "model")
-        os.makedirs(model_dir, exist_ok=True)
+        return service
 
-        model_py_content = '''
-import numpy as np
-from typing import Dict, Any
-
-class Model:
-    def __init__(self, **kwargs):
-        self._model = None
-        self._model_path = kwargs.get('model_path')
-
-    def load(self):
-        """Load the model from the serialized format"""
-        import joblib
-        self._model = joblib.load(self._model_path)
-
-    def predict(self, request: Dict[str, Any]) -> Dict[str, Any]:
-        """Predict with the model"""
-        if not self._model:
-            self.load()
-            
-        # Extract features from the request
-        features = np.array(request["instances"])
-        
-        # Make prediction
-        predictions = self._model.predict(features)
-        
-        # Return predictions
-        return {"predictions": predictions.tolist()}
-'''
-
-        model_py_path = os.path.join(model_dir, "model.py")
-        with open(model_py_path, "w") as f:
-            f.write(model_py_content.strip())
-
-        logger.info(f"Created model.py at {model_py_path}")
-
-    def deploy_model(
+    def perform_deploy_model(
         self,
-        replace: bool,
-        config: Dict[str, Any],
+        id: UUID,
+        config: BasetenDeploymentConfig,
         timeout: int = DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT,
-        service_type: Optional[str] = None,
-    ) -> BaseService:
+    ) -> BasetenDeploymentService:
         """Deploy a model to Baseten.
 
         Args:
-            replace: Whether to replace an existing deployment.
-            config: Configuration for the deployment.
-            timeout: Timeout in seconds.
-            service_type: Optional service type.
+            id: The UUID to use for the service.
+            config: The deployment configuration.
+            timeout: The timeout in seconds.
 
         Returns:
             The deployment service.
 
         Raises:
-            RuntimeError: If the deployment fails.
+            RuntimeError: If deployment fails.
         """
         logger.info(
-            f"Starting model deployment with config: {config}, replace={replace}"
+            f"Starting deployment with config: {config}, using service ID: {id}"
         )
 
-        # Create a deployment config from the input config
-        deployment_config = BasetenDeploymentConfig(
-            model_name=config.get("model_name", "zenml_model"),
-            model_uri=config.get("model_uri"),
-            model_type=config.get("model_type", "sklearn"),
-            pipeline_name=config.get("pipeline_name"),
-            run_name=config.get("run_name"),
-            pipeline_step_name=config.get("pipeline_step_name"),
-            root_runtime_path=self.local_path,
-        )
-        logger.info(f"Created deployment config: {deployment_config}")
-
-        # Call the internal implementation
-        return self.perform_deploy_model(
-            config=deployment_config,
-            replace=replace,
-        )
-
-    def perform_deploy_model(
-        self,
-        config: BasetenDeploymentConfig,
-        replace: bool = True,
-    ) -> BasetenDeploymentService:
-        """Deploy a model to Baseten."""
-        logger.info(
-            f"Starting model deployment with config: {config}, replace={replace}"
-        )
-
-        # Create a new deployment configuration
-        deployment_config = BasetenDeploymentConfig(**config.model_dump())
-        logger.info(f"Created deployment config: {deployment_config}")
-
-        # Generate a unique ID for the service
-        service_id = str(uuid4())
-        logger.info(f"Starting deployment with ID {service_id}")
-
-        # Get API key from config or environment
+        # Get API key and set up auth
         baseten_api_key = self.config.baseten_api_key
         if not baseten_api_key:
             raise RuntimeError(
-                "No Baseten API key found. Please set it in the model deployer config or provide it as a secret."
+                "No Baseten API key found. Please set it in the model deployer config."
             )
-        logger.info("Found Baseten API key")
+        self._setup_truss_auth(baseten_api_key)
 
-        # Set up Truss configuration
-        self._setup_truss_config(baseten_api_key)
+        # Validate Truss directory exists
+        truss_dir = config.uri
+        if not os.path.exists(truss_dir):
+            raise RuntimeError(f"Truss directory not found: {truss_dir}")
 
-        # Validate Truss directory
-        truss_dir = config.model_uri
-        if not truss_dir:
-            raise RuntimeError(
-                "No Truss directory specified. Please provide a 'model_uri' in the config or step."
-            )
-        logger.info(f"Using Truss directory: {truss_dir}")
-
-        # Create Truss config.yaml
-        self._create_truss_config_yaml(truss_dir, config.model_name)
-
-        # temporarily consider adding `unset AWS_PROFILE`
-
-        # Push to Baseten
+        # Deploy to Baseten
         cmd = [
             "truss",
             "push",
             truss_dir,
-            "--wait",  # Wait for deployment to complete
+            "--wait",
             "--model-name",
-            config.model_name,  # Set the model name
+            config.name,
         ]
         logger.info(f"Running command: {' '.join(cmd)}")
 
-        logger.info(f"Deploying model to Baseten: {config.model_name}")
         proc = subprocess.run(cmd, capture_output=True, text=True)
-
-        # Log the full output for debugging
         logger.debug(f"Command stdout: {proc.stdout}")
         logger.debug(f"Command stderr: {proc.stderr}")
 
         if proc.returncode != 0:
-            error_msg = (
-                f"Failed to deploy model to Baseten:\nStdout: {proc.stdout}\n"
-                f"Stderr: {proc.stderr}"
+            raise RuntimeError(
+                f"Failed to deploy to Baseten:\nStdout: {proc.stdout}\nStderr: {proc.stderr}"
             )
-            logger.error(error_msg)
-            raise RuntimeError(error_msg)
 
-        logger.info("Model pushed to Baseten successfully")
+        # Parse deployment info
+        model_id = None
+        endpoint_url = None
+        for line in proc.stdout.split("\n"):
+            if "Model ID:" in line:
+                model_id = line.split("Model ID:")[1].strip()
+            elif "Deployment URL:" in line:
+                endpoint_url = line.split("Deployment URL:")[1].strip()
 
-        # Wait for a bit to ensure the model is fully deployed
-        logger.info("Waiting for model to be fully deployed...")
-        time.sleep(10)  # Give Baseten some time to complete the deployment
+        if not model_id or not endpoint_url:
+            raise RuntimeError(
+                "Failed to extract model ID or endpoint from deployment output"
+            )
 
-        # Generate consistent IDs based on service_id and model_name
-        model_id = f"{service_id}-{config.model_name}"
-        deployment_id = model_id
+        logger.info(f"Model ID: {model_id}")
+        logger.info(f"Endpoint URL: {endpoint_url}")
 
-        logger.info(
-            f"Using generated Model ID: {model_id}, Deployment ID: {deployment_id}"
-        )
-
-        # Create the service configuration
-        service = BasetenDeploymentService(
-            id=service_id,
-            config=deployment_config,
+        # Create service
+        service = self._create_deployment_service(
+            id=id,
+            config=config,
             model_id=model_id,
-            deployment_id=deployment_id,
+            endpoint_url=endpoint_url,
         )
 
-        # Register the service with ZenML
-        client = Client()
+        # Wait for deployment to be ready
+        logger.info("Waiting for deployment to be ready...")
+        max_retries = timeout // 10  # Check every 10 seconds
+        retry_delay = 10
 
-        # Check if a service with the same configuration already exists
-        existing_services = client.list_services(
-            service_name=deployment_config.service_name,
-        )
-        if existing_services.total > 0 and replace:
-            # Delete the existing service
-            logger.info(
-                f"Deleting existing service {deployment_config.service_name}"
-            )
-            for existing_service in existing_services.items:
-                client.delete_service(existing_service.id)
+        for attempt in range(max_retries):
+            try:
+                state, error = service.check_status()
+                if state == ServiceState.ACTIVE:
+                    logger.info("Deployment is ready")
+                    break
+                elif state == ServiceState.ERROR:
+                    raise RuntimeError(f"Deployment failed: {error}")
+                else:
+                    if attempt < max_retries - 1:
+                        logger.info(
+                            f"Deployment not ready (state: {state}), retrying in {retry_delay}s..."
+                        )
+                        time.sleep(retry_delay)
+                    else:
+                        raise RuntimeError(
+                            f"Deployment failed to become ready: {error}"
+                        )
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    logger.warning(
+                        f"Failed to check deployment status: {e}, retrying in {retry_delay}s..."
+                    )
+                    time.sleep(retry_delay)
+                else:
+                    raise RuntimeError(
+                        f"Failed to verify deployment status: {str(e)}"
+                    )
 
-        # Create the new service request
-        service_request = ServiceRequest(
-            id=service_id,
-            name=deployment_config.service_name,
-            service_type=service.SERVICE_TYPE,
-            config=deployment_config.model_dump(),
-            service_source=source_utils.resolve(service.__class__).import_path,
-            status=service.status.model_dump(),
-            endpoint=service.endpoint.model_dump()
-            if service.endpoint
-            else None,
-            user=client.active_user.id,
-            workspace=client.active_workspace.id,
-        )
+        return service
 
-        try:
-            # Register the service with ZenML
-            client.zen_store.create_service(service_request)
-            logger.info(f"Service {service_id} registered with ZenML")
-
-            # Start the service
-            service.start()
-            logger.info(f"Service {service_id} started successfully")
-
-            return service
-
-        except Exception as e:
-            logger.error(f"Failed to register service with ZenML: {str(e)}")
-            # Try to clean up the Baseten deployment if service registration fails
-            # TODO: Implement Baseten model deletion
-            raise
-            return service
-
-        except Exception as e:
-            logger.error(f"Failed to register service with ZenML: {str(e)}")
-            # Try to clean up the Baseten deployment if service registration fails
-            # TODO: Implement Baseten model deletion
-            raise
-
-    @staticmethod
     def get_model_server_info(
-        service: BaseService,
+        self,
+        service: BasetenDeploymentService,
     ) -> Dict[str, Optional[str]]:
         """Get information about the model server.
 
@@ -373,24 +250,24 @@ class Model:
         Returns:
             A dictionary of information about the model server.
         """
-        assert isinstance(service, BasetenDeploymentService)
         return {
-            "model_name": service.config.model_name,
-            "model_uri": service.config.model_uri,
-            "model_type": service.config.model_type,
+            "name": service.config.name,
+            "model_uri": service.config.uri,
+            "framework": service.config.framework,
             "pipeline_name": service.config.pipeline_name,
             "run_name": service.config.run_name,
             "pipeline_step_name": service.config.pipeline_step_name,
             "prediction_url": service.prediction_url,
             "status": service.status.state.value,
+            "baseten_id": service.config.baseten_id,
         }
 
     def perform_stop_model(
         self,
-        service: BaseService,
+        service: BasetenDeploymentService,
         timeout: int = DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT,
         force: bool = False,
-    ) -> BaseService:
+    ) -> BasetenDeploymentService:
         """Stop a model server.
 
         Args:
@@ -401,17 +278,15 @@ class Model:
         Returns:
             The updated service.
         """
-        logger.info(f"Stopping service {service.uuid}")
-        assert isinstance(service, BasetenDeploymentService)
+        logger.info(f"Stopping service {service.id}")
         service.stop(timeout=timeout, force=force)
-        logger.info("Service stopped successfully")
         return service
 
     def perform_start_model(
         self,
-        service: BaseService,
+        service: BasetenDeploymentService,
         timeout: int = DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT,
-    ) -> BaseService:
+    ) -> BasetenDeploymentService:
         """Start a model server.
 
         Args:
@@ -421,15 +296,13 @@ class Model:
         Returns:
             The updated service.
         """
-        logger.info(f"Starting service {service.uuid}")
-        assert isinstance(service, BasetenDeploymentService)
+        logger.info(f"Starting service {service.id}")
         service.start(timeout=timeout)
-        logger.info("Service started successfully")
         return service
 
     def perform_delete_model(
         self,
-        service: BaseService,
+        service: BasetenDeploymentService,
         timeout: int = DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT,
         force: bool = False,
     ) -> None:
@@ -440,10 +313,143 @@ class Model:
             timeout: Timeout in seconds.
             force: Whether to force delete.
         """
-        logger.info(f"Deleting service {service.uuid}")
-        assert isinstance(service, BasetenDeploymentService)
+        logger.info(f"Deleting service {service.id}")
+        service.delete(timeout=timeout, force=force)
 
-        # TODO: Implement actual deletion of the model in Baseten using their API
-        # Currently we only stop the service, but the model remains on Baseten
-        service.stop(timeout=timeout, force=force)
-        logger.info("Service stopped and marked as deleted successfully")
+    def find_model_server(
+        self,
+        config: Optional[Dict[str, Any]] = None,
+        running: Optional[bool] = None,
+        service_uuid: Optional[UUID] = None,
+        pipeline_name: Optional[str] = None,
+        pipeline_step_name: Optional[str] = None,
+        service_name: Optional[str] = None,
+        model_name: Optional[str] = None,
+        model_version: Optional[str] = None,
+        service_type: Optional[ServiceType] = None,
+        type: Optional[str] = None,
+        flavor: Optional[str] = None,
+        pipeline_run_id: Optional[str] = None,
+    ) -> List[BasetenDeploymentService]:
+        """Find model servers matching the given criteria.
+
+        Args:
+            config: Custom Service configuration parameters.
+            running: If True, only return running services.
+            service_uuid: UUID of the service.
+            pipeline_name: Name of the pipeline.
+            pipeline_step_name: Name of the pipeline step.
+            service_name: Name of the service.
+            model_name: Name of the model.
+            model_version: Version of the model.
+            service_type: Type of the service.
+            type: Type of the service (alternative to service_type).
+            flavor: The flavor of the model deployer.
+            pipeline_run_id: ID of the pipeline run.
+
+        Returns:
+            List of matching services.
+        """
+        client = Client()
+        services = []
+
+        try:
+            # List all services
+            service_list = client.list_services()
+            for service in service_list.items:
+                if service.service_type != self.SERVICE_TYPE:
+                    continue
+
+                # Convert to BasetenDeploymentService
+                try:
+                    deployment_service = BasetenDeploymentService.from_model(
+                        service
+                    )
+                except ValueError as e:
+                    logger.debug(
+                        f"Failed to convert service {service.id} to BasetenDeploymentService: {e}"
+                    )
+                    continue
+                except Exception as e:
+                    logger.warning(
+                        f"Unexpected error converting service {service.id}: {e}"
+                    )
+                    continue
+
+                # Check if service matches criteria
+                if service_uuid and service.id != service_uuid:
+                    continue
+
+                # Check config-based criteria
+                service_config = deployment_service.config
+                if config:
+                    try:
+                        # Convert config values to strings for comparison
+                        config_str = {k: str(v) for k, v in config.items()}
+                        service_config_str = {
+                            k: str(v)
+                            for k, v in service_config.model_dump().items()
+                        }
+                        if not all(
+                            service_config_str.get(k) == v
+                            for k, v in config_str.items()
+                        ):
+                            continue
+                    except Exception as e:
+                        logger.debug(
+                            f"Error comparing config for service {service.id}: {e}"
+                        )
+                        continue
+
+                if (
+                    pipeline_name
+                    and service_config.pipeline_name != pipeline_name
+                ):
+                    continue
+                if (
+                    pipeline_step_name
+                    and service_config.pipeline_step_name != pipeline_step_name
+                ):
+                    continue
+                if (
+                    service_name
+                    and service_config.service_name != service_name
+                ):
+                    continue
+                if model_name and service_config.name != model_name:
+                    continue
+                if (
+                    model_version
+                    and service_config.model_version != model_version
+                ):
+                    continue
+                if running is not None:
+                    try:
+                        is_running = deployment_service.is_running
+                        if running != is_running:
+                            continue
+                    except Exception as e:
+                        logger.debug(
+                            f"Error checking running status for service {service.id}: {e}"
+                        )
+                        continue
+                if (
+                    pipeline_run_id
+                    and service_config.run_name != pipeline_run_id
+                ):
+                    continue
+
+                # Check service type
+                if service_type and service.service_type != service_type:
+                    continue
+                if type and service.service_type.type != type:
+                    continue
+                if flavor and flavor != self.FLAVOR.name:
+                    continue
+
+                services.append(deployment_service)
+
+        except Exception as e:
+            logger.error(f"Error listing services: {e}")
+
+        return services
