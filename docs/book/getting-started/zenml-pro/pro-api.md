@@ -46,15 +46,15 @@ To generate a new API token for the ZenML Pro API:
 
   * using curl:
 
-  ```bash
-  curl -H "Authorization: Bearer YOUR_API_TOKEN" https://cloudapi.zenml.io/users/me
-  ```
+    ```bash
+    curl -H "Authorization: Bearer YOUR_API_TOKEN" https://cloudapi.zenml.io/users/me
+    ```
 
   * using wget:
 
-  ```bash
-  wget -qO- --header="Authorization: Bearer YOUR_API_TOKEN" https://cloudapi.zenml.io/users/me
-  ```
+    ```bash
+    wget -qO- --header="Authorization: Bearer YOUR_API_TOKEN" https://cloudapi.zenml.io/users/me
+    ```
 
 {% hint style="info" %}
 **Important Notes**

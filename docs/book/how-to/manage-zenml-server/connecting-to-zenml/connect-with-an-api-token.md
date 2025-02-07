@@ -1,3 +1,8 @@
+---
+description: >-
+  Connect to the ZenML server using a temporary API token.
+---
+
 # Connect with an API Token
 
 API tokens provide a way to authenticate with the ZenML server for temporary automation tasks. These tokens are scoped to your user account and are valid for a maximum of 1 hour.

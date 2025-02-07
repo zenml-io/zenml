@@ -1,3 +1,8 @@
+---
+description: >-
+  Connect to the ZenML server using the ZenML CLI and the web based login.
+---
+
 # Connect in with your User (interactive)
 
 You can authenticate your clients with the ZenML Server using the ZenML CLI and the web based login. This can be executed with the command:

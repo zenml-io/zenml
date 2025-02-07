@@ -1,3 +1,8 @@
+---
+description: >-
+  Connect to the ZenML server using a service account and an API key.
+---
+
 # Connect with a Service Account
 
 Sometimes you may need to authenticate to a ZenML server from a non-interactive environment where the web login is not possible, like a CI/CD workload or a serverless function. In these cases, you can configure a service account and an API key and use the API key to authenticate to the ZenML server:

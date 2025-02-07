@@ -30,15 +30,15 @@ You can generate a short-lived (1 hour) API token from your ZenML dashboard. Thi
 
   * using curl:
 
-  ```bash
-  curl -H "Authorization: Bearer YOUR_API_TOKEN" https://your-zenml-server/api/v1/current-user
-  ```
+    ```bash
+    curl -H "Authorization: Bearer YOUR_API_TOKEN" https://your-zenml-server/api/v1/current-user
+    ```
 
   * using wget:
 
-  ```bash
-  wget -qO- --header="Authorization: Bearer YOUR_API_TOKEN" https://your-zenml-server/api/v1/current-user
-  ```
+    ```bash
+    wget -qO- --header="Authorization: Bearer YOUR_API_TOKEN" https://your-zenml-server/api/v1/current-user
+    ```
 
 {% hint style="info" %}
 **Important Notes**
@@ -55,9 +55,9 @@ You can use a service account's API key to obtain short-lived API tokens for pro
 
 1. Create a [service account](../how-to/manage-zenml-server/connecting-to-zenml/connect-with-a-service-account.md):
 
-```shell
-zenml service-account create myserviceaccount
-```
+  ```shell
+  zenml service-account create myserviceaccount
+  ```
 
 This will print out the `<ZENML_API_KEY>`, you can use in the next steps.
 
@@ -65,32 +65,32 @@ This will print out the `<ZENML_API_KEY>`, you can use in the next steps.
 
   * using curl:
 
-  ```bash
-  curl -X POST -d "password=<YOUR_API_KEY>" https://your-zenml-server/api/v1/login
-  ```
+    ```bash
+    curl -X POST -d "password=<YOUR_API_KEY>" https://your-zenml-server/api/v1/login
+    ```
 
   * using wget:
 
-  ```bash
-  wget -qO- --post-data="password=<YOUR_API_KEY>" \
-      --header="Content-Type: application/x-www-form-urlencoded" \
-      https://your-zenml-server/api/v1/login
-  ```
+    ```bash
+    wget -qO- --post-data="password=<YOUR_API_KEY>" \
+        --header="Content-Type: application/x-www-form-urlencoded" \
+        https://your-zenml-server/api/v1/login
+    ```
 
   * using python:
 
-  ```python
-  import requests
-  import json
+    ```python
+    import requests
+    import json
 
-  response = requests.post(
-      "https://your-zenml-server/api/v1/login",
-      data={"password": "<YOUR_API_KEY>"},
-      headers={"Content-Type": "application/x-www-form-urlencoded"}
-  )
+    response = requests.post(
+        "https://your-zenml-server/api/v1/login",
+        data={"password": "<YOUR_API_KEY>"},
+        headers={"Content-Type": "application/x-www-form-urlencoded"}
+    )
 
-  print(response.json())
-  ```
+    print(response.json())
+    ```
 
 This will return a response like this:
 
@@ -108,28 +108,28 @@ This will return a response like this:
 
   * using curl:
 
-  ```bash
-  curl -H "Authorization: Bearer YOUR_API_TOKEN" https://your-zenml-server/api/v1/current-user
-  ```
+    ```bash
+    curl -H "Authorization: Bearer YOUR_API_TOKEN" https://your-zenml-server/api/v1/current-user
+    ```
 
   * using wget:
 
-  ```bash
-  wget -qO- --header="Authorization: Bearer YOUR_API_TOKEN" https://your-zenml-server/api/v1/current-user
-  ```
+    ```bash
+    wget -qO- --header="Authorization: Bearer YOUR_API_TOKEN" https://your-zenml-server/api/v1/current-user
+    ```
 
   * using python:
 
-  ```python
-  import requests
+    ```python
+    import requests
 
-  response = requests.get(
-      "https://your-zenml-server/api/v1/current-user",
-      headers={"Authorization": f"Bearer {YOUR_API_TOKEN}"}
-  )
+    response = requests.get(
+        "https://your-zenml-server/api/v1/current-user",
+        headers={"Authorization": f"Bearer {YOUR_API_TOKEN}"}
+    )
 
-  print(response.json())
-  ```
+    print(response.json())
+    ```
 
 {% hint style="info" %}
 **Important notes**
