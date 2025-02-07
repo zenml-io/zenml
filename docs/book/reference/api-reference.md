@@ -18,7 +18,7 @@ In the local case (i.e. using `zenml login --local`, the docs are available on `
 
 ## Using a bearer token to access the API programmatically
 
-If you are using the ZenML server API using the above pages, it is enough to be logged in to your ZenML account in the same browser session. However, in order to do this programmatically, you can use one of the methods documented in the following sections.
+If you are using the ZenML server API using the methods displayed above, it is enough to be logged in to your ZenML account in the same browser session. However, in order to do this programmatically, you can use one of the methods documented in the following sections.
 
 ### Using a short-lived API token
 
@@ -43,7 +43,7 @@ You can generate a short-lived (1 hour) API token from your ZenML dashboard. Thi
 {% hint style="info" %}
 **Important Notes**
 
-- API tokens expire after 1 hour and cannot be retrieved after initial generation
+- API tokens expire after 1 hour and cannot be retrieved after the initial generation
 - Tokens are scoped to your user account and inherit your permissions
 - For long-term programmatic access, it is recommended to [set up a service account and an API key](#using-a-service-account-and-an-api-key) instead
 {% endhint %}
@@ -134,7 +134,7 @@ This will return a response like this:
 {% hint style="info" %}
 **Important notes**
 
-* API tokens are scoped to the service account that created them and inherit its permissions
+* API tokens are scoped to the service account that created them and inherit their permissions
 * Tokens are temporary and will expire after a configured duration (typically 1 hour, but it depends on how the server is configured)
 * You can request a new token at any time using the same API key
 * For security reasons, you should handle API tokens carefully and never share them

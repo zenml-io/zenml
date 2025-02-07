@@ -29,11 +29,11 @@ by being logged into ZenML Pro at [https://cloud.zenml.io](https://cloud.zenml.i
 
 ### Programmatic access with API tokens
 
-API tokens provide a way to authenticate with the ZenML Pro API for temporary automation tasks. These tokens are scoped to your user account and are valid for a maximum of 1 hour. You can use the generated API tokens for programmatic access to the ZenML Pro REST API. This is the quickest way to access the ZenML Pro API programmatically.
+API tokens provide a way to authenticate with the ZenML Pro API for temporary automation tasks. These tokens are scoped to your user account and are valid for 1 hour by default. You can use the generated API tokens for programmatic access to the ZenML Pro REST API.
 
 To generate a new API token for the ZenML Pro API:
 
-1. Navigate to the OrganizationSettings page in your ZenML Pro dashboard
+1. Navigate to the organization settings page in your ZenML Pro dashboard
 2. Select "API Tokens" from the left sidebar
 
     ![API Tokens](../../.gitbook/assets/zenml-pro-api-token-01.png)
@@ -65,7 +65,7 @@ To generate a new API token for the ZenML Pro API:
 
 ### Tenant programmatic access
 
-Programmatic access to the ZenML Pro tenant API is done essentially the same as for the ZenML OSS server API. You can use one of two methods:
+Programmatic access to the ZenML Pro tenant API is achieved essentially the same way as the ZenML OSS server API. You can use one of these two methods:
 
 * [Generate and use temporary API tokens](../../reference/api-reference.md#using-a-short-lived-api-token)
 * [Create a service account and use its API key](../../reference/api-reference.md#using-a-service-account-and-an-api-key)
