@@ -1,3 +1,8 @@
+---
+description: >-
+  Connect to the ZenML server using the ZenML CLI and the web based login.
+---
+
 # Connect in with your User (interactive)
 
 You can authenticate your clients with the ZenML Server using the ZenML CLI and the web based login. This can be executed with the command:
@@ -7,6 +12,10 @@ zenml login https://...
 ```
 
 This command will start a series of steps to validate the device from where you are connecting that will happen in your browser. You can choose whether to mark your respective device as trusted or not. If you choose not to click `Trust this device`, a 24-hour token will be issued for authentication services. Choosing to trust the device will issue a 30-day token instead.
+
+{% hint style="warning" %}
+When you are connecting to a ZenML Pro tenant, managing your authorized devices as described above is not yet supported. This feature is coming soon.
+{% endhint %}
 
 To see all devices you've permitted, use the following command:
 
