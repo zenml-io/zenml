@@ -21,25 +21,25 @@ Owing to ZenML's vast documentation, we have created multiple `llms.txt` files t
 | how-to-guides.txt | 75k | Summarized how-to guides for common ZenML workflows |
 | llms-full.txt | 600k | Complete, unabridged ZenML documentation |
 
-1. llms.txt
+1. [llms.txt](https://huggingface.co/datasets/zenml/llms.txt/blob/main/basics.txt)
 
 **Tokens**: 120k
 
 This is where you should start. It covers the [User Guides](../user-guide/starter-guide/README.md) and the [Getting Started](../getting-started/installation.md) section of the ZenML documentation, unsummarized, and can be used for answering basic questions about ZenML. This file can also be used alongside other domain-specific files in cases where you need better answers.
 
-2. component-guide.txt
+2. [component-guide.txt](https://huggingface.co/datasets/zenml/llms.txt/blob/main/component-guide.txt)
 
 **Tokens**: 180k
 
 This file covers all the [stack components in ZenML](../component-guide/README.md), unsummarized, and can be used when you want to find answers pertaining to all of our integrations, how to configure/use them and more.
 
-3. how-to-guides.txt
+3. [how-to-guides.txt](https://huggingface.co/datasets/zenml/llms.txt/blob/main/how-to-guides.txt)
 
 **Tokens**: 75k
 
 This file contains all the doc pages in the [how-to section of our documentation](../how-to/manage-zenml-server/README.md); each page summarized to contain all useful information. For most cases, the how-to guides can answer all process questions.
 
-4. llms-full.txt
+4. [llms-full.txt](https://huggingface.co/datasets/zenml/llms.txt/blob/main/llms-full.txt)
 
 **Tokens**: 600k
 
