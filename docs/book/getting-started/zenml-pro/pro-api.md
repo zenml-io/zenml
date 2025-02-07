@@ -43,18 +43,24 @@ To generate a new API token for the ZenML Pro API:
     ![API Tokens](../../.gitbook/assets/zenml-pro-api-token-02.png)
 
 4. Simply use the API token as the bearer token in your HTTP requests. For example, you can use the following command to check your current user:
+    * using curl:
+      ```bash
+      curl -H "Authorization: Bearer YOUR_API_TOKEN" https://cloudapi.zenml.io/users/me
+      ```
+    * using wget:
+      ```bash
+      wget -qO- --header="Authorization: Bearer YOUR_API_TOKEN" https://cloudapi.zenml.io/users/me
+      ```
+    * using python:
+      ```python
+      import requests
 
-  * using curl:
-
-    ```bash
-    curl -H "Authorization: Bearer YOUR_API_TOKEN" https://cloudapi.zenml.io/users/me
-    ```
-
-  * using wget:
-
-    ```bash
-    wget -qO- --header="Authorization: Bearer YOUR_API_TOKEN" https://cloudapi.zenml.io/users/me
-    ```
+      response = requests.get(
+        "https://cloudapi.zenml.io/users/me",
+        headers={"Authorization": f"Bearer YOUR_API_TOKEN"}
+      )
+      print(response.json())
+      ```
 
 {% hint style="info" %}
 **Important Notes**
