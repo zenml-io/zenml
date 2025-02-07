@@ -21,7 +21,7 @@ Owing to ZenML's vast documentation, we have created multiple `llms.txt` files t
 | how-to-guides.txt | 75k | Summarized how-to guides for common ZenML workflows |
 | llms-full.txt | 600k | Complete, unabridged ZenML documentation |
 
-1. [llms.txt](https://huggingface.co/datasets/zenml/llms.txt/blob/main/basics.txt)
+1. [llms.txt](https://huggingface.co/datasets/zenml/llms.txt/blob/main/llms.txt)
 
 **Tokens**: 120k
 
