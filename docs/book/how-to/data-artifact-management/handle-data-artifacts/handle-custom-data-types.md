@@ -8,6 +8,21 @@ A ZenML pipeline is built in a data-centric way. The outputs and inputs of steps
 
 A materializer dictates how a given artifact can be written to and retrieved from the artifact store and also contains all serialization and deserialization logic. Whenever you pass artifacts as outputs from one pipeline step to other steps as inputs, the corresponding materializer for the respective data type defines how this artifact is first serialized and written to the artifact store, and then deserialized and read in the next step.
 
+<div style="border: 2px solid #FFA500; background-color: #FFF7E6; padding: 15px; margin: 20px 0; border-radius: 4px;">
+    <div style="display: flex; align-items: center; margin-bottom: 10px;">
+        <span style="font-weight: bold; color: #D97706; font-size: 1.1em;">🧪 Experimental Feature: Audio Documentation</span>
+    </div>
+    <p style="margin: 0; color: #555;">
+        This page includes an (informal) audio take on the documentation's content. Click the play button below to listen. This is an experimental feature and we'd love your feedback!
+    </p>
+    <div style="margin-top: 15px;">
+        <audio controls preload="none" style="width: 100%; max-width: 500px;">
+            <source src="https://zenml-audio-documentation.s3.amazonaws.com/zenml-custom-data-types-and-materializers.mp3" type="audio/mpeg">
+            Your browser does not support the audio element.
+        </audio>
+    </div>
+</div>
+
 ## Built-In Materializers
 
 ZenML already includes built-in materializers for many common data types. These are always enabled and are used in the background without requiring any user interaction / activation:
