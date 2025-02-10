@@ -10,6 +10,8 @@ The llms.txt file format was proposed by [llmstxt.org](https://llmstxt.org/) as 
 
 Our `llms.txt` file is a summary of the ZenML documentation that can be used to answer basic questions about ZenML. The base version is available at https://zenml.io/llms.txt. Read on to learn about additional files, where they are hosted and how to use them.
 
+[![Learn how to use our llms.txt files](../.gitbook/assets/llms-txt-thumb.png)](https://www.youtube.com/watch?v=hSW9glgynlc)
+
 ## Available llms.txt files
 
 Owing to ZenML's vast documentation, we have created multiple `llms.txt` files that cover different parts of the documentation. You can find them on ZenML's [llms.txt HuggingFace dataset](https://huggingface.co/datasets/zenml/llms.txt).
