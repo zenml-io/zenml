@@ -23,7 +23,10 @@ A materializer dictates how a given artifact can be written to and retrieved fro
     </div>
 </div>
 
-{% embed url="https://drive.google.com/file/d/1wPf-ptSD_WSGMDf-n-jGMj4v9Vpae9ZL/preview?usp=sharing" %}
+<iframe src="https://drive.google.com/file/d/1wPf-ptSD_WSGMDf-n-jGMj4v9Vpae9ZL/view?usp=sharing" 
+        width="300" height="45" frameborder="0" allow="autoplay"></iframe>
+
+{% embed url="https://drive.google.com/file/d/1wPf-ptSD_WSGMDf-n-jGMj4v9Vpae9ZL/view?usp=sharing" %}
 
 ## Built-In Materializers
 
