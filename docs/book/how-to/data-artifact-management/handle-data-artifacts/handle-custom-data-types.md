@@ -23,6 +23,8 @@ A materializer dictates how a given artifact can be written to and retrieved fro
     </div>
 </div>
 
+{% embed url="https://zenml-audio-documentation.s3.amazonaws.com/zenml-custom-data-types-and-materializers.mp3" %}
+
 ## Built-In Materializers
 
 ZenML already includes built-in materializers for many common data types. These are always enabled and are used in the background without requiring any user interaction / activation:
