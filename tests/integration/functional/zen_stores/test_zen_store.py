@@ -116,7 +116,6 @@ from zenml.models import (
     StackUpdate,
     StepRunFilter,
     StepRunUpdate,
-    TagFilter,
     TagResourceRequest,
     UserRequest,
     UserResponse,
