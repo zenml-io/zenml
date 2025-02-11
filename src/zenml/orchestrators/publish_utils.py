@@ -54,6 +54,28 @@ def publish_successful_step_run(
     )
 
 
+def publish_delayed_cached_step_run(
+    step_run_id: "UUID", output_artifact_ids: Dict[str, List["UUID"]]
+) -> "StepRunResponse":
+    """Publishes a successful step run.
+
+    Args:
+        step_run_id: The ID of the step run to update.
+        output_artifact_ids: The output artifact IDs for the step run.
+
+    Returns:
+        The updated step run.
+    """
+    return Client().zen_store.update_run_step(
+        step_run_id=step_run_id,
+        step_run_update=StepRunUpdate(
+            status=ExecutionStatus.CACHED,
+            end_time=utc_now(),
+            outputs=output_artifact_ids,
+        ),
+    )
+
+
 def publish_failed_step_run(step_run_id: "UUID") -> "StepRunResponse":
     """Publishes a failed step run.
 
