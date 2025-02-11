@@ -27,8 +27,9 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import Field
+from pydantic import Field, model_validator
 
+from zenml.logger import get_logger
 from zenml.models.v2.base.base import (
     BaseDatedResponseBody,
     BaseIdentifiedResponse,
@@ -46,6 +47,9 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas import BaseSchema
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
+
+logger = get_logger(__name__)
+
 
 # ---------------------- Request Models ----------------------
 
@@ -470,15 +474,45 @@ class TaggableFilter(BaseFilter):
     tag: Optional[str] = Field(
         description="Tag to apply to the filter query.", default=None
     )
+    tags: Optional[List[str]] = Field(
+        description="Tags to apply to the filter query.", default=None
+    )
 
+    CLI_EXCLUDE_FIELDS = [
+        *BaseFilter.FILTER_EXCLUDE_FIELDS,
+        "tag",
+    ]
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *BaseFilter.FILTER_EXCLUDE_FIELDS,
         "tag",
+        "tags",
     ]
     CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
         *BaseFilter.CUSTOM_SORTING_OPTIONS,
         "tags",
     ]
+
+    @model_validator(mode="after")
+    def add_tag_to_tags(self) -> "TaggableFilter":
+        """Deprecated the tag attribute in favor of the tags attribute.
+
+        Returns:
+            self
+        """
+        if self.tag is not None:
+            logger.warning(
+                "The `tag` attribute is deprecated. Please use `tags` when "
+                "filtering objects by tags."
+            )
+
+            if self.tags is not None:
+                self.tags.append(self.tag)
+            else:
+                self.tags = [self.tag]
+
+            self.tag = None
+
+        return self
 
     def apply_filter(
         self,
@@ -497,7 +531,8 @@ class TaggableFilter(BaseFilter):
         from zenml.zen_stores.schemas import TagResourceSchema, TagSchema
 
         query = super().apply_filter(query=query, table=table)
-        if self.tag:
+
+        if self.tags is not None:
             query = query.join(
                 TagResourceSchema,
                 TagResourceSchema.resource_id == getattr(table, "id"),
@@ -516,15 +551,19 @@ class TaggableFilter(BaseFilter):
         Returns:
             A list of custom filters.
         """
-        from zenml.zen_stores.schemas import TagSchema
-
         custom_filters = super().get_custom_filters(table)
-        if self.tag:
-            custom_filters.append(
-                self.generate_custom_query_conditions_for_column(
-                    value=self.tag, table=TagSchema, column="name"
+
+        if self.tags is not None:
+            from sqlmodel import exists
+
+            from zenml.zen_stores.schemas import TagSchema
+
+            for tag in self.tags:
+                conditions = self.generate_custom_query_conditions_for_column(
+                    value=tag, table=TagSchema, column="name"
                 )
-            )
+                exists_subquery = exists().where(conditions)
+                custom_filters.append(exists_subquery)
 
         return custom_filters
 
