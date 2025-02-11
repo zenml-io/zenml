@@ -2876,7 +2876,7 @@ class Client(metaclass=ClientMetaClass):
         rotate_secret: Optional[bool] = None,
         is_active: Optional[bool] = None,
     ) -> EventSourceResponse:
-        """Updates a event_source.
+        """Updates an event_source.
 
         Args:
             name_id_or_prefix: The name, id or prefix of the event_source to update.
@@ -7542,8 +7542,16 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The newly created tag.
         """
+        request_model = TagRequest(name=name)
+
+        if singleton is not None:
+            request_model.singleton = singleton
+
+        if color is not None:
+            request_model.color = color
+
         return self.zen_store.create_tag(
-            tag=TagRequest(name=name, singleton=singleton, color=color)
+            tag=request_model
         )
 
     def delete_tag(self, tag_name_or_id: Union[str, UUID]) -> None:
@@ -7576,13 +7584,20 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The updated tag.
         """
+        update_model = TagUpdate()
+
+        if name is not None:
+            update_model.name = name
+
+        if singleton is not None:
+            update_model.singleton = singleton
+
+        if color is not None:
+            update_model.color = color
+
         return self.zen_store.update_tag(
             tag_name_or_id=tag_name_or_id,
-            tag_update_model=TagUpdate(
-                name=name,
-                singleton=singleton,
-                color=color,
-            ),
+            tag_update_model=update_model,
         )
 
     def get_tag(
