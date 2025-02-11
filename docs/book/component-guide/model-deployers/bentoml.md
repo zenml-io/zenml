@@ -49,7 +49,7 @@ The recommended flow to use the BentoML model deployer is to first [create a Ben
 
 ### Create a BentoML Service
 
-The first step to being able to deploy your models and use BentoML is to create a [bento service](https://docs.bentoml.com/en/latest/guides/services.html) which is the main logic that defines how your model will be served. The 
+The first step to being able to deploy your models and use BentoML is to create a [bento service](https://docs.bentoml.com/en/latest/guides/services.html) which is the main logic that defines how your model will be served.
 
 The following example shows how to create a basic bento service that will be used to serve a torch model. Learn more about how to specify the inputs and outputs for the APIs and how to use validators in the [Input and output types BentoML docs](https://docs.bentoml.com/en/latest/guides/iotypes.html)
 
