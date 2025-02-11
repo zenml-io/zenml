@@ -2499,7 +2499,7 @@ class ZenStoreInterface(ABC):
         trigger_execution_id: UUID,
         hydrate: bool = True,
     ) -> TriggerExecutionResponse:
-        """Get an trigger execution by ID.
+        """Get a trigger execution by ID.
 
         Args:
             trigger_execution_id: The ID of the trigger execution to get.
@@ -3005,9 +3005,7 @@ class ZenStoreInterface(ABC):
             KeyError: specified ID not found.
         """
 
-    #################
-    # Tags
-    #################
+    # -------------------- Tags --------------------
 
     @abstractmethod
     def create_tag(self, tag: TagRequest) -> TagResponse:
