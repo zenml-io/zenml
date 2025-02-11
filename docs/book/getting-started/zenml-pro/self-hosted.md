@@ -489,7 +489,9 @@ To deploy the ZenML Pro control plane and one or more ZenML Pro tenant servers, 
             - Value: `<Load Balancer IP>`
         - Use a DNS propagation checker to confirm that the DNS record is resolving correctly.
 
-        {% hint style="warning" %}Make sure you don't use a simple DNS prefix for the servers (e.g. `https://zenml.cluster` is not recommended). This is especially relevant for the TLS certificates that you have to prepare for these endpoints. Always use a fully qualified domain name (FQDN) (e.g. `https://zenml.ml.cluster`). The TLS certificates will not be accepted by some browsers otherwise (e.g. Chrome).{% endhint %}
+{% hint style="warning" %}
+Make sure you don't use a simple DNS prefix for the servers (e.g. `https://zenml.cluster` is not recommended). This is especially relevant for the TLS certificates that you have to prepare for these endpoints. Always use a fully qualified domain name (FQDN) (e.g. `https://zenml.ml.cluster`). The TLS certificates will not be accepted by some browsers otherwise (e.g. Chrome).
+{% endhint %}
 
 5. **SSL Certificate**
     
@@ -583,7 +585,9 @@ To deploy the ZenML Pro control plane and one or more ZenML Pro tenant servers, 
             
         - Reference the domain in your IngressRoute or Middleware configuration.
 
-        {% hint style="warning" %}If you used a custom CA certificate to sign the TLS certificates for the ZenML Pro services, you will need to install the CA certificates on every client machine, as covered in the [Install CA Certificates](#install-ca-certificates) section.{% endhint %}
+{% hint style="warning" %}
+If you used a custom CA certificate to sign the TLS certificates for the ZenML Pro services, you will need to install the CA certificates on every client machine, as covered in the [Install CA Certificates](#install-ca-certificates) section.
+{% endhint %}
 
 
 The above are infrastructure requirements for ZenML Pro. If, in addition to ZenML, you would also like to reuse the same Kubernetes cluster to run machine learning workloads with ZenML, you will require the following additional infrastructure resources and services to be able to set up [a remote ZenML Stack](../../user-guide/production-guide/understand-stacks.md):
@@ -597,7 +601,7 @@ The above are infrastructure requirements for ZenML Pro. If, in addition to ZenM
 
 ### Set up Credentials
 
-If your Kubernetes cluster is not set to be authenticated to the container registry where the ZenML Pro container images are hosted, you will need to create a secret to allow the ZenML Pro server to pull the images. The following is an example of how to do this if you're received a private access key for the ZenML GCP Artifact Registry, but you can use the same approach for your own private container registry:
+If your Kubernetes cluster is not set to be authenticated to the container registry where the ZenML Pro container images are hosted, you will need to create a secret to allow the ZenML Pro server to pull the images. The following is an example of how to do this if you've received a private access key for the ZenML GCP Artifact Registry from ZenML, but you can use the same approach for your own private container registry:
 
 ```
 kubectl create ns zenml-pro
@@ -807,120 +811,115 @@ However, this feature is currently supported with helper Python scripts, as desc
 {% endhint %}
 
 1. The deployed ZenML Pro service will come with a pre-installed default administrator account. This admin account serves the purpose of creating and recovering other users. First you will need to get the admin password following the instructions at the previous step.
+    ```bash
+    kubectl get secret --namespace zenml-pro zenml-pro -o jsonpath="{.data.ZENML_CLOUD_ADMIN_PASSWORD}" | base64 --decode; echo
+    ```
+2. Create a `users.yml` file that contains a list of all the users that you want to create for ZenML. Also set a default password. The users will be asked to change this password on their first login.
+    ```yaml
+    users:
+    - email: adam@zenml.io
+        password: tu3]4_Xz{5$9
+    ```
+3. Run the `create_users.py` script below. This will create all of the users.
 
-```bash
-kubectl get secret --namespace zenml-pro zenml-pro -o jsonpath="{.data.ZENML_CLOUD_ADMIN_PASSWORD}" | base64 --decode; echo
-```
+    **[file: create_users.py]**
+    ```python
+    import getpass
+    from typing import Optional
 
-1. Create a `users.yml` file that contains a list of all the users that you want to create for ZenML. Also set a default password. The users will be asked to change this password on their first login.
+    import requests
+    import yaml
+    import sys
 
-```yaml
-users:
-  - email: adam@zenml.io
-    password: tu3]4_Xz{5$9
-```
+    # Configuration
+    LOGIN_ENDPOINT = "/api/v1/auth/login"
+    USERS_ENDPOINT = "/api/v1/users"
 
-1. Run the `create_users.py` script below. This will create all of the users.
+    def login(base_url: str, username: str, password: str):
+        """Log in and return the authentication token."""
+        # Define the headers
+        headers = {
+            'accept': 'application/json',
+            'Content-Type': 'application/x-www-form-urlencoded'
+        }
 
-**[file: create_users.py]**
+        # Define the data payload
+        data = {
+            'grant_type': '',
+            'username': username,
+            'password': password,
+            'client_id': '',
+            'client_secret': '',
+            'device_code': '',
+            'audience': ''
+        }
 
-```python
-import getpass
-from typing import Optional
+        login_url = f"{base_url}{LOGIN_ENDPOINT}"
+        response = requests.post(login_url, headers=headers, data=data)
 
-import requests
-import yaml
-import sys
+        if response.status_code == 200:
+            return response.json().get("token")
+        else:
+            print(f"Login failed. Status code: {response.status_code}")
+            print(f"Response: {response.text}")
+            sys.exit(1)
 
-# Configuration
-LOGIN_ENDPOINT = "/api/v1/auth/login"
-USERS_ENDPOINT = "/api/v1/users"
+    def create_user(token: str, base_url: str, email: str, password: Optional[str]):
+        """Create a user with the given email."""
+        users_url = f"{base_url}{USERS_ENDPOINT}"
+        params = {
+            'email': email,
+            'password': password
+        }
 
-def login(base_url: str, username: str, password: str):
-    """Log in and return the authentication token."""
-    # Define the headers
-    headers = {
-        'accept': 'application/json',
-        'Content-Type': 'application/x-www-form-urlencoded'
-    }
+        # Define the headers
+        headers = {
+            'accept': 'application/json',
+            "Authorization": f"Bearer {token}"
+        }
 
-    # Define the data payload
-    data = {
-        'grant_type': '',
-        'username': username,
-        'password': password,
-        'client_id': '',
-        'client_secret': '',
-        'device_code': '',
-        'audience': ''
-    }
+        # Make the POST request
+        response = requests.post(users_url, params=params, headers=headers, data='')
 
-    login_url = f"{base_url}{LOGIN_ENDPOINT}"
-    response = requests.post(login_url, headers=headers, data=data)
+        if response.status_code == 200:
+            print(f"User created successfully: {email}")
+        else:
+            print(f"Failed to create user: {email}")
+            print(f"Status code: {response.status_code}")
+            print(f"Response: {response.text}")
 
-    if response.status_code == 200:
-        return response.json().get("token")
-    else:
-        print(f"Login failed. Status code: {response.status_code}")
-        print(f"Response: {response.text}")
-        sys.exit(1)
+    def main():
+        # Get login credentials
+        base_url = input("ZenML URL: ")
+        username = input("Enter username: ")
+        password = getpass.getpass("Enter password: ")
+        # Get the YAML file path
+        yaml_file = input("Enter the path to the YAML file containing email addresses: ")
 
-def create_user(token: str, base_url: str, email: str, password: Optional[str]):
-    """Create a user with the given email."""
-    users_url = f"{base_url}{USERS_ENDPOINT}"
-    params = {
-        'email': email,
-        'password': password
-    }
+        # Login and get token
+        token = login(base_url, username, password)
+        print("Login successful.")
 
-    # Define the headers
-    headers = {
-        'accept': 'application/json',
-        "Authorization": f"Bearer {token}"
-    }
+        # Read users from YAML file
+        try:
+            with open(yaml_file, 'r') as file:
+                data = yaml.safe_load(file)
+        except Exception as e:
+            print(f"Error reading YAML file: {e}")
+            sys.exit(1)
 
-    # Make the POST request
-    response = requests.post(users_url, params=params, headers=headers, data='')
+        users = data['users']
 
-    if response.status_code == 200:
-        print(f"User created successfully: {email}")
-    else:
-        print(f"Failed to create user: {email}")
-        print(f"Status code: {response.status_code}")
-        print(f"Response: {response.text}")
+        # Create users
+        if isinstance(users, list):
+            for user in users:
+                create_user(token, base_url, user["email"], user["password"])
+        else:
+            print("Invalid YAML format. Expected a list of email addresses.")
 
-def main():
-    # Get login credentials
-    base_url = input("ZenML URL: ")
-    username = input("Enter username: ")
-    password = getpass.getpass("Enter password: ")
-    # Get the YAML file path
-    yaml_file = input("Enter the path to the YAML file containing email addresses: ")
-
-    # Login and get token
-    token = login(base_url, username, password)
-    print("Login successful.")
-
-    # Read users from YAML file
-    try:
-        with open(yaml_file, 'r') as file:
-            data = yaml.safe_load(file)
-    except Exception as e:
-        print(f"Error reading YAML file: {e}")
-        sys.exit(1)
-
-    users = data['users']
-
-    # Create users
-    if isinstance(users, list):
-        for user in users:
-            create_user(token, base_url, user["email"], user["password"])
-    else:
-        print("Invalid YAML format. Expected a list of email addresses.")
-
-if __name__ == "__main__":
-    main()
-```
+    if __name__ == "__main__":
+        main()
+    ```
 
 The script will prompt you for the URL of your deployment, the admin account email and admin account password and finally the location of your `users.yml` file.
 
@@ -966,28 +965,29 @@ Installing and updating on-prem ZenML Pro tenant servers is not automated, as it
 
 ### Enrolling a Tenant
 
-1. run the `enroll-tenant.py` script below. This will collect all the necessary data, then enroll the tenant in the organization and generate a Helm `values.yaml` file template that you can use to install the tenant server:
-    
+1. **Run the `enroll-tenant.py` script below**
+
+    This will collect all the necessary data, then enroll the tenant in the organization and generate a Helm `values.yaml` file template that you can use to install the tenant server:
+        
     **[file: enroll-tenant.py]**
-    
     ```python
     import getpass
     import sys
     import uuid
     from typing import List, Optional, Tuple
-    
+
     import requests
-    
+
     DEFAULT_API_ROOT_PATH = "/api/v1"
     DEFAULT_REPOSITORY = (
         "715803424590.dkr.ecr.eu-central-1.amazonaws.com/zenml-pro-server"
     )
-    
+
     # Configuration
     LOGIN_ENDPOINT = "/api/v1/auth/login"
     TENANT_ENDPOINT = "/api/v1/tenants"
     ORGANIZATION_ENDPOINT = "/api/v1/organizations"
-    
+
     def login(base_url: str, username: str, password: str) -> str:
         """Log in and return the authentication token."""
         # Define the headers
@@ -995,7 +995,7 @@ Installing and updating on-prem ZenML Pro tenant servers is not automated, as it
             "accept": "application/json",
             "Content-Type": "application/x-www-form-urlencoded",
         }
-    
+
         # Define the data payload
         data = {
             "grant_type": "",
@@ -1006,17 +1006,17 @@ Installing and updating on-prem ZenML Pro tenant servers is not automated, as it
             "device_code": "",
             "audience": "",
         }
-    
+
         login_url = f"{base_url}{LOGIN_ENDPOINT}"
         response = requests.post(login_url, headers=headers, data=data)
-    
+
         if response.status_code == 200:
             return response.json().get("access_token")
         else:
             print(f"Login failed. Status code: {response.status_code}")
             print(f"Response: {response.text}")
             sys.exit(1)
-    
+
     def tenant_exists(
         token: str,
         base_url: str,
@@ -1025,7 +1025,7 @@ Installing and updating on-prem ZenML Pro tenant servers is not automated, as it
     ) -> Optional[str]:
         """Get a tenant with a given name or url."""
         tenant_url = f"{base_url}{TENANT_ENDPOINT}"
-    
+
         # Define the headers
         headers = {
             "accept": "application/json",
@@ -1036,14 +1036,14 @@ Installing and updating on-prem ZenML Pro tenant servers is not automated, as it
         }
         if tenant_name:
             params["tenant_name"] = tenant_name
-    
+
         # Create the tenant
         response = requests.get(
             tenant_url,
             params=params,
             headers=headers,
         )
-    
+
         if response.status_code == 200:
             json_response = response.json()
             if len(json_response) > 0:
@@ -1053,28 +1053,28 @@ Installing and updating on-prem ZenML Pro tenant servers is not automated, as it
             print(f"Status code: {response.status_code}")
             print(f"Response: {response.text}")
             sys.exit(1)
-    
+
         return None
-    
+
     def list_organizations(
         token: str,
         base_url: str,
     ) -> List[Tuple[str, str]]:
         """Get a list of organizations."""
         organization_url = f"{base_url}{ORGANIZATION_ENDPOINT}"
-    
+
         # Define the headers
         headers = {
             "accept": "application/json",
             "Authorization": f"Bearer {token}",
         }
-    
+
         # Create the tenant
         response = requests.get(
             organization_url,
             headers=headers,
         )
-    
+
         if response.status_code == 200:
             json_response = response.json()
             return [(org["id"], org["name"]) for org in json_response]
@@ -1083,7 +1083,7 @@ Installing and updating on-prem ZenML Pro tenant servers is not automated, as it
             print(f"Status code: {response.status_code}")
             print(f"Response: {response.text}")
             sys.exit(1)
-    
+
     def enroll_tenant(
         token: str,
         base_url: str,
@@ -1093,20 +1093,20 @@ Installing and updating on-prem ZenML Pro tenant servers is not automated, as it
     ) -> dict:
         """Enroll a tenant."""
         tenant_url = f"{base_url}{TENANT_ENDPOINT}"
-    
+
         # Define the headers
         headers = {
             "accept": "application/json",
             "Authorization": f"Bearer {token}",
         }
-    
+
         if delete_existing:
             # Delete the tenant
             response = requests.delete(
                 f"{tenant_url}/{delete_existing}",
                 headers=headers,
             )
-    
+
             if response.status_code == 200:
                 print(f"Tenant deleted successfully: {delete_existing}")
             else:
@@ -1114,7 +1114,7 @@ Installing and updating on-prem ZenML Pro tenant servers is not automated, as it
                 print(f"Status code: {response.status_code}")
                 print(f"Response: {response.text}")
                 sys.exit(1)
-    
+
         # Enroll the tenant
         response = requests.post(
             tenant_url,
@@ -1127,44 +1127,44 @@ Installing and updating on-prem ZenML Pro tenant servers is not automated, as it
             },
             headers=headers,
         )
-    
+
         if response.status_code == 200:
             tenant = response.json()
             tenant_id = tenant.get("id")
             print(f"Tenant enrolled successfully: {tenant_name} [{tenant_id}]")
-    
+
             return tenant
         else:
             print(f"Failed to enroll tenant: {tenant_name}")
             print(f"Status code: {response.status_code}")
             print(f"Response: {response.text}")
             sys.exit(1)
-    
+
     def prompt(
         prompt_text: str,
         default_value: Optional[str] = None,
         password: bool = False,
     ) -> str:
         """Prompt the user with a default value."""
-    
+
         while True:
             if default_value:
                 text = f"{prompt_text} [{default_value}]: "
             else:
                 text = f"{prompt_text}: "
-    
+
             if password:
                 user_input = getpass.getpass(text)
             else:
                 user_input = input(text)
-    
+
             if user_input.strip() == "":
                 if default_value:
                     return default_value
                 print("Please provide a value.")
                 continue
             return user_input
-    
+
     def get_tenant_config(
         zenml_pro_url: str,
         organization_id: str,
@@ -1175,23 +1175,23 @@ Installing and updating on-prem ZenML Pro tenant servers is not automated, as it
         repository: str = DEFAULT_REPOSITORY,
     ) -> str:
         """Get the tenant configuration.
-    
+
         Args:
             tenant_id: Tenant ID.
             tenant_name: Tenant name.
             organization_name: Organization name.
             enrollment_key: Enrollment key.
             repository: Tenant docker image repository.
-    
+
         Returns:
             The tenant configuration.
         """
         # Generate a secret key to encrypt the SQL database secrets
         encryption_key = f"{uuid.uuid4().hex}{uuid.uuid4().hex}"
-    
+
         # Generate a hostname and database name from the tenant ID
         short_tenant_id = tenant_id.replace("-", "")
-    
+
         return f"""
     zenml:
         analyticsOptIn: false
@@ -1225,7 +1225,7 @@ Installing and updating on-prem ZenML Pro tenant servers is not automated, as it
             sql:
                 encryptionKey: { encryption_key }
             type: sql
-    
+
     # TODO: these are the minimum resources required for the ZenML server. You can
     # adjust them to your needs.
     resources:
@@ -1235,7 +1235,7 @@ Installing and updating on-prem ZenML Pro tenant servers is not automated, as it
             cpu: 100m
             memory: 450Mi
     """
-    
+
     def main() -> None:
         zenml_pro_url = prompt(
             "What is the URL of your ZenML Pro instance? (e.g. https://zenml-pro.mydomain.com)",
@@ -1247,11 +1247,11 @@ Installing and updating on-prem ZenML Pro tenant servers is not automated, as it
         password = prompt(
             "Enter the ZenML Pro admin account password", password=True
         )
-    
+
         # Login and get token
         token = login(zenml_pro_url, username, password)
         print("Login successful.")
-    
+
         organizations = list_organizations(
             token=token,
             base_url=zenml_pro_url,
@@ -1281,21 +1281,21 @@ Installing and updating on-prem ZenML Pro tenant servers is not automated, as it
                 if organization_id in [id for id, _ in organizations]:
                     break
                 print("Invalid organization ID. Please try again.")
-    
+
         # Generate a default tenant name
         tenant_name = f"zenml-{str(uuid.uuid4())[:8]}"
         tenant_name = prompt(
             "Choose a name for the tenant, or press enter to use a generated name",
             default_value=tenant_name,
         )
-    
+
         existing_tenant_id = tenant_exists(
             token=token,
             base_url=zenml_pro_url,
             org_id=organization_id,
             tenant_name=tenant_name,
         )
-    
+
         if existing_tenant_id:
             confirm = prompt(
                 f"A tenant with name {tenant_name} already exists in the "
@@ -1305,7 +1305,7 @@ Installing and updating on-prem ZenML Pro tenant servers is not automated, as it
             if confirm.lower() != "y":
                 print("Exiting.")
                 sys.exit(0)
-    
+
         tenant = enroll_tenant(
             token=token,
             base_url=zenml_pro_url,
@@ -1313,11 +1313,11 @@ Installing and updating on-prem ZenML Pro tenant servers is not automated, as it
             tenant_name=tenant_name,
             delete_existing=existing_tenant_id,
         )
-    
+
         tenant_id = tenant.get("id")
         organization_name = tenant.get("organization").get("name")
         enrollment_key = tenant.get("enrollment_key")
-    
+
         tenant_config = get_tenant_config(
             zenml_pro_url=zenml_pro_url,
             tenant_name=tenant_name,
@@ -1326,34 +1326,34 @@ Installing and updating on-prem ZenML Pro tenant servers is not automated, as it
             organization_name=organization_name,
             enrollment_key=enrollment_key,
         )
-    
+
         # Write the tenant configuration to a file
         values_file = f"zenml-{tenant_id}-values.yaml"
         with open(values_file, "w") as file:
             file.write(tenant_config)
-    
+
         print(
             f"""
     The tenant was enrolled successfully. It can be accessed at:
-    
+
     {zenml_pro_url}/organizations/{organization_id}/tenants/{tenant_id}
-    
+
     The tenant server Helm values were written to: {values_file}
-    
+
     Please note the TODOs in the file and adjust them to your needs.
-    
+
     To install the tenant, run e.g.:
-    
+
         helm --namespace zenml-pro-{tenant_id} upgrade --install --create-namespace \
             zenml oci://public.ecr.aws/zenml/zenml --version <version> \
             --values {values_file}
-    
+
     """
         )
-    
+
     if __name__ == "__main__":
         main()
-    
+
     ```
 
     Running the script does two things:
@@ -1406,71 +1406,67 @@ Installing and updating on-prem ZenML Pro tenant servers is not automated, as it
             cpu: 100m
             memory: 450Mi
     ```
+2. **Configure the ZenML Pro tenant Helm chart**
 
-2. configure the ZenML Pro tenant Helm chart:
-
-    {% hint style="warning" %}
-    In configuring the ZenML Pro tenant Helm chart, keep the following in mind:
+    **IMPORTANT**: In configuring the ZenML Pro tenant Helm chart, keep the following in mind:
     
     - don't use the same database name for multiple tenants
     - don't reuse the control plane database name for the tenant server database
-    {% endhint %}
 
     The ZenML Pro tenant server is nothing more than a slightly modified open-source ZenML server. The deployment even uses the official open-source helm chart.
     
     There are a variety of options that can be configured for the ZenML Pro tenant server chart before installation. You can start by taking a look at the [Helm chart README](https://artifacthub.io/packages/helm/zenml/zenml) and [`values.yaml` file](https://artifacthub.io/packages/helm/zenml/zenml?modal=values) and familiarize yourself with some of the configuration settings that you can customize for your ZenML server deployment. Alternatively, you can unpack the `README.md` and `values.yaml` files included in the helm chart:
-    
+
     ```bash
     helm  pull --untar  oci://public.ecr.aws/zenml/zenml --version <version>
     less zenml/README.md
     less zenml/values.yaml
     ```
-    
+
     To configure the Helm chart, use the generated YAML file generated at the previous step as a template and fill in the necessary values marked by `TODO` comments. At a minimum, you'll need to configure the following:
-    
+
     - configure container registry credentials (`imagePullSecrets`, same as [described for the control plane](#set-up-credentials))
     - the MySQL database credentials (`zenml.database.url`)
     - the container image repository where the ZenML Pro tenant server container images are stored (`zenml.image.repository`)
     - the hostname where the ZenML Pro tenant server will be reachable (`zenml.ingress.host` and `zenml.serverURL`)
-    
+
     You may also choose to configure additional features documented in [the official OSS ZenML Helm deployment documentation pages](https://docs.zenml.io/getting-started/deploying-zenml/deploy-with-helm), if you need them:
-    
+
     - injecting custom CA certificates (`zenml.certificates`), especially important if the TLS certificate used for the ZenML Pro control plane is signed by a custom Certificate Authority
     - configure HTTP proxy settings (`zenml.proxy`)
     - set up secrets stores
     - configure database backup and restore
     - customize Kubernetes resources
     - etc.
-    
-3. deploy the ZenML Pro tenant server with Helm:
+
+3. **Deploy the ZenML Pro tenant server with Helm**
 
     To install the helm chart (assuming the customized configuration values are in the generated `zenml-f8e306ef-90e7-4b2f-99db-28298834feed-values.yaml` file), run e.g.:
-    
+
     ```python
     helm --namespace zenml-pro-f8e306ef-90e7-4b2f-99db-28298834feed upgrade --install --create-namespace zenml oci://public.ecr.aws/zenml/zenml --version <version> --values zenml-f8e306ef-90e7-4b2f-99db-28298834feed-values.yaml
     ```
-    
+
     The deployment is ready when the ZenML server pod is running and healthy:
-    
+
     ```python
     $ kubectl -n zenml-pro-f8e306ef-90e7-4b2f-99db-28298834feed get all
     NAME                           READY   STATUS      RESTARTS   AGE
     pod/zenml-5c4b6d9dcd-7bhfp     1/1     Running     0          85m
-    
+
     NAME            TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE
     service/zenml   ClusterIP   172.20.43.140   <none>        80/TCP    85m
-    
+
     NAME                    READY   UP-TO-DATE   AVAILABLE   AGE
     deployment.apps/zenml   1/1     1            1           85m
-    
+
     NAME                               DESIRED   CURRENT   READY   AGE
     replicaset.apps/zenml-5c4b6d9dcd   1         1         1       85m
     ```
-    
 
-After deployment, your tenant should show up as running in the ZenML Pro dashboard and can be accessed at the next step.
+    After deployment, your tenant should show up as running in the ZenML Pro dashboard and can be accessed at the next step.
 
-If you need to deploy multiple tenants, simply run the enrollment script again with different values.
+    If you need to deploy multiple tenants, simply run the enrollment script again with different values.
 
 ### Accessing the Tenant
 
@@ -1506,6 +1502,66 @@ Alternatively, you can set the `ZENML_PRO_API_URL` environment variable:
 export ZENML_PRO_API_URL=https://zenml-pro.staging.cloudinfra.zenml.io/api/v1
 zenml login
 ```
+
+## Day 2 Operations: Upgrades and Updates
+
+This section covers how to upgrade or update your ZenML Pro deployment. The process involves updating both the ZenML Pro Control Plane and the ZenML Pro tenant servers.
+
+{% hint style="warning" %}
+Always upgrade the ZenML Pro Control Plane first, then upgrade the tenant servers. This ensures compatibility and prevents potential issues.
+{% endhint %}
+
+### Upgrade Checklist
+
+1. **Check Available Versions and Release Notes**
+   * For ZenML Pro Control Plane:
+     * Check available versions in the [ZenML Pro ArtifactHub repository](https://artifacthub.io/packages/helm/zenml-pro/zenml-pro)
+   * For ZenML Pro Tenant Servers:
+     * Check available versions in the [ZenML OSS ArtifactHub repository](https://artifacthub.io/packages/helm/zenml/zenml)
+     * Review the [ZenML GitHub releases page](https://github.com/zenml-io/zenml/releases) for release notes and breaking changes
+
+2. **Fetch and Prepare New Software Artifacts**
+   * Follow the [Software Artifacts](#software-artifacts) section to get access to the new versions of:
+     * ZenML Pro Control Plane container images and Helm chart
+     * ZenML Pro tenant server container images and Helm chart
+   * If using a private registry, copy the new container images to your private registry
+   * If you are using an air-gapped installation, follow the [Air-Gapped Installation](#air-gapped-installation) instructions
+
+3. **Upgrade the ZenML Pro Control Plane**
+   * Option A - In-place upgrade with existing values. Use this if you don't need to change any configuration values as part of the upgrade:
+     ```bash
+     helm --namespace zenml-pro upgrade zenml-pro oci://public.ecr.aws/zenml/zenml-pro \
+       --version <new-version> --reuse-values
+     ```
+   * Option B - Retrieve, modify and reapply values, if necessary. Use this if you need to change any configuration values as part of the upgrade or if you are performing a configuration update without upgrading the ZenML Pro Control Plane.
+     ```bash
+     # Get the current values
+     helm --namespace zenml-pro get values zenml-pro > current-values.yaml
+     
+     # Edit current-values.yaml if needed, then upgrade
+     helm --namespace zenml-pro upgrade zenml-pro oci://public.ecr.aws/zenml/zenml-pro \
+       --version <new-or-existing-version> --values current-values.yaml
+     ```
+
+4. **Upgrade ZenML Pro Tenant Servers**
+   * For each tenant, perform either:
+       * Option A - In-place upgrade with existing values. Use this if you don't need to change any configuration values as part of the upgrade:
+           ```bash
+           helm --namespace zenml-pro-<tenant-id> upgrade zenml oci://public.ecr.aws/zenml/zenml \
+           --version <new-version> --reuse-values
+           ```
+       * Option B - Retrieve, modify and reapply values, if necessary. Use this if you need to change any configuration values as part of the upgrade or if you are performing a configuration update without upgrading the ZenML Pro Tenant Server.
+           ```bash
+           # Get the current values
+           helm --namespace zenml-pro-<tenant-id> get values zenml > current-tenant-values.yaml
+           
+           # Edit current-tenant-values.yaml if needed, then upgrade
+           helm --namespace zenml-pro-<tenant-id> upgrade zenml oci://public.ecr.aws/zenml/zenml \
+           --version <new-version> --values current-tenant-values.yaml
+           ```
+
+
+
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
