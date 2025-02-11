@@ -275,32 +275,15 @@ def resolve(
     )
 
 
-def get_source_root() -> str:
-    """Get the source root.
-
-    The source root will be determined in the following order:
-    - The manually specified custom source root if it was set.
-    - The ZenML repository directory if one exists in the current working
-      directory or any parent directories.
-    - The parent directory of the main module file.
-
-    Returns:
-        The source root.
+def get_implicit_source_root() -> str:
+    """Get the implicit source root (the parent directory of the main module).
 
     Raises:
         RuntimeError: If the main module file can't be found.
+
+    Returns:
+        The implicit source root.
     """
-    if _CUSTOM_SOURCE_ROOT:
-        logger.debug("Using custom source root: %s", _CUSTOM_SOURCE_ROOT)
-        return _CUSTOM_SOURCE_ROOT
-
-    from zenml.client import Client
-
-    repo_root = Client.find_repository()
-    if repo_root:
-        logger.debug("Using repository root as source root: %s", repo_root)
-        return str(repo_root.resolve())
-
     main_module = sys.modules.get("__main__")
     if main_module is None:
         raise RuntimeError(
@@ -314,13 +297,42 @@ def get_source_root() -> str:
             "have an associated file. This could be because you're running in "
             "an interactive Python environment. If you are trying to run from "
             "within a Jupyter notebook, please run `zenml init` from the root "
-            "where your notebook is located and restart your notebook server.   "
+            "where your notebook is located and restart your notebook server."
         )
 
     path = Path(main_module.__file__).resolve().parent
-
-    logger.debug("Using main module parent directory as source root: %s", path)
     return str(path)
+
+
+def get_source_root() -> str:
+    """Get the source root.
+
+    The source root will be determined in the following order:
+    - The manually specified custom source root if it was set.
+    - The ZenML repository directory if one exists in the current working
+      directory or any parent directories.
+    - The parent directory of the main module file.
+
+    Returns:
+        The source root.
+    """
+    if _CUSTOM_SOURCE_ROOT:
+        logger.debug("Using custom source root: %s", _CUSTOM_SOURCE_ROOT)
+        return _CUSTOM_SOURCE_ROOT
+
+    from zenml.client import Client
+
+    repo_root = Client.find_repository()
+    if repo_root:
+        logger.debug("Using repository root as source root: %s", repo_root)
+        return str(repo_root.resolve())
+
+    implicit_source_root = get_implicit_source_root()
+    logger.debug(
+        "Using main module parent directory as source root: %s",
+        implicit_source_root,
+    )
+    return implicit_source_root
 
 
 def set_custom_source_root(source_root: Optional[str]) -> None:
