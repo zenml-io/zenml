@@ -716,7 +716,7 @@ class BaseFilter(BaseModel):
             value: The filter value.
             table: The table to filter.
             additional_columns: Additional table columns that should also
-                filtered for the given value as part of the or condition.
+                filter for the given value as part of the or condition.
 
         Returns:
             The query conditions.
