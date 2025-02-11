@@ -56,7 +56,12 @@ from zenml.steps.utils import (
     parse_return_type_annotations,
     resolve_type_annotation,
 )
-from zenml.utils import materializer_utils, source_utils, string_utils
+from zenml.utils import (
+    env_utils,
+    materializer_utils,
+    source_utils,
+    string_utils,
+)
 from zenml.utils.typing_utils import get_origin, is_union
 
 if TYPE_CHECKING:
@@ -183,86 +188,90 @@ class StepRunner:
             )
 
             step_failed = False
-            try:
-                return_values = step_instance.call_entrypoint(
-                    **function_params
-                )
-            except BaseException as step_exception:  # noqa: E722
-                step_failed = True
-                if not handle_bool_env_var(
-                    ENV_ZENML_IGNORE_FAILURE_HOOK, False
-                ):
-                    if (
-                        failure_hook_source
-                        := self.configuration.failure_hook_source
-                    ):
-                        logger.info("Detected failure hook. Running...")
-                        self.load_and_run_hook(
-                            failure_hook_source,
-                            step_exception=step_exception,
-                        )
-                raise
-            finally:
+            with env_utils.temporary_environment(step_run.config.environment):
                 try:
-                    step_run_metadata = self._stack.get_step_run_metadata(
-                        info=step_run_info,
+                    return_values = step_instance.call_entrypoint(
+                        **function_params
                     )
-                    publish_step_run_metadata(
-                        step_run_id=step_run_info.step_run_id,
-                        step_run_metadata=step_run_metadata,
-                    )
-                    self._stack.cleanup_step_run(
-                        info=step_run_info, step_failed=step_failed
-                    )
-                    if not step_failed:
+                except BaseException as step_exception:  # noqa: E722
+                    step_failed = True
+                    if not handle_bool_env_var(
+                        ENV_ZENML_IGNORE_FAILURE_HOOK, False
+                    ):
                         if (
-                            success_hook_source
-                            := self.configuration.success_hook_source
+                            failure_hook_source
+                            := self.configuration.failure_hook_source
                         ):
-                            logger.info("Detected success hook. Running...")
+                            logger.info("Detected failure hook. Running...")
                             self.load_and_run_hook(
-                                success_hook_source,
-                                step_exception=None,
+                                failure_hook_source,
+                                step_exception=step_exception,
                             )
-
-                        # Store and publish the output artifacts of the step function.
-                        output_data = self._validate_outputs(
-                            return_values, output_annotations
-                        )
-                        artifact_metadata_enabled = is_setting_enabled(
-                            is_enabled_on_step=step_run_info.config.enable_artifact_metadata,
-                            is_enabled_on_pipeline=step_run_info.pipeline.enable_artifact_metadata,
-                        )
-                        artifact_visualization_enabled = is_setting_enabled(
-                            is_enabled_on_step=step_run_info.config.enable_artifact_visualization,
-                            is_enabled_on_pipeline=step_run_info.pipeline.enable_artifact_visualization,
-                        )
-                        output_artifacts = self._store_output_artifacts(
-                            output_data=output_data,
-                            output_artifact_uris=output_artifact_uris,
-                            output_materializers=output_materializers,
-                            output_annotations=output_annotations,
-                            artifact_metadata_enabled=artifact_metadata_enabled,
-                            artifact_visualization_enabled=artifact_visualization_enabled,
-                        )
-
-                        if (
-                            model_version := step_run.model_version
-                            or pipeline_run.model_version
-                        ):
-                            from zenml.orchestrators import step_run_utils
-
-                            step_run_utils.link_output_artifacts_to_model_version(
-                                artifacts={
-                                    k: [v] for k, v in output_artifacts.items()
-                                },
-                                model_version=model_version,
-                            )
+                    raise
                 finally:
-                    step_context._cleanup_registry.execute_callbacks(
-                        raise_on_exception=False
-                    )
-                    StepContext._clear()  # Remove the step context singleton
+                    try:
+                        step_run_metadata = self._stack.get_step_run_metadata(
+                            info=step_run_info,
+                        )
+                        publish_step_run_metadata(
+                            step_run_id=step_run_info.step_run_id,
+                            step_run_metadata=step_run_metadata,
+                        )
+                        self._stack.cleanup_step_run(
+                            info=step_run_info, step_failed=step_failed
+                        )
+                        if not step_failed:
+                            if (
+                                success_hook_source
+                                := self.configuration.success_hook_source
+                            ):
+                                logger.info(
+                                    "Detected success hook. Running..."
+                                )
+                                self.load_and_run_hook(
+                                    success_hook_source,
+                                    step_exception=None,
+                                )
+
+                            # Store and publish the output artifacts of the step function.
+                            output_data = self._validate_outputs(
+                                return_values, output_annotations
+                            )
+                            artifact_metadata_enabled = is_setting_enabled(
+                                is_enabled_on_step=step_run_info.config.enable_artifact_metadata,
+                                is_enabled_on_pipeline=step_run_info.pipeline.enable_artifact_metadata,
+                            )
+                            artifact_visualization_enabled = is_setting_enabled(
+                                is_enabled_on_step=step_run_info.config.enable_artifact_visualization,
+                                is_enabled_on_pipeline=step_run_info.pipeline.enable_artifact_visualization,
+                            )
+                            output_artifacts = self._store_output_artifacts(
+                                output_data=output_data,
+                                output_artifact_uris=output_artifact_uris,
+                                output_materializers=output_materializers,
+                                output_annotations=output_annotations,
+                                artifact_metadata_enabled=artifact_metadata_enabled,
+                                artifact_visualization_enabled=artifact_visualization_enabled,
+                            )
+
+                            if (
+                                model_version := step_run.model_version
+                                or pipeline_run.model_version
+                            ):
+                                from zenml.orchestrators import step_run_utils
+
+                                step_run_utils.link_output_artifacts_to_model_version(
+                                    artifacts={
+                                        k: [v]
+                                        for k, v in output_artifacts.items()
+                                    },
+                                    model_version=model_version,
+                                )
+                    finally:
+                        step_context._cleanup_registry.execute_callbacks(
+                            raise_on_exception=False
+                        )
+                        StepContext._clear()  # Remove the step context singleton
 
             # Update the status and output artifacts of the step run.
             output_artifact_ids = {

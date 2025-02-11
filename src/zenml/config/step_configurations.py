@@ -148,6 +148,7 @@ class StepConfigurationUpdate(StrictBaseModel):
     step_operator: Optional[str] = None
     experiment_tracker: Optional[str] = None
     parameters: Dict[str, Any] = {}
+    environment: Dict[str, Any] = {}
     settings: Dict[str, SerializeAsAny[BaseSettings]] = {}
     extra: Dict[str, Any] = {}
     failure_hook_source: Optional[SourceWithValidator] = None
