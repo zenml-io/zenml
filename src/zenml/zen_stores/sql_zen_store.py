@@ -385,7 +385,6 @@ AnyIdentifiedResponse = TypeVar(
 SelectOfScalar.inherit_cache = True
 Select.inherit_cache = True
 
-
 logger = get_logger(__name__)
 
 ZENML_SQLITE_DB_FILENAME = "zenml.db"
@@ -2586,7 +2585,7 @@ class SqlZenStore(BaseZenStore):
             if artifact.tags:
                 self._attach_tags_to_resource(
                     tag_names=artifact.tags,
-                    resource_id=artifact_schema.id,
+                    resource=artifact_schema,
                     resource_type=TaggableResourceTypes.ARTIFACT,
                 )
 
@@ -2675,7 +2674,7 @@ class SqlZenStore(BaseZenStore):
             if artifact_update.add_tags:
                 self._attach_tags_to_resource(
                     tag_names=artifact_update.add_tags,
-                    resource_id=existing_artifact.id,
+                    resource=existing_artifact,
                     resource_type=TaggableResourceTypes.ARTIFACT,
                 )
             if artifact_update.remove_tags:
@@ -2901,7 +2900,7 @@ class SqlZenStore(BaseZenStore):
             if artifact_version.tags:
                 self._attach_tags_to_resource(
                     tag_names=artifact_version.tags,
-                    resource_id=artifact_version_id,
+                    resource=artifact_version_schema,
                     resource_type=TaggableResourceTypes.ARTIFACT_VERSION,
                 )
 
@@ -3061,7 +3060,7 @@ class SqlZenStore(BaseZenStore):
             if artifact_version_update.add_tags:
                 self._attach_tags_to_resource(
                     tag_names=artifact_version_update.add_tags,
-                    resource_id=existing_artifact_version.id,
+                    resource=existing_artifact_version,
                     resource_type=TaggableResourceTypes.ARTIFACT_VERSION,
                 )
             if artifact_version_update.remove_tags:
@@ -3070,7 +3069,6 @@ class SqlZenStore(BaseZenStore):
                     resource_id=existing_artifact_version.id,
                     resource_type=TaggableResourceTypes.ARTIFACT_VERSION,
                 )
-
             # Update the schema itself.
             existing_artifact_version.update(
                 artifact_version_update=artifact_version_update
@@ -4275,7 +4273,7 @@ class SqlZenStore(BaseZenStore):
             if pipeline.tags:
                 self._attach_tags_to_resource(
                     tag_names=pipeline.tags,
-                    resource_id=new_pipeline.id,
+                    resource=new_pipeline,
                     resource_type=TaggableResourceTypes.PIPELINE,
                 )
 
@@ -4395,7 +4393,7 @@ class SqlZenStore(BaseZenStore):
             if pipeline_update.add_tags:
                 self._attach_tags_to_resource(
                     tag_names=pipeline_update.add_tags,
-                    resource_id=existing_pipeline.id,
+                    resource=existing_pipeline,
                     resource_type=TaggableResourceTypes.PIPELINE,
                 )
             pipeline_update.add_tags = None
@@ -4716,7 +4714,7 @@ class SqlZenStore(BaseZenStore):
             if template.tags:
                 self._attach_tags_to_resource(
                     tag_names=template.tags,
-                    resource_id=template_schema.id,
+                    resource=template_schema,
                     resource_type=TaggableResourceTypes.RUN_TEMPLATE,
                 )
 
@@ -4818,7 +4816,7 @@ class SqlZenStore(BaseZenStore):
             if template_update.add_tags:
                 self._attach_tags_to_resource(
                     tag_names=template_update.add_tags,
-                    resource_id=template.id,
+                    resource=template,
                     resource_type=TaggableResourceTypes.RUN_TEMPLATE,
                 )
             template_update.add_tags = None
@@ -5117,7 +5115,7 @@ class SqlZenStore(BaseZenStore):
             if pipeline_run.tags:
                 self._attach_tags_to_resource(
                     tag_names=pipeline_run.tags,
-                    resource_id=new_run.id,
+                    resource=new_run,
                     resource_type=TaggableResourceTypes.PIPELINE_RUN,
                 )
 
@@ -5226,7 +5224,7 @@ class SqlZenStore(BaseZenStore):
             if pipeline_run.tags:
                 self._attach_tags_to_resource(
                     tag_names=pipeline_run.tags,
-                    resource_id=run_schema.id,
+                    resource=run_schema,
                     resource_type=TaggableResourceTypes.PIPELINE_RUN,
                 )
 
@@ -5434,7 +5432,7 @@ class SqlZenStore(BaseZenStore):
             if run_update.add_tags:
                 self._attach_tags_to_resource(
                     tag_names=run_update.add_tags,
-                    resource_id=existing_run.id,
+                    resource=existing_run,
                     resource_type=TaggableResourceTypes.PIPELINE_RUN,
                 )
             run_update.add_tags = None
@@ -10086,7 +10084,7 @@ class SqlZenStore(BaseZenStore):
             if model.tags:
                 self._attach_tags_to_resource(
                     tag_names=model.tags,
-                    resource_id=model_schema.id,
+                    resource=model_schema,
                     resource_type=TaggableResourceTypes.MODEL,
                 )
             try:
@@ -10207,7 +10205,7 @@ class SqlZenStore(BaseZenStore):
             if model_update.add_tags:
                 self._attach_tags_to_resource(
                     tag_names=model_update.add_tags,
-                    resource_id=existing_model.id,
+                    resource=existing_model,
                     resource_type=TaggableResourceTypes.MODEL,
                 )
             model_update.add_tags = None
@@ -10618,8 +10616,8 @@ class SqlZenStore(BaseZenStore):
         if model_version.tags:
             self._attach_tags_to_resource(
                 tag_names=model_version.tags,
-                resource_id=model_version_id,
-                resource_type=TaggableResourceTypes.MODEL_VERSION,
+                resource=model_version_schema,
+                resource_type=TaggableResourceTypes.MODEL_VERSION
             )
 
         return self.get_model_version(model_version_id)
@@ -10800,7 +10798,7 @@ class SqlZenStore(BaseZenStore):
             if model_version_update_model.add_tags:
                 self._attach_tags_to_resource(
                     tag_names=model_version_update_model.add_tags,
-                    resource_id=existing_model_version.id,
+                    resource=existing_model_version,
                     resource_type=TaggableResourceTypes.MODEL_VERSION,
                 )
             if model_version_update_model.remove_tags:
@@ -11101,21 +11099,19 @@ class SqlZenStore(BaseZenStore):
             session.delete(model_version_pipeline_run_link)
             session.commit()
 
-    #################
-    # Tags
-    #################
+    # ---------------------------------- Tags ----------------------------------
 
     def _attach_tags_to_resource(
         self,
         tag_names: List[str],
-        resource_id: UUID,
-        resource_type: TaggableResourceTypes,
+        resource: AnySchema,
+        resource_type: TaggableResourceTypes
     ) -> None:
         """Creates a tag<>resource link if not present.
 
         Args:
             tag_names: The list of names of the tags.
-            resource_id: The id of the resource.
+            resource: The id of the resource.
             resource_type: The type of the resource to create link with.
         """
         for tag_name in tag_names:
@@ -11124,13 +11120,58 @@ class SqlZenStore(BaseZenStore):
             except KeyError:
                 tag = self.create_tag(TagRequest(name=tag_name))
             try:
+                if tag.singleton:
+                    detach_resource_id = None
+
+                    if resource_type == TaggableResourceTypes.PIPELINE_RUN:
+                        older_runs = self.list_runs(
+                            PipelineRunFilter(
+                                pipeline_id=resource.pipeline_id,
+                                tags=[tag.name],
+                            )
+                        )
+                        if older_runs.items:
+                            detach_resource_id = older_runs.items[0].id
+                    elif resource_type == TaggableResourceTypes.ARTIFACT_VERSION:
+                        older_versions = self.list_artifact_versions(
+                            ArtifactVersionFilter(
+                                artifact_id=resource.artifact_id,
+                                tags=[tag.name],
+                            )
+                        )
+                        if older_versions.items:
+                            detach_resource_id = older_versions.items[0].id
+                    elif resource_type == TaggableResourceTypes.RUN_TEMPLATE:
+                        older_templates = self.list_run_templates(
+                            RunTemplateFilter(
+                                tags=[tag.name],
+                            )
+                        )
+                        if older_templates.items:
+                            detach_resource_id = older_templates.items[0].id
+                    else:
+                        logger.debug(
+                            "Singleton tag functionality only works: for "
+                            "templates, for pipeline runs (within the scope of "
+                            "pipelines) and for artifact versions (within the "
+                            "scope of artifacts)."
+                        )
+
+                    if detach_resource_id:
+                        self._detach_tags_from_resource(
+                            tag_names=[tag.name],
+                            resource_id=detach_resource_id,
+                            resource_type=resource_type,
+                        )
+
                 self.create_tag_resource(
                     TagResourceRequest(
                         tag_id=tag.id,
-                        resource_id=resource_id,
+                        resource_id=resource.id,
                         resource_type=resource_type,
                     )
                 )
+
             except EntityExistsError:
                 pass
 
@@ -11290,6 +11331,41 @@ class SqlZenStore(BaseZenStore):
                 tag_name_or_id=tag_name_or_id, session=session
             )
 
+            if tag_update_model.singleton is True:
+                error_messages = []
+                for resource_type, resource_id, scope_id in [
+                    (
+                        TaggableResourceTypes.PIPELINE_RUN,
+                        PipelineRunSchema.id,
+                        PipelineRunSchema.pipeline_id,
+                    ),
+                    (
+                        TaggableResourceTypes.ARTIFACT_VERSION,
+                        ArtifactVersionSchema.id,
+                        ArtifactVersionSchema.artifact_id,
+                    ),
+                    (
+                        TaggableResourceTypes.RUN_TEMPLATE,
+                        RunTemplateSchema.id,
+                        RunTemplateSchema.id,
+                    ),
+                ]:
+                    check, error = self._singleton_check_for_existing_tags(
+                        tag=tag,
+                        session=session,
+                        resource_type=resource_type,
+                        resource_id_column=resource_id,
+                        scope_id_column=scope_id,
+                    )
+                    if check is False:
+                        error_messages.append(error)
+
+                if error_messages:
+                    raise RuntimeError(
+                        "\n".join(error_messages)
+                        + "\nYou can only convert a tag into a singleton "
+                        "if the conflicts mentioned above are resolved."
+                    )
             if not tag:
                 raise KeyError(f"Tag with ID `{tag_name_or_id}` not found.")
 
@@ -11301,9 +11377,42 @@ class SqlZenStore(BaseZenStore):
             session.refresh(tag)
             return tag.to_model(include_metadata=True, include_resources=True)
 
-    ####################
-    # Tags <> resources
-    ####################
+    @staticmethod
+    def _singleton_check_for_existing_tags(
+        tag,
+        session,
+        resource_type,
+        resource_id_column,
+        scope_id_column,
+    ) -> (bool, str):
+        query = (
+            select(scope_id_column, func.count().label("count"))
+            .join(
+                TagResourceSchema,
+                and_(
+                    TagResourceSchema.resource_id == resource_id_column,
+                    TagResourceSchema.resource_type == resource_type,
+                ),
+            )
+            .where(TagResourceSchema.tag_id == tag.id)
+            .group_by(scope_id_column)
+        )
+        results = session.exec(query).all()
+        conflicts = [k for k, v in results if v > 1]
+        if conflicts:
+            error_message = (
+                f"The tag `{tag.name}` is associated with multiple entries of "
+                f"`{resource_type.value}`s"
+            )
+
+            if resource_id_column != scope_id_column:
+                error_message += (
+                    f" that share the same `{scope_id_column.name}`s"
+                )
+            error_message += f": {conflicts}"
+            return False, error_message
+
+        return True, ""
 
     def create_tag_resource(
         self, tag_resource: TagResourceRequest

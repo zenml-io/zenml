@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of tag tables."""
 
+import random
 from typing import Any, List
 from uuid import UUID
 
@@ -43,6 +44,8 @@ class TagSchema(NamedSchema, table=True):
     __tablename__ = "tag"
 
     color: str = Field(sa_column=Column(VARCHAR(255), nullable=False))
+    singleton: bool = Field(default=False)
+
     links: List["TagResourceSchema"] = Relationship(
         back_populates="tag",
         sa_relationship_kwargs={"overlaps": "tags", "cascade": "delete"},
@@ -60,7 +63,8 @@ class TagSchema(NamedSchema, table=True):
         """
         return cls(
             name=request.name,
-            color=request.color.value,
+            color=request.color.value if request.color else None,
+            singleton=request.singleton,
         )
 
     def to_model(
@@ -87,6 +91,7 @@ class TagSchema(NamedSchema, table=True):
                 created=self.created,
                 updated=self.updated,
                 color=ColorVariants(self.color),
+                singleton=self.singleton,
                 tagged_count=len(self.links),
             ),
         )

@@ -39,7 +39,11 @@ class TagRequest(BaseRequest):
         description="The unique title of the tag.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    color: ColorVariants = Field(
+    singleton: Optional[bool] = Field(
+        description="The flag signifying whether the tag is a singleton.",
+        default=False,
+    )
+    color: Optional[ColorVariants] = Field(
         description="The color variant assigned to the tag.",
         default_factory=lambda: random.choice(list(ColorVariants)),
     )
@@ -52,6 +56,7 @@ class TagUpdate(BaseModel):
     """Update model for tags."""
 
     name: Optional[str] = None
+    singleton: Optional[bool] = None
     color: Optional[ColorVariants] = None
 
 
@@ -64,6 +69,9 @@ class TagResponseBody(BaseDatedResponseBody):
     color: ColorVariants = Field(
         description="The color variant assigned to the tag.",
         default_factory=lambda: random.choice(list(ColorVariants)),
+    )
+    singleton: bool = Field(
+        description="The flag signifying whether the tag is a singleton."
     )
     tagged_count: int = Field(
         description="The count of resources tagged with this tag."
@@ -106,6 +114,15 @@ class TagResponse(
         return self.get_body().color
 
     @property
+    def singleton(self) -> bool:
+        """The `singleton` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().singleton
+
+    @property
     def tagged_count(self) -> int:
         """The `tagged_count` property.
 
@@ -126,4 +143,8 @@ class TagFilter(BaseFilter):
     )
     color: Optional[ColorVariants] = Field(
         description="The color variant assigned to the tag.", default=None
+    )
+    singleton: Optional[bool] = Field(
+        description="The flag signifying whether the tag is a singleton.",
+        default=None,
     )
