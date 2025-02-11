@@ -28,7 +28,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, field_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
-from zenml.enums import ModelStages
+from zenml.enums import ArtifactType, ModelStages
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.base.filter import AnyQuery
 from zenml.models.v2.base.page import Page
@@ -426,32 +426,36 @@ class ModelVersionResponse(
 
     def _get_linked_object(
         self,
-        collection: Dict[str, Dict[str, UUID]],
         name: str,
         version: Optional[str] = None,
+        type: Optional[ArtifactType] = None,
     ) -> Optional["ArtifactVersionResponse"]:
         """Get the artifact linked to this model version given type.
 
         Args:
-            collection: The collection to search in (one of
-                self.model_artifact_ids, self.data_artifact_ids,
-                self.deployment_artifact_ids)
             name: The name of the artifact to retrieve.
             version: The version of the artifact to retrieve (None for
                 latest/non-versioned)
+            type: The type of the artifact to filter by.
 
         Returns:
             Specific version of an artifact from collection or None
         """
         from zenml.client import Client
 
-        client = Client()
+        artifact_versions = Client().list_artifact_versions(
+            sort_by="desc:created",
+            size=1,
+            name=name,
+            version=version,
+            model_version_id=self.id,
+            type=type,
+            hydrate=True,
+        )
 
-        if name not in collection:
+        if not artifact_versions.items:
             return None
-        if version is None:
-            version = max(collection[name].keys())
-        return client.get_artifact_version(collection[name][version])
+        return artifact_versions.items[0]
 
     def get_artifact(
         self,
@@ -468,12 +472,7 @@ class ModelVersionResponse(
         Returns:
             Specific version of an artifact or None
         """
-        all_artifact_ids = {
-            **self.model_artifact_ids,
-            **self.data_artifact_ids,
-            **self.deployment_artifact_ids,
-        }
-        return self._get_linked_object(all_artifact_ids, name, version)
+        return self._get_linked_object(name, version)
 
     def get_model_artifact(
         self,
@@ -490,7 +489,7 @@ class ModelVersionResponse(
         Returns:
             Specific version of the model artifact or None
         """
-        return self._get_linked_object(self.model_artifact_ids, name, version)
+        return self._get_linked_object(name, version, ArtifactType.MODEL)
 
     def get_data_artifact(
         self,
@@ -507,11 +506,7 @@ class ModelVersionResponse(
         Returns:
             Specific version of the data artifact or None
         """
-        return self._get_linked_object(
-            self.data_artifact_ids,
-            name,
-            version,
-        )
+        return self._get_linked_object(name, version, ArtifactType.DATA)
 
     def get_deployment_artifact(
         self,
@@ -528,11 +523,7 @@ class ModelVersionResponse(
         Returns:
             Specific version of the deployment artifact or None
         """
-        return self._get_linked_object(
-            self.deployment_artifact_ids,
-            name,
-            version,
-        )
+        return self._get_linked_object(name, version, ArtifactType.SERVICE)
 
     def get_pipeline_run(self, name: str) -> "PipelineRunResponse":
         """Get pipeline run linked to this version.

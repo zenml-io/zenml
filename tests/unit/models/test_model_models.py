@@ -13,12 +13,9 @@
 #  permissions and limitations under the License.
 
 from datetime import datetime
-from unittest.mock import patch
 from uuid import uuid4
 
-import pytest
-
-from tests.unit.steps.test_external_artifact import MockZenmlClient
+from zenml.enums import ArtifactType
 from zenml.models import (
     ModelResponse,
     ModelResponseBody,
@@ -28,106 +25,88 @@ from zenml.models import (
     ModelVersionResponseMetadata,
 )
 
-ARTIFACT_VERSION_IDS = [uuid4(), uuid4()]
 
-
-@pytest.mark.parametrize(
-    "artifact_object_ids,query_name,query_version,expected",
-    (
-        (
-            {"artifact": {"1": ARTIFACT_VERSION_IDS[0]}},
-            "artifact",
-            None,
-            ARTIFACT_VERSION_IDS[0],
-        ),
-        (
-            {
-                "artifact": {
-                    "1": ARTIFACT_VERSION_IDS[0],
-                    "2": ARTIFACT_VERSION_IDS[1],
-                }
-            },
-            "artifact",
-            None,
-            ARTIFACT_VERSION_IDS[1],
-        ),
-        (
-            {
-                "artifact": {
-                    "1": ARTIFACT_VERSION_IDS[0],
-                    "2": ARTIFACT_VERSION_IDS[1],
-                }
-            },
-            "artifact",
-            "1",
-            ARTIFACT_VERSION_IDS[0],
-        ),
-        (
-            {},
-            "artifact",
-            None,
-            None,
-        ),
-    ),
-    ids=[
-        "No collision",
-        "Latest version",
-        "Specific version",
-        "Not found",
-    ],
-)
-def test_getters(
-    artifact_object_ids,
-    query_name,
-    query_version,
-    expected,
-    sample_workspace_model,
+def test_model_version_response_artifact_fetching(
+    clean_client, mocker, sample_workspace_model
 ):
-    """Test that the getters work as expected."""
-    with patch.dict(
-        "sys.modules",
-        {
-            "zenml.client": MockZenmlClient,
-        },
-    ):
-        model = ModelResponse(
-            id=uuid4(),
-            name="model",
-            body=ModelResponseBody(
-                created=datetime.now(),
-                updated=datetime.now(),
-                tags=[],
-            ),
-            metadata=ModelResponseMetadata(
-                workspace=sample_workspace_model,
-            ),
-        )
-        mv = ModelVersionResponse(
-            id=uuid4(),
-            name="foo",
-            body=ModelVersionResponseBody(
-                created=datetime.now(),
-                updated=datetime.now(),
-                model=model,
-                number=-1,
-                data_artifact_ids=artifact_object_ids,
-            ),
-            metadata=ModelVersionResponseMetadata(
-                workspace=sample_workspace_model,
-            ),
-        )
-        if expected != "RuntimeError":
-            got = mv.get_data_artifact(
-                name=query_name,
-                version=query_version,
-            )
-            if got is not None:
-                assert got.id == expected
-            else:
-                assert expected is None
-        else:
-            with pytest.raises(RuntimeError):
-                mv.get_data_artifact(
-                    name=query_name,
-                    version=query_version,
-                )
+    """Test artifact fetching from a model version response."""
+    mock_list_artifact_versions = mocker.patch.object(
+        type(clean_client),
+        "list_artifact_versions",
+    )
+
+    model = ModelResponse(
+        id=uuid4(),
+        name="model",
+        body=ModelResponseBody(
+            created=datetime.now(),
+            updated=datetime.now(),
+            tags=[],
+        ),
+        metadata=ModelResponseMetadata(
+            workspace=sample_workspace_model,
+        ),
+    )
+    mv = ModelVersionResponse(
+        id=uuid4(),
+        name="foo",
+        body=ModelVersionResponseBody(
+            created=datetime.now(),
+            updated=datetime.now(),
+            model=model,
+            number=-1,
+        ),
+        metadata=ModelVersionResponseMetadata(
+            workspace=sample_workspace_model,
+        ),
+    )
+
+    artifact_name = "artifact_name"
+    version_name = "version_name"
+
+    mv.get_artifact(artifact_name, version_name)
+    mock_list_artifact_versions.assert_called_once_with(
+        sort_by="desc:created",
+        size=1,
+        name=artifact_name,
+        version=version_name,
+        model_version_id=mv.id,
+        type=None,
+        hydrate=True,
+    )
+    mock_list_artifact_versions.reset_mock()
+
+    mv.get_data_artifact(artifact_name, version_name)
+    mock_list_artifact_versions.assert_called_once_with(
+        sort_by="desc:created",
+        size=1,
+        name=artifact_name,
+        version=version_name,
+        model_version_id=mv.id,
+        type=ArtifactType.DATA,
+        hydrate=True,
+    )
+    mock_list_artifact_versions.reset_mock()
+
+    mv.get_model_artifact(artifact_name, version_name)
+    mock_list_artifact_versions.assert_called_once_with(
+        sort_by="desc:created",
+        size=1,
+        name=artifact_name,
+        version=version_name,
+        model_version_id=mv.id,
+        type=ArtifactType.MODEL,
+        hydrate=True,
+    )
+    mock_list_artifact_versions.reset_mock()
+
+    mv.get_deployment_artifact(artifact_name, version_name)
+    mock_list_artifact_versions.assert_called_once_with(
+        sort_by="desc:created",
+        size=1,
+        name=artifact_name,
+        version=version_name,
+        model_version_id=mv.id,
+        type=ArtifactType.SERVICE,
+        hydrate=True,
+    )
