@@ -59,6 +59,7 @@ from zenml.constants import (
 )
 from zenml.enums import (
     ArtifactType,
+    ColorVariants,
     LogicalOperators,
     ModelStages,
     OAuthDeviceStatus,
@@ -3816,10 +3817,11 @@ class Client(metaclass=ClientMetaClass):
         status: Optional[str] = None,
         start_time: Optional[Union[datetime, str]] = None,
         end_time: Optional[Union[datetime, str]] = None,
-        num_steps: Optional[Union[int, str]] = None,
+        num_steps: Optional[Union[int, str]] = None,  # TODO: Remove this?
         unlisted: Optional[bool] = None,
         templatable: Optional[bool] = None,
         tag: Optional[str] = None,
+        tags: Optional[List[str]] = None,
         user: Optional[Union[UUID, str]] = None,
         run_metadata: Optional[Dict[str, Any]] = None,
         pipeline: Optional[Union[UUID, str]] = None,
@@ -3860,6 +3862,7 @@ class Client(metaclass=ClientMetaClass):
             unlisted: If the runs should be unlisted or not.
             templatable: If the runs should be templatable or not.
             tag: Tag to filter by.
+            tag: Tags to filter by.
             user: The name/ID of the user to filter by.
             run_metadata: The run_metadata of the run to filter by.
             pipeline: The name/ID of the pipeline to filter by.
@@ -3897,8 +3900,8 @@ class Client(metaclass=ClientMetaClass):
             status=status,
             start_time=start_time,
             end_time=end_time,
-            num_steps=num_steps,
             tag=tag,
+            tags=tags,
             unlisted=unlisted,
             user=user,
             run_metadata=run_metadata,
@@ -7505,23 +7508,30 @@ class Client(metaclass=ClientMetaClass):
             api_key_name_or_id=api_key.id,
         )
 
-    #############################################
-    # Tags
-    #
-    # Note: tag<>resource are not exposed and
-    # can be accessed via relevant resources
-    #############################################
-
-    def create_tag(self, tag: TagRequest) -> TagResponse:
+    # ---------------------------------- Tags ----------------------------------
+    def create_tag(
+        self,
+        name: str,
+        singleton: Optional[bool] = False,
+        color: Optional[Union[str, ColorVariants]] = None,
+    ) -> TagResponse:
         """Creates a new tag.
 
         Args:
-            tag: the Tag to be created.
+            name: the name of the tag.
+            singleton: the boolean to decide whether the tag is a singleton.
+                A singleton means that the tag can exist only for:
+                    - a pipeline run within the scope of a pipeline
+                    - an artifact version within the scope of an artifact
+                    - within the scope of run templates
+            color: the color of the tag
 
         Returns:
             The newly created tag.
         """
-        return self.zen_store.create_tag(tag=tag)
+        return self.zen_store.create_tag(
+            tag=TagRequest(name=name, singleton=singleton, color=color)
+        )
 
     def delete_tag(self, tag_name_or_id: Union[str, UUID]) -> None:
         """Deletes a tag.
@@ -7534,19 +7544,32 @@ class Client(metaclass=ClientMetaClass):
     def update_tag(
         self,
         tag_name_or_id: Union[str, UUID],
-        tag_update_model: TagUpdate,
+        name: Optional[str] = None,
+        singleton: Optional[bool] = None,
+        color: Optional[Union[str, ColorVariants]] = None,
     ) -> TagResponse:
         """Updates an existing tag.
 
         Args:
             tag_name_or_id: name or UUID of the tag to be updated.
-            tag_update_model: the tag to be updated.
+            name: the name of the tag.
+            singleton: the boolean to decide whether the tag is a singleton.
+                A singleton means that the tag can be associated with only one:
+                    - pipeline run within the scope of a pipeline
+                    - artifact version within the scope of an artifact
+                    - run template
+            color: the color of the tag
 
         Returns:
             The updated tag.
         """
         return self.zen_store.update_tag(
-            tag_name_or_id=tag_name_or_id, tag_update_model=tag_update_model
+            tag_name_or_id=tag_name_or_id,
+            tag_update_model=TagUpdate(
+                name=name,
+                singleton=singleton,
+                color=color,
+            ),
         )
 
     def get_tag(
@@ -7568,14 +7591,29 @@ class Client(metaclass=ClientMetaClass):
 
     def list_tags(
         self,
-        tag_filter_model: TagFilter,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        name: Optional[str] = None,
+        color: Optional[Union[str, ColorVariants]] = None,
+        singleton: Optional[bool] = None,
         hydrate: bool = False,
     ) -> Page[TagResponse]:
         """Get tags by filter.
 
         Args:
-            tag_filter_model: All filter parameters including pagination
-                params.
+            sort_by: The column to sort by.
+            page: The page of items.
+            size: The maximum size of all pages.
+            logical_operator: Which logical operator to use [and, or].
+            created: Use to filter by time of creation.
+            updated: Use the last updated date for filtering.
+            name: The name of the tag.
+            color: The color of the tag.
+            singleton: Flag indicating whether the tag is singleton.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -7583,5 +7621,16 @@ class Client(metaclass=ClientMetaClass):
             A page of all tags.
         """
         return self.zen_store.list_tags(
-            tag_filter_model=tag_filter_model, hydrate=hydrate
+            tag_filter_model=TagFilter(
+                sort_by=sort_by,
+                page=page,
+                size=size,
+                logical_operator=logical_operator,
+                created=created,
+                updated=updated,
+                name=name,
+                color=color,
+                singleton=singleton,
+            ),
+            hydrate=hydrate,
         )

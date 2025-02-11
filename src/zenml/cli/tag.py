@@ -26,7 +26,6 @@ from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
 from zenml.models import (
     TagFilter,
-    TagRequest,
     TagUpdate,
 )
 from zenml.utils.dict_utils import remove_none_values
@@ -47,7 +46,7 @@ def list_tags(**kwargs: Any) -> None:
     Args:
         **kwargs: Keyword arguments to filter models.
     """
-    tags = Client().list_tags(TagFilter(**kwargs))
+    tags = Client().list_tags(**kwargs)
 
     if not tags:
         cli_utils.declare("No tags found.")
@@ -83,7 +82,7 @@ def register_tag(name: str, color: Optional[ColorVariants]) -> None:
     """
     request_dict = remove_none_values(dict(name=name, color=color))
     try:
-        tag = Client().create_tag(TagRequest(**request_dict))
+        tag = Client().create_tag(**request_dict)
     except (EntityExistsError, ValueError) as e:
         cli_utils.error(str(e))
 

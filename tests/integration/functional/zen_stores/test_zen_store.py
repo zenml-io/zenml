@@ -117,9 +117,7 @@ from zenml.models import (
     StepRunFilter,
     StepRunUpdate,
     TagFilter,
-    TagRequest,
     TagResourceRequest,
-    TagUpdate,
     UserRequest,
     UserResponse,
     UserUpdate,
@@ -5172,34 +5170,34 @@ class TestModelVersionPipelineRunLinks:
 class TestTag:
     def test_create_pass(self, clean_client: "Client"):
         """Tests that tag creation passes."""
-        tag = clean_client.create_tag(TagRequest(name="foo"))
+        tag = clean_client.create_tag(name="foo")
         assert tag.name == "foo"
         assert tag.color is not None
-        tag = clean_client.create_tag(TagRequest(name="bar", color="yellow"))
+        tag = clean_client.create_tag(name="bar", color="yellow")
         assert tag.name == "bar"
         assert tag.color == ColorVariants.YELLOW.name.lower()
         with pytest.raises(ValueError):
-            clean_client.create_tag(TagRequest(color="yellow"))
+            clean_client.create_tag(color="yellow")
 
     def test_create_bad_input(self, clean_client: "Client"):
         """Tests that tag creation fails without a name."""
         with pytest.raises(ValueError):
-            clean_client.create_tag(TagRequest(color="yellow"))
+            clean_client.create_tag(color="yellow")
 
     def test_create_fails_with_invalid_name(self, clean_client: "Client"):
         """Tests that tag creation fails with invalid name."""
         with pytest.raises(ValueError):
-            clean_client.create_tag(TagRequest(name="I will fail\n"))
+            clean_client.create_tag(name="I will fail\n")
 
     def test_create_duplicate(self, clean_client: "Client"):
         """Tests that tag creation fails on duplicate."""
-        clean_client.create_tag(TagRequest(name="foo"))
+        clean_client.create_tag(name="foo")
         with pytest.raises(EntityExistsError):
-            clean_client.create_tag(TagRequest(name="foo", color="yellow"))
+            clean_client.create_tag(name="foo", color="yellow")
 
     def test_get_tag_found(self, clean_client: "Client"):
         """Tests that tag get pass if found."""
-        clean_client.create_tag(TagRequest(name="foo"))
+        clean_client.create_tag(name="foo")
         tag = clean_client.get_tag("foo")
         assert tag.name == "foo"
         assert tag.color is not None
@@ -5211,37 +5209,37 @@ class TestTag:
 
     def test_list_tags(self, clean_client: "Client"):
         """Tests various list scenarios."""
-        tags = clean_client.list_tags(TagFilter())
+        tags = clean_client.list_tags()
         assert len(tags) == 0
-        clean_client.create_tag(TagRequest(name="foo", color="red"))
-        clean_client.create_tag(TagRequest(name="bar", color="green"))
+        clean_client.create_tag(name="foo", color="red")
+        clean_client.create_tag(name="bar", color="green")
 
-        tags = clean_client.list_tags(TagFilter())
+        tags = clean_client.list_tags()
         assert len(tags) == 2
         assert {t.name for t in tags} == {"foo", "bar"}
         assert {t.color for t in tags} == {"red", "green"}
 
-        tags = clean_client.list_tags(TagFilter(name="foo"))
+        tags = clean_client.list_tags(name="foo")
         assert len(tags) == 1
         assert tags[0].name == "foo"
         assert tags[0].color == "red"
 
-        tags = clean_client.list_tags(TagFilter(color="green"))
+        tags = clean_client.list_tags(color="green")
         assert len(tags) == 1
         assert tags[0].name == "bar"
         assert tags[0].color == "green"
 
     def test_update_tag(self, clean_client: "Client"):
         """Tests various update scenarios."""
-        clean_client.create_tag(TagRequest(name="foo", color="red"))
-        tag = clean_client.create_tag(TagRequest(name="bar", color="green"))
+        clean_client.create_tag(name="foo", color="red")
+        tag = clean_client.create_tag(name="bar", color="green")
 
-        clean_client.update_tag("foo", TagUpdate(name="foo2"))
+        clean_client.update_tag("foo", name="foo2")
         assert clean_client.get_tag("foo2").color == "red"
         with pytest.raises(KeyError):
             clean_client.get_tag("foo")
 
-        clean_client.update_tag(tag.id, TagUpdate(color="yellow"))
+        clean_client.update_tag(tag.id, color="yellow")
         assert clean_client.get_tag(tag.id).color == "yellow"
         assert clean_client.get_tag("bar").color == "yellow"
 
@@ -5251,7 +5249,7 @@ class TestTagResource:
         """Tests creating tag<>resource mapping pass."""
         if clean_client.zen_store.type != StoreType.SQL:
             pytest.skip("Only SQL Zen Stores support tagging resources")
-        tag = clean_client.create_tag(TagRequest(name="foo", color="red"))
+        tag = clean_client.create_tag(name="foo", color="red")
         mapping = clean_client.zen_store.create_tag_resource(
             TagResourceRequest(
                 tag_id=tag.id,
@@ -5268,7 +5266,7 @@ class TestTagResource:
         """Tests creating tag<>resource mapping fails on duplicate."""
         if clean_client.zen_store.type != StoreType.SQL:
             pytest.skip("Only SQL Zen Stores support tagging resources")
-        tag = clean_client.create_tag(TagRequest(name="foo", color="red"))
+        tag = clean_client.create_tag(name="foo", color="red")
         mapping = clean_client.zen_store.create_tag_resource(
             TagResourceRequest(
                 tag_id=tag.id,
@@ -5290,7 +5288,7 @@ class TestTagResource:
         """Tests deleting tag<>resource mapping pass."""
         if clean_client.zen_store.type != StoreType.SQL:
             pytest.skip("Only SQL Zen Stores support tagging resources")
-        tag = clean_client.create_tag(TagRequest(name="foo", color="red"))
+        tag = clean_client.create_tag(name="foo", color="red")
         resource_id = uuid4()
         clean_client.zen_store.create_tag_resource(
             TagResourceRequest(
@@ -5319,7 +5317,7 @@ class TestTagResource:
         class MockTaggableResourceTypes(StrEnum):
             APPLE = "apple"
 
-        tag = clean_client.create_tag(TagRequest(name="foo", color="red"))
+        tag = clean_client.create_tag(name="foo", color="red")
         resource_id = uuid4()
         clean_client.zen_store.create_tag_resource(
             TagResourceRequest(
@@ -5348,7 +5346,7 @@ class TestTagResource:
             pytest.skip("Only SQL Zen Stores support tagging resources")
         with ModelContext() as model:
             tag = clean_client.create_tag(
-                TagRequest(name="test_cascade_deletion", color="red")
+                name="test_cascade_deletion", color="red"
             )
             fake_model_id = uuid4() if not use_model else model.id
             clean_client.zen_store.create_tag_resource(
@@ -5371,7 +5369,7 @@ class TestTagResource:
             if use_tag:
                 clean_client.delete_tag(tag.id)
                 tag = clean_client.create_tag(
-                    TagRequest(name="test_cascade_deletion", color="red")
+                    name="test_cascade_deletion", color="red"
                 )
             else:
                 clean_client.delete_model(model.id)
