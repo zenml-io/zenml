@@ -57,15 +57,17 @@ class StackComponentSchema(NamedSchema, table=True):
     configuration: bytes
     labels: Optional[bytes]
 
-    workspace_id: UUID = build_foreign_key_field(
+    workspace_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
         target=WorkspaceSchema.__tablename__,
         source_column="workspace_id",
         target_column="id",
         ondelete="CASCADE",
-        nullable=False,
+        nullable=True,
     )
-    workspace: "WorkspaceSchema" = Relationship(back_populates="components")
+    workspace: Optional["WorkspaceSchema"] = Relationship(
+        back_populates="components"
+    )
 
     user_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -158,7 +160,7 @@ class StackComponentSchema(NamedSchema, table=True):
             The updated `StackComponentSchema`.
         """
         for field, value in component_update.model_dump(
-            exclude_unset=True, exclude={"workspace", "user", "connector"}
+            exclude_unset=True, exclude={"user", "connector"}
         ).items():
             if field == "configuration":
                 self.configuration = base64.b64encode(
@@ -209,7 +211,9 @@ class StackComponentSchema(NamedSchema, table=True):
         metadata = None
         if include_metadata:
             metadata = ComponentResponseMetadata(
-                workspace=self.workspace.to_model(),
+                workspace=self.workspace.to_model()
+                if self.workspace
+                else None,
                 configuration=json.loads(
                     base64.b64decode(self.configuration).decode()
                 ),

@@ -57,15 +57,15 @@ class ServiceConnectorSchema(NamedSchema, table=True):
     expiration_seconds: Optional[int]
     labels: Optional[bytes]
 
-    workspace_id: UUID = build_foreign_key_field(
+    workspace_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
         target=WorkspaceSchema.__tablename__,
         source_column="workspace_id",
         target_column="id",
         ondelete="CASCADE",
-        nullable=False,
+        nullable=True,
     )
-    workspace: "WorkspaceSchema" = Relationship(
+    workspace: Optional["WorkspaceSchema"] = Relationship(
         back_populates="service_connectors"
     )
 
@@ -189,7 +189,7 @@ class ServiceConnectorSchema(NamedSchema, table=True):
         """
         for field, value in connector_update.model_dump(
             exclude_unset=False,
-            exclude={"workspace", "user", "secrets"},
+            exclude={"user", "secrets"},
         ).items():
             if value is None:
                 if field == "resource_id":
@@ -264,7 +264,9 @@ class ServiceConnectorSchema(NamedSchema, table=True):
         metadata = None
         if include_metadata:
             metadata = ServiceConnectorResponseMetadata(
-                workspace=self.workspace.to_model(),
+                workspace=self.workspace.to_model()
+                if self.workspace
+                else None,
                 configuration=json.loads(
                     base64.b64decode(self.configuration).decode()
                 )

@@ -79,15 +79,17 @@ class StackSchema(NamedSchema, table=True):
     stack_spec_path: Optional[str]
     labels: Optional[bytes]
 
-    workspace_id: UUID = build_foreign_key_field(
+    workspace_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
         target=WorkspaceSchema.__tablename__,
         source_column="workspace_id",
         target_column="id",
         ondelete="CASCADE",
-        nullable=False,
+        nullable=True,
     )
-    workspace: "WorkspaceSchema" = Relationship(back_populates="stacks")
+    workspace: Optional["WorkspaceSchema"] = Relationship(
+        back_populates="stacks"
+    )
 
     user_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -123,7 +125,7 @@ class StackSchema(NamedSchema, table=True):
             The updated StackSchema.
         """
         for field, value in stack_update.model_dump(
-            exclude_unset=True, exclude={"workspace", "user"}
+            exclude_unset=True, exclude={"user"}
         ).items():
             if field == "components":
                 self.components = components
@@ -150,7 +152,6 @@ class StackSchema(NamedSchema, table=True):
             include_resources: Whether the resources will be filled.
             **kwargs: Keyword arguments to allow schema specific logic
 
-
         Returns:
             The converted model.
         """
@@ -162,7 +163,9 @@ class StackSchema(NamedSchema, table=True):
         metadata = None
         if include_metadata:
             metadata = StackResponseMetadata(
-                workspace=self.workspace.to_model(),
+                workspace=self.workspace.to_model()
+                if self.workspace
+                else None,
                 components={c.type: [c.to_model()] for c in self.components},
                 stack_spec_path=self.stack_spec_path,
                 labels=json.loads(base64.b64decode(self.labels).decode())

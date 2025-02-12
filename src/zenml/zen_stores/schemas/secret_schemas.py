@@ -59,15 +59,17 @@ class SecretSchema(NamedSchema, table=True):
 
     values: Optional[bytes] = Field(sa_column=Column(TEXT, nullable=True))
 
-    workspace_id: UUID = build_foreign_key_field(
+    workspace_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
         target=WorkspaceSchema.__tablename__,
         source_column="workspace_id",
         target_column="id",
         ondelete="CASCADE",
-        nullable=False,
+        nullable=True,
     )
-    workspace: "WorkspaceSchema" = Relationship(back_populates="secrets")
+    workspace: Optional["WorkspaceSchema"] = Relationship(
+        back_populates="secrets"
+    )
 
     user_id: UUID = build_foreign_key_field(
         source=__tablename__,
@@ -202,7 +204,7 @@ class SecretSchema(NamedSchema, table=True):
         # SQL secret store will call `set_secret_values` to update the
         # values separately if SQL is used as the secrets store.
         for field, value in secret_update.model_dump(
-            exclude_unset=True, exclude={"workspace", "user", "values"}
+            exclude_unset=True, exclude={"user", "values"}
         ).items():
             if field == "scope":
                 setattr(self, field, value.value)
@@ -232,7 +234,9 @@ class SecretSchema(NamedSchema, table=True):
         metadata = None
         if include_metadata:
             metadata = SecretResponseMetadata(
-                workspace=self.workspace.to_model(),
+                workspace=self.workspace.to_model()
+                if self.workspace
+                else None,
             )
 
         # Don't load the secret values implicitly in the secret. The

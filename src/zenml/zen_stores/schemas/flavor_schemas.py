@@ -84,7 +84,10 @@ class FlavorSchema(NamedSchema, table=True):
 
     is_custom: bool = Field(default=True)
 
-    def update(self, flavor_update: "FlavorUpdate") -> "FlavorSchema":
+    def update(
+        self,
+        flavor_update: "FlavorUpdate",
+    ) -> "FlavorSchema":
         """Update a `FlavorSchema` from a `FlavorUpdate`.
 
         Args:
@@ -94,7 +97,7 @@ class FlavorSchema(NamedSchema, table=True):
             The updated `FlavorSchema`.
         """
         for field, value in flavor_update.model_dump(
-            exclude_unset=True, exclude={"workspace", "user"}
+            exclude_unset=True, exclude={"user"}
         ).items():
             if field == "config_schema":
                 setattr(self, field, json.dumps(value))
