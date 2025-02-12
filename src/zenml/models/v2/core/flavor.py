@@ -20,27 +20,26 @@ from pydantic import Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import StackComponentType
-from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
-    UserScopedRequest,
-    UserScopedResponse,
-    UserScopedResponseBody,
-    UserScopedResponseMetadata,
-    UserScopedResponseResources,
-    WorkspaceScopedFilter,
+    FlexibleScopedFilter,
+    FlexibleScopedRequest,
+    FlexibleScopedResponse,
+    FlexibleScopedResponseBody,
+    FlexibleScopedResponseMetadata,
+    FlexibleScopedResponseResources,
+    FlexibleScopedUpdate,
 )
 
 if TYPE_CHECKING:
     from zenml.models import (
         ServiceConnectorRequirements,
     )
-    from zenml.models.v2.core.workspace import WorkspaceResponse
 
 # ------------------ Request Model ------------------
 
 
-class FlavorRequest(UserScopedRequest):
-    """Request model for flavors."""
+class FlavorRequest(FlexibleScopedRequest):
+    """Request model for stack component flavors."""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = [
         "type",
@@ -98,9 +97,6 @@ class FlavorRequest(UserScopedRequest):
         title="Whether or not this flavor is a custom, user created flavor.",
         default=True,
     )
-    workspace: Optional[UUID] = Field(
-        default=None, title="The workspace to which this resource belongs."
-    )
 
 
 class InternalFlavorRequest(FlavorRequest):
@@ -115,8 +111,8 @@ class InternalFlavorRequest(FlavorRequest):
 # ------------------ Update Model ------------------
 
 
-class FlavorUpdate(BaseUpdate):
-    """Update model for flavors."""
+class FlavorUpdate(FlexibleScopedUpdate):
+    """Update model for stack component flavors."""
 
     name: Optional[str] = Field(
         title="The name of the Flavor.",
@@ -175,17 +171,13 @@ class FlavorUpdate(BaseUpdate):
         title="Whether or not this flavor is a custom, user created flavor.",
         default=None,
     )
-    workspace: Optional[UUID] = Field(
-        title="The workspace to which this resource belongs.",
-        default=None,
-    )
 
 
 # ------------------ Response Model ------------------
 
 
-class FlavorResponseBody(UserScopedResponseBody):
-    """Response body for flavor."""
+class FlavorResponseBody(FlexibleScopedResponseBody):
+    """Response body for stack component flavors."""
 
     type: StackComponentType = Field(title="The type of the Flavor.")
     integration: Optional[str] = Field(
@@ -203,12 +195,9 @@ class FlavorResponseBody(UserScopedResponseBody):
     )
 
 
-class FlavorResponseMetadata(UserScopedResponseMetadata):
-    """Response metadata for flavors."""
+class FlavorResponseMetadata(FlexibleScopedResponseMetadata):
+    """Response metadata for stack component flavors."""
 
-    workspace: Optional["WorkspaceResponse"] = Field(
-        title="The project of this resource."
-    )
     config_schema: Dict[str, Any] = Field(
         title="The JSON schema of this flavor's corresponding configuration.",
     )
@@ -244,16 +233,18 @@ class FlavorResponseMetadata(UserScopedResponseMetadata):
     )
 
 
-class FlavorResponseResources(UserScopedResponseResources):
-    """Class for all resource models associated with the flavor entity."""
+class FlavorResponseResources(FlexibleScopedResponseResources):
+    """Response resources for stack component flavors."""
 
 
 class FlavorResponse(
-    UserScopedResponse[
-        FlavorResponseBody, FlavorResponseMetadata, FlavorResponseResources
+    FlexibleScopedResponse[
+        FlavorResponseBody,
+        FlavorResponseMetadata,
+        FlavorResponseResources,
     ]
 ):
-    """Response model for flavors."""
+    """Response model for stack component flavors."""
 
     # Analytics
     ANALYTICS_FIELDS: ClassVar[List[str]] = [
@@ -338,15 +329,6 @@ class FlavorResponse(
         return self.get_body().logo_url
 
     @property
-    def workspace(self) -> Optional["WorkspaceResponse"]:
-        """The `workspace` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_metadata().workspace
-
-    @property
     def config_schema(self) -> Dict[str, Any]:
         """The `config_schema` property.
 
@@ -413,8 +395,8 @@ class FlavorResponse(
 # ------------------ Filter Model ------------------
 
 
-class FlavorFilter(WorkspaceScopedFilter):
-    """Model to enable advanced filtering of all Flavors."""
+class FlavorFilter(FlexibleScopedFilter):
+    """Model to enable advanced stack component flavor filtering."""
 
     name: Optional[str] = Field(
         default=None,
