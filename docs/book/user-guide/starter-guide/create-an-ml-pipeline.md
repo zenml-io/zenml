@@ -17,6 +17,9 @@ Before starting this guide, make sure you have [installed ZenML](../../getting-s
 pip install "zenml[server]"
 zenml login --local  # Will launch the dashboard locally
 ```
+
+It is also highly recommended that you run [`zenml init`](../../how-to/project-setup-and-management/setting-up-a-project-repository/set-up-repository.md#zen) at your project root directory when starting a new project. This will tell ZenML which files to include when
+running your pipelines remotely.
 {% endhint %}
 
 ## Start with a simple ML pipeline
