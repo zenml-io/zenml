@@ -153,3 +153,7 @@ class WandbExperimentTracker(BaseExperimentTracker):
             tags=tags,
             settings=settings,
         )
+        
+        if settings.enable_weave:
+            import weave
+            weave.init(project_name=self.config.project_name)
