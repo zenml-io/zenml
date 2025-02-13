@@ -10617,7 +10617,7 @@ class SqlZenStore(BaseZenStore):
             self._attach_tags_to_resource(
                 tag_names=model_version.tags,
                 resource=model_version_schema,
-                resource_type=TaggableResourceTypes.MODEL_VERSION
+                resource_type=TaggableResourceTypes.MODEL_VERSION,
             )
 
         return self.get_model_version(model_version_id)
@@ -11105,7 +11105,7 @@ class SqlZenStore(BaseZenStore):
         self,
         tag_names: List[str],
         resource: AnySchema,
-        resource_type: TaggableResourceTypes
+        resource_type: TaggableResourceTypes,
     ) -> None:
         """Creates a tag<>resource link if not present.
 
@@ -11126,15 +11126,19 @@ class SqlZenStore(BaseZenStore):
                     if resource_type == TaggableResourceTypes.PIPELINE_RUN:
                         older_runs = self.list_runs(
                             PipelineRunFilter(
+                                id=f"notequals:{resource.id}",
                                 pipeline_id=resource.pipeline_id,
                                 tags=[tag.name],
                             )
                         )
                         if older_runs.items:
                             detach_resource_id = older_runs.items[0].id
-                    elif resource_type == TaggableResourceTypes.ARTIFACT_VERSION:
+                    elif (
+                        resource_type == TaggableResourceTypes.ARTIFACT_VERSION
+                    ):
                         older_versions = self.list_artifact_versions(
                             ArtifactVersionFilter(
+                                id=f"notequals:{resource.id}",
                                 artifact_id=resource.artifact_id,
                                 tags=[tag.name],
                             )
@@ -11144,6 +11148,7 @@ class SqlZenStore(BaseZenStore):
                     elif resource_type == TaggableResourceTypes.RUN_TEMPLATE:
                         older_templates = self.list_run_templates(
                             RunTemplateFilter(
+                                id=f"notequals:{resource.id}",
                                 tags=[tag.name],
                             )
                         )

@@ -554,15 +554,21 @@ class TaggableFilter(BaseFilter):
         custom_filters = super().get_custom_filters(table)
 
         if self.tags is not None:
-            from sqlmodel import exists
+            from sqlmodel import exists, select
 
-            from zenml.zen_stores.schemas import TagSchema
+            from zenml.zen_stores.schemas import TagResourceSchema, TagSchema
 
             for tag in self.tags:
-                conditions = self.generate_custom_query_conditions_for_column(
+                condition = self.generate_custom_query_conditions_for_column(
                     value=tag, table=TagSchema, column="name"
                 )
-                exists_subquery = exists().where(conditions)
+                exists_subquery = exists(
+                    select(TagResourceSchema)
+                    .join(TagSchema, TagSchema.id == TagResourceSchema.tag_id)
+                    .where(
+                        TagResourceSchema.resource_id == table.id, condition
+                    )
+                )
                 custom_filters.append(exists_subquery)
 
         return custom_filters

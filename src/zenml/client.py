@@ -7550,9 +7550,7 @@ class Client(metaclass=ClientMetaClass):
         if color is not None:
             request_model.color = color
 
-        return self.zen_store.create_tag(
-            tag=request_model
-        )
+        return self.zen_store.create_tag(tag=request_model)
 
     def delete_tag(self, tag_name_or_id: Union[str, UUID]) -> None:
         """Deletes a tag.

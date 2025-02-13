@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of tag tables."""
 
-import random
 from typing import Any, List
 from uuid import UUID
 
