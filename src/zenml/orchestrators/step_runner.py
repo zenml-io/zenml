@@ -637,6 +637,7 @@ class StepRunner:
 
             # Get full set of tags
             tags = step_context.get_output_tags(output_name)
+            tags.extend(step_context.pipeline_run.config.tags)
 
             artifact_request = _store_artifact_data_and_prepare_request(
                 name=artifact_name,
