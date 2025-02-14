@@ -343,6 +343,17 @@ our GitHub repo.
 2. [LLM Fine-Tuning Pipeline](https://github.com/zenml-io/zenml-projects/tree/main/llm-finetuning) - From data prep to deployed model
 3. [LLM Agents Example](https://github.com/zenml-io/zenml-projects/tree/main/llm-agents) - Track conversation quality and tool usage
 
+## 🤖 AI-Friendly Documentation with llms.txt
+
+ZenML implements the llms.txt standard to make our documentation more accessible to AI assistants and LLMs. Our implementation includes:
+
+- Base documentation at [zenml.io/llms.txt](https://zenml.io/llms.txt) with core user guides
+- Specialized files for different documentation aspects:
+  - [Component guides](https://zenml.io/component-guide.txt) for integration details
+  - [How-to guides](https://zenml.io/how-to-guides.txt) for practical implementations
+  - [Complete documentation corpus](https://zenml.io/llms-full.txt) for comprehensive access
+
+This structured approach helps AI tools better understand and utilize ZenML's documentation, enabling more accurate code suggestions and improved documentation search.
 
 ## 📜 License
 
