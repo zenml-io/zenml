@@ -250,6 +250,7 @@
   * [HyperAI Orchestrator](component-guide/orchestrators/hyperai.md)
   * [Lightning AI Orchestrator](component-guide/orchestrators/lightning.md)
   * [Develop a custom orchestrator](component-guide/orchestrators/custom.md)
+  * [Daytona Orchestrator](component-guide/orchestrators/daytona.md)
 * [Artifact Stores](component-guide/artifact-stores/artifact-stores.md)
   * [Local Artifact Store](component-guide/artifact-stores/local.md)
   * [Amazon Simple Cloud Storage (S3)](component-guide/artifact-stores/s3.md)
