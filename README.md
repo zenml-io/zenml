@@ -187,7 +187,7 @@ def training(...):
 
 Create a complete lineage of who, where, and what data and models are produced.
 
-You’ll be able to find out who produced which model, at what time, with which data, and on which version of the code. This guarantees full reproducibility and auditability.
+You'll be able to find out who produced which model, at what time, with which data, and on which version of the code. This guarantees full reproducibility and auditability.
 
 ```python
 from zenml import Model
@@ -244,6 +244,14 @@ def train_and_deploy(training_df: pd.DataFrame) -> bento.Bento
 ```
 
 ![Exploring ZenML Integrations](/docs/book/.gitbook/assets/readme_integrations.gif)
+
+## 🔄 Your LLM Framework Isn't Enough for Production
+
+While tools like LangChain and LlamaIndex help you **build** LLM workflows, ZenML helps you **productionize** them by adding:
+
+✅ **Artifact Tracking** - Every vector store index, fine-tuned model, and evaluation result versioned automatically  
+✅ **Pipeline History** - See exactly what code/data produced each version of your RAG system  
+✅ **Stage Promotion** - Move validated pipelines from staging → production with one click  
 
 ## 🖼️ Learning
 
