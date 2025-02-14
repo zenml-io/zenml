@@ -485,5 +485,6 @@ module = [
     "vllm.*",
     "numba.*",
     "uvloop.*",
+    "daytona_sdk.*",
 ]
 ignore_missing_imports = true
