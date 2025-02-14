@@ -1902,21 +1902,25 @@ class RestZenStore(BaseZenStore):
 
     # ----------------------------- Pipeline runs -----------------------------
 
-    def create_run(
+    def get_or_create_run(
         self, pipeline_run: PipelineRunRequest
-    ) -> PipelineRunResponse:
-        """Creates a pipeline run.
+    ) -> Tuple[PipelineRunResponse, bool]:
+        """Gets or creates a pipeline run.
+
+        If a run with the same ID or name already exists, it is returned.
+        Otherwise, a new run is created.
 
         Args:
-            pipeline_run: The pipeline run to create.
+            pipeline_run: The pipeline run to get or create.
 
         Returns:
-            The created pipeline run.
+            The pipeline run, and a boolean indicating whether the run was
+            created or not.
         """
-        return self._create_workspace_scoped_resource(
+        return self._get_or_create_workspace_scoped_resource(
             resource=pipeline_run,
-            response_model=PipelineRunResponse,
             route=RUNS,
+            response_model=PipelineRunResponse,
         )
 
     def get_run(
@@ -1991,27 +1995,6 @@ class RestZenStore(BaseZenStore):
         self._delete_resource(
             resource_id=run_id,
             route=RUNS,
-        )
-
-    def get_or_create_run(
-        self, pipeline_run: PipelineRunRequest
-    ) -> Tuple[PipelineRunResponse, bool]:
-        """Gets or creates a pipeline run.
-
-        If a run with the same ID or name already exists, it is returned.
-        Otherwise, a new run is created.
-
-        Args:
-            pipeline_run: The pipeline run to get or create.
-
-        Returns:
-            The pipeline run, and a boolean indicating whether the run was
-            created or not.
-        """
-        return self._get_or_create_workspace_scoped_resource(
-            resource=pipeline_run,
-            route=RUNS,
-            response_model=PipelineRunResponse,
         )
 
     # ----------------------------- Run Metadata -----------------------------
@@ -2661,33 +2644,21 @@ class RestZenStore(BaseZenStore):
 
     def list_service_connector_resources(
         self,
-        workspace_name_or_id: Union[str, UUID],
-        connector_type: Optional[str] = None,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
+        filter_model: ServiceConnectorFilter,
     ) -> List[ServiceConnectorResourcesModel]:
         """List resources that can be accessed by service connectors.
 
         Args:
-            workspace_name_or_id: The name or ID of the workspace to scope to.
-            connector_type: The type of service connector to scope to.
-            resource_type: The type of resource to scope to.
-            resource_id: The ID of the resource to scope to.
+            filter_model: The filter model to use when fetching service
+                connectors.
 
         Returns:
             The matching list of resources that available service
             connectors have access to.
         """
-        params = {}
-        if connector_type:
-            params["connector_type"] = connector_type
-        if resource_type:
-            params["resource_type"] = resource_type
-        if resource_id:
-            params["resource_id"] = resource_id
         response_body = self.get(
-            f"{WORKSPACES}/{workspace_name_or_id}{SERVICE_CONNECTORS}{SERVICE_CONNECTOR_RESOURCES}",
-            params=params,
+            SERVICE_CONNECTOR_RESOURCES,
+            params=filter_model.model_dump(exclude_none=True),
             timeout=max(
                 self.config.http_timeout,
                 SERVICE_CONNECTOR_VERIFY_REQUEST_TIMEOUT,
@@ -2724,12 +2695,12 @@ class RestZenStore(BaseZenStore):
 
             try:
                 local_resources = connector_instance.verify(
-                    resource_type=resource_type,
-                    resource_id=resource_id,
+                    resource_type=filter_model.resource_type,
+                    resource_id=filter_model.resource_id,
                 )
             except (ValueError, AuthorizationException) as e:
                 logger.error(
-                    f"Failed to fetch {resource_type or 'available'} "
+                    f"Failed to fetch {filter_model.resource_type or 'available'} "
                     f"resources from service connector {connector.name}/"
                     f"{connector.id}: {e}"
                 )

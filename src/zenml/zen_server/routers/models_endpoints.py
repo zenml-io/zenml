@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for models."""
 
-from typing import Union
+from typing import Optional, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -26,6 +26,7 @@ from zenml.constants import (
 )
 from zenml.models import (
     ModelFilter,
+    ModelRequest,
     ModelResponse,
     ModelUpdate,
     ModelVersionFilter,
@@ -36,6 +37,7 @@ from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.feature_gate.endpoint_utils import report_decrement
 from zenml.zen_server.rbac.endpoint_utils import (
+    verify_permissions_and_create_entity,
     verify_permissions_and_delete_entity,
     verify_permissions_and_get_entity,
     verify_permissions_and_list_entities,
@@ -45,6 +47,9 @@ from zenml.zen_server.rbac.models import ResourceType
 from zenml.zen_server.rbac.utils import (
     dehydrate_page,
     get_allowed_resource_ids,
+)
+from zenml.zen_server.routers.workspaces_endpoints import (
+    router as workspace_router,
 )
 from zenml.zen_server.utils import (
     handle_exceptions,
@@ -62,6 +67,46 @@ router = APIRouter(
     tags=["models"],
     responses={401: error_response, 403: error_response},
 )
+
+
+@router.post(
+    "",
+    response_model=ModelResponse,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@workspace_router.post(
+    "/{workspace_name_or_id}" + MODELS,
+    response_model=ModelResponse,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@handle_exceptions
+def create_model(
+    model: ModelRequest,
+    workspace_name_or_id: Optional[Union[str, UUID]] = None,
+    _: AuthContext = Security(authorize),
+) -> ModelResponse:
+    """Creates a model.
+
+    Args:
+        model: Model to create.
+        workspace_name_or_id: Optional name or ID of the workspace.
+
+    Returns:
+        The created model.
+
+    Raises:
+        IllegalOperationError: If the workspace specified in the model
+            does not match the current workspace.
+    """
+    if workspace_name_or_id:
+        workspace = zen_store().get_workspace(workspace_name_or_id)
+        model.workspace = workspace.id
+
+    return verify_permissions_and_create_entity(
+        request_model=model,
+        resource_type=ResourceType.MODEL,
+        create_method=zen_store().create_model,
+    )
 
 
 @router.get(

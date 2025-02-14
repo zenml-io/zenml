@@ -13,13 +13,14 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for pipeline runs."""
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional, Tuple, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import (
     API,
+    GET_OR_CREATE,
     PIPELINE_CONFIGURATION,
     REFRESH,
     RUNS,
@@ -28,10 +29,12 @@ from zenml.constants import (
     VERSION_1,
 )
 from zenml.enums import ExecutionStatus, StackComponentType
+from zenml.exceptions import IllegalOperationError
 from zenml.logger import get_logger
 from zenml.models import (
     Page,
     PipelineRunFilter,
+    PipelineRunRequest,
     PipelineRunResponse,
     PipelineRunUpdate,
     StepRunFilter,
@@ -39,6 +42,10 @@ from zenml.models import (
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.feature_gate.endpoint_utils import (
+    check_entitlement,
+    report_usage,
+)
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_delete_entity,
     verify_permissions_and_get_entity,
@@ -46,7 +53,13 @@ from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_update_entity,
 )
 from zenml.zen_server.rbac.models import Action, ResourceType
-from zenml.zen_server.rbac.utils import verify_permission_for_model
+from zenml.zen_server.rbac.utils import (
+    verify_permission,
+    verify_permission_for_model,
+)
+from zenml.zen_server.routers.workspaces_endpoints import (
+    router as workspace_router,
+)
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -63,8 +76,74 @@ router = APIRouter(
 logger = get_logger(__name__)
 
 
+@router.post(
+    GET_OR_CREATE,
+    response_model=Tuple[PipelineRunResponse, bool],
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@workspace_router.post(
+    "/{workspace_name_or_id}" + RUNS + GET_OR_CREATE,
+    response_model=Tuple[PipelineRunResponse, bool],
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@handle_exceptions
+def get_or_create_pipeline_run(
+    pipeline_run: PipelineRunRequest,
+    workspace_name_or_id: Optional[Union[str, UUID]] = None,
+    auth_context: AuthContext = Security(authorize),
+) -> Tuple[PipelineRunResponse, bool]:
+    """Get or create a pipeline run.
+
+    Args:
+        pipeline_run: Pipeline run to create.
+        workspace_name_or_id: Optional name or ID of the workspace.
+        auth_context: Authentication context.
+
+    Returns:
+        The pipeline run and a boolean indicating whether the run was created
+        or not.
+
+    Raises:
+        IllegalOperationError: If the workspace or user specified in the
+            pipeline run does not match the current workspace or authenticated
+            user.
+    """
+    if workspace_name_or_id:
+        workspace = zen_store().get_workspace(workspace_name_or_id)
+        pipeline_run.workspace = workspace.id
+
+    if pipeline_run.user != auth_context.user.id:
+        raise IllegalOperationError(
+            "Creating pipeline runs for a user other than yourself "
+            "is not supported."
+        )
+
+    def _pre_creation_hook() -> None:
+        verify_permission(
+            resource_type=ResourceType.PIPELINE_RUN, action=Action.CREATE
+        )
+        check_entitlement(resource_type=ResourceType.PIPELINE_RUN)
+
+    run, created = zen_store().get_or_create_run(
+        pipeline_run=pipeline_run, pre_creation_hook=_pre_creation_hook
+    )
+    if created:
+        report_usage(
+            resource_type=ResourceType.PIPELINE_RUN, resource_id=run.id
+        )
+    else:
+        verify_permission_for_model(run, action=Action.READ)
+
+    return run, created
+
+
 @router.get(
     "",
+    response_model=Page[PipelineRunResponse],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@workspace_router.get(
+    "/{workspace_name_or_id}" + RUNS,
     response_model=Page[PipelineRunResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
@@ -73,6 +152,7 @@ def list_runs(
     runs_filter_model: PipelineRunFilter = Depends(
         make_dependable(PipelineRunFilter)
     ),
+    workspace_name_or_id: Optional[Union[str, UUID]] = None,
     hydrate: bool = False,
     _: AuthContext = Security(authorize),
 ) -> Page[PipelineRunResponse]:
@@ -80,12 +160,17 @@ def list_runs(
 
     Args:
         runs_filter_model: Filter model used for pagination, sorting, filtering.
+        workspace_name_or_id: Optional name or ID of the workspace.
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
 
     Returns:
         The pipeline runs according to query filters.
     """
+    if workspace_name_or_id:
+        workspace = zen_store().get_workspace(workspace_name_or_id)
+        runs_filter_model.set_scope_workspace(workspace.id)
+
     return verify_permissions_and_list_entities(
         filter_model=runs_filter_model,
         resource_type=ResourceType.PIPELINE_RUN,

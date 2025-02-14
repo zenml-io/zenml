@@ -1531,20 +1531,20 @@ class ZenStoreInterface(ABC):
     # -------------------- Pipeline runs --------------------
 
     @abstractmethod
-    def create_run(
+    def get_or_create_run(
         self, pipeline_run: PipelineRunRequest
-    ) -> PipelineRunResponse:
-        """Creates a pipeline run.
+    ) -> Tuple[PipelineRunResponse, bool]:
+        """Gets or creates a pipeline run.
+
+        If a run with the same ID or name already exists, it is returned.
+        Otherwise, a new run is created.
 
         Args:
-            pipeline_run: The pipeline run to create.
+            pipeline_run: The pipeline run to get or create.
 
         Returns:
-            The created pipeline run.
-
-        Raises:
-            EntityExistsError: If an identical pipeline run already exists.
-            KeyError: If the pipeline does not exist.
+            The pipeline run, and a boolean indicating whether the run was
+            created or not.
         """
 
     @abstractmethod
@@ -1609,23 +1609,6 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: if the pipeline run doesn't exist.
-        """
-
-    @abstractmethod
-    def get_or_create_run(
-        self, pipeline_run: PipelineRunRequest
-    ) -> Tuple[PipelineRunResponse, bool]:
-        """Gets or creates a pipeline run.
-
-        If a run with the same ID or name already exists, it is returned.
-        Otherwise, a new run is created.
-
-        Args:
-            pipeline_run: The pipeline run to get or create.
-
-        Returns:
-            The pipeline run, and a boolean indicating whether the run was
-            created or not.
         """
 
     # -------------------- Run metadata --------------------
@@ -2147,18 +2130,13 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def list_service_connector_resources(
         self,
-        workspace_name_or_id: Union[str, UUID],
-        connector_type: Optional[str] = None,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
+        filter_model: ServiceConnectorFilter,
     ) -> List[ServiceConnectorResourcesModel]:
         """List resources that can be accessed by service connectors.
 
         Args:
-            workspace_name_or_id: The name or ID of the workspace to scope to.
-            connector_type: The type of service connector to scope to.
-            resource_type: The type of resource to scope to.
-            resource_id: The ID of the resource to scope to.
+            filter_model: The filter model to use when fetching service
+                connectors.
 
         Returns:
             The matching list of resources that available service

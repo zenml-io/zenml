@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for models."""
 
-from typing import Union
+from typing import Optional, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -24,6 +24,7 @@ from zenml.constants import (
     MODEL_VERSION_ARTIFACTS,
     MODEL_VERSION_PIPELINE_RUNS,
     MODEL_VERSIONS,
+    MODELS,
     RUNS,
     VERSION_1,
 )
@@ -35,18 +36,25 @@ from zenml.models import (
     ModelVersionPipelineRunFilter,
     ModelVersionPipelineRunRequest,
     ModelVersionPipelineRunResponse,
+    ModelVersionRequest,
     ModelVersionResponse,
     ModelVersionUpdate,
 )
 from zenml.models.v2.base.page import Page
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.rbac.endpoint_utils import (
+    verify_permissions_and_create_entity,
+)
 from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import (
     dehydrate_page,
     dehydrate_response_model,
     get_allowed_resource_ids,
     verify_permission_for_model,
+)
+from zenml.zen_server.routers.workspaces_endpoints import (
+    router as workspace_router,
 )
 from zenml.zen_server.utils import (
     handle_exceptions,
@@ -64,6 +72,55 @@ router = APIRouter(
     tags=["model_versions"],
     responses={401: error_response, 403: error_response},
 )
+
+
+@router.post(
+    "",
+    response_model=ModelVersionResponse,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@workspace_router.post(
+    "/{workspace_name_or_id}"
+    + MODELS
+    + "/{model_name_or_id}"
+    + MODEL_VERSIONS,
+    response_model=ModelVersionResponse,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@handle_exceptions
+def create_model_version(
+    model_version: ModelVersionRequest,
+    model_name_or_id: Optional[Union[str, UUID]] = None,
+    workspace_name_or_id: Optional[Union[str, UUID]] = None,
+    _: AuthContext = Security(authorize),
+) -> ModelVersionResponse:
+    """Creates a model version.
+
+    Args:
+        model_version: Model version to create.
+        model_name_or_id: Optional name or ID of the model.
+        workspace_name_or_id: Optional name or ID of the workspace.
+
+    Returns:
+        The created model version.
+
+    Raises:
+        IllegalOperationError: If the workspace specified in the model version
+            does not match the current workspace.
+    """
+    if workspace_name_or_id:
+        workspace = zen_store().get_workspace(workspace_name_or_id)
+        model_version.workspace = workspace.id
+
+    if model_name_or_id:
+        model = zen_store().get_model(model_name_or_id)
+        model_version.model = model.id
+
+    return verify_permissions_and_create_entity(
+        request_model=model_version,
+        resource_type=ResourceType.MODEL_VERSION,
+        create_method=zen_store().create_model_version,
+    )
 
 
 @router.get(

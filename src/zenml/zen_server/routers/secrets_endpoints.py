@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for pipeline run secrets."""
 
-from typing import Optional
+from typing import Optional, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -29,12 +29,14 @@ from zenml.constants import (
 from zenml.models import (
     Page,
     SecretFilter,
+    SecretRequest,
     SecretResponse,
     SecretUpdate,
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
+    verify_permissions_and_create_entity,
     verify_permissions_and_delete_entity,
     verify_permissions_and_get_entity,
     verify_permissions_and_list_entities,
@@ -46,6 +48,9 @@ from zenml.zen_server.rbac.utils import (
     has_permissions_for_model,
     is_owned_by_authenticated_user,
     verify_permission,
+)
+from zenml.zen_server.routers.workspaces_endpoints import (
+    router as workspace_router,
 )
 from zenml.zen_server.utils import (
     handle_exceptions,
@@ -64,6 +69,46 @@ op_router = APIRouter(
     tags=["secrets"],
     responses={401: error_response, 403: error_response},
 )
+
+
+@router.post(
+    "",
+    response_model=SecretResponse,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@workspace_router.post(
+    "/{workspace_name_or_id}" + SECRETS,
+    response_model=SecretResponse,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@handle_exceptions
+def create_secret(
+    secret: SecretRequest,
+    workspace_name_or_id: Optional[Union[str, UUID]] = None,
+    _: AuthContext = Security(authorize),
+) -> SecretResponse:
+    """Creates a secret.
+
+    Args:
+        secret: Secret to create.
+        workspace_name_or_id: Optional name or ID of the workspace.
+
+    Returns:
+        The created secret.
+
+    Raises:
+        IllegalOperationError: If the workspace specified in the
+            secret does not match the current workspace.
+    """
+    if workspace_name_or_id:
+        workspace = zen_store().get_workspace(workspace_name_or_id)
+        secret.workspace = workspace.id
+
+    return verify_permissions_and_create_entity(
+        request_model=secret,
+        resource_type=ResourceType.SECRET,
+        create_method=zen_store().create_secret,
+    )
 
 
 @router.get(

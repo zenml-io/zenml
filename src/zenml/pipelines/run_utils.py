@@ -88,7 +88,8 @@ def create_placeholder_run(
         status=ExecutionStatus.INITIALIZING,
         tags=deployment.pipeline_configuration.tags,
     )
-    return Client().zen_store.create_run(run_request)
+    run, _ = Client().zen_store.get_or_create_run(run_request)
+    return run
 
 
 def get_placeholder_run(

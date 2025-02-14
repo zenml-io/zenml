@@ -13,12 +13,19 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for stacks."""
 
+from typing import Optional, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, STACKS, VERSION_1
-from zenml.models import Page, StackFilter, StackResponse, StackUpdate
+from zenml.models import (
+    Page,
+    StackFilter,
+    StackRequest,
+    StackResponse,
+    StackUpdate,
+)
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
@@ -28,7 +35,14 @@ from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_update_entity,
 )
 from zenml.zen_server.rbac.models import Action, ResourceType
-from zenml.zen_server.rbac.utils import batch_verify_permissions_for_models
+from zenml.zen_server.rbac.utils import (
+    batch_verify_permissions_for_models,
+    verify_permission,
+    verify_permission_for_model,
+)
+from zenml.zen_server.routers.workspaces_endpoints import (
+    router as workspace_router,
+)
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -42,28 +56,113 @@ router = APIRouter(
 )
 
 
+@router.post(
+    "",
+    response_model=StackResponse,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@workspace_router.post(
+    "/{workspace_name_or_id}" + STACKS,
+    response_model=StackResponse,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@handle_exceptions
+def create_stack(
+    stack: StackRequest,
+    workspace_name_or_id: Optional[Union[str, UUID]] = None,
+    auth_context: AuthContext = Security(authorize),
+) -> StackResponse:
+    """Creates a stack, optionally in a specific workspace.
+
+    Args:
+        stack: Stack to register.
+        workspace_name_or_id: Optional name or ID of the workspace.
+        auth_context: Authentication context.
+
+    Returns:
+        The created stack.
+    """
+    if workspace_name_or_id:
+        workspace = zen_store().get_workspace(workspace_name_or_id)
+        stack.workspace = workspace.id
+
+    # Check the service connector creation
+    is_connector_create_needed = False
+    for connector_id_or_info in stack.service_connectors:
+        if isinstance(connector_id_or_info, UUID):
+            service_connector = zen_store().get_service_connector(
+                connector_id_or_info, hydrate=False
+            )
+            verify_permission_for_model(
+                model=service_connector, action=Action.READ
+            )
+        else:
+            is_connector_create_needed = True
+
+    # Check the component creation
+    if is_connector_create_needed:
+        verify_permission(
+            resource_type=ResourceType.SERVICE_CONNECTOR, action=Action.CREATE
+        )
+    is_component_create_needed = False
+    for components in stack.components.values():
+        for component_id_or_info in components:
+            if isinstance(component_id_or_info, UUID):
+                component = zen_store().get_stack_component(
+                    component_id_or_info, hydrate=False
+                )
+                verify_permission_for_model(
+                    model=component, action=Action.READ
+                )
+            else:
+                is_component_create_needed = True
+    if is_component_create_needed:
+        verify_permission(
+            resource_type=ResourceType.STACK_COMPONENT,
+            action=Action.CREATE,
+        )
+
+    # Check the stack creation
+    verify_permission(resource_type=ResourceType.STACK, action=Action.CREATE)
+
+    stack.user = auth_context.user.id
+
+    return zen_store().create_stack(stack)
+
+
 @router.get(
     "",
     response_model=Page[StackResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
+@workspace_router.get(
+    "/{workspace_name_or_id}" + STACKS,
+    response_model=Page[StackResponse],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
 @handle_exceptions
 def list_stacks(
+    workspace_name_or_id: Optional[Union[str, UUID]] = None,
     stack_filter_model: StackFilter = Depends(make_dependable(StackFilter)),
     hydrate: bool = False,
     _: AuthContext = Security(authorize),
 ) -> Page[StackResponse]:
-    """Returns all stacks.
+    """Returns all stacks, optionally filtered by workspace.
 
     Args:
+        workspace_name_or_id: Optional name or ID of the workspace to filter by.
         stack_filter_model: Filter model used for pagination, sorting,
             filtering.
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
 
     Returns:
-        All stacks.
+        All stacks matching the filter criteria.
     """
+    if workspace_name_or_id:
+        workspace = zen_store().get_workspace(workspace_name_or_id)
+        stack_filter_model.set_scope_workspace(workspace.id)
+
     return verify_permissions_and_list_entities(
         filter_model=stack_filter_model,
         resource_type=ResourceType.STACK,

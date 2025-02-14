@@ -5979,6 +5979,7 @@ class Client(metaclass=ClientMetaClass):
         connector_type: Optional[str] = None,
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
+        workspace_id: Optional[UUID] = None,
     ) -> List[ServiceConnectorResourcesModel]:
         """List resources that can be accessed by service connectors.
 
@@ -5986,16 +5987,20 @@ class Client(metaclass=ClientMetaClass):
             connector_type: The type of service connector to filter by.
             resource_type: The type of resource to filter by.
             resource_id: The ID of a particular resource instance to filter by.
+            workspace_id: The ID of the workspace to filter by. If not provided,
+                the active workspace will be used.
 
         Returns:
             The matching list of resources that available service
             connectors have access to.
         """
         return self.zen_store.list_service_connector_resources(
-            workspace_name_or_id=self.active_workspace.id,
-            connector_type=connector_type,
-            resource_type=resource_type,
-            resource_id=resource_id,
+            ServiceConnectorFilter(
+                workspace_id=workspace_id or self.active_workspace.id,
+                connector_type=connector_type,
+                resource_type=resource_type,
+                resource_id=resource_id,
+            )
         )
 
     def list_service_connector_types(

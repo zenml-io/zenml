@@ -13,19 +13,25 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for pipeline run schedules."""
 
+from typing import Optional, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, SCHEDULES, VERSION_1
+from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     Page,
     ScheduleFilter,
+    ScheduleRequest,
     ScheduleResponse,
     ScheduleUpdate,
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.routers.workspaces_endpoints import (
+    router as workspace_router,
+)
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -39,8 +45,56 @@ router = APIRouter(
 )
 
 
+@router.post(
+    "",
+    response_model=ScheduleResponse,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@workspace_router.post(
+    "/{workspace_name_or_id}" + SCHEDULES,
+    response_model=ScheduleResponse,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@handle_exceptions
+def create_schedule(
+    schedule: ScheduleRequest,
+    workspace_name_or_id: Optional[Union[str, UUID]] = None,
+    auth_context: AuthContext = Security(authorize),
+) -> ScheduleResponse:
+    """Creates a schedule.
+
+    Args:
+        schedule: Schedule to create.
+        workspace_name_or_id: Optional name or ID of the workspace.
+        auth_context: Authentication context.
+
+    Returns:
+        The created schedule.
+
+    Raises:
+        IllegalOperationError: If the workspace or user specified in the
+            schedule does not match the current workspace or authenticated user.
+    """
+    if workspace_name_or_id:
+        workspace = zen_store().get_workspace(workspace_name_or_id)
+        schedule.workspace = workspace.id
+
+    if schedule.user != auth_context.user.id:
+        raise IllegalOperationError(
+            "Creating schedules for a user other than yourself "
+            "is not supported."
+        )
+
+    return zen_store().create_schedule(schedule=schedule)
+
+
 @router.get(
     "",
+    response_model=Page[ScheduleResponse],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@workspace_router.get(
+    "/{workspace_name_or_id}" + SCHEDULES,
     response_model=Page[ScheduleResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
@@ -49,6 +103,7 @@ def list_schedules(
     schedule_filter_model: ScheduleFilter = Depends(
         make_dependable(ScheduleFilter)
     ),
+    workspace_name_or_id: Optional[Union[str, UUID]] = None,
     hydrate: bool = False,
     _: AuthContext = Security(authorize),
 ) -> Page[ScheduleResponse]:
@@ -57,14 +112,20 @@ def list_schedules(
     Args:
         schedule_filter_model: Filter model used for pagination, sorting,
             filtering
+        workspace_name_or_id: Optional name or ID of the workspace.
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
 
     Returns:
         List of schedule objects.
     """
+    if workspace_name_or_id:
+        workspace = zen_store().get_workspace(workspace_name_or_id)
+        schedule_filter_model.set_scope_workspace(workspace.id)
+
     return zen_store().list_schedules(
-        schedule_filter_model=schedule_filter_model, hydrate=hydrate
+        schedule_filter_model=schedule_filter_model,
+        hydrate=hydrate,
     )
 
 
@@ -89,7 +150,10 @@ def get_schedule(
     Returns:
         A specific schedule object.
     """
-    return zen_store().get_schedule(schedule_id=schedule_id, hydrate=hydrate)
+    return zen_store().get_schedule(
+        schedule_id=schedule_id,
+        hydrate=hydrate,
+    )
 
 
 @router.put(
@@ -113,7 +177,8 @@ def update_schedule(
         The updated schedule object.
     """
     return zen_store().update_schedule(
-        schedule_id=schedule_id, schedule_update=schedule_update
+        schedule_id=schedule_id,
+        schedule_update=schedule_update,
     )
 
 

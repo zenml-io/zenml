@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for builds."""
 
+from typing import Optional, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -21,16 +22,21 @@ from zenml.constants import API, PIPELINE_BUILDS, VERSION_1
 from zenml.models import (
     Page,
     PipelineBuildFilter,
+    PipelineBuildRequest,
     PipelineBuildResponse,
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
+    verify_permissions_and_create_entity,
     verify_permissions_and_delete_entity,
     verify_permissions_and_get_entity,
     verify_permissions_and_list_entities,
 )
 from zenml.zen_server.rbac.models import ResourceType
+from zenml.zen_server.routers.workspaces_endpoints import (
+    router as workspace_router,
+)
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -44,8 +50,53 @@ router = APIRouter(
 )
 
 
+@router.post(
+    "",
+    response_model=PipelineBuildResponse,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@workspace_router.post(
+    "/{workspace_name_or_id}" + PIPELINE_BUILDS,
+    response_model=PipelineBuildResponse,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@handle_exceptions
+def create_build(
+    build: PipelineBuildRequest,
+    workspace_name_or_id: Optional[Union[str, UUID]] = None,
+    _: AuthContext = Security(authorize),
+) -> PipelineBuildResponse:
+    """Creates a build, optionally in a specific workspace.
+
+    Args:
+        build: Build to create.
+        workspace_name_or_id: Optional name or ID of the workspace.
+
+    Returns:
+        The created build.
+
+    Raises:
+        IllegalOperationError: If the workspace specified in the build
+            does not match the current workspace.
+    """
+    if workspace_name_or_id:
+        workspace = zen_store().get_workspace(workspace_name_or_id)
+        build.workspace = workspace.id
+
+    return verify_permissions_and_create_entity(
+        request_model=build,
+        resource_type=ResourceType.PIPELINE_BUILD,
+        create_method=zen_store().create_build,
+    )
+
+
 @router.get(
     "",
+    response_model=Page[PipelineBuildResponse],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@workspace_router.get(
+    "/{workspace_name_or_id}" + PIPELINE_BUILDS,
     response_model=Page[PipelineBuildResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
@@ -54,20 +105,26 @@ def list_builds(
     build_filter_model: PipelineBuildFilter = Depends(
         make_dependable(PipelineBuildFilter)
     ),
+    workspace_name_or_id: Optional[Union[str, UUID]] = None,
     hydrate: bool = False,
     _: AuthContext = Security(authorize),
 ) -> Page[PipelineBuildResponse]:
-    """Gets a list of builds.
+    """Gets a list of builds, optionally filtered by workspace.
 
     Args:
         build_filter_model: Filter model used for pagination, sorting,
             filtering.
+        workspace_name_or_id: Optional name or ID of the workspace to filter by.
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
 
     Returns:
-        List of build objects.
+        List of build objects matching the filter criteria.
     """
+    if workspace_name_or_id:
+        workspace = zen_store().get_workspace(workspace_name_or_id)
+        build_filter_model.set_scope_workspace(workspace.id)
+
     return verify_permissions_and_list_entities(
         filter_model=build_filter_model,
         resource_type=ResourceType.PIPELINE_BUILD,

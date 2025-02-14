@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for pipelines."""
 
+from typing import Optional, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -26,6 +27,7 @@ from zenml.constants import (
 from zenml.models import (
     Page,
     PipelineFilter,
+    PipelineRequest,
     PipelineResponse,
     PipelineRunFilter,
     PipelineRunResponse,
@@ -33,14 +35,22 @@ from zenml.models import (
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
-from zenml.zen_server.feature_gate.endpoint_utils import report_decrement
+from zenml.zen_server.feature_gate.endpoint_utils import (
+    check_entitlement,
+    report_decrement,
+    report_usage,
+)
 from zenml.zen_server.rbac.endpoint_utils import (
+    verify_permissions_and_create_entity,
     verify_permissions_and_delete_entity,
     verify_permissions_and_get_entity,
     verify_permissions_and_list_entities,
     verify_permissions_and_update_entity,
 )
 from zenml.zen_server.rbac.models import ResourceType
+from zenml.zen_server.routers.workspaces_endpoints import (
+    router as workspace_router,
+)
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -55,8 +65,71 @@ router = APIRouter(
 )
 
 
+@router.post(
+    "",
+    response_model=PipelineResponse,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@workspace_router.post(
+    "/{workspace_name_or_id}" + PIPELINES,
+    response_model=PipelineResponse,
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+@handle_exceptions
+def create_pipeline(
+    pipeline: PipelineRequest,
+    workspace_name_or_id: Optional[Union[str, UUID]] = None,
+    _: AuthContext = Security(authorize),
+) -> PipelineResponse:
+    """Creates a pipeline, optionally in a specific workspace.
+
+    Args:
+        pipeline: Pipeline to create.
+        workspace_name_or_id: Optional name or ID of the workspace.
+
+    Returns:
+        The created pipeline.
+
+    Raises:
+        IllegalOperationError: If the workspace specified in the pipeline
+            does not match the current workspace.
+    """
+    if workspace_name_or_id:
+        workspace = zen_store().get_workspace(workspace_name_or_id)
+        pipeline.workspace = workspace.id
+
+    # We limit pipeline namespaces, not pipeline versions
+    needs_usage_increment = (
+        ResourceType.PIPELINE in server_config().reportable_resources
+        and zen_store().count_pipelines(PipelineFilter(name=pipeline.name))
+        == 0
+    )
+
+    if needs_usage_increment:
+        check_entitlement(ResourceType.PIPELINE)
+
+    pipeline_response = verify_permissions_and_create_entity(
+        request_model=pipeline,
+        resource_type=ResourceType.PIPELINE,
+        create_method=zen_store().create_pipeline,
+    )
+
+    if needs_usage_increment:
+        report_usage(
+            resource_type=ResourceType.PIPELINE,
+            resource_id=pipeline_response.id,
+        )
+
+    return pipeline_response
+
+
 @router.get(
     "",
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@workspace_router.get(
+    "/{workspace_name_or_id}" + PIPELINES,
+    response_model=Page[PipelineResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -64,20 +137,26 @@ def list_pipelines(
     pipeline_filter_model: PipelineFilter = Depends(
         make_dependable(PipelineFilter)
     ),
+    workspace_name_or_id: Optional[Union[str, UUID]] = None,
     hydrate: bool = False,
     _: AuthContext = Security(authorize),
 ) -> Page[PipelineResponse]:
-    """Gets a list of pipelines.
+    """Gets a list of pipelines, optionally filtered by workspace.
 
     Args:
         pipeline_filter_model: Filter model used for pagination, sorting,
             filtering.
+        workspace_name_or_id: Optional name or ID of the workspace to filter by.
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
 
     Returns:
-        List of pipeline objects.
+        List of pipeline objects matching the filter criteria.
     """
+    if workspace_name_or_id:
+        workspace = zen_store().get_workspace(workspace_name_or_id)
+        pipeline_filter_model.set_scope_workspace(workspace.id)
+
     return verify_permissions_and_list_entities(
         filter_model=pipeline_filter_model,
         resource_type=ResourceType.PIPELINE,

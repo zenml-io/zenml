@@ -5192,7 +5192,7 @@ class SqlZenStore(BaseZenStore):
                 is not None
             )
 
-    def create_run(
+    def _create_run(
         self, pipeline_run: PipelineRunRequest
     ) -> PipelineRunResponse:
         """Creates a pipeline run.
@@ -5451,19 +5451,19 @@ class SqlZenStore(BaseZenStore):
             # three cases described above:
             # (1) The behavior depends on whether we're the first step of the
             #     pipeline run that's trying to create the run. If yes, the
-            #     `self.create_run(...)` will succeed. If no, a run with the
+            #     `self._create_run(...)` will succeed. If no, a run with the
             #     same deployment_id and orchestrator_run_id already exists and
-            #     the `self.create_run(...)` call will fail due to the unique
+            #     the `self._create_run(...)` call will fail due to the unique
             #     constraint on those columns.
             # (2) Same as (1).
             # (3) A step of the same pipeline run replaced the placeholder
             #     run, which now contains the deployment_id and
             #     orchestrator_run_id of the run that we're trying to create.
-            #     -> The `self.create_run(...) call will fail due to the unique
+            #     -> The `self._create_run(...) call will fail due to the unique
             #     constraint on those columns.
             if pre_creation_hook:
                 pre_creation_hook()
-            return self.create_run(pipeline_run), True
+            return self._create_run(pipeline_run), True
         except EntityExistsError as create_error:
             # Creating the run failed because
             # - a run with the same deployment_id and orchestrator_run_id
@@ -7414,19 +7414,11 @@ class SqlZenStore(BaseZenStore):
 
     def list_service_connector_resources(
         self,
-        workspace_name_or_id: Union[str, UUID],
-        connector_type: Optional[str] = None,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
-        filter_model: Optional[ServiceConnectorFilter] = None,
+        filter_model: ServiceConnectorFilter,
     ) -> List[ServiceConnectorResourcesModel]:
         """List resources that can be accessed by service connectors.
 
         Args:
-            workspace_name_or_id: The name or ID of the workspace to scope to.
-            connector_type: The type of service connector to scope to.
-            resource_type: The type of resource to scope to.
-            resource_id: The ID of the resource to scope to.
             filter_model: Optional filter model to use when fetching service
                 connectors.
 
@@ -7434,14 +7426,11 @@ class SqlZenStore(BaseZenStore):
             The matching list of resources that available service
             connectors have access to.
         """
-        workspace = self.get_workspace(workspace_name_or_id)
-
-        if not filter_model:
-            filter_model = ServiceConnectorFilter(
-                connector_type=connector_type,
-                resource_type=resource_type,
-                workspace_id=workspace.id,
-            )
+        # We process the resource_id filter separately, if set, because
+        # this is not a simple string comparison, but specific to every
+        # connector type.
+        resource_id = filter_model.resource_id
+        filter_model.resource_id = None
 
         service_connectors = self.list_service_connectors(
             filter_model=filter_model
@@ -7468,7 +7457,7 @@ class SqlZenStore(BaseZenStore):
                 resources = (
                     ServiceConnectorResourcesModel.from_connector_model(
                         connector,
-                        resource_type=resource_type,
+                        resource_type=filter_model.resource_type,
                     )
                 )
                 for r in resources.resources:
@@ -7487,13 +7476,13 @@ class SqlZenStore(BaseZenStore):
                     )
 
                     resources = connector_instance.verify(
-                        resource_type=resource_type,
+                        resource_type=filter_model.resource_type,
                         resource_id=resource_id,
                         list_resources=True,
                     )
                 except (ValueError, AuthorizationException) as e:
                     error = (
-                        f"Failed to fetch {resource_type or 'available'} "
+                        f"Failed to fetch {filter_model.resource_type or 'available'} "
                         f"resources from service connector {connector.name}/"
                         f"{connector.id}: {e}"
                     )
