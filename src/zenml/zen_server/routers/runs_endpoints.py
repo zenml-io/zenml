@@ -20,7 +20,6 @@ from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import (
     API,
-    GET_OR_CREATE,
     PIPELINE_CONFIGURATION,
     REFRESH,
     RUNS,
@@ -77,12 +76,12 @@ logger = get_logger(__name__)
 
 
 @router.post(
-    GET_OR_CREATE,
+    "",
     response_model=Tuple[PipelineRunResponse, bool],
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @workspace_router.post(
-    "/{workspace_name_or_id}" + RUNS + GET_OR_CREATE,
+    "/{workspace_name_or_id}" + RUNS,
     response_model=Tuple[PipelineRunResponse, bool],
     responses={401: error_response, 409: error_response, 422: error_response},
 )

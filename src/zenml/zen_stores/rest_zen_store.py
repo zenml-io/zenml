@@ -69,7 +69,6 @@ from zenml.constants import (
     ENV_ZENML_DISABLE_CLIENT_SERVER_MISMATCH_WARNING,
     EVENT_SOURCES,
     FLAVORS,
-    GET_OR_CREATE,
     INFO,
     LOGIN,
     LOGS,
@@ -259,7 +258,6 @@ from zenml.models import (
     WorkspaceFilter,
     WorkspaceRequest,
     WorkspaceResponse,
-    WorkspaceScopedRequest,
     WorkspaceUpdate,
 )
 from zenml.service_connectors.service_connector_registry import (
@@ -280,10 +278,6 @@ Json = Union[Dict[str, Any], List[Any], str, int, float, bool, None]
 
 AnyRequest = TypeVar("AnyRequest", bound=BaseRequest)
 AnyResponse = TypeVar("AnyResponse", bound=BaseIdentifiedResponse)  # type: ignore[type-arg]
-AnyWorkspaceScopedRequest = TypeVar(
-    "AnyWorkspaceScopedRequest",
-    bound=WorkspaceScopedRequest,
-)
 
 
 class RestZenStoreConfiguration(StoreConfiguration):
@@ -1157,7 +1151,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             The newly created code repository.
         """
-        return self._create_workspace_scoped_resource(
+        return self._create_resource(
             resource=code_repository,
             response_model=CodeRepositoryResponse,
             route=CODE_REPOSITORIES,
@@ -1249,7 +1243,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             The created stack component.
         """
-        return self._create_workspace_scoped_resource(
+        return self._create_resource(
             resource=component,
             route=STACK_COMPONENTS,
             response_model=ComponentResponse,
@@ -1443,7 +1437,7 @@ class RestZenStore(BaseZenStore):
     # ----------------------------- Pipelines -----------------------------
 
     def create_pipeline(self, pipeline: PipelineRequest) -> PipelineResponse:
-        """Creates a new pipeline in a workspace.
+        """Creates a new pipeline.
 
         Args:
             pipeline: The pipeline to create.
@@ -1451,7 +1445,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             The newly created pipeline.
         """
-        return self._create_workspace_scoped_resource(
+        return self._create_resource(
             resource=pipeline,
             route=PIPELINES,
             response_model=PipelineResponse,
@@ -1536,7 +1530,7 @@ class RestZenStore(BaseZenStore):
         self,
         build: PipelineBuildRequest,
     ) -> PipelineBuildResponse:
-        """Creates a new build in a workspace.
+        """Creates a new build.
 
         Args:
             build: The build to create.
@@ -1544,7 +1538,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             The newly created build.
         """
-        return self._create_workspace_scoped_resource(
+        return self._create_resource(
             resource=build,
             route=PIPELINE_BUILDS,
             response_model=PipelineBuildResponse,
@@ -1610,7 +1604,7 @@ class RestZenStore(BaseZenStore):
         self,
         deployment: PipelineDeploymentRequest,
     ) -> PipelineDeploymentResponse:
-        """Creates a new deployment in a workspace.
+        """Creates a new deployment.
 
         Args:
             deployment: The deployment to create.
@@ -1618,7 +1612,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             The newly created deployment.
         """
-        return self._create_workspace_scoped_resource(
+        return self._create_resource(
             resource=deployment,
             route=PIPELINE_DEPLOYMENTS,
             response_model=PipelineDeploymentResponse,
@@ -1692,7 +1686,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             The newly created template.
         """
-        return self._create_workspace_scoped_resource(
+        return self._create_resource(
             resource=template,
             route=RUN_TEMPLATES,
             response_model=RunTemplateResponse,
@@ -1917,7 +1911,7 @@ class RestZenStore(BaseZenStore):
             The pipeline run, and a boolean indicating whether the run was
             created or not.
         """
-        return self._get_or_create_workspace_scoped_resource(
+        return self._get_or_create_resource(
             resource=pipeline_run,
             route=RUNS,
             response_model=PipelineRunResponse,
@@ -2008,9 +2002,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             The created run metadata.
         """
-        route = f"{WORKSPACES}/{str(run_metadata.workspace)}{RUN_METADATA}"
-        self.post(f"{route}", body=run_metadata)
-        return None
+        self.post(RUN_METADATA, body=run_metadata)
 
     # ----------------------------- Schedules -----------------------------
 
@@ -2023,7 +2015,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             The newly created schedule.
         """
-        return self._create_workspace_scoped_resource(
+        return self._create_resource(
             resource=schedule,
             route=SCHEDULES,
             response_model=ScheduleResponse,
@@ -2054,7 +2046,7 @@ class RestZenStore(BaseZenStore):
         schedule_filter_model: ScheduleFilter,
         hydrate: bool = False,
     ) -> Page[ScheduleResponse]:
-        """List all schedules in the workspace.
+        """List all schedules.
 
         Args:
             schedule_filter_model: All filter parameters including pagination
@@ -2123,7 +2115,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             The newly created secret.
         """
-        return self._create_workspace_scoped_resource(
+        return self._create_resource(
             resource=secret,
             route=SECRETS,
             response_model=SecretResponse,
@@ -2382,7 +2374,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             The newly created service connector.
         """
-        connector_model = self._create_workspace_scoped_resource(
+        connector_model = self._create_resource(
             resource=service_connector,
             route=SERVICE_CONNECTORS,
             response_model=ServiceConnectorResponse,
@@ -2829,12 +2821,10 @@ class RestZenStore(BaseZenStore):
         Returns:
             The registered stack.
         """
-        assert stack.workspace is not None
-
         return self._create_resource(
             resource=stack,
             response_model=StackResponse,
-            route=f"{WORKSPACES}/{str(stack.workspace)}{STACKS}",
+            route=STACKS,
         )
 
     def get_stack(self, stack_id: UUID, hydrate: bool = True) -> StackResponse:
@@ -3444,7 +3434,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             The newly created model.
         """
-        return self._create_workspace_scoped_resource(
+        return self._create_resource(
             resource=model,
             response_model=ModelResponse,
             route=MODELS,
@@ -3535,7 +3525,7 @@ class RestZenStore(BaseZenStore):
         Returns:
             The newly created model version.
         """
-        return self._create_workspace_scoped_resource(
+        return self._create_resource(
             resource=model_version,
             response_model=ModelVersionResponse,
             route=f"{MODELS}/{model_version.model}{MODEL_VERSIONS}",
@@ -4573,32 +4563,6 @@ class RestZenStore(BaseZenStore):
             for model_data in response
         ]
 
-    def _create_workspace_scoped_resource(
-        self,
-        resource: AnyWorkspaceScopedRequest,
-        response_model: Type[AnyResponse],
-        route: str,
-        params: Optional[Dict[str, Any]] = None,
-    ) -> AnyResponse:
-        """Create a new workspace scoped resource.
-
-        Args:
-            resource: The resource to create.
-            route: The resource REST API route to use.
-            response_model: Optional model to use to deserialize the response
-                body. If not provided, the resource class itself will be used.
-            params: Optional query parameters to pass to the endpoint.
-
-        Returns:
-            The created resource.
-        """
-        return self._create_resource(
-            resource=resource,
-            response_model=response_model,
-            route=f"{WORKSPACES}/{str(resource.workspace)}{route}",
-            params=params,
-        )
-
     def _get_or_create_resource(
         self,
         resource: AnyRequest,
@@ -4625,56 +4589,29 @@ class RestZenStore(BaseZenStore):
                 a boolean indicating whether the resource was created or not.
         """
         response_body = self.post(
-            f"{route}{GET_OR_CREATE}",
+            route,
             body=resource,
             params=params,
         )
         if not isinstance(response_body, list):
             raise ValueError(
-                f"Expected a list response from the {route}{GET_OR_CREATE} "
+                f"Expected a list response from the {route} "
                 f"endpoint but got {type(response_body)} instead."
             )
         if len(response_body) != 2:
             raise ValueError(
                 f"Expected a list response with 2 elements from the "
-                f"{route}{GET_OR_CREATE} endpoint but got {len(response_body)} "
+                f"{route} endpoint but got {len(response_body)} "
                 f"elements instead."
             )
         model_json, was_created = response_body
         if not isinstance(was_created, bool):
             raise ValueError(
                 f"Expected a boolean as the second element of the list "
-                f"response from the {route}{GET_OR_CREATE} endpoint but got "
+                f"response from the {route} endpoint but got "
                 f"{type(was_created)} instead."
             )
         return response_model.model_validate(model_json), was_created
-
-    def _get_or_create_workspace_scoped_resource(
-        self,
-        resource: AnyWorkspaceScopedRequest,
-        response_model: Type[AnyResponse],
-        route: str,
-        params: Optional[Dict[str, Any]] = None,
-    ) -> Tuple[AnyResponse, bool]:
-        """Get or create a workspace scoped resource.
-
-        Args:
-            resource: The resource to get or create.
-            route: The resource REST API route to use.
-            response_model: Optional model to use to deserialize the response
-                body. If not provided, the resource class itself will be used.
-            params: Optional query parameters to pass to the endpoint.
-
-        Returns:
-            The created resource, and a boolean indicating whether the resource
-            was created or not.
-        """
-        return self._get_or_create_resource(
-            resource=resource,
-            response_model=response_model,
-            route=f"{WORKSPACES}/{str(resource.workspace)}{route}",
-            params=params,
-        )
 
     def _get_resource(
         self,
