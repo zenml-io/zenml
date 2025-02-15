@@ -95,10 +95,6 @@ def create_secret(
 
     Returns:
         The created secret.
-
-    Raises:
-        IllegalOperationError: If the workspace specified in the
-            secret does not match the current workspace.
     """
     if workspace_name_or_id:
         workspace = zen_store().get_workspace(workspace_name_or_id)

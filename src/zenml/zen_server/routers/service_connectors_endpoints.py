@@ -104,10 +104,6 @@ def create_service_connector(
 
     Returns:
         The created service connector.
-
-    Raises:
-        IllegalOperationError: If the workspace specified in the service
-            connector does not match the current workspace.
     """
     if workspace_name_or_id:
         workspace = zen_store().get_workspace(workspace_name_or_id)

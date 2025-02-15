@@ -75,7 +75,6 @@ class StepRunRequestFactory:
             pipeline_run_id=self.pipeline_run.id,
             status=ExecutionStatus.RUNNING,
             start_time=utc_now(),
-            user=Client().active_user.id,
             workspace=Client().active_workspace.id,
         )
 

@@ -57,7 +57,14 @@ class UserScopedRequest(BaseRequest):
     Used as a base class for all domain models that are "owned" by a user.
     """
 
-    user: UUID = Field(title="The id of the user that created this resource.")
+    user: Optional[UUID] = Field(
+        default=None,
+        title="The id of the user that created this resource. Set "
+        "automatically by the server.",
+        # This field is set automatically by the server, so the client doesn't
+        # need to set it and it will not be serialized.
+        exclude=True,
+    )
 
     def get_analytics_metadata(self) -> Dict[str, Any]:
         """Fetches the analytics metadata for user scoped models.

@@ -84,10 +84,6 @@ def create_stack_component(
 
     Returns:
         The created stack component.
-
-    Raises:
-        IllegalOperationError: If the workspace specified in the stack
-            component does not match the current workspace.
     """
     if workspace_name_or_id:
         workspace = zen_store().get_workspace(workspace_name_or_id)

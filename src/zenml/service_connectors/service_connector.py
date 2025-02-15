@@ -706,7 +706,6 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
 
     def to_model(
         self,
-        user: UUID,
         workspace: UUID,
         name: Optional[str] = None,
         description: str = "",
@@ -716,7 +715,6 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
 
         Args:
             name: The name of the connector.
-            user: The ID of the user that created the connector.
             workspace: The ID of the workspace that the connector belongs to.
             description: The description of the connector.
             labels: The labels of the connector.
@@ -740,7 +738,6 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
             connector_type=spec.connector_type,
             name=name,
             description=description,
-            user=user,
             workspace=workspace,
             auth_method=self.auth_method,
             expires_at=self.expires_at,

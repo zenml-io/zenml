@@ -28,7 +28,6 @@ from zenml.constants import (
     VERSION_1,
 )
 from zenml.enums import ExecutionStatus, StackComponentType
-from zenml.exceptions import IllegalOperationError
 from zenml.logger import get_logger
 from zenml.models import (
     Page,
@@ -101,21 +100,12 @@ def get_or_create_pipeline_run(
     Returns:
         The pipeline run and a boolean indicating whether the run was created
         or not.
-
-    Raises:
-        IllegalOperationError: If the workspace or user specified in the
-            pipeline run does not match the current workspace or authenticated
-            user.
     """
     if workspace_name_or_id:
         workspace = zen_store().get_workspace(workspace_name_or_id)
         pipeline_run.workspace = workspace.id
 
-    if pipeline_run.user != auth_context.user.id:
-        raise IllegalOperationError(
-            "Creating pipeline runs for a user other than yourself "
-            "is not supported."
-        )
+    pipeline_run.user = auth_context.user.id
 
     def _pre_creation_hook() -> None:
         verify_permission(

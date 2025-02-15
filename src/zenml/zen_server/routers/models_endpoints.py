@@ -93,10 +93,6 @@ def create_model(
 
     Returns:
         The created model.
-
-    Raises:
-        IllegalOperationError: If the workspace specified in the model
-            does not match the current workspace.
     """
     if workspace_name_or_id:
         workspace = zen_store().get_workspace(workspace_name_or_id)

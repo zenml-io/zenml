@@ -103,10 +103,6 @@ def create_model_version(
 
     Returns:
         The created model version.
-
-    Raises:
-        IllegalOperationError: If the workspace specified in the model version
-            does not match the current workspace.
     """
     if workspace_name_or_id:
         workspace = zen_store().get_workspace(workspace_name_or_id)

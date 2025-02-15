@@ -406,7 +406,6 @@ def deployment_request_from_template(
     assert deployment.stack
     assert deployment.build
     deployment_request = PipelineDeploymentRequest(
-        user=user_id,
         workspace=deployment.workspace.id,
         run_name_template=config.run_name
         or get_default_run_name(pipeline_name=pipeline_configuration.name),

@@ -14,7 +14,6 @@
 """Models representing flavors."""
 
 from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional
-from uuid import UUID
 
 from pydantic import Field
 
@@ -99,13 +98,8 @@ class FlavorRequest(FlexibleScopedRequest):
     )
 
 
-class InternalFlavorRequest(FlavorRequest):
-    """Internal flavor request model."""
-
-    user: Optional[UUID] = Field(  # type: ignore[assignment]
-        title="The id of the user that created this resource.",
-        default=None,
-    )
+class BuiltinFlavorRequest(FlavorRequest):
+    """Internal flavor request model used only for buit-in flavors."""
 
 
 # ------------------ Update Model ------------------

@@ -20,7 +20,6 @@ from fastapi import APIRouter, Security
 
 from zenml.constants import API, RUN_METADATA, VERSION_1
 from zenml.enums import MetadataResourceTypes
-from zenml.exceptions import IllegalOperationError
 from zenml.models import RunMetadataRequest
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
@@ -66,19 +65,13 @@ def create_run_metadata(
         None
 
     Raises:
-        IllegalOperationError: If the workspace or user specified in the run
-            metadata does not match the current workspace or authenticated user.
         RuntimeError: If the resource type is not supported.
     """
     if workspace_name_or_id:
         workspace = zen_store().get_workspace(workspace_name_or_id)
         run_metadata.workspace = workspace.id
 
-    if run_metadata.user != auth_context.user.id:
-        raise IllegalOperationError(
-            "Creating run metadata for a user other than yourself "
-            "is not supported."
-        )
+    run_metadata.user = auth_context.user.id
 
     verify_models: List[Any] = []
     for resource in run_metadata.resources:

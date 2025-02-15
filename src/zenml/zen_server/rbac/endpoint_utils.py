@@ -21,7 +21,6 @@ from pydantic import BaseModel
 from zenml.constants import (
     REQUIRES_CUSTOM_RESOURCE_REPORTING,
 )
-from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     BaseFilter,
     BaseIdentifiedResponse,
@@ -63,10 +62,6 @@ def verify_permissions_and_create_entity(
         resource_type: The resource type of the entity to create.
         create_method: The method to create the entity.
 
-    Raises:
-        IllegalOperationError: If the request model has a different owner then
-            the currently authenticated user.
-
     Returns:
         A model of the created entity.
     """
@@ -74,11 +69,10 @@ def verify_permissions_and_create_entity(
         auth_context = get_auth_context()
         assert auth_context
 
-        if request_model.user != auth_context.user.id:
-            raise IllegalOperationError(
-                f"Not allowed to create resource '{resource_type}' for a "
-                "different user."
-            )
+        # Ignore the user field set in the request model, if any, and set it to
+        # the current user's ID instead.
+        request_model.user = auth_context.user.id
+
     verify_permission(resource_type=resource_type, action=Action.CREATE)
 
     needs_usage_increment = (
@@ -109,8 +103,6 @@ def verify_permissions_and_batch_create_entity(
         create_method: The method to create the entities.
 
     Raises:
-        IllegalOperationError: If the request model has a different owner then
-            the currently authenticated user.
         RuntimeError: If the resource type is usage-tracked.
 
     Returns:
@@ -121,11 +113,9 @@ def verify_permissions_and_batch_create_entity(
 
     for request_model in batch:
         if isinstance(request_model, UserScopedRequest):
-            if request_model.user != auth_context.user.id:
-                raise IllegalOperationError(
-                    f"Not allowed to create resource '{resource_type}' for a "
-                    "different user."
-                )
+            # Ignore the user field set in the request model, if any, and set it to
+            # the current user's ID instead.
+            request_model.user = auth_context.user.id
 
     verify_permission(resource_type=resource_type, action=Action.CREATE)
 

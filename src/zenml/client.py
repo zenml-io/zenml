@@ -1188,7 +1188,6 @@ class Client(metaclass=ClientMetaClass):
             components=stack_components,
             stack_spec_path=stack_spec_file,
             workspace=self.active_workspace.id,
-            user=self.active_user.id,
             labels=labels,
         )
 
@@ -1322,7 +1321,6 @@ class Client(metaclass=ClientMetaClass):
         # Create the update model
         update_model = StackUpdate(
             workspace=self.active_workspace.id,
-            user=self.active_user.id,
             stack_spec_path=stack_spec_file,
         )
 
@@ -1633,7 +1631,6 @@ class Client(metaclass=ClientMetaClass):
             service_type=service_type,
             config=config.model_dump(),
             workspace=self.active_workspace.id,
-            user=self.active_user.id,
             model_version_id=model_version_id,
         )
         # Register the service
@@ -2017,7 +2014,6 @@ class Client(metaclass=ClientMetaClass):
             type=component_type,
             flavor=flavor,
             configuration=configuration,
-            user=self.active_user.id,
             workspace=self.active_workspace.id,
             labels=labels,
         )
@@ -2068,7 +2064,6 @@ class Client(metaclass=ClientMetaClass):
 
         update_model = ComponentUpdate(
             workspace=self.active_workspace.id,
-            user=self.active_user.id,
         )
 
         if name is not None:
@@ -2771,7 +2766,6 @@ class Client(metaclass=ClientMetaClass):
             flavor=flavor,
             plugin_type=PluginType.EVENT_SOURCE,
             plugin_subtype=event_source_subtype,
-            user=self.active_user.id,
             workspace=self.active_workspace.id,
         )
 
@@ -2970,7 +2964,6 @@ class Client(metaclass=ClientMetaClass):
             configuration=configuration,
             service_account_id=service_account_id,
             auth_window=auth_window,
-            user=self.active_user.id,
             workspace=self.active_workspace.id,
         )
 
@@ -3147,7 +3140,6 @@ class Client(metaclass=ClientMetaClass):
             event_source_id=event_source_id,
             event_filter=event_filter,
             action_id=action_id,
-            user=self.active_user.id,
             workspace=self.active_workspace.id,
         )
 
@@ -3477,7 +3469,6 @@ class Client(metaclass=ClientMetaClass):
                 description=description,
                 source_deployment_id=deployment_id,
                 tags=tags,
-                user=self.active_user.id,
                 workspace=self.active_workspace.id,
             )
         )
@@ -4511,7 +4502,6 @@ class Client(metaclass=ClientMetaClass):
 
         run_metadata = RunMetadataRequest(
             workspace=self.active_workspace.id,
-            user=self.active_user.id,
             resources=resources,
             stack_component_id=stack_component_id,
             publisher_step_id=publisher_step_id,
@@ -4546,7 +4536,6 @@ class Client(metaclass=ClientMetaClass):
             name=name,
             values=values,
             scope=scope,
-            user=self.active_user.id,
             workspace=self.active_workspace.id,
         )
         try:
@@ -5012,7 +5001,6 @@ class Client(metaclass=ClientMetaClass):
         """
         self._validate_code_repository_config(source=source, config=config)
         repo_request = CodeRepositoryRequest(
-            user=self.active_user.id,
             workspace=self.active_workspace.id,
             name=name,
             config=config,
@@ -5276,7 +5264,6 @@ class Client(metaclass=ClientMetaClass):
             assert connector_instance is not None
             connector_request = connector_instance.to_model(
                 name=name,
-                user=self.active_user.id,
                 workspace=self.active_workspace.id,
                 description=description or "",
                 labels=labels,
@@ -5324,7 +5311,6 @@ class Client(metaclass=ClientMetaClass):
                 expiration_seconds=expiration_seconds,
                 expires_at=expires_at,
                 expires_skew_tolerance=expires_skew_tolerance,
-                user=self.active_user.id,
                 workspace=self.active_workspace.id,
                 labels=labels or {},
             )
@@ -5705,7 +5691,6 @@ class Client(metaclass=ClientMetaClass):
             # Convert the update model to a request model for validation
             connector_request_dict = connector_update.model_dump()
             connector_request_dict.update(
-                user=self.active_user.id,
                 workspace=self.active_workspace.id,
             )
             connector_request = ServiceConnectorRequest.model_validate(
@@ -6087,7 +6072,6 @@ class Client(metaclass=ClientMetaClass):
                 trade_offs=trade_offs,
                 ethics=ethics,
                 tags=tags,
-                user=self.active_user.id,
                 workspace=self.active_workspace.id,
                 save_models_to_registry=save_models_to_registry,
             )
@@ -6255,7 +6239,6 @@ class Client(metaclass=ClientMetaClass):
             model_version=ModelVersionRequest(
                 name=name,
                 description=description,
-                user=self.active_user.id,
                 workspace=self.active_workspace.id,
                 model=model_name_or_id,
                 tags=tags,

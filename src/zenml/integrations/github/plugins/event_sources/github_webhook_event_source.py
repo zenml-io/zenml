@@ -362,7 +362,6 @@ class GithubWebhookEventSourceHandler(BaseWebhookEventSourceHandler):
             name=f"event_source-{str(event_source.id)}-{random_str(4)}".lower(),
             values={"webhook_secret": secret_key_value},
             workspace=event_source.workspace.id,
-            user=event_source.user.id,
             scope=SecretScope.WORKSPACE,
         )
         secret = self.zen_store.create_secret(webhook_secret)

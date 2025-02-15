@@ -19,7 +19,6 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, SCHEDULES, VERSION_1
-from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     Page,
     ScheduleFilter,
@@ -70,20 +69,12 @@ def create_schedule(
 
     Returns:
         The created schedule.
-
-    Raises:
-        IllegalOperationError: If the workspace or user specified in the
-            schedule does not match the current workspace or authenticated user.
     """
     if workspace_name_or_id:
         workspace = zen_store().get_workspace(workspace_name_or_id)
         schedule.workspace = workspace.id
 
-    if schedule.user != auth_context.user.id:
-        raise IllegalOperationError(
-            "Creating schedules for a user other than yourself "
-            "is not supported."
-        )
+    schedule.user = auth_context.user.id
 
     return zen_store().create_schedule(schedule=schedule)
 

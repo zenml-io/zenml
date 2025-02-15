@@ -86,6 +86,8 @@ def create_stack(
         workspace = zen_store().get_workspace(workspace_name_or_id)
         stack.workspace = workspace.id
 
+    stack.user = auth_context.user.id
+
     # Check the service connector creation
     is_connector_create_needed = False
     for connector_id_or_info in stack.service_connectors:
@@ -124,8 +126,6 @@ def create_stack(
 
     # Check the stack creation
     verify_permission(resource_type=ResourceType.STACK, action=Action.CREATE)
-
-    stack.user = auth_context.user.id
 
     return zen_store().create_stack(stack)
 

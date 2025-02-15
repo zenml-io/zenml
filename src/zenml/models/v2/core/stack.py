@@ -61,9 +61,6 @@ if TYPE_CHECKING:
 class StackRequest(FlexibleScopedRequest):
     """Request model for stack creation."""
 
-    user: Optional[UUID] = None
-    workspace: Optional[UUID] = None
-
     name: str = Field(
         title="The name of the stack.", max_length=STR_FIELD_MAX_LENGTH
     )
@@ -130,6 +127,10 @@ class StackRequest(FlexibleScopedRequest):
                                 "connectors."
                             )
         return self
+
+
+class DefaultStackRequest(StackRequest):
+    """Internal stack request model used only for default stacks."""
 
 
 # ------------------ Update Model ------------------

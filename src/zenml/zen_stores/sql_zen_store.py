@@ -169,7 +169,9 @@ from zenml.models import (
     ArtifactVisualizationResponse,
     BaseFilter,
     BaseIdentifiedResponse,
+    BaseRequest,
     BaseResponse,
+    BuiltinFlavorRequest,
     CodeReferenceRequest,
     CodeReferenceResponse,
     CodeRepositoryFilter,
@@ -180,6 +182,8 @@ from zenml.models import (
     ComponentRequest,
     ComponentResponse,
     ComponentUpdate,
+    DefaultComponentRequest,
+    DefaultStackRequest,
     DeployedStack,
     EventSourceFilter,
     EventSourceRequest,
@@ -286,6 +290,7 @@ from zenml.models import (
     UserFilter,
     UserRequest,
     UserResponse,
+    UserScopedRequest,
     UserUpdate,
     WorkspaceFilter,
     WorkspaceRequest,
@@ -293,7 +298,6 @@ from zenml.models import (
     WorkspaceScopedResponse,
     WorkspaceUpdate,
 )
-from zenml.models.v2.core.component import InternalComponentRequest
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
 )
@@ -816,6 +820,7 @@ class SqlZenStore(BaseZenStore):
     _backup_secrets_store: Optional[BaseSecretsStore] = None
     _should_send_user_enriched_events: bool = False
     _cached_onboarding_state: Optional[Set[str]] = None
+    _default_user: Optional[UserSchema] = None
 
     @property
     def secrets_store(self) -> "BaseSecretsStore":
@@ -1888,6 +1893,8 @@ class SqlZenStore(BaseZenStore):
             The created action.
         """
         with Session(self.engine) as session:
+            self._set_request_user_id(request_model=action, session=session)
+
             self._fail_if_action_with_name_exists(
                 action_name=action.name,
                 workspace_id=action.workspace,
@@ -2112,6 +2119,8 @@ class SqlZenStore(BaseZenStore):
                 configured for the same service account.
         """
         with Session(self.engine) as session:
+            self._set_request_user_id(request_model=api_key, session=session)
+
             # Fetch the service account
             service_account = self._get_account_schema(
                 service_account_id, session=session, service_account=True
@@ -2343,6 +2352,10 @@ class SqlZenStore(BaseZenStore):
             The updated API key.
         """
         with Session(self.engine) as session:
+            self._set_request_user_id(
+                request_model=rotate_request, session=session
+            )
+
             api_key = self._get_api_key(
                 service_account_id=service_account_id,
                 api_key_name_or_id=api_key_name_or_id,
@@ -2429,6 +2442,7 @@ class SqlZenStore(BaseZenStore):
             The newly created service.
         """
         with Session(self.engine) as session:
+            self._set_request_user_id(request_model=service, session=session)
             # Check if a service with the given name already exists
             self._fail_if_service_with_config_exists(
                 service_request=service,
@@ -2585,6 +2599,8 @@ class SqlZenStore(BaseZenStore):
         """
         validate_name(artifact)
         with Session(self.engine) as session:
+            self._set_request_user_id(request_model=artifact, session=session)
+
             # Check if an artifact with the given name already exists
             existing_artifact = session.exec(
                 select(ArtifactSchema).where(
@@ -2820,6 +2836,8 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The created artifact version.
         """
+        self._set_request_user_id(request_model=artifact_version)
+
         if artifact_name := artifact_version.artifact_name:
             artifact_schema = self._get_or_create_artifact_for_name(
                 name=artifact_name,
@@ -2955,7 +2973,6 @@ class SqlZenStore(BaseZenStore):
                 self.create_run_metadata(
                     RunMetadataRequest(
                         workspace=artifact_version.workspace,
-                        user=artifact_version.user,
                         resources=[
                             RunMetadataResource(
                                 id=artifact_version_id,
@@ -3268,6 +3285,10 @@ class SqlZenStore(BaseZenStore):
                 exists.
         """
         with Session(self.engine) as session:
+            self._set_request_user_id(
+                request_model=code_repository, session=session
+            )
+
             existing_repo = session.exec(
                 select(CodeRepositorySchema)
                 .where(CodeRepositorySchema.name == code_repository.name)
@@ -3434,6 +3455,14 @@ class SqlZenStore(BaseZenStore):
         """
         validate_name(component)
         with Session(self.engine) as session:
+            if isinstance(component, DefaultComponentRequest):
+                # Set the user to None for default components
+                component.user = None
+            else:
+                self._set_request_user_id(
+                    request_model=component, session=session
+                )
+
             self._fail_if_component_with_name_type_exists(
                 name=component.name,
                 component_type=component.type,
@@ -4081,6 +4110,13 @@ class SqlZenStore(BaseZenStore):
             ValueError: In case the config_schema string exceeds the max length.
         """
         with Session(self.engine) as session:
+            if isinstance(flavor, BuiltinFlavorRequest):
+                # Set the user to None for built-in flavors
+                flavor.user = None
+            else:
+                self._set_request_user_id(
+                    request_model=flavor, session=session
+                )
             # Check if flavor with the same domain key (name, type, workspace,
             # owner) already exists
             existing_flavor = session.exec(
@@ -4305,6 +4341,8 @@ class SqlZenStore(BaseZenStore):
             EntityExistsError: If an identical pipeline already exists.
         """
         with Session(self.engine) as session:
+            self._set_request_user_id(request_model=pipeline, session=session)
+
             new_pipeline = PipelineSchema.from_request(pipeline)
 
             if pipeline.tags:
@@ -4489,6 +4527,7 @@ class SqlZenStore(BaseZenStore):
             The newly created build.
         """
         with Session(self.engine) as session:
+            self._set_request_user_id(request_model=build, session=session)
             if stack_id := build.stack:
                 self._verify_workspace(
                     expected_workspace_id=build.workspace,
@@ -4611,6 +4650,9 @@ class SqlZenStore(BaseZenStore):
             The newly created deployment.
         """
         with Session(self.engine) as session:
+            self._set_request_user_id(
+                request_model=deployment, session=session
+            )
             self._verify_workspace(
                 expected_workspace_id=deployment.workspace,
                 obj=(StackSchema, deployment.workspace),
@@ -4777,6 +4819,7 @@ class SqlZenStore(BaseZenStore):
                 have an associated build.
         """
         with Session(self.engine) as session:
+            self._set_request_user_id(request_model=template, session=session)
             existing_template = session.exec(
                 select(RunTemplateSchema)
                 .where(RunTemplateSchema.name == template.name)
@@ -5031,6 +5074,9 @@ class SqlZenStore(BaseZenStore):
             The created event_source.
         """
         with Session(self.engine) as session:
+            self._set_request_user_id(
+                request_model=event_source, session=session
+            )
             self._fail_if_event_source_with_name_exists(
                 event_source=event_source,
                 session=session,
@@ -5411,7 +5457,7 @@ class SqlZenStore(BaseZenStore):
                 "Unable to get or create run for request with missing "
                 "orchestrator run ID."
             )
-
+        self._set_request_user_id(request_model=pipeline_run)
         try:
             # We first try the most likely case that the run was already
             # created by a previous step in the same pipeline run.
@@ -5612,6 +5658,9 @@ class SqlZenStore(BaseZenStore):
             The created run metadata.
         """
         with Session(self.engine) as session:
+            self._set_request_user_id(
+                request_model=run_metadata, session=session
+            )
             if run_metadata.resources:
                 for key, value in run_metadata.values.items():
                     type_ = run_metadata.types[key]
@@ -5649,6 +5698,7 @@ class SqlZenStore(BaseZenStore):
             The newly created schedule.
         """
         with Session(self.engine) as session:
+            self._set_request_user_id(request_model=schedule, session=session)
             if orchestrator_id := schedule.orchestrator_id:
                 self._verify_workspace(
                     expected_workspace_id=schedule.workspace,
@@ -6207,6 +6257,7 @@ class SqlZenStore(BaseZenStore):
                 the same scope.
         """
         with Session(self.engine) as session:
+            self._set_request_user_id(request_model=secret, session=session)
             # Check if a secret with the same name already exists in the same
             # scope.
             secret_exists, msg = self._check_sql_secret_scope(
@@ -6764,6 +6815,8 @@ class SqlZenStore(BaseZenStore):
             Exception: If anything goes wrong during the creation of the
                 service connector.
         """
+        self._set_request_user_id(request_model=service_connector)
+
         # If the connector type is locally available, we validate the request
         # against the connector type schema before storing it in the database
         if service_connector_registry.is_registered(service_connector.type):
@@ -7198,7 +7251,6 @@ class SqlZenStore(BaseZenStore):
                     return self.create_secret(
                         SecretRequest(
                             name=secret_name,
-                            user=user,
                             workspace=workspace,
                             scope=SecretScope.WORKSPACE,
                             values=secrets,
@@ -7333,6 +7385,8 @@ class SqlZenStore(BaseZenStore):
             The list of resources that the service connector configuration has
             access to.
         """
+        self._set_request_user_id(request_model=service_connector)
+
         connector_instance = service_connector_registry.instantiate_connector(
             model=service_connector
         )
@@ -7554,6 +7608,12 @@ class SqlZenStore(BaseZenStore):
                 errors.
         """
         with Session(self.engine) as session:
+            if isinstance(stack, DefaultStackRequest):
+                # Set the user to None for default stacks
+                stack.user = None
+            else:
+                self._set_request_user_id(request_model=stack, session=session)
+
             # For clean-up purposes, each created entity is tracked here
             service_connectors_created_ids: List[UUID] = []
             components_created_ids: List[UUID] = []
@@ -7628,7 +7688,6 @@ class SqlZenStore(BaseZenStore):
                                     connector_type=connector_id_or_info.type,
                                     auth_method=connector_id_or_info.auth_method,
                                     configuration=connector_config,
-                                    user=stack.user,
                                     workspace=stack.workspace,
                                     labels={
                                         k: str(v)
@@ -7687,7 +7746,6 @@ class SqlZenStore(BaseZenStore):
                                         type=component_type,
                                         flavor=component_info.flavor,
                                         configuration=component_info.configuration,
-                                        user=stack.user,
                                         workspace=stack.workspace,
                                         labels=stack.labels,
                                     )
@@ -8075,11 +8133,12 @@ class SqlZenStore(BaseZenStore):
                 f"Creating default stack in workspace {workspace.name}..."
             )
             orchestrator = self.create_stack_component(
-                component=InternalComponentRequest(
-                    # Passing `None` for the user here means the orchestrator
-                    # is owned by the server, which for RBAC indicates that
-                    # everyone can read it
-                    user=None,
+                # Use `DefaultComponentRequest` instead of
+                # `ComponentRequest` here to force the `create_stack_component`
+                # call to use `None` for the user, meaning the orchestrator
+                # is owned by the server, which for RBAC indicates that
+                # everyone can read it
+                component=DefaultComponentRequest(
                     workspace=workspace.id,
                     name=DEFAULT_STACK_AND_COMPONENT_NAME,
                     type=StackComponentType.ORCHESTRATOR,
@@ -8089,11 +8148,12 @@ class SqlZenStore(BaseZenStore):
             )
 
             artifact_store = self.create_stack_component(
-                component=InternalComponentRequest(
-                    # Passing `None` for the user here means the stack is owned
-                    # by the server, which for RBAC indicates that everyone can
-                    # read it
-                    user=None,
+                # Use `DefaultComponentRequest` instead of
+                # `ComponentRequest` here to force the `create_stack_component`
+                # call to use `None` for the user, meaning the artifact store
+                # is owned by the server, which for RBAC indicates that everyone
+                # can read it
+                component=DefaultComponentRequest(
                     workspace=workspace.id,
                     name=DEFAULT_STACK_AND_COMPONENT_NAME,
                     type=StackComponentType.ARTIFACT_STORE,
@@ -8106,8 +8166,11 @@ class SqlZenStore(BaseZenStore):
                 c.type: [c.id] for c in [orchestrator, artifact_store]
             }
 
-            stack = StackRequest(
-                user=None,
+            # Use `DefaultStackRequest` instead of `StackRequest` here to force
+            # the `create_stack` call to use `None` for the user, meaning the
+            # stack is owned by the server, which for RBAC indicates that
+            # everyone can read it
+            stack = DefaultStackRequest(
                 name=DEFAULT_STACK_AND_COMPONENT_NAME,
                 components=components,
                 workspace=workspace.id,
@@ -8213,6 +8276,8 @@ class SqlZenStore(BaseZenStore):
             KeyError: if the pipeline run doesn't exist.
         """
         with Session(self.engine) as session:
+            self._set_request_user_id(request_model=step_run, session=session)
+
             # Check if the pipeline run exists
             run = session.exec(
                 select(PipelineRunSchema).where(
@@ -8793,6 +8858,8 @@ class SqlZenStore(BaseZenStore):
             The newly created trigger.
         """
         with Session(self.engine) as session:
+            self._set_request_user_id(request_model=trigger, session=session)
+
             # Verify that the given action exists
             self._get_action(action_id=trigger.action_id, session=session)
 
@@ -9005,6 +9072,10 @@ class SqlZenStore(BaseZenStore):
             The created trigger execution.
         """
         with Session(self.engine) as session:
+            self._set_request_user_id(
+                request_model=trigger_execution, session=session
+            )
+
             # TODO: Verify that the given trigger exists
             new_execution = TriggerExecutionSchema.from_request(
                 trigger_execution
@@ -9222,6 +9293,38 @@ class SqlZenStore(BaseZenStore):
 
         return False
 
+    def _get_default_user(
+        self, session: Optional[Session] = None
+    ) -> UserSchema:
+        """Get the default user.
+
+        Args:
+            session: The database session to use for the query.
+
+        Returns:
+            The default user schema.
+        """
+        if self._default_user is None:
+            default_username = os.getenv(
+                ENV_ZENML_DEFAULT_USER_NAME, DEFAULT_USERNAME
+            )
+
+            if session is None:
+                with Session(self.engine) as session:
+                    self._default_user = self._get_account_schema(
+                        account_name_or_id=default_username,
+                        session=session,
+                        service_account=False,
+                    )
+            else:
+                self._default_user = self._get_account_schema(
+                    account_name_or_id=default_username,
+                    session=session,
+                    service_account=False,
+                )
+
+        return self._default_user
+
     def _get_active_user(self, session: Session) -> UserSchema:
         """Get the active user.
 
@@ -9253,16 +9356,9 @@ class SqlZenStore(BaseZenStore):
                 )
 
             raise KeyError("No active user found.")
-        else:
-            # If the code is running on the client, use the default user.
-            admin_username = os.getenv(
-                ENV_ZENML_DEFAULT_USER_NAME, DEFAULT_USERNAME
-            )
-            return self._get_account_schema(
-                account_name_or_id=admin_username,
-                session=session,
-                service_account=False,
-            )
+
+        # If the code is running on the client, use the default user.
+        return self._get_default_user(session=session)
 
     def create_user(self, user: UserRequest) -> UserResponse:
         """Creates a new user.
@@ -10194,6 +10290,8 @@ class SqlZenStore(BaseZenStore):
         """
         validate_name(model)
         with Session(self.engine) as session:
+            self._set_request_user_id(request_model=model, session=session)
+
             model_schema = ModelSchema.from_request(model)
             session.add(model_schema)
 
@@ -10753,6 +10851,8 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The newly created model version.
         """
+        self._set_request_user_id(request_model=model_version)
+
         return self._create_model_version(model_version=model_version)
 
     def get_model_version(
@@ -10952,6 +11052,10 @@ class SqlZenStore(BaseZenStore):
             The newly created model version to artifact link.
         """
         with Session(self.engine) as session:
+            self._set_request_user_id(
+                request_model=model_version_artifact_link
+            )
+
             # If the link already exists, return it
             existing_model_version_artifact_link = session.exec(
                 select(ModelVersionArtifactSchema)
@@ -11112,6 +11216,10 @@ class SqlZenStore(BaseZenStore):
                 run link.
         """
         with Session(self.engine) as session:
+            self._set_request_user_id(
+                request_model=model_version_pipeline_run_link
+            )
+
             # If the link already exists, return it
             existing_model_version_pipeline_run_link = session.exec(
                 select(ModelVersionPipelineRunSchema)
@@ -11340,6 +11448,7 @@ class SqlZenStore(BaseZenStore):
         """
         validate_name(tag)
         with Session(self.engine) as session:
+            self._set_request_user_id(request_model=tag, session=session)
             existing_tag = session.exec(
                 select(TagSchema).where(TagSchema.name == tag.name)
             ).first()
@@ -11488,6 +11597,9 @@ class SqlZenStore(BaseZenStore):
                 configuration already exists.
         """
         with Session(self.engine) as session:
+            self._set_request_user_id(
+                request_model=tag_resource, session=session
+            )
             existing_tag_resource = session.exec(
                 select(TagResourceSchema).where(
                     TagResourceSchema.tag_id == tag_resource.tag_id,
@@ -11605,3 +11717,34 @@ class SqlZenStore(BaseZenStore):
 
             if result != expected_workspace_id:
                 _raise_error(resource=schema.__name__, id_=id_)
+
+    def _set_request_user_id(
+        self,
+        request_model: BaseRequest,
+        session: Optional[Session] = None,
+    ) -> None:
+        """Set the user ID on a request model to the active user.
+
+        Args:
+            request_model: The request model to set the user ID on.
+            session: The DB session to use to use for queries.
+        """
+        if not isinstance(request_model, UserScopedRequest):
+            # If the request model is not a UserScopedRequest, we don't need to
+            # set the user ID.
+            return
+
+        if handle_bool_env_var(ENV_ZENML_SERVER):
+            # Running inside server
+            from zenml.zen_server.auth import get_auth_context
+
+            # If the code is running on the server, use the auth context.
+            auth_context = get_auth_context()
+            if auth_context is None:
+                raise RuntimeError("No active user found.")
+
+            user_id = auth_context.user.id
+        else:
+            user_id = self._get_default_user(session).id
+
+        request_model.user = user_id

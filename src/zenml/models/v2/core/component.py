@@ -120,13 +120,8 @@ class ComponentRequest(ComponentBase, FlexibleScopedRequest):
         return name
 
 
-class InternalComponentRequest(ComponentRequest):
-    """Internal component request model."""
-
-    user: Optional[UUID] = Field(  # type: ignore[assignment]
-        title="The id of the user that created this resource.",
-        default=None,
-    )
+class DefaultComponentRequest(ComponentRequest):
+    """Internal component request model used only for default stack components."""
 
 
 # ------------------ Update Model ------------------

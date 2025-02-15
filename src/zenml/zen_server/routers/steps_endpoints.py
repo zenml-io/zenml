@@ -104,16 +104,19 @@ def list_run_steps(
 @handle_exceptions
 def create_run_step(
     step: StepRunRequest,
-    _: AuthContext = Security(authorize),
+    auth_context: AuthContext = Security(authorize),
 ) -> StepRunResponse:
     """Create a run step.
 
     Args:
         step: The run step to create.
+        auth_context: Authentication context.
 
     Returns:
         The created run step.
     """
+    step.user = auth_context.user.id
+
     pipeline_run = zen_store().get_run(step.pipeline_run_id)
     verify_permission_for_model(pipeline_run, action=Action.UPDATE)
 

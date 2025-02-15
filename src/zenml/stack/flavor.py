@@ -25,7 +25,7 @@ from zenml.models import (
     FlavorResponse,
     ServiceConnectorRequirements,
 )
-from zenml.models.v2.core.flavor import InternalFlavorRequest
+from zenml.models.v2.core.flavor import BuiltinFlavorRequest
 from zenml.stack.stack_component import StackComponent, StackComponentConfig
 from zenml.utils import source_utils
 from zenml.utils.package_utils import is_latest_zenml_version
@@ -189,15 +189,12 @@ class Flavor:
             if connector_requirements
             else None
         )
-        user = None
         workspace = None
         if is_custom:
-            user = Client().active_user.id
             workspace = Client().active_workspace.id
 
-        model_class = FlavorRequest if is_custom else InternalFlavorRequest
+        model_class = FlavorRequest if is_custom else BuiltinFlavorRequest
         model = model_class(
-            user=user,
             workspace=workspace,
             name=self.name,
             type=self.type,
