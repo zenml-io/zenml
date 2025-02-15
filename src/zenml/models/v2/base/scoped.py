@@ -203,6 +203,7 @@ class UserScopedFilter(BaseFilter):
     user: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Name/ID of the user that created the entity.",
+        union_mode="left_to_right",
     )
 
     def set_scope_user(self, user_id: UUID) -> None:
@@ -447,14 +448,10 @@ class WorkspaceScopedFilter(UserScopedFilter):
         default=None,
         description="The workspace to scope this query to.",
     )
-    workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="UUID of the workspace that this entity belongs to.",
-        union_mode="left_to_right",
-    )
     workspace: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Name/ID of the workspace that this entity belongs to.",
+        union_mode="left_to_right",
     )
 
     def set_scope_workspace(self, workspace_id: UUID) -> None:

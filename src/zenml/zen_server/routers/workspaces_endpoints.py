@@ -221,13 +221,13 @@ def get_workspace_statistics(
         id=get_allowed_resource_ids(resource_type=ResourceType.STACK),
     )
 
-    run_filter = PipelineRunFilter(workspace_id=workspace.id)
+    run_filter = PipelineRunFilter(workspace=workspace.id)
     run_filter.configure_rbac(
         authenticated_user_id=user_id,
         id=get_allowed_resource_ids(resource_type=ResourceType.PIPELINE_RUN),
     )
 
-    pipeline_filter = PipelineFilter(workspace_id=workspace.id)
+    pipeline_filter = PipelineFilter(workspace=workspace.id)
     pipeline_filter.configure_rbac(
         authenticated_user_id=user_id,
         id=get_allowed_resource_ids(resource_type=ResourceType.PIPELINE),
