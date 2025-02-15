@@ -1237,7 +1237,6 @@ class Client(metaclass=ClientMetaClass):
         name: Optional[str] = None,
         description: Optional[str] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
-        user_id: Optional[Union[str, UUID]] = None,
         component_id: Optional[Union[str, UUID]] = None,
         user: Optional[Union[UUID, str]] = None,
         component: Optional[Union[UUID, str]] = None,
@@ -1255,7 +1254,6 @@ class Client(metaclass=ClientMetaClass):
             updated: Use the last updated date for filtering
             description: Use the stack description for filtering
             workspace_id: The id of the workspace to filter by.
-            user_id: The  id of the user to filter by.
             component_id: The id of the component to filter by.
             user: The name/ID of the user to filter by.
             component: The name/ID of the component to filter by.
@@ -1272,7 +1270,6 @@ class Client(metaclass=ClientMetaClass):
             sort_by=sort_by,
             logical_operator=logical_operator,
             workspace_id=workspace_id,
-            user_id=user_id,
             component_id=component_id,
             user=user,
             component=component,
@@ -1700,7 +1697,6 @@ class Client(metaclass=ClientMetaClass):
         flavor: Optional[str] = None,
         user: Optional[Union[UUID, str]] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
-        user_id: Optional[Union[str, UUID]] = None,
         hydrate: bool = False,
         running: Optional[bool] = None,
         service_name: Optional[str] = None,
@@ -1723,7 +1719,6 @@ class Client(metaclass=ClientMetaClass):
             type: Use the service type for filtering
             flavor: Use the service flavor for filtering
             workspace_id: The id of the workspace to filter by.
-            user_id: The id of the user to filter by.
             user: Filter by user name/ID.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
@@ -1750,7 +1745,6 @@ class Client(metaclass=ClientMetaClass):
             type=type,
             flavor=flavor,
             workspace_id=workspace_id,
-            user_id=user_id,
             user=user,
             running=running,
             name=service_name,
@@ -1919,7 +1913,6 @@ class Client(metaclass=ClientMetaClass):
         flavor: Optional[str] = None,
         type: Optional[str] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
-        user_id: Optional[Union[str, UUID]] = None,
         connector_id: Optional[Union[str, UUID]] = None,
         stack_id: Optional[Union[str, UUID]] = None,
         user: Optional[Union[UUID, str]] = None,
@@ -1938,7 +1931,6 @@ class Client(metaclass=ClientMetaClass):
             flavor: Use the component flavor for filtering
             type: Use the component type for filtering
             workspace_id: The id of the workspace to filter by.
-            user_id: The id of the user to filter by.
             connector_id: The id of the connector to filter by.
             stack_id: The id of the stack to filter by.
             name: The name of the component to filter by.
@@ -1955,7 +1947,6 @@ class Client(metaclass=ClientMetaClass):
             sort_by=sort_by,
             logical_operator=logical_operator,
             workspace_id=workspace_id or self.active_workspace.id,
-            user_id=user_id,
             connector_id=connector_id,
             stack_id=stack_id,
             name=name,
@@ -2236,7 +2227,6 @@ class Client(metaclass=ClientMetaClass):
         name: Optional[str] = None,
         type: Optional[str] = None,
         integration: Optional[str] = None,
-        user_id: Optional[Union[str, UUID]] = None,
         user: Optional[Union[UUID, str]] = None,
         hydrate: bool = False,
     ) -> Page[FlavorResponse]:
@@ -2250,7 +2240,6 @@ class Client(metaclass=ClientMetaClass):
             id: Use the id of flavors to filter by.
             created: Use to flavors by time of creation
             updated: Use the last updated date for filtering
-            user_id: The  id of the user to filter by.
             user: Filter by user name/ID.
             name: The name of the flavor to filter by.
             type: The type of the flavor to filter by.
@@ -2266,7 +2255,6 @@ class Client(metaclass=ClientMetaClass):
             size=size,
             sort_by=sort_by,
             logical_operator=logical_operator,
-            user_id=user_id,
             user=user,
             name=name,
             type=type,
@@ -2361,7 +2349,6 @@ class Client(metaclass=ClientMetaClass):
         name: Optional[str] = None,
         latest_run_status: Optional[str] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
-        user_id: Optional[Union[str, UUID]] = None,
         user: Optional[Union[UUID, str]] = None,
         tag: Optional[str] = None,
         hydrate: bool = False,
@@ -2380,7 +2367,6 @@ class Client(metaclass=ClientMetaClass):
             latest_run_status: Filter by the status of the latest run of a
                 pipeline.
             workspace_id: The id of the workspace to filter by.
-            user_id: The id of the user to filter by.
             user: The name/ID of the user to filter by.
             tag: Tag to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
@@ -2400,7 +2386,6 @@ class Client(metaclass=ClientMetaClass):
             name=name,
             latest_run_status=latest_run_status,
             workspace_id=workspace_id,
-            user_id=user_id,
             user=user,
             tag=tag,
         )
@@ -2658,7 +2643,6 @@ class Client(metaclass=ClientMetaClass):
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
-        user_id: Optional[Union[str, UUID]] = None,
         user: Optional[Union[UUID, str]] = None,
         pipeline_id: Optional[Union[str, UUID]] = None,
         stack_id: Optional[Union[str, UUID]] = None,
@@ -2682,7 +2666,6 @@ class Client(metaclass=ClientMetaClass):
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
             workspace_id: The id of the workspace to filter by.
-            user_id: The  id of the user to filter by.
             user: Filter by user name/ID.
             pipeline_id: The id of the pipeline to filter by.
             stack_id: The id of the stack to filter by.
@@ -2709,7 +2692,6 @@ class Client(metaclass=ClientMetaClass):
             created=created,
             updated=updated,
             workspace_id=workspace_id,
-            user_id=user_id,
             user=user,
             pipeline_id=pipeline_id,
             stack_id=stack_id,
@@ -2810,7 +2792,6 @@ class Client(metaclass=ClientMetaClass):
         flavor: Optional[str] = None,
         event_source_type: Optional[str] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
-        user_id: Optional[Union[str, UUID]] = None,
         user: Optional[Union[UUID, str]] = None,
         hydrate: bool = False,
     ) -> Page[EventSourceResponse]:
@@ -2825,7 +2806,6 @@ class Client(metaclass=ClientMetaClass):
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
             workspace_id: The id of the workspace to filter by.
-            user_id: The  id of the user to filter by.
             user: Filter by user name/ID.
             name: The name of the event_source to filter by.
             flavor: The flavor of the event_source to filter by.
@@ -2842,7 +2822,6 @@ class Client(metaclass=ClientMetaClass):
             sort_by=sort_by,
             logical_operator=logical_operator,
             workspace_id=workspace_id,
-            user_id=user_id,
             user=user,
             name=name,
             flavor=flavor,
@@ -3009,7 +2988,6 @@ class Client(metaclass=ClientMetaClass):
         flavor: Optional[str] = None,
         action_type: Optional[str] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
-        user_id: Optional[Union[str, UUID]] = None,
         user: Optional[Union[UUID, str]] = None,
         hydrate: bool = False,
     ) -> Page[ActionResponse]:
@@ -3024,7 +3002,6 @@ class Client(metaclass=ClientMetaClass):
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
             workspace_id: The id of the workspace to filter by.
-            user_id: The id of the user to filter by.
             user: Filter by user name/ID.
             name: The name of the action to filter by.
             flavor: The flavor of the action to filter by.
@@ -3041,7 +3018,6 @@ class Client(metaclass=ClientMetaClass):
             sort_by=sort_by,
             logical_operator=logical_operator,
             workspace_id=workspace_id,
-            user_id=user_id,
             user=user,
             name=name,
             id=id,
@@ -3189,7 +3165,6 @@ class Client(metaclass=ClientMetaClass):
         action_flavor: Optional[str] = None,
         action_subtype: Optional[str] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
-        user_id: Optional[Union[str, UUID]] = None,
         user: Optional[Union[UUID, str]] = None,
         hydrate: bool = False,
     ) -> Page[TriggerResponse]:
@@ -3204,7 +3179,6 @@ class Client(metaclass=ClientMetaClass):
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
             workspace_id: The id of the workspace to filter by.
-            user_id: The  id of the user to filter by.
             user: Filter by user name/ID.
             name: The name of the trigger to filter by.
             event_source_id: The event source associated with the trigger.
@@ -3227,7 +3201,6 @@ class Client(metaclass=ClientMetaClass):
             sort_by=sort_by,
             logical_operator=logical_operator,
             workspace_id=workspace_id,
-            user_id=user_id,
             user=user,
             name=name,
             event_source_id=event_source_id,
@@ -3378,7 +3351,6 @@ class Client(metaclass=ClientMetaClass):
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
-        user_id: Optional[Union[str, UUID]] = None,
         user: Optional[Union[UUID, str]] = None,
         pipeline_id: Optional[Union[str, UUID]] = None,
         stack_id: Optional[Union[str, UUID]] = None,
@@ -3397,7 +3369,6 @@ class Client(metaclass=ClientMetaClass):
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
             workspace_id: The id of the workspace to filter by.
-            user_id: The  id of the user to filter by.
             user: Filter by user name/ID.
             pipeline_id: The id of the pipeline to filter by.
             stack_id: The id of the stack to filter by.
@@ -3418,7 +3389,6 @@ class Client(metaclass=ClientMetaClass):
             created=created,
             updated=updated,
             workspace_id=workspace_id,
-            user_id=user_id,
             user=user,
             pipeline_id=pipeline_id,
             stack_id=stack_id,
@@ -3508,7 +3478,6 @@ class Client(metaclass=ClientMetaClass):
         name: Optional[str] = None,
         tag: Optional[str] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
-        user_id: Optional[Union[str, UUID]] = None,
         pipeline_id: Optional[Union[str, UUID]] = None,
         build_id: Optional[Union[str, UUID]] = None,
         stack_id: Optional[Union[str, UUID]] = None,
@@ -3531,7 +3500,6 @@ class Client(metaclass=ClientMetaClass):
             name: Filter by run template name.
             tag: Filter by run template tags.
             workspace_id: Filter by workspace ID.
-            user_id: Filter by user ID.
             pipeline_id: Filter by pipeline ID.
             build_id: Filter by build ID.
             stack_id: Filter by stack ID.
@@ -3556,7 +3524,6 @@ class Client(metaclass=ClientMetaClass):
             name=name,
             tag=tag,
             workspace_id=workspace_id,
-            user_id=user_id,
             pipeline_id=pipeline_id,
             build_id=build_id,
             stack_id=stack_id,
@@ -3668,7 +3635,6 @@ class Client(metaclass=ClientMetaClass):
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
-        user_id: Optional[Union[str, UUID]] = None,
         user: Optional[Union[UUID, str]] = None,
         pipeline_id: Optional[Union[str, UUID]] = None,
         orchestrator_id: Optional[Union[str, UUID]] = None,
@@ -3693,7 +3659,6 @@ class Client(metaclass=ClientMetaClass):
             updated: Use the last updated date for filtering
             name: The name of the stack to filter by.
             workspace_id: The id of the workspace to filter by.
-            user_id: The  id of the user to filter by.
             user: Filter by user name/ID.
             pipeline_id: The id of the pipeline to filter by.
             orchestrator_id: The id of the orchestrator to filter by.
@@ -3720,7 +3685,6 @@ class Client(metaclass=ClientMetaClass):
             updated=updated,
             name=name,
             workspace_id=workspace_id,
-            user_id=user_id,
             user=user,
             pipeline_id=pipeline_id,
             orchestrator_id=orchestrator_id,
@@ -3795,7 +3759,6 @@ class Client(metaclass=ClientMetaClass):
         workspace_id: Optional[Union[str, UUID]] = None,
         pipeline_id: Optional[Union[str, UUID]] = None,
         pipeline_name: Optional[str] = None,
-        user_id: Optional[Union[str, UUID]] = None,
         stack_id: Optional[Union[str, UUID]] = None,
         schedule_id: Optional[Union[str, UUID]] = None,
         build_id: Optional[Union[str, UUID]] = None,
@@ -3834,7 +3797,6 @@ class Client(metaclass=ClientMetaClass):
             pipeline_id: The id of the pipeline to filter by.
             pipeline_name: DEPRECATED. Use `pipeline` instead to filter by
                 pipeline name.
-            user_id: The id of the user to filter by.
             stack_id: The id of the stack to filter by.
             schedule_id: The id of the schedule to filter by.
             build_id: The id of the build to filter by.
@@ -3883,7 +3845,6 @@ class Client(metaclass=ClientMetaClass):
             template_id=template_id,
             model_version_id=model_version_id,
             orchestrator_run_id=orchestrator_run_id,
-            user_id=user_id,
             stack_id=stack_id,
             status=status,
             start_time=start_time,
@@ -3961,7 +3922,6 @@ class Client(metaclass=ClientMetaClass):
         deployment_id: Optional[Union[str, UUID]] = None,
         original_step_run_id: Optional[Union[str, UUID]] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
-        user_id: Optional[Union[str, UUID]] = None,
         user: Optional[Union[UUID, str]] = None,
         model_version_id: Optional[Union[str, UUID]] = None,
         model: Optional[Union[UUID, str]] = None,
@@ -3981,7 +3941,6 @@ class Client(metaclass=ClientMetaClass):
             start_time: Use to filter by the time when the step started running
             end_time: Use to filter by the time when the step finished running
             workspace_id: The id of the workspace to filter by.
-            user_id: The  id of the user to filter by.
             user: Filter by user name/ID.
             pipeline_run_id: The id of the pipeline run to filter by.
             deployment_id: The id of the deployment to filter by.
@@ -4017,7 +3976,6 @@ class Client(metaclass=ClientMetaClass):
             end_time=end_time,
             name=name,
             workspace_id=workspace_id,
-            user_id=user_id,
             user=user,
             model_version_id=model_version_id,
             model=model,
@@ -4241,7 +4199,6 @@ class Client(metaclass=ClientMetaClass):
         uri: Optional[str] = None,
         materializer: Optional[str] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
-        user_id: Optional[Union[str, UUID]] = None,
         model_version_id: Optional[Union[str, UUID]] = None,
         only_unused: Optional[bool] = False,
         has_custom_name: Optional[bool] = None,
@@ -4272,7 +4229,6 @@ class Client(metaclass=ClientMetaClass):
             uri: The uri of the artifact to filter by.
             materializer: The materializer of the artifact to filter by.
             workspace_id: The id of the workspace to filter by.
-            user_id: The id of the user to filter by.
             model_version_id: Filter by model version ID.
             only_unused: Only return artifact versions that are not used in
                 any pipeline runs.
@@ -4306,7 +4262,6 @@ class Client(metaclass=ClientMetaClass):
             uri=uri,
             materializer=materializer,
             workspace_id=workspace_id,
-            user_id=user_id,
             model_version_id=model_version_id,
             only_unused=only_unused,
             has_custom_name=has_custom_name,
@@ -4687,7 +4642,6 @@ class Client(metaclass=ClientMetaClass):
         name: Optional[str] = None,
         scope: Optional[SecretScope] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
-        user_id: Optional[Union[str, UUID]] = None,
         user: Optional[Union[UUID, str]] = None,
         hydrate: bool = False,
     ) -> Page[SecretResponse]:
@@ -4707,7 +4661,6 @@ class Client(metaclass=ClientMetaClass):
             name: The name of the secret to filter by.
             scope: The scope of the secret to filter by.
             workspace_id: The id of the workspace to filter by.
-            user_id: The  id of the user to filter by.
             user: Filter by user name/ID.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
@@ -4724,7 +4677,6 @@ class Client(metaclass=ClientMetaClass):
             size=size,
             sort_by=sort_by,
             logical_operator=logical_operator,
-            user_id=user_id,
             user=user,
             workspace_id=workspace_id,
             name=name,
@@ -5048,7 +5000,6 @@ class Client(metaclass=ClientMetaClass):
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
-        user_id: Optional[Union[str, UUID]] = None,
         user: Optional[Union[UUID, str]] = None,
         hydrate: bool = False,
     ) -> Page[CodeRepositoryResponse]:
@@ -5064,7 +5015,6 @@ class Client(metaclass=ClientMetaClass):
             updated: Use the last updated date for filtering.
             name: The name of the code repository to filter by.
             workspace_id: The id of the workspace to filter by.
-            user_id: The id of the user to filter by.
             user: Filter by user name/ID.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
@@ -5082,7 +5032,6 @@ class Client(metaclass=ClientMetaClass):
             updated=updated,
             name=name,
             workspace_id=workspace_id,
-            user_id=user_id,
             user=user,
         )
         filter_model.set_scope_workspace(self.active_workspace.id)
@@ -5458,7 +5407,6 @@ class Client(metaclass=ClientMetaClass):
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
         workspace_id: Optional[Union[str, UUID]] = None,
-        user_id: Optional[Union[str, UUID]] = None,
         user: Optional[Union[UUID, str]] = None,
         labels: Optional[Dict[str, Optional[str]]] = None,
         secret_id: Optional[Union[str, UUID]] = None,
@@ -5481,7 +5429,6 @@ class Client(metaclass=ClientMetaClass):
             resource_id: Filter service connectors by the resource id that
                 they can give access to.
             workspace_id: The id of the workspace to filter by.
-            user_id: The id of the user to filter by.
             user: Filter by user name/ID.
             name: The name of the service connector to filter by.
             labels: The labels of the service connector to filter by.
@@ -5499,7 +5446,6 @@ class Client(metaclass=ClientMetaClass):
             sort_by=sort_by,
             logical_operator=logical_operator,
             workspace_id=workspace_id or self.active_workspace.id,
-            user_id=user_id,
             user=user,
             name=name,
             connector_type=connector_type,

@@ -200,11 +200,6 @@ class UserScopedFilter(BaseFilter):
         default=None,
         description="The user to scope this query to.",
     )
-    user_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="UUID of the user that created the entity.",
-        union_mode="left_to_right",
-    )
     user: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Name/ID of the user that created the entity.",

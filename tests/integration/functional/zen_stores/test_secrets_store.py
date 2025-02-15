@@ -518,7 +518,7 @@ def test_reusing_user_secret_name_succeeds():
             SecretFilter(
                 name=secret.name,
                 scope=SecretScope.USER,
-                user_id=client.active_user.id,
+                user=client.active_user.id,
                 workspace_id=client.active_workspace.id,
             )
         ).items
@@ -554,7 +554,7 @@ def test_reusing_user_secret_name_succeeds():
                     SecretFilter(
                         name=secret.name,
                         scope=SecretScope.USER,
-                        user_id=other_client.active_user.id,
+                        user=other_client.active_user.id,
                         workspace_id=other_client.active_workspace.id,
                     ),
                 ).items
@@ -565,7 +565,7 @@ def test_reusing_user_secret_name_succeeds():
                     SecretFilter(
                         name=secret.name,
                         scope=SecretScope.USER,
-                        user_id=client.active_user.id,
+                        user=client.active_user.id,
                         workspace_id=client.active_workspace.id,
                     ),
                 ).items
@@ -771,7 +771,7 @@ def test_workspace_secret_is_visible_to_other_users():
             SecretFilter(
                 name=secret.name,
                 scope=SecretScope.USER,
-                user_id=client.active_user.id,
+                user=client.active_user.id,
                 workspace_id=client.active_workspace.id,
             )
         ).items
@@ -801,7 +801,7 @@ def test_workspace_secret_is_visible_to_other_users():
                 SecretFilter(
                     name=secret.name,
                     scope=SecretScope.USER,
-                    user_id=other_client.active_user.id,
+                    user=other_client.active_user.id,
                     workspace_id=other_client.active_workspace.id,
                 ),
             ).items
@@ -833,7 +833,7 @@ def test_user_secret_is_not_visible_to_other_users():
             SecretFilter(
                 name=secret.name,
                 scope=SecretScope.USER,
-                user_id=client.active_user.id,
+                user=client.active_user.id,
                 workspace_id=client.active_workspace.id,
             )
         ).items
@@ -863,7 +863,7 @@ def test_user_secret_is_not_visible_to_other_users():
                 SecretFilter(
                     name=secret.name,
                     scope=SecretScope.USER,
-                    user_id=client.active_user.id,
+                    user=client.active_user.id,
                     workspace_id=client.active_workspace.id,
                 )
             ).items
@@ -897,7 +897,7 @@ def test_user_secret_is_not_visible_to_other_users():
                     SecretFilter(
                         name=secret.name,
                         scope=SecretScope.USER,
-                        user_id=other_client.active_user.id,
+                        user=other_client.active_user.id,
                         workspace_id=other_client.active_workspace.id,
                     )
                 ).items
@@ -929,7 +929,7 @@ def test_workspace_secret_is_not_visible_to_other_workspaces():
             SecretFilter(
                 name=secret.name,
                 scope=SecretScope.USER,
-                user_id=client.active_user.id,
+                user=client.active_user.id,
                 workspace_id=client.active_workspace.id,
             )
         ).items
@@ -953,7 +953,7 @@ def test_workspace_secret_is_not_visible_to_other_workspaces():
                 SecretFilter(
                     name=secret.name,
                     scope=SecretScope.USER,
-                    user_id=client.active_user.id,
+                    user=client.active_user.id,
                     workspace_id=client.active_workspace.id,
                 )
             ).items
@@ -979,7 +979,7 @@ def test_workspace_secret_is_not_visible_to_other_workspaces():
                     SecretFilter(
                         name=secret.name,
                         scope=SecretScope.USER,
-                        user_id=client.active_user.id,
+                        user=client.active_user.id,
                         workspace_id=client.active_workspace.id,
                     )
                 ).items
@@ -1011,7 +1011,7 @@ def test_user_secret_is_not_visible_to_other_workspaces():
             SecretFilter(
                 name=secret.name,
                 scope=SecretScope.USER,
-                user_id=client.active_user.id,
+                user=client.active_user.id,
                 workspace_id=client.active_workspace.id,
             )
         ).items
@@ -1041,7 +1041,7 @@ def test_user_secret_is_not_visible_to_other_workspaces():
                 SecretFilter(
                     name=secret.name,
                     scope=SecretScope.USER,
-                    user_id=client.active_user.id,
+                    user=client.active_user.id,
                     workspace_id=client.active_workspace.id,
                 )
             ).items
@@ -1067,7 +1067,7 @@ def test_user_secret_is_not_visible_to_other_workspaces():
                     SecretFilter(
                         name=secret.name,
                         scope=SecretScope.USER,
-                        user_id=client.active_user.id,
+                        user=client.active_user.id,
                         workspace_id=client.active_workspace.id,
                     )
                 ).items
@@ -1099,7 +1099,7 @@ def test_user_secret_is_not_visible_to_other_workspaces():
                             SecretFilter(
                                 name=secret.name,
                                 scope=SecretScope.USER,
-                                user_id=other_client.active_user.id,
+                                user=other_client.active_user.id,
                                 workspace_id=other_client.active_workspace.id,
                             )
                         ).items
@@ -1236,7 +1236,7 @@ def test_list_secrets_filter():
             SecretFilter(
                 name=aria_secret_name,
                 workspace_id=client.active_workspace.id,
-                user_id=client.active_user.id,
+                user=client.active_user.id,
             )
         ).items
         assert len(all_secrets) == 2
@@ -1248,7 +1248,7 @@ def test_list_secrets_filter():
             SecretFilter(
                 name=axl_secret_name,
                 workspace_id=client.active_workspace.id,
-                user_id=client.active_user.id,
+                user=client.active_user.id,
             )
         ).items
         assert len(all_secrets) == 2
@@ -1625,7 +1625,7 @@ def test_delete_user_with_secrets():
             SecretFilter(
                 name=secret.name,
                 scope=SecretScope.USER,
-                user_id=client.active_user.id,
+                user=client.active_user.id,
                 workspace_id=client.active_workspace.id,
             )
         ).items
@@ -1652,7 +1652,7 @@ def test_delete_user_with_secrets():
                     SecretFilter(
                         name=secret.name,
                         scope=SecretScope.USER,
-                        user_id=user.id,
+                        user=user.id,
                         workspace_id=client.active_workspace.id,
                     ),
                 ).items
@@ -1676,7 +1676,7 @@ def test_delete_user_with_secrets():
             SecretFilter(
                 name=secret.name,
                 scope=SecretScope.USER,
-                user_id=user.id,
+                user=user.id,
                 workspace_id=client.active_workspace.id,
             ),
         ).items
@@ -1701,7 +1701,7 @@ def test_delete_user_with_secrets():
             SecretFilter(
                 name=secret.name,
                 scope=SecretScope.USER,
-                user_id=user.id,
+                user=user.id,
                 workspace_id=client.active_workspace.id,
             ),
         ).items
