@@ -7548,7 +7548,10 @@ class Client(metaclass=ClientMetaClass):
             request_model.singleton = singleton
 
         if color is not None:
-            request_model.color = color
+            if isinstance(color, str):
+                request_model.color = ColorVariants(color)
+            else:
+                request_model.color = color
 
         return self.zen_store.create_tag(tag=request_model)
 
@@ -7591,7 +7594,10 @@ class Client(metaclass=ClientMetaClass):
             update_model.singleton = singleton
 
         if color is not None:
-            update_model.color = color
+            if isinstance(color, str):
+                update_model.color = ColorVariants(color)
+            else:
+                update_model.color = color
 
         return self.zen_store.update_tag(
             tag_name_or_id=tag_name_or_id,

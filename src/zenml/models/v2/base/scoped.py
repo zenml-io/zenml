@@ -564,7 +564,7 @@ class TaggableFilter(BaseFilter):
                 )
                 exists_subquery = exists(
                     select(TagResourceSchema)
-                    .join(TagSchema, TagSchema.id == TagResourceSchema.tag_id)
+                    .join(TagSchema, TagSchema.id == TagResourceSchema.tag_id)  # type: ignore[arg-type]
                     .where(
                         TagResourceSchema.resource_id == table.id, condition
                     )

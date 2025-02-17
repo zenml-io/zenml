@@ -26,7 +26,6 @@ from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
 from zenml.models import (
     TagFilter,
-    TagUpdate,
 )
 from zenml.utils.dict_utils import remove_none_values
 
@@ -125,7 +124,7 @@ def update_tag(
 
     tag = Client().update_tag(
         tag_name_or_id=tag_name_or_id,
-        tag_update_model=TagUpdate(**update_dict),
+        **update_dict,
     )
 
     cli_utils.print_pydantic_models(

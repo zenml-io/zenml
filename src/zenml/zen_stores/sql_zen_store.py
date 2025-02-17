@@ -11127,7 +11127,7 @@ class SqlZenStore(BaseZenStore):
                         older_runs = self.list_runs(
                             PipelineRunFilter(
                                 id=f"notequals:{resource.id}",
-                                pipeline_id=resource.pipeline_id,
+                                pipeline_id=resource.pipeline_id,  # type: ignore[attr-defined]
                                 tags=[tag.name],
                             )
                         )
@@ -11139,7 +11139,7 @@ class SqlZenStore(BaseZenStore):
                         older_versions = self.list_artifact_versions(
                             ArtifactVersionFilter(
                                 id=f"notequals:{resource.id}",
-                                artifact_id=resource.artifact_id,
+                                artifact_id=resource.artifact_id,  # type: ignore[attr-defined]
                                 tags=[tag.name],
                             )
                         )
@@ -11384,12 +11384,12 @@ class SqlZenStore(BaseZenStore):
 
     @staticmethod
     def _singleton_check_for_existing_tags(
-        tag,
-        session,
-        resource_type,
-        resource_id_column,
-        scope_id_column,
-    ) -> (bool, str):
+        tag: TagSchema,
+        session: Session,
+        resource_type: TaggableResourceTypes,
+        resource_id_column: Any,
+        scope_id_column: Any,
+    ) -> Tuple[bool, str]:
         query = (
             select(scope_id_column, func.count().label("count"))
             .join(
