@@ -318,7 +318,6 @@ class RunTemplateFilter(WorkspaceScopedFilter, TaggableFilter):
         "stack_id",
         "build_id",
         "pipeline_id",
-        "user",
         "pipeline",
         "stack",
     ]

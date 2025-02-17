@@ -368,13 +368,7 @@ class ServiceResponse(
 
 
 class ServiceFilter(WorkspaceScopedFilter):
-    """Model to enable advanced filtering of services.
-
-    The Service needs additional scoping. As such the `_scope_user` field
-    can be set to the user that is doing the filtering. The
-    `generate_filter()` method of the baseclass is overwritten to include the
-    scoping.
-    """
+    """Model to enable advanced filtering of services."""
 
     name: Optional[str] = Field(
         default=None,

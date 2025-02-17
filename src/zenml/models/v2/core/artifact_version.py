@@ -545,10 +545,6 @@ class ArtifactVersionFilter(WorkspaceScopedFilter, TaggableFilter):
         default=None,
         description="Filter only artifacts with/without custom names.",
     )
-    user: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="Name/ID of the user that created the artifact version.",
-    )
     model: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Name/ID of the model that is associated with this "
