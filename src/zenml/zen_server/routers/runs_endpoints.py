@@ -79,10 +79,14 @@ logger = get_logger(__name__)
     response_model=Tuple[PipelineRunResponse, bool],
     responses={401: error_response, 409: error_response, 422: error_response},
 )
+# TODO: the workspace scoped endpoint is only kept for dashboard compatibility
+# and can be removed after the migration
 @workspace_router.post(
     "/{workspace_name_or_id}" + RUNS,
     response_model=Tuple[PipelineRunResponse, bool],
     responses={401: error_response, 409: error_response, 422: error_response},
+    deprecated=True,
+    tags=["runs"],
 )
 @handle_exceptions
 def get_or_create_pipeline_run(
@@ -131,10 +135,14 @@ def get_or_create_pipeline_run(
     response_model=Page[PipelineRunResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
+# TODO: the workspace scoped endpoint is only kept for dashboard compatibility
+# and can be removed after the migration
 @workspace_router.get(
     "/{workspace_name_or_id}" + RUNS,
     response_model=Page[PipelineRunResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
+    deprecated=True,
+    tags=["runs"],
 )
 @handle_exceptions
 def list_runs(

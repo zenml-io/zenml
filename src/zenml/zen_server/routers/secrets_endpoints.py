@@ -76,10 +76,14 @@ op_router = APIRouter(
     response_model=SecretResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
+# TODO: the workspace scoped endpoint is only kept for dashboard compatibility
+# and can be removed after the migration
 @workspace_router.post(
     "/{workspace_name_or_id}" + SECRETS,
     response_model=SecretResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
+    deprecated=True,
+    tags=["secrets"],
 )
 @handle_exceptions
 def create_secret(

@@ -57,10 +57,14 @@ router = APIRouter(
     response_model=CodeRepositoryResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
+# TODO: the workspace scoped endpoint is only kept for dashboard compatibility
+# and can be removed after the migration
 @workspace_router.post(
     "/{workspace_name_or_id}" + CODE_REPOSITORIES,
     response_model=CodeRepositoryResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
+    deprecated=True,
+    tags=["code_repositories"],
 )
 @handle_exceptions
 def create_code_repository(
@@ -93,10 +97,14 @@ def create_code_repository(
     response_model=Page[CodeRepositoryResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
+# TODO: the workspace scoped endpoint is only kept for dashboard compatibility
+# and can be removed after the migration
 @workspace_router.get(
     "/{workspace_name_or_id}" + CODE_REPOSITORIES,
     response_model=Page[CodeRepositoryResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
+    deprecated=True,
+    tags=["code_repositories"],
 )
 @handle_exceptions
 def list_code_repositories(

@@ -57,10 +57,14 @@ router = APIRouter(
     response_model=PipelineDeploymentResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
+# TODO: the workspace scoped endpoint is only kept for dashboard compatibility
+# and can be removed after the migration
 @workspace_router.post(
     "/{workspace_name_or_id}" + PIPELINE_DEPLOYMENTS,
     response_model=PipelineDeploymentResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
+    deprecated=True,
+    tags=["deployments"],
 )
 @handle_exceptions
 def create_deployment(
@@ -93,10 +97,14 @@ def create_deployment(
     response_model=Page[PipelineDeploymentResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
+# TODO: the workspace scoped endpoint is only kept for dashboard compatibility
+# and can be removed after the migration
 @workspace_router.get(
     "/{workspace_name_or_id}" + PIPELINE_DEPLOYMENTS,
     response_model=Page[PipelineDeploymentResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
+    deprecated=True,
+    tags=["deployments"],
 )
 @handle_exceptions
 def list_deployments(

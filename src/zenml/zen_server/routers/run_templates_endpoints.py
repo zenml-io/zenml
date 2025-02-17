@@ -63,10 +63,14 @@ router = APIRouter(
     response_model=RunTemplateResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
+# TODO: the workspace scoped endpoint is only kept for dashboard compatibility
+# and can be removed after the migration
 @workspace_router.post(
     "/{workspace_name_or_id}" + RUN_TEMPLATES,
     response_model=RunTemplateResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
+    deprecated=True,
+    tags=["run_templates"],
 )
 @handle_exceptions
 def create_run_template(
@@ -99,10 +103,14 @@ def create_run_template(
     response_model=Page[RunTemplateResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
+# TODO: the workspace scoped endpoint is only kept for dashboard compatibility
+# and can be removed after the migration
 @workspace_router.get(
     "/{workspace_name_or_id}" + RUN_TEMPLATES,
     response_model=Page[RunTemplateResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
+    deprecated=True,
+    tags=["run_templates"],
 )
 @handle_exceptions
 def list_run_templates(

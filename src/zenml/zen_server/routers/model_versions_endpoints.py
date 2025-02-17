@@ -79,6 +79,8 @@ router = APIRouter(
     response_model=ModelVersionResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
+# TODO: the workspace scoped endpoint is only kept for dashboard compatibility
+# and can be removed after the migration
 @workspace_router.post(
     "/{workspace_name_or_id}"
     + MODELS
@@ -86,6 +88,8 @@ router = APIRouter(
     + MODEL_VERSIONS,
     response_model=ModelVersionResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
+    deprecated=True,
+    tags=["model_versions"],
 )
 @handle_exceptions
 def create_model_version(

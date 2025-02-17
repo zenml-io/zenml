@@ -57,10 +57,14 @@ router = APIRouter(
     response_model=ServiceResponse,
     responses={401: error_response, 422: error_response},
 )
+# TODO: the workspace scoped endpoint is only kept for dashboard compatibility
+# and can be removed after the migration
 @workspace_router.post(
     "/{workspace_name_or_id}" + SERVICES,
     response_model=ServiceResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
+    deprecated=True,
+    tags=["services"],
 )
 @handle_exceptions
 def create_service(
