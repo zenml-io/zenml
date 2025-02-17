@@ -757,10 +757,16 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             build=build_model,
             can_download_from_code_repository=can_download_from_code_repository,
         ):
-            code_archive = code_utils.CodeArchive(
-                root=source_utils.get_source_root()
+            source_root = source_utils.get_source_root()
+            code_archive = code_utils.CodeArchive(root=source_root)
+            logger.info(
+                "Archiving pipeline code directory: `%s`. If this is taking "
+                "longer than you expected, make sure your source root "
+                "is set correctly by running `zenml init`, and that it "
+                "does not contain unnecessarily huge files.",
+                source_root,
             )
-            logger.info("Archiving pipeline code...")
+
             code_path = code_utils.upload_code_if_necessary(code_archive)
 
         request = PipelineDeploymentRequest(
