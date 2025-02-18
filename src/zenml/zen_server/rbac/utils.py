@@ -34,6 +34,8 @@ from zenml.models import (
     Page,
     UserResponse,
     UserScopedResponse,
+    FlexibleScopedResponse,
+    WorkspaceScopedResponse,
 )
 from zenml.zen_server.auth import get_auth_context
 from zenml.zen_server.rbac.models import Action, Resource, ResourceType
@@ -283,6 +285,7 @@ def verify_permission(
     resource_type: str,
     action: Action,
     resource_id: Optional[UUID] = None,
+    workspace_id: Optional[UUID] = None,
 ) -> None:
     """Verifies if a user has permission to perform an action on a resource.
 
@@ -291,8 +294,12 @@ def verify_permission(
             action on.
         action: The action the user wants to perform.
         resource_id: ID of the resource the user wants to perform the action on.
+        workspace_id: ID of the workspace the user wants to perform the action
+            on. Only used for workspace scoped resources.
     """
-    resource = Resource(type=resource_type, id=resource_id)
+    resource = Resource(
+        type=resource_type, id=resource_id, workspace_id=workspace_id
+    )
     batch_verify_permissions(resources={resource}, action=action)
 
 
@@ -346,7 +353,11 @@ def get_resource_for_model(model: AnyResponse) -> Optional[Resource]:
         # This model is not tied to any RBAC resource type
         return None
 
-    return Resource(type=resource_type, id=model.id)
+    workspace_id: Optional[UUID] = None
+    if isinstance(model, WorkspaceScopedResponse):
+        workspace_id = model.workspace.id
+
+    return Resource(type=resource_type, id=model.id, workspace_id=workspace_id)
 
 
 def get_surrogate_permission_model_for_model(
@@ -446,6 +457,24 @@ def get_resource_type_for_model(
     }
 
     return mapping.get(type(model))
+
+
+def is_resource_type_workspace_scoped(resource_type: ResourceType) -> bool:
+    """Check if a resource type is workspace scoped.
+
+    Args:
+        resource_type: The resource type to check.
+
+    Returns:
+        Whether the resource type is workspace scoped.
+    """
+    return resource_type in [
+        ResourceType.STACK,
+        ResourceType.PIPELINE,
+        ResourceType.CODE_REPOSITORY,
+        ResourceType.SECRET,
+        ResourceType.MODEL,
+    ]
 
 
 def is_owned_by_authenticated_user(model: AnyResponse) -> bool:

@@ -13,10 +13,16 @@
 #  permissions and limitations under the License.
 """RBAC model classes."""
 
-from typing import Optional
+from typing import Any, Dict, Optional
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    ValidationInfo,
+    field_validator,
+    model_validator,
+)
 
 from zenml.utils.enum_utils import StrEnum
 
@@ -73,12 +79,57 @@ class ResourceType(StrEnum):
     # USER = "user"
     # WORKSPACE = "workspace"
 
+    def is_flexible_scoped(self) -> bool:
+        """Check if a resource type may flexibly be scoped to a workspace.
+
+        Args:
+            resource_type: The resource type to check.
+
+        Returns:
+            Whether the resource type may flexibly be scoped to a workspace.
+        """
+        return self in [
+            self.FLAVOR,
+            self.SECRET,
+            self.SERVICE_CONNECTOR,
+            self.STACK,
+            self.STACK_COMPONENT,
+        ]
+
+    def is_workspace_scoped(self) -> bool:
+        """Check if a resource type is workspace scoped.
+
+        Args:
+            resource_type: The resource type to check.
+
+        Returns:
+            Whether the resource type is workspace scoped.
+        """
+        return not self.is_flexible_scoped() and not self.is_unscoped()
+
+    def is_unscoped(self) -> bool:
+        """Check if a resource type is unscoped.
+
+        Args:
+            resource_type: The resource type to check.
+
+        Returns:
+            Whether the resource type is unscoped.
+        """
+        return self in [
+            self.SERVICE_ACCOUNT,
+            # Deactivated for now
+            # cls.USER,
+            # cls.WORKSPACE,
+        ]
+
 
 class Resource(BaseModel):
     """RBAC resource model."""
 
     type: str
     id: Optional[UUID] = None
+    workspace_id: Optional[UUID] = None
 
     def __str__(self) -> str:
         """Convert to a string.
@@ -86,10 +137,40 @@ class Resource(BaseModel):
         Returns:
             Resource string representation.
         """
-        representation = self.type
+        if self.workspace_id:
+            representation = f"{self.workspace_id}:"
+        else:
+            representation = ""
+        representation += self.type
         if self.id:
             representation += f"/{self.id}"
 
         return representation
+
+    @model_validator(mode="after")
+    def validate_workspace_id(self) -> "Resource":
+        """Validate that workspace_id is set in combination with the correct resource types.
+
+        Raises:
+            ValueError: If workspace_id is not set for a workspace-scoped
+                resource or set for an unscoped resource.
+
+        Returns:
+            The validated resource.
+        """
+        resource_type = ResourceType(self.type)
+        if resource_type.is_workspace_scoped() and not self.workspace_id:
+            raise ValueError(
+                "workspace_id must be set for workspace-scoped resource type "
+                f"'{self.type}'"
+            )
+
+        if resource_type.is_unscoped() and self.workspace_id:
+            raise ValueError(
+                "workspace_id must not be set for unscoped resource type "
+                f"'{self.type}'"
+            )
+
+        return self
 
     model_config = ConfigDict(frozen=True)

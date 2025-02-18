@@ -28,6 +28,10 @@ from zenml.models.v2.base.base import (
     BaseDatedResponseBody,
 )
 from zenml.models.v2.base.scoped import (
+    FlexibleScopedFilter,
+    FlexibleScopedRequest,
+    FlexibleScopedResponse,
+    FlexibleScopedUpdate,
     TaggableFilter,
     UserScopedRequest,
     UserScopedFilter,
@@ -490,6 +494,10 @@ __all__ = [
     "BaseDatedResponseBody",
     "BaseZenModel",
     "BasePluginFlavorResponse",
+    "FlexibleScopedFilter",
+    "FlexibleScopedRequest",
+    "FlexibleScopedResponse",
+    "FlexibleScopedUpdate",
     "UserScopedRequest",
     "UserScopedFilter",
     "UserScopedResponse",

@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Cloud RBAC implementation."""
 
-from typing import TYPE_CHECKING, Dict, List, Set, Tuple
+from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
 
 from zenml.zen_server.cloud_utils import cloud_connection
 from zenml.zen_server.rbac.models import Action, Resource
@@ -42,12 +42,7 @@ def _convert_to_cloud_resource(resource: Resource) -> str:
     Returns:
         The converted resource.
     """
-    resource_string = f"{SERVER_ID}@{SERVER_SCOPE_IDENTIFIER}:{resource.type}"
-
-    if resource.id:
-        resource_string += f"/{resource.id}"
-
-    return resource_string
+    return f"{SERVER_ID}@{SERVER_SCOPE_IDENTIFIER}:{resource}"
 
 
 def _convert_from_cloud_resource(cloud_resource: str) -> Resource:
@@ -62,16 +57,29 @@ def _convert_from_cloud_resource(cloud_resource: str) -> Resource:
     Returns:
         The converted resource.
     """
-    scope, resource_type_and_id = cloud_resource.rsplit(":", maxsplit=1)
+    scope, workspace_resource_type_and_id = cloud_resource.rsplit(
+        ":", maxsplit=1
+    )
 
     if scope != f"{SERVER_ID}@{SERVER_SCOPE_IDENTIFIER}":
         raise ValueError("Invalid scope for server resource.")
 
+    workspace_id: Optional[str] = None
+    if ":" in workspace_resource_type_and_id:
+        workspace_id, resource_type_and_id = (
+            workspace_resource_type_and_id.split(":", maxsplit=1)
+        )
+    else:
+        workspace_id = None
+        resource_type_and_id = workspace_resource_type_and_id
+
+    resource_id: Optional[str] = None
     if "/" in resource_type_and_id:
         resource_type, resource_id = resource_type_and_id.split("/")
-        return Resource(type=resource_type, id=resource_id)
-    else:
-        return Resource(type=resource_type_and_id)
+
+    return Resource(
+        type=resource_type, id=resource_id, workspace_id=workspace_id
+    )
 
 
 class ZenMLCloudRBAC(RBACInterface):

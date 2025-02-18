@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """High-level helper functions to write endpoints with RBAC."""
 
-from typing import Any, Callable, List, TypeVar, Union
+from typing import Any, Callable, List, Optional, TypeVar, Union
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -25,8 +25,11 @@ from zenml.models import (
     BaseFilter,
     BaseIdentifiedResponse,
     BaseRequest,
+    FlexibleScopedFilter,
     Page,
     UserScopedRequest,
+    WorkspaceScopedFilter,
+    WorkspaceScopedRequest,
 )
 from zenml.zen_server.auth import get_auth_context
 from zenml.zen_server.feature_gate.endpoint_utils import (
@@ -70,10 +73,19 @@ def verify_permissions_and_create_entity(
         assert auth_context
 
         # Ignore the user field set in the request model, if any, and set it to
-        # the current user's ID instead.
+        # the current user's ID instead. This prevents the current user from
+        # being able to create entities on behalf of other users.
         request_model.user = auth_context.user.id
 
-    verify_permission(resource_type=resource_type, action=Action.CREATE)
+    if isinstance(request_model, WorkspaceScopedRequest):
+        # A workspace scoped request is always scoped to a specific workspace
+        workspace_id = request_model.workspace
+
+    verify_permission(
+        resource_type=resource_type,
+        action=Action.CREATE,
+        workspace_id=workspace_id,
+    )
 
     needs_usage_increment = (
         resource_type in server_config().reportable_resources
@@ -111,13 +123,25 @@ def verify_permissions_and_batch_create_entity(
     auth_context = get_auth_context()
     assert auth_context
 
+    workspace_ids = set()
     for request_model in batch:
         if isinstance(request_model, UserScopedRequest):
             # Ignore the user field set in the request model, if any, and set it to
             # the current user's ID instead.
             request_model.user = auth_context.user.id
 
-    verify_permission(resource_type=resource_type, action=Action.CREATE)
+        if isinstance(request_model, WorkspaceScopedRequest):
+            # A workspace scoped request is always scoped to a specific workspace
+            workspace_ids.add(request_model.workspace)
+        else:
+            workspace_ids.add(None)
+
+    for workspace_id in workspace_ids:
+        verify_permission(
+            resource_type=resource_type,
+            action=Action.CREATE,
+            workspace_id=workspace_id,
+        )
 
     if resource_type in server_config().reportable_resources:
         raise RuntimeError(
@@ -164,9 +188,24 @@ def verify_permissions_and_list_entities(
 
     Returns:
         A page of entity models.
+
+    Raises:
+        ValueError: If the workspace ID is not set for workspace-scoped resources.
     """
     auth_context = get_auth_context()
     assert auth_context
+
+    workspace_id: Optional[UUID] = None
+    if isinstance(filter_model, WorkspaceScopedFilter):
+        # A workspace scoped request is always scoped to a specific workspace
+        workspace_id = filter_model.workspace
+        if workspace_id is None:
+            raise ValueError("Workspace ID is required for workspace-scoped resources.")
+
+    elif isinstance(filter_model, FlexibleScopedFilter):
+        # A flexible scoped request is always scoped to a specific workspace
+        workspace_id = filter_model.workspace
+
 
     allowed_ids = get_allowed_resource_ids(resource_type=resource_type)
     filter_model.configure_rbac(

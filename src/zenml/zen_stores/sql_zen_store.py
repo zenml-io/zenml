@@ -11370,7 +11370,7 @@ class SqlZenStore(BaseZenStore):
                 resource_type = self._get_taggable_resource_type(
                     resource=resource
                 )
-                self.create_tag_resource(
+                self._create_tag_resource(
                     TagResourceRequest(
                         tag_id=tag.id,
                         resource_id=resource.id,
@@ -11399,7 +11399,7 @@ class SqlZenStore(BaseZenStore):
             except KeyError:
                 tag = self.create_tag(TagRequest(name=tag_name))
             try:
-                self.create_tag_resource(
+                self._create_tag_resource(
                     TagResourceRequest(
                         tag_id=tag.id,
                         resource_id=resource_id,
@@ -11581,7 +11581,7 @@ class SqlZenStore(BaseZenStore):
     # Tags <> resources
     ####################
 
-    def create_tag_resource(
+    def _create_tag_resource(
         self, tag_resource: TagResourceRequest
     ) -> TagResourceResponse:
         """Creates a new tag resource relationship.
