@@ -323,6 +323,19 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                 ExecutionVariables.PIPELINE_EXECUTION_ARN
             )
 
+            if step_settings.environment:
+                step_environment = step_settings.environment.copy()
+                # Sagemaker does not allow environment variables longer than 256
+                # characters to be passed to Processor steps. If an environment variable
+                # is longer than 256 characters, we split it into multiple environment
+                # variables (chunks) and re-construct it on the other side using the
+                # custom entrypoint configuration.
+                split_environment_variables(
+                    size_limit=SAGEMAKER_PROCESSOR_STEP_ENV_VAR_SIZE_LIMIT,
+                    env=step_environment,
+                )
+                environment.update(step_environment)
+
             use_training_step = (
                 step_settings.use_training_step
                 if step_settings.use_training_step is not None
@@ -456,6 +469,11 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
                             s3_upload_mode=step_settings.output_data_s3_mode,
                         )
                     )
+
+            # Convert environment to a dict of strings
+            environment = {
+                key: str(value) for key, value in environment.items()
+            }
 
             if use_training_step:
                 # Create Estimator and TrainingStep
