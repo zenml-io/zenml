@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of tag tables."""
 
-from typing import Any, List
+from typing import Any, List, Optional
 from uuid import UUID
 
 from sqlalchemy import VARCHAR, Column
@@ -27,6 +27,7 @@ from zenml.models import (
     TagResourceResponseBody,
     TagResponse,
     TagResponseBody,
+    TagResponseMetadata,
     TagUpdate,
 )
 from zenml.utils.time_utils import utc_now
@@ -35,12 +36,34 @@ from zenml.zen_stores.schemas.schema_utils import (
     build_foreign_key_field,
     build_index,
 )
+from zenml.zen_stores.schemas.user_schemas import UserSchema
+from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 
 class TagSchema(NamedSchema, table=True):
     """SQL Model for tag."""
 
     __tablename__ = "tag"
+
+    workspace_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=WorkspaceSchema.__tablename__,
+        source_column="workspace_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
+    workspace: "WorkspaceSchema" = Relationship(back_populates="tags")
+
+    user_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=UserSchema.__tablename__,
+        source_column="user_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
+    user: Optional["UserSchema"] = Relationship(back_populates="tags")
 
     color: str = Field(sa_column=Column(VARCHAR(255), nullable=False))
     links: List["TagResourceSchema"] = Relationship(
@@ -61,6 +84,8 @@ class TagSchema(NamedSchema, table=True):
         return cls(
             name=request.name,
             color=request.color.value,
+            workspace_id=request.workspace,
+            user_id=request.user,
         )
 
     def to_model(
@@ -80,15 +105,22 @@ class TagSchema(NamedSchema, table=True):
         Returns:
             The created `TagResponse`.
         """
+        metadata = None
+        if include_metadata:
+            metadata = TagResponseMetadata(
+                workspace=self.workspace.to_model(),
+            )
         return TagResponse(
             id=self.id,
             name=self.name,
             body=TagResponseBody(
+                user=self.user.to_model() if self.user else None,
                 created=self.created,
                 updated=self.updated,
                 color=ColorVariants(self.color),
                 tagged_count=len(self.links),
             ),
+            metadata=metadata,
         )
 
     def update(self, update: TagUpdate) -> "TagSchema":

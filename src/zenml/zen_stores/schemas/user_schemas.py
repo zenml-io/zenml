@@ -58,6 +58,7 @@ if TYPE_CHECKING:
         StackComponentSchema,
         StackSchema,
         StepRunSchema,
+        TagSchema,
         TriggerSchema,
     )
 
@@ -149,6 +150,9 @@ class UserSchema(NamedSchema, table=True):
     api_keys: List["APIKeySchema"] = Relationship(
         back_populates="service_account",
         sa_relationship_kwargs={"cascade": "delete"},
+    )
+    tags: List["TagSchema"] = Relationship(
+        back_populates="user",
     )
 
     @classmethod

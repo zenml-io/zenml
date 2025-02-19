@@ -20,19 +20,19 @@ from pydantic import BaseModel, Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import ColorVariants
-from zenml.models.v2.base.base import (
-    BaseDatedResponseBody,
-    BaseIdentifiedResponse,
-    BaseRequest,
-    BaseResponseMetadata,
-    BaseResponseResources,
+from zenml.models.v2.base.scoped import (
+    WorkspaceScopedFilter,
+    WorkspaceScopedRequest,
+    WorkspaceScopedResponse,
+    WorkspaceScopedResponseBody,
+    WorkspaceScopedResponseMetadata,
+    WorkspaceScopedResponseResources,
 )
-from zenml.models.v2.base.filter import BaseFilter
 
 # ------------------ Request Model ------------------
 
 
-class TagRequest(BaseRequest):
+class TagRequest(WorkspaceScopedRequest):
     """Request model for tags."""
 
     name: str = Field(
@@ -58,7 +58,7 @@ class TagUpdate(BaseModel):
 # ------------------ Response Model ------------------
 
 
-class TagResponseBody(BaseDatedResponseBody):
+class TagResponseBody(WorkspaceScopedResponseBody):
     """Response body for tags."""
 
     color: ColorVariants = Field(
@@ -70,13 +70,17 @@ class TagResponseBody(BaseDatedResponseBody):
     )
 
 
-class TagResponseResources(BaseResponseResources):
+class TagResponseMetadata(WorkspaceScopedResponseMetadata):
+    """Response metadata for tags."""
+
+
+class TagResponseResources(WorkspaceScopedResponseResources):
     """Class for all resource models associated with the tag entity."""
 
 
 class TagResponse(
-    BaseIdentifiedResponse[
-        TagResponseBody, BaseResponseMetadata, TagResponseResources
+    WorkspaceScopedResponse[
+        TagResponseBody, TagResponseMetadata, TagResponseResources
     ]
 ):
     """Response model for tags."""
@@ -118,7 +122,7 @@ class TagResponse(
 # ------------------ Filter Model ------------------
 
 
-class TagFilter(BaseFilter):
+class TagFilter(WorkspaceScopedFilter):
     """Model to enable advanced filtering of all tags."""
 
     name: Optional[str] = Field(

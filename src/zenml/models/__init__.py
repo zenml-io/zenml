@@ -302,6 +302,7 @@ from zenml.models.v2.core.tag import (
     TagFilter,
     TagResponse,
     TagResponseBody,
+    TagResponseMetadata,
     TagRequest,
     TagUpdate,
 )
@@ -709,6 +710,7 @@ __all__ = [
     "TagResourceRequest",
     "TagResponse",
     "TagResponseBody",
+    "TagResponseMetadata",
     "TagRequest",
     "TagUpdate",
     "TriggerResponse",

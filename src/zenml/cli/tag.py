@@ -82,8 +82,11 @@ def register_tag(name: str, color: Optional[ColorVariants]) -> None:
         color: The color variant for UI.
     """
     request_dict = remove_none_values(dict(name=name, color=color))
+    client = Client()
     try:
-        tag = Client().create_tag(TagRequest(**request_dict))
+        tag = client.create_tag(
+            TagRequest(workspace=client.active_workspace.id, **request_dict)
+        )
     except (EntityExistsError, ValueError) as e:
         cli_utils.error(str(e))
 
