@@ -889,7 +889,7 @@ class ZenStoreInterface(ABC):
             The created stack component.
 
         Raises:
-            StackComponentExistsError: If a stack component with the same name
+            EntityExistsError: If a stack component with the same name
                 and type is already owned by this user in this workspace.
         """
 
@@ -2191,11 +2191,8 @@ class ZenStoreInterface(ABC):
             The created stack.
 
         Raises:
-            EntityExistsError: If a service connector with the same name
-                already exists.
-            StackComponentExistsError: If a stack component with the same name
-                already exists.
-            StackExistsError: If a stack with the same name already exists.
+            EntityExistsError: If a stack, stack component or service connector
+                with the same name already exists.
         """
 
     @abstractmethod

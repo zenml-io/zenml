@@ -33,6 +33,7 @@ from typing import (
     Dict,
     ForwardRef,
     List,
+    Literal,
     NoReturn,
     Optional,
     Sequence,
@@ -48,6 +49,7 @@ from uuid import UUID
 
 from packaging import version
 from pydantic import (
+    BaseModel,
     ConfigDict,
     Field,
     SecretStr,
@@ -131,17 +133,12 @@ from zenml.enums import (
     TaggableResourceTypes,
 )
 from zenml.exceptions import (
-    ActionExistsError,
     AuthorizationException,
     BackupSecretsStoreNotConfiguredError,
     EntityCreationError,
     EntityExistsError,
-    EventSourceExistsError,
     IllegalOperationError,
     SecretsStoreNotConfiguredError,
-    StackComponentExistsError,
-    StackExistsError,
-    TriggerExistsError,
 )
 from zenml.io import fileio
 from zenml.logger import get_console_handler, get_logger, get_logging_level
@@ -1855,34 +1852,6 @@ class SqlZenStore(BaseZenStore):
 
     # -------------------- Actions  --------------------
 
-    def _fail_if_action_with_name_exists(
-        self, action_name: str, workspace_id: UUID, session: Session
-    ) -> None:
-        """Raise an exception if an action with same name exists.
-
-        Args:
-            action_name: The name of the action.
-            workspace_id: Workspace ID of the action.
-            session: DB Session.
-
-        Raises:
-            ActionExistsError: If an action with the given name already exists.
-        """
-        existing_domain_action = session.exec(
-            select(ActionSchema)
-            .where(ActionSchema.name == action_name)
-            .where(ActionSchema.workspace_id == workspace_id)
-        ).first()
-        if existing_domain_action is not None:
-            workspace = self._get_workspace_schema(
-                workspace_name_or_id=workspace_id, session=session
-            )
-            raise ActionExistsError(
-                f"Unable to register action with name "
-                f"'{action_name}': Found an existing action with "
-                f"the same name in the active workspace, '{workspace.name}'."
-            )
-
     def create_action(self, action: ActionRequest) -> ActionResponse:
         """Create an action.
 
@@ -1895,9 +1864,9 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             self._set_request_user_id(request_model=action, session=session)
 
-            self._fail_if_action_with_name_exists(
-                action_name=action.name,
-                workspace_id=action.workspace,
+            self._verify_name_uniqueness(
+                request=action,
+                schema_class=ActionSchema,
                 session=session,
             )
 
@@ -2013,13 +1982,11 @@ class SqlZenStore(BaseZenStore):
 
             # In case of a renaming update, make sure no action already exists
             # with that name
-            if action_update.name:
-                if action.name != action_update.name:
-                    self._fail_if_action_with_name_exists(
-                        action_name=action_update.name,
-                        workspace_id=action.workspace.id,
-                        session=session,
-                    )
+            self._verify_name_uniqueness(
+                update=action_update,
+                existing_schema=action,
+                session=session,
+            )
 
             action.update(action_update=action_update)
             session.add(action)
@@ -2593,25 +2560,17 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The newly created artifact.
-
-        Raises:
-            EntityExistsError: If an artifact with the same name already exists.
         """
         validate_name(artifact)
         with Session(self.engine) as session:
             self._set_request_user_id(request_model=artifact, session=session)
 
             # Check if an artifact with the given name already exists
-            existing_artifact = session.exec(
-                select(ArtifactSchema).where(
-                    ArtifactSchema.name == artifact.name
-                )
-            ).first()
-            if existing_artifact is not None:
-                raise EntityExistsError(
-                    f"Unable to create artifact with name '{artifact.name}': "
-                    "An artifact with the same name already exists."
-                )
+            self._verify_name_uniqueness(
+                request=artifact,
+                schema_class=ArtifactSchema,
+                session=session,
+            )
 
             # Create the artifact.
             artifact_schema = ArtifactSchema.from_request(artifact)
@@ -2703,6 +2662,12 @@ class SqlZenStore(BaseZenStore):
             ).first()
             if not existing_artifact:
                 raise KeyError(f"Artifact with ID {artifact_id} not found.")
+
+            self._verify_name_uniqueness(
+                update=artifact_update,
+                existing_schema=existing_artifact,
+                session=session,
+            )
 
             # Handle tag updates.
             if artifact_update.add_tags:
@@ -3277,20 +3242,11 @@ class SqlZenStore(BaseZenStore):
                 request_model=code_repository, session=session
             )
 
-            existing_repo = session.exec(
-                select(CodeRepositorySchema)
-                .where(CodeRepositorySchema.name == code_repository.name)
-                .where(
-                    CodeRepositorySchema.workspace_id
-                    == code_repository.workspace
-                )
-            ).first()
-            if existing_repo is not None:
-                raise EntityExistsError(
-                    f"Unable to create code repository in workspace "
-                    f"'{code_repository.workspace}': A code repository with "
-                    "this name already exists."
-                )
+            self._verify_name_uniqueness(
+                request=code_repository,
+                schema_class=CodeRepositorySchema,
+                session=session,
+            )
 
             new_repo = CodeRepositorySchema.from_request(code_repository)
             session.add(new_repo)
@@ -3388,6 +3344,12 @@ class SqlZenStore(BaseZenStore):
                     "found."
                 )
 
+            self._verify_name_uniqueness(
+                update=update,
+                existing_schema=existing_repo,
+                session=session,
+            )
+
             existing_repo.update(update)
 
             session.add(existing_repo)
@@ -3454,7 +3416,6 @@ class SqlZenStore(BaseZenStore):
             self._fail_if_component_with_name_type_exists(
                 name=component.name,
                 component_type=component.type,
-                workspace_id=component.workspace,
                 session=session,
             )
 
@@ -3661,7 +3622,6 @@ class SqlZenStore(BaseZenStore):
                         component_type=StackComponentType(
                             existing_component.type
                         ),
-                        workspace_id=existing_component.workspace_id,
                         session=session,
                     )
 
@@ -3769,7 +3729,6 @@ class SqlZenStore(BaseZenStore):
     def _fail_if_component_with_name_type_exists(
         name: str,
         component_type: StackComponentType,
-        workspace_id: UUID,
         session: Session,
     ) -> None:
         """Raise an exception if a component with same name/type exists.
@@ -3777,27 +3736,24 @@ class SqlZenStore(BaseZenStore):
         Args:
             name: The name of the component
             component_type: The type of the component
-            workspace_id: The ID of the workspace
             session: The Session
 
         Raises:
-            StackComponentExistsError: If a component with the given name and
+            EntityExistsError: If a component with the given name and
                 type already exists.
         """
-        # Check if component with the same domain key (name, type, workspace)
-        # already exists
+        # Check if component with the same domain key (name, type) already
+        # exists
         existing_domain_component = session.exec(
             select(StackComponentSchema)
             .where(StackComponentSchema.name == name)
-            .where(StackComponentSchema.workspace_id == workspace_id)
             .where(StackComponentSchema.type == component_type)
         ).first()
         if existing_domain_component is not None:
-            raise StackComponentExistsError(
+            raise EntityExistsError(
                 f"Unable to register '{component_type}' component "
                 f"with name '{name}': Found an existing "
-                f"component with the same name and type in the same "
-                f" workspace '{existing_domain_component.workspace.name}'."
+                f"component with the same name and type."
             )
 
     # -------------------------- Devices -------------------------
@@ -4094,7 +4050,7 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             EntityExistsError: If a flavor with the same name and type
-                is already owned by this user in this workspace.
+                is already owned by this user.
             ValueError: In case the config_schema string exceeds the max length.
         """
         with Session(self.engine) as session:
@@ -4105,23 +4061,19 @@ class SqlZenStore(BaseZenStore):
                 self._set_request_user_id(
                     request_model=flavor, session=session
                 )
-            # Check if flavor with the same domain key (name, type, workspace,
-            # owner) already exists
+            # Check if flavor with the same domain key (name, type) already
+            # exists
             existing_flavor = session.exec(
                 select(FlavorSchema)
                 .where(FlavorSchema.name == flavor.name)
                 .where(FlavorSchema.type == flavor.type)
-                .where(FlavorSchema.workspace_id == flavor.workspace)
-                .where(FlavorSchema.user_id == flavor.user)
             ).first()
 
             if existing_flavor is not None:
                 raise EntityExistsError(
                     f"Unable to register '{flavor.type.value}' flavor "
-                    f"with name '{flavor.name}': Found an existing "
-                    f"flavor with the same name and type in the same "
-                    f"'{flavor.workspace}' workspace owned by the same "
-                    f"'{flavor.user}' user."
+                    f"with name '{flavor.name}' and type '{flavor.type}': "
+                    "Found an existing flavor with the same name and type."
                 )
 
             config_schema = json.dumps(flavor.config_schema)
@@ -4222,6 +4174,8 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             KeyError: If no flavor with the given id exists.
+            EntityExistsError: If a flavor with the same name and type already
+                exists.
         """
         with Session(self.engine) as session:
             existing_flavor = session.exec(
@@ -4230,6 +4184,33 @@ class SqlZenStore(BaseZenStore):
 
             if not existing_flavor:
                 raise KeyError(f"Flavor with ID {flavor_id} not found.")
+
+            # Check if flavor with the new domain key (name, type) already
+            # exists
+            if (
+                flavor_update.name
+                and flavor_update.name != existing_flavor.name
+                or flavor_update.type
+                and flavor_update.type != existing_flavor.type
+            ):
+                other_flavor = session.exec(
+                    select(FlavorSchema)
+                    .where(
+                        FlavorSchema.name
+                        == (flavor_update.name or existing_flavor.name)
+                    )
+                    .where(
+                        FlavorSchema.type
+                        == (flavor_update.type or existing_flavor.type)
+                    )
+                ).first()
+
+                if other_flavor is not None:
+                    raise EntityExistsError(
+                        f"Unable to update '{existing_flavor.type}' flavor "
+                        f"with name '{existing_flavor.name}': Found an existing "
+                        f"flavor with the same name and type."
+                    )
 
             existing_flavor.update(flavor_update=flavor_update)
             session.add(existing_flavor)
@@ -4805,17 +4786,12 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             self._set_request_user_id(request_model=template, session=session)
-            existing_template = session.exec(
-                select(RunTemplateSchema)
-                .where(RunTemplateSchema.name == template.name)
-                .where(RunTemplateSchema.workspace_id == template.workspace)
-            ).first()
-            if existing_template is not None:
-                raise EntityExistsError(
-                    f"Unable to create run template in workspace "
-                    f"'{existing_template.workspace.name}': A run template "
-                    f"with the name '{template.name}' already exists."
-                )
+
+            self._verify_name_uniqueness(
+                request=template,
+                schema_class=RunTemplateSchema,
+                session=session,
+            )
 
             deployment = session.exec(
                 select(PipelineDeploymentSchema).where(
@@ -5016,34 +4992,6 @@ class SqlZenStore(BaseZenStore):
 
     # -------------------- Event Sources  --------------------
 
-    def _fail_if_event_source_with_name_exists(
-        self, event_source: EventSourceRequest, session: Session
-    ) -> None:
-        """Raise an exception if a stack with same name exists.
-
-        Args:
-            event_source: The event_source to create.
-            session: The Session
-
-        Raises:
-            EventSourceExistsError: If an event source with the given name
-                already exists.
-        """
-        existing_domain_event_source = session.exec(
-            select(EventSourceSchema)
-            .where(EventSourceSchema.name == event_source.name)
-            .where(EventSourceSchema.workspace_id == event_source.workspace)
-        ).first()
-        if existing_domain_event_source is not None:
-            workspace = self._get_workspace_schema(
-                workspace_name_or_id=event_source.workspace, session=session
-            )
-            raise EventSourceExistsError(
-                f"Unable to register event source with name "
-                f"'{event_source.name}': Found an existing event source with "
-                f"the same name in the active workspace, '{workspace.name}'."
-            )
-
     def create_event_source(
         self, event_source: EventSourceRequest
     ) -> EventSourceResponse:
@@ -5059,10 +5007,13 @@ class SqlZenStore(BaseZenStore):
             self._set_request_user_id(
                 request_model=event_source, session=session
             )
-            self._fail_if_event_source_with_name_exists(
-                event_source=event_source,
+
+            self._verify_name_uniqueness(
+                request=event_source,
+                schema_class=EventSourceSchema,
                 session=session,
             )
+
             new_event_source = EventSourceSchema.from_request(event_source)
             session.add(new_event_source)
             session.commit()
@@ -5157,6 +5108,13 @@ class SqlZenStore(BaseZenStore):
             event_source = self._get_event_source(
                 session=session, event_source_id=event_source_id
             )
+
+            self._verify_name_uniqueness(
+                update=event_source_update,
+                existing_schema=event_source,
+                session=session,
+            )
+
             event_source.update(update=event_source_update)
             session.add(event_source)
             session.commit()
@@ -5200,26 +5158,6 @@ class SqlZenStore(BaseZenStore):
 
     # ----------------------------- Pipeline runs -----------------------------
 
-    def _pipeline_run_exists(self, workspace_id: UUID, name: str) -> bool:
-        """Check if a pipeline name with a certain name exists.
-
-        Args:
-            workspace_id: The workspace to check.
-            name: The run name.
-
-        Returns:
-            If a pipeline run with the given name exists.
-        """
-        with Session(self.engine) as session:
-            return (
-                session.exec(
-                    select(PipelineRunSchema.id)
-                    .where(PipelineRunSchema.workspace_id == workspace_id)
-                    .where(PipelineRunSchema.name == name)
-                ).first()
-                is not None
-            )
-
     def _create_run(
         self, pipeline_run: PipelineRunRequest
     ) -> PipelineRunResponse:
@@ -5260,19 +5198,20 @@ class SqlZenStore(BaseZenStore):
             try:
                 session.commit()
             except IntegrityError:
-                if self._pipeline_run_exists(
-                    workspace_id=pipeline_run.workspace, name=pipeline_run.name
-                ):
-                    raise EntityExistsError(
-                        f"Unable to create pipeline run: A pipeline run with "
-                        f"name '{pipeline_run.name}' already exists."
-                    )
-                else:
-                    raise EntityExistsError(
-                        "Unable to create pipeline run: A pipeline run with "
-                        "the same deployment_id and orchestrator_run_id "
-                        "already exists."
-                    )
+                # This can fail if the name is taken by a different run
+                self._verify_name_uniqueness(
+                    request=pipeline_run,
+                    schema_class=PipelineRunSchema,
+                    session=session,
+                )
+
+                # ... or if the deployment_id and orchestrator_run_id are used
+                # by an existing run
+                raise EntityExistsError(
+                    "Unable to create pipeline run: A pipeline run with "
+                    "the same deployment_id and orchestrator_run_id "
+                    "already exists."
+                )
 
             if model_version_id := self._get_or_create_model_version_for_run(
                 new_run
@@ -5677,6 +5616,13 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             self._set_request_user_id(request_model=schedule, session=session)
+
+            self._verify_name_uniqueness(
+                request=schedule,
+                schema_class=ScheduleSchema,
+                session=session,
+            )
+
             if orchestrator_id := schedule.orchestrator_id:
                 self._verify_workspace(
                     expected_workspace_id=schedule.workspace,
@@ -5780,6 +5726,12 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to update schedule with ID {schedule_id}: "
                     f"No schedule with this ID found."
                 )
+
+            self._verify_name_uniqueness(
+                update=schedule_update,
+                existing_schema=existing_schedule,
+                session=session,
+            )
 
             # Update the schedule
             existing_schedule = existing_schedule.update(schedule_update)
@@ -6793,8 +6745,6 @@ class SqlZenStore(BaseZenStore):
             Exception: If anything goes wrong during the creation of the
                 service connector.
         """
-        self._set_request_user_id(request_model=service_connector)
-
         # If the connector type is locally available, we validate the request
         # against the connector type schema before storing it in the database
         if service_connector_registry.is_registered(service_connector.type):
@@ -6812,9 +6762,11 @@ class SqlZenStore(BaseZenStore):
             )
 
         with Session(self.engine) as session:
-            self._fail_if_service_connector_with_name_exists(
-                name=service_connector.name,
-                workspace_id=service_connector.workspace,
+            self._set_request_user_id(request_model=service_connector)
+
+            self._verify_name_uniqueness(
+                request=service_connector,
+                schema_class=ServiceConnectorSchema,
                 session=session,
             )
 
@@ -7002,12 +6954,11 @@ class SqlZenStore(BaseZenStore):
 
             # In case of a renaming update, make sure no service connector uses
             # that name already
-            if update.name and existing_connector.name != update.name:
-                self._fail_if_service_connector_with_name_exists(
-                    name=update.name,
-                    workspace_id=existing_connector.workspace_id,
-                    session=session,
-                )
+            self._verify_name_uniqueness(
+                update=update,
+                existing_schema=existing_connector,
+                session=session,
+            )
 
             existing_connector_model = existing_connector.to_model(
                 include_metadata=True
@@ -7154,37 +7105,6 @@ class SqlZenStore(BaseZenStore):
                 raise KeyError from error
 
             session.commit()
-
-    @staticmethod
-    def _fail_if_service_connector_with_name_exists(
-        name: str,
-        workspace_id: UUID,
-        session: Session,
-    ) -> None:
-        """Raise an exception if a service connector with same name exists.
-
-        Args:
-            name: The name of the service connector
-            workspace_id: The ID of the workspace
-            session: The Session
-
-        Raises:
-            EntityExistsError: If a service connector with the given name
-                already exists.
-        """
-        # Check if service connector with the same domain key (name, workspace)
-        # already exists
-        existing_domain_connector = session.exec(
-            select(ServiceConnectorSchema)
-            .where(ServiceConnectorSchema.name == name)
-            .where(ServiceConnectorSchema.workspace_id == workspace_id)
-        ).first()
-        if existing_domain_connector is not None:
-            raise EntityExistsError(
-                f"Unable to register service connector with name '{name}': "
-                "Found an existing service connector with the same name in the "
-                f"same workspace '{existing_domain_connector.workspace.name}'."
-            )
 
     def _create_connector_secret(
         self,
@@ -7812,11 +7732,9 @@ class SqlZenStore(BaseZenStore):
                         ]
 
                 # Stack
-                assert stack.workspace is not None
-
-                self._fail_if_stack_with_name_exists(
-                    stack_name=stack.name,
-                    workspace_id=stack.workspace,
+                self._verify_name_uniqueness(
+                    request=stack,
+                    schema_class=StackSchema,
                     session=session,
                 )
 
@@ -7972,13 +7890,11 @@ class SqlZenStore(BaseZenStore):
                 )
             # In case of a renaming update, make sure no stack already exists
             # with that name
-            if stack_update.name:
-                if existing_stack.name != stack_update.name:
-                    self._fail_if_stack_with_name_exists(
-                        stack_name=stack_update.name,
-                        workspace_id=existing_stack.workspace.id,
-                        session=session,
-                    )
+            self._verify_name_uniqueness(
+                update=stack_update,
+                existing_schema=existing_stack,
+                session=session,
+            )
 
             components: List["StackComponentSchema"] = []
             if stack_update.components:
@@ -8052,41 +7968,6 @@ class SqlZenStore(BaseZenStore):
         return self._count_entity(
             schema=StackSchema, filter_model=filter_model
         )
-
-    def _fail_if_stack_with_name_exists(
-        self,
-        stack_name: str,
-        workspace_id: UUID,
-        session: Session,
-    ) -> None:
-        """Raise an exception if a stack with same name exists.
-
-        Args:
-            stack_name: The name of the stack
-            workspace_id: The ID of the workspace
-            session: The session
-
-        Returns:
-            None
-
-        Raises:
-            StackExistsError: If a stack with the given name already exists.
-        """
-        existing_domain_stack = session.exec(
-            select(StackSchema)
-            .where(StackSchema.name == stack_name)
-            .where(StackSchema.workspace_id == workspace_id)
-        ).first()
-        if existing_domain_stack is not None:
-            workspace = self._get_workspace_schema(
-                workspace_name_or_id=workspace_id, session=session
-            )
-            raise StackExistsError(
-                f"Unable to register stack with name "
-                f"'{stack_name}': Found an existing stack with the same "
-                f"name in the active workspace, '{workspace.name}'."
-            )
-        return None
 
     def _create_default_stack(
         self,
@@ -8851,9 +8732,9 @@ class SqlZenStore(BaseZenStore):
             self._get_action(action_id=trigger.action_id, session=session)
 
             # Verify that the trigger name is unique
-            self._fail_if_trigger_with_name_exists(
-                trigger_name=trigger.name,
-                workspace_id=trigger.workspace,
+            self._verify_name_uniqueness(
+                request=trigger,
+                schema_class=TriggerSchema,
                 session=session,
             )
 
@@ -8958,13 +8839,11 @@ class SqlZenStore(BaseZenStore):
 
             # In case of a renaming update, make sure no trigger already exists
             # with that name
-            if trigger_update.name:
-                if existing_trigger.name != trigger_update.name:
-                    self._fail_if_trigger_with_name_exists(
-                        trigger_name=trigger_update.name,
-                        workspace_id=existing_trigger.workspace.id,
-                        session=session,
-                    )
+            self._verify_name_uniqueness(
+                update=trigger_update,
+                existing_schema=existing_trigger,
+                session=session,
+            )
 
             existing_trigger.update(
                 trigger_update=trigger_update,
@@ -9000,41 +8879,6 @@ class SqlZenStore(BaseZenStore):
                 raise KeyError from error
 
             session.commit()
-
-    def _fail_if_trigger_with_name_exists(
-        self,
-        trigger_name: str,
-        workspace_id: UUID,
-        session: Session,
-    ) -> None:
-        """Raise an exception if a trigger with same name exists.
-
-        Args:
-            trigger_name: The Trigger name
-            workspace_id: The workspace ID
-            session: The Session
-
-        Returns:
-            None
-
-        Raises:
-            TriggerExistsError: If a trigger with the given name already exists.
-        """
-        existing_domain_trigger = session.exec(
-            select(TriggerSchema)
-            .where(TriggerSchema.name == trigger_name)
-            .where(TriggerSchema.workspace_id == workspace_id)
-        ).first()
-        if existing_domain_trigger is not None:
-            workspace = self._get_workspace_schema(
-                workspace_name_or_id=workspace_id, session=session
-            )
-            raise TriggerExistsError(
-                f"Unable to register trigger with name "
-                f"'{trigger_name}': Found an existing trigger with the same "
-                f"name in the active workspace, '{workspace.name}'."
-            )
-        return None
 
     # -------------------- Trigger Executions --------------------
 
@@ -9727,16 +9571,11 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             # Check if workspace with the given name already exists
-            existing_workspace = session.exec(
-                select(WorkspaceSchema).where(
-                    WorkspaceSchema.name == workspace.name
-                )
-            ).first()
-            if existing_workspace is not None:
-                raise EntityExistsError(
-                    f"Unable to create workspace {workspace.name}: "
-                    "A workspace with this name already exists."
-                )
+            self._verify_name_uniqueness(
+                request=workspace,
+                schema_class=WorkspaceSchema,
+                session=session,
+            )
 
             # Create the workspace
             new_workspace = WorkspaceSchema.from_request(workspace)
@@ -9836,6 +9675,12 @@ class SqlZenStore(BaseZenStore):
                 raise IllegalOperationError(
                     "The name of the default workspace cannot be changed."
                 )
+
+            self._verify_name_uniqueness(
+                update=workspace_update,
+                existing_schema=existing_workspace,
+                session=session,
+            )
 
             # Update the workspace
             existing_workspace.update(workspace_update=workspace_update)
@@ -10013,6 +9858,209 @@ class SqlZenStore(BaseZenStore):
         if schema is None:
             raise KeyError(error_msg)
         return schema
+
+    def _verify_workspace(
+        self,
+        expected_workspace_id: UUID,
+        obj: Union[
+            AnySchema,
+            WorkspaceScopedResponse,
+            Tuple[Type[AnySchema], Union[UUID, str]],
+        ],
+        session: Optional[Session] = None,
+    ) -> None:
+        """Verify that the workspace of the object is the expected workspace.
+
+        Args:
+            expected_workspace_id: The expected workspace ID.
+            obj: The object to verify the workspace of.
+            session: The session to use to verify the workspace.
+        """
+
+        def _raise_error(resource: str, id_: UUID) -> NoReturn:
+            """Raise an error if the workspace of the object is not the expected workspace.
+
+            Args:
+                resource: The resource to raise the error for.
+                id_: The ID of the object to raise the error for.
+
+            Raises:
+                ValueError: If the workspace of the object is not the expected
+                    workspace.
+            """
+            raise ValueError(
+                f"{resource} {id_} is not in workspace {expected_workspace_id}."
+            )
+
+        if isinstance(obj, WorkspaceScopedResponse):
+            if obj.workspace.id != expected_workspace_id:
+                _raise_error(resource=type(obj).__name__, id_=obj.id)
+        elif isinstance(obj, BaseSchema):
+            if getattr(obj, "workspace_id", None) != expected_workspace_id:
+                _raise_error(resource=obj.__name__, id_=obj.id)
+        else:
+            schema, id_ = obj
+
+            workspace_col = getattr(schema, "workspace_id", None)
+            if not workspace_col:
+                raise ValueError(
+                    f"Schema {schema.__name__} has no attribute workspace_id."
+                )
+
+            query = select(col(workspace_col)).where(schema.id == id_)
+
+            result: UUID
+            if session:
+                result = session.exec(query).one()
+            else:
+                with Session(self.engine) as session:
+                    result = session.exec(query).one()
+
+            if result != expected_workspace_id:
+                _raise_error(resource=schema.__name__, id_=id_)
+
+    def _set_request_user_id(
+        self,
+        request_model: BaseRequest,
+        session: Optional[Session] = None,
+    ) -> None:
+        """Set the user ID on a request model to the active user.
+
+        Args:
+            request_model: The request model to set the user ID on.
+            session: The DB session to use to use for queries.
+        """
+        if not isinstance(request_model, UserScopedRequest):
+            # If the request model is not a UserScopedRequest, we don't need to
+            # set the user ID.
+            return
+
+        if handle_bool_env_var(ENV_ZENML_SERVER):
+            # Running inside server
+            from zenml.zen_server.auth import get_auth_context
+
+            # If the code is running on the server, use the auth context.
+            auth_context = get_auth_context()
+            if auth_context is None:
+                raise RuntimeError("No active user found.")
+
+            user_id = auth_context.user.id
+        else:
+            user_id = self._get_default_user(session).id
+
+        request_model.user = user_id
+
+    def _verify_name_uniqueness(
+        self,
+        session: Session,
+        request: Optional[BaseRequest] = None,
+        schema_class: Optional[Type[AnyNamedSchema]] = None,
+        update: Optional[BaseModel] = None,
+        existing_schema: Optional[AnyNamedSchema] = None,
+    ) -> None:
+        """Check the name uniqueness constraint for a given entity.
+
+        This method can be used to verify the name uniqueness constraint for
+        a given entity during creation and during subsequent updates:
+
+        * during creation, by providing a request and a schema class.
+        * during updates, by providing an update and the schema object
+        of the existing entity being updated
+
+        Args:
+            session: The session to use to verify the name of.
+            request: The create model for which to verify the name
+                uniqueness during creation.
+            schema_class: The schema class for which to verify the name
+                uniqueness during creation.
+            update: The update model for which to verify the name
+                uniqueness during an update.
+            existing_schema: The existing schema for which to verify the name
+                uniqueness during an update.
+
+        Raises:
+            RuntimeError: If the arguments are invalid.
+            EntityExistsError: If the name is not unique.
+        """
+        model: Optional[BaseModel] = None
+        name: Optional[str] = None
+        operation: Literal["create", "update"] = "create"
+        workspace_id: Optional[UUID] = None
+        if request is not None:
+            model = request
+            workspace_id = getattr(existing_schema, "workspace", None)
+        elif update is not None:
+            model = update
+            operation = "update"
+        else:
+            raise RuntimeError("Either request or update must be provided.")
+
+        # If the model type doesn't have a `name` attribute, we can't verify
+        # the name uniqueness.
+        if not hasattr(type(model), "name"):
+            raise RuntimeError(
+                f"Model {type(model)} does not represent a named entity."
+            )
+
+        name = getattr(model, "name", None)
+        if name is None:
+            # If the name is not set, we don't need to verify the name
+            # uniqueness. This can only happen with update models if
+            # the name is not actually updated.
+            return
+
+        if existing_schema is not None:
+            schema_class = type(existing_schema)
+            workspace_id = getattr(existing_schema, "workspace_id", None)
+        elif schema_class is None:
+            raise RuntimeError("Either schema or schema_class must be provided.")
+
+        if not hasattr(schema_class, "name"):
+            raise RuntimeError(f"Schema {schema_class.__name__} has no name.")
+
+        if update and existing_schema and existing_schema.name == name:
+            # If the name is not being updated during an update, we don't need
+            # to verify the name uniqueness.
+            return
+
+
+        entity_name = schema_class.__tablename__
+        assert isinstance(entity_name, str)
+        # Some entities are plural, some are singular, some have multiple words
+        # in their table name connected by underscores (e.g. pipeline_run)
+        entity_name = entity_name.replace("_", " ").rstrip("s")
+
+        # We "detect" if the entity is workspace-scoped by looking at the
+        # schema.
+        workspace_scoped = False
+        if workspace_id and hasattr(schema_class, "workspace_id"):
+            # If the workspace_id attribute is present, the entity is workspace
+            # scoped only if the attribute type is not Optional.
+            workspace_scoped = not schema_class.workspace_id.nullable  # type: ignore[attr-defined]
+
+        query = select(schema_class).where(schema_class.name == name)
+        if workspace_scoped:
+            if not hasattr(schema_class, "workspace_id"):
+                raise RuntimeError(
+                    f"Schema {schema_class.__name__} has no workspace."
+                )
+            query = query.where(schema_class.workspace_id == workspace_id)  # type: ignore[attr-defined]
+
+        existing_entry = session.exec(query).first()
+        if existing_entry is not None:
+            if workspace_scoped:
+                if not hasattr(existing_entry, "workspace"):
+                    raise RuntimeError(
+                        f"Schema {schema_class.__name__} has no workspace."
+                    )
+                scope = f" in the '{existing_entry.workspace.name}' workspace"  # type: ignore[attr-defined]
+            else:
+                scope = ""
+            raise EntityExistsError(
+                f"Unable to {operation} the requested {entity_name} with name "
+                f"'{name}': Found another existing {entity_name} with the same "
+                f"name{scope}."
+            )
 
     def _get_workspace_schema(
         self,
@@ -10270,6 +10318,12 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             self._set_request_user_id(request_model=model, session=session)
 
+            self._verify_name_uniqueness(
+                request=model,
+                schema_class=ModelSchema,
+                session=session,
+            )
+
             model_schema = ModelSchema.from_request(model)
             session.add(model_schema)
 
@@ -10392,6 +10446,12 @@ class SqlZenStore(BaseZenStore):
 
             if not existing_model:
                 raise KeyError(f"Model with ID {model_id} not found.")
+
+            self._verify_name_uniqueness(
+                update=model_update,
+                existing_schema=existing_model,
+                session=session,
+            )
 
             if model_update.add_tags:
                 self._attach_tags_to_resource(
@@ -11411,14 +11471,11 @@ class SqlZenStore(BaseZenStore):
         validate_name(tag)
         with Session(self.engine) as session:
             self._set_request_user_id(request_model=tag, session=session)
-            existing_tag = session.exec(
-                select(TagSchema).where(TagSchema.name == tag.name)
-            ).first()
-            if existing_tag is not None:
-                raise EntityExistsError(
-                    f"Unable to create tag {tag.name}: "
-                    "A tag with this name already exists."
-                )
+            self._verify_name_uniqueness(
+                request=tag,
+                schema_class=TagSchema,
+                session=session,
+            )
 
             tag_schema = TagSchema.from_request(tag)
             session.add(tag_schema)
@@ -11531,6 +11588,12 @@ class SqlZenStore(BaseZenStore):
             if not tag:
                 raise KeyError(f"Tag with ID `{tag_name_or_id}` not found.")
 
+            self._verify_name_uniqueness(
+                update=tag_update_model,
+                existing_schema=tag,
+                session=session,
+            )
+
             tag.update(update=tag_update_model)
             session.add(tag)
             session.commit()
@@ -11619,94 +11682,3 @@ class SqlZenStore(BaseZenStore):
                 )
             session.delete(tag_model)
             session.commit()
-
-    def _verify_workspace(
-        self,
-        expected_workspace_id: UUID,
-        obj: Union[
-            AnySchema,
-            WorkspaceScopedResponse,
-            Tuple[Type[AnySchema], Union[UUID, str]],
-        ],
-        session: Optional[Session] = None,
-    ) -> None:
-        """Verify that the workspace of the object is the expected workspace.
-
-        Args:
-            expected_workspace_id: The expected workspace ID.
-            obj: The object to verify the workspace of.
-            session: The session to use to verify the workspace.
-        """
-
-        def _raise_error(resource: str, id_: UUID) -> NoReturn:
-            """Raise an error if the workspace of the object is not the expected workspace.
-
-            Args:
-                resource: The resource to raise the error for.
-                id_: The ID of the object to raise the error for.
-
-            Raises:
-                ValueError: If the workspace of the object is not the expected
-                    workspace.
-            """
-            raise ValueError(
-                f"{resource} {id_} is not in workspace {expected_workspace_id}."
-            )
-
-        if isinstance(obj, WorkspaceScopedResponse):
-            if obj.workspace.id != expected_workspace_id:
-                _raise_error(resource=type(obj).__name__, id_=obj.id)
-        elif isinstance(obj, BaseSchema):
-            if getattr(obj, "workspace_id", None) != expected_workspace_id:
-                _raise_error(resource=obj.__name__, id_=obj.id)
-        else:
-            schema, id_ = obj
-
-            workspace_col = getattr(schema, "workspace_id", None)
-            if not workspace_col:
-                raise ValueError(
-                    f"Schema {schema.__name__} has no attribute workspace_id."
-                )
-
-            query = select(col(workspace_col)).where(schema.id == id_)
-
-            result: UUID
-            if session:
-                result = session.exec(query).one()
-            else:
-                with Session(self.engine) as session:
-                    result = session.exec(query).one()
-
-            if result != expected_workspace_id:
-                _raise_error(resource=schema.__name__, id_=id_)
-
-    def _set_request_user_id(
-        self,
-        request_model: BaseRequest,
-        session: Optional[Session] = None,
-    ) -> None:
-        """Set the user ID on a request model to the active user.
-
-        Args:
-            request_model: The request model to set the user ID on.
-            session: The DB session to use to use for queries.
-        """
-        if not isinstance(request_model, UserScopedRequest):
-            # If the request model is not a UserScopedRequest, we don't need to
-            # set the user ID.
-            return
-
-        if handle_bool_env_var(ENV_ZENML_SERVER):
-            # Running inside server
-            from zenml.zen_server.auth import get_auth_context
-
-            # If the code is running on the server, use the auth context.
-            auth_context = get_auth_context()
-            if auth_context is None:
-                raise RuntimeError("No active user found.")
-
-            user_id = auth_context.user.id
-        else:
-            user_id = self._get_default_user(session).id
-
-        request_model.user = user_id

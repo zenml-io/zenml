@@ -32,7 +32,7 @@ from zenml.models import (
     RunTemplateUpdate,
 )
 from zenml.utils.time_utils import utc_now
-from zenml.zen_stores.schemas.base_schemas import BaseSchema
+from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
@@ -45,7 +45,7 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas.tag_schemas import TagSchema
 
 
-class RunTemplateSchema(BaseSchema, table=True):
+class RunTemplateSchema(NamedSchema, table=True):
     """SQL Model for run templates."""
 
     __tablename__ = "run_template"
@@ -57,7 +57,6 @@ class RunTemplateSchema(BaseSchema, table=True):
         ),
     )
 
-    name: str = Field(nullable=False)
     description: Optional[str] = Field(
         sa_column=Column(
             String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
