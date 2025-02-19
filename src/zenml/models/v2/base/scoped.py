@@ -696,7 +696,7 @@ class FlexibleScopedFilter(UserScopedFilter):
         return super().apply_sorting(query=query, table=table)
 
 
-class TaggableFilter(BaseFilter):
+class TaggableFilter(WorkspaceScopedFilter):
     """Model to enable filtering and sorting by tags."""
 
     tag: Optional[str] = Field(
@@ -704,11 +704,11 @@ class TaggableFilter(BaseFilter):
     )
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *BaseFilter.FILTER_EXCLUDE_FIELDS,
+        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
         "tag",
     ]
     CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
-        *BaseFilter.CUSTOM_SORTING_OPTIONS,
+        *WorkspaceScopedFilter.CUSTOM_SORTING_OPTIONS,
         "tags",
     ]
 

@@ -36,7 +36,6 @@ from zenml.enums import ExecutionStatus
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.base.scoped import (
     TaggableFilter,
-    WorkspaceScopedFilter,
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
@@ -585,11 +584,10 @@ class PipelineRunResponse(
 # ------------------ Filter Model ------------------
 
 
-class PipelineRunFilter(WorkspaceScopedFilter, TaggableFilter):
+class PipelineRunFilter(TaggableFilter):
     """Model to enable advanced filtering of all Workspaces."""
 
     CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
-        *WorkspaceScopedFilter.CUSTOM_SORTING_OPTIONS,
         *TaggableFilter.CUSTOM_SORTING_OPTIONS,
         "tag",
         "stack",
@@ -598,7 +596,6 @@ class PipelineRunFilter(WorkspaceScopedFilter, TaggableFilter):
         "model_version",
     ]
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
         *TaggableFilter.FILTER_EXCLUDE_FIELDS,
         "unlisted",
         "code_repository_id",
@@ -614,10 +611,6 @@ class PipelineRunFilter(WorkspaceScopedFilter, TaggableFilter):
         "pipeline_name",
         "templatable",
         "run_metadata",
-    ]
-    CLI_EXCLUDE_FIELDS = [
-        *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
-        *TaggableFilter.CLI_EXCLUDE_FIELDS,
     ]
 
     name: Optional[str] = Field(
