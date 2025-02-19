@@ -112,7 +112,6 @@ def create_stack_component(
 
     return verify_permissions_and_create_entity(
         request_model=component,
-        resource_type=ResourceType.STACK_COMPONENT,
         create_method=zen_store().create_stack_component,
     )
 

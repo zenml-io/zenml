@@ -104,7 +104,6 @@ def create_model(
 
     return verify_permissions_and_create_entity(
         request_model=model,
-        resource_type=ResourceType.MODEL,
         create_method=zen_store().create_model,
     )
 

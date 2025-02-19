@@ -162,7 +162,6 @@ def create_trigger(
 
     return verify_permissions_and_create_entity(
         request_model=trigger,
-        resource_type=ResourceType.TRIGGER,
         create_method=zen_store().create_trigger,
     )
 

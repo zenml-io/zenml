@@ -106,7 +106,6 @@ def create_secret(
 
     return verify_permissions_and_create_entity(
         request_model=secret,
-        resource_type=ResourceType.SECRET,
         create_method=zen_store().create_secret,
     )
 

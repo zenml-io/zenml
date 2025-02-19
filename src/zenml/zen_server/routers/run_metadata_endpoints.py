@@ -23,10 +23,10 @@ from zenml.enums import MetadataResourceTypes
 from zenml.models import RunMetadataRequest
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
-from zenml.zen_server.rbac.models import Action, ResourceType
+from zenml.zen_server.rbac.models import Action
 from zenml.zen_server.rbac.utils import (
     batch_verify_permissions_for_models,
-    verify_permission,
+    verify_permission_for_model,
 )
 from zenml.zen_server.routers.workspaces_endpoints import (
     router as workspace_router,
@@ -97,8 +97,6 @@ def create_run_metadata(
         action=Action.UPDATE,
     )
 
-    verify_permission(
-        resource_type=ResourceType.RUN_METADATA, action=Action.CREATE
-    )
+    verify_permission_for_model(model=run_metadata, action=Action.CREATE)
 
     zen_store().create_run_metadata(run_metadata)

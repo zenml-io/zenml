@@ -45,6 +45,7 @@ from zenml.service_connectors.service_connector_utils import (
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
+    verify_permissions_and_create_entity,
     verify_permissions_and_delete_entity,
     verify_permissions_and_list_entities,
     verify_permissions_and_update_entity,
@@ -113,11 +114,10 @@ def create_service_connector(
         workspace = zen_store().get_workspace(workspace_name_or_id)
         connector.workspace = workspace.id
 
-    verify_permission(
-        resource_type=ResourceType.SERVICE_CONNECTOR, action=Action.CREATE
+    return verify_permissions_and_create_entity(
+        request_model=connector,
+        create_method=zen_store().create_service_connector,
     )
-
-    return zen_store().create_service_connector(connector)
 
 
 @router.get(
@@ -318,9 +318,7 @@ def validate_and_verify_service_connector_config(
         The list of resources that the service connector configuration has
         access to.
     """
-    verify_permission(
-        resource_type=ResourceType.SERVICE_CONNECTOR, action=Action.CREATE
-    )
+    verify_permission_for_model(model=connector, action=Action.CREATE)
 
     return zen_store().verify_service_connector_config(
         service_connector=connector,

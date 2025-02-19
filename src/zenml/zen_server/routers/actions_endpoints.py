@@ -219,7 +219,6 @@ def create_action(
 
     return verify_permissions_and_create_entity(
         request_model=action,
-        resource_type=ResourceType.ACTION,
         create_method=action_handler.create_action,
     )
 

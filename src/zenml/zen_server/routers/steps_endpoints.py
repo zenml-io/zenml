@@ -37,6 +37,9 @@ from zenml.models import (
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.rbac.endpoint_utils import (
+    verify_permissions_and_create_entity,
+)
 from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import (
     dehydrate_page,
@@ -104,24 +107,24 @@ def list_run_steps(
 @handle_exceptions
 def create_run_step(
     step: StepRunRequest,
-    auth_context: AuthContext = Security(authorize),
+    _: AuthContext = Security(authorize),
 ) -> StepRunResponse:
     """Create a run step.
 
     Args:
         step: The run step to create.
-        auth_context: Authentication context.
+        _: Authentication context.
 
     Returns:
         The created run step.
     """
-    step.user = auth_context.user.id
-
     pipeline_run = zen_store().get_run(step.pipeline_run_id)
-    verify_permission_for_model(pipeline_run, action=Action.UPDATE)
 
-    step_response = zen_store().create_run_step(step_run=step)
-    return dehydrate_response_model(step_response)
+    return verify_permissions_and_create_entity(
+        request_model=step,
+        create_method=zen_store().create_run_step,
+        surrogate_models=[pipeline_run],
+    )
 
 
 @router.get(

@@ -115,7 +115,6 @@ def create_artifact_version(
     """
     return verify_permissions_and_create_entity(
         request_model=artifact_version,
-        resource_type=ResourceType.ARTIFACT_VERSION,
         create_method=zen_store().create_artifact_version,
     )
 
@@ -139,7 +138,6 @@ def batch_create_artifact_version(
     """
     return verify_permissions_and_batch_create_entity(
         batch=artifact_versions,
-        resource_type=ResourceType.ARTIFACT_VERSION,
         create_method=zen_store().batch_create_artifact_versions,
     )
 

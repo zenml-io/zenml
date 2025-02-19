@@ -87,7 +87,6 @@ def create_deployment(
 
     return verify_permissions_and_create_entity(
         request_model=deployment,
-        resource_type=ResourceType.PIPELINE_DEPLOYMENT,
         create_method=zen_store().create_deployment,
     )
 

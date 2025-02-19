@@ -85,7 +85,6 @@ def create_build(
 
     return verify_permissions_and_create_entity(
         request_model=build,
-        resource_type=ResourceType.PIPELINE_BUILD,
         create_method=zen_store().create_build,
     )
 

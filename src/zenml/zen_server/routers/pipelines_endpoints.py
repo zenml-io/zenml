@@ -36,9 +36,7 @@ from zenml.models import (
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.feature_gate.endpoint_utils import (
-    check_entitlement,
     report_decrement,
-    report_usage,
 )
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_create_entity,
@@ -99,28 +97,15 @@ def create_pipeline(
         pipeline.workspace = workspace.id
 
     # We limit pipeline namespaces, not pipeline versions
-    needs_usage_increment = (
-        ResourceType.PIPELINE in server_config().reportable_resources
-        and zen_store().count_pipelines(PipelineFilter(name=pipeline.name))
-        == 0
+    skip_entitlements = (
+        zen_store().count_pipelines(PipelineFilter(name=pipeline.name)) > 0
     )
 
-    if needs_usage_increment:
-        check_entitlement(ResourceType.PIPELINE)
-
-    pipeline_response = verify_permissions_and_create_entity(
+    return verify_permissions_and_create_entity(
         request_model=pipeline,
-        resource_type=ResourceType.PIPELINE,
         create_method=zen_store().create_pipeline,
+        skip_entitlements=skip_entitlements,
     )
-
-    if needs_usage_increment:
-        report_usage(
-            resource_type=ResourceType.PIPELINE,
-            resource_id=pipeline_response.id,
-        )
-
-    return pipeline_response
 
 
 @router.get(

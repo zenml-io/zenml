@@ -129,7 +129,7 @@ def create_stack(
         )
 
     # Check the stack creation
-    verify_permission(resource_type=ResourceType.STACK, action=Action.CREATE)
+    verify_permission_for_model(model=stack, action=Action.CREATE)
 
     return zen_store().create_stack(stack)
 

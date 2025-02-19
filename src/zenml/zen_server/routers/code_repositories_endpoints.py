@@ -87,7 +87,6 @@ def create_code_repository(
 
     return verify_permissions_and_create_entity(
         request_model=code_repository,
-        resource_type=ResourceType.CODE_REPOSITORY,
         create_method=zen_store().create_code_repository,
     )
 

@@ -118,7 +118,6 @@ def create_model_version(
 
     return verify_permissions_and_create_entity(
         request_model=model_version,
-        resource_type=ResourceType.MODEL_VERSION,
         create_method=zen_store().create_model_version,
     )
 
@@ -277,12 +276,14 @@ def create_model_version_artifact_link(
     model_version = zen_store().get_model_version(
         model_version_artifact_link.model_version
     )
-    verify_permission_for_model(model_version, action=Action.UPDATE)
 
-    mv = zen_store().create_model_version_artifact_link(
-        model_version_artifact_link
+    return verify_permissions_and_create_entity(
+        request_model=model_version_artifact_link,
+        create_method=zen_store().create_model_version_artifact_link,
+        # Check for UPDATE permissions on the model version instead of the
+        # model version artifact link
+        surrogate_models=[model_version],
     )
-    return mv
 
 
 @model_version_artifacts_router.get(
@@ -399,12 +400,14 @@ def create_model_version_pipeline_run_link(
     model_version = zen_store().get_model_version(
         model_version_pipeline_run_link.model_version, hydrate=False
     )
-    verify_permission_for_model(model_version, action=Action.UPDATE)
 
-    mv = zen_store().create_model_version_pipeline_run_link(
-        model_version_pipeline_run_link
+    return verify_permissions_and_create_entity(
+        request_model=model_version_pipeline_run_link,
+        create_method=zen_store().create_model_version_pipeline_run_link,
+        # Check for UPDATE permissions on the model version instead of the
+        # model version pipeline run link
+        surrogate_models=[model_version],
     )
-    return mv
 
 
 @model_version_pipeline_runs_router.get(

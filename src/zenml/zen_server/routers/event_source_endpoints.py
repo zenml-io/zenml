@@ -222,7 +222,6 @@ def create_event_source(
 
     return verify_permissions_and_create_entity(
         request_model=event_source,
-        resource_type=ResourceType.EVENT_SOURCE,
         create_method=event_source_handler.create_event_source,
     )
 

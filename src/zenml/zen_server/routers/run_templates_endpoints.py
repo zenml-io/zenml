@@ -93,7 +93,6 @@ def create_run_template(
 
     return verify_permissions_and_create_entity(
         request_model=run_template,
-        resource_type=ResourceType.RUN_TEMPLATE,
         create_method=zen_store().create_run_template,
     )
 

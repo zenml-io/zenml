@@ -125,7 +125,6 @@ def create_flavor(
     """
     return verify_permissions_and_create_entity(
         request_model=flavor,
-        resource_type=ResourceType.FLAVOR,
         create_method=zen_store().create_flavor,
     )
 

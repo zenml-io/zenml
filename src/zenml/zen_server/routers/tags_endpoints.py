@@ -77,7 +77,6 @@ def create_tag(
     """
     return verify_permissions_and_create_entity(
         request_model=tag,
-        resource_type=ResourceType.TAG,
         create_method=zen_store().create_tag,
     )
 

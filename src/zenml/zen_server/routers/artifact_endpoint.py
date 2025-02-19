@@ -100,7 +100,6 @@ def create_artifact(
     """
     return verify_permissions_and_create_entity(
         request_model=artifact,
-        resource_type=ResourceType.ARTIFACT,
         create_method=zen_store().create_artifact,
     )
 

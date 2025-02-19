@@ -89,7 +89,6 @@ def create_service_account(
     """
     return verify_permissions_and_create_entity(
         request_model=service_account,
-        resource_type=ResourceType.SERVICE_ACCOUNT,
         create_method=zen_store().create_service_account,
     )
 
@@ -233,13 +232,22 @@ def create_api_key(
     Returns:
         The created API key.
     """
+
+    def create_api_key_wrapper(
+        api_key: APIKeyRequest,
+    ) -> APIKeyResponse:
+        return zen_store().create_api_key(
+            service_account_id=service_account_id,
+            api_key=api_key,
+        )
+
     service_account = zen_store().get_service_account(service_account_id)
-    verify_permission_for_model(service_account, action=Action.UPDATE)
-    created_api_key = zen_store().create_api_key(
-        service_account_id=service_account_id,
-        api_key=api_key,
+
+    return verify_permissions_and_create_entity(
+        request_model=api_key,
+        create_method=create_api_key_wrapper,
+        surrogate_models=[service_account],
     )
-    return created_api_key
 
 
 @router.get(

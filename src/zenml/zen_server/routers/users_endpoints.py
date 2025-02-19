@@ -174,7 +174,6 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
         # new_user = verify_permissions_and_create_entity(
         #     request_model=user,
-        #     resource_type=ResourceType.USER,
         #     create_method=zen_store().create_user,
         # )
         new_user = zen_store().create_user(user)

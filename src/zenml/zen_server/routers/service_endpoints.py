@@ -88,7 +88,6 @@ def create_service(
     return verify_permissions_and_create_entity(
         request_model=service,
         create_method=zen_store().create_service,
-        resource_type=ResourceType.SERVICE,
     )
 
 
