@@ -10013,7 +10013,9 @@ class SqlZenStore(BaseZenStore):
             schema_class = type(existing_schema)
             workspace_id = getattr(existing_schema, "workspace_id", None)
         elif schema_class is None:
-            raise RuntimeError("Either schema or schema_class must be provided.")
+            raise RuntimeError(
+                "Either schema or schema_class must be provided."
+            )
 
         if not hasattr(schema_class, "name"):
             raise RuntimeError(f"Schema {schema_class.__name__} has no name.")
@@ -10022,7 +10024,6 @@ class SqlZenStore(BaseZenStore):
             # If the name is not being updated during an update, we don't need
             # to verify the name uniqueness.
             return
-
 
         entity_name = schema_class.__tablename__
         assert isinstance(entity_name, str)

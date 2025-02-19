@@ -91,6 +91,26 @@ class ArtifactSchema(NamedSchema, table=True):
         ),
     )
 
+    workspace_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=WorkspaceSchema.__tablename__,
+        source_column="workspace_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
+    workspace: "WorkspaceSchema" = Relationship()
+
+    user_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=UserSchema.__tablename__,
+        source_column="user_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
+    user: Optional["UserSchema"] = Relationship()
+
     @property
     def latest_version(self) -> Optional["ArtifactVersionSchema"]:
         """Fetch the latest version for this artifact.
@@ -133,6 +153,8 @@ class ArtifactSchema(NamedSchema, table=True):
         return cls(
             name=artifact_request.name,
             has_custom_name=artifact_request.has_custom_name,
+            workspace_id=artifact_request.workspace,
+            user_id=artifact_request.user,
         )
 
     def to_model(
@@ -165,6 +187,7 @@ class ArtifactSchema(NamedSchema, table=True):
             tags=[tag.to_model() for tag in self.tags],
             latest_version_name=latest_name,
             latest_version_id=latest_id,
+            user=self.user.to_model() if self.user else None,
         )
 
         # Create the metadata of the model
@@ -172,6 +195,7 @@ class ArtifactSchema(NamedSchema, table=True):
         if include_metadata:
             metadata = ArtifactResponseMetadata(
                 has_custom_name=self.has_custom_name,
+                workspace=self.workspace.to_model(),
             )
 
         return ArtifactResponse(

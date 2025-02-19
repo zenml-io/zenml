@@ -16,7 +16,6 @@
 from typing import (
     TYPE_CHECKING,
     Any,
-    ClassVar,
     Dict,
     List,
     Optional,
@@ -28,14 +27,14 @@ from uuid import UUID
 from pydantic import BaseModel, Field
 
 from zenml.constants import SORT_BY_LATEST_VERSION_KEY, STR_FIELD_MAX_LENGTH
-from zenml.models.v2.base.base import (
-    BaseDatedResponseBody,
-    BaseIdentifiedResponse,
-    BaseRequest,
-    BaseResponseMetadata,
-    BaseResponseResources,
+from zenml.models.v2.base.scoped import (
+    TaggableFilter,
+    WorkspaceScopedRequest,
+    WorkspaceScopedResponse,
+    WorkspaceScopedResponseBody,
+    WorkspaceScopedResponseMetadata,
+    WorkspaceScopedResponseResources,
 )
-from zenml.models.v2.base.scoped import TaggableFilter
 from zenml.models.v2.core.tag import TagResponse
 
 if TYPE_CHECKING:
@@ -49,7 +48,7 @@ AnyQuery = TypeVar("AnyQuery", bound=Any)
 # ------------------ Request Model ------------------
 
 
-class ArtifactRequest(BaseRequest):
+class ArtifactRequest(WorkspaceScopedRequest):
     """Artifact request model."""
 
     name: str = Field(
@@ -82,7 +81,7 @@ class ArtifactUpdate(BaseModel):
 # ------------------ Response Model ------------------
 
 
-class ArtifactResponseBody(BaseDatedResponseBody):
+class ArtifactResponseBody(WorkspaceScopedResponseBody):
     """Response body for artifacts."""
 
     tags: List[TagResponse] = Field(
@@ -92,7 +91,7 @@ class ArtifactResponseBody(BaseDatedResponseBody):
     latest_version_id: Optional[UUID] = None
 
 
-class ArtifactResponseMetadata(BaseResponseMetadata):
+class ArtifactResponseMetadata(WorkspaceScopedResponseMetadata):
     """Response metadata for artifacts."""
 
     has_custom_name: bool = Field(
@@ -101,12 +100,12 @@ class ArtifactResponseMetadata(BaseResponseMetadata):
     )
 
 
-class ArtifactResponseResources(BaseResponseResources):
+class ArtifactResponseResources(WorkspaceScopedResponseResources):
     """Class for all resource models associated with the Artifact Entity."""
 
 
 class ArtifactResponse(
-    BaseIdentifiedResponse[
+    WorkspaceScopedResponse[
         ArtifactResponseBody,
         ArtifactResponseMetadata,
         ArtifactResponseResources,
@@ -186,13 +185,13 @@ class ArtifactResponse(
 class ArtifactFilter(TaggableFilter):
     """Model to enable advanced filtering of artifacts."""
 
-    name: Optional[str] = None
-    has_custom_name: Optional[bool] = None
-
-    CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
+    CUSTOM_SORTING_OPTIONS = [
         *TaggableFilter.CUSTOM_SORTING_OPTIONS,
         SORT_BY_LATEST_VERSION_KEY,
     ]
+
+    name: Optional[str] = None
+    has_custom_name: Optional[bool] = None
 
     def apply_sorting(
         self,
