@@ -178,7 +178,7 @@ def _dehydrate_value(
         return value
 
 
-def has_permissions_for_model(model: AnyResponse, action: Action) -> bool:
+def has_permissions_for_model(model: AnyModel, action: Action) -> bool:
     """If the active user has permissions to perform the action on the model.
 
     Args:
@@ -342,7 +342,7 @@ def get_allowed_resource_ids(
     if not server_config().rbac_enabled:
         return None
 
-    if ResourceType(resource_type).is_workspace_scoped and not workspace_id:
+    if ResourceType(resource_type).is_workspace_scoped() and not workspace_id:
         raise ValueError(
             "Workspace ID is required to list workspace scoped resources."
         )

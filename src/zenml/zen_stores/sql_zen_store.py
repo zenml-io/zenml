@@ -11350,14 +11350,14 @@ class SqlZenStore(BaseZenStore):
             try:
                 tag = self.get_tag(tag_name)
                 self._verify_workspace(
-                    expected_workspace_id=resource.workspace_id,  # type: ignore[attr-defined]
+                    expected_workspace_id=resource.workspace_id,
                     obj=tag,
                 )
             except KeyError:
                 tag = self.create_tag(
                     TagRequest(
                         name=tag_name,
-                        workspace=resource.workspace_id,  # type: ignore[attr-defined]
+                        workspace=resource.workspace_id,
                     )
                 )
             try:
