@@ -9,7 +9,7 @@ PYDOCSTYLE_CMD = (
     "D103,D104,D105,D107,D202"
 )
 
-API_DOCS_TITLE = "# Welcome to the ZenML Api Docs\n"
+API_DOCS_TITLE = "# Welcome to the ZenML API Docs\n"
 INTEGRATION_DOCS_TITLE = "# Welcome to the ZenML Integration Docs\n"
 
 API_DOCS = "core_code_docs"
