@@ -16,13 +16,14 @@
 from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Type, TypeVar
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from zenml.constants import (
     SORT_BY_LATEST_VERSION_KEY,
     STR_FIELD_MAX_LENGTH,
     TEXT_FIELD_MAX_LENGTH,
 )
+from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
     TaggableFilter,
     WorkspaceScopedRequest,
@@ -100,7 +101,7 @@ class ModelRequest(WorkspaceScopedRequest):
 # ------------------ Update Model ------------------
 
 
-class ModelUpdate(BaseModel):
+class ModelUpdate(BaseUpdate):
     """Update model for models."""
 
     name: Optional[str] = None

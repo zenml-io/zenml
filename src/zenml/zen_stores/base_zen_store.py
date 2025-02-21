@@ -304,7 +304,7 @@ class BaseZenStore(
         This method is guaranteed to return valid workspace ID and stack ID
         values. If the supplied workspace and stack are not set or are not valid
         (e.g. they do not exist or are not accessible), the default workspace and
-        default workspace stack will be returned in their stead.
+        default stack will be returned in their stead.
 
         Args:
             active_workspace_name_or_id: The name or ID of the active workspace.
@@ -351,28 +351,14 @@ class BaseZenStore(
                     "Resetting the active stack to default.",
                     config_name,
                 )
-                active_stack = self._get_default_stack(
-                    workspace_id=active_workspace.id
-                )
-            else:
-                if active_stack.workspace.id != active_workspace.id:
-                    logger.warning(
-                        "The current %s active stack is not part of the active "
-                        "workspace. Resetting the active stack to default.",
-                        config_name,
-                    )
-                    active_stack = self._get_default_stack(
-                        workspace_id=active_workspace.id
-                    )
+                active_stack = self._get_default_stack()
 
         else:
             logger.warning(
                 "Setting the %s active stack to default.",
                 config_name,
             )
-            active_stack = self._get_default_stack(
-                workspace_id=active_workspace.id
-            )
+            active_stack = self._get_default_stack()
 
         return active_workspace, active_stack
 
@@ -462,29 +448,22 @@ class BaseZenStore(
 
     def _get_default_stack(
         self,
-        workspace_id: UUID,
     ) -> StackResponse:
-        """Get the default stack for a user in a workspace.
-
-        Args:
-            workspace_id: ID of the workspace.
+        """Get the default stack.
 
         Returns:
-            The default stack in the workspace.
+            The default stack.
 
         Raises:
-            KeyError: if the workspace or default stack doesn't exist.
+            KeyError: if the default stack doesn't exist.
         """
         default_stacks = self.list_stacks(
             StackFilter(
-                workspace_id=workspace_id,
                 name=DEFAULT_STACK_AND_COMPONENT_NAME,
             )
         )
         if default_stacks.total == 0:
-            raise KeyError(
-                f"No default stack found in workspace {workspace_id}."
-            )
+            raise KeyError("No default stack found.")
         return default_stacks.items[0]
 
     def get_external_user(self, user_id: UUID) -> UserResponse:

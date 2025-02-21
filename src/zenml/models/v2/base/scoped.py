@@ -35,7 +35,6 @@ from zenml.models.v2.base.base import (
     BaseRequest,
     BaseResponseMetadata,
     BaseResponseResources,
-    BaseUpdate,
 )
 from zenml.models.v2.base.filter import AnyQuery, BaseFilter
 
@@ -95,29 +94,6 @@ class WorkspaceScopedRequest(UserScopedRequest):
         """
         metadata = super().get_analytics_metadata()
         metadata["workspace_id"] = self.workspace
-        return metadata
-
-
-class FlexibleScopedRequest(UserScopedRequest):
-    """Base flexible-scoped request model.
-
-    Used as a base class for all domain models that can optionally belong to a workspace.
-    """
-
-    workspace: Optional[UUID] = Field(
-        default=None,
-        title="The workspace to which this resource belongs.",
-    )
-
-    def get_analytics_metadata(self) -> Dict[str, Any]:
-        """Fetches the analytics metadata for flexible scoped models.
-
-        Returns:
-            The analytics metadata.
-        """
-        metadata = super().get_analytics_metadata()
-        if self.workspace is not None:
-            metadata["workspace_id"] = self.workspace
         return metadata
 
 
@@ -354,75 +330,6 @@ class WorkspaceScopedResponse(
         return self.get_metadata().workspace
 
 
-# Flexible scoped models
-
-
-class FlexibleScopedResponseBody(UserScopedResponseBody):
-    """Base flexible-scoped body."""
-
-
-class FlexibleScopedResponseMetadata(UserScopedResponseMetadata):
-    """Base flexible-scoped metadata."""
-
-    workspace: Optional["WorkspaceResponse"] = Field(
-        title="The workspace of this resource.",
-        default=None,
-    )
-
-
-class FlexibleScopedResponseResources(UserScopedResponseResources):
-    """Base flexible-scoped resources."""
-
-
-FlexibleScopedBody = TypeVar(
-    "FlexibleScopedBody", bound=FlexibleScopedResponseBody
-)
-FlexibleScopedMetadata = TypeVar(
-    "FlexibleScopedMetadata", bound=FlexibleScopedResponseMetadata
-)
-FlexibleScopedResources = TypeVar(
-    "FlexibleScopedResources", bound=FlexibleScopedResponseResources
-)
-
-
-class FlexibleScopedResponse(
-    UserScopedResponse[
-        FlexibleScopedBody, FlexibleScopedMetadata, FlexibleScopedResources
-    ],
-    Generic[
-        FlexibleScopedBody, FlexibleScopedMetadata, FlexibleScopedResources
-    ],
-):
-    """Base flexible-scoped domain model.
-
-    Used as a base class for all domain models that can optionally belong to a workspace.
-    """
-
-    # Body and metadata properties
-    @property
-    def workspace(self) -> Optional["WorkspaceResponse"]:
-        """The workspace property.
-
-        Returns:
-            the value of the property or None if this is a global resource.
-        """
-        return self.get_metadata().workspace
-
-
-# ---------------------- Update Models ----------------------
-class FlexibleScopedUpdate(BaseUpdate):
-    """Base flexible-scoped update model.
-
-    Used as a base class for all update models that can optionally belong to a workspace.
-    """
-
-    workspace: Optional[UUID] = Field(
-        default=None,
-        title="The workspace to which this resource belongs. If set to None, "
-        "the resource will be moved to the global scope.",
-    )
-
-
 # ---------------------- Filter Models ----------------------
 
 
@@ -436,8 +343,6 @@ class WorkspaceScopedFilter(UserScopedFilter):
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *UserScopedFilter.CLI_EXCLUDE_FIELDS,
-        "workspace_id",
-        "workspace",
         "scope_workspace",
     ]
     CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
@@ -543,143 +448,6 @@ class WorkspaceScopedFilter(UserScopedFilter):
             column = WorkspaceSchema.name
 
             query = query.join(
-                WorkspaceSchema,
-                getattr(table, "workspace_id") == WorkspaceSchema.id,
-            )
-
-            query = query.add_columns(WorkspaceSchema.name)
-
-            if operand == SorterOps.ASCENDING:
-                query = query.order_by(asc(column))
-            else:
-                query = query.order_by(desc(column))
-
-            return query
-
-        return super().apply_sorting(query=query, table=table)
-
-
-class FlexibleScopedFilter(UserScopedFilter):
-    """Model to enable advanced scoping with optional workspace."""
-
-    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *UserScopedFilter.FILTER_EXCLUDE_FIELDS,
-        "workspace",
-        "scope_workspace",
-    ]
-    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *UserScopedFilter.CLI_EXCLUDE_FIELDS,
-        "workspace_id",
-        "workspace",
-        "scope_workspace",
-    ]
-    CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
-        *UserScopedFilter.CUSTOM_SORTING_OPTIONS,
-        "workspace",
-    ]
-    scope_workspace: Optional[UUID] = Field(
-        default=None,
-        description="The workspace to scope this query to.",
-    )
-    workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="UUID of the workspace that this entity belongs to.",
-        union_mode="left_to_right",
-    )
-    workspace: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="Name/ID of the workspace that this entity belongs to.",
-    )
-
-    def set_scope_workspace(self, workspace_id: UUID) -> None:
-        """Set the workspace to scope this response.
-
-        Args:
-            workspace_id: The workspace to scope this response to.
-        """
-        self.scope_workspace = workspace_id
-
-    def get_custom_filters(
-        self, table: Type["AnySchema"]
-    ) -> List["ColumnElement[bool]"]:
-        """Get custom filters.
-
-        Args:
-            table: The query table.
-
-        Returns:
-            A list of custom filters.
-        """
-        custom_filters = super().get_custom_filters(table)
-
-        from sqlmodel import and_
-
-        from zenml.zen_stores.schemas import WorkspaceSchema
-
-        if self.workspace:
-            workspace_filter = and_(
-                getattr(table, "workspace_id") == WorkspaceSchema.id,
-                self.generate_name_or_id_query_conditions(
-                    value=self.workspace,
-                    table=WorkspaceSchema,
-                ),
-            )
-            custom_filters.append(workspace_filter)
-
-        return custom_filters
-
-    def apply_filter(
-        self,
-        query: AnyQuery,
-        table: Type["AnySchema"],
-    ) -> AnyQuery:
-        """Applies the filter to a query.
-
-        Args:
-            query: The query to which to apply the filter.
-            table: The query table.
-
-        Returns:
-            The query with filter applied.
-        """
-        from sqlmodel import or_
-
-        query = super().apply_filter(query=query, table=table)
-
-        if self.scope_workspace:
-            scope_filter = or_(
-                getattr(table, "workspace_id") == self.scope_workspace,
-                getattr(table, "workspace_id").is_(None),
-            )
-            query = query.where(scope_filter)
-
-        return query
-
-    def apply_sorting(
-        self,
-        query: AnyQuery,
-        table: Type["AnySchema"],
-    ) -> AnyQuery:
-        """Apply sorting to the query.
-
-        Args:
-            query: The query to which to apply the sorting.
-            table: The query table.
-
-        Returns:
-            The query with sorting applied.
-        """
-        from sqlmodel import asc, desc
-
-        from zenml.enums import SorterOps
-        from zenml.zen_stores.schemas import WorkspaceSchema
-
-        sort_by, operand = self.sorting_params
-
-        if sort_by == "workspace":
-            column = WorkspaceSchema.name
-
-            query = query.outerjoin(  # Note: Changed join to outerjoin for optional workspace
                 WorkspaceSchema,
                 getattr(table, "workspace_id") == WorkspaceSchema.id,
             )

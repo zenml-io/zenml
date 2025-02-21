@@ -36,7 +36,7 @@ from zenml.models.v2.base.base import (
     BaseRequest,
     BaseResponseMetadata,
     BaseResponseResources,
-    BaseZenModel,
+    BaseUpdate,
 )
 from zenml.models.v2.base.filter import AnyQuery, BaseFilter
 
@@ -176,7 +176,7 @@ class UserRequest(UserBase, BaseRequest):
 # ------------------ Update Model ------------------
 
 
-class UserUpdate(UserBase, BaseZenModel):
+class UserUpdate(UserBase, BaseUpdate):
     """Update model for users."""
 
     name: Optional[str] = Field(

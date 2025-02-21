@@ -89,10 +89,6 @@ def create_stack_component(
     Returns:
         The created stack component.
     """
-    if workspace_name_or_id:
-        workspace = zen_store().get_workspace(workspace_name_or_id)
-        component.workspace = workspace.id
-
     if component.connector:
         service_connector = zen_store().get_service_connector(
             component.connector
@@ -151,10 +147,6 @@ def list_stack_components(
     Returns:
         List of stack components matching the filter criteria.
     """
-    if workspace_name_or_id:
-        workspace = zen_store().get_workspace(workspace_name_or_id)
-        component_filter_model.set_scope_workspace(workspace.id)
-
     return verify_permissions_and_list_entities(
         filter_model=component_filter_model,
         resource_type=ResourceType.STACK_COMPONENT,

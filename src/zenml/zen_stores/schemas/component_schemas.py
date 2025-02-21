@@ -37,7 +37,6 @@ from zenml.zen_stores.schemas.service_connector_schemas import (
 )
 from zenml.zen_stores.schemas.stack_schemas import StackCompositionSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
-from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.flavor_schemas import FlavorSchema
@@ -56,18 +55,6 @@ class StackComponentSchema(NamedSchema, table=True):
     flavor: str
     configuration: bytes
     labels: Optional[bytes]
-
-    workspace_id: Optional[UUID] = build_foreign_key_field(
-        source=__tablename__,
-        target=WorkspaceSchema.__tablename__,
-        source_column="workspace_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=True,
-    )
-    workspace: Optional["WorkspaceSchema"] = Relationship(
-        back_populates="components"
-    )
 
     user_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -134,7 +121,6 @@ class StackComponentSchema(NamedSchema, table=True):
         """
         return cls(
             name=request.name,
-            workspace_id=request.workspace,
             user_id=request.user,
             type=request.type,
             flavor=request.flavor,
@@ -211,9 +197,6 @@ class StackComponentSchema(NamedSchema, table=True):
         metadata = None
         if include_metadata:
             metadata = ComponentResponseMetadata(
-                workspace=self.workspace.to_model()
-                if self.workspace
-                else None,
                 configuration=json.loads(
                     base64.b64decode(self.configuration).decode()
                 ),

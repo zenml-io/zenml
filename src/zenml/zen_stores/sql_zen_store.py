@@ -49,7 +49,6 @@ from uuid import UUID
 
 from packaging import version
 from pydantic import (
-    BaseModel,
     ConfigDict,
     Field,
     SecretStr,
@@ -168,6 +167,7 @@ from zenml.models import (
     BaseIdentifiedResponse,
     BaseRequest,
     BaseResponse,
+    BaseUpdate,
     BuiltinFlavorRequest,
     CodeReferenceRequest,
     CodeReferenceResponse,
@@ -292,6 +292,7 @@ from zenml.models import (
     WorkspaceFilter,
     WorkspaceRequest,
     WorkspaceResponse,
+    WorkspaceScopedRequest,
     WorkspaceScopedResponse,
     WorkspaceUpdate,
 )
@@ -1158,6 +1159,8 @@ class SqlZenStore(BaseZenStore):
         """Initialize the database if not already initialized."""
         # Make sure the default workspace exists
         self._get_or_create_default_workspace()
+        # Make sure the default stack exists
+        self._get_or_create_default_stack()
         # Make sure the server is activated and the default user exists, if
         # applicable
         self._auto_activate_server()
@@ -1866,8 +1869,8 @@ class SqlZenStore(BaseZenStore):
             self._set_request_user_id(request_model=action, session=session)
 
             self._verify_name_uniqueness(
-                request=action,
-                schema_class=ActionSchema,
+                resource=action,
+                schema=ActionSchema,
                 session=session,
             )
 
@@ -1971,8 +1974,8 @@ class SqlZenStore(BaseZenStore):
             # In case of a renaming update, make sure no action already exists
             # with that name
             self._verify_name_uniqueness(
-                update=action_update,
-                existing_schema=action,
+                resource=action_update,
+                schema=action,
                 session=session,
             )
 
@@ -2560,8 +2563,8 @@ class SqlZenStore(BaseZenStore):
 
             # Check if an artifact with the given name already exists
             self._verify_name_uniqueness(
-                request=artifact,
-                schema_class=ArtifactSchema,
+                resource=artifact,
+                schema=ArtifactSchema,
                 session=session,
             )
 
@@ -2657,8 +2660,8 @@ class SqlZenStore(BaseZenStore):
                 raise KeyError(f"Artifact with ID {artifact_id} not found.")
 
             self._verify_name_uniqueness(
-                update=artifact_update,
-                existing_schema=existing_artifact,
+                resource=artifact_update,
+                schema=existing_artifact,
                 session=session,
             )
 
@@ -3245,8 +3248,8 @@ class SqlZenStore(BaseZenStore):
             )
 
             self._verify_name_uniqueness(
-                request=code_repository,
-                schema_class=CodeRepositorySchema,
+                resource=code_repository,
+                schema=CodeRepositorySchema,
                 session=session,
             )
 
@@ -3347,8 +3350,8 @@ class SqlZenStore(BaseZenStore):
                 )
 
             self._verify_name_uniqueness(
-                update=update,
-                existing_schema=existing_repo,
+                resource=update,
+                schema=existing_repo,
                 session=session,
             )
 
@@ -4087,7 +4090,6 @@ class SqlZenStore(BaseZenStore):
                     connector_type=flavor.connector_type,
                     connector_resource_type=flavor.connector_resource_type,
                     connector_resource_id_attr=flavor.connector_resource_id_attr,
-                    workspace_id=flavor.workspace,
                     user_id=flavor.user,
                     logo_url=flavor.logo_url,
                     docs_url=flavor.docs_url,
@@ -4825,8 +4827,8 @@ class SqlZenStore(BaseZenStore):
             self._set_request_user_id(request_model=template, session=session)
 
             self._verify_name_uniqueness(
-                request=template,
-                schema_class=RunTemplateSchema,
+                resource=template,
+                schema=RunTemplateSchema,
                 session=session,
             )
 
@@ -5038,8 +5040,8 @@ class SqlZenStore(BaseZenStore):
             )
 
             self._verify_name_uniqueness(
-                request=event_source,
-                schema_class=EventSourceSchema,
+                resource=event_source,
+                schema=EventSourceSchema,
                 session=session,
             )
 
@@ -5125,8 +5127,8 @@ class SqlZenStore(BaseZenStore):
             )
 
             self._verify_name_uniqueness(
-                update=event_source_update,
-                existing_schema=event_source,
+                resource=event_source_update,
+                schema=event_source,
                 session=session,
             )
 
@@ -5212,8 +5214,8 @@ class SqlZenStore(BaseZenStore):
             except IntegrityError:
                 # This can fail if the name is taken by a different run
                 self._verify_name_uniqueness(
-                    request=pipeline_run,
-                    schema_class=PipelineRunSchema,
+                    resource=pipeline_run,
+                    schema=PipelineRunSchema,
                     session=session,
                 )
 
@@ -5633,8 +5635,8 @@ class SqlZenStore(BaseZenStore):
             self._set_request_user_id(request_model=schedule, session=session)
 
             self._verify_name_uniqueness(
-                request=schedule,
-                schema_class=ScheduleSchema,
+                resource=schedule,
+                schema=ScheduleSchema,
                 session=session,
             )
 
@@ -5745,8 +5747,8 @@ class SqlZenStore(BaseZenStore):
                 )
 
             self._verify_name_uniqueness(
-                update=schedule_update,
-                existing_schema=existing_schedule,
+                resource=schedule_update,
+                schema=existing_schedule,
                 session=session,
             )
 
@@ -6782,8 +6784,8 @@ class SqlZenStore(BaseZenStore):
             self._set_request_user_id(request_model=service_connector)
 
             self._verify_name_uniqueness(
-                request=service_connector,
-                schema_class=ServiceConnectorSchema,
+                resource=service_connector,
+                schema=ServiceConnectorSchema,
                 session=session,
             )
 
@@ -6972,8 +6974,8 @@ class SqlZenStore(BaseZenStore):
             # In case of a renaming update, make sure no service connector uses
             # that name already
             self._verify_name_uniqueness(
-                update=update,
-                existing_schema=existing_connector,
+                resource=update,
+                schema=existing_connector,
                 session=session,
             )
 
@@ -7372,7 +7374,6 @@ class SqlZenStore(BaseZenStore):
         # Return the model for the connector client
         connector = connector_client.to_response_model(
             user=connector.user,
-            workspace=connector.workspace,
             description=connector.description,
             labels=connector.labels,
         )
@@ -7603,7 +7604,6 @@ class SqlZenStore(BaseZenStore):
                                     connector_type=connector_id_or_info.type,
                                     auth_method=connector_id_or_info.auth_method,
                                     configuration=connector_config,
-                                    workspace=stack.workspace,
                                     labels={
                                         k: str(v)
                                         for k, v in stack.labels.items()
@@ -7661,7 +7661,6 @@ class SqlZenStore(BaseZenStore):
                                         type=component_type,
                                         flavor=component_info.flavor,
                                         configuration=component_info.configuration,
-                                        workspace=stack.workspace,
                                         labels=stack.labels,
                                     )
                                     component = self.create_stack_component(
@@ -7750,8 +7749,8 @@ class SqlZenStore(BaseZenStore):
 
                 # Stack
                 self._verify_name_uniqueness(
-                    request=stack,
-                    schema_class=StackSchema,
+                    resource=stack,
+                    schema=StackSchema,
                     session=session,
                 )
 
@@ -7774,7 +7773,6 @@ class SqlZenStore(BaseZenStore):
                 ).all()
 
                 new_stack_schema = StackSchema(
-                    workspace_id=stack.workspace,
                     user_id=stack.user,
                     stack_spec_path=stack.stack_spec_path,
                     name=stack.name,
@@ -7908,8 +7906,8 @@ class SqlZenStore(BaseZenStore):
             # In case of a renaming update, make sure no stack already exists
             # with that name
             self._verify_name_uniqueness(
-                update=stack_update,
-                existing_schema=existing_stack,
+                resource=stack_update,
+                schema=existing_stack,
                 session=session,
             )
 
@@ -7986,26 +7984,17 @@ class SqlZenStore(BaseZenStore):
 
     def _create_default_stack(
         self,
-        workspace_id: UUID,
     ) -> StackResponse:
         """Create the default stack components and stack.
 
         The default stack contains a local orchestrator and a local artifact
         store.
 
-        Args:
-            workspace_id: ID of the workspace to which the stack
-                belongs.
-
         Returns:
             The model of the created default stack.
         """
         with analytics_disabler():
-            workspace = self.get_workspace(workspace_name_or_id=workspace_id)
-
-            logger.info(
-                f"Creating default stack in workspace {workspace.name}..."
-            )
+            logger.info("Creating default stack...")
             orchestrator = self.create_stack_component(
                 # Use `DefaultComponentRequest` instead of
                 # `ComponentRequest` here to force the `create_stack_component`
@@ -8013,7 +8002,6 @@ class SqlZenStore(BaseZenStore):
                 # is owned by the server, which for RBAC indicates that
                 # everyone can read it
                 component=DefaultComponentRequest(
-                    workspace=workspace.id,
                     name=DEFAULT_STACK_AND_COMPONENT_NAME,
                     type=StackComponentType.ORCHESTRATOR,
                     flavor="local",
@@ -8028,7 +8016,6 @@ class SqlZenStore(BaseZenStore):
                 # is owned by the server, which for RBAC indicates that everyone
                 # can read it
                 component=DefaultComponentRequest(
-                    workspace=workspace.id,
                     name=DEFAULT_STACK_AND_COMPONENT_NAME,
                     type=StackComponentType.ARTIFACT_STORE,
                     flavor="local",
@@ -8047,29 +8034,21 @@ class SqlZenStore(BaseZenStore):
             stack = DefaultStackRequest(
                 name=DEFAULT_STACK_AND_COMPONENT_NAME,
                 components=components,
-                workspace=workspace.id,
             )
             return self.create_stack(stack=stack)
 
     def _get_or_create_default_stack(
-        self, workspace: WorkspaceResponse
+        self,
     ) -> StackResponse:
         """Get or create the default stack if it doesn't exist.
-
-        Args:
-            workspace: The workspace for which to create the default stack.
 
         Returns:
             The default stack.
         """
         try:
-            return self._get_default_stack(
-                workspace_id=workspace.id,
-            )
+            return self._get_default_stack()
         except KeyError:
-            return self._create_default_stack(
-                workspace_id=workspace.id,
-            )
+            return self._create_default_stack()
 
     # ---------------- Stack deployments-----------------
 
@@ -8716,8 +8695,8 @@ class SqlZenStore(BaseZenStore):
 
             # Verify that the trigger name is unique
             self._verify_name_uniqueness(
-                request=trigger,
-                schema_class=TriggerSchema,
+                resource=trigger,
+                schema=TriggerSchema,
                 session=session,
             )
 
@@ -8838,8 +8817,8 @@ class SqlZenStore(BaseZenStore):
             # In case of a renaming update, make sure no trigger already exists
             # with that name
             self._verify_name_uniqueness(
-                update=trigger_update,
-                existing_schema=existing_trigger,
+                resource=trigger_update,
+                schema=existing_trigger,
                 session=session,
             )
 
@@ -9570,8 +9549,8 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             # Check if workspace with the given name already exists
             self._verify_name_uniqueness(
-                request=workspace,
-                schema_class=WorkspaceSchema,
+                resource=workspace,
+                schema=WorkspaceSchema,
                 session=session,
             )
 
@@ -9587,7 +9566,6 @@ class SqlZenStore(BaseZenStore):
                 include_metadata=True, include_resources=True
             )
 
-        self._get_or_create_default_stack(workspace=workspace_model)
         return workspace_model
 
     def get_workspace(
@@ -9671,8 +9649,8 @@ class SqlZenStore(BaseZenStore):
                 )
 
             self._verify_name_uniqueness(
-                update=workspace_update,
-                existing_schema=existing_workspace,
+                resource=workspace_update,
+                schema=existing_workspace,
                 session=session,
             )
 
@@ -10022,11 +10000,9 @@ class SqlZenStore(BaseZenStore):
 
     def _verify_name_uniqueness(
         self,
+        resource: Union[BaseRequest, BaseUpdate],
+        schema: Union[Type[AnyNamedSchema], AnyNamedSchema],
         session: Session,
-        request: Optional[BaseRequest] = None,
-        schema_class: Optional[Type[AnyNamedSchema]] = None,
-        update: Optional[BaseModel] = None,
-        existing_schema: Optional[AnyNamedSchema] = None,
     ) -> None:
         """Check the name uniqueness constraint for a given entity.
 
@@ -10037,91 +10013,91 @@ class SqlZenStore(BaseZenStore):
         * during updates, by providing an update and the schema object
         of the existing entity being updated
 
+        The scope in which the name uniqueness is verified depends on the
+        entity type: for global resources (e.g. stack, service-connector), the
+        name must be globally unique, while for workspace-scoped resources (e.g.
+        pipeline, artifact, etc.), the name must be unique within the
+        workspace.
+
         Args:
+            resource: The resource to verify the name uniqueness for. This can
+                be a request model used during a resource creation or an update
+                model used during a resource update.
+            schema: The schema for the resource. For a created resource, this
+                will be the schema class, while for an updated resource, this
+                will be the existing schema object being updated.
             session: The session to use to verify the name of.
-            request: The create model for which to verify the name
-                uniqueness during creation.
-            schema_class: The schema class for which to verify the name
-                uniqueness during creation.
-            update: The update model for which to verify the name
-                uniqueness during an update.
-            existing_schema: The existing schema for which to verify the name
-                uniqueness during an update.
 
         Raises:
             RuntimeError: If the arguments are invalid.
             EntityExistsError: If the name is not unique.
         """
-        model: Optional[BaseModel] = None
-        name: Optional[str] = None
-        operation: Literal["create", "update"] = "create"
-        workspace_id: Optional[UUID] = None
-        if request is not None:
-            model = request
-            workspace_id = getattr(existing_schema, "workspace", None)
-        elif update is not None:
-            model = update
-            operation = "update"
-        else:
-            raise RuntimeError("Either request or update must be provided.")
-
         # If the model type doesn't have a `name` attribute, we can't verify
         # the name uniqueness.
-        if not hasattr(model, "name"):
+        if not hasattr(resource, "name"):
             raise RuntimeError(
-                f"Model {type(model)} does not represent a named entity."
+                f"Model {type(resource)} does not represent a named entity."
             )
+        name = getattr(resource, "name")
 
-        name = getattr(model, "name", None)
-        if name is None:
-            # If the name is not set, we don't need to verify the name
-            # uniqueness. This can only happen with update models if
-            # the name is not actually updated.
-            return
-
-        if existing_schema is not None:
-            schema_class = type(existing_schema)
-            workspace_id = getattr(existing_schema, "workspace_id", None)
-        elif schema_class is None:
-            raise RuntimeError(
-                "Either schema or schema_class must be provided."
-            )
+        if isinstance(schema, BaseSchema):
+            schema_class = type(schema)
+        else:
+            schema_class = schema
 
         if not hasattr(schema_class, "name"):
             raise RuntimeError(f"Schema {schema_class.__name__} has no name.")
 
-        if update and existing_schema and existing_schema.name == name:
-            # If the name is not being updated during an update, we don't need
-            # to verify the name uniqueness.
-            return
-
-        # We "detect" if the entity is workspace-scoped by looking at the
-        # schema.
-        workspace_scoped = False
-        if workspace_id and hasattr(schema_class, "workspace_id"):
-            # If the workspace_id attribute is present, the entity is workspace
-            # scoped only if the attribute type is not Optional.
-            workspace_scoped = not schema_class.workspace_id.nullable  # type: ignore[attr-defined]
+        operation: Literal["create", "update"] = "create"
+        workspace_id: Optional[UUID] = None
+        if isinstance(resource, BaseRequest):
+            # Create operation
+            if isinstance(resource, WorkspaceScopedRequest):
+                workspace_id = resource.workspace
+            else:
+                workspace_id = None
+        else:
+            # Update operation
+            if name is None:
+                # If the name is not set - i.e. the name is not actually updated
+                # during an update - we don't need to verify the name
+                # uniqueness.
+                return
+            if not isinstance(schema, BaseSchema):
+                raise RuntimeError(
+                    "An existing schema instance must be provided for update "
+                    "operations."
+                )
+            existing_name = getattr(schema, "name", None)
+            if existing_name == name:
+                # If the name is not being changed during an update, we don't
+                # need to verify the name uniqueness.
+                return
+            workspace_id = getattr(schema, "workspace_id", None)
+            operation = "update"
 
         query = select(schema_class).where(schema_class.name == name)
-        if workspace_scoped:
-            if not hasattr(schema_class, "workspace_id"):
+
+        # We "detect" if the entity is workspace-scoped by looking at the
+        # workspace_id attribute.
+        if workspace_id:
+            if not hasattr(schema_class, "workspace_id") or not hasattr(
+                schema_class, "workspace"
+            ):
                 raise RuntimeError(
-                    f"Schema {schema_class.__name__} has no workspace."
+                    f"Model {type(resource)} is workspace-scoped, but "
+                    f"schema {schema_class.__name__} has no "
+                    "workspace_id and workspace attributes."
                 )
             query = query.where(schema_class.workspace_id == workspace_id)  # type: ignore[attr-defined]
 
         existing_entry = session.exec(query).first()
         if existing_entry is not None:
-            if workspace_scoped:
-                if not hasattr(existing_entry, "workspace"):
-                    raise RuntimeError(
-                        f"Schema {schema_class.__name__} has no workspace."
-                    )
+            resource_name = get_resource_name(schema_class)
+            if workspace_id:
                 scope = f" in the '{existing_entry.workspace.name}' workspace"  # type: ignore[attr-defined]
             else:
                 scope = ""
-            resource_name = get_resource_name(schema_class)
             raise EntityExistsError(
                 f"Unable to {operation} the requested {resource_name} with name "
                 f"'{name}': Found another existing {resource_name} with the same "
@@ -10284,8 +10260,8 @@ class SqlZenStore(BaseZenStore):
             self._set_request_user_id(request_model=model, session=session)
 
             self._verify_name_uniqueness(
-                request=model,
-                schema_class=ModelSchema,
+                resource=model,
+                schema=ModelSchema,
                 session=session,
             )
 
@@ -10414,8 +10390,8 @@ class SqlZenStore(BaseZenStore):
                 raise KeyError(f"Model with ID {model_id} not found.")
 
             self._verify_name_uniqueness(
-                update=model_update,
-                existing_schema=existing_model,
+                resource=model_update,
+                schema=existing_model,
                 session=session,
             )
 
@@ -11463,8 +11439,8 @@ class SqlZenStore(BaseZenStore):
         validate_name(tag)
         self._set_request_user_id(request_model=tag, session=session)
         self._verify_name_uniqueness(
-            request=tag,
-            schema_class=TagSchema,
+            resource=tag,
+            schema=TagSchema,
             session=session,
         )
 
@@ -11590,8 +11566,8 @@ class SqlZenStore(BaseZenStore):
             )
 
             self._verify_name_uniqueness(
-                update=tag_update_model,
-                existing_schema=tag,
+                resource=tag_update_model,
+                schema=tag,
                 session=session,
             )
 

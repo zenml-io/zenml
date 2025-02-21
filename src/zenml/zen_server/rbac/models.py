@@ -77,23 +77,6 @@ class ResourceType(StrEnum):
     # USER = "user"
     # WORKSPACE = "workspace"
 
-    def is_flexible_scoped(self) -> bool:
-        """Check if a resource type may flexibly be scoped to a workspace.
-
-        Args:
-            resource_type: The resource type to check.
-
-        Returns:
-            Whether the resource type may flexibly be scoped to a workspace.
-        """
-        return self in [
-            self.FLAVOR,
-            self.SECRET,
-            self.SERVICE_CONNECTOR,
-            self.STACK,
-            self.STACK_COMPONENT,
-        ]
-
     def is_workspace_scoped(self) -> bool:
         """Check if a resource type is workspace scoped.
 
@@ -103,18 +86,12 @@ class ResourceType(StrEnum):
         Returns:
             Whether the resource type is workspace scoped.
         """
-        return not self.is_flexible_scoped() and not self.is_unscoped()
-
-    def is_unscoped(self) -> bool:
-        """Check if a resource type is unscoped.
-
-        Args:
-            resource_type: The resource type to check.
-
-        Returns:
-            Whether the resource type is unscoped.
-        """
-        return self in [
+        return self not in [
+            self.FLAVOR,
+            self.SECRET,
+            self.SERVICE_CONNECTOR,
+            self.STACK,
+            self.STACK_COMPONENT,
             self.SERVICE_ACCOUNT,
             # Deactivated for now
             # cls.USER,
@@ -147,7 +124,7 @@ class Resource(BaseModel):
 
     @model_validator(mode="after")
     def validate_workspace_id(self) -> "Resource":
-        """Validate that workspace_id is set in combination with the correct resource types.
+        """Validate that workspace_id is set in combination with workspace-scoped resource types.
 
         Raises:
             ValueError: If workspace_id is not set for a workspace-scoped
@@ -163,9 +140,9 @@ class Resource(BaseModel):
                 f"'{self.type}'"
             )
 
-        if resource_type.is_unscoped() and self.workspace_id:
+        if not resource_type.is_workspace_scoped() and self.workspace_id:
             raise ValueError(
-                "workspace_id must not be set for unscoped resource type "
+                "workspace_id must not be set for global resource type "
                 f"'{self.type}'"
             )
 

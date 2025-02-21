@@ -16,13 +16,11 @@
 from typing import Any, Callable, List, Optional, Tuple, TypeVar, Union
 from uuid import UUID
 
-from pydantic import BaseModel
-
 from zenml.models import (
     BaseFilter,
     BaseIdentifiedResponse,
     BaseRequest,
-    FlexibleScopedFilter,
+    BaseUpdate,
     Page,
     UserScopedRequest,
     WorkspaceScopedFilter,
@@ -49,7 +47,7 @@ AnyRequest = TypeVar("AnyRequest", bound=BaseRequest)
 AnyResponse = TypeVar("AnyResponse", bound=BaseIdentifiedResponse)  # type: ignore[type-arg]
 AnyOtherResponse = TypeVar("AnyOtherResponse", bound=BaseIdentifiedResponse)  # type: ignore[type-arg]
 AnyFilter = TypeVar("AnyFilter", bound=BaseFilter)
-AnyUpdate = TypeVar("AnyUpdate", bound=BaseModel)
+AnyUpdate = TypeVar("AnyUpdate", bound=BaseUpdate)
 UUIDOrStr = TypeVar("UUIDOrStr", UUID, Union[UUID, str])
 
 
@@ -246,10 +244,6 @@ def verify_permissions_and_list_entities(
             raise ValueError(
                 "Workspace ID is required for workspace-scoped resources."
             )
-
-    elif isinstance(filter_model, FlexibleScopedFilter):
-        # A flexible scoped request may be scoped to a specific workspace
-        workspace_id = filter_model.scope_workspace
 
     allowed_ids = get_allowed_resource_ids(
         resource_type=resource_type, workspace_id=workspace_id

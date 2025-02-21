@@ -21,21 +21,21 @@ from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import (
     SecretScope,
 )
+from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
-    FlexibleScopedFilter,
-    FlexibleScopedRequest,
-    FlexibleScopedResponse,
-    FlexibleScopedResponseBody,
-    FlexibleScopedResponseMetadata,
-    FlexibleScopedResponseResources,
-    FlexibleScopedUpdate,
+    UserScopedFilter,
+    UserScopedRequest,
+    UserScopedResponse,
+    UserScopedResponseBody,
+    UserScopedResponseMetadata,
+    UserScopedResponseResources,
 )
 from zenml.utils.secret_utils import PlainSerializedSecretStr
 
 # ------------------ Request Model ------------------
 
 
-class SecretRequest(FlexibleScopedRequest):
+class SecretRequest(UserScopedRequest):
     """Request model for secrets."""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = ["scope"]
@@ -73,7 +73,7 @@ class SecretRequest(FlexibleScopedRequest):
 # ------------------ Update Model ------------------
 
 
-class SecretUpdate(FlexibleScopedUpdate):
+class SecretUpdate(BaseUpdate):
     """Update model for secrets."""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = ["scope"]
@@ -109,7 +109,7 @@ class SecretUpdate(FlexibleScopedUpdate):
 # ------------------ Response Model ------------------
 
 
-class SecretResponseBody(FlexibleScopedResponseBody):
+class SecretResponseBody(UserScopedResponseBody):
     """Response body for secrets."""
 
     scope: SecretScope = Field(
@@ -120,16 +120,16 @@ class SecretResponseBody(FlexibleScopedResponseBody):
     )
 
 
-class SecretResponseMetadata(FlexibleScopedResponseMetadata):
+class SecretResponseMetadata(UserScopedResponseMetadata):
     """Response metadata for secrets."""
 
 
-class SecretResponseResources(FlexibleScopedResponseResources):
+class SecretResponseResources(UserScopedResponseResources):
     """Response resources for secrets."""
 
 
 class SecretResponse(
-    FlexibleScopedResponse[
+    UserScopedResponse[
         SecretResponseBody,
         SecretResponseMetadata,
         SecretResponseResources,
@@ -238,11 +238,11 @@ class SecretResponse(
 # ------------------ Filter Model ------------------
 
 
-class SecretFilter(FlexibleScopedFilter):
+class SecretFilter(UserScopedFilter):
     """Model to enable advanced secret filtering."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *FlexibleScopedFilter.FILTER_EXCLUDE_FIELDS,
+        *UserScopedFilter.FILTER_EXCLUDE_FIELDS,
         "values",
     ]
 

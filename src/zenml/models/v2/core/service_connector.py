@@ -22,14 +22,14 @@ from pydantic import Field, SecretStr, ValidationError, model_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.logger import get_logger
+from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
-    FlexibleScopedFilter,
-    FlexibleScopedRequest,
-    FlexibleScopedResponse,
-    FlexibleScopedResponseBody,
-    FlexibleScopedResponseMetadata,
-    FlexibleScopedResponseResources,
-    FlexibleScopedUpdate,
+    UserScopedFilter,
+    UserScopedRequest,
+    UserScopedResponse,
+    UserScopedResponseBody,
+    UserScopedResponseMetadata,
+    UserScopedResponseResources,
 )
 from zenml.models.v2.misc.service_connector_type import (
     ServiceConnectorTypeModel,
@@ -41,7 +41,7 @@ logger = get_logger(__name__)
 # ------------------ Request Model ------------------
 
 
-class ServiceConnectorRequest(FlexibleScopedRequest):
+class ServiceConnectorRequest(UserScopedRequest):
     """Request model for service connectors."""
 
     name: str = Field(
@@ -206,7 +206,7 @@ class ServiceConnectorRequest(FlexibleScopedRequest):
 # ------------------ Update Model ------------------
 
 
-class ServiceConnectorUpdate(FlexibleScopedUpdate):
+class ServiceConnectorUpdate(BaseUpdate):
     """Model used for service connector updates.
 
     Most fields in the update model are optional and will not be updated if
@@ -400,7 +400,7 @@ class ServiceConnectorUpdate(FlexibleScopedUpdate):
 # ------------------ Response Model ------------------
 
 
-class ServiceConnectorResponseBody(FlexibleScopedResponseBody):
+class ServiceConnectorResponseBody(UserScopedResponseBody):
     """Response body for service connectors."""
 
     description: str = Field(
@@ -446,7 +446,7 @@ class ServiceConnectorResponseBody(FlexibleScopedResponseBody):
     )
 
 
-class ServiceConnectorResponseMetadata(FlexibleScopedResponseMetadata):
+class ServiceConnectorResponseMetadata(UserScopedResponseMetadata):
     """Response metadata for service connectors."""
 
     configuration: Dict[str, Any] = Field(
@@ -475,12 +475,12 @@ class ServiceConnectorResponseMetadata(FlexibleScopedResponseMetadata):
     )
 
 
-class ServiceConnectorResponseResources(FlexibleScopedResponseResources):
+class ServiceConnectorResponseResources(UserScopedResponseResources):
     """Class for all resource models associated with the service connector entity."""
 
 
 class ServiceConnectorResponse(
-    FlexibleScopedResponse[
+    UserScopedResponse[
         ServiceConnectorResponseBody,
         ServiceConnectorResponseMetadata,
         ServiceConnectorResponseResources,
@@ -781,18 +781,18 @@ class ServiceConnectorResponse(
 # ------------------ Filter Model ------------------
 
 
-class ServiceConnectorFilter(FlexibleScopedFilter):
+class ServiceConnectorFilter(UserScopedFilter):
     """Model to enable advanced filtering of service connectors."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *FlexibleScopedFilter.FILTER_EXCLUDE_FIELDS,
+        *UserScopedFilter.FILTER_EXCLUDE_FIELDS,
         "scope_type",
         "resource_type",
         "labels_str",
         "labels",
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *FlexibleScopedFilter.CLI_EXCLUDE_FIELDS,
+        *UserScopedFilter.CLI_EXCLUDE_FIELDS,
         "scope_type",
         "labels_str",
         "labels",

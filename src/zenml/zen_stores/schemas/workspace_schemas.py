@@ -33,7 +33,6 @@ if TYPE_CHECKING:
         ArtifactVersionSchema,
         CodeRepositorySchema,
         EventSourceSchema,
-        FlavorSchema,
         ModelSchema,
         ModelVersionSchema,
         PipelineBuildSchema,
@@ -42,11 +41,7 @@ if TYPE_CHECKING:
         PipelineSchema,
         RunMetadataSchema,
         ScheduleSchema,
-        SecretSchema,
-        ServiceConnectorSchema,
         ServiceSchema,
-        StackComponentSchema,
-        StackSchema,
         StepRunSchema,
         TagSchema,
         TriggerSchema,
@@ -60,18 +55,6 @@ class WorkspaceSchema(NamedSchema, table=True):
 
     description: str
 
-    stacks: List["StackSchema"] = Relationship(
-        back_populates="workspace",
-        sa_relationship_kwargs={"cascade": "delete"},
-    )
-    components: List["StackComponentSchema"] = Relationship(
-        back_populates="workspace",
-        sa_relationship_kwargs={"cascade": "delete"},
-    )
-    flavors: List["FlavorSchema"] = Relationship(
-        back_populates="workspace",
-        sa_relationship_kwargs={"cascade": "delete"},
-    )
     pipelines: List["PipelineSchema"] = Relationship(
         back_populates="workspace",
         sa_relationship_kwargs={"cascade": "delete"},
@@ -100,10 +83,6 @@ class WorkspaceSchema(NamedSchema, table=True):
         back_populates="workspace",
         sa_relationship_kwargs={"cascade": "delete"},
     )
-    secrets: List["SecretSchema"] = Relationship(
-        back_populates="workspace",
-        sa_relationship_kwargs={"cascade": "delete"},
-    )
     actions: List["ActionSchema"] = Relationship(
         back_populates="workspace",
         sa_relationship_kwargs={"cascade": "delete"},
@@ -126,10 +105,6 @@ class WorkspaceSchema(NamedSchema, table=True):
         sa_relationship_kwargs={"cascade": "delete"},
     )
     services: List["ServiceSchema"] = Relationship(
-        back_populates="workspace",
-        sa_relationship_kwargs={"cascade": "delete"},
-    )
-    service_connectors: List["ServiceConnectorSchema"] = Relationship(
         back_populates="workspace",
         sa_relationship_kwargs={"cascade": "delete"},
     )

@@ -19,14 +19,14 @@ from pydantic import Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import StackComponentType
+from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
-    FlexibleScopedFilter,
-    FlexibleScopedRequest,
-    FlexibleScopedResponse,
-    FlexibleScopedResponseBody,
-    FlexibleScopedResponseMetadata,
-    FlexibleScopedResponseResources,
-    FlexibleScopedUpdate,
+    UserScopedFilter,
+    UserScopedRequest,
+    UserScopedResponse,
+    UserScopedResponseBody,
+    UserScopedResponseMetadata,
+    UserScopedResponseResources,
 )
 
 if TYPE_CHECKING:
@@ -37,7 +37,7 @@ if TYPE_CHECKING:
 # ------------------ Request Model ------------------
 
 
-class FlavorRequest(FlexibleScopedRequest):
+class FlavorRequest(UserScopedRequest):
     """Request model for stack component flavors."""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = [
@@ -105,7 +105,7 @@ class BuiltinFlavorRequest(FlavorRequest):
 # ------------------ Update Model ------------------
 
 
-class FlavorUpdate(FlexibleScopedUpdate):
+class FlavorUpdate(BaseUpdate):
     """Update model for stack component flavors."""
 
     name: Optional[str] = Field(
@@ -170,7 +170,7 @@ class FlavorUpdate(FlexibleScopedUpdate):
 # ------------------ Response Model ------------------
 
 
-class FlavorResponseBody(FlexibleScopedResponseBody):
+class FlavorResponseBody(UserScopedResponseBody):
     """Response body for stack component flavors."""
 
     type: StackComponentType = Field(title="The type of the Flavor.")
@@ -187,9 +187,13 @@ class FlavorResponseBody(FlexibleScopedResponseBody):
         title="Optionally, a url pointing to a png,"
         "svg or jpg can be attached.",
     )
+    is_custom: bool = Field(
+        title="Whether or not this flavor is a custom, user created flavor.",
+        default=True,
+    )
 
 
-class FlavorResponseMetadata(FlexibleScopedResponseMetadata):
+class FlavorResponseMetadata(UserScopedResponseMetadata):
     """Response metadata for stack component flavors."""
 
     config_schema: Dict[str, Any] = Field(
@@ -221,18 +225,14 @@ class FlavorResponseMetadata(FlexibleScopedResponseMetadata):
         title="Optionally, a url pointing to SDK docs,"
         "within sdkdocs.zenml.io.",
     )
-    is_custom: bool = Field(
-        title="Whether or not this flavor is a custom, user created flavor.",
-        default=True,
-    )
 
 
-class FlavorResponseResources(FlexibleScopedResponseResources):
+class FlavorResponseResources(UserScopedResponseResources):
     """Response resources for stack component flavors."""
 
 
 class FlavorResponse(
-    FlexibleScopedResponse[
+    UserScopedResponse[
         FlavorResponseBody,
         FlavorResponseMetadata,
         FlavorResponseResources,
@@ -323,6 +323,15 @@ class FlavorResponse(
         return self.get_body().logo_url
 
     @property
+    def is_custom(self) -> bool:
+        """The `is_custom` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().is_custom
+
+    @property
     def config_schema(self) -> Dict[str, Any]:
         """The `config_schema` property.
 
@@ -376,20 +385,11 @@ class FlavorResponse(
         """
         return self.get_metadata().sdk_docs_url
 
-    @property
-    def is_custom(self) -> bool:
-        """The `is_custom` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_metadata().is_custom
-
 
 # ------------------ Filter Model ------------------
 
 
-class FlavorFilter(FlexibleScopedFilter):
+class FlavorFilter(UserScopedFilter):
     """Model to enable advanced stack component flavor filtering."""
 
     name: Optional[str] = Field(

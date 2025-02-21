@@ -100,10 +100,6 @@ def create_secret(
     Returns:
         The created secret.
     """
-    if workspace_name_or_id:
-        workspace = zen_store().get_workspace(workspace_name_or_id)
-        secret.workspace = workspace.id
-
     return verify_permissions_and_create_entity(
         request_model=secret,
         create_method=zen_store().create_secret,

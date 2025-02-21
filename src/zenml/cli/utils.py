@@ -1795,7 +1795,6 @@ def print_service_connector_configuration(
                 else "N/A"
             ),
             "OWNER": user_name,
-            "WORKSPACE": connector.workspace.name,
             "CREATED_AT": connector.created,
             "UPDATED_AT": connector.updated,
         }
@@ -2161,9 +2160,6 @@ def print_debug_stack() -> None:
     console.print(f"ID: {str(stack.id)}")
     if stack.user and stack.user.name and stack.user.id:  # mypy check
         console.print(f"User: {stack.user.name} / {str(stack.user.id)}")
-    console.print(
-        f"Workspace: {stack.workspace.name} / {str(stack.workspace.id)}"
-    )
 
     for component_type, components in stack.components.items():
         component = components[0]
@@ -2190,9 +2186,6 @@ def print_debug_stack() -> None:
             console.print(
                 f"User: {component_response.user.name} / {str(component_response.user.id)}"
             )
-        console.print(
-            f"Workspace: {component_response.workspace.name} / {str(component_response.workspace.id)}"
-        )
 
 
 def _component_display_name(

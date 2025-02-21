@@ -110,10 +110,6 @@ def create_service_connector(
     Returns:
         The created service connector.
     """
-    if workspace_name_or_id:
-        workspace = zen_store().get_workspace(workspace_name_or_id)
-        connector.workspace = workspace.id
-
     return verify_permissions_and_create_entity(
         request_model=connector,
         create_method=zen_store().create_service_connector,
@@ -157,10 +153,6 @@ def list_service_connectors(
     Returns:
         Page with list of service connectors matching the filter criteria.
     """
-    if workspace_name_or_id:
-        workspace = zen_store().get_workspace(workspace_name_or_id)
-        connector_filter_model.set_scope_workspace(workspace.id)
-
     connectors = verify_permissions_and_list_entities(
         filter_model=connector_filter_model,
         resource_type=ResourceType.SERVICE_CONNECTOR,
@@ -360,10 +352,6 @@ def list_service_connector_resources(
         The matching list of resources that available service
         connectors have access to.
     """
-    if workspace_name_or_id:
-        workspace = zen_store().get_workspace(workspace_name_or_id)
-        filter_model.set_scope_workspace(workspace.id)
-
     allowed_ids = get_allowed_resource_ids(
         resource_type=ResourceType.SERVICE_CONNECTOR
     )

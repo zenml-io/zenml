@@ -24,9 +24,10 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from zenml.constants import SORT_BY_LATEST_VERSION_KEY, STR_FIELD_MAX_LENGTH
+from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
     TaggableFilter,
     WorkspaceScopedRequest,
@@ -69,7 +70,7 @@ class ArtifactRequest(WorkspaceScopedRequest):
 # ------------------ Update Model ------------------
 
 
-class ArtifactUpdate(BaseModel):
+class ArtifactUpdate(BaseUpdate):
     """Artifact update model."""
 
     name: Optional[str] = None

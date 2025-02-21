@@ -38,7 +38,6 @@ from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
-from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 
 class SecretDecodeError(Exception):
@@ -58,18 +57,6 @@ class SecretSchema(NamedSchema, table=True):
     scope: str
 
     values: Optional[bytes] = Field(sa_column=Column(TEXT, nullable=True))
-
-    workspace_id: Optional[UUID] = build_foreign_key_field(
-        source=__tablename__,
-        target=WorkspaceSchema.__tablename__,
-        source_column="workspace_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=True,
-    )
-    workspace: Optional["WorkspaceSchema"] = Relationship(
-        back_populates="secrets"
-    )
 
     user_id: UUID = build_foreign_key_field(
         source=__tablename__,
@@ -180,7 +167,6 @@ class SecretSchema(NamedSchema, table=True):
         return cls(
             name=secret.name,
             scope=secret.scope.value,
-            workspace_id=secret.workspace,
             user_id=secret.user,
             # Don't store secret values implicitly in the secret. The
             # SQL secret store will call `store_secret_values` to store the
@@ -233,11 +219,7 @@ class SecretSchema(NamedSchema, table=True):
         """
         metadata = None
         if include_metadata:
-            metadata = SecretResponseMetadata(
-                workspace=self.workspace.to_model()
-                if self.workspace
-                else None,
-            )
+            metadata = SecretResponseMetadata()
 
         # Don't load the secret values implicitly in the secret. The
         # SQL secret store will call `get_secret_values` to load the

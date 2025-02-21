@@ -16,10 +16,11 @@
 import random
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import ColorVariants
+from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -48,7 +49,7 @@ class TagRequest(WorkspaceScopedRequest):
 # ------------------ Update Model ------------------
 
 
-class TagUpdate(BaseModel):
+class TagUpdate(BaseUpdate):
     """Update model for tags."""
 
     name: Optional[str] = None

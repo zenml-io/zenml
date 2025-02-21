@@ -27,12 +27,13 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import ConfigDict, Field
 
 from zenml.config.step_configurations import StepConfiguration, StepSpec
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus, StepRunInputArtifactType
 from zenml.metadata.metadata_types import MetadataType
+from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -144,7 +145,7 @@ class StepRunRequest(WorkspaceScopedRequest):
 # ------------------ Update Model ------------------
 
 
-class StepRunUpdate(BaseModel):
+class StepRunUpdate(BaseUpdate):
     """Update model for step runs."""
 
     outputs: Dict[str, List[UUID]] = Field(

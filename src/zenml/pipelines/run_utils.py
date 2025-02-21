@@ -213,7 +213,7 @@ def validate_stack_is_runnable_from_server(
         assert len(flavors) == 1
         flavor_model = flavors[0]
 
-        if flavor_model.workspace is not None:
+        if flavor_model.is_custom:
             raise ValueError("No custom stack component flavors allowed.")
 
         flavor = Flavor.from_model(flavor_model)

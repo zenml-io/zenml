@@ -33,7 +33,6 @@ from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
-from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
@@ -56,18 +55,6 @@ class ServiceConnectorSchema(NamedSchema, table=True):
     expires_skew_tolerance: Optional[int]
     expiration_seconds: Optional[int]
     labels: Optional[bytes]
-
-    workspace_id: Optional[UUID] = build_foreign_key_field(
-        source=__tablename__,
-        target=WorkspaceSchema.__tablename__,
-        source_column="workspace_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=True,
-    )
-    workspace: Optional["WorkspaceSchema"] = Relationship(
-        back_populates="service_connectors"
-    )
 
     user_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -146,7 +133,6 @@ class ServiceConnectorSchema(NamedSchema, table=True):
         """
         assert connector_request.user is not None, "User must be set."
         return cls(
-            workspace_id=connector_request.workspace,
             user_id=connector_request.user,
             name=connector_request.name,
             description=connector_request.description,
@@ -264,9 +250,6 @@ class ServiceConnectorSchema(NamedSchema, table=True):
         metadata = None
         if include_metadata:
             metadata = ServiceConnectorResponseMetadata(
-                workspace=self.workspace.to_model()
-                if self.workspace
-                else None,
                 configuration=json.loads(
                     base64.b64decode(self.configuration).decode()
                 )

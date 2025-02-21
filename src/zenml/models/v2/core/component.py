@@ -30,14 +30,14 @@ from pydantic import BaseModel, Field, field_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import LogicalOperators, StackComponentType
+from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
-    FlexibleScopedFilter,
-    FlexibleScopedRequest,
-    FlexibleScopedResponse,
-    FlexibleScopedResponseBody,
-    FlexibleScopedResponseMetadata,
-    FlexibleScopedResponseResources,
-    FlexibleScopedUpdate,
+    UserScopedFilter,
+    UserScopedRequest,
+    UserScopedResponse,
+    UserScopedResponseBody,
+    UserScopedResponseMetadata,
+    UserScopedResponseResources,
 )
 from zenml.utils import secret_utils
 
@@ -88,7 +88,7 @@ class ComponentBase(BaseModel):
 # ------------------ Request Model ------------------
 
 
-class ComponentRequest(ComponentBase, FlexibleScopedRequest):
+class ComponentRequest(ComponentBase, UserScopedRequest):
     """Request model for stack components."""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = ["type", "flavor"]
@@ -127,7 +127,7 @@ class DefaultComponentRequest(ComponentRequest):
 # ------------------ Update Model ------------------
 
 
-class ComponentUpdate(FlexibleScopedUpdate):
+class ComponentUpdate(BaseUpdate):
     """Update model for stack components."""
 
     name: Optional[str] = Field(
@@ -157,7 +157,7 @@ class ComponentUpdate(FlexibleScopedUpdate):
 # ------------------ Response Model ------------------
 
 
-class ComponentResponseBody(FlexibleScopedResponseBody):
+class ComponentResponseBody(UserScopedResponseBody):
     """Response body for stack components."""
 
     type: StackComponentType = Field(
@@ -180,7 +180,7 @@ class ComponentResponseBody(FlexibleScopedResponseBody):
     )
 
 
-class ComponentResponseMetadata(FlexibleScopedResponseMetadata):
+class ComponentResponseMetadata(UserScopedResponseMetadata):
     """Response metadata for stack components."""
 
     configuration: Dict[str, Any] = Field(
@@ -201,7 +201,7 @@ class ComponentResponseMetadata(FlexibleScopedResponseMetadata):
     )
 
 
-class ComponentResponseResources(FlexibleScopedResponseResources):
+class ComponentResponseResources(UserScopedResponseResources):
     """Response resources for stack components."""
 
     flavor: "FlavorResponse" = Field(
@@ -210,7 +210,7 @@ class ComponentResponseResources(FlexibleScopedResponseResources):
 
 
 class ComponentResponse(
-    FlexibleScopedResponse[
+    UserScopedResponse[
         ComponentResponseBody,
         ComponentResponseMetadata,
         ComponentResponseResources,
@@ -341,16 +341,16 @@ class ComponentResponse(
 # ------------------ Filter Model ------------------
 
 
-class ComponentFilter(FlexibleScopedFilter):
+class ComponentFilter(UserScopedFilter):
     """Model to enable advanced stack component filtering."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *FlexibleScopedFilter.FILTER_EXCLUDE_FIELDS,
+        *UserScopedFilter.FILTER_EXCLUDE_FIELDS,
         "scope_type",
         "stack_id",
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *FlexibleScopedFilter.CLI_EXCLUDE_FIELDS,
+        *UserScopedFilter.CLI_EXCLUDE_FIELDS,
         "scope_type",
     ]
     scope_type: Optional[str] = Field(

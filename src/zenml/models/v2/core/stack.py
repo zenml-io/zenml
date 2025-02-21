@@ -32,14 +32,14 @@ from sqlmodel import and_
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import StackComponentType
+from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
-    FlexibleScopedFilter,
-    FlexibleScopedRequest,
-    FlexibleScopedResponse,
-    FlexibleScopedResponseBody,
-    FlexibleScopedResponseMetadata,
-    FlexibleScopedResponseResources,
-    FlexibleScopedUpdate,
+    UserScopedFilter,
+    UserScopedRequest,
+    UserScopedResponse,
+    UserScopedResponseBody,
+    UserScopedResponseMetadata,
+    UserScopedResponseResources,
 )
 from zenml.models.v2.misc.info_models import (
     ComponentInfo,
@@ -58,7 +58,7 @@ if TYPE_CHECKING:
 # ------------------ Request Model ------------------
 
 
-class StackRequest(FlexibleScopedRequest):
+class StackRequest(UserScopedRequest):
     """Request model for stack creation."""
 
     name: str = Field(
@@ -136,7 +136,7 @@ class DefaultStackRequest(StackRequest):
 # ------------------ Update Model ------------------
 
 
-class StackUpdate(FlexibleScopedUpdate):
+class StackUpdate(BaseUpdate):
     """Update model for stacks."""
 
     name: Optional[str] = Field(
@@ -167,11 +167,11 @@ class StackUpdate(FlexibleScopedUpdate):
 # ------------------ Response Model ------------------
 
 
-class StackResponseBody(FlexibleScopedResponseBody):
+class StackResponseBody(UserScopedResponseBody):
     """Response body for stacks."""
 
 
-class StackResponseMetadata(FlexibleScopedResponseMetadata):
+class StackResponseMetadata(UserScopedResponseMetadata):
     """Response metadata for stacks."""
 
     components: Dict[StackComponentType, List["ComponentResponse"]] = Field(
@@ -193,12 +193,12 @@ class StackResponseMetadata(FlexibleScopedResponseMetadata):
     )
 
 
-class StackResponseResources(FlexibleScopedResponseResources):
+class StackResponseResources(UserScopedResponseResources):
     """Response resources for stacks."""
 
 
 class StackResponse(
-    FlexibleScopedResponse[
+    UserScopedResponse[
         StackResponseBody,
         StackResponseMetadata,
         StackResponseResources,
@@ -328,11 +328,11 @@ class StackResponse(
 # ------------------ Filter Model ------------------
 
 
-class StackFilter(FlexibleScopedFilter):
+class StackFilter(UserScopedFilter):
     """Model to enable advanced stack filtering."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *FlexibleScopedFilter.FILTER_EXCLUDE_FIELDS,
+        *UserScopedFilter.FILTER_EXCLUDE_FIELDS,
         "component_id",
         "component",
     ]

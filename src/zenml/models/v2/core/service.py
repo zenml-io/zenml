@@ -27,10 +27,11 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import ConfigDict, Field
 from sqlalchemy.sql.elements import ColumnElement
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
+from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -119,7 +120,7 @@ class ServiceRequest(WorkspaceScopedRequest):
 # ------------------ Update Model ------------------
 
 
-class ServiceUpdate(BaseModel):
+class ServiceUpdate(BaseUpdate):
     """Update model for stack components."""
 
     name: Optional[str] = Field(

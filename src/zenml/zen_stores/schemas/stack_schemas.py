@@ -30,7 +30,6 @@ from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
-from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.component_schemas import (
@@ -78,18 +77,6 @@ class StackSchema(NamedSchema, table=True):
     __tablename__ = "stack"
     stack_spec_path: Optional[str]
     labels: Optional[bytes]
-
-    workspace_id: Optional[UUID] = build_foreign_key_field(
-        source=__tablename__,
-        target=WorkspaceSchema.__tablename__,
-        source_column="workspace_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=True,
-    )
-    workspace: Optional["WorkspaceSchema"] = Relationship(
-        back_populates="stacks"
-    )
 
     user_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -163,9 +150,6 @@ class StackSchema(NamedSchema, table=True):
         metadata = None
         if include_metadata:
             metadata = StackResponseMetadata(
-                workspace=self.workspace.to_model()
-                if self.workspace
-                else None,
                 components={c.type: [c.to_model()] for c in self.components},
                 stack_spec_path=self.stack_spec_path,
                 labels=json.loads(base64.b64decode(self.labels).decode())

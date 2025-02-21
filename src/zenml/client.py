@@ -1236,7 +1236,6 @@ class Client(metaclass=ClientMetaClass):
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
         description: Optional[str] = None,
-        workspace_id: Optional[Union[str, UUID]] = None,
         component_id: Optional[Union[str, UUID]] = None,
         user: Optional[Union[UUID, str]] = None,
         component: Optional[Union[UUID, str]] = None,
@@ -1253,7 +1252,6 @@ class Client(metaclass=ClientMetaClass):
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
             description: Use the stack description for filtering
-            workspace_id: The id of the workspace to filter by.
             component_id: The id of the component to filter by.
             user: The name/ID of the user to filter by.
             component: The name/ID of the component to filter by.
@@ -1269,7 +1267,6 @@ class Client(metaclass=ClientMetaClass):
             size=size,
             sort_by=sort_by,
             logical_operator=logical_operator,
-            workspace_id=workspace_id,
             component_id=component_id,
             user=user,
             component=component,
@@ -1279,7 +1276,6 @@ class Client(metaclass=ClientMetaClass):
             created=created,
             updated=updated,
         )
-        stack_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_stacks(stack_filter_model, hydrate=hydrate)
 
     def update_stack(
@@ -1884,9 +1880,6 @@ class Client(metaclass=ClientMetaClass):
             component_filter_model.set_scope_type(
                 component_type=component_type
             )
-            component_filter_model.set_scope_workspace(
-                self.active_workspace.id
-            )
             return self.zen_store.list_stack_components(
                 component_filter_model=component_filter_model,
                 hydrate=hydrate,
@@ -1912,7 +1905,6 @@ class Client(metaclass=ClientMetaClass):
         name: Optional[str] = None,
         flavor: Optional[str] = None,
         type: Optional[str] = None,
-        workspace_id: Optional[Union[str, UUID]] = None,
         connector_id: Optional[Union[str, UUID]] = None,
         stack_id: Optional[Union[str, UUID]] = None,
         user: Optional[Union[UUID, str]] = None,
@@ -1930,7 +1922,6 @@ class Client(metaclass=ClientMetaClass):
             updated: Use the last updated date for filtering
             flavor: Use the component flavor for filtering
             type: Use the component type for filtering
-            workspace_id: The id of the workspace to filter by.
             connector_id: The id of the connector to filter by.
             stack_id: The id of the stack to filter by.
             name: The name of the component to filter by.
@@ -1946,7 +1937,6 @@ class Client(metaclass=ClientMetaClass):
             size=size,
             sort_by=sort_by,
             logical_operator=logical_operator,
-            workspace_id=workspace_id or self.active_workspace.id,
             connector_id=connector_id,
             stack_id=stack_id,
             name=name,
@@ -1957,7 +1947,6 @@ class Client(metaclass=ClientMetaClass):
             updated=updated,
             user=user,
         )
-        component_filter_model.set_scope_workspace(self.active_workspace.id)
 
         return self.zen_store.list_stack_components(
             component_filter_model=component_filter_model, hydrate=hydrate
@@ -2263,7 +2252,6 @@ class Client(metaclass=ClientMetaClass):
             created=created,
             updated=updated,
         )
-        flavor_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_flavors(
             flavor_filter_model=flavor_filter_model, hydrate=hydrate
         )
@@ -4641,7 +4629,6 @@ class Client(metaclass=ClientMetaClass):
         updated: Optional[datetime] = None,
         name: Optional[str] = None,
         scope: Optional[SecretScope] = None,
-        workspace_id: Optional[Union[str, UUID]] = None,
         user: Optional[Union[UUID, str]] = None,
         hydrate: bool = False,
     ) -> Page[SecretResponse]:
@@ -4660,7 +4647,6 @@ class Client(metaclass=ClientMetaClass):
             updated: Use the last updated date for filtering
             name: The name of the secret to filter by.
             scope: The scope of the secret to filter by.
-            workspace_id: The id of the workspace to filter by.
             user: Filter by user name/ID.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
@@ -4678,14 +4664,12 @@ class Client(metaclass=ClientMetaClass):
             sort_by=sort_by,
             logical_operator=logical_operator,
             user=user,
-            workspace_id=workspace_id,
             name=name,
             scope=scope,
             id=id,
             created=created,
             updated=updated,
         )
-        secret_filter_model.set_scope_workspace(self.active_workspace.id)
         try:
             return self.zen_store.list_secrets(
                 secret_filter_model=secret_filter_model,
@@ -5342,32 +5326,9 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The registered service connector.
         """
-
-        def scoped_list_method(
-            hydrate: bool = False,
-            **kwargs: Any,
-        ) -> Page[ServiceConnectorResponse]:
-            """Call `zen_store.list_service_connectors` with workspace scoping.
-
-            Args:
-                hydrate: Flag deciding whether to hydrate the output model(s)
-                    by including metadata fields in the response.
-                **kwargs: Keyword arguments to pass to
-                    `ServiceConnectorFilterModel`.
-
-            Returns:
-                The list of service connectors.
-            """
-            filter_model = ServiceConnectorFilter(**kwargs)
-            filter_model.set_scope_workspace(self.active_workspace.id)
-            return self.zen_store.list_service_connectors(
-                filter_model=filter_model,
-                hydrate=hydrate,
-            )
-
         connector = self._get_entity_by_id_or_name_or_prefix(
             get_method=self.zen_store.get_service_connector,
-            list_method=scoped_list_method,
+            list_method=self.zen_store.list_service_connectors,
             name_id_or_prefix=name_id_or_prefix,
             allow_name_prefix_match=allow_name_prefix_match,
             hydrate=hydrate,
@@ -5406,7 +5367,6 @@ class Client(metaclass=ClientMetaClass):
         auth_method: Optional[str] = None,
         resource_type: Optional[str] = None,
         resource_id: Optional[str] = None,
-        workspace_id: Optional[Union[str, UUID]] = None,
         user: Optional[Union[UUID, str]] = None,
         labels: Optional[Dict[str, Optional[str]]] = None,
         secret_id: Optional[Union[str, UUID]] = None,
@@ -5428,7 +5388,6 @@ class Client(metaclass=ClientMetaClass):
                 they can give access to.
             resource_id: Filter service connectors by the resource id that
                 they can give access to.
-            workspace_id: The id of the workspace to filter by.
             user: Filter by user name/ID.
             name: The name of the service connector to filter by.
             labels: The labels of the service connector to filter by.
@@ -5445,7 +5404,6 @@ class Client(metaclass=ClientMetaClass):
             size=size,
             sort_by=sort_by,
             logical_operator=logical_operator,
-            workspace_id=workspace_id or self.active_workspace.id,
             user=user,
             name=name,
             connector_type=connector_type,
@@ -5458,7 +5416,6 @@ class Client(metaclass=ClientMetaClass):
             labels=labels,
             secret_id=secret_id,
         )
-        connector_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_service_connectors(
             filter_model=connector_filter_model,
             hydrate=hydrate,

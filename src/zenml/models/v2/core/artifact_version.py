@@ -27,7 +27,6 @@ from typing import (
 from uuid import UUID
 
 from pydantic import (
-    BaseModel,
     ConfigDict,
     Field,
     field_validator,
@@ -39,6 +38,7 @@ from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ArtifactSaveType, ArtifactType, GenericFilterOps
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
+from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.filter import FilterGenerator, StrFilter
 from zenml.models.v2.base.scoped import (
     TaggableFilter,
@@ -164,7 +164,7 @@ class ArtifactVersionRequest(WorkspaceScopedRequest):
 # ------------------ Update Model ------------------
 
 
-class ArtifactVersionUpdate(BaseModel):
+class ArtifactVersionUpdate(BaseUpdate):
     """Artifact version update model."""
 
     name: Optional[str] = None

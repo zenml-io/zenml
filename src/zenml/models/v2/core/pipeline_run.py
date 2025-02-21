@@ -28,12 +28,13 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import ConfigDict, Field
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus
 from zenml.metadata.metadata_types import MetadataType
+from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
     TaggableFilter,
     WorkspaceScopedRequest,
@@ -127,7 +128,7 @@ class PipelineRunRequest(WorkspaceScopedRequest):
 # ------------------ Update Model ------------------
 
 
-class PipelineRunUpdate(BaseModel):
+class PipelineRunUpdate(BaseUpdate):
     """Pipeline run update model."""
 
     status: Optional[ExecutionStatus] = None

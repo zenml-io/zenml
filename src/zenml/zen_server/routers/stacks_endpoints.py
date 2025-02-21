@@ -86,10 +86,6 @@ def create_stack(
     Returns:
         The created stack.
     """
-    if workspace_name_or_id:
-        workspace = zen_store().get_workspace(workspace_name_or_id)
-        stack.workspace = workspace.id
-
     stack.user = auth_context.user.id
 
     # Check the service connector creation
@@ -167,10 +163,6 @@ def list_stacks(
     Returns:
         All stacks matching the filter criteria.
     """
-    if workspace_name_or_id:
-        workspace = zen_store().get_workspace(workspace_name_or_id)
-        stack_filter_model.set_scope_workspace(workspace.id)
-
     return verify_permissions_and_list_entities(
         filter_model=stack_filter_model,
         resource_type=ResourceType.STACK,
