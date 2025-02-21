@@ -180,6 +180,7 @@ def get_secret(
         get_method=zen_store().get_secret,
         hydrate=hydrate,
     )
+
     if not has_permissions_for_model(secret, action=Action.READ_SECRET_VALUE):
         secret.remove_secrets()
 

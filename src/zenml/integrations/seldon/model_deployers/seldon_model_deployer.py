@@ -245,7 +245,7 @@ class SeldonModelDeployer(BaseModelDeployer):
             )
 
             try:
-                zenml_secret = Client().get_secret_by_name_and_scope(
+                zenml_secret = Client().get_secret_by_name_and_private_status(
                     name=self.config.secret,
                 )
             except KeyError as e:

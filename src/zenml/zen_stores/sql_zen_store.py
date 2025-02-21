@@ -123,7 +123,6 @@ from zenml.enums import (
     MetadataResourceTypes,
     ModelStages,
     OnboardingStep,
-    SecretScope,
     SecretsStoreType,
     StackComponentType,
     StackDeploymentProvider,
@@ -5790,44 +5789,36 @@ class SqlZenStore(BaseZenStore):
         self,
         session: Session,
         secret_name: str,
-        scope: SecretScope,
-        workspace: UUID,
+        private: bool,
         user: UUID,
         exclude_secret_id: Optional[UUID] = None,
     ) -> Tuple[bool, str]:
-        """Checks if a secret with the given name already exists in the given scope.
+        """Checks if a secret with the given name already exists with the given private status.
 
-        This method enforces the following scope rules:
+        This method enforces the following private status rules:
 
-          - only one workspace-scoped secret with the given name can exist
-            in the target workspace.
-          - only one user-scoped secret with the given name can exist in the
-            target workspace for the target user.
+        - a user cannot own two private secrets with the same name
+        - two public secrets cannot have the same name
 
         Args:
             session: The SQLAlchemy session.
             secret_name: The name of the secret.
-            scope: The scope of the secret.
-            workspace: The ID of the workspace to which the secret belongs.
+            private: The private status of the secret.
             user: The ID of the user to which the secret belongs.
             exclude_secret_id: The ID of a secret to exclude from the check
                 (used e.g. during an update to exclude the existing secret).
 
         Returns:
-            True if a secret with the given name already exists in the given
-            scope, False otherwise, and an error message.
+            True if a secret with the given name already exists with the given
+            private status, False otherwise, and an error message.
         """
         scope_filter = (
             select(SecretSchema)
             .where(SecretSchema.name == secret_name)
-            .where(SecretSchema.scope == scope.value)
+            .where(SecretSchema.private == private)
         )
 
-        if scope in [SecretScope.WORKSPACE, SecretScope.USER]:
-            scope_filter = scope_filter.where(
-                SecretSchema.workspace_id == workspace
-            )
-        if scope == SecretScope.USER:
+        if private:
             scope_filter = scope_filter.where(SecretSchema.user_id == user)
         if exclude_secret_id is not None:
             scope_filter = scope_filter.where(
@@ -5841,16 +5832,12 @@ class SqlZenStore(BaseZenStore):
                 include_metadata=True
             )
 
+            private_status = "private" if private else "public"
             msg = (
-                f"Found an existing {scope.value} scoped secret with the "
+                f"Found an existing {private_status} secret with the "
                 f"same '{secret_name}' name"
             )
-            if scope in [SecretScope.WORKSPACE, SecretScope.USER]:
-                msg += (
-                    f" in the same '{existing_secret_model.workspace.name}' "
-                    f"workspace"
-                )
-            if scope == SecretScope.USER:
+            if private:
                 assert existing_secret_model.user
                 msg += (
                     f" for the same '{existing_secret_model.user.name}' user"
@@ -6190,10 +6177,8 @@ class SqlZenStore(BaseZenStore):
         The new secret is also validated against the scoping rules enforced in
         the secrets store:
 
-          - only one workspace-scoped secret with the given name can exist
-            in the target workspace.
-          - only one user-scoped secret with the given name can exist in the
-            target workspace for the target user.
+        - a user cannot own two private secrets with the same name
+        - two public secrets cannot have the same name
 
         Args:
             secret: The secret to create.
@@ -6207,13 +6192,13 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             self._set_request_user_id(request_model=secret, session=session)
+            assert secret.user is not None
             # Check if a secret with the same name already exists in the same
             # scope.
             secret_exists, msg = self._check_sql_secret_scope(
                 session=session,
                 secret_name=secret.name,
-                scope=secret.scope,
-                workspace=secret.workspace,
+                private=secret.private,
                 user=secret.user,
             )
             if secret_exists:
@@ -6265,8 +6250,17 @@ class SqlZenStore(BaseZenStore):
             secret_in_db = session.exec(
                 select(SecretSchema).where(SecretSchema.id == secret_id)
             ).first()
-            if secret_in_db is None:
-                raise KeyError(f"Secret with ID {secret_id} not found.")
+            if (
+                secret_in_db is None
+                # Private secrets are only accessible to their owner
+                or secret_in_db.private
+                and secret_in_db.user.id != self._get_active_user_id(session)
+            ):
+                raise KeyError(
+                    f"Secret with ID {secret_id} not found or is private and "
+                    "not owned by the current user."
+                )
+
             secret_model = secret_in_db.to_model(
                 include_metadata=hydrate, include_resources=True
             )
@@ -6297,6 +6291,11 @@ class SqlZenStore(BaseZenStore):
             secret.
         """
         with Session(self.engine) as session:
+            # Filter all secrets according to their private status and the active
+            # user
+            secret_filter_model.set_scope_user(
+                self._get_active_user_id(session)
+            )
             query = select(SecretSchema)
             return self.filter_and_paginate(
                 session=session,
@@ -6319,10 +6318,8 @@ class SqlZenStore(BaseZenStore):
         If the update includes a change of name or scope, the scoping rules
         enforced in the secrets store are used to validate the update:
 
-          - only one workspace-scoped secret with the given name can exist
-            in the target workspace.
-          - only one user-scoped secret with the given name can exist in the
-            target workspace for the target user.
+        - a user cannot own two private secrets with the same name
+        - two public secrets cannot have the same name
 
         Args:
             secret_id: The ID of the secret to be updated.
@@ -6341,22 +6338,40 @@ class SqlZenStore(BaseZenStore):
                 select(SecretSchema).where(SecretSchema.id == secret_id)
             ).first()
 
-            if not existing_secret:
-                raise KeyError(f"Secret with ID {secret_id} not found.")
+            if not existing_secret or (
+                # Private secrets are only accessible to their owner
+                existing_secret.private
+                and existing_secret.user.id
+                != self._get_active_user_id(session)
+            ):
+                raise KeyError(
+                    f"Secret with ID {secret_id} not found or is private and "
+                    "not owned by the current user."
+                )
+
+            if (
+                secret_update.private is not None
+                and existing_secret.user.id
+                != self._get_active_user_id(session)
+            ):
+                raise IllegalOperationError(
+                    "Only the user who created the secret is allowed to update "
+                    "its private status."
+                )
 
             # A change in name or scope requires a check of the scoping rules.
             if (
                 secret_update.name is not None
                 and existing_secret.name != secret_update.name
-                or secret_update.scope is not None
-                and existing_secret.scope != secret_update.scope
+                or secret_update.private is not None
+                and existing_secret.private != secret_update.private
             ):
                 secret_exists, msg = self._check_sql_secret_scope(
                     session=session,
                     secret_name=secret_update.name or existing_secret.name,
-                    scope=secret_update.scope
-                    or SecretScope(existing_secret.scope),
-                    workspace=existing_secret.workspace.id,
+                    private=secret_update.private
+                    if secret_update.private is not None
+                    else existing_secret.private,
                     user=existing_secret.user.id,
                     exclude_secret_id=secret_id,
                 )
@@ -6397,23 +6412,35 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: if the secret doesn't exist.
         """
-        # Delete the secret values in the configured secrets store
-        try:
-            self._delete_secret_values(secret_id=secret_id)
-        except KeyError:
-            # If the secret values don't exist in the secrets store, we don't
-            # need to raise an error.
-            pass
-
         with Session(self.engine) as session:
+            existing_secret = session.exec(
+                select(SecretSchema).where(SecretSchema.id == secret_id)
+            ).first()
+
+            if not existing_secret or (
+                # Private secrets are only accessible to their owner
+                existing_secret.private
+                and existing_secret.user.id
+                != self._get_active_user_id(session)
+            ):
+                raise KeyError(
+                    f"Secret with ID {secret_id} not found or is private and "
+                    "not owned by the current user."
+                )
+
+            # Delete the secret values in the configured secrets store
             try:
-                secret_in_db = session.exec(
-                    select(SecretSchema).where(SecretSchema.id == secret_id)
-                ).one()
-                session.delete(secret_in_db)
-                session.commit()
-            except NoResultFound:
-                raise KeyError(f"Secret with ID {secret_id} not found.")
+                self._delete_secret_values(secret_id=secret_id)
+            except KeyError:
+                # If the secret values don't exist in the secrets store, we don't
+                # need to raise an error.
+                pass
+
+            secret_in_db = session.exec(
+                select(SecretSchema).where(SecretSchema.id == secret_id)
+            ).one()
+            session.delete(secret_in_db)
+            session.commit()
 
     def backup_secrets(
         self, ignore_errors: bool = True, delete_secrets: bool = False
@@ -6782,6 +6809,7 @@ class SqlZenStore(BaseZenStore):
 
         with Session(self.engine) as session:
             self._set_request_user_id(request_model=service_connector)
+            assert service_connector.user is not None
 
             self._verify_name_uniqueness(
                 resource=service_connector,
@@ -6792,8 +6820,6 @@ class SqlZenStore(BaseZenStore):
             # Create the secret
             secret_id = self._create_connector_secret(
                 connector_name=service_connector.name,
-                user=service_connector.user,
-                workspace=service_connector.workspace,
                 secrets=service_connector.secrets,
             )
             try:
@@ -7128,8 +7154,6 @@ class SqlZenStore(BaseZenStore):
     def _create_connector_secret(
         self,
         connector_name: str,
-        user: UUID,
-        workspace: UUID,
         secrets: Optional[Dict[str, Optional[SecretStr]]],
     ) -> Optional[UUID]:
         """Creates a new secret to store the service connector secret credentials.
@@ -7138,8 +7162,6 @@ class SqlZenStore(BaseZenStore):
             connector_name: The name of the service connector for which to
                 create a secret.
             user: The ID of the user who owns the service connector.
-            workspace: The ID of the workspace in which the service connector
-                is registered.
             secrets: The secret credentials to store.
 
         Returns:
@@ -7168,8 +7190,7 @@ class SqlZenStore(BaseZenStore):
                     return self.create_secret(
                         SecretRequest(
                             name=secret_name,
-                            workspace=workspace,
-                            scope=SecretScope.WORKSPACE,
+                            private=False,
                             values=secrets,
                         )
                     ).id
@@ -7281,8 +7302,6 @@ class SqlZenStore(BaseZenStore):
         # A secret does not exist yet, create a new one
         return self._create_connector_secret(
             connector_name=updated_connector.name or existing_connector.name,
-            user=existing_connector.user.id,
-            workspace=existing_connector.workspace.id,
             secrets=updated_connector.secrets,
         )
 
@@ -9967,6 +9986,30 @@ class SqlZenStore(BaseZenStore):
 
         raise KeyError(error_msg)
 
+    def _get_active_user_id(
+        self,
+        session: Optional[Session] = None,
+    ) -> UUID:
+        """Get the active user ID.
+
+        Args:
+            session: The DB session to use to use for queries.
+        """
+        if handle_bool_env_var(ENV_ZENML_SERVER):
+            # Running inside server
+            from zenml.zen_server.auth import get_auth_context
+
+            # If the code is running on the server, use the auth context.
+            auth_context = get_auth_context()
+            if auth_context is None:
+                raise RuntimeError("No active user found.")
+
+            user_id = auth_context.user.id
+        else:
+            user_id = self._get_default_user(session).id
+
+        return user_id
+
     def _set_request_user_id(
         self,
         request_model: BaseRequest,
@@ -9983,20 +10026,7 @@ class SqlZenStore(BaseZenStore):
             # set the user ID.
             return
 
-        if handle_bool_env_var(ENV_ZENML_SERVER):
-            # Running inside server
-            from zenml.zen_server.auth import get_auth_context
-
-            # If the code is running on the server, use the auth context.
-            auth_context = get_auth_context()
-            if auth_context is None:
-                raise RuntimeError("No active user found.")
-
-            user_id = auth_context.user.id
-        else:
-            user_id = self._get_default_user(session).id
-
-        request_model.user = user_id
+        request_model.user = self._get_active_user_id(session)
 
     def _verify_name_uniqueness(
         self,

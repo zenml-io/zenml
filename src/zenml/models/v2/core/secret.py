@@ -13,15 +13,21 @@
 #  permissions and limitations under the License.
 """Models representing secrets."""
 
-from typing import ClassVar, Dict, List, Optional, Union
+from typing import (
+    TYPE_CHECKING,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Type,
+    TypeVar,
+)
 
 from pydantic import Field, SecretStr
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
-from zenml.enums import (
-    SecretScope,
-)
 from zenml.models.v2.base.base import BaseUpdate
+from zenml.models.v2.base.filter import AnyQuery
 from zenml.models.v2.base.scoped import (
     UserScopedFilter,
     UserScopedRequest,
@@ -32,20 +38,27 @@ from zenml.models.v2.base.scoped import (
 )
 from zenml.utils.secret_utils import PlainSerializedSecretStr
 
+if TYPE_CHECKING:
+    from zenml.zen_stores.schemas.base_schemas import BaseSchema
+
+    AnySchema = TypeVar("AnySchema", bound=BaseSchema)
+
 # ------------------ Request Model ------------------
 
 
 class SecretRequest(UserScopedRequest):
     """Request model for secrets."""
 
-    ANALYTICS_FIELDS: ClassVar[List[str]] = ["scope"]
+    ANALYTICS_FIELDS: ClassVar[List[str]] = ["private"]
 
     name: str = Field(
         title="The name of the secret.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    scope: SecretScope = Field(
-        SecretScope.WORKSPACE, title="The scope of the secret."
+    private: bool = Field(
+        False,
+        title="Whether the secret is private. A private secret is only "
+        "accessible to the user who created it.",
     )
     values: Dict[str, Optional[PlainSerializedSecretStr]] = Field(
         default_factory=dict, title="The values stored in this secret."
@@ -76,15 +89,17 @@ class SecretRequest(UserScopedRequest):
 class SecretUpdate(BaseUpdate):
     """Update model for secrets."""
 
-    ANALYTICS_FIELDS: ClassVar[List[str]] = ["scope"]
+    ANALYTICS_FIELDS: ClassVar[List[str]] = ["private"]
 
     name: Optional[str] = Field(
         title="The name of the secret.",
         max_length=STR_FIELD_MAX_LENGTH,
         default=None,
     )
-    scope: Optional[SecretScope] = Field(
-        default=None, title="The scope of the secret."
+    private: Optional[bool] = Field(
+        default=None,
+        title="Whether the secret is private. A private secret is only "
+        "accessible to the user who created it.",
     )
     values: Optional[Dict[str, Optional[PlainSerializedSecretStr]]] = Field(
         title="The values stored in this secret.",
@@ -112,8 +127,10 @@ class SecretUpdate(BaseUpdate):
 class SecretResponseBody(UserScopedResponseBody):
     """Response body for secrets."""
 
-    scope: SecretScope = Field(
-        SecretScope.WORKSPACE, title="The scope of the secret."
+    private: bool = Field(
+        False,
+        title="Whether the secret is private. A private secret is only "
+        "accessible to the user who created it.",
     )
     values: Dict[str, Optional[PlainSerializedSecretStr]] = Field(
         default_factory=dict, title="The values stored in this secret."
@@ -157,13 +174,13 @@ class SecretResponse(
     # Body and metadata properties
 
     @property
-    def scope(self) -> SecretScope:
-        """The `scope` property.
+    def private(self) -> bool:
+        """The `private` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_body().scope
+        return self.get_body().private
 
     @property
     def values(self) -> Dict[str, Optional[SecretStr]]:
@@ -250,8 +267,54 @@ class SecretFilter(UserScopedFilter):
         default=None,
         description="Name of the secret",
     )
-    scope: Optional[Union[SecretScope, str]] = Field(
+    private: Optional[bool] = Field(
         default=None,
-        description="Scope in which to filter secrets",
-        union_mode="left_to_right",
+        description="Whether to filter secrets by private status",
     )
+
+    def apply_filter(
+        self,
+        query: AnyQuery,
+        table: Type["AnySchema"],
+    ) -> AnyQuery:
+        """Applies the filter to a query.
+
+        Args:
+            query: The query to which to apply the filter.
+            table: The query table.
+
+        Returns:
+            The query with filter applied.
+        """
+        # The secret user scoping works a bit differently than the other
+        # scoped filters. We have to filter out all private secrets that are
+        # not owned by the current user.
+        if not self.scope_user:
+            return super().apply_filter(query=query, table=table)
+
+        scope_user = self.scope_user
+
+        # First we apply the inherited filters without the user scoping
+        # applied.
+        self.scope_user = None
+        query = super().apply_filter(query=query, table=table)
+        self.scope_user = scope_user
+
+        # Then we apply the user scoping filter.
+        if self.scope_user:
+            from sqlmodel import and_, or_
+
+            query = query.where(
+                or_(
+                    and_(
+                        getattr(table, "user_id") == self.scope_user,
+                        getattr(table, "private") == True,  # noqa: E712
+                    ),
+                    getattr(table, "private") == False,  # noqa: E712
+                )
+            )
+
+        else:
+            query = query.where(getattr(table, "private") == False)  # noqa: E712
+
+        return query

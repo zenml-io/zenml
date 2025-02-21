@@ -215,7 +215,7 @@ class StackComponentConfig(BaseModel, ABC):
 
         # Try to resolve the secret using the secret store
         try:
-            secret = Client().get_secret_by_name_and_scope(
+            secret = Client().get_secret_by_name_and_private_status(
                 name=secret_ref.name,
             )
         except (KeyError, NotImplementedError):

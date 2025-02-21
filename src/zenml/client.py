@@ -64,7 +64,6 @@ from zenml.enums import (
     OAuthDeviceStatus,
     PluginSubType,
     PluginType,
-    SecretScope,
     SorterOps,
     StackComponentType,
     StoreType,
@@ -4459,14 +4458,15 @@ class Client(metaclass=ClientMetaClass):
         self,
         name: str,
         values: Dict[str, str],
-        scope: SecretScope = SecretScope.WORKSPACE,
+        private: bool = False,
     ) -> SecretResponse:
         """Creates a new secret.
 
         Args:
             name: The name of the secret.
             values: The values of the secret.
-            scope: The scope of the secret.
+            private: Whether the secret is private. A private secret is only
+                accessible to the user who created it.
 
         Returns:
             The created secret (in model form).
@@ -4478,8 +4478,7 @@ class Client(metaclass=ClientMetaClass):
         create_secret_request = SecretRequest(
             name=name,
             values=values,
-            scope=scope,
-            workspace=self.active_workspace.id,
+            private=private,
         )
         try:
             return self.zen_store.create_secret(secret=create_secret_request)
@@ -4492,7 +4491,7 @@ class Client(metaclass=ClientMetaClass):
     def get_secret(
         self,
         name_id_or_prefix: Union[str, UUID],
-        scope: Optional[SecretScope] = None,
+        private: Optional[bool] = None,
         allow_partial_name_match: bool = True,
         allow_partial_id_match: bool = True,
         hydrate: bool = True,
@@ -4502,18 +4501,17 @@ class Client(metaclass=ClientMetaClass):
         Get a secret identified by a name, ID or prefix of the name or ID and
         optionally a scope.
 
-        If a scope is not provided, the secret will be searched for in all
-        scopes starting with the innermost scope (user) to the outermost scope
-        (workspace). When a name or prefix is used instead of a UUID value, each
-        scope is first searched for an exact match, then for a ID prefix or
-        name substring match before moving on to the next scope.
+        If a private status is not provided, privately scoped secrets will be
+        searched for first, followed by publicly scoped secrets. When a name or
+        prefix is used instead of a UUID value, each scope is first searched for
+        an exact match, then for a ID prefix or name substring match before
+        moving on to the next scope.
 
         Args:
             name_id_or_prefix: The name, ID or prefix to the id of the secret
                 to get.
-            scope: The scope of the secret. If not set, all scopes will be
-                searched starting with the innermost scope (user) to the
-                outermost scope (global) until a secret is found.
+            private: Whether the secret is private. If not set, all secrets will
+                be searched for, prioritizing privately scoped secrets.
             allow_partial_name_match: If True, allow partial name matches.
             allow_partial_id_match: If True, allow partial ID matches.
             hydrate: Flag deciding whether to hydrate the output model(s)
@@ -4540,7 +4538,7 @@ class Client(metaclass=ClientMetaClass):
                     else name_id_or_prefix,
                     hydrate=hydrate,
                 )
-                if scope is not None and secret.scope != scope:
+                if private is not None and secret.private != private:
                     raise KeyError(
                         f"No secret found with ID {str(name_id_or_prefix)}"
                     )
@@ -4555,11 +4553,9 @@ class Client(metaclass=ClientMetaClass):
         # If not a UUID, try to find by name and then by prefix
         assert not isinstance(name_id_or_prefix, UUID)
 
-        # Scopes to search in order of priority
-        search_scopes = (
-            [SecretScope.USER, SecretScope.WORKSPACE]
-            if scope is None
-            else [scope]
+        # Private statuses to search in order of priority
+        search_private_statuses = (
+            [False, True] if private is None else [private]
         )
 
         secrets = self.list_secrets(
@@ -4573,10 +4569,10 @@ class Client(metaclass=ClientMetaClass):
             hydrate=hydrate,
         )
 
-        for search_scope in search_scopes:
+        for search_private_status in search_private_statuses:
             partial_matches: List[SecretResponse] = []
             for secret in secrets.items:
-                if secret.scope != search_scope:
+                if secret.private != search_private_status:
                     continue
                 # Exact match
                 if secret.name == name_id_or_prefix:
@@ -4611,10 +4607,13 @@ class Client(metaclass=ClientMetaClass):
                     secret_id=partial_matches[0].id,
                     hydrate=hydrate,
                 )
-
-        msg = f"No secret found with name, ID or prefix '{name_id_or_prefix}'"
-        if scope is not None:
-            msg += f" in scope '{scope}'"
+        private_status = ""
+        if private is not None:
+            private_status = "private " if private else "public "
+        msg = (
+            f"No {private_status}secret found with name, ID or prefix "
+            f"'{name_id_or_prefix}'"
+        )
 
         raise KeyError(msg)
 
@@ -4628,7 +4627,7 @@ class Client(metaclass=ClientMetaClass):
         created: Optional[datetime] = None,
         updated: Optional[datetime] = None,
         name: Optional[str] = None,
-        scope: Optional[SecretScope] = None,
+        private: Optional[bool] = None,
         user: Optional[Union[UUID, str]] = None,
         hydrate: bool = False,
     ) -> Page[SecretResponse]:
@@ -4646,7 +4645,7 @@ class Client(metaclass=ClientMetaClass):
             created: Use to secrets by time of creation
             updated: Use the last updated date for filtering
             name: The name of the secret to filter by.
-            scope: The scope of the secret to filter by.
+            private: The private status of the secret to filter by.
             user: Filter by user name/ID.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
@@ -4665,7 +4664,7 @@ class Client(metaclass=ClientMetaClass):
             logical_operator=logical_operator,
             user=user,
             name=name,
-            scope=scope,
+            private=private,
             id=id,
             created=created,
             updated=updated,
@@ -4684,9 +4683,9 @@ class Client(metaclass=ClientMetaClass):
     def update_secret(
         self,
         name_id_or_prefix: Union[str, UUID],
-        scope: Optional[SecretScope] = None,
+        private: Optional[bool] = None,
         new_name: Optional[str] = None,
-        new_scope: Optional[SecretScope] = None,
+        update_private: Optional[bool] = None,
         add_or_update_values: Optional[Dict[str, str]] = None,
         remove_values: Optional[List[str]] = None,
     ) -> SecretResponse:
@@ -4695,9 +4694,10 @@ class Client(metaclass=ClientMetaClass):
         Args:
             name_id_or_prefix: The name, id or prefix of the id for the
                 secret to update.
-            scope: The scope of the secret to update.
+            private: The private status of the secret to update.
             new_name: The new name of the secret.
-            new_scope: The new scope of the secret.
+            update_private: New value used to update the private status of the
+                secret.
             add_or_update_values: The values to add or update.
             remove_values: The values to remove.
 
@@ -4711,7 +4711,7 @@ class Client(metaclass=ClientMetaClass):
         """
         secret = self.get_secret(
             name_id_or_prefix=name_id_or_prefix,
-            scope=scope,
+            private=private,
             # Don't allow partial name matches, but allow partial ID matches
             allow_partial_name_match=False,
             allow_partial_id_match=True,
@@ -4720,8 +4720,8 @@ class Client(metaclass=ClientMetaClass):
 
         secret_update = SecretUpdate(name=new_name or secret.name)
 
-        if new_scope:
-            secret_update.scope = new_scope
+        if update_private:
+            secret_update.private = update_private
         values: Dict[str, Optional[SecretStr]] = {}
         if add_or_update_values:
             values.update(
@@ -4751,17 +4751,17 @@ class Client(metaclass=ClientMetaClass):
         )
 
     def delete_secret(
-        self, name_id_or_prefix: str, scope: Optional[SecretScope] = None
+        self, name_id_or_prefix: str, private: Optional[bool] = None
     ) -> None:
         """Deletes a secret.
 
         Args:
             name_id_or_prefix: The name or ID of the secret.
-            scope: The scope of the secret to delete.
+            private: The private status of the secret to delete.
         """
         secret = self.get_secret(
             name_id_or_prefix=name_id_or_prefix,
-            scope=scope,
+            private=private,
             # Don't allow partial name matches, but allow partial ID matches
             allow_partial_name_match=False,
             allow_partial_id_match=True,
@@ -4769,23 +4769,24 @@ class Client(metaclass=ClientMetaClass):
 
         self.zen_store.delete_secret(secret_id=secret.id)
 
-    def get_secret_by_name_and_scope(
+    def get_secret_by_name_and_private_status(
         self,
         name: str,
-        scope: Optional[SecretScope] = None,
+        private: Optional[bool] = None,
         hydrate: bool = True,
     ) -> SecretResponse:
-        """Fetches a registered secret with a given name and optional scope.
+        """Fetches a registered secret with a given name and optional private status.
 
         This is a version of get_secret that restricts the search to a given
-        name and an optional scope, without doing any prefix or UUID matching.
+        name and an optional private status, without doing any prefix or UUID
+        matching.
 
-        If no scope is provided, the search will be done first in the user
-        scope, then in the workspace scope.
+        If no private status is provided, the search will be done first for
+        private secrets, then for public secrets.
 
         Args:
             name: The name of the secret to get.
-            scope: The scope of the secret to get.
+            private: The private status of the secret to get.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -4796,21 +4797,20 @@ class Client(metaclass=ClientMetaClass):
             KeyError: If no secret exists for the given name in the given scope.
         """
         logger.debug(
-            f"Fetching the secret with name '{name}' and scope '{scope}'."
+            f"Fetching the secret with name '{name}' and private status "
+            f"'{private}'."
         )
 
-        # Scopes to search in order of priority
-        search_scopes = (
-            [SecretScope.USER, SecretScope.WORKSPACE]
-            if scope is None
-            else [scope]
+        # Private statuses to search in order of priority
+        search_private_statuses = (
+            [False, True] if private is None else [private]
         )
 
-        for search_scope in search_scopes:
+        for search_private_status in search_private_statuses:
             secrets = self.list_secrets(
                 logical_operator=LogicalOperators.AND,
                 name=f"equals:{name}",
-                scope=search_scope,
+                private=search_private_status,
                 hydrate=hydrate,
             )
 
@@ -4820,33 +4820,34 @@ class Client(metaclass=ClientMetaClass):
                     secret_id=secrets.items[0].id, hydrate=hydrate
                 )
 
-        msg = f"No secret with name '{name}' was found"
-        if scope is not None:
-            msg += f" in scope '{scope.value}'"
+        private_status = ""
+        if private is not None:
+            private_status = "private " if private else "public "
+        msg = f"No {private_status}secret with name '{name}' was found"
 
         raise KeyError(msg)
 
-    def list_secrets_in_scope(
+    def list_secrets_by_private_status(
         self,
-        scope: SecretScope,
+        private: bool,
         hydrate: bool = False,
     ) -> Page[SecretResponse]:
-        """Fetches the list of secret in a given scope.
+        """Fetches the list of secrets with a given private status.
 
         The returned secrets do not contain the secret values. To get the
         secret values, use `get_secret` individually for each secret.
 
         Args:
-            scope: The secrets scope to search for.
+            private: The private status of the secrets to search for.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
         Returns:
             The list of secrets in the given scope without the secret values.
         """
-        logger.debug(f"Fetching the secrets in scope {scope.value}.")
+        logger.debug(f"Fetching the secrets with private status '{private}'.")
 
-        return self.list_secrets(scope=scope, hydrate=hydrate)
+        return self.list_secrets(private=private, hydrate=hydrate)
 
     def backup_secrets(
         self,
