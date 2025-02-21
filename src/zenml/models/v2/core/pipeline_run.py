@@ -132,11 +132,6 @@ class PipelineRunUpdate(BaseModel):
 
     status: Optional[ExecutionStatus] = None
     end_time: Optional[datetime] = None
-    model_version_id: Optional[UUID] = Field(
-        title="The ID of the model version that was "
-        "configured by this pipeline run explicitly.",
-        default=None,
-    )
     # TODO: we should maybe have a different update model here, the upper
     #  three attributes should only be for internal use
     add_tags: Optional[List[str]] = Field(

@@ -357,9 +357,6 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 self.status = value.value
             if key == "end_time":
                 self.end_time = value
-            if key == "model_version_id":
-                if value and self.model_version_id is None:
-                    self.model_version_id = value
 
         self.updated = utc_now()
 

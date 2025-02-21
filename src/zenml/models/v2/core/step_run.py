@@ -137,14 +137,6 @@ class StepRunRequest(WorkspaceScopedRequest):
         title="Logs associated with this step run.",
         default=None,
     )
-    deployment: UUID = Field(
-        title="The deployment associated with the step run."
-    )
-    model_version_id: Optional[UUID] = Field(
-        title="The ID of the model version that was "
-        "configured by this step run explicitly.",
-        default=None,
-    )
 
     model_config = ConfigDict(protected_namespaces=())
 
@@ -169,11 +161,6 @@ class StepRunUpdate(BaseModel):
     )
     end_time: Optional[datetime] = Field(
         title="The end time of the step run.",
-        default=None,
-    )
-    model_version_id: Optional[UUID] = Field(
-        title="The ID of the model version that was "
-        "configured by this step run explicitly.",
         default=None,
     )
     model_config = ConfigDict(protected_namespaces=())

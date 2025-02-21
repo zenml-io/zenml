@@ -8472,7 +8472,7 @@ class SqlZenStore(BaseZenStore):
             reference_schema=StepRunSchema,
             reference_id=parent_id,
             session=session,
-            reference_name="parent step run",
+            reference_name="parent step",
         )
         assert parent_step_run is not None
 

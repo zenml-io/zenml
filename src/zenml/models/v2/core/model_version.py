@@ -92,9 +92,6 @@ class ModelVersionRequest(WorkspaceScopedRequest):
 class ModelVersionUpdate(BaseModel):
     """Update model for model versions."""
 
-    model: UUID = Field(
-        description="The ID of the model containing version",
-    )
     stage: Optional[Union[str, ModelStages]] = Field(
         description="Target model version stage to be set",
         default=None,

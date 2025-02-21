@@ -127,15 +127,6 @@ class ScheduleUpdate(BaseUpdate):
     """Update model for schedules."""
 
     name: Optional[str] = None
-    active: Optional[bool] = None
-    cron_expression: Optional[str] = None
-    start_time: Optional[datetime] = None
-    end_time: Optional[datetime] = None
-    interval_second: Optional[timedelta] = None
-    catchup: Optional[bool] = None
-    run_once_start_time: Optional[datetime] = None
-    orchestrator_id: Optional[UUID] = None
-    pipeline_id: Optional[UUID] = None
 
 
 # ------------------ Response Model ------------------
