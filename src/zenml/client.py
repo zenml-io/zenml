@@ -7462,7 +7462,10 @@ class Client(metaclass=ClientMetaClass):
         Args:
             tag_name_or_id: name or id of the tag to be deleted.
         """
-        self.zen_store.delete_tag(tag_name_or_id=tag_name_or_id)
+        self.zen_store.delete_tag(
+            tag_name_or_id=tag_name_or_id,
+            workspace_id=self.active_workspace.id,
+        )
 
     def update_tag(
         self,
@@ -7479,7 +7482,9 @@ class Client(metaclass=ClientMetaClass):
             The updated tag.
         """
         return self.zen_store.update_tag(
-            tag_name_or_id=tag_name_or_id, tag_update_model=tag_update_model
+            tag_name_or_id=tag_name_or_id,
+            tag_update_model=tag_update_model,
+            workspace_id=self.active_workspace.id,
         )
 
     def get_tag(
@@ -7496,7 +7501,9 @@ class Client(metaclass=ClientMetaClass):
             The tag of interest.
         """
         return self.zen_store.get_tag(
-            tag_name_or_id=tag_name_or_id, hydrate=hydrate
+            tag_name_or_id=tag_name_or_id,
+            hydrate=hydrate,
+            workspace_id=self.active_workspace.id,
         )
 
     def list_tags(

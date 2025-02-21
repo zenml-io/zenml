@@ -1918,12 +1918,12 @@ class RestZenStore(BaseZenStore):
         )
 
     def get_run(
-        self, run_name_or_id: Union[UUID, str], hydrate: bool = True
+        self, run_id: UUID, hydrate: bool = True
     ) -> PipelineRunResponse:
         """Gets a pipeline run.
 
         Args:
-            run_name_or_id: The name or ID of the pipeline run to get.
+            run_id: The ID of the pipeline run to get.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -1931,7 +1931,7 @@ class RestZenStore(BaseZenStore):
             The pipeline run.
         """
         return self._get_resource(
-            resource_id=run_name_or_id,
+            resource_id=run_id,
             route=RUNS,
             response_model=PipelineRunResponse,
             params={"hydrate": hydrate},
@@ -3899,32 +3899,51 @@ class RestZenStore(BaseZenStore):
     def delete_tag(
         self,
         tag_name_or_id: Union[str, UUID],
+        workspace_id: Optional[UUID] = None,
     ) -> None:
         """Deletes a tag.
 
         Args:
             tag_name_or_id: name or id of the tag to delete.
+            workspace_id: ID of the workspace to delete the tag from. Required
+                if `tag_name_or_id` is a tag name.
         """
-        self._delete_resource(resource_id=tag_name_or_id, route=TAGS)
+        params = {}
+        if workspace_id:
+            params["workspace_id"] = workspace_id
+        self._delete_resource(
+            resource_id=tag_name_or_id,
+            route=TAGS,
+            params=params,
+        )
 
     def get_tag(
-        self, tag_name_or_id: Union[str, UUID], hydrate: bool = True
+        self,
+        tag_name_or_id: Union[str, UUID],
+        workspace_id: Optional[UUID] = None,
+        hydrate: bool = True,
     ) -> TagResponse:
         """Get an existing tag.
 
         Args:
             tag_name_or_id: name or id of the tag to be retrieved.
+            workspace_id: ID of the workspace to get the tag from. Required
+                if `tag_name_or_id` is a tag name.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
         Returns:
             The tag of interest.
         """
+        params: Dict[str, Any] = {"hydrate": hydrate}
+        if workspace_id:
+            params["workspace_id"] = workspace_id
+
         return self._get_resource(
             resource_id=tag_name_or_id,
             route=TAGS,
             response_model=TagResponse,
-            params={"hydrate": hydrate},
+            params=params,
         )
 
     def list_tags(
@@ -3953,22 +3972,29 @@ class RestZenStore(BaseZenStore):
         self,
         tag_name_or_id: Union[str, UUID],
         tag_update_model: TagUpdate,
+        workspace_id: Optional[UUID] = None,
     ) -> TagResponse:
         """Update tag.
 
         Args:
             tag_name_or_id: name or id of the tag to be updated.
             tag_update_model: Tag to use for the update.
+            workspace_id: ID of the workspace to update the tag in. Required
+                if `tag_name_or_id` is a tag name.
 
         Returns:
             An updated tag.
         """
-        tag = self.get_tag(tag_name_or_id)
+        params = {}
+        if workspace_id:
+            params["workspace_id"] = workspace_id
+        tag = self.get_tag(tag_name_or_id, workspace_id=workspace_id)
         return self._update_resource(
             resource_id=tag.id,
             resource_update=tag_update_model,
             route=TAGS,
             response_model=TagResponse,
+            params=params,
         )
 
     # =======================
@@ -4728,12 +4754,16 @@ class RestZenStore(BaseZenStore):
         return response_model.model_validate(response_body)
 
     def _delete_resource(
-        self, resource_id: Union[str, UUID], route: str
+        self,
+        resource_id: Union[str, UUID],
+        route: str,
+        params: Optional[Dict[str, Any]] = None,
     ) -> None:
         """Delete a resource.
 
         Args:
             resource_id: The ID of the resource to delete.
             route: The resource REST API route to use.
+            params: Optional query parameters to pass to the endpoint.
         """
-        self.delete(f"{route}/{str(resource_id)}")
+        self.delete(f"{route}/{str(resource_id)}", params=params)

@@ -266,6 +266,7 @@ def verify_permissions_and_update_entity(
     update_model: AnyUpdate,
     get_method: Callable[[UUIDOrStr, bool], AnyResponse],
     update_method: Callable[[UUIDOrStr, AnyUpdate], AnyResponse],
+    **update_method_kwargs: Any,
 ) -> AnyResponse:
     """Verify permissions and update an entity.
 
@@ -274,6 +275,7 @@ def verify_permissions_and_update_entity(
         update_model: The entity update model.
         get_method: The method to fetch the entity.
         update_method: The method to update the entity.
+        update_method_kwargs: Keyword arguments to pass to the update method.
 
     Returns:
         A model of the updated entity.
@@ -281,7 +283,9 @@ def verify_permissions_and_update_entity(
     # We don't need the hydrated version here
     model = get_method(id, False)
     verify_permission_for_model(model, action=Action.UPDATE)
-    updated_model = update_method(model.id, update_model)
+    updated_model = update_method(
+        model.id, update_model, **update_method_kwargs
+    )
     return dehydrate_response_model(updated_model)
 
 
@@ -289,6 +293,7 @@ def verify_permissions_and_delete_entity(
     id: UUIDOrStr,
     get_method: Callable[[UUIDOrStr, bool], AnyResponse],
     delete_method: Callable[[UUIDOrStr], None],
+    **delete_method_kwargs: Any,
 ) -> AnyResponse:
     """Verify permissions and delete an entity.
 
@@ -296,6 +301,7 @@ def verify_permissions_and_delete_entity(
         id: The ID of the entity to delete.
         get_method: The method to fetch the entity.
         delete_method: The method to delete the entity.
+        delete_method_kwargs: Keyword arguments to pass to the delete method.
 
     Returns:
         The deleted entity.
@@ -303,7 +309,7 @@ def verify_permissions_and_delete_entity(
     # We don't need the hydrated version here
     model = get_method(id, False)
     verify_permission_for_model(model, action=Action.DELETE)
-    delete_method(model.id)
+    delete_method(model.id, **delete_method_kwargs)
 
     return model
 
