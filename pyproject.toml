@@ -275,6 +275,7 @@ dev = [
     "types-termcolor",
     "types-psutil",
     "types-passlib",
+    "google-cloud-build",
 ]
 
 [build-system]
