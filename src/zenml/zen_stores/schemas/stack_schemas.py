@@ -18,7 +18,8 @@ import json
 from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
-from sqlmodel import Relationship, SQLModel
+from sqlalchemy import UniqueConstraint
+from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.models import (
     StackResponse,
@@ -75,6 +76,14 @@ class StackSchema(NamedSchema, table=True):
     """SQL Model for stacks."""
 
     __tablename__ = "stack"
+    __table_args__ = (
+        UniqueConstraint(
+            "name",
+            name="unique_stack_name",
+        ),
+    )
+
+    description: Optional[str] = Field(default=None)
     stack_spec_path: Optional[str]
     labels: Optional[bytes]
 
@@ -155,6 +164,7 @@ class StackSchema(NamedSchema, table=True):
                 labels=json.loads(base64.b64decode(self.labels).decode())
                 if self.labels
                 else None,
+                description=self.description,
             )
 
         return StackResponse(

@@ -16,7 +16,7 @@
 from typing import Any, List, Optional
 from uuid import UUID
 
-from sqlalchemy import VARCHAR, Column
+from sqlalchemy import VARCHAR, Column, UniqueConstraint
 from sqlmodel import Field, Relationship
 
 from zenml.enums import ColorVariants, TaggableResourceTypes
@@ -44,6 +44,13 @@ class TagSchema(NamedSchema, table=True):
     """SQL Model for tag."""
 
     __tablename__ = "tag"
+    __table_args__ = (
+        UniqueConstraint(
+            "name",
+            "workspace_id",
+            name="unique_tag_name_in_workspace",
+        ),
+    )
 
     workspace_id: UUID = build_foreign_key_field(
         source=__tablename__,

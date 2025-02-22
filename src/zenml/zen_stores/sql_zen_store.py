@@ -292,7 +292,6 @@ from zenml.models import (
     WorkspaceRequest,
     WorkspaceResponse,
     WorkspaceScopedRequest,
-    WorkspaceScopedResponse,
     WorkspaceUpdate,
 )
 from zenml.service_connectors.service_connector_registry import (
@@ -365,7 +364,7 @@ from zenml.zen_stores.schemas.artifact_visualization_schemas import (
 from zenml.zen_stores.schemas.logs_schemas import LogsSchema
 from zenml.zen_stores.schemas.service_schemas import ServiceSchema
 from zenml.zen_stores.schemas.trigger_schemas import TriggerSchema
-from zenml.zen_stores.schemas.utils import get_resource_name
+from zenml.zen_stores.schemas.utils import get_resource_type_name
 from zenml.zen_stores.secrets_stores.base_secrets_store import BaseSecretsStore
 from zenml.zen_stores.secrets_stores.sql_secrets_store import (
     SqlSecretsStoreConfiguration,
@@ -1906,7 +1905,7 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             action = self._get_schema_by_id(
-                object_id=action_id,
+                resource_id=action_id,
                 schema_class=ActionSchema,
                 session=session,
             )
@@ -1957,7 +1956,7 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             action = self._get_schema_by_id(
-                object_id=action_id,
+                resource_id=action_id,
                 schema_class=ActionSchema,
                 session=session,
             )
@@ -2000,7 +1999,7 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             action = self._get_schema_by_id(
-                object_id=action_id,
+                resource_id=action_id,
                 schema_class=ActionSchema,
                 session=session,
             )
@@ -2410,14 +2409,14 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            self._fetch_reference_and_verify_scope(
+            self._get_reference_schema_by_id(
                 resource=service,
                 reference_schema=PipelineRunSchema,
                 reference_id=service.pipeline_run_id,
                 session=session,
             )
 
-            self._fetch_reference_and_verify_scope(
+            self._get_reference_schema_by_id(
                 resource=service,
                 reference_schema=ModelVersionSchema,
                 reference_id=service.model_version_id,
@@ -2445,19 +2444,13 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The service.
-
-        Raises:
-            KeyError: if the service doesn't exist.
         """
         with Session(self.engine) as session:
-            service = session.exec(
-                select(ServiceSchema).where(ServiceSchema.id == service_id)
-            ).first()
-            if service is None:
-                raise KeyError(
-                    f"Unable to get service with ID {service_id}: No "
-                    "service with this ID found."
-                )
+            service = self._get_schema_by_id(
+                resource_id=service_id,
+                schema_class=ServiceSchema,
+                session=session,
+            )
             return service.to_model(
                 include_metadata=hydrate, include_resources=True
             )
@@ -2497,18 +2490,15 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The updated service.
-
-        Raises:
-            KeyError: if the service doesn't exist.
         """
         with Session(self.engine) as session:
-            existing_service = session.exec(
-                select(ServiceSchema).where(ServiceSchema.id == service_id)
-            ).first()
-            if not existing_service:
-                raise KeyError(f"Service with ID {service_id} not found.")
+            existing_service = self._get_schema_by_id(
+                resource_id=service_id,
+                schema_class=ServiceSchema,
+                session=session,
+            )
 
-            self._fetch_reference_and_verify_scope(
+            self._get_reference_schema_by_id(
                 resource=existing_service,
                 reference_schema=ModelVersionSchema,
                 reference_id=update.model_version_id,
@@ -2530,16 +2520,13 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             service_id: The ID of the service to delete.
-
-        Raises:
-            KeyError: if the service doesn't exist.
         """
         with Session(self.engine) as session:
-            existing_service = session.exec(
-                select(ServiceSchema).where(ServiceSchema.id == service_id)
-            ).first()
-            if not existing_service:
-                raise KeyError(f"Service with ID {service_id} not found.")
+            existing_service = self._get_schema_by_id(
+                resource_id=service_id,
+                schema_class=ServiceSchema,
+                session=session,
+            )
 
             # Delete the service
             session.delete(existing_service)
@@ -2595,19 +2582,13 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The artifact.
-
-        Raises:
-            KeyError: if the artifact doesn't exist.
         """
         with Session(self.engine) as session:
-            artifact = session.exec(
-                select(ArtifactSchema).where(ArtifactSchema.id == artifact_id)
-            ).first()
-            if artifact is None:
-                raise KeyError(
-                    f"Unable to get artifact with ID {artifact_id}: No "
-                    "artifact with this ID found."
-                )
+            artifact = self._get_schema_by_id(
+                resource_id=artifact_id,
+                schema_class=ArtifactSchema,
+                session=session,
+            )
             return artifact.to_model(
                 include_metadata=hydrate, include_resources=True
             )
@@ -2647,16 +2628,13 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The updated artifact.
-
-        Raises:
-            KeyError: if the artifact doesn't exist.
         """
         with Session(self.engine) as session:
-            existing_artifact = session.exec(
-                select(ArtifactSchema).where(ArtifactSchema.id == artifact_id)
-            ).first()
-            if not existing_artifact:
-                raise KeyError(f"Artifact with ID {artifact_id} not found.")
+            existing_artifact = self._get_schema_by_id(
+                resource_id=artifact_id,
+                schema_class=ArtifactSchema,
+                session=session,
+            )
 
             self._verify_name_uniqueness(
                 resource=artifact_update,
@@ -2690,16 +2668,13 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             artifact_id: The ID of the artifact to delete.
-
-        Raises:
-            KeyError: if the artifact doesn't exist.
         """
         with Session(self.engine) as session:
-            existing_artifact = session.exec(
-                select(ArtifactSchema).where(ArtifactSchema.id == artifact_id)
-            ).first()
-            if not existing_artifact:
-                raise KeyError(f"Artifact with ID {artifact_id} not found.")
+            existing_artifact = self._get_schema_by_id(
+                resource_id=artifact_id,
+                schema_class=ArtifactSchema,
+                session=session,
+            )
             session.delete(existing_artifact)
             session.commit()
 
@@ -2723,8 +2698,10 @@ class SqlZenStore(BaseZenStore):
         Returns:
             Schema of the artifact.
         """
-        artifact_query = select(ArtifactSchema).where(
-            ArtifactSchema.name == name
+        artifact_query = (
+            select(ArtifactSchema)
+            .where(ArtifactSchema.name == name)
+            .where(ArtifactSchema.workspace_id == workspace_id)
         )
         artifact = session.exec(artifact_query).first()
 
@@ -2803,12 +2780,12 @@ class SqlZenStore(BaseZenStore):
                 request_model=artifact_version, session=session
             )
 
-            self._fetch_reference_and_verify_scope(
+            self._get_reference_schema_by_id(
                 resource=artifact_version,
                 reference_schema=StackComponentSchema,
                 reference_id=artifact_version.artifact_store_id,
                 session=session,
-                reference_name="artifact store",
+                reference_type="artifact store",
             )
 
             if artifact_name := artifact_version.artifact_name:
@@ -2982,22 +2959,13 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The artifact version.
-
-        Raises:
-            KeyError: if the artifact version doesn't exist.
         """
         with Session(self.engine) as session:
-            artifact_version = session.exec(
-                select(ArtifactVersionSchema).where(
-                    ArtifactVersionSchema.id == artifact_version_id
-                )
-            ).first()
-            if artifact_version is None:
-                raise KeyError(
-                    f"Unable to get artifact version with ID "
-                    f"{artifact_version_id}: No artifact version with this ID "
-                    f"found."
-                )
+            artifact_version = self._get_schema_by_id(
+                resource_id=artifact_version_id,
+                schema_class=ArtifactVersionSchema,
+                session=session,
+            )
             return artifact_version.to_model(
                 include_metadata=hydrate, include_resources=True
             )
@@ -3042,20 +3010,13 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The updated artifact version.
-
-        Raises:
-            KeyError: if the artifact version doesn't exist.
         """
         with Session(self.engine) as session:
-            existing_artifact_version = session.exec(
-                select(ArtifactVersionSchema).where(
-                    ArtifactVersionSchema.id == artifact_version_id
-                )
-            ).first()
-            if not existing_artifact_version:
-                raise KeyError(
-                    f"Artifact version with ID {artifact_version_id} not found."
-                )
+            existing_artifact_version = self._get_schema_by_id(
+                resource_id=artifact_version_id,
+                schema_class=ArtifactVersionSchema,
+                session=session,
+            )
 
             # Handle tag updates.
             if artifact_version_update.add_tags:
@@ -3085,22 +3046,13 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             artifact_version_id: The ID of the artifact version to delete.
-
-        Raises:
-            KeyError: if the artifact version doesn't exist.
         """
         with Session(self.engine) as session:
-            artifact_version = session.exec(
-                select(ArtifactVersionSchema).where(
-                    ArtifactVersionSchema.id == artifact_version_id
-                )
-            ).first()
-            if artifact_version is None:
-                raise KeyError(
-                    f"Unable to delete artifact version with ID "
-                    f"{artifact_version_id}: No artifact version with this ID "
-                    "found."
-                )
+            artifact_version = self._get_schema_by_id(
+                resource_id=artifact_version_id,
+                schema_class=ArtifactVersionSchema,
+                session=session,
+            )
             session.delete(artifact_version)
             session.commit()
 
@@ -3169,22 +3121,13 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The artifact visualization.
-
-        Raises:
-            KeyError: if the code reference doesn't exist.
         """
         with Session(self.engine) as session:
-            artifact_visualization = session.exec(
-                select(ArtifactVisualizationSchema).where(
-                    ArtifactVisualizationSchema.id == artifact_visualization_id
-                )
-            ).first()
-            if artifact_visualization is None:
-                raise KeyError(
-                    f"Unable to get artifact visualization with ID "
-                    f"{artifact_visualization_id}: "
-                    f"No artifact visualization with this ID found."
-                )
+            artifact_visualization = self._get_schema_by_id(
+                resource_id=artifact_visualization_id,
+                schema_class=ArtifactVisualizationSchema,
+                session=session,
+            )
             return artifact_visualization.to_model(
                 include_metadata=hydrate, include_resources=True
             )
@@ -3203,22 +3146,13 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The code reference.
-
-        Raises:
-            KeyError: if the code reference doesn't exist.
         """
         with Session(self.engine) as session:
-            code_reference = session.exec(
-                select(CodeReferenceSchema).where(
-                    CodeRepositorySchema.id == code_reference_id
-                )
-            ).first()
-            if code_reference is None:
-                raise KeyError(
-                    f"Unable to get code reference with ID "
-                    f"{code_reference_id}: "
-                    f"No code reference with this ID found."
-                )
+            code_reference = self._get_schema_by_id(
+                resource_id=code_reference_id,
+                schema_class=CodeReferenceSchema,
+                session=session,
+            )
             return code_reference.to_model(
                 include_metadata=hydrate, include_resources=True
             )
@@ -3273,22 +3207,13 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The requested code repository, if it was found.
-
-        Raises:
-            KeyError: If no code repository with the given ID exists.
         """
         with Session(self.engine) as session:
-            repo = session.exec(
-                select(CodeRepositorySchema).where(
-                    CodeRepositorySchema.id == code_repository_id
-                )
-            ).first()
-            if repo is None:
-                raise KeyError(
-                    f"Unable to get code repository with ID "
-                    f"'{code_repository_id}': No code repository with this "
-                    "ID found."
-                )
+            repo = self._get_schema_by_id(
+                resource_id=code_repository_id,
+                schema_class=CodeRepositorySchema,
+                session=session,
+            )
 
             return repo.to_model(
                 include_metadata=hydrate, include_resources=True
@@ -3331,22 +3256,13 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The updated code repository.
-
-        Raises:
-            KeyError: If no code repository with the given name exists.
         """
         with Session(self.engine) as session:
-            existing_repo = session.exec(
-                select(CodeRepositorySchema).where(
-                    CodeRepositorySchema.id == code_repository_id
-                )
-            ).first()
-            if existing_repo is None:
-                raise KeyError(
-                    f"Unable to update code repository with ID "
-                    f"{code_repository_id}: No code repository with this ID "
-                    "found."
-                )
+            existing_repo = self._get_schema_by_id(
+                resource_id=code_repository_id,
+                schema_class=CodeRepositorySchema,
+                session=session,
+            )
 
             self._verify_name_uniqueness(
                 resource=update,
@@ -3368,22 +3284,13 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             code_repository_id: The ID of the code repository to delete.
-
-        Raises:
-            KeyError: If no code repository with the given ID exists.
         """
         with Session(self.engine) as session:
-            existing_repo = session.exec(
-                select(CodeRepositorySchema).where(
-                    CodeRepositorySchema.id == code_repository_id
-                )
-            ).first()
-            if existing_repo is None:
-                raise KeyError(
-                    f"Unable to delete code repository with ID "
-                    f"{code_repository_id}: No code repository with this ID "
-                    "found."
-                )
+            existing_repo = self._get_schema_by_id(
+                resource_id=code_repository_id,
+                schema_class=CodeRepositorySchema,
+                session=session,
+            )
 
             session.delete(existing_repo)
             session.commit()
@@ -3444,7 +3351,7 @@ class SqlZenStore(BaseZenStore):
                     validate_custom_flavors=False,
                 )
 
-            service_connector = self._fetch_reference_and_verify_scope(
+            service_connector = self._get_reference_schema_by_id(
                 resource=component,
                 reference_schema=ServiceConnectorSchema,
                 reference_id=component.connector,
@@ -3503,21 +3410,13 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The stack component.
-
-        Raises:
-            KeyError: if the stack component doesn't exist.
         """
         with Session(self.engine) as session:
-            stack_component = session.exec(
-                select(StackComponentSchema).where(
-                    StackComponentSchema.id == component_id
-                )
-            ).first()
-
-            if stack_component is None:
-                raise KeyError(
-                    f"Stack component with ID {component_id} not found."
-                )
+            stack_component = self._get_schema_by_id(
+                resource_id=component_id,
+                schema_class=StackComponentSchema,
+                session=session,
+            )
 
             return stack_component.to_model(
                 include_metadata=hydrate, include_resources=True
@@ -3565,23 +3464,15 @@ class SqlZenStore(BaseZenStore):
             The updated stack component.
 
         Raises:
-            KeyError: if the stack component doesn't exist.
             IllegalOperationError: if the stack component is a default stack
                 component.
         """
         with Session(self.engine) as session:
-            existing_component = session.exec(
-                select(StackComponentSchema).where(
-                    StackComponentSchema.id == component_id
-                )
-            ).first()
-
-            if existing_component is None:
-                raise KeyError(
-                    f"Unable to update component with id "
-                    f"'{component_id}': Found no"
-                    f"existing component with this id."
-                )
+            existing_component = self._get_schema_by_id(
+                resource_id=component_id,
+                schema_class=StackComponentSchema,
+                session=session,
+            )
 
             if component_update.configuration is not None:
                 from zenml.stack.utils import validate_stack_component_config
@@ -3621,19 +3512,7 @@ class SqlZenStore(BaseZenStore):
             existing_component.update(component_update=component_update)
 
             if component_update.connector:
-                service_connector = session.exec(
-                    select(ServiceConnectorSchema).where(
-                        ServiceConnectorSchema.id == component_update.connector
-                    )
-                ).first()
-
-                if service_connector is None:
-                    raise KeyError(
-                        "Service connector with ID "
-                        f"{component_update.connector} not found."
-                    )
-
-                self._fetch_reference_and_verify_scope(
+                service_connector = self._get_reference_schema_by_id(
                     resource=existing_component,
                     reference_schema=ServiceConnectorSchema,
                     reference_id=component_update.connector,
@@ -3662,47 +3541,40 @@ class SqlZenStore(BaseZenStore):
             component_id: The id of the stack component to delete.
 
         Raises:
-            KeyError: if the stack component doesn't exist.
             IllegalOperationError: if the stack component is part of one or
                 more stacks, or if it's a default stack component.
         """
         with Session(self.engine) as session:
-            try:
-                stack_component = session.exec(
-                    select(StackComponentSchema).where(
-                        StackComponentSchema.id == component_id
-                    )
-                ).one()
+            stack_component = self._get_schema_by_id(
+                resource_id=component_id,
+                schema_class=StackComponentSchema,
+                session=session,
+            )
 
-                if stack_component is None:
-                    raise KeyError(f"Stack with ID {component_id} not found.")
-                if (
-                    stack_component.name == DEFAULT_STACK_AND_COMPONENT_NAME
-                    and stack_component.type
-                    in [
-                        StackComponentType.ORCHESTRATOR,
-                        StackComponentType.ARTIFACT_STORE,
-                    ]
-                ):
-                    raise IllegalOperationError(
-                        f"The default {stack_component.type} cannot be deleted."
-                    )
+            if (
+                stack_component.name == DEFAULT_STACK_AND_COMPONENT_NAME
+                and stack_component.type
+                in [
+                    StackComponentType.ORCHESTRATOR,
+                    StackComponentType.ARTIFACT_STORE,
+                ]
+            ):
+                raise IllegalOperationError(
+                    f"The default {stack_component.type} cannot be deleted."
+                )
 
-                if len(stack_component.stacks) > 0:
-                    raise IllegalOperationError(
-                        f"Stack Component `{stack_component.name}` of type "
-                        f"`{stack_component.type} cannot be "
-                        f"deleted as it is part of "
-                        f"{len(stack_component.stacks)} stacks. "
-                        f"Before deleting this stack "
-                        f"component, make sure to remove it "
-                        f"from all stacks."
-                    )
-                else:
-                    session.delete(stack_component)
-            except NoResultFound as error:
-                raise KeyError from error
+            if len(stack_component.stacks) > 0:
+                raise IllegalOperationError(
+                    f"Stack Component `{stack_component.name}` of type "
+                    f"`{stack_component.type} cannot be "
+                    f"deleted as it is part of "
+                    f"{len(stack_component.stacks)} stacks. "
+                    f"Before deleting this stack "
+                    f"component, make sure to remove it "
+                    f"from all stacks."
+                )
 
+            session.delete(stack_component)
             session.commit()
 
     def count_stack_components(
@@ -3771,6 +3643,9 @@ class SqlZenStore(BaseZenStore):
         with Session(self.engine) as session:
             existing_device = session.exec(
                 select(OAuthDeviceSchema).where(
+                    # We search for a device with the same client ID
+                    # because the client ID is the one that is used to
+                    # identify the device
                     OAuthDeviceSchema.client_id == device.client_id
                 )
             ).first()
@@ -3812,21 +3687,14 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The requested device, if it was found.
-
-        Raises:
-            KeyError: If no device with the given ID exists.
         """
         with Session(self.engine) as session:
-            device = session.exec(
-                select(OAuthDeviceSchema).where(
-                    OAuthDeviceSchema.id == device_id
-                )
-            ).first()
-            if device is None:
-                raise KeyError(
-                    f"Unable to get device with ID {device_id}: No device with "
-                    "this ID found."
-                )
+            device = self._get_schema_by_id(
+                resource_id=device_id,
+                schema_class=OAuthDeviceSchema,
+                session=session,
+                resource_type="authorized device",
+            )
 
             return device.to_model(
                 include_metadata=hydrate, include_resources=True
@@ -3917,21 +3785,14 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The updated OAuth 2.0 authorized device.
-
-        Raises:
-            KeyError: If no device with the given ID exists.
         """
         with Session(self.engine) as session:
-            existing_device = session.exec(
-                select(OAuthDeviceSchema).where(
-                    OAuthDeviceSchema.id == device_id
-                )
-            ).first()
-            if existing_device is None:
-                raise KeyError(
-                    f"Unable to update device with ID {device_id}: No "
-                    "device with this ID found."
-                )
+            existing_device = self._get_schema_by_id(
+                resource_id=device_id,
+                schema_class=OAuthDeviceSchema,
+                session=session,
+                resource_type="authorized device",
+            )
 
             existing_device.update(update)
 
@@ -3953,21 +3814,14 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The updated OAuth 2.0 authorized device.
-
-        Raises:
-            KeyError: If no device with the given ID exists.
         """
         with Session(self.engine) as session:
-            existing_device = session.exec(
-                select(OAuthDeviceSchema).where(
-                    OAuthDeviceSchema.id == device_id
-                )
-            ).first()
-            if existing_device is None:
-                raise KeyError(
-                    f"Unable to update device with ID {device_id}: No device "
-                    "with this ID found."
-                )
+            existing_device = self._get_schema_by_id(
+                resource_id=device_id,
+                schema_class=OAuthDeviceSchema,
+                session=session,
+                resource_type="authorized device",
+            )
 
             (
                 _,
@@ -3996,21 +3850,14 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             device_id: The ID of the device to delete.
-
-        Raises:
-            KeyError: If no device with the given ID exists.
         """
         with Session(self.engine) as session:
-            existing_device = session.exec(
-                select(OAuthDeviceSchema).where(
-                    OAuthDeviceSchema.id == device_id
-                )
-            ).first()
-            if existing_device is None:
-                raise KeyError(
-                    f"Unable to delete device with ID {device_id}: No device "
-                    "with this ID found."
-                )
+            existing_device = self._get_schema_by_id(
+                resource_id=device_id,
+                schema_class=OAuthDeviceSchema,
+                session=session,
+                resource_type="authorized device",
+            )
 
             session.delete(existing_device)
             session.commit()
@@ -4114,16 +3961,13 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The stack component flavor.
-
-        Raises:
-            KeyError: if the stack component flavor doesn't exist.
         """
         with Session(self.engine) as session:
-            flavor_in_db = session.exec(
-                select(FlavorSchema).where(FlavorSchema.id == flavor_id)
-            ).first()
-            if flavor_in_db is None:
-                raise KeyError(f"Flavor with ID {flavor_id} not found.")
+            flavor_in_db = self._get_schema_by_id(
+                resource_id=flavor_id,
+                schema_class=FlavorSchema,
+                session=session,
+            )
             return flavor_in_db.to_model(
                 include_metadata=hydrate, include_resources=True
             )
@@ -4167,17 +4011,15 @@ class SqlZenStore(BaseZenStore):
             The updated flavor.
 
         Raises:
-            KeyError: If no flavor with the given id exists.
             EntityExistsError: If a flavor with the same name and type already
                 exists.
         """
         with Session(self.engine) as session:
-            existing_flavor = session.exec(
-                select(FlavorSchema).where(FlavorSchema.id == flavor_id)
-            ).first()
-
-            if not existing_flavor:
-                raise KeyError(f"Flavor with ID {flavor_id} not found.")
+            existing_flavor = self._get_schema_by_id(
+                resource_id=flavor_id,
+                schema_class=FlavorSchema,
+                session=session,
+            )
 
             # Check if flavor with the new domain key (name, type) already
             # exists
@@ -4223,17 +4065,15 @@ class SqlZenStore(BaseZenStore):
             flavor_id: The id of the flavor to delete.
 
         Raises:
-            KeyError: if the flavor doesn't exist.
             IllegalOperationError: if the flavor is used by a stack component.
         """
         with Session(self.engine) as session:
             try:
-                flavor_in_db = session.exec(
-                    select(FlavorSchema).where(FlavorSchema.id == flavor_id)
-                ).one()
-
-                if flavor_in_db is None:
-                    raise KeyError(f"Flavor with ID {flavor_id} not found.")
+                flavor_in_db = self._get_schema_by_id(
+                    resource_id=flavor_id,
+                    schema_class=FlavorSchema,
+                    session=session,
+                )
                 components_of_flavor = session.exec(
                     select(StackComponentSchema).where(
                         StackComponentSchema.flavor == flavor_in_db.name
@@ -4267,20 +4107,13 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The logs.
-
-        Raises:
-            KeyError: if the logs doesn't exist.
         """
         with Session(self.engine) as session:
-            logs = session.exec(
-                select(LogsSchema).where(LogsSchema.id == logs_id)
-            ).first()
-            if logs is None:
-                raise KeyError(
-                    f"Unable to get logs with ID "
-                    f"{logs_id}: "
-                    f"No logs with this ID found."
-                )
+            logs = self._get_schema_by_id(
+                resource_id=logs_id,
+                schema_class=LogsSchema,
+                session=session,
+            )
             return logs.to_model(
                 include_metadata=hydrate, include_resources=True
             )
@@ -4341,21 +4174,14 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The pipeline.
-
-        Raises:
-            KeyError: if the pipeline does not exist.
         """
         with Session(self.engine) as session:
             # Check if pipeline with the given ID exists
-            pipeline = session.exec(
-                select(PipelineSchema).where(PipelineSchema.id == pipeline_id)
-            ).first()
-            if pipeline is None:
-                raise KeyError(
-                    f"Unable to get pipeline with ID '{pipeline_id}': "
-                    "No pipeline with this ID found."
-                )
-
+            pipeline = self._get_schema_by_id(
+                resource_id=pipeline_id,
+                schema_class=PipelineSchema,
+                session=session,
+            )
             return pipeline.to_model(
                 include_metadata=hydrate, include_resources=True
             )
@@ -4386,7 +4212,7 @@ class SqlZenStore(BaseZenStore):
                 hydrate=hydrate,
             )
 
-    def count_pipelines(self, filter_model: Optional[PipelineFilter]) -> int:
+    def count_pipelines(self, filter_model: PipelineFilter) -> int:
         """Count all pipelines.
 
         Args:
@@ -4412,20 +4238,14 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The updated pipeline.
-
-        Raises:
-            KeyError: if the pipeline doesn't exist.
         """
         with Session(self.engine) as session:
             # Check if pipeline with the given ID exists
-            existing_pipeline = session.exec(
-                select(PipelineSchema).where(PipelineSchema.id == pipeline_id)
-            ).first()
-            if existing_pipeline is None:
-                raise KeyError(
-                    f"Unable to update pipeline with ID {pipeline_id}: "
-                    f"No pipeline with this ID found."
-                )
+            existing_pipeline = self._get_schema_by_id(
+                resource_id=pipeline_id,
+                schema_class=PipelineSchema,
+                session=session,
+            )
 
             if pipeline_update.add_tags:
                 self._attach_tags_to_resource(
@@ -4454,20 +4274,14 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             pipeline_id: The ID of the pipeline to delete.
-
-        Raises:
-            KeyError: if the pipeline doesn't exist.
         """
         with Session(self.engine) as session:
             # Check if pipeline with the given ID exists
-            pipeline = session.exec(
-                select(PipelineSchema).where(PipelineSchema.id == pipeline_id)
-            ).first()
-            if pipeline is None:
-                raise KeyError(
-                    f"Unable to delete pipeline with ID {pipeline_id}: "
-                    f"No pipeline with this ID found."
-                )
+            pipeline = self._get_schema_by_id(
+                resource_id=pipeline_id,
+                schema_class=PipelineSchema,
+                session=session,
+            )
 
             session.delete(pipeline)
             session.commit()
@@ -4488,14 +4302,14 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             self._set_request_user_id(request_model=build, session=session)
-            self._fetch_reference_and_verify_scope(
+            self._get_reference_schema_by_id(
                 resource=build,
                 reference_schema=StackSchema,
                 reference_id=build.stack,
                 session=session,
             )
 
-            self._fetch_reference_and_verify_scope(
+            self._get_reference_schema_by_id(
                 resource=build,
                 reference_schema=PipelineSchema,
                 reference_id=build.pipeline,
@@ -4523,23 +4337,14 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The build.
-
-        Raises:
-            KeyError: If the build does not exist.
         """
         with Session(self.engine) as session:
             # Check if build with the given ID exists
-            build = session.exec(
-                select(PipelineBuildSchema).where(
-                    PipelineBuildSchema.id == build_id
-                )
-            ).first()
-            if build is None:
-                raise KeyError(
-                    f"Unable to get build with ID '{build_id}': "
-                    "No build with this ID found."
-                )
-
+            build = self._get_schema_by_id(
+                resource_id=build_id,
+                schema_class=PipelineBuildSchema,
+                session=session,
+            )
             return build.to_model(
                 include_metadata=hydrate, include_resources=True
             )
@@ -4575,22 +4380,14 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             build_id: The ID of the build to delete.
-
-        Raises:
-            KeyError: if the build doesn't exist.
         """
         with Session(self.engine) as session:
             # Check if build with the given ID exists
-            build = session.exec(
-                select(PipelineBuildSchema).where(
-                    PipelineBuildSchema.id == build_id
-                )
-            ).first()
-            if build is None:
-                raise KeyError(
-                    f"Unable to delete build with ID {build_id}: "
-                    f"No build with this ID found."
-                )
+            build = self._get_schema_by_id(
+                resource_id=build_id,
+                schema_class=PipelineBuildSchema,
+                session=session,
+            )
 
             session.delete(build)
             session.commit()
@@ -4655,46 +4452,43 @@ class SqlZenStore(BaseZenStore):
             self._set_request_user_id(
                 request_model=deployment, session=session
             )
-            self._fetch_reference_and_verify_scope(
+            self._get_reference_schema_by_id(
                 resource=deployment,
                 reference_schema=StackSchema,
                 reference_id=deployment.stack,
                 session=session,
             )
 
-            if pipeline_id := deployment.pipeline:
-                self._fetch_reference_and_verify_scope(
-                    resource=deployment,
-                    reference_schema=PipelineSchema,
-                    reference_id=pipeline_id,
-                    session=session,
-                )
+            self._get_reference_schema_by_id(
+                resource=deployment,
+                reference_schema=PipelineSchema,
+                reference_id=deployment.pipeline,
+                session=session,
+            )
 
-            if build_id := deployment.build:
-                self._fetch_reference_and_verify_scope(
-                    resource=deployment,
-                    reference_schema=PipelineBuildSchema,
-                    reference_id=build_id,
-                    session=session,
-                )
+            self._get_reference_schema_by_id(
+                resource=deployment,
+                reference_schema=PipelineBuildSchema,
+                reference_id=deployment.build,
+                session=session,
+            )
 
-            if schedule_id := deployment.schedule:
-                self._fetch_reference_and_verify_scope(
-                    resource=deployment,
-                    reference_schema=ScheduleSchema,
-                    reference_id=schedule_id,
-                    session=session,
-                )
+            self._get_reference_schema_by_id(
+                resource=deployment,
+                reference_schema=ScheduleSchema,
+                reference_id=deployment.schedule,
+                session=session,
+            )
 
             if deployment.code_reference:
-                self._fetch_reference_and_verify_scope(
+                self._get_reference_schema_by_id(
                     resource=deployment,
                     reference_schema=CodeRepositorySchema,
                     reference_id=deployment.code_reference.code_repository,
                     session=session,
                 )
 
-            self._fetch_reference_and_verify_scope(
+            self._get_reference_schema_by_id(
                 resource=deployment,
                 reference_schema=RunTemplateSchema,
                 reference_id=deployment.template,
@@ -4730,22 +4524,14 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The deployment.
-
-        Raises:
-            KeyError: If the deployment does not exist.
         """
         with Session(self.engine) as session:
             # Check if deployment with the given ID exists
-            deployment = session.exec(
-                select(PipelineDeploymentSchema).where(
-                    PipelineDeploymentSchema.id == deployment_id
-                )
-            ).first()
-            if deployment is None:
-                raise KeyError(
-                    f"Unable to get deployment with ID '{deployment_id}': "
-                    "No deployment with this ID found."
-                )
+            deployment = self._get_schema_by_id(
+                resource_id=deployment_id,
+                schema_class=PipelineDeploymentSchema,
+                session=session,
+            )
 
             return deployment.to_model(
                 include_metadata=hydrate, include_resources=True
@@ -4782,22 +4568,14 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             deployment_id: The ID of the deployment to delete.
-
-        Raises:
-            KeyError: If the deployment doesn't exist.
         """
         with Session(self.engine) as session:
             # Check if build with the given ID exists
-            deployment = session.exec(
-                select(PipelineDeploymentSchema).where(
-                    PipelineDeploymentSchema.id == deployment_id
-                )
-            ).first()
-            if deployment is None:
-                raise KeyError(
-                    f"Unable to delete deployment with ID {deployment_id}: "
-                    f"No deployment with this ID found."
-                )
+            deployment = self._get_schema_by_id(
+                resource_id=deployment_id,
+                schema_class=PipelineDeploymentSchema,
+                session=session,
+            )
 
             session.delete(deployment)
             session.commit()
@@ -4831,7 +4609,7 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            deployment = self._fetch_reference_and_verify_scope(
+            deployment = self._get_reference_schema_by_id(
                 resource=template,
                 reference_schema=PipelineDeploymentSchema,
                 reference_id=template.source_deployment_id,
@@ -4869,22 +4647,13 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The template.
-
-        Raises:
-            KeyError: If the template does not exist.
         """
         with Session(self.engine) as session:
-            template = session.exec(
-                select(RunTemplateSchema).where(
-                    RunTemplateSchema.id == template_id
-                )
-            ).first()
-            if template is None:
-                raise KeyError(
-                    f"Unable to get run template with ID {template_id}: "
-                    f"No run template with this ID found."
-                )
-
+            template = self._get_schema_by_id(
+                resource_id=template_id,
+                schema_class=RunTemplateSchema,
+                session=session,
+            )
             return template.to_model(
                 include_metadata=hydrate, include_resources=True
             )
@@ -4928,21 +4697,13 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The updated template.
-
-        Raises:
-            KeyError: If the template does not exist.
         """
         with Session(self.engine) as session:
-            template = session.exec(
-                select(RunTemplateSchema).where(
-                    RunTemplateSchema.id == template_id
-                )
-            ).first()
-            if template is None:
-                raise KeyError(
-                    f"Unable to update run template with ID {template_id}: "
-                    f"No run template with this ID found."
-                )
+            template = self._get_schema_by_id(
+                resource_id=template_id,
+                schema_class=RunTemplateSchema,
+                session=session,
+            )
 
             if template_update.add_tags:
                 self._attach_tags_to_resource(
@@ -4972,21 +4733,13 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             template_id: The ID of the template to delete.
-
-        Raises:
-            KeyError: If the template does not exist.
         """
         with Session(self.engine) as session:
-            template = session.exec(
-                select(RunTemplateSchema).where(
-                    RunTemplateSchema.id == template_id
-                )
-            ).first()
-            if template is None:
-                raise KeyError(
-                    f"Unable to delete run template with ID {template_id}: "
-                    f"No run template with this ID found."
-                )
+            template = self._get_schema_by_id(
+                resource_id=template_id,
+                schema_class=RunTemplateSchema,
+                session=session,
+            )
 
             session.delete(template)
             # We set the reference of all deployments to this template to null
@@ -5070,7 +4823,7 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             event_source = self._get_schema_by_id(
-                object_id=event_source_id,
+                resource_id=event_source_id,
                 schema_class=EventSourceSchema,
                 session=session,
             )
@@ -5120,7 +4873,7 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             event_source = self._get_schema_by_id(
-                object_id=event_source_id,
+                resource_id=event_source_id,
                 schema_class=EventSourceSchema,
                 session=session,
             )
@@ -5153,7 +4906,7 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             event_source = self._get_schema_by_id(
-                object_id=event_source_id,
+                resource_id=event_source_id,
                 schema_class=EventSourceSchema,
                 session=session,
             )
@@ -5185,14 +4938,17 @@ class SqlZenStore(BaseZenStore):
             EntityExistsError: If a run with the same name already exists.
         """
         with Session(self.engine) as session:
-            self._fetch_reference_and_verify_scope(
+            self._set_request_user_id(
+                request_model=pipeline_run, session=session
+            )
+            self._get_reference_schema_by_id(
                 resource=pipeline_run,
                 reference_schema=PipelineDeploymentSchema,
                 reference_id=pipeline_run.deployment,
                 session=session,
             )
 
-            self._fetch_reference_and_verify_scope(
+            self._get_reference_schema_by_id(
                 resource=pipeline_run,
                 reference_schema=PipelineSchema,
                 reference_id=pipeline_run.pipeline,
@@ -5259,11 +5015,13 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             run = self._get_schema_by_id(
-                object_id=run_id,
+                resource_id=run_id,
                 schema_class=PipelineRunSchema,
                 session=session,
             )
-        return run.to_model(include_metadata=hydrate, include_resources=True)
+            return run.to_model(
+                include_metadata=hydrate, include_resources=True
+            )
 
     def _replace_placeholder_run(
         self,
@@ -5303,6 +5061,9 @@ class SqlZenStore(BaseZenStore):
                 )
                 .where(
                     PipelineRunSchema.orchestrator_run_id.is_(None)  # type: ignore[union-attr]
+                )
+                .where(
+                    PipelineRunSchema.workspace_id == pipeline_run.workspace
                 )
             ).first()
 
@@ -5379,7 +5140,6 @@ class SqlZenStore(BaseZenStore):
 
         # noqa: DAR401
         Raises:
-            ValueError: If the request does not contain an orchestrator run ID.
             EntityExistsError: If a run with the same name already exists.
             RuntimeError: If the run fetching failed unexpectedly.
 
@@ -5387,24 +5147,19 @@ class SqlZenStore(BaseZenStore):
             The pipeline run, and a boolean indicating whether the run was
             created or not.
         """
-        if not pipeline_run.orchestrator_run_id:
-            raise ValueError(
-                "Unable to get or create run for request with missing "
-                "orchestrator run ID."
-            )
-        self._set_request_user_id(request_model=pipeline_run)
-        try:
-            # We first try the most likely case that the run was already
-            # created by a previous step in the same pipeline run.
-            return (
-                self._get_run_by_orchestrator_run_id(
-                    orchestrator_run_id=pipeline_run.orchestrator_run_id,
-                    deployment_id=pipeline_run.deployment,
-                ),
-                False,
-            )
-        except KeyError:
-            pass
+        if pipeline_run.orchestrator_run_id:
+            try:
+                # We first try the most likely case that the run was already
+                # created by a previous step in the same pipeline run.
+                return (
+                    self._get_run_by_orchestrator_run_id(
+                        orchestrator_run_id=pipeline_run.orchestrator_run_id,
+                        deployment_id=pipeline_run.deployment,
+                    ),
+                    False,
+                )
+            except KeyError:
+                pass
 
         try:
             return (
@@ -5446,6 +5201,8 @@ class SqlZenStore(BaseZenStore):
                 pre_creation_hook()
             return self._create_run(pipeline_run), True
         except EntityExistsError as create_error:
+            if not pipeline_run.orchestrator_run_id:
+                raise
             # Creating the run failed because
             # - a run with the same deployment_id and orchestrator_run_id
             #   exists. We now fetch and return that run.
@@ -5505,20 +5262,14 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The updated pipeline run.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
         """
         with Session(self.engine) as session:
             # Check if pipeline run with the given ID exists
-            existing_run = session.exec(
-                select(PipelineRunSchema).where(PipelineRunSchema.id == run_id)
-            ).first()
-            if existing_run is None:
-                raise KeyError(
-                    f"Unable to update pipeline run with ID {run_id}: "
-                    f"No pipeline run with this ID found."
-                )
+            existing_run = self._get_schema_by_id(
+                resource_id=run_id,
+                schema_class=PipelineRunSchema,
+                session=session,
+            )
 
             if run_update.add_tags:
                 self._attach_tags_to_resource(
@@ -5547,26 +5298,20 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             run_id: The ID of the pipeline run to delete.
-
-        Raises:
-            KeyError: if the pipeline run doesn't exist.
         """
         with Session(self.engine) as session:
             # Check if pipeline run with the given ID exists
-            existing_run = session.exec(
-                select(PipelineRunSchema).where(PipelineRunSchema.id == run_id)
-            ).first()
-            if existing_run is None:
-                raise KeyError(
-                    f"Unable to delete pipeline run with ID {run_id}: "
-                    f"No pipeline run with this ID found."
-                )
+            existing_run = self._get_schema_by_id(
+                resource_id=run_id,
+                schema_class=PipelineRunSchema,
+                session=session,
+            )
 
             # Delete the pipeline run
             session.delete(existing_run)
             session.commit()
 
-    def count_runs(self, filter_model: Optional[PipelineRunFilter]) -> int:
+    def count_runs(self, filter_model: PipelineRunFilter) -> int:
         """Count all pipeline runs.
 
         Args:
@@ -5589,14 +5334,50 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The created run metadata.
+
+        Raises:
+            RuntimeError: If the resource type is not supported.
         """
         with Session(self.engine) as session:
             self._set_request_user_id(
                 request_model=run_metadata, session=session
             )
+
+            self._get_reference_schema_by_id(
+                resource=run_metadata,
+                reference_schema=StackComponentSchema,
+                reference_id=run_metadata.stack_component_id,
+                session=session,
+            )
+
+            for resource in run_metadata.resources:
+                reference_schema: Type[BaseSchema]
+                if resource.type == MetadataResourceTypes.PIPELINE_RUN:
+                    reference_schema = PipelineRunSchema
+                elif resource.type == MetadataResourceTypes.STEP_RUN:
+                    reference_schema = StepRunSchema
+                elif resource.type == MetadataResourceTypes.ARTIFACT_VERSION:
+                    reference_schema = ArtifactVersionSchema
+                elif resource.type == MetadataResourceTypes.MODEL_VERSION:
+                    reference_schema = ModelVersionSchema
+                elif resource.type == MetadataResourceTypes.SCHEDULE:
+                    reference_schema = ScheduleSchema
+                else:
+                    raise RuntimeError(
+                        f"Unknown resource type: {resource.type}"
+                    )
+
+                self._get_reference_schema_by_id(
+                    resource=run_metadata,
+                    reference_schema=reference_schema,
+                    reference_id=resource.id,
+                    session=session,
+                )
+
             if run_metadata.resources:
                 for key, value in run_metadata.values.items():
                     type_ = run_metadata.types[key]
+
                     run_metadata_schema = RunMetadataSchema(
                         workspace_id=run_metadata.workspace,
                         user_id=run_metadata.user,
@@ -5606,8 +5387,8 @@ class SqlZenStore(BaseZenStore):
                         type=type_,
                         publisher_step_id=run_metadata.publisher_step_id,
                     )
+
                     session.add(run_metadata_schema)
-                    session.commit()
 
                     for resource in run_metadata.resources:
                         rm_resource_link = RunMetadataResourceSchema(
@@ -5616,7 +5397,12 @@ class SqlZenStore(BaseZenStore):
                             run_metadata_id=run_metadata_schema.id,
                         )
                         session.add(rm_resource_link)
-                        session.commit()
+
+                # We can have a single commit at the end, because SQLAlchemy handles
+                # the ID generation and relationship management automatically when
+                # objects are added to the session and this significantly improves
+                # performance.
+                session.commit()
         return None
 
     # ----------------------------- Schedules -----------------------------
@@ -5639,15 +5425,15 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            self._fetch_reference_and_verify_scope(
+            self._get_reference_schema_by_id(
                 resource=schedule,
                 reference_schema=StackComponentSchema,
                 reference_id=schedule.orchestrator_id,
                 session=session,
-                reference_name="orchestrator",
+                reference_type="orchestrator",
             )
 
-            self._fetch_reference_and_verify_scope(
+            self._get_reference_schema_by_id(
                 resource=schedule,
                 reference_schema=PipelineSchema,
                 reference_id=schedule.pipeline_id,
@@ -5673,20 +5459,14 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The schedule.
-
-        Raises:
-            KeyError: if the schedule does not exist.
         """
         with Session(self.engine) as session:
             # Check if schedule with the given ID exists
-            schedule = session.exec(
-                select(ScheduleSchema).where(ScheduleSchema.id == schedule_id)
-            ).first()
-            if schedule is None:
-                raise KeyError(
-                    f"Unable to get schedule with ID '{schedule_id}': "
-                    "No schedule with this ID found."
-                )
+            schedule = self._get_schema_by_id(
+                resource_id=schedule_id,
+                schema_class=ScheduleSchema,
+                session=session,
+            )
             return schedule.to_model(
                 include_metadata=hydrate, include_resources=True
             )
@@ -5730,20 +5510,14 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The updated schedule.
-
-        Raises:
-            KeyError: if the schedule doesn't exist.
         """
         with Session(self.engine) as session:
             # Check if schedule with the given ID exists
-            existing_schedule = session.exec(
-                select(ScheduleSchema).where(ScheduleSchema.id == schedule_id)
-            ).first()
-            if existing_schedule is None:
-                raise KeyError(
-                    f"Unable to update schedule with ID {schedule_id}: "
-                    f"No schedule with this ID found."
-                )
+            existing_schedule = self._get_schema_by_id(
+                resource_id=schedule_id,
+                schema_class=ScheduleSchema,
+                session=session,
+            )
 
             self._verify_name_uniqueness(
                 resource=schedule_update,
@@ -5764,20 +5538,14 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             schedule_id: The ID of the schedule to delete.
-
-        Raises:
-            KeyError: if the schedule doesn't exist.
         """
         with Session(self.engine) as session:
             # Check if schedule with the given ID exists
-            schedule = session.exec(
-                select(ScheduleSchema).where(ScheduleSchema.id == schedule_id)
-            ).first()
-            if schedule is None:
-                raise KeyError(
-                    f"Unable to delete schedule with ID {schedule_id}: "
-                    f"No schedule with this ID found."
-                )
+            schedule = self._get_schema_by_id(
+                resource_id=schedule_id,
+                schema_class=ScheduleSchema,
+                session=session,
+            )
 
             # Delete the schedule
             session.delete(schedule)
@@ -6864,22 +6632,13 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The requested service connector, if it was found.
-
-        Raises:
-            KeyError: If no service connector with the given ID exists.
         """
         with Session(self.engine) as session:
-            service_connector = session.exec(
-                select(ServiceConnectorSchema).where(
-                    ServiceConnectorSchema.id == service_connector_id
-                )
-            ).first()
-
-            if service_connector is None:
-                raise KeyError(
-                    f"Service connector with ID {service_connector_id} not "
-                    "found."
-                )
+            service_connector = self._get_schema_by_id(
+                resource_id=service_connector_id,
+                schema_class=ServiceConnectorSchema,
+                session=session,
+            )
 
             connector = service_connector.to_model(
                 include_metadata=hydrate, include_resources=True
@@ -6978,24 +6737,16 @@ class SqlZenStore(BaseZenStore):
             The updated service connector.
 
         Raises:
-            KeyError: If no service connector with the given ID exists.
             IllegalOperationError: If the service connector is referenced by
                 one or more stack components and the update would change the
                 connector type, resource type or resource ID.
         """
         with Session(self.engine) as session:
-            existing_connector = session.exec(
-                select(ServiceConnectorSchema).where(
-                    ServiceConnectorSchema.id == service_connector_id
-                )
-            ).first()
-
-            if existing_connector is None:
-                raise KeyError(
-                    f"Unable to update service connector with ID "
-                    f"'{service_connector_id}': Found no existing service "
-                    "connector with this ID."
-                )
+            existing_connector = self._get_schema_by_id(
+                resource_id=service_connector_id,
+                schema_class=ServiceConnectorSchema,
+                session=session,
+            )
 
             # In case of a renaming update, make sure no service connector uses
             # that name already
@@ -7109,23 +6860,16 @@ class SqlZenStore(BaseZenStore):
             service_connector_id: The ID of the service connector to delete.
 
         Raises:
-            KeyError: If no service connector with the given ID exists.
             IllegalOperationError: If the service connector is still referenced
                 by one or more stack components.
         """
         with Session(self.engine) as session:
             try:
-                service_connector = session.exec(
-                    select(ServiceConnectorSchema).where(
-                        ServiceConnectorSchema.id == service_connector_id
-                    )
-                ).one()
-
-                if service_connector is None:
-                    raise KeyError(
-                        f"Service connector with ID {service_connector_id} not "
-                        "found."
-                    )
+                service_connector = self._get_schema_by_id(
+                    resource_id=service_connector_id,
+                    schema_class=ServiceConnectorSchema,
+                    session=session,
+                )
 
                 if len(service_connector.components) > 0:
                     raise IllegalOperationError(
@@ -7849,17 +7593,13 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The stack with the given ID.
-
-        Raises:
-            KeyError: if the stack doesn't exist.
         """
         with Session(self.engine) as session:
-            stack = session.exec(
-                select(StackSchema).where(StackSchema.id == stack_id)
-            ).first()
-
-            if stack is None:
-                raise KeyError(f"Stack with ID {stack_id} not found.")
+            stack = self._get_schema_by_id(
+                resource_id=stack_id,
+                schema_class=StackSchema,
+                session=session,
+            )
             return stack.to_model(
                 include_metadata=hydrate, include_resources=True
             )
@@ -7904,20 +7644,14 @@ class SqlZenStore(BaseZenStore):
             The updated stack.
 
         Raises:
-            KeyError: if the stack doesn't exist.
             IllegalOperationError: if the stack is a default stack.
         """
         with Session(self.engine) as session:
-            # Check if stack with the domain key (name, workspace, owner)
-            # already exists
-            existing_stack = session.exec(
-                select(StackSchema).where(StackSchema.id == stack_id)
-            ).first()
-            if existing_stack is None:
-                raise KeyError(
-                    f"Unable to update stack with id '{stack_id}': Found no"
-                    f"existing stack with this id."
-                )
+            existing_stack = self._get_schema_by_id(
+                resource_id=stack_id,
+                schema_class=StackSchema,
+                session=session,
+            )
             if existing_stack.name == DEFAULT_STACK_AND_COMPONENT_NAME:
                 raise IllegalOperationError(
                     "The default stack cannot be modified."
@@ -7937,12 +7671,12 @@ class SqlZenStore(BaseZenStore):
                     list_of_component_ids,
                 ) in stack_update.components.items():
                     for component_id in list_of_component_ids:
-                        component = self._fetch_reference_and_verify_scope(
+                        component = self._get_reference_schema_by_id(
                             resource=existing_stack,
                             reference_schema=StackComponentSchema,
                             reference_id=component_id,
                             session=session,
-                            reference_name=f"{str(component_type)} stack component",
+                            reference_type=f"{str(component_type)} stack component",
                         )
                         if component:
                             components.append(component)
@@ -7967,25 +7701,19 @@ class SqlZenStore(BaseZenStore):
             stack_id: The ID of the stack to delete.
 
         Raises:
-            KeyError: if the stack doesn't exist.
             IllegalOperationError: if the stack is a default stack.
         """
         with Session(self.engine) as session:
-            try:
-                stack = session.exec(
-                    select(StackSchema).where(StackSchema.id == stack_id)
-                ).one()
-
-                if stack is None:
-                    raise KeyError(f"Stack with ID {stack_id} not found.")
-                if stack.name == DEFAULT_STACK_AND_COMPONENT_NAME:
-                    raise IllegalOperationError(
-                        "The default stack cannot be deleted."
-                    )
-                session.delete(stack)
-            except NoResultFound as error:
-                raise KeyError from error
-
+            stack = self._get_schema_by_id(
+                resource_id=stack_id,
+                schema_class=StackSchema,
+                session=session,
+            )
+            if stack.name == DEFAULT_STACK_AND_COMPONENT_NAME:
+                raise IllegalOperationError(
+                    "The default stack cannot be deleted."
+                )
+            session.delete(stack)
             session.commit()
 
     def count_stacks(self, filter_model: Optional[StackFilter]) -> int:
@@ -8151,7 +7879,7 @@ class SqlZenStore(BaseZenStore):
             self._set_request_user_id(request_model=step_run, session=session)
 
             # Check if the pipeline run exists
-            run = self._fetch_reference_and_verify_scope(
+            run = self._get_reference_schema_by_id(
                 resource=step_run,
                 reference_schema=PipelineRunSchema,
                 reference_id=step_run.pipeline_run_id,
@@ -8159,12 +7887,12 @@ class SqlZenStore(BaseZenStore):
             )
             assert run is not None
 
-            self._fetch_reference_and_verify_scope(
+            self._get_reference_schema_by_id(
                 resource=step_run,
                 reference_schema=StepRunSchema,
                 reference_id=step_run.original_step_run_id,
                 session=session,
-                reference_name="original step run",
+                reference_type="original step run",
             )
 
             step_schema = StepRunSchema.from_request(
@@ -8182,12 +7910,12 @@ class SqlZenStore(BaseZenStore):
 
             # Add logs entry for the step if exists
             if step_run.logs is not None:
-                self._fetch_reference_and_verify_scope(
+                self._get_reference_schema_by_id(
                     resource=step_run,
                     reference_schema=StackComponentSchema,
                     reference_id=step_run.logs.artifact_store_id,
                     session=session,
-                    reference_name="logs artifact store",
+                    reference_type="logs artifact store",
                 )
 
                 log_entry = LogsSchema(
@@ -8314,19 +8042,13 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The step run.
-
-        Raises:
-            KeyError: if the step run doesn't exist.
         """
         with Session(self.engine) as session:
-            step_run = session.exec(
-                select(StepRunSchema).where(StepRunSchema.id == step_run_id)
-            ).first()
-            if step_run is None:
-                raise KeyError(
-                    f"Unable to get step run with ID {step_run_id}: No step "
-                    "run with this ID found."
-                )
+            step_run = self._get_schema_by_id(
+                resource_id=step_run_id,
+                schema_class=StepRunSchema,
+                session=session,
+            )
             return step_run.to_model(
                 include_metadata=hydrate, include_resources=True
             )
@@ -8370,20 +8092,14 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The updated step run.
-
-        Raises:
-            KeyError: if the step run doesn't exist.
         """
         with Session(self.engine) as session:
             # Check if the step exists
-            existing_step_run = session.exec(
-                select(StepRunSchema).where(StepRunSchema.id == step_run_id)
-            ).first()
-            if existing_step_run is None:
-                raise KeyError(
-                    f"Unable to update step with ID {step_run_id}: "
-                    f"No step with this ID found."
-                )
+            existing_step_run = self._get_schema_by_id(
+                resource_id=step_run_id,
+                schema_class=StepRunSchema,
+                session=session,
+            )
 
             # Update the step
             existing_step_run.update(step_run_update)
@@ -8465,12 +8181,12 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: if the child step run or parent step run doesn't exist.
         """
-        parent_step_run = self._fetch_reference_and_verify_scope(
+        parent_step_run = self._get_reference_schema_by_id(
             resource=child_step_run,
             reference_schema=StepRunSchema,
             reference_id=parent_id,
             session=session,
-            reference_name="parent step",
+            reference_type="parent step",
         )
         assert parent_step_run is not None
 
@@ -8510,12 +8226,12 @@ class SqlZenStore(BaseZenStore):
             KeyError: if the step run or artifact doesn't exist.
         """
         # Check if the artifact exists.
-        artifact = self._fetch_reference_and_verify_scope(
+        artifact = self._get_reference_schema_by_id(
             resource=step_run,
             reference_schema=ArtifactVersionSchema,
             reference_id=artifact_version_id,
             session=session,
-            reference_name="input artifact",
+            reference_type="input artifact",
         )
         assert artifact is not None
 
@@ -8559,12 +8275,12 @@ class SqlZenStore(BaseZenStore):
             KeyError: if the step run or artifact doesn't exist.
         """
         # Check if the artifact exists.
-        artifact = self._fetch_reference_and_verify_scope(
+        artifact = self._get_reference_schema_by_id(
             resource=step_run,
             reference_schema=ArtifactVersionSchema,
             reference_id=artifact_version_id,
             session=session,
-            reference_name="output artifact",
+            reference_type="output artifact",
         )
         assert artifact is not None
 
@@ -8720,14 +8436,14 @@ class SqlZenStore(BaseZenStore):
             )
 
             # Verify that the given action exists
-            self._fetch_reference_and_verify_scope(
+            self._get_reference_schema_by_id(
                 resource=trigger,
                 reference_schema=ActionSchema,
                 reference_id=trigger.action_id,
                 session=session,
             )
 
-            self._fetch_reference_and_verify_scope(
+            self._get_reference_schema_by_id(
                 resource=trigger,
                 reference_schema=EventSourceSchema,
                 reference_id=trigger.event_source_id,
@@ -8755,17 +8471,13 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The trigger with the given ID.
-
-        Raises:
-            KeyError: If the trigger doesn't exist.
         """
         with Session(self.engine) as session:
-            trigger = session.exec(
-                select(TriggerSchema).where(TriggerSchema.id == trigger_id)
-            ).first()
-
-            if trigger is None:
-                raise KeyError(f"Trigger with ID {trigger_id} not found.")
+            trigger = self._get_schema_by_id(
+                resource_id=trigger_id,
+                schema_class=TriggerSchema,
+                session=session,
+            )
             return trigger.to_model(
                 include_metadata=hydrate, include_resources=True
             )
@@ -8810,20 +8522,16 @@ class SqlZenStore(BaseZenStore):
             The updated trigger.
 
         Raises:
-            KeyError: If the trigger doesn't exist.
             ValueError: If both a schedule and an event source are provided.
         """
         with Session(self.engine) as session:
             # Check if trigger with the domain key (name, workspace, owner)
             # already exists
-            existing_trigger = session.exec(
-                select(TriggerSchema).where(TriggerSchema.id == trigger_id)
-            ).first()
-            if existing_trigger is None:
-                raise KeyError(
-                    f"Unable to update trigger with id '{trigger_id}': No "
-                    f"existing trigger with this id exists."
-                )
+            existing_trigger = self._get_schema_by_id(
+                resource_id=trigger_id,
+                schema_class=TriggerSchema,
+                session=session,
+            )
 
             # Verify that either a schedule or an event source is provided, not
             # both
@@ -8858,22 +8566,14 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             trigger_id: The ID of the trigger to delete.
-
-        Raises:
-            KeyError: if the trigger doesn't exist.
         """
         with Session(self.engine) as session:
-            try:
-                trigger = session.exec(
-                    select(TriggerSchema).where(TriggerSchema.id == trigger_id)
-                ).one()
-
-                if trigger is None:
-                    raise KeyError(f"Trigger with ID {trigger_id} not found.")
-                session.delete(trigger)
-            except NoResultFound as error:
-                raise KeyError from error
-
+            trigger = self._get_schema_by_id(
+                resource_id=trigger_id,
+                schema_class=TriggerSchema,
+                session=session,
+            )
+            session.delete(trigger)
             session.commit()
 
     # -------------------- Trigger Executions --------------------
@@ -8893,8 +8593,12 @@ class SqlZenStore(BaseZenStore):
             self._set_request_user_id(
                 request_model=trigger_execution, session=session
             )
-
-            # TODO: Verify that the given trigger exists
+            self._get_reference_schema_by_id(
+                resource=trigger_execution,
+                reference_schema=TriggerSchema,
+                reference_id=trigger_execution.trigger,
+                session=session,
+            )
             new_execution = TriggerExecutionSchema.from_request(
                 trigger_execution
             )
@@ -8920,21 +8624,13 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The trigger execution.
-
-        Raises:
-            KeyError: If the trigger execution doesn't exist.
         """
         with Session(self.engine) as session:
-            execution = session.exec(
-                select(TriggerExecutionSchema).where(
-                    TriggerExecutionSchema.id == trigger_execution_id
-                )
-            ).first()
-
-            if execution is None:
-                raise KeyError(
-                    f"Trigger execution with ID {trigger_execution_id} not found."
-                )
+            execution = self._get_schema_by_id(
+                resource_id=trigger_execution_id,
+                schema_class=TriggerExecutionSchema,
+                session=session,
+            )
             return execution.to_model(
                 include_metadata=hydrate, include_resources=True
             )
@@ -8970,24 +8666,16 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             trigger_execution_id: The ID of the trigger execution to delete.
-
-        Raises:
-            KeyError: If the trigger execution doesn't exist.
         """
         with Session(self.engine) as session:
-            try:
-                execution = session.exec(
-                    select(TriggerExecutionSchema).where(
-                        TriggerExecutionSchema.id == trigger_execution_id
-                    )
-                ).one()
+            execution = self._get_schema_by_id(
+                resource_id=trigger_execution_id,
+                schema_class=TriggerExecutionSchema,
+                session=session,
+            )
 
-                session.delete(execution)
-                session.commit()
-            except NoResultFound:
-                raise KeyError(
-                    f"Execution with ID {trigger_execution_id} not found."
-                )
+            session.delete(execution)
+            session.commit()
 
     # ----------------------------- Users -----------------------------
 
@@ -9654,7 +9342,7 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             existing_workspace = self._get_schema_by_id(
-                object_id=workspace_id,
+                resource_id=workspace_id,
                 schema_class=WorkspaceSchema,
                 session=session,
             )
@@ -9804,32 +9492,47 @@ class SqlZenStore(BaseZenStore):
 
     @staticmethod
     def _get_schema_by_id(
-        object_id: UUID,
+        resource_id: UUID,
         schema_class: Type[AnySchema],
         session: Session,
+        resource_type: Optional[str] = None,
+        workspace_id: Optional[UUID] = None,
     ) -> AnySchema:
         """Query a schema by its 'id' field.
 
         Args:
-            object_id: The ID of the object to query.
+            resource_id: The ID of the resource to query.
             schema_class: The schema class to query. E.g., `WorkspaceSchema`.
             session: The database session to use.
+            resource_type: Optional name of the resource type to use in error
+                messages. If not provided, the type name will be inferred
+                from the schema class.
+            workspace_id: Optional ID of a workspace to filter by.
 
         Returns:
             The schema object.
 
         Raises:
             KeyError: if the object couldn't be found.
+            RuntimeError: if the schema is not workspace-scoped but the
+                workspace ID is provided.
         """
-        schema_name = get_resource_name(schema_class)
+        resource_type = resource_type or get_resource_type_name(schema_class)
         error_msg = (
-            f"Unable to get {schema_name} with ID "
-            f"'{object_id}': No {schema_name} with this ID found."
+            f"Unable to get {resource_type} with ID "
+            f"'{resource_id}': No {resource_type} with this ID found"
         )
+        query = select(schema_class).where(schema_class.id == resource_id)
+        if workspace_id:
+            error_msg += f" in workspace `{str(workspace_id)}`"
+            if not hasattr(schema_class, "workspace_id"):
+                raise RuntimeError(
+                    f"Schema {schema_class.__name__} is not workspace-scoped."
+                )
 
-        schema = session.exec(
-            select(schema_class).where(schema_class.id == object_id)
-        ).first()
+            query = query.where(schema_class.workspace_id == workspace_id)  # type: ignore[attr-defined]
+
+        schema = session.exec(query).first()
 
         if schema is None:
             raise KeyError(error_msg)
@@ -9859,7 +9562,7 @@ class SqlZenStore(BaseZenStore):
             KeyError: if the object couldn't be found.
             ValueError: if the schema_name isn't provided.
         """
-        schema_name = get_resource_name(schema_class)
+        schema_name = get_resource_type_name(schema_class)
         if uuid_utils.is_valid_uuid(object_name_or_id):
             filter_params = schema_class.id == object_name_or_id
             error_msg = (
@@ -9887,13 +9590,13 @@ class SqlZenStore(BaseZenStore):
             raise KeyError(error_msg)
         return schema
 
-    def _fetch_reference_and_verify_scope(
+    def _get_reference_schema_by_id(
         self,
         session: Session,
         resource: Union[BaseRequest, BaseSchema],
         reference_schema: Type[AnySchema],
-        reference_id: Optional[Union[UUID, str]] = None,
-        reference_name: Optional[str] = None,
+        reference_id: Optional[UUID] = None,
+        reference_type: Optional[str] = None,
     ) -> Optional[AnySchema]:
         """Fetch a referenced resource and verify scope relationship rules.
 
@@ -9919,9 +9622,9 @@ class SqlZenStore(BaseZenStore):
             reference_schema: The schema of the referenced entity.
             reference_id: The ID of the referenced entity. If not provided, the
                 function will return immediately with a None value.
-            reference_name: The name of the referenced resource to use in error
-                messages. If not provided, the name will be inferred from the
-                schema class.
+            reference_type: The type name of the referenced resource to use in
+                error messages. If not provided, the type name will be inferred
+                from the schema class.
 
         Returns:
             The referenced resource.
@@ -9932,16 +9635,18 @@ class SqlZenStore(BaseZenStore):
         if reference_id is None:
             return None
 
-        # Create a resource name out of the model name
-        resource_name = type(resource).__name__
+        # Create a resource type name out of the model name
+        resource_type = type(resource).__name__
         # Remove the "Response" and "Request" suffix
-        resource_name = resource_name.removesuffix("Response").removesuffix(
+        resource_type = resource_type.removesuffix("Response").removesuffix(
             "Request"
         )
         # Split into words
-        resource_name = re.sub(r"(?<!^)(?=[A-Z])", " ", resource_name).lower()
+        resource_type = re.sub(r"(?<!^)(?=[A-Z])", " ", resource_type).lower()
 
-        reference_name = get_resource_name(reference_schema)
+        reference_type = reference_type or get_resource_type_name(
+            reference_schema
+        )
 
         operation: str = "created"
         if isinstance(resource, BaseSchema):
@@ -9949,9 +9654,9 @@ class SqlZenStore(BaseZenStore):
 
         resource_workspace_id: Optional[UUID] = None
         resource_workspace_name: Optional[str] = None
-        if isinstance(resource, WorkspaceScopedResponse):
-            resource_workspace_id = resource.workspace.id
-            resource_workspace_name = resource.workspace.name
+        if isinstance(resource, WorkspaceScopedRequest):
+            resource_workspace_id = resource.workspace
+            resource_workspace_name = str(resource.workspace)
         elif isinstance(resource, BaseSchema):
             resource_workspace_id = getattr(resource, "workspace_id", None)
             resource_workspace = getattr(resource, "workspace", None)
@@ -9960,31 +9665,42 @@ class SqlZenStore(BaseZenStore):
                 resource_workspace_name = resource_workspace.name
 
         error_msg = (
-            f"The {reference_name} with ID {str(reference_id)} referenced by "
-            f"the {resource_name} being {operation} was not found"
+            f"The {reference_type} with ID {str(reference_id)} referenced by "
+            f"the {resource_type} being {operation} was not found"
         )
 
-        reference = session.exec(
-            select(reference_schema).where(reference_schema.id == reference_id)
-        ).first()
+        reference_is_workspace_scoped = hasattr(
+            reference_schema, "workspace_id"
+        )
 
-        if reference is None:
+        # There's one particular case that should never happen: if a global
+        # resource (e.g. a stack) references a workspace-scoped resource
+        # (e.g. a pipeline), this is a design error.
+        if resource_workspace_id is None and reference_is_workspace_scoped:
+            raise RuntimeError(
+                f"A global resource {resource_type} cannot reference a "
+                f"workspace-scoped resource {reference_type}. This is a "
+                "design error."
+            )
+
+        # Filter the reference by workspace if the resource itself is
+        # workspace-scoped and the reference is workspace-scoped.
+        reference_workspace_filter = (
+            resource_workspace_id if reference_is_workspace_scoped else None
+        )
+        try:
+            return self._get_schema_by_id(
+                resource_id=reference_id,
+                schema_class=reference_schema,
+                session=session,
+                workspace_id=reference_workspace_filter,
+                resource_type=reference_type,
+            )
+        except KeyError:
+            if resource_workspace_name:
+                error_msg += f" in the '{resource_workspace_name}' workspace"
+
             raise KeyError(error_msg)
-
-        reference_workspace_id = getattr(reference, "workspace_id", None)
-
-        if (
-            reference_workspace_id == resource_workspace_id
-            or reference_workspace_id is None
-        ):
-            # Both resources are in the same workspace, or are global resources
-            # or the reference is a global resource.
-            return reference
-
-        if resource_workspace_name:
-            error_msg += f" in the '{resource_workspace_name}' workspace"
-
-        raise KeyError(error_msg)
 
     def _get_active_user_id(
         self,
@@ -10123,7 +9839,7 @@ class SqlZenStore(BaseZenStore):
 
         existing_entry = session.exec(query).first()
         if existing_entry is not None:
-            resource_name = get_resource_name(schema_class)
+            resource_name = get_resource_type_name(schema_class)
             if workspace_id:
                 scope = f" in the '{existing_entry.workspace.name}' workspace"  # type: ignore[attr-defined]
             else:
@@ -10761,7 +10477,7 @@ class SqlZenStore(BaseZenStore):
                 )
 
         with Session(self.engine) as session:
-            model = self._fetch_reference_and_verify_scope(
+            model = self._get_reference_schema_by_id(
                 resource=model_version,
                 reference_schema=ModelSchema,
                 reference_id=model_version.model,
@@ -10883,7 +10599,7 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             model_version = self._get_schema_by_id(
-                object_id=model_version_id,
+                resource_id=model_version_id,
                 schema_class=ModelVersionSchema,
                 session=session,
             )

@@ -17,7 +17,7 @@ import json
 from typing import Any, Optional
 from uuid import UUID
 
-from sqlalchemy import TEXT, Column
+from sqlalchemy import TEXT, Column, UniqueConstraint
 from sqlmodel import Field, Relationship
 
 from zenml.enums import StackComponentType
@@ -44,6 +44,13 @@ class FlavorSchema(NamedSchema, table=True):
     """
 
     __tablename__ = "flavor"
+    __table_args__ = (
+        UniqueConstraint(
+            "name",
+            "type",
+            name="unique_flavor_name_and_type",
+        ),
+    )
 
     type: str
     source: str

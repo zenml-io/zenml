@@ -112,7 +112,7 @@ class RunMetadataInterface:
         }
 
 
-def get_resource_name(schema_class: Type[BaseSchema]) -> str:
+def get_resource_type_name(schema_class: Type[BaseSchema]) -> str:
     """Get the name of a resource from a schema class.
 
     Args:

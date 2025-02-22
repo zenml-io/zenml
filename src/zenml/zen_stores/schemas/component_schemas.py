@@ -18,6 +18,7 @@ import json
 from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
+from sqlalchemy import UniqueConstraint
 from sqlmodel import Relationship
 
 from zenml.enums import StackComponentType
@@ -50,6 +51,13 @@ class StackComponentSchema(NamedSchema, table=True):
     """SQL Model for stack components."""
 
     __tablename__ = "stack_component"
+    __table_args__ = (
+        UniqueConstraint(
+            "name",
+            "type",
+            name="unique_component_name_and_type",
+        ),
+    )
 
     type: str
     flavor: str

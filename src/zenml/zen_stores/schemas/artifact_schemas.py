@@ -71,7 +71,8 @@ class ArtifactSchema(NamedSchema, table=True):
     __table_args__ = (
         UniqueConstraint(
             "name",
-            name="unique_artifact_name",
+            "workspace_id",
+            name="unique_artifact_name_in_workspace",
         ),
     )
 

@@ -44,6 +44,8 @@ from zenml.services.service_status import ServiceState
 from zenml.services.service_type import ServiceType
 
 if TYPE_CHECKING:
+    from zenml.models.v2.core.model_version import ModelVersionResponse
+    from zenml.models.v2.core.pipeline_run import PipelineRunResponse
     from zenml.zen_stores.schemas import BaseSchema
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
@@ -102,10 +104,9 @@ class ServiceRequest(WorkspaceScopedRequest):
         default=None,
         title="The model version id linked to the service.",
     )
-    pipeline_run_id: Optional[Union[UUID, str]] = Field(
+    pipeline_run_id: Optional[UUID] = Field(
         default=None,
-        description="By the event source this trigger is attached to.",
-        union_mode="left_to_right",
+        title="The pipeline run id linked to the service.",
     )
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
@@ -230,6 +231,15 @@ class ServiceResponseMetadata(WorkspaceScopedResponseMetadata):
 
 class ServiceResponseResources(WorkspaceScopedResponseResources):
     """Class for all resource models associated with the service entity."""
+
+    pipeline_run: Optional["PipelineRunResponse"] = Field(
+        default=None,
+        title="The pipeline run associated with the service.",
+    )
+    model_version: Optional["ModelVersionResponse"] = Field(
+        default=None,
+        title="The model version associated with the service.",
+    )
 
 
 class ServiceResponse(
@@ -363,6 +373,24 @@ class ServiceResponse(
             the value of the property.
         """
         return self.get_body().state
+
+    @property
+    def pipeline_run(self) -> Optional["PipelineRunResponse"]:
+        """The `pipeline_run` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().pipeline_run
+
+    @property
+    def model_version(self) -> Optional["ModelVersionResponse"]:
+        """The `model_version` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().model_version
 
 
 # ------------------ Filter Model ------------------

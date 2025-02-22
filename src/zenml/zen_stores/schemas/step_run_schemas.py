@@ -134,7 +134,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
-    model_version_id: UUID = build_foreign_key_field(
+    model_version_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
         target=MODEL_VERSION_TABLENAME,
         source_column="model_version_id",

@@ -18,7 +18,7 @@ import json
 from typing import Any, Dict, Optional, cast
 from uuid import UUID
 
-from sqlalchemy import TEXT, Column
+from sqlalchemy import TEXT, Column, UniqueConstraint
 from sqlalchemy_utils.types.encrypted.encrypted_type import (
     AesGcmEngine,
     InvalidCiphertextError,
@@ -52,6 +52,13 @@ class SecretSchema(NamedSchema, table=True):
     """
 
     __tablename__ = "secret"
+    __table_args__ = (
+        UniqueConstraint(
+            "name",
+            "private",
+            name="unique_secret_name_and_private_scope",
+        ),
+    )
 
     private: bool
 

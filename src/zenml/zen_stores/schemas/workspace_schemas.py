@@ -15,6 +15,7 @@
 
 from typing import TYPE_CHECKING, Any, List
 
+from sqlalchemy import UniqueConstraint
 from sqlmodel import Relationship
 
 from zenml.models import (
@@ -52,6 +53,12 @@ class WorkspaceSchema(NamedSchema, table=True):
     """SQL Model for workspaces."""
 
     __tablename__ = "workspace"
+    __table_args__ = (
+        UniqueConstraint(
+            "name",
+            name="unique_workspace_name",
+        ),
+    )
 
     description: str
 

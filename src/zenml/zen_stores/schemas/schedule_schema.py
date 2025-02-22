@@ -17,6 +17,7 @@ from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
+from sqlalchemy import UniqueConstraint
 from sqlmodel import Field, Relationship
 
 from zenml.enums import MetadataResourceTypes
@@ -49,6 +50,13 @@ class ScheduleSchema(NamedSchema, RunMetadataInterface, table=True):
     """SQL Model for schedules."""
 
     __tablename__ = "schedule"
+    __table_args__ = (
+        UniqueConstraint(
+            "name",
+            "workspace_id",
+            name="unique_schedule_name_in_workspace",
+        ),
+    )
 
     workspace_id: UUID = build_foreign_key_field(
         source=__tablename__,

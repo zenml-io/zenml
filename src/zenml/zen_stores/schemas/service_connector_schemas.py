@@ -19,7 +19,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 from uuid import UUID
 
-from sqlalchemy import TEXT, Column
+from sqlalchemy import TEXT, Column, UniqueConstraint
 from sqlmodel import Field, Relationship
 
 from zenml.models import (
@@ -42,6 +42,12 @@ class ServiceConnectorSchema(NamedSchema, table=True):
     """SQL Model for service connectors."""
 
     __tablename__ = "service_connector"
+    __table_args__ = (
+        UniqueConstraint(
+            "name",
+            name="unique_service_connector_name",
+        ),
+    )
 
     connector_type: str = Field(sa_column=Column(TEXT))
     description: str
