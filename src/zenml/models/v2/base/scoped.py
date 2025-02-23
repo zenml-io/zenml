@@ -409,17 +409,22 @@ class WorkspaceScopedFilter(UserScopedFilter):
 
         Returns:
             The query with filter applied.
+
+        Raises:
+            RuntimeError: If the workspace scope is missing from the filter.
         """
         from sqlmodel import or_
 
         query = super().apply_filter(query=query, table=table)
 
-        if self.scope_workspace:
-            scope_filter = or_(
-                getattr(table, "workspace_id") == self.scope_workspace,
-                getattr(table, "workspace_id").is_(None),
-            )
-            query = query.where(scope_filter)
+        if not self.scope_workspace:
+            raise RuntimeError("Workspace scope missing from the filter.")
+
+        scope_filter = or_(
+            getattr(table, "workspace_id") == self.scope_workspace,
+            getattr(table, "workspace_id").is_(None),
+        )
+        query = query.where(scope_filter)
 
         return query
 

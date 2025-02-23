@@ -125,8 +125,7 @@ def list_schedules(
         List of schedule objects.
     """
     if workspace_name_or_id:
-        workspace = zen_store().get_workspace(workspace_name_or_id)
-        schedule_filter_model.set_scope_workspace(workspace.id)
+        schedule_filter_model.workspace = workspace_name_or_id
 
     return zen_store().list_schedules(
         schedule_filter_model=schedule_filter_model,

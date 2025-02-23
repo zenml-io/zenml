@@ -291,6 +291,7 @@ from zenml.models import (
     WorkspaceFilter,
     WorkspaceRequest,
     WorkspaceResponse,
+    WorkspaceScopedFilter,
     WorkspaceScopedRequest,
     WorkspaceUpdate,
 )
@@ -1931,6 +1932,10 @@ class SqlZenStore(BaseZenStore):
             A page of actions matching the filter criteria.
         """
         with Session(self.engine) as session:
+            self._set_filter_workspace_id(
+                filter_model=action_filter_model,
+                session=session,
+            )
             query = select(ActionSchema)
             return self.filter_and_paginate(
                 session=session,
@@ -2470,6 +2475,10 @@ class SqlZenStore(BaseZenStore):
             A list of all services matching the filter criteria.
         """
         with Session(self.engine) as session:
+            self._set_filter_workspace_id(
+                filter_model=filter_model,
+                session=session,
+            )
             query = select(ServiceSchema)
             return self.filter_and_paginate(
                 session=session,
@@ -2608,6 +2617,10 @@ class SqlZenStore(BaseZenStore):
             A list of all artifacts matching the filter criteria.
         """
         with Session(self.engine) as session:
+            self._set_filter_workspace_id(
+                filter_model=filter_model,
+                session=session,
+            )
             query = select(ArtifactSchema)
             return self.filter_and_paginate(
                 session=session,
@@ -2987,6 +3000,10 @@ class SqlZenStore(BaseZenStore):
             A list of all artifact versions matching the filter criteria.
         """
         with Session(self.engine) as session:
+            self._set_filter_workspace_id(
+                filter_model=artifact_version_filter_model,
+                session=session,
+            )
             query = select(ArtifactVersionSchema)
             return self.filter_and_paginate(
                 session=session,
@@ -3236,6 +3253,10 @@ class SqlZenStore(BaseZenStore):
             A page of all code repositories.
         """
         with Session(self.engine) as session:
+            self._set_filter_workspace_id(
+                filter_model=filter_model,
+                session=session,
+            )
             query = select(CodeRepositorySchema)
             return self.filter_and_paginate(
                 session=session,
@@ -4203,6 +4224,10 @@ class SqlZenStore(BaseZenStore):
             A list of all pipelines matching the filter criteria.
         """
         with Session(self.engine) as session:
+            self._set_filter_workspace_id(
+                filter_model=pipeline_filter_model,
+                session=session,
+            )
             query = select(PipelineSchema)
             return self.filter_and_paginate(
                 session=session,
@@ -4366,6 +4391,10 @@ class SqlZenStore(BaseZenStore):
             A page of all builds matching the filter criteria.
         """
         with Session(self.engine) as session:
+            self._set_filter_workspace_id(
+                filter_model=build_filter_model,
+                session=session,
+            )
             query = select(PipelineBuildSchema)
             return self.filter_and_paginate(
                 session=session,
@@ -4554,6 +4583,10 @@ class SqlZenStore(BaseZenStore):
             A page of all deployments matching the filter criteria.
         """
         with Session(self.engine) as session:
+            self._set_filter_workspace_id(
+                filter_model=deployment_filter_model,
+                session=session,
+            )
             query = select(PipelineDeploymentSchema)
             return self.filter_and_paginate(
                 session=session,
@@ -4675,6 +4708,10 @@ class SqlZenStore(BaseZenStore):
             A list of all templates matching the filter criteria.
         """
         with Session(self.engine) as session:
+            self._set_filter_workspace_id(
+                filter_model=template_filter_model,
+                session=session,
+            )
             query = select(RunTemplateSchema)
             return self.filter_and_paginate(
                 session=session,
@@ -4848,6 +4885,10 @@ class SqlZenStore(BaseZenStore):
             A list of all event_sources matching the filter criteria.
         """
         with Session(self.engine) as session:
+            self._set_filter_workspace_id(
+                filter_model=event_source_filter_model,
+                session=session,
+            )
             query = select(EventSourceSchema)
             return self.filter_and_paginate(
                 session=session,
@@ -5242,6 +5283,10 @@ class SqlZenStore(BaseZenStore):
             A list of all pipeline runs matching the filter criteria.
         """
         with Session(self.engine) as session:
+            self._set_filter_workspace_id(
+                filter_model=runs_filter_model,
+                session=session,
+            )
             query = select(PipelineRunSchema)
             return self.filter_and_paginate(
                 session=session,
@@ -5488,6 +5533,10 @@ class SqlZenStore(BaseZenStore):
             A list of schedules.
         """
         with Session(self.engine) as session:
+            self._set_filter_workspace_id(
+                filter_model=schedule_filter_model,
+                session=session,
+            )
             query = select(ScheduleSchema)
             return self.filter_and_paginate(
                 session=session,
@@ -6576,7 +6625,9 @@ class SqlZenStore(BaseZenStore):
             )
 
         with Session(self.engine) as session:
-            self._set_request_user_id(request_model=service_connector)
+            self._set_request_user_id(
+                request_model=service_connector, session=session
+            )
             assert service_connector.user is not None
 
             self._verify_name_uniqueness(
@@ -8070,6 +8121,10 @@ class SqlZenStore(BaseZenStore):
             A list of all step runs matching the filter criteria.
         """
         with Session(self.engine) as session:
+            self._set_filter_workspace_id(
+                filter_model=step_run_filter_model,
+                session=session,
+            )
             query = select(StepRunSchema)
             return self.filter_and_paginate(
                 session=session,
@@ -8499,6 +8554,10 @@ class SqlZenStore(BaseZenStore):
             A list of all triggers matching the filter criteria.
         """
         with Session(self.engine) as session:
+            self._set_filter_workspace_id(
+                filter_model=trigger_filter_model,
+                session=session,
+            )
             query = select(TriggerSchema)
             return self.filter_and_paginate(
                 session=session,
@@ -8652,6 +8711,10 @@ class SqlZenStore(BaseZenStore):
             A list of all trigger executions matching the filter criteria.
         """
         with Session(self.engine) as session:
+            self._set_filter_workspace_id(
+                filter_model=trigger_execution_filter_model,
+                session=session,
+            )
             query = select(TriggerExecutionSchema)
             return self.filter_and_paginate(
                 session=session,
@@ -9396,6 +9459,26 @@ class SqlZenStore(BaseZenStore):
             session.delete(workspace)
             session.commit()
 
+    def set_filter_workspace_id(
+        self,
+        filter_model: WorkspaceScopedFilter,
+        workspace_name_or_id: Optional[Union[UUID, str]] = None,
+    ) -> None:
+        """Set the workspace ID on a filter model.
+
+        Args:
+            filter_model: The filter model to set the workspace ID on.
+            workspace_name_or_id: The workspace to set the scope for. If not
+                provided, the workspace scope is determined from the request
+                workspace filter or the default workspace, in that order.
+        """
+        with Session(self.engine) as session:
+            self._set_filter_workspace_id(
+                filter_model=filter_model,
+                session=session,
+                workspace_name_or_id=workspace_name_or_id,
+            )
+
     def _get_or_create_default_workspace(self) -> WorkspaceResponse:
         """Get or create the default workspace if it doesn't exist.
 
@@ -9436,6 +9519,12 @@ class SqlZenStore(BaseZenStore):
             query = select(func.count(schema.id))  # type: ignore[arg-type]
 
             if filter_model:
+                if isinstance(filter_model, WorkspaceScopedFilter):
+                    self._set_filter_workspace_id(
+                        filter_model=filter_model,
+                        session=session,
+                        workspace_name_or_id=filter_model.workspace,
+                    )
                 query = filter_model.apply_filter(query=query, table=schema)
 
             entity_count = session.scalar(query)
@@ -9743,6 +9832,49 @@ class SqlZenStore(BaseZenStore):
             return
 
         request_model.user = self._get_active_user_id(session)
+
+    def _set_filter_workspace_id(
+        self,
+        filter_model: WorkspaceScopedFilter,
+        session: Session,
+        workspace_name_or_id: Optional[Union[UUID, str]] = None,
+    ) -> None:
+        """Set the workspace ID on a filter model.
+
+        Args:
+            filter_model: The filter model to set the workspace ID on.
+            session: The DB session to use to use for queries.
+            workspace_name_or_id: The workspace to set the scope for. If not
+                provided, the workspace scope is determined from the request
+                workspace filter or the default workspace, in that order.
+        """
+        if workspace_name_or_id:
+            workspace = self._get_schema_by_name_or_id(
+                object_name_or_id=workspace_name_or_id,
+                schema_class=WorkspaceSchema,
+                session=session,
+            )
+        elif filter_model.scope_workspace:
+            # The filter already has a workspace ID set, so we don't need to
+            # do anything.
+            return
+        elif filter_model.workspace:
+            workspace = self._get_schema_by_name_or_id(
+                object_name_or_id=filter_model.workspace,
+                schema_class=WorkspaceSchema,
+                session=session,
+            )
+        else:
+            try:
+                workspace = self._get_schema_by_name_or_id(
+                    object_name_or_id=self._default_workspace_name,
+                    schema_class=WorkspaceSchema,
+                    session=session,
+                )
+            except KeyError:
+                raise ValueError("Workspace scope missing from the filter")
+
+        filter_model.set_scope_workspace(workspace.id)
 
     def _verify_name_uniqueness(
         self,
@@ -10079,6 +10211,10 @@ class SqlZenStore(BaseZenStore):
             A page of all models.
         """
         with Session(self.engine) as session:
+            self._set_filter_workspace_id(
+                filter_model=model_filter_model,
+                session=session,
+            )
             query = select(ModelSchema)
             return self.filter_and_paginate(
                 session=session,
@@ -10477,6 +10613,9 @@ class SqlZenStore(BaseZenStore):
                 )
 
         with Session(self.engine) as session:
+            self._set_request_user_id(
+                request_model=model_version, session=session
+            )
             model = self._get_reference_schema_by_id(
                 resource=model_version,
                 reference_schema=ModelSchema,
@@ -10576,8 +10715,6 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The newly created model version.
         """
-        self._set_request_user_id(request_model=model_version)
-
         return self._create_model_version(model_version=model_version)
 
     def get_model_version(
@@ -10628,6 +10765,10 @@ class SqlZenStore(BaseZenStore):
             A page of all model versions.
         """
         with Session(self.engine) as session:
+            self._set_filter_workspace_id(
+                filter_model=model_version_filter_model,
+                session=session,
+            )
             if model_name_or_id:
                 model = self.get_model(model_name_or_id)
                 model_version_filter_model.set_scope_model(model.id)
@@ -10770,7 +10911,7 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             self._set_request_user_id(
-                request_model=model_version_artifact_link
+                request_model=model_version_artifact_link, session=session
             )
 
             # If the link already exists, return it
@@ -10934,7 +11075,7 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             self._set_request_user_id(
-                request_model=model_version_pipeline_run_link
+                request_model=model_version_pipeline_run_link, session=session
             )
 
             # If the link already exists, return it
@@ -11278,6 +11419,10 @@ class SqlZenStore(BaseZenStore):
             A page of all tags.
         """
         with Session(self.engine) as session:
+            self._set_filter_workspace_id(
+                filter_model=tag_filter_model,
+                session=session,
+            )
             query = select(TagSchema)
             return self.filter_and_paginate(
                 session=session,

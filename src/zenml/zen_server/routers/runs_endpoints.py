@@ -145,8 +145,7 @@ def list_runs(
         The pipeline runs according to query filters.
     """
     if workspace_name_or_id:
-        workspace = zen_store().get_workspace(workspace_name_or_id)
-        runs_filter_model.set_scope_workspace(workspace.id)
+        runs_filter_model.workspace = workspace_name_or_id
 
     return verify_permissions_and_list_entities(
         filter_model=runs_filter_model,

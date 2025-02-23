@@ -38,6 +38,7 @@ from zenml.zen_server.rbac.models import ResourceType
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
+    set_filter_workspace_scope,
     zen_store,
 )
 
@@ -72,6 +73,7 @@ def list_artifacts(
     Returns:
         The artifacts according to query filters.
     """
+    set_filter_workspace_scope(artifact_filter_model)
     return verify_permissions_and_list_entities(
         filter_model=artifact_filter_model,
         resource_type=ResourceType.ARTIFACT,

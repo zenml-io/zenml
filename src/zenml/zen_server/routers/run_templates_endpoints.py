@@ -133,8 +133,7 @@ def list_run_templates(
         Page of run templates.
     """
     if workspace_name_or_id:
-        workspace = zen_store().get_workspace(workspace_name_or_id)
-        filter_model.set_scope_workspace(workspace.id)
+        filter_model.workspace = workspace_name_or_id
 
     return verify_permissions_and_list_entities(
         filter_model=filter_model,

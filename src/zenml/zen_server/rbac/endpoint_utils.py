@@ -41,7 +41,7 @@ from zenml.zen_server.rbac.utils import (
     verify_permission,
     verify_permission_for_model,
 )
-from zenml.zen_server.utils import server_config
+from zenml.zen_server.utils import server_config, set_filter_workspace_scope
 
 AnyRequest = TypeVar("AnyRequest", bound=BaseRequest)
 AnyResponse = TypeVar("AnyResponse", bound=BaseIdentifiedResponse)  # type: ignore[type-arg]
@@ -231,19 +231,18 @@ def verify_permissions_and_list_entities(
         A page of entity models.
 
     Raises:
-        ValueError: If the workspace ID is not set for workspace-scoped resources.
+        RuntimeError: If the workspace ID is not set for workspace-scoped
+            resources.
     """
     auth_context = get_auth_context()
     assert auth_context
 
     workspace_id: Optional[UUID] = None
     if isinstance(filter_model, WorkspaceScopedFilter):
-        # A workspace scoped request is always scoped to a specific workspace
+        # A workspace scoped request must always be scoped to a specific
+        # workspace. This is required for the RBAC check to work.
+        set_filter_workspace_scope(filter_model)
         workspace_id = filter_model.scope_workspace
-        if workspace_id is None:
-            raise ValueError(
-                "Workspace ID is required for workspace-scoped resources."
-            )
 
     allowed_ids = get_allowed_resource_ids(
         resource_type=resource_type, workspace_id=workspace_id
