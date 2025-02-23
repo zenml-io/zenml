@@ -1082,15 +1082,22 @@ class RestZenStore(BaseZenStore):
 
     def prune_artifact_versions(
         self,
+        workspace_name_or_id: Union[str, UUID],
         only_versions: bool = True,
     ) -> None:
         """Prunes unused artifact versions and their artifacts.
 
         Args:
+            workspace_name_or_id: The workspace name or ID to prune artifact
+                versions for.
             only_versions: Only delete artifact versions, keeping artifacts
         """
         self.delete(
-            path=ARTIFACT_VERSIONS, params={"only_versions": only_versions}
+            path=ARTIFACT_VERSIONS,
+            params={
+                "only_versions": only_versions,
+                "workspace_name_or_id": workspace_name_or_id,
+            },
         )
 
     # ------------------------ Artifact Visualizations ------------------------
@@ -3440,13 +3447,13 @@ class RestZenStore(BaseZenStore):
             route=MODELS,
         )
 
-    def delete_model(self, model_name_or_id: Union[str, UUID]) -> None:
+    def delete_model(self, model_id: UUID) -> None:
         """Deletes a model.
 
         Args:
-            model_name_or_id: name or id of the model to be deleted.
+            model_id: id of the model to be deleted.
         """
-        self._delete_resource(resource_id=model_name_or_id, route=MODELS)
+        self._delete_resource(resource_id=model_id, route=MODELS)
 
     def update_model(
         self,
@@ -3469,13 +3476,11 @@ class RestZenStore(BaseZenStore):
             response_model=ModelResponse,
         )
 
-    def get_model(
-        self, model_name_or_id: Union[str, UUID], hydrate: bool = True
-    ) -> ModelResponse:
+    def get_model(self, model_id: UUID, hydrate: bool = True) -> ModelResponse:
         """Get an existing model.
 
         Args:
-            model_name_or_id: name or id of the model to be retrieved.
+            model_id: id of the model to be retrieved.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -3483,7 +3488,7 @@ class RestZenStore(BaseZenStore):
             The model of interest.
         """
         return self._get_resource(
-            resource_id=model_name_or_id,
+            resource_id=model_id,
             route=MODELS,
             response_model=ModelResponse,
             params={"hydrate": hydrate},
@@ -3569,14 +3574,11 @@ class RestZenStore(BaseZenStore):
     def list_model_versions(
         self,
         model_version_filter_model: ModelVersionFilter,
-        model_name_or_id: Optional[Union[str, UUID]] = None,
         hydrate: bool = False,
     ) -> Page[ModelVersionResponse]:
         """Get all model versions by filter.
 
         Args:
-            model_name_or_id: name or id of the model containing the model
-                versions.
             model_version_filter_model: All filter parameters including
                 pagination params.
             hydrate: Flag deciding whether to hydrate the output model(s)
@@ -3585,20 +3587,12 @@ class RestZenStore(BaseZenStore):
         Returns:
             A page of all model versions.
         """
-        if model_name_or_id:
-            return self._list_paginated_resources(
-                route=f"{MODELS}/{model_name_or_id}{MODEL_VERSIONS}",
-                response_model=ModelVersionResponse,
-                filter_model=model_version_filter_model,
-                params={"hydrate": hydrate},
-            )
-        else:
-            return self._list_paginated_resources(
-                route=MODEL_VERSIONS,
-                response_model=ModelVersionResponse,
-                filter_model=model_version_filter_model,
-                params={"hydrate": hydrate},
-            )
+        return self._list_paginated_resources(
+            route=MODEL_VERSIONS,
+            response_model=ModelVersionResponse,
+            filter_model=model_version_filter_model,
+            params={"hydrate": hydrate},
+        )
 
     def update_model_version(
         self,

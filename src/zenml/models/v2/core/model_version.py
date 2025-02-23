@@ -25,7 +25,7 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import ConfigDict, Field, PrivateAttr, field_validator
+from pydantic import ConfigDict, Field, field_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ArtifactType, ModelStages
@@ -570,7 +570,16 @@ class ModelVersionFilter(TaggableFilter):
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *TaggableFilter.FILTER_EXCLUDE_FIELDS,
+        "model",
         "run_metadata",
+    ]
+    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *TaggableFilter.CLI_EXCLUDE_FIELDS,
+        "scope_model",
+    ]
+    CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
+        *TaggableFilter.CUSTOM_SORTING_OPTIONS,
+        "model",
     ]
 
     name: Optional[str] = Field(
@@ -590,23 +599,23 @@ class ModelVersionFilter(TaggableFilter):
         default=None,
         description="The run_metadata to filter the model versions by.",
     )
+    model: Optional[Union[str, UUID]] = Field(
+        default=None,
+        description="The name or ID of the model to filter the model versions by.",
+        union_mode="left_to_right",
+    )
+    scope_model: Optional[UUID] = Field(
+        default=None,
+        description="The ID of the model to scope this query to.",
+    )
 
-    _model_id: UUID = PrivateAttr(None)
-
-    def set_scope_model(self, model_name_or_id: Union[str, UUID]) -> None:
-        """Set the model to scope this response.
+    def set_scope_model(self, model_id: UUID) -> None:
+        """Set the model to scope this query to.
 
         Args:
-            model_name_or_id: The model to scope this response to.
+            model_id: The model to scope this query to.
         """
-        try:
-            model_id = UUID(str(model_name_or_id))
-        except ValueError:
-            from zenml.client import Client
-
-            model_id = Client().get_model(model_name_or_id).id
-
-        self._model_id = model_id
+        self.scope_model = model_id
 
     def get_custom_filters(
         self, table: Type["AnySchema"]
@@ -624,10 +633,21 @@ class ModelVersionFilter(TaggableFilter):
         from sqlmodel import and_
 
         from zenml.zen_stores.schemas import (
+            ModelSchema,
             ModelVersionSchema,
             RunMetadataResourceSchema,
             RunMetadataSchema,
         )
+
+        if self.model:
+            model_filter = and_(
+                getattr(table, "model_id") == ModelSchema.id,
+                self.generate_name_or_id_query_conditions(
+                    value=self.model,
+                    table=ModelSchema,
+                ),
+            )
+            custom_filters.append(model_filter)
 
         if self.run_metadata is not None:
             from zenml.enums import MetadataResourceTypes
@@ -663,10 +683,15 @@ class ModelVersionFilter(TaggableFilter):
 
         Returns:
             The query with filter applied.
+
+        Raises:
+            RuntimeError: if the filter is not scoped to a model.
         """
         query = super().apply_filter(query=query, table=table)
 
-        if self._model_id:
-            query = query.where(getattr(table, "model_id") == self._model_id)
+        if not self.scope_model:
+            raise RuntimeError("Model scope missing from the filter")
+
+        query = query.where(getattr(table, "model_id") == self.scope_model)
 
         return query

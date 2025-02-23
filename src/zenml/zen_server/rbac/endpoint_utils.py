@@ -310,6 +310,7 @@ def verify_permissions_and_delete_entity(
 def verify_permissions_and_prune_entities(
     resource_type: ResourceType,
     prune_method: Callable[..., None],
+    workspace_id: Optional[UUID] = None,
     **kwargs: Any,
 ) -> None:
     """Verify permissions and prune entities of certain type.
@@ -317,7 +318,12 @@ def verify_permissions_and_prune_entities(
     Args:
         resource_type: The resource type of the entities to prune.
         prune_method: The method to prune the entities.
+        workspace_id: The workspace ID to prune the entities for.
         kwargs: Keyword arguments to pass to the prune method.
     """
-    verify_permission(resource_type=resource_type, action=Action.PRUNE)
+    verify_permission(
+        resource_type=resource_type,
+        action=Action.PRUNE,
+        workspace_id=workspace_id,
+    )
     prune_method(**kwargs)

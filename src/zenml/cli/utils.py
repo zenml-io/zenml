@@ -2268,22 +2268,13 @@ def print_pipeline_runs_table(
     print_table(runs_dicts)
 
 
-def warn_unsupported_non_default_workspace() -> None:
-    """Warning for unsupported non-default workspace."""
-    from zenml.constants import (
-        ENV_ZENML_DISABLE_WORKSPACE_WARNINGS,
-        handle_bool_env_var,
-    )
-
-    disable_warnings = handle_bool_env_var(
-        ENV_ZENML_DISABLE_WORKSPACE_WARNINGS, False
-    )
-    if not disable_warnings:
+def check_zenml_pro_workspace_availability() -> None:
+    """Check if the ZenML Pro workspace feature is available."""
+    client = Client()
+    if not client.zen_store.get_store_info().is_pro_server():
         warning(
-            "Currently the concept of `workspace` is not supported "
-            "within the Dashboard. The Project functionality will be "
-            "completed in the coming weeks. For the time being it "
-            "is recommended to stay within the `default` workspace."
+            "The ZenML workspace feature is available only on ZenML Pro. "
+            "Please visit https://zenml.io/pro to learn more."
         )
 
 

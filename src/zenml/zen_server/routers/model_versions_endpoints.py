@@ -46,12 +46,14 @@ from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_create_entity,
 )
-from zenml.zen_server.rbac.models import Action, ResourceType
+from zenml.zen_server.rbac.models import Action
 from zenml.zen_server.rbac.utils import (
     dehydrate_page,
     dehydrate_response_model,
-    get_allowed_resource_ids,
     verify_permission_for_model,
+)
+from zenml.zen_server.routers.models_endpoints import (
+    router as model_router,
 )
 from zenml.zen_server.routers.workspaces_endpoints import (
     router as workspace_router,
@@ -59,6 +61,7 @@ from zenml.zen_server.routers.workspaces_endpoints import (
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
+    set_filter_workspace_scope,
     zen_store,
 )
 
@@ -82,10 +85,7 @@ router = APIRouter(
 # TODO: the workspace scoped endpoint is only kept for dashboard compatibility
 # and can be removed after the migration
 @workspace_router.post(
-    "/{workspace_name_or_id}"
-    + MODELS
-    + "/{model_name_or_id}"
-    + MODEL_VERSIONS,
+    "/{workspace_name_or_id}" + MODELS + "/{model_id}" + MODEL_VERSIONS,
     response_model=ModelVersionResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
     deprecated=True,
@@ -94,7 +94,7 @@ router = APIRouter(
 @handle_exceptions
 def create_model_version(
     model_version: ModelVersionRequest,
-    model_name_or_id: Optional[Union[str, UUID]] = None,
+    model_id: Optional[UUID] = None,
     workspace_name_or_id: Optional[Union[str, UUID]] = None,
     _: AuthContext = Security(authorize),
 ) -> ModelVersionResponse:
@@ -102,7 +102,7 @@ def create_model_version(
 
     Args:
         model_version: Model version to create.
-        model_name_or_id: Optional name or ID of the model.
+        model_id: Optional ID of the model.
         workspace_name_or_id: Optional name or ID of the workspace.
 
     Returns:
@@ -112,9 +112,8 @@ def create_model_version(
         workspace = zen_store().get_workspace(workspace_name_or_id)
         model_version.workspace = workspace.id
 
-    if model_name_or_id:
-        model = zen_store().get_model(model_name_or_id)
-        model_version.model = model.id
+    if model_id:
+        model_version.model = model_id
 
     return verify_permissions_and_create_entity(
         request_model=model_version,
@@ -122,6 +121,11 @@ def create_model_version(
     )
 
 
+@model_router.get(
+    "/{model_name_or_id}" + MODEL_VERSIONS,
+    response_model=Page[ModelVersionResponse],
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
 @router.get(
     "",
     response_model=Page[ModelVersionResponse],
@@ -132,6 +136,7 @@ def list_model_versions(
     model_version_filter_model: ModelVersionFilter = Depends(
         make_dependable(ModelVersionFilter)
     ),
+    model_name_or_id: Optional[Union[str, UUID]] = None,
     hydrate: bool = False,
     auth_context: AuthContext = Security(authorize),
 ) -> Page[ModelVersionResponse]:
@@ -140,6 +145,7 @@ def list_model_versions(
     Args:
         model_version_filter_model: Filter model used for pagination, sorting,
             filtering.
+        model_name_or_id: Optional name or ID of the model.
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
         auth_context: The authentication context.
@@ -147,12 +153,27 @@ def list_model_versions(
     Returns:
         The model versions according to query filters.
     """
-    allowed_model_ids = get_allowed_resource_ids(
-        resource_type=ResourceType.MODEL
+    if model_name_or_id:
+        model_version_filter_model.model = model_name_or_id
+
+    if not model_version_filter_model.model:
+        raise ValueError("Workspace missing from the filter")
+
+    # A workspace scoped request must always be scoped to a specific
+    # workspace. This is required for the RBAC check to work.
+    set_filter_workspace_scope(model_version_filter_model)
+    assert model_version_filter_model.scope_workspace
+
+    model = zen_store().get_model_by_name_or_id(
+        model_version_filter_model.model,
+        workspace=model_version_filter_model.scope_workspace,
     )
+
+    # Check read permissions on the model
+    verify_permission_for_model(model, action=Action.READ)
+
     model_version_filter_model.configure_rbac(
-        authenticated_user_id=auth_context.user.id,
-        model_id=allowed_model_ids,
+        authenticated_user_id=auth_context.user.id
     )
 
     model_versions = zen_store().list_model_versions(

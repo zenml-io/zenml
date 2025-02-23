@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for artifact versions."""
 
-from typing import List
+from typing import List, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -225,18 +225,24 @@ def delete_artifact_version(
 )
 @handle_exceptions
 def prune_artifact_versions(
+    workspace_name_or_id: Union[str, UUID],
     only_versions: bool = True,
     _: AuthContext = Security(authorize),
 ) -> None:
     """Prunes unused artifact versions and their artifacts.
 
     Args:
+        workspace_name_or_id: The workspace name or ID to prune artifact
+            versions for.
         only_versions: Only delete artifact versions, keeping artifacts
     """
+    workspace_id = zen_store().get_workspace(workspace_name_or_id).id
+
     verify_permissions_and_prune_entities(
         resource_type=ResourceType.ARTIFACT_VERSION,
         prune_method=zen_store().prune_artifact_versions,
         only_versions=only_versions,
+        workspace_id=workspace_id,
     )
 
 

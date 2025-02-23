@@ -20,7 +20,6 @@ from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import (
     API,
-    MODEL_VERSIONS,
     MODELS,
     VERSION_1,
 )
@@ -29,8 +28,6 @@ from zenml.models import (
     ModelRequest,
     ModelResponse,
     ModelUpdate,
-    ModelVersionFilter,
-    ModelVersionResponse,
     Page,
 )
 from zenml.zen_server.auth import AuthContext, authorize
@@ -44,10 +41,6 @@ from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_update_entity,
 )
 from zenml.zen_server.rbac.models import ResourceType
-from zenml.zen_server.rbac.utils import (
-    dehydrate_page,
-    get_allowed_resource_ids,
-)
 from zenml.zen_server.routers.workspaces_endpoints import (
     router as workspace_router,
 )
@@ -139,20 +132,20 @@ def list_models(
 
 
 @router.get(
-    "/{model_name_or_id}",
+    "/{model_id}",
     response_model=ModelResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def get_model(
-    model_name_or_id: Union[str, UUID],
+    model_id: UUID,
     hydrate: bool = True,
     _: AuthContext = Security(authorize),
 ) -> ModelResponse:
     """Get a model by name or ID.
 
     Args:
-        model_name_or_id: The name or ID of the model to get.
+        model_id: The ID of the model to get.
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
 
@@ -160,7 +153,7 @@ def get_model(
         The model with the given name or ID.
     """
     return verify_permissions_and_get_entity(
-        id=model_name_or_id, get_method=zen_store().get_model, hydrate=hydrate
+        id=model_id, get_method=zen_store().get_model, hydrate=hydrate
     )
 
 
@@ -193,21 +186,21 @@ def update_model(
 
 
 @router.delete(
-    "/{model_name_or_id}",
+    "/{model_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
 def delete_model(
-    model_name_or_id: Union[str, UUID],
+    model_id: UUID,
     _: AuthContext = Security(authorize),
 ) -> None:
-    """Delete a model by name or ID.
+    """Delete a model by ID.
 
     Args:
-        model_name_or_id: The name or ID of the model to delete.
+        model_id: The ID of the model to delete.
     """
     model = verify_permissions_and_delete_entity(
-        id=model_name_or_id,
+        id=model_id,
         get_method=zen_store().get_model,
         delete_method=zen_store().delete_model,
     )
@@ -215,52 +208,3 @@ def delete_model(
     if server_config().feature_gate_enabled:
         if ResourceType.MODEL in server_config().reportable_resources:
             report_decrement(ResourceType.MODEL, resource_id=model.id)
-
-
-#################
-# Model Versions
-#################
-
-
-@router.get(
-    "/{model_name_or_id}" + MODEL_VERSIONS,
-    response_model=Page[ModelVersionResponse],
-    responses={401: error_response, 404: error_response, 422: error_response},
-)
-@handle_exceptions
-def list_model_versions(
-    model_name_or_id: Union[str, UUID],
-    model_version_filter_model: ModelVersionFilter = Depends(
-        make_dependable(ModelVersionFilter)
-    ),
-    hydrate: bool = False,
-    auth_context: AuthContext = Security(authorize),
-) -> Page[ModelVersionResponse]:
-    """Get model versions according to query filters.
-
-    This endpoint serves the purpose of allowing scoped filtering by model_id.
-
-    Args:
-        model_name_or_id: The name or ID of the model to list in.
-        model_version_filter_model: Filter model used for pagination, sorting,
-            filtering.
-        hydrate: Flag deciding whether to hydrate the output model(s)
-            by including metadata fields in the response.
-        auth_context: The authentication context.
-
-    Returns:
-        The model versions according to query filters.
-    """
-    allowed_model_ids = get_allowed_resource_ids(
-        resource_type=ResourceType.MODEL
-    )
-    model_version_filter_model.configure_rbac(
-        authenticated_user_id=auth_context.user.id, model_id=allowed_model_ids
-    )
-
-    model_versions = zen_store().list_model_versions(
-        model_name_or_id=model_name_or_id,
-        model_version_filter_model=model_version_filter_model,
-        hydrate=hydrate,
-    )
-    return dehydrate_page(model_versions)

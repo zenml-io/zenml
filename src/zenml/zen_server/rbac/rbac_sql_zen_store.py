@@ -63,7 +63,9 @@ class RBACSqlZenStore(SqlZenStore):
 
         try:
             verify_permission(
-                resource_type=ResourceType.MODEL, action=Action.CREATE
+                resource_type=ResourceType.MODEL,
+                action=Action.CREATE,
+                workspace_id=model_request.workspace,
             )
             check_entitlement(resource_type=ResourceType.MODEL)
         except Exception as e:
@@ -76,7 +78,10 @@ class RBACSqlZenStore(SqlZenStore):
             )
         else:
             try:
-                model_response = self.get_model(model_request.name)
+                model_response = self.get_model_by_name_or_id(
+                    model_name_or_id=model_request.name,
+                    workspace=model_request.workspace,
+                )
                 created = False
             except KeyError:
                 # The model does not exist. We now raise the error that

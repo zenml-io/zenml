@@ -312,7 +312,9 @@ class ModelResponse(
 
         client = Client()
         model_versions = depaginate(
-            client.list_model_versions, model_name_or_id=self.id
+            client.list_model_versions,
+            model_name_or_id=self.id,
+            workspace=self.workspace.id,
         )
         return [
             mv.to_model_class(suppress_class_validation_warnings=True)

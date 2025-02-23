@@ -744,11 +744,14 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def prune_artifact_versions(
         self,
+        workspace_name_or_id: Union[str, UUID],
         only_versions: bool = True,
     ) -> None:
         """Prunes unused artifact versions and their artifacts.
 
         Args:
+            workspace_name_or_id: The workspace name or ID to prune artifact
+                versions for.
             only_versions: Only delete artifact versions, keeping artifacts
         """
 
@@ -2700,14 +2703,14 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def delete_model(self, model_name_or_id: Union[str, UUID]) -> None:
+    def delete_model(self, model_id: UUID) -> None:
         """Deletes a model.
 
         Args:
-            model_name_or_id: name or id of the model to be deleted.
+            model_id: id of the model to be deleted.
 
         Raises:
-            KeyError: specified ID or name not found.
+            KeyError: model with specified ID not found.
         """
 
     @abstractmethod
@@ -2727,13 +2730,11 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_model(
-        self, model_name_or_id: Union[str, UUID], hydrate: bool = True
-    ) -> ModelResponse:
+    def get_model(self, model_id: UUID, hydrate: bool = True) -> ModelResponse:
         """Get an existing model.
 
         Args:
-            model_name_or_id: name or id of the model to be retrieved.
+            model_id: id of the model to be retrieved.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -2741,7 +2742,7 @@ class ZenStoreInterface(ABC):
             The model of interest.
 
         Raises:
-            KeyError: specified ID or name not found.
+            KeyError: model with specified ID not found.
         """
 
     @abstractmethod
@@ -2820,14 +2821,11 @@ class ZenStoreInterface(ABC):
     def list_model_versions(
         self,
         model_version_filter_model: ModelVersionFilter,
-        model_name_or_id: Optional[Union[str, UUID]] = None,
         hydrate: bool = False,
     ) -> Page[ModelVersionResponse]:
         """Get all model versions by filter.
 
         Args:
-            model_name_or_id: name or id of the model containing the model
-                versions.
             model_version_filter_model: All filter parameters including
                 pagination params.
             hydrate: Flag deciding whether to hydrate the output model(s)

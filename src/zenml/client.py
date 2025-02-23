@@ -1140,11 +1140,10 @@ class Client(metaclass=ClientMetaClass):
         if workspace.name != DEFAULT_WORKSPACE_NAME:
             logger.warning(
                 f"You are running with a non-default workspace "
-                f"'{workspace.name}'. Any stacks, components, "
-                f"pipelines and pipeline runs produced in this "
-                f"workspace will currently not be accessible through "
-                f"the dashboard. However, this will be possible "
-                f"in the near future."
+                f"'{workspace.name}'. The ZenML workspace feature is available "
+                "only on ZenML Pro. Pipelines, pipeline runs and artifacts "
+                "produced in this workspace will not be accessible through the "
+                "dashboard. Please visit https://zenml.io/pro to learn more."
             )
         return workspace
 
@@ -1634,6 +1633,7 @@ class Client(metaclass=ClientMetaClass):
         allow_name_prefix_match: bool = True,
         hydrate: bool = True,
         type: Optional[str] = None,
+        workspace: Optional[Union[str, UUID]] = None,
     ) -> ServiceResponse:
         """Gets a service.
 
@@ -1643,6 +1643,7 @@ class Client(metaclass=ClientMetaClass):
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
             type: The type of the service.
+            workspace: The workspace name/ID to filter by.
 
         Returns:
             The Service
@@ -1665,7 +1666,6 @@ class Client(metaclass=ClientMetaClass):
             service_filter_model = ServiceFilter(**kwargs)
             if type:
                 service_filter_model.set_type(type=type)
-            service_filter_model.set_scope_workspace(self.active_workspace.id)
             return self.zen_store.list_services(
                 filter_model=service_filter_model,
                 hydrate=hydrate,
@@ -1676,6 +1676,7 @@ class Client(metaclass=ClientMetaClass):
             list_method=type_scoped_list_method,
             name_id_or_prefix=name_id_or_prefix,
             allow_name_prefix_match=allow_name_prefix_match,
+            workspace=workspace,
             hydrate=hydrate,
         )
 
@@ -1739,7 +1740,7 @@ class Client(metaclass=ClientMetaClass):
             updated=updated,
             type=type,
             flavor=flavor,
-            workspace=workspace,
+            workspace=workspace or self.active_workspace.id,
             user=user,
             running=running,
             name=service_name,
@@ -1749,7 +1750,6 @@ class Client(metaclass=ClientMetaClass):
             pipeline_run_id=pipeline_run_id,
             config=dict_to_bytes(config) if config else None,
         )
-        service_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_services(
             filter_model=service_filter_model, hydrate=hydrate
         )
@@ -1807,15 +1807,21 @@ class Client(metaclass=ClientMetaClass):
             service_id=id, update=service_update
         )
 
-    def delete_service(self, name_id_or_prefix: UUID) -> None:
+    def delete_service(
+        self,
+        name_id_or_prefix: UUID,
+        workspace: Optional[Union[str, UUID]] = None,
+    ) -> None:
         """Delete a service.
 
         Args:
             name_id_or_prefix: The name or ID of the service to delete.
+            workspace: The workspace name/ID to filter by.
         """
         service = self.get_service(
             name_id_or_prefix,
             allow_name_prefix_match=False,
+            workspace=workspace,
         )
         self.zen_store.delete_service(service_id=service.id)
 
@@ -2372,11 +2378,10 @@ class Client(metaclass=ClientMetaClass):
             updated=updated,
             name=name,
             latest_run_status=latest_run_status,
-            workspace=workspace,
+            workspace=workspace or self.active_workspace.id,
             user=user,
             tag=tag,
         )
-        pipeline_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_pipelines(
             pipeline_filter_model=pipeline_filter_model,
             hydrate=hydrate,
@@ -2385,12 +2390,14 @@ class Client(metaclass=ClientMetaClass):
     def get_pipeline(
         self,
         name_id_or_prefix: Union[str, UUID],
+        workspace: Optional[Union[str, UUID]] = None,
         hydrate: bool = True,
     ) -> PipelineResponse:
         """Get a pipeline by name, id or prefix.
 
         Args:
             name_id_or_prefix: The name, ID or ID prefix of the pipeline.
+            workspace: The workspace name/ID to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -2401,19 +2408,24 @@ class Client(metaclass=ClientMetaClass):
             get_method=self.zen_store.get_pipeline,
             list_method=self.list_pipelines,
             name_id_or_prefix=name_id_or_prefix,
+            workspace=workspace,
             hydrate=hydrate,
         )
 
     def delete_pipeline(
         self,
         name_id_or_prefix: Union[str, UUID],
+        workspace: Optional[Union[str, UUID]] = None,
     ) -> None:
         """Delete a pipeline.
 
         Args:
             name_id_or_prefix: The name, ID or ID prefix of the pipeline.
+            workspace: The workspace name/ID to filter by.
         """
-        pipeline = self.get_pipeline(name_id_or_prefix=name_id_or_prefix)
+        pipeline = self.get_pipeline(
+            name_id_or_prefix=name_id_or_prefix, workspace=workspace
+        )
         self.zen_store.delete_pipeline(pipeline_id=pipeline.id)
 
     @_fail_for_sql_zen_store
@@ -2427,6 +2439,7 @@ class Client(metaclass=ClientMetaClass):
         template_id: Optional[UUID] = None,
         stack_name_or_id: Union[str, UUID, None] = None,
         synchronous: bool = False,
+        workspace: Optional[Union[str, UUID]] = None,
     ) -> PipelineRunResponse:
         """Trigger a pipeline from the server.
 
@@ -2466,6 +2479,7 @@ class Client(metaclass=ClientMetaClass):
                 runnable template on any stack.
             synchronous: If `True`, this method will wait until the triggered
                 run is finished.
+            workspace: The workspace name/ID to filter by.
 
         Raises:
             RuntimeError: If triggering the pipeline failed.
@@ -2529,6 +2543,7 @@ class Client(metaclass=ClientMetaClass):
                 self.list_run_templates,
                 pipeline_id=pipeline.id,
                 stack_id=stack.id if stack else None,
+                workspace=workspace or pipeline.workspace.id,
             )
 
             for template in templates:
@@ -2567,12 +2582,14 @@ class Client(metaclass=ClientMetaClass):
     def get_build(
         self,
         id_or_prefix: Union[str, UUID],
+        workspace: Optional[Union[str, UUID]] = None,
         hydrate: bool = True,
     ) -> PipelineBuildResponse:
         """Get a build by id or prefix.
 
         Args:
             id_or_prefix: The id or id prefix of the build.
+            workspace: The workspace name/ID to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -2596,9 +2613,16 @@ class Client(metaclass=ClientMetaClass):
                 hydrate=hydrate,
             )
 
-        entity = self.list_builds(
-            id=f"startswith:{id_or_prefix}", hydrate=hydrate
+        list_kwargs: Dict[str, Any] = dict(
+            id=f"startswith:{id_or_prefix}",
+            hydrate=hydrate,
         )
+        scope = ""
+        if workspace:
+            list_kwargs["workspace"] = workspace
+            scope = f" in workspace {workspace}"
+
+        entity = self.list_builds(**list_kwargs)
 
         # If only a single entity is found, return it.
         if entity.total == 1:
@@ -2608,11 +2632,11 @@ class Client(metaclass=ClientMetaClass):
         if entity.total == 0:
             raise KeyError(
                 f"No builds have been found that have either an id or prefix "
-                f"that matches the provided string '{id_or_prefix}'."
+                f"that matches the provided string '{id_or_prefix}'{scope}."
             )
 
         raise ZenKeyError(
-            f"{entity.total} builds have been found that have "
+            f"{entity.total} builds have been found{scope} that have "
             f"an ID that matches the provided "
             f"string '{id_or_prefix}':\n"
             f"{[entity.items]}.\n"
@@ -2678,7 +2702,7 @@ class Client(metaclass=ClientMetaClass):
             id=id,
             created=created,
             updated=updated,
-            workspace=workspace,
+            workspace=workspace or self.active_workspace.id,
             user=user,
             pipeline_id=pipeline_id,
             stack_id=stack_id,
@@ -2690,19 +2714,21 @@ class Client(metaclass=ClientMetaClass):
             checksum=checksum,
             stack_checksum=stack_checksum,
         )
-        build_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_builds(
             build_filter_model=build_filter_model,
             hydrate=hydrate,
         )
 
-    def delete_build(self, id_or_prefix: str) -> None:
+    def delete_build(
+        self, id_or_prefix: str, workspace: Optional[Union[str, UUID]] = None
+    ) -> None:
         """Delete a build.
 
         Args:
             id_or_prefix: The id or id prefix of the build.
+            workspace: The workspace name/ID to filter by.
         """
-        build = self.get_build(id_or_prefix=id_or_prefix)
+        build = self.get_build(id_or_prefix=id_or_prefix, workspace=workspace)
         self.zen_store.delete_build(build_id=build.id)
 
     # --------------------------------- Event Sources -------------------------
@@ -2745,6 +2771,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         name_id_or_prefix: Union[UUID, str],
         allow_name_prefix_match: bool = True,
+        workspace: Optional[Union[str, UUID]] = None,
         hydrate: bool = True,
     ) -> EventSourceResponse:
         """Get an event source by name, ID or prefix.
@@ -2752,6 +2779,7 @@ class Client(metaclass=ClientMetaClass):
         Args:
             name_id_or_prefix: The name, ID or prefix of the stack.
             allow_name_prefix_match: If True, allow matching by name prefix.
+            workspace: The workspace name/ID to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -2763,6 +2791,7 @@ class Client(metaclass=ClientMetaClass):
             list_method=self.list_event_sources,
             name_id_or_prefix=name_id_or_prefix,
             allow_name_prefix_match=allow_name_prefix_match,
+            workspace=workspace,
             hydrate=hydrate,
         )
 
@@ -2808,7 +2837,7 @@ class Client(metaclass=ClientMetaClass):
             size=size,
             sort_by=sort_by,
             logical_operator=logical_operator,
-            workspace=workspace,
+            workspace=workspace or self.active_workspace.id,
             user=user,
             name=name,
             flavor=flavor,
@@ -2817,7 +2846,6 @@ class Client(metaclass=ClientMetaClass):
             created=created,
             updated=updated,
         )
-        event_source_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_event_sources(
             event_source_filter_model, hydrate=hydrate
         )
@@ -2831,6 +2859,7 @@ class Client(metaclass=ClientMetaClass):
         configuration: Optional[Dict[str, Any]] = None,
         rotate_secret: Optional[bool] = None,
         is_active: Optional[bool] = None,
+        workspace: Optional[Union[str, UUID]] = None,
     ) -> EventSourceResponse:
         """Updates a event_source.
 
@@ -2843,6 +2872,7 @@ class Client(metaclass=ClientMetaClass):
                 contain the new secret value
             is_active: Optional[bool] = Allows for activation/deactivating the
                 event source
+            workspace: The workspace name/ID to filter by.
 
         Returns:
             The model of the updated event_source.
@@ -2852,7 +2882,9 @@ class Client(metaclass=ClientMetaClass):
         """
         # First, get the eve
         event_source = self.get_event_source(
-            name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=False,
+            workspace=workspace,
         )
 
         # Create the update model
@@ -2878,15 +2910,22 @@ class Client(metaclass=ClientMetaClass):
         return updated_event_source
 
     @_fail_for_sql_zen_store
-    def delete_event_source(self, name_id_or_prefix: Union[str, UUID]) -> None:
+    def delete_event_source(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        workspace: Optional[Union[str, UUID]] = None,
+    ) -> None:
         """Deletes an event_source.
 
         Args:
             name_id_or_prefix: The name, id or prefix id of the event_source
                 to deregister.
+            workspace: The workspace name/ID to filter by.
         """
         event_source = self.get_event_source(
-            name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=False,
+            workspace=workspace,
         )
 
         self.zen_store.delete_event_source(event_source_id=event_source.id)
@@ -2940,6 +2979,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         name_id_or_prefix: Union[UUID, str],
         allow_name_prefix_match: bool = True,
+        workspace: Optional[Union[str, UUID]] = None,
         hydrate: bool = True,
     ) -> ActionResponse:
         """Get an action by name, ID or prefix.
@@ -2947,6 +2987,7 @@ class Client(metaclass=ClientMetaClass):
         Args:
             name_id_or_prefix: The name, ID or prefix of the action.
             allow_name_prefix_match: If True, allow matching by name prefix.
+            workspace: The workspace name/ID to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -2958,6 +2999,7 @@ class Client(metaclass=ClientMetaClass):
             list_method=self.list_actions,
             name_id_or_prefix=name_id_or_prefix,
             allow_name_prefix_match=allow_name_prefix_match,
+            workspace=workspace,
             hydrate=hydrate,
         )
 
@@ -3004,7 +3046,7 @@ class Client(metaclass=ClientMetaClass):
             size=size,
             sort_by=sort_by,
             logical_operator=logical_operator,
-            workspace=workspace,
+            workspace=workspace or self.active_workspace.id,
             user=user,
             name=name,
             id=id,
@@ -3013,7 +3055,6 @@ class Client(metaclass=ClientMetaClass):
             created=created,
             updated=updated,
         )
-        filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_actions(filter_model, hydrate=hydrate)
 
     @_fail_for_sql_zen_store
@@ -3025,6 +3066,7 @@ class Client(metaclass=ClientMetaClass):
         configuration: Optional[Dict[str, Any]] = None,
         service_account_id: Optional[UUID] = None,
         auth_window: Optional[int] = None,
+        workspace: Optional[Union[str, UUID]] = None,
     ) -> ActionResponse:
         """Update an action.
 
@@ -3038,12 +3080,15 @@ class Client(metaclass=ClientMetaClass):
             auth_window: The new time window in minutes for which the service
                 account is authorized to execute the action. Set this to 0 to
                 authorize the service account indefinitely (not recommended).
+            workspace: The workspace name/ID to filter by.
 
         Returns:
             The updated action.
         """
         action = self.get_action(
-            name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=False,
+            workspace=workspace,
         )
 
         update_model = ActionUpdate(
@@ -3060,15 +3105,22 @@ class Client(metaclass=ClientMetaClass):
         )
 
     @_fail_for_sql_zen_store
-    def delete_action(self, name_id_or_prefix: Union[str, UUID]) -> None:
+    def delete_action(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        workspace: Optional[Union[str, UUID]] = None,
+    ) -> None:
         """Delete an action.
 
         Args:
             name_id_or_prefix: The name, id or prefix id of the action
                 to delete.
+            workspace: The workspace name/ID to filter by.
         """
         action = self.get_action(
-            name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=False,
+            workspace=workspace,
         )
 
         self.zen_store.delete_action(action_id=action.id)
@@ -3113,6 +3165,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         name_id_or_prefix: Union[UUID, str],
         allow_name_prefix_match: bool = True,
+        workspace: Optional[Union[str, UUID]] = None,
         hydrate: bool = True,
     ) -> TriggerResponse:
         """Get a trigger by name, ID or prefix.
@@ -3120,6 +3173,7 @@ class Client(metaclass=ClientMetaClass):
         Args:
             name_id_or_prefix: The name, ID or prefix of the trigger.
             allow_name_prefix_match: If True, allow matching by name prefix.
+            workspace: The workspace name/ID to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -3131,6 +3185,7 @@ class Client(metaclass=ClientMetaClass):
             list_method=self.list_triggers,
             name_id_or_prefix=name_id_or_prefix,
             allow_name_prefix_match=allow_name_prefix_match,
+            workspace=workspace,
             hydrate=hydrate,
         )
 
@@ -3187,7 +3242,7 @@ class Client(metaclass=ClientMetaClass):
             size=size,
             sort_by=sort_by,
             logical_operator=logical_operator,
-            workspace=workspace,
+            workspace=workspace or self.active_workspace.id,
             user=user,
             name=name,
             event_source_id=event_source_id,
@@ -3200,7 +3255,6 @@ class Client(metaclass=ClientMetaClass):
             created=created,
             updated=updated,
         )
-        trigger_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_triggers(
             trigger_filter_model, hydrate=hydrate
         )
@@ -3213,6 +3267,7 @@ class Client(metaclass=ClientMetaClass):
         description: Optional[str] = None,
         event_filter: Optional[Dict[str, Any]] = None,
         is_active: Optional[bool] = None,
+        workspace: Optional[Union[str, UUID]] = None,
     ) -> TriggerResponse:
         """Updates a trigger.
 
@@ -3222,6 +3277,7 @@ class Client(metaclass=ClientMetaClass):
             description: the new description of the trigger.
             event_filter: The event filter configuration.
             is_active: Whether the trigger is active or not.
+            workspace: The workspace name/ID to filter by.
 
         Returns:
             The model of the updated trigger.
@@ -3231,7 +3287,9 @@ class Client(metaclass=ClientMetaClass):
         """
         # First, get the eve
         trigger = self.get_trigger(
-            name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=False,
+            workspace=workspace,
         )
 
         # Create the update model
@@ -3256,15 +3314,22 @@ class Client(metaclass=ClientMetaClass):
         return updated_trigger
 
     @_fail_for_sql_zen_store
-    def delete_trigger(self, name_id_or_prefix: Union[str, UUID]) -> None:
+    def delete_trigger(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        workspace: Optional[Union[str, UUID]] = None,
+    ) -> None:
         """Deletes an trigger.
 
         Args:
             name_id_or_prefix: The name, id or prefix id of the trigger
                 to deregister.
+            workspace: The workspace name/ID to filter by.
         """
         trigger = self.get_trigger(
-            name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=False,
+            workspace=workspace,
         )
 
         self.zen_store.delete_trigger(trigger_id=trigger.id)
@@ -3275,12 +3340,14 @@ class Client(metaclass=ClientMetaClass):
     def get_deployment(
         self,
         id_or_prefix: Union[str, UUID],
+        workspace: Optional[Union[str, UUID]] = None,
         hydrate: bool = True,
     ) -> PipelineDeploymentResponse:
         """Get a deployment by id or prefix.
 
         Args:
             id_or_prefix: The id or id prefix of the deployment.
+            workspace: The workspace name/ID to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -3303,10 +3370,16 @@ class Client(metaclass=ClientMetaClass):
             )
             return self.zen_store.get_deployment(id_, hydrate=hydrate)
 
-        entity = self.list_deployments(
+        list_kwargs: Dict[str, Any] = dict(
             id=f"startswith:{id_or_prefix}",
             hydrate=hydrate,
         )
+        scope = ""
+        if workspace:
+            list_kwargs["workspace"] = workspace
+            scope = f" in workspace {workspace}"
+
+        entity = self.list_deployments(**list_kwargs)
 
         # If only a single entity is found, return it.
         if entity.total == 1:
@@ -3316,11 +3389,11 @@ class Client(metaclass=ClientMetaClass):
         if entity.total == 0:
             raise KeyError(
                 f"No deployment have been found that have either an id or "
-                f"prefix that matches the provided string '{id_or_prefix}'."
+                f"prefix that matches the provided string '{id_or_prefix}'{scope}."
             )
 
         raise ZenKeyError(
-            f"{entity.total} deployments have been found that have "
+            f"{entity.total} deployments have been found{scope} that have "
             f"an ID that matches the provided "
             f"string '{id_or_prefix}':\n"
             f"{[entity.items]}.\n"
@@ -3375,27 +3448,33 @@ class Client(metaclass=ClientMetaClass):
             id=id,
             created=created,
             updated=updated,
-            workspace=workspace,
+            workspace=workspace or self.active_workspace.id,
             user=user,
             pipeline_id=pipeline_id,
             stack_id=stack_id,
             build_id=build_id,
             template_id=template_id,
         )
-        deployment_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_deployments(
             deployment_filter_model=deployment_filter_model,
             hydrate=hydrate,
         )
 
-    def delete_deployment(self, id_or_prefix: str) -> None:
+    def delete_deployment(
+        self,
+        id_or_prefix: str,
+        workspace: Optional[Union[str, UUID]] = None,
+    ) -> None:
         """Delete a deployment.
 
         Args:
             id_or_prefix: The id or id prefix of the deployment.
+            workspace: The workspace name/ID to filter by.
         """
         deployment = self.get_deployment(
-            id_or_prefix=id_or_prefix, hydrate=False
+            id_or_prefix=id_or_prefix,
+            workspace=workspace,
+            hydrate=False,
         )
         self.zen_store.delete_deployment(deployment_id=deployment.id)
 
@@ -3433,12 +3512,14 @@ class Client(metaclass=ClientMetaClass):
     def get_run_template(
         self,
         name_id_or_prefix: Union[str, UUID],
+        workspace: Optional[Union[str, UUID]] = None,
         hydrate: bool = True,
     ) -> RunTemplateResponse:
         """Get a run template.
 
         Args:
             name_id_or_prefix: Name/ID/ID prefix of the template to get.
+            workspace: The workspace name/ID to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -3450,6 +3531,7 @@ class Client(metaclass=ClientMetaClass):
             list_method=self.list_run_templates,
             name_id_or_prefix=name_id_or_prefix,
             allow_name_prefix_match=False,
+            workspace=workspace,
             hydrate=hydrate,
         )
 
@@ -3531,6 +3613,7 @@ class Client(metaclass=ClientMetaClass):
         description: Optional[str] = None,
         add_tags: Optional[List[str]] = None,
         remove_tags: Optional[List[str]] = None,
+        workspace: Optional[Union[str, UUID]] = None,
     ) -> RunTemplateResponse:
         """Update a run template.
 
@@ -3540,6 +3623,7 @@ class Client(metaclass=ClientMetaClass):
             description: The new description of the run template.
             add_tags: Tags to add to the run template.
             remove_tags: Tags to remove from the run template.
+            workspace: The workspace name/ID to filter by.
 
         Returns:
             The updated run template.
@@ -3552,7 +3636,9 @@ class Client(metaclass=ClientMetaClass):
             )
         else:
             template_id = self.get_run_template(
-                name_id_or_prefix, hydrate=False
+                name_id_or_prefix,
+                workspace=workspace,
+                hydrate=False,
             ).id
 
         return self.zen_store.update_run_template(
@@ -3565,11 +3651,16 @@ class Client(metaclass=ClientMetaClass):
             ),
         )
 
-    def delete_run_template(self, name_id_or_prefix: Union[str, UUID]) -> None:
+    def delete_run_template(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        workspace: Optional[Union[str, UUID]] = None,
+    ) -> None:
         """Delete a run template.
 
         Args:
             name_id_or_prefix: Name/ID/ID prefix of the template to delete.
+            workspace: The workspace name/ID to filter by.
         """
         if is_valid_uuid(name_id_or_prefix):
             template_id = (
@@ -3579,7 +3670,9 @@ class Client(metaclass=ClientMetaClass):
             )
         else:
             template_id = self.get_run_template(
-                name_id_or_prefix, hydrate=False
+                name_id_or_prefix,
+                workspace=workspace,
+                hydrate=False,
             ).id
 
         self.zen_store.delete_run_template(template_id=template_id)
@@ -3590,6 +3683,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         name_id_or_prefix: Union[str, UUID],
         allow_name_prefix_match: bool = True,
+        workspace: Optional[Union[str, UUID]] = None,
         hydrate: bool = True,
     ) -> ScheduleResponse:
         """Get a schedule by name, id or prefix.
@@ -3597,6 +3691,7 @@ class Client(metaclass=ClientMetaClass):
         Args:
             name_id_or_prefix: The name, id or prefix of the schedule.
             allow_name_prefix_match: If True, allow matching by name prefix.
+            workspace: The workspace name/ID to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -3608,6 +3703,7 @@ class Client(metaclass=ClientMetaClass):
             list_method=self.list_schedules,
             name_id_or_prefix=name_id_or_prefix,
             allow_name_prefix_match=allow_name_prefix_match,
+            workspace=workspace,
             hydrate=hydrate,
         )
 
@@ -3671,7 +3767,7 @@ class Client(metaclass=ClientMetaClass):
             created=created,
             updated=updated,
             name=name,
-            workspace=workspace,
+            workspace=workspace or self.active_workspace.id,
             user=user,
             pipeline_id=pipeline_id,
             orchestrator_id=orchestrator_id,
@@ -3683,21 +3779,27 @@ class Client(metaclass=ClientMetaClass):
             catchup=catchup,
             run_once_start_time=run_once_start_time,
         )
-        schedule_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_schedules(
             schedule_filter_model=schedule_filter_model,
             hydrate=hydrate,
         )
 
-    def delete_schedule(self, name_id_or_prefix: Union[str, UUID]) -> None:
+    def delete_schedule(
+        self,
+        name_id_or_prefix: Union[str, UUID],
+        workspace: Optional[Union[str, UUID]] = None,
+    ) -> None:
         """Delete a schedule.
 
         Args:
             name_id_or_prefix: The name, id or prefix id of the schedule
                 to delete.
+            workspace: The workspace name/ID to filter by.
         """
         schedule = self.get_schedule(
-            name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=False,
+            workspace=workspace,
         )
         logger.warning(
             f"Deleting schedule '{name_id_or_prefix}'... This will only delete "
@@ -3712,6 +3814,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         name_id_or_prefix: Union[str, UUID],
         allow_name_prefix_match: bool = True,
+        workspace: Optional[Union[str, UUID]] = None,
         hydrate: bool = True,
     ) -> PipelineRunResponse:
         """Gets a pipeline run by name, ID, or prefix.
@@ -3719,6 +3822,7 @@ class Client(metaclass=ClientMetaClass):
         Args:
             name_id_or_prefix: Name, ID, or prefix of the pipeline run.
             allow_name_prefix_match: If True, allow matching by name prefix.
+            workspace: The workspace name/ID to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -3730,6 +3834,7 @@ class Client(metaclass=ClientMetaClass):
             list_method=self.list_pipeline_runs,
             name_id_or_prefix=name_id_or_prefix,
             allow_name_prefix_match=allow_name_prefix_match,
+            workspace=workspace,
             hydrate=hydrate,
         )
 
@@ -3822,7 +3927,7 @@ class Client(metaclass=ClientMetaClass):
             created=created,
             updated=updated,
             name=name,
-            workspace=workspace,
+            workspace=workspace or self.active_workspace.id,
             pipeline_id=pipeline_id,
             pipeline_name=pipeline_name,
             schedule_id=schedule_id,
@@ -3848,7 +3953,6 @@ class Client(metaclass=ClientMetaClass):
             stack_component=stack_component,
             templatable=templatable,
         )
-        runs_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_runs(
             runs_filter_model=runs_filter_model,
             hydrate=hydrate,
@@ -3857,14 +3961,18 @@ class Client(metaclass=ClientMetaClass):
     def delete_pipeline_run(
         self,
         name_id_or_prefix: Union[str, UUID],
+        workspace: Optional[Union[str, UUID]] = None,
     ) -> None:
         """Deletes a pipeline run.
 
         Args:
             name_id_or_prefix: Name, ID, or prefix of the pipeline run.
+            workspace: The workspace name/ID to filter by.
         """
         run = self.get_pipeline_run(
-            name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=False,
+            workspace=workspace,
         )
         self.zen_store.delete_run(run_id=run.id)
 
@@ -3962,13 +4070,12 @@ class Client(metaclass=ClientMetaClass):
             start_time=start_time,
             end_time=end_time,
             name=name,
-            workspace=workspace,
+            workspace=workspace or self.active_workspace.id,
             user=user,
             model_version_id=model_version_id,
             model=model,
             run_metadata=run_metadata,
         )
-        step_run_filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_run_steps(
             step_run_filter_model=step_run_filter_model,
             hydrate=hydrate,
@@ -3979,12 +4086,14 @@ class Client(metaclass=ClientMetaClass):
     def get_artifact(
         self,
         name_id_or_prefix: Union[str, UUID],
+        workspace: Optional[Union[str, UUID]] = None,
         hydrate: bool = False,
     ) -> ArtifactResponse:
         """Get an artifact by name, id or prefix.
 
         Args:
             name_id_or_prefix: The name, ID or prefix of the artifact to get.
+            workspace: The workspace name/ID to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -3995,6 +4104,7 @@ class Client(metaclass=ClientMetaClass):
             get_method=self.zen_store.get_artifact,
             list_method=self.list_artifacts,
             name_id_or_prefix=name_id_or_prefix,
+            workspace=workspace,
             hydrate=hydrate,
         )
 
@@ -4009,6 +4119,7 @@ class Client(metaclass=ClientMetaClass):
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
         has_custom_name: Optional[bool] = None,
+        workspace: Optional[Union[str, UUID]] = None,
         hydrate: bool = False,
         tag: Optional[str] = None,
     ) -> Page[ArtifactResponse]:
@@ -4024,6 +4135,7 @@ class Client(metaclass=ClientMetaClass):
             updated: Use the last updated date for filtering
             name: The name of the artifact to filter by.
             has_custom_name: Filter artifacts with/without custom names.
+            workspace: The workspace name/ID to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
             tag: Filter artifacts by tag.
@@ -4042,6 +4154,7 @@ class Client(metaclass=ClientMetaClass):
             name=name,
             has_custom_name=has_custom_name,
             tag=tag,
+            workspace=workspace or self.active_workspace.id,
         )
         return self.zen_store.list_artifacts(
             artifact_filter_model,
@@ -4055,6 +4168,7 @@ class Client(metaclass=ClientMetaClass):
         add_tags: Optional[List[str]] = None,
         remove_tags: Optional[List[str]] = None,
         has_custom_name: Optional[bool] = None,
+        workspace: Optional[Union[str, UUID]] = None,
     ) -> ArtifactResponse:
         """Update an artifact.
 
@@ -4064,11 +4178,15 @@ class Client(metaclass=ClientMetaClass):
             add_tags: Tags to add to the artifact.
             remove_tags: Tags to remove from the artifact.
             has_custom_name: Whether the artifact has a custom name.
+            workspace: The workspace name/ID to filter by.
 
         Returns:
             The updated artifact.
         """
-        artifact = self.get_artifact(name_id_or_prefix=name_id_or_prefix)
+        artifact = self.get_artifact(
+            name_id_or_prefix=name_id_or_prefix,
+            workspace=workspace,
+        )
         artifact_update = ArtifactUpdate(
             name=new_name,
             add_tags=add_tags,
@@ -4082,13 +4200,18 @@ class Client(metaclass=ClientMetaClass):
     def delete_artifact(
         self,
         name_id_or_prefix: Union[str, UUID],
+        workspace: Optional[Union[str, UUID]] = None,
     ) -> None:
         """Delete an artifact.
 
         Args:
             name_id_or_prefix: The name, ID or prefix of the artifact to delete.
+            workspace: The workspace name/ID to filter by.
         """
-        artifact = self.get_artifact(name_id_or_prefix=name_id_or_prefix)
+        artifact = self.get_artifact(
+            name_id_or_prefix=name_id_or_prefix,
+            workspace=workspace,
+        )
         self.zen_store.delete_artifact(artifact_id=artifact.id)
         logger.info(f"Deleted artifact '{artifact.name}'.")
 
@@ -4096,23 +4219,31 @@ class Client(metaclass=ClientMetaClass):
         self,
         only_versions: bool = True,
         delete_from_artifact_store: bool = False,
+        workspace: Optional[Union[str, UUID]] = None,
     ) -> None:
         """Delete all unused artifacts and artifact versions.
 
         Args:
             only_versions: Only delete artifact versions, keeping artifacts
             delete_from_artifact_store: Delete data from artifact metadata
+            workspace: The workspace name/ID to filter by.
         """
         if delete_from_artifact_store:
             unused_artifact_versions = depaginate(
-                self.list_artifact_versions, only_unused=True
+                self.list_artifact_versions,
+                only_unused=True,
+                workspace=workspace,
             )
             for unused_artifact_version in unused_artifact_versions:
                 self._delete_artifact_from_artifact_store(
                     unused_artifact_version
                 )
 
-        self.zen_store.prune_artifact_versions(only_versions)
+        workspace = workspace or self.active_workspace.id
+
+        self.zen_store.prune_artifact_versions(
+            workspace_name_or_id=workspace, only_versions=only_versions
+        )
         logger.info("All unused artifacts and artifact versions deleted.")
 
     # --------------------------- Artifact Versions ---------------------------
@@ -4121,6 +4252,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         name_id_or_prefix: Union[str, UUID],
         version: Optional[str] = None,
+        workspace: Optional[Union[str, UUID]] = None,
         hydrate: bool = True,
     ) -> ArtifactVersionResponse:
         """Get an artifact version by ID or artifact name.
@@ -4131,6 +4263,7 @@ class Client(metaclass=ClientMetaClass):
             version: The version of the artifact to get. Only used if
                 `name_id_or_prefix` is the name of the artifact. If not
                 specified, the latest version is returned.
+            workspace: The workspace name/ID to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -4143,6 +4276,7 @@ class Client(metaclass=ClientMetaClass):
             method_name="get_artifact_version",
             name_id_or_prefix=name_id_or_prefix,
             version=version,
+            workspace=workspace,
             hydrate=hydrate,
         ):
             return cll  # type: ignore[return-value]
@@ -4152,6 +4286,7 @@ class Client(metaclass=ClientMetaClass):
             list_method=self.list_artifact_versions,
             name_id_or_prefix=name_id_or_prefix,
             version=version,
+            workspace=workspace,
             hydrate=hydrate,
         )
         try:
@@ -4248,7 +4383,7 @@ class Client(metaclass=ClientMetaClass):
             data_type=data_type,
             uri=uri,
             materializer=materializer,
-            workspace=workspace,
+            workspace=workspace or self.active_workspace.id,
             model_version_id=model_version_id,
             only_unused=only_unused,
             has_custom_name=has_custom_name,
@@ -4257,9 +4392,6 @@ class Client(metaclass=ClientMetaClass):
             model=model,
             pipeline_run=pipeline_run,
             run_metadata=run_metadata,
-        )
-        artifact_version_filter_model.set_scope_workspace(
-            self.active_workspace.id
         )
         return self.zen_store.list_artifact_versions(
             artifact_version_filter_model,
@@ -4272,6 +4404,7 @@ class Client(metaclass=ClientMetaClass):
         version: Optional[str] = None,
         add_tags: Optional[List[str]] = None,
         remove_tags: Optional[List[str]] = None,
+        workspace: Optional[Union[str, UUID]] = None,
     ) -> ArtifactVersionResponse:
         """Update an artifact version.
 
@@ -4282,6 +4415,7 @@ class Client(metaclass=ClientMetaClass):
                 specified, the latest version is updated.
             add_tags: Tags to add to the artifact version.
             remove_tags: Tags to remove from the artifact version.
+            workspace: The workspace name/ID to filter by.
 
         Returns:
             The updated artifact version.
@@ -4289,6 +4423,7 @@ class Client(metaclass=ClientMetaClass):
         artifact_version = self.get_artifact_version(
             name_id_or_prefix=name_id_or_prefix,
             version=version,
+            workspace=workspace,
         )
         artifact_version_update = ArtifactVersionUpdate(
             add_tags=add_tags, remove_tags=remove_tags
@@ -4304,6 +4439,7 @@ class Client(metaclass=ClientMetaClass):
         version: Optional[str] = None,
         delete_metadata: bool = True,
         delete_from_artifact_store: bool = False,
+        workspace: Optional[Union[str, UUID]] = None,
     ) -> None:
         """Delete an artifact version.
 
@@ -4317,10 +4453,13 @@ class Client(metaclass=ClientMetaClass):
             delete_metadata: If True, delete the metadata of the artifact
                 version from the database.
             delete_from_artifact_store: If True, delete the artifact object
-                itself from the artifact store.
+                    itself from the artifact store.
+            workspace: The workspace name/ID to filter by.
         """
         artifact_version = self.get_artifact_version(
-            name_id_or_prefix=name_id_or_prefix, version=version
+            name_id_or_prefix=name_id_or_prefix,
+            version=version,
+            workspace=workspace,
         )
         if delete_from_artifact_store:
             self._delete_artifact_from_artifact_store(
@@ -4953,6 +5092,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         name_id_or_prefix: Union[str, UUID],
         allow_name_prefix_match: bool = True,
+        workspace: Optional[Union[str, UUID]] = None,
         hydrate: bool = True,
     ) -> CodeRepositoryResponse:
         """Get a code repository by name, id or prefix.
@@ -4960,6 +5100,7 @@ class Client(metaclass=ClientMetaClass):
         Args:
             name_id_or_prefix: The name, ID or ID prefix of the code repository.
             allow_name_prefix_match: If True, allow matching by name prefix.
+            workspace: The workspace name/ID to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -4972,6 +5113,7 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix=name_id_or_prefix,
             allow_name_prefix_match=allow_name_prefix_match,
             hydrate=hydrate,
+            workspace=workspace,
         )
 
     def list_code_repositories(
@@ -5016,10 +5158,9 @@ class Client(metaclass=ClientMetaClass):
             created=created,
             updated=updated,
             name=name,
-            workspace=workspace,
+            workspace=workspace or self.active_workspace.id,
             user=user,
         )
-        filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_code_repositories(
             filter_model=filter_model,
             hydrate=hydrate,
@@ -5032,6 +5173,7 @@ class Client(metaclass=ClientMetaClass):
         description: Optional[str] = None,
         logo_url: Optional[str] = None,
         config: Optional[Dict[str, Any]] = None,
+        workspace: Optional[Union[str, UUID]] = None,
     ) -> CodeRepositoryResponse:
         """Update a code repository.
 
@@ -5045,12 +5187,15 @@ class Client(metaclass=ClientMetaClass):
                 be used to update the existing configuration values. To remove
                 values from the existing configuration, set the value for that
                 key to `None`.
+            workspace: The workspace name/ID to filter by.
 
         Returns:
             The updated code repository.
         """
         repo = self.get_code_repository(
-            name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=False,
+            workspace=workspace,
         )
         update = CodeRepositoryUpdate(
             name=name, description=description, logo_url=logo_url
@@ -5074,14 +5219,18 @@ class Client(metaclass=ClientMetaClass):
     def delete_code_repository(
         self,
         name_id_or_prefix: Union[str, UUID],
+        workspace: Optional[Union[str, UUID]] = None,
     ) -> None:
         """Delete a code repository.
 
         Args:
             name_id_or_prefix: The name, ID or prefix of the code repository.
+            workspace: The workspace name/ID to filter by.
         """
         repo = self.get_code_repository(
-            name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
+            name_id_or_prefix=name_id_or_prefix,
+            allow_name_prefix_match=False,
+            workspace=workspace,
         )
         self.zen_store.delete_code_repository(code_repository_id=repo.id)
 
@@ -5329,7 +5478,7 @@ class Client(metaclass=ClientMetaClass):
         """
         connector = self._get_entity_by_id_or_name_or_prefix(
             get_method=self.zen_store.get_service_connector,
-            list_method=self.zen_store.list_service_connectors,
+            list_method=self.list_service_connectors,
             name_id_or_prefix=name_id_or_prefix,
             allow_name_prefix_match=allow_name_prefix_match,
             hydrate=hydrate,
@@ -5981,13 +6130,21 @@ class Client(metaclass=ClientMetaClass):
             )
         )
 
-    def delete_model(self, model_name_or_id: Union[str, UUID]) -> None:
+    def delete_model(
+        self,
+        model_name_or_id: Union[str, UUID],
+        workspace: Optional[Union[str, UUID]] = None,
+    ) -> None:
         """Deletes a model from Model Control Plane.
 
         Args:
             model_name_or_id: name or id of the model to be deleted.
+            workspace: The workspace name/ID to filter by.
         """
-        self.zen_store.delete_model(model_name_or_id=model_name_or_id)
+        model = self.get_model(
+            model_name_or_id=model_name_or_id, workspace=workspace
+        )
+        self.zen_store.delete_model(model_id=model.id)
 
     def update_model(
         self,
@@ -6003,6 +6160,7 @@ class Client(metaclass=ClientMetaClass):
         add_tags: Optional[List[str]] = None,
         remove_tags: Optional[List[str]] = None,
         save_models_to_registry: Optional[bool] = None,
+        workspace: Optional[Union[str, UUID]] = None,
     ) -> ModelResponse:
         """Updates an existing model in Model Control Plane.
 
@@ -6020,14 +6178,16 @@ class Client(metaclass=ClientMetaClass):
             remove_tags: Tags to remove from to the model.
             save_models_to_registry: Whether to save the model to the
                 registry.
+            workspace: The workspace name/ID to filter by.
 
         Returns:
             The updated model.
         """
-        if not is_valid_uuid(model_name_or_id):
-            model_name_or_id = self.zen_store.get_model(model_name_or_id).id
+        model = self.get_model(
+            model_name_or_id=model_name_or_id, workspace=workspace
+        )
         return self.zen_store.update_model(
-            model_id=model_name_or_id,  # type:ignore[arg-type]
+            model_id=model.id,
             model_update=ModelUpdate(
                 name=name,
                 license=license,
@@ -6046,12 +6206,14 @@ class Client(metaclass=ClientMetaClass):
     def get_model(
         self,
         model_name_or_id: Union[str, UUID],
+        workspace: Optional[Union[str, UUID]] = None,
         hydrate: bool = True,
     ) -> ModelResponse:
         """Get an existing model from Model Control Plane.
 
         Args:
             model_name_or_id: name or id of the model to be retrieved.
+            workspace: The workspace name/ID to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -6059,11 +6221,18 @@ class Client(metaclass=ClientMetaClass):
             The model of interest.
         """
         if cll := client_lazy_loader(
-            "get_model", model_name_or_id=model_name_or_id, hydrate=hydrate
+            "get_model",
+            model_name_or_id=model_name_or_id,
+            hydrate=hydrate,
+            workspace=workspace,
         ):
             return cll  # type: ignore[return-value]
-        return self.zen_store.get_model(
-            model_name_or_id=model_name_or_id,
+
+        return self._get_entity_by_id_or_name_or_prefix(
+            get_method=self.zen_store.get_model,
+            list_method=self.list_models,
+            name_id_or_prefix=model_name_or_id,
+            workspace=workspace,
             hydrate=hydrate,
         )
 
@@ -6077,6 +6246,7 @@ class Client(metaclass=ClientMetaClass):
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
         user: Optional[Union[UUID, str]] = None,
+        workspace: Optional[Union[str, UUID]] = None,
         hydrate: bool = False,
         tag: Optional[str] = None,
     ) -> Page[ModelResponse]:
@@ -6091,6 +6261,7 @@ class Client(metaclass=ClientMetaClass):
             updated: Use the last updated date for filtering
             name: The name of the model to filter by.
             user: Filter by user name/ID.
+            workspace: The workspace name/ID to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
             tag: The tag of the model to filter by.
@@ -6108,6 +6279,7 @@ class Client(metaclass=ClientMetaClass):
             updated=updated,
             tag=tag,
             user=user,
+            workspace=workspace or self.active_workspace.id,
         )
 
         return self.zen_store.list_models(
@@ -6124,6 +6296,7 @@ class Client(metaclass=ClientMetaClass):
         name: Optional[str] = None,
         description: Optional[str] = None,
         tags: Optional[List[str]] = None,
+        workspace: Optional[Union[str, UUID]] = None,
     ) -> ModelVersionResponse:
         """Creates a new model version in Model Control Plane.
 
@@ -6133,18 +6306,20 @@ class Client(metaclass=ClientMetaClass):
             name: the name of the Model Version to be created.
             description: the description of the Model Version to be created.
             tags: Tags associated with the model.
+            workspace: The workspace name/ID to filter by.
 
         Returns:
             The newly created model version.
         """
-        if not is_valid_uuid(model_name_or_id):
-            model_name_or_id = self.get_model(model_name_or_id).id
+        model = self.get_model(
+            model_name_or_id=model_name_or_id, workspace=workspace
+        )
         return self.zen_store.create_model_version(
             model_version=ModelVersionRequest(
                 name=name,
                 description=description,
-                workspace=self.active_workspace.id,
-                model=model_name_or_id,
+                workspace=workspace or self.active_workspace.id,
+                model=model.id,
                 tags=tags,
             )
         )
@@ -6168,6 +6343,7 @@ class Client(metaclass=ClientMetaClass):
         model_version_name_or_number_or_id: Optional[
             Union[str, int, ModelStages, UUID]
         ] = None,
+        workspace: Optional[Union[str, UUID]] = None,
         hydrate: bool = True,
     ) -> ModelVersionResponse:
         """Get an existing model version from Model Control Plane.
@@ -6178,6 +6354,7 @@ class Client(metaclass=ClientMetaClass):
             model_version_name_or_number_or_id: name, id, stage or number of
                 the model version to be retrieved. If skipped - latest version
                 is retrieved.
+            workspace: The workspace name/ID to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -6202,6 +6379,7 @@ class Client(metaclass=ClientMetaClass):
             "get_model_version",
             model_name_or_id=model_name_or_id,
             model_version_name_or_number_or_id=model_version_name_or_number_or_id,
+            workspace=workspace,
             hydrate=hydrate,
         ):
             return cll  # type: ignore[return-value]
@@ -6216,18 +6394,20 @@ class Client(metaclass=ClientMetaClass):
             )
         elif isinstance(model_version_name_or_number_or_id, int):
             model_versions = self.zen_store.list_model_versions(
-                model_name_or_id=model_name_or_id,
                 model_version_filter_model=ModelVersionFilter(
+                    model=model_name_or_id,
                     number=model_version_name_or_number_or_id,
+                    workspace=workspace or self.active_workspace.id,
                 ),
                 hydrate=hydrate,
             ).items
         elif isinstance(model_version_name_or_number_or_id, str):
             if model_version_name_or_number_or_id == ModelStages.LATEST:
                 model_versions = self.zen_store.list_model_versions(
-                    model_name_or_id=model_name_or_id,
                     model_version_filter_model=ModelVersionFilter(
-                        sort_by=f"{SorterOps.DESCENDING}:number"
+                        model=model_name_or_id,
+                        sort_by=f"{SorterOps.DESCENDING}:number",
+                        workspace=workspace or self.active_workspace.id,
                     ),
                     hydrate=hydrate,
                 ).items
@@ -6238,17 +6418,19 @@ class Client(metaclass=ClientMetaClass):
                     model_versions = []
             elif model_version_name_or_number_or_id in ModelStages.values():
                 model_versions = self.zen_store.list_model_versions(
-                    model_name_or_id=model_name_or_id,
                     model_version_filter_model=ModelVersionFilter(
-                        stage=model_version_name_or_number_or_id
+                        model=model_name_or_id,
+                        stage=model_version_name_or_number_or_id,
+                        workspace=workspace or self.active_workspace.id,
                     ),
                     hydrate=hydrate,
                 ).items
             else:
                 model_versions = self.zen_store.list_model_versions(
-                    model_name_or_id=model_name_or_id,
                     model_version_filter_model=ModelVersionFilter(
-                        name=model_version_name_or_number_or_id
+                        model=model_name_or_id,
+                        name=model_version_name_or_number_or_id,
+                        workspace=workspace or self.active_workspace.id,
                     ),
                     hydrate=hydrate,
                 ).items
@@ -6289,6 +6471,7 @@ class Client(metaclass=ClientMetaClass):
         user: Optional[Union[UUID, str]] = None,
         hydrate: bool = False,
         tag: Optional[str] = None,
+        workspace: Optional[Union[str, UUID]] = None,
     ) -> Page[ModelVersionResponse]:
         """Get model versions by filter from Model Control Plane.
 
@@ -6308,6 +6491,7 @@ class Client(metaclass=ClientMetaClass):
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
             tag: The tag to filter by.
+            workspace: The workspace name/ID to filter by.
 
         Returns:
             A page object with all model versions.
@@ -6324,10 +6508,11 @@ class Client(metaclass=ClientMetaClass):
             stage=stage,
             tag=tag,
             user=user,
+            model=model_name_or_id,
+            workspace=workspace or self.active_workspace.id,
         )
 
         return self.zen_store.list_model_versions(
-            model_name_or_id=model_name_or_id,
             model_version_filter_model=model_version_filter_model,
             hydrate=hydrate,
         )
@@ -6342,6 +6527,7 @@ class Client(metaclass=ClientMetaClass):
         description: Optional[str] = None,
         add_tags: Optional[List[str]] = None,
         remove_tags: Optional[List[str]] = None,
+        workspace: Optional[Union[str, UUID]] = None,
     ) -> ModelVersionResponse:
         """Get all model versions by filter.
 
@@ -6355,15 +6541,18 @@ class Client(metaclass=ClientMetaClass):
             description: Target model version description to be set.
             add_tags: Tags to add to the model version.
             remove_tags: Tags to remove from to the model version.
+            workspace: The workspace name/ID to filter by.
 
         Returns:
             An updated model version.
         """
         if not is_valid_uuid(model_name_or_id):
-            model_name_or_id = self.get_model(model_name_or_id).id
+            model = self.get_model(model_name_or_id, workspace=workspace)
+            model_name_or_id = model.id
+            workspace = workspace or model.workspace.id
         if not is_valid_uuid(version_name_or_id):
             version_name_or_id = self.get_model_version(
-                model_name_or_id, version_name_or_id
+                model_name_or_id, version_name_or_id, workspace=workspace
             ).id
 
         return self.zen_store.update_model_version(
@@ -6717,6 +6906,7 @@ class Client(metaclass=ClientMetaClass):
         logical_operator: LogicalOperators = LogicalOperators.AND,
         trigger_id: Optional[UUID] = None,
         user: Optional[Union[UUID, str]] = None,
+        workspace: Optional[Union[UUID, str]] = None,
         hydrate: bool = False,
     ) -> Page[TriggerExecutionResponse]:
         """List all trigger executions matching the given filter criteria.
@@ -6728,6 +6918,7 @@ class Client(metaclass=ClientMetaClass):
             logical_operator: Which logical operator to use [and, or].
             trigger_id: ID of the trigger to filter by.
             user: Filter by user name/ID.
+            workspace: Filter by workspace name/ID.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -6741,8 +6932,8 @@ class Client(metaclass=ClientMetaClass):
             size=size,
             user=user,
             logical_operator=logical_operator,
+            workspace=workspace or self.active_workspace.id,
         )
-        filter_model.set_scope_workspace(self.active_workspace.id)
         return self.zen_store.list_trigger_executions(
             trigger_execution_filter_model=filter_model, hydrate=hydrate
         )
@@ -6765,6 +6956,7 @@ class Client(metaclass=ClientMetaClass):
         list_method: Callable[..., Page[AnyResponse]],
         name_id_or_prefix: Union[str, UUID],
         allow_name_prefix_match: bool = True,
+        workspace: Optional[Union[str, UUID]] = None,
         hydrate: bool = True,
     ) -> AnyResponse:
         """Fetches an entity using the id, name, or partial id/name.
@@ -6777,6 +6969,7 @@ class Client(metaclass=ClientMetaClass):
             allow_name_prefix_match: If True, allow matching by name prefix.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            workspace: The workspace name/ID to filter by.
 
         Returns:
             The entity with the given name, id or partial id.
@@ -6795,10 +6988,15 @@ class Client(metaclass=ClientMetaClass):
 
         # If not a UUID, try to find by name
         assert not isinstance(name_id_or_prefix, UUID)
-        entity = list_method(
+        list_kwargs: Dict[str, Any] = dict(
             name=f"equals:{name_id_or_prefix}",
             hydrate=hydrate,
         )
+        scope = ""
+        if workspace:
+            scope = f"in workspace {workspace} "
+            list_kwargs["workspace"] = workspace
+        entity = list_method(**list_kwargs)
 
         # If only a single entity is found, return it
         if entity.total == 1:
@@ -6811,6 +7009,7 @@ class Client(metaclass=ClientMetaClass):
                 list_method=list_method,
                 partial_id_or_name=name_id_or_prefix,
                 allow_name_prefix_match=allow_name_prefix_match,
+                workspace=workspace,
                 hydrate=hydrate,
             )
 
@@ -6822,7 +7021,7 @@ class Client(metaclass=ClientMetaClass):
             for item in entity.items
         ]
         raise ZenKeyError(
-            f"{entity.total} {entity_label} have been found that have "
+            f"{entity.total} {entity_label} have been found {scope}that have "
             f"a name that matches the provided "
             f"string '{name_id_or_prefix}':\n"
             f"{formatted_entity_items}.\n"
@@ -6836,6 +7035,7 @@ class Client(metaclass=ClientMetaClass):
         list_method: Callable[..., Page[AnyResponse]],
         name_id_or_prefix: Union[str, UUID],
         version: Optional[str],
+        workspace: Optional[Union[str, UUID]] = None,
         hydrate: bool = True,
     ) -> "AnyResponse":
         from zenml.utils.uuid_utils import is_valid_uuid
@@ -6855,13 +7055,18 @@ class Client(metaclass=ClientMetaClass):
             return get_method(name_id_or_prefix, hydrate=hydrate)
 
         assert not isinstance(name_id_or_prefix, UUID)
-        exact_name_matches = list_method(
+        list_kwargs: Dict[str, Any] = dict(
             size=1,
             sort_by="desc:created",
             name=name_id_or_prefix,
             version=version,
             hydrate=hydrate,
         )
+        scope = ""
+        if workspace:
+            scope = f" in workspace {workspace}"
+            list_kwargs["workspace"] = workspace
+        exact_name_matches = list_method(**list_kwargs)
 
         if len(exact_name_matches) == 1:
             # If the name matches exactly, use the explicitly specified version
@@ -6883,13 +7088,13 @@ class Client(metaclass=ClientMetaClass):
         elif partial_id_matches.total == 0:
             raise KeyError(
                 f"No {entity_label} found for name, ID or prefix "
-                f"{name_id_or_prefix}."
+                f"{name_id_or_prefix}{scope}."
             )
         else:
             raise ZenKeyError(
-                f"{partial_id_matches.total} {entity_label} have been found "
-                "that have an id prefix that matches the provided string "
-                f"'{name_id_or_prefix}':\n"
+                f"{partial_id_matches.total} {entity_label} have been found"
+                f"{scope} that have an id prefix that matches the provided "
+                f"string '{name_id_or_prefix}':\n"
                 f"{partial_id_matches.items}.\n"
                 f"Please provide more characters to uniquely identify "
                 f"only one of the {entity_label}s."
@@ -6901,6 +7106,7 @@ class Client(metaclass=ClientMetaClass):
         list_method: Callable[..., Page[AnyResponse]],
         partial_id_or_name: str,
         allow_name_prefix_match: bool,
+        workspace: Optional[Union[str, UUID]] = None,
         hydrate: bool = True,
     ) -> AnyResponse:
         """Fetches an entity using a partial ID or name.
@@ -6912,6 +7118,7 @@ class Client(metaclass=ClientMetaClass):
             allow_name_prefix_match: If True, allow matching by name prefix.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            workspace: The workspace name/ID to filter by.
 
         Returns:
             The entity with the given partial ID or name.
@@ -6928,6 +7135,10 @@ class Client(metaclass=ClientMetaClass):
         }
         if allow_name_prefix_match:
             list_method_args["name"] = f"startswith:{partial_id_or_name}"
+        scope = ""
+        if workspace:
+            scope = f"in workspace {workspace} "
+            list_method_args["workspace"] = workspace
 
         entity = list_method(**list_method_args)
 
@@ -6947,7 +7158,7 @@ class Client(metaclass=ClientMetaClass):
         # If no entity is found, raise an error.
         if entity.total == 0:
             raise KeyError(
-                f"No {entity_label} have been found that have "
+                f"No {entity_label} have been found{scope} that have "
                 f"{prefix_description} that matches the provided string "
                 f"'{partial_id_or_name}'."
             )
@@ -6961,7 +7172,7 @@ class Client(metaclass=ClientMetaClass):
             else:
                 ambiguous_entities.append(str(model.id))
         raise ZenKeyError(
-            f"{entity.total} {entity_label} have been found that have "
+            f"{entity.total} {entity_label} have been found{scope} that have "
             f"{prefix_description} that matches the provided "
             f"string '{partial_id_or_name}':\n"
             f"{ambiguous_entities}.\n"
@@ -7414,54 +7625,77 @@ class Client(metaclass=ClientMetaClass):
         """
         return self.zen_store.create_tag(tag=tag)
 
-    def delete_tag(self, tag_name_or_id: Union[str, UUID]) -> None:
+    def delete_tag(
+        self,
+        tag_name_or_id: Union[str, UUID],
+        workspace: Optional[Union[str, UUID]] = None,
+    ) -> None:
         """Deletes a tag.
 
         Args:
             tag_name_or_id: name or id of the tag to be deleted.
+            workspace: The workspace name/ID to filter by.
         """
+        if workspace and not isinstance(workspace, UUID):
+            workspace = self.get_workspace(workspace).id
+
+        assert isinstance(workspace, UUID)
         self.zen_store.delete_tag(
             tag_name_or_id=tag_name_or_id,
-            workspace_id=self.active_workspace.id,
+            workspace_id=workspace or self.active_workspace.id,
         )
 
     def update_tag(
         self,
         tag_name_or_id: Union[str, UUID],
         tag_update_model: TagUpdate,
+        workspace: Optional[Union[str, UUID]] = None,
     ) -> TagResponse:
         """Updates an existing tag.
 
         Args:
             tag_name_or_id: name or UUID of the tag to be updated.
             tag_update_model: the tag to be updated.
+            workspace: The workspace name/ID to filter by.
 
         Returns:
             The updated tag.
         """
+        if workspace and not isinstance(workspace, UUID):
+            workspace = self.get_workspace(workspace).id
+
+        assert isinstance(workspace, UUID)
         return self.zen_store.update_tag(
             tag_name_or_id=tag_name_or_id,
             tag_update_model=tag_update_model,
-            workspace_id=self.active_workspace.id,
+            workspace_id=workspace or self.active_workspace.id,
         )
 
     def get_tag(
-        self, tag_name_or_id: Union[str, UUID], hydrate: bool = True
+        self,
+        tag_name_or_id: Union[str, UUID],
+        workspace: Optional[Union[str, UUID]] = None,
+        hydrate: bool = True,
     ) -> TagResponse:
         """Get an existing tag.
 
         Args:
-            tag_name_or_id: name or id of the model to be retrieved.
+            tag_name_or_id: name or id of the tag to be retrieved.
+            workspace: The workspace name/ID to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
         Returns:
             The tag of interest.
         """
+        if workspace and not isinstance(workspace, UUID):
+            workspace = self.get_workspace(workspace).id
+
+        assert isinstance(workspace, UUID)
         return self.zen_store.get_tag(
             tag_name_or_id=tag_name_or_id,
             hydrate=hydrate,
-            workspace_id=self.active_workspace.id,
+            workspace_id=workspace or self.active_workspace.id,
         )
 
     def list_tags(
@@ -7480,6 +7714,9 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             A page of all tags.
         """
+        tag_filter_model.workspace = (
+            tag_filter_model.workspace or self.active_workspace.id
+        )
         return self.zen_store.list_tags(
             tag_filter_model=tag_filter_model, hydrate=hydrate
         )

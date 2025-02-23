@@ -3075,14 +3075,23 @@ class SqlZenStore(BaseZenStore):
 
     def prune_artifact_versions(
         self,
+        workspace_name_or_id: Union[str, UUID],
         only_versions: bool = True,
     ) -> None:
         """Prunes unused artifact versions and their artifacts.
 
         Args:
+            workspace_name_or_id: The workspace name or ID to prune artifact
+                versions for.
             only_versions: Only delete artifact versions, keeping artifacts
         """
         with Session(self.engine) as session:
+            workspace_id = self._get_schema_by_name_or_id(
+                object_name_or_id=workspace_name_or_id,
+                schema_class=WorkspaceSchema,
+                session=session,
+            ).id
+
             unused_artifact_versions = [
                 a[0]
                 for a in session.execute(
@@ -3094,6 +3103,8 @@ class SqlZenStore(BaseZenStore):
                             col(ArtifactVersionSchema.id).notin_(
                                 select(StepRunInputArtifactSchema.artifact_id)
                             ),
+                            col(ArtifactVersionSchema.workspace_id)
+                            == workspace_id,
                         )
                     )
                 ).fetchall()
@@ -10165,31 +10176,54 @@ class SqlZenStore(BaseZenStore):
 
     def get_model(
         self,
-        model_name_or_id: Union[str, UUID],
+        model_id: UUID,
         hydrate: bool = True,
     ) -> ModelResponse:
         """Get an existing model.
 
         Args:
-            model_name_or_id: name or id of the model to be retrieved.
+            model_id: id of the model to be retrieved.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
-
-        Raises:
-            KeyError: specified ID or name not found.
 
         Returns:
             The model of interest.
         """
         with Session(self.engine) as session:
-            # TODO: there is a bug here: if a model name is provided, it will
-            # get the first model with that name in ANY workspace.
-            # This breaks the usual pattern of getting a resource by ID only.
+            model = self._get_schema_by_id(
+                resource_id=model_id,
+                schema_class=ModelSchema,
+                session=session,
+            )
+            return model.to_model(
+                include_metadata=hydrate, include_resources=True
+            )
+
+    def get_model_by_name_or_id(
+        self,
+        model_name_or_id: Union[str, UUID],
+        workspace: UUID,
+        hydrate: bool = True,
+    ) -> ModelResponse:
+        """Get a model by name or ID.
+
+        Args:
+            model_name_or_id: The name or ID of the model to get.
+            workspace: The workspace ID of the model to get.
+            hydrate: Flag deciding whether to hydrate the output model(s)
+                by including metadata fields in the response.
+
+        Returns:
+            The model.
+        """
+        with Session(self.engine) as session:
             model = self._get_schema_by_name_or_id(
                 object_name_or_id=model_name_or_id,
                 schema_class=ModelSchema,
                 session=session,
+                workspace_id=workspace,
             )
+
             return model.to_model(
                 include_metadata=hydrate, include_resources=True
             )
@@ -10224,21 +10258,15 @@ class SqlZenStore(BaseZenStore):
                 hydrate=hydrate,
             )
 
-    def delete_model(self, model_name_or_id: Union[str, UUID]) -> None:
+    def delete_model(self, model_id: UUID) -> None:
         """Deletes a model.
 
         Args:
-            model_name_or_id: name or id of the model to be deleted.
-
-        Raises:
-            KeyError: specified ID or name not found.
+            model_id: id of the model to be deleted.
         """
         with Session(self.engine) as session:
-            # TODO: there is a bug here: if a model name is provided, it will
-            # get the first model with that name in ANY workspace and delete it.
-            # This breaks the usual pattern of deleting a resource by ID only.
-            model = self._get_schema_by_name_or_id(
-                object_name_or_id=model_name_or_id,
+            model = self._get_schema_by_id(
+                resource_id=model_id,
                 schema_class=ModelSchema,
                 session=session,
             )
@@ -10317,7 +10345,10 @@ class SqlZenStore(BaseZenStore):
         try:
             return True, self.create_model(model_request)
         except EntityExistsError:
-            return False, self.get_model(model_request.name)
+            return False, self.get_model_by_name_or_id(
+                model_name_or_id=model_request.name,
+                workspace=model_request.workspace,
+            )
 
     def _get_next_numeric_version_for_model(
         self, session: Session, model_id: UUID
@@ -10745,17 +10776,44 @@ class SqlZenStore(BaseZenStore):
             include_metadata=hydrate, include_resources=True
         )
 
+    def _set_filter_model_id(
+        self,
+        filter_model: ModelVersionFilter,
+        session: Session,
+    ) -> None:
+        """Set the model ID on a filter model.
+
+        Args:
+            filter_model: The filter model to set the model ID on.
+            session: The DB session to use to use for queries.
+
+        Raises:
+            ValueError: if the filter is not scoped to a model.
+        """
+        if filter_model.scope_model:
+            # The filter already has a model ID set, so we don't need to
+            # do anything.
+            return
+        elif filter_model.model:
+            model = self._get_schema_by_name_or_id(
+                object_name_or_id=filter_model.model,
+                schema_class=ModelSchema,
+                workspace_id=filter_model.scope_workspace,
+                session=session,
+            )
+        else:
+            raise ValueError("Model ID missing from the filter")
+
+        filter_model.set_scope_model(model.id)
+
     def list_model_versions(
         self,
         model_version_filter_model: ModelVersionFilter,
-        model_name_or_id: Optional[Union[str, UUID]] = None,
         hydrate: bool = False,
     ) -> Page[ModelVersionResponse]:
         """Get all model versions by filter.
 
         Args:
-            model_name_or_id: name or id of the model containing the model
-                versions.
             model_version_filter_model: All filter parameters including
                 pagination params.
             hydrate: Flag deciding whether to hydrate the output model(s)
@@ -10769,9 +10827,10 @@ class SqlZenStore(BaseZenStore):
                 filter_model=model_version_filter_model,
                 session=session,
             )
-            if model_name_or_id:
-                model = self.get_model(model_name_or_id)
-                model_version_filter_model.set_scope_model(model.id)
+            self._set_filter_model_id(
+                filter_model=model_version_filter_model,
+                session=session,
+            )
 
             query = select(ModelVersionSchema)
 
