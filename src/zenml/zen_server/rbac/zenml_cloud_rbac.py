@@ -16,7 +16,7 @@
 from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
 
 from zenml.zen_server.cloud_utils import cloud_connection
-from zenml.zen_server.rbac.models import Action, Resource
+from zenml.zen_server.rbac.models import Action, Resource, ResourceType
 from zenml.zen_server.rbac.rbac_interface import RBACInterface
 from zenml.zen_server.utils import server_config
 
@@ -76,6 +76,12 @@ def _convert_from_cloud_resource(cloud_resource: str) -> Resource:
     resource_id: Optional[str] = None
     if "/" in resource_type_and_id:
         resource_type, resource_id = resource_type_and_id.split("/")
+
+    if resource_type == ResourceType.WORKSPACE and workspace_id is not None:
+        # TODO: For now, we duplicate the workspace ID in the string
+        # representation when describing a workspace instance, because
+        # this is what is expected by the RBAC implementation.
+        workspace_id = None
 
     return Resource(
         type=resource_type, id=resource_id, workspace_id=workspace_id

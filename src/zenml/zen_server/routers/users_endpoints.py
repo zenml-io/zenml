@@ -47,6 +47,9 @@ from zenml.zen_server.auth import (
 )
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rate_limit import RequestLimiter
+from zenml.zen_server.rbac.endpoint_utils import (
+    verify_permissions_and_get_entity,
+)
 from zenml.zen_server.rbac.models import Action, Resource, ResourceType
 from zenml.zen_server.rbac.utils import (
     dehydrate_page,
@@ -751,6 +754,7 @@ if server_config().rbac_enabled:
                 "Not allowed to call endpoint with the authenticated user."
             )
 
+        resource_type = ResourceType(resource_type)
         schema_class = get_schema_for_resource_type(resource_type)
         model = zen_store().get_entity_by_id(
             entity_id=resource_id, schema_class=schema_class
@@ -762,7 +766,6 @@ if server_config().rbac_enabled:
                 "not exist."
             )
 
-        resource_type = ResourceType(resource_type)
         workspace_id = None
         if isinstance(model, WorkspaceScopedResponse):
             workspace_id = model.workspace.id
@@ -782,3 +785,36 @@ if server_config().rbac_enabled:
             resource=resource,
             actions=[Action(action) for action in actions],
         )
+
+
+@current_user_router.put(
+    "/default-workspace",
+    response_model=UserResponse,
+    responses={
+        401: error_response,
+        404: error_response,
+        422: error_response,
+    },
+)
+@handle_exceptions
+def update_user_default_workspace(
+    workspace_name_or_id: Union[str, UUID],
+    auth_context: AuthContext = Security(authorize),
+) -> UserResponse:
+    """Updates the default workspace of the current user.
+
+    Args:
+        workspace_name_or_id: Name or ID of the workspace.
+        auth_context: Authentication context.
+    """
+    workspace = verify_permissions_and_get_entity(
+        id=workspace_name_or_id,
+        get_method=zen_store().get_workspace,
+    )
+
+    user = zen_store().update_user(
+        user_id=auth_context.user.id,
+        user_update=UserUpdate(default_workspace_id=workspace.id),
+    )
+
+    return dehydrate_response_model(user)

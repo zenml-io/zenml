@@ -81,6 +81,10 @@ class UserBase(BaseModel):
         default=None,
         title="The metadata associated with the user.",
     )
+    default_workspace_id: Optional[UUID] = Field(
+        default=None,
+        title="The default workspace ID for the user.",
+    )
 
     @classmethod
     def _get_crypt_context(cls) -> "CryptContext":
@@ -279,6 +283,10 @@ class UserResponseBody(BaseDatedResponseBody):
     is_admin: bool = Field(
         title="Whether the account is an administrator.",
     )
+    default_workspace_id: Optional[UUID] = Field(
+        default=None,
+        title="The default workspace ID for the user.",
+    )
 
 
 class UserResponseMetadata(BaseResponseMetadata):
@@ -394,6 +402,15 @@ class UserResponse(
             Whether the user is an admin.
         """
         return self.get_body().is_admin
+
+    @property
+    def default_workspace_id(self) -> Optional[UUID]:
+        """The `default_workspace_id` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().default_workspace_id
 
     @property
     def email(self) -> Optional[str]:

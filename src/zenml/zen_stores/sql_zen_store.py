@@ -6082,7 +6082,7 @@ class SqlZenStore(BaseZenStore):
                 secret_in_db is None
                 # Private secrets are only accessible to their owner
                 or secret_in_db.private
-                and secret_in_db.user.id != self._get_active_user_id(session)
+                and secret_in_db.user.id != self._get_active_user(session).id
             ):
                 raise KeyError(
                     f"Secret with ID {secret_id} not found or is private and "
@@ -6122,7 +6122,7 @@ class SqlZenStore(BaseZenStore):
             # Filter all secrets according to their private status and the active
             # user
             secret_filter_model.set_scope_user(
-                self._get_active_user_id(session)
+                self._get_active_user(session).id
             )
             query = select(SecretSchema)
             return self.filter_and_paginate(
@@ -6166,11 +6166,12 @@ class SqlZenStore(BaseZenStore):
                 select(SecretSchema).where(SecretSchema.id == secret_id)
             ).first()
 
+            active_user = self._get_active_user(session)
+
             if not existing_secret or (
                 # Private secrets are only accessible to their owner
                 existing_secret.private
-                and existing_secret.user.id
-                != self._get_active_user_id(session)
+                and existing_secret.user.id != active_user.id
             ):
                 raise KeyError(
                     f"Secret with ID {secret_id} not found or is private and "
@@ -6179,8 +6180,7 @@ class SqlZenStore(BaseZenStore):
 
             if (
                 secret_update.private is not None
-                and existing_secret.user.id
-                != self._get_active_user_id(session)
+                and existing_secret.user.id != active_user.id
             ):
                 raise IllegalOperationError(
                     "Only the user who created the secret is allowed to update "
@@ -6249,7 +6249,7 @@ class SqlZenStore(BaseZenStore):
                 # Private secrets are only accessible to their owner
                 existing_secret.private
                 and existing_secret.user.id
-                != self._get_active_user_id(session)
+                != self._get_active_user(session).id
             ):
                 raise KeyError(
                     f"Secret with ID {secret_id} not found or is private and "
@@ -8905,7 +8905,10 @@ class SqlZenStore(BaseZenStore):
 
         return self._default_user
 
-    def _get_active_user(self, session: Session) -> UserSchema:
+    def _get_active_user(
+        self,
+        session: Optional[Session] = None,
+    ) -> UserResponse:
         """Get the active user.
 
         Depending on context, this is:
@@ -8916,13 +8919,10 @@ class SqlZenStore(BaseZenStore):
         directly to a database
 
         Args:
-            session: The database session to use for the query.
+            session: The DB session to use to use for queries.
 
         Returns:
-            The active user schema.
-
-        Raises:
-            KeyError: If no active user is found.
+            The active user.
         """
         if handle_bool_env_var(ENV_ZENML_SERVER):
             # Running inside server
@@ -8930,15 +8930,14 @@ class SqlZenStore(BaseZenStore):
 
             # If the code is running on the server, use the auth context.
             auth_context = get_auth_context()
-            if auth_context is not None:
-                return self._get_account_schema(
-                    session=session, account_name_or_id=auth_context.user.id
-                )
+            if auth_context is None:
+                raise RuntimeError("No active user found.")
 
-            raise KeyError("No active user found.")
+            user = auth_context.user
+        else:
+            user = self._get_default_user(session).to_model()
 
-        # If the code is running on the client, use the default user.
-        return self._get_default_user(session=session)
+        return user
 
     def create_user(self, user: UserRequest) -> UserResponse:
         """Creates a new user.
@@ -9802,30 +9801,6 @@ class SqlZenStore(BaseZenStore):
 
             raise KeyError(error_msg)
 
-    def _get_active_user_id(
-        self,
-        session: Optional[Session] = None,
-    ) -> UUID:
-        """Get the active user ID.
-
-        Args:
-            session: The DB session to use to use for queries.
-        """
-        if handle_bool_env_var(ENV_ZENML_SERVER):
-            # Running inside server
-            from zenml.zen_server.auth import get_auth_context
-
-            # If the code is running on the server, use the auth context.
-            auth_context = get_auth_context()
-            if auth_context is None:
-                raise RuntimeError("No active user found.")
-
-            user_id = auth_context.user.id
-        else:
-            user_id = self._get_default_user(session).id
-
-        return user_id
-
     def _set_request_user_id(
         self,
         request_model: BaseRequest,
@@ -9842,7 +9817,7 @@ class SqlZenStore(BaseZenStore):
             # set the user ID.
             return
 
-        request_model.user = self._get_active_user_id(session)
+        request_model.user = self._get_active_user(session).id
 
     def _set_filter_workspace_id(
         self,
@@ -9865,6 +9840,7 @@ class SqlZenStore(BaseZenStore):
                 schema_class=WorkspaceSchema,
                 session=session,
             )
+            workspace_id = workspace.id
         elif filter_model.scope_workspace:
             # The filter already has a workspace ID set, so we don't need to
             # do anything.
@@ -9875,17 +9851,26 @@ class SqlZenStore(BaseZenStore):
                 schema_class=WorkspaceSchema,
                 session=session,
             )
+            workspace_id = workspace.id
         else:
-            try:
-                workspace = self._get_schema_by_name_or_id(
-                    object_name_or_id=self._default_workspace_name,
-                    schema_class=WorkspaceSchema,
-                    session=session,
-                )
-            except KeyError:
-                raise ValueError("Workspace scope missing from the filter")
+            # Use the default workspace configured for the active user, if set
+            user = self._get_active_user(session)
+            if user.default_workspace_id:
+                workspace_id = user.default_workspace_id
+            else:
+                # Finally, if the user has no default workspace, use the
+                # default workspace as a last resort.
+                try:
+                    workspace = self._get_schema_by_name_or_id(
+                        object_name_or_id=self._default_workspace_name,
+                        schema_class=WorkspaceSchema,
+                        session=session,
+                    )
+                    workspace_id = workspace.id
+                except KeyError:
+                    raise ValueError("Workspace scope missing from the filter")
 
-        filter_model.set_scope_workspace(workspace.id)
+        filter_model.set_scope_workspace(workspace_id)
 
     def _verify_name_uniqueness(
         self,

@@ -34,6 +34,7 @@ from zenml.models import (
     Page,
     UserResponse,
     UserScopedResponse,
+    WorkspaceResponse,
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
 )
@@ -342,16 +343,6 @@ def get_allowed_resource_ids(
     if not server_config().rbac_enabled:
         return None
 
-    if ResourceType(resource_type).is_workspace_scoped() and not workspace_id:
-        raise ValueError(
-            "Workspace ID is required to list workspace scoped resources."
-        )
-    if not ResourceType(resource_type).is_workspace_scoped() and workspace_id:
-        raise ValueError(
-            "Workspace ID is not allowed to list resources that are not "
-            "workspace scoped."
-        )
-
     auth_context = get_auth_context()
     assert auth_context
 
@@ -540,7 +531,7 @@ def get_resource_type_for_model(
         TriggerResponse: ResourceType.TRIGGER,
         TriggerExecutionRequest: ResourceType.TRIGGER_EXECUTION,
         TriggerExecutionResponse: ResourceType.TRIGGER_EXECUTION,
-        # WorkspaceResponse: ResourceType.WORKSPACE,
+        WorkspaceResponse: ResourceType.WORKSPACE,
         # UserResponse: ResourceType.USER,
     }
 

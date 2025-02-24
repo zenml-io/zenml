@@ -73,9 +73,9 @@ class ResourceType(StrEnum):
     TAG = "tag"
     TRIGGER = "trigger"
     TRIGGER_EXECUTION = "trigger_execution"
+    WORKSPACE = "workspace"
     # Deactivated for now
     # USER = "user"
-    # WORKSPACE = "workspace"
 
     def is_workspace_scoped(self) -> bool:
         """Check if a resource type is workspace scoped.
@@ -93,9 +93,9 @@ class ResourceType(StrEnum):
             self.STACK,
             self.STACK_COMPONENT,
             self.SERVICE_ACCOUNT,
+            self.WORKSPACE,
             # Deactivated for now
-            # cls.USER,
-            # cls.WORKSPACE,
+            # self.USER,
         ]
 
 
@@ -112,8 +112,15 @@ class Resource(BaseModel):
         Returns:
             Resource string representation.
         """
-        if self.workspace_id:
-            representation = f"{self.workspace_id}:"
+        workspace_id = self.workspace_id
+        if self.type == ResourceType.WORKSPACE and self.id:
+            # TODO: For now, we duplicate the workspace ID in the string
+            # representation when describing a workspace instance, because
+            # this is what is expected by the RBAC implementation.
+            workspace_id = self.id
+
+        if workspace_id:
+            representation = f"{workspace_id}:"
         else:
             representation = ""
         representation += self.type
@@ -134,6 +141,7 @@ class Resource(BaseModel):
             The validated resource.
         """
         resource_type = ResourceType(self.type)
+
         if resource_type.is_workspace_scoped() and not self.workspace_id:
             raise ValueError(
                 "workspace_id must be set for workspace-scoped resource type "

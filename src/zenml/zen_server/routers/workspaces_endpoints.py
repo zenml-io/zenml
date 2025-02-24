@@ -37,10 +37,15 @@ from zenml.models import (
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.rbac.endpoint_utils import (
+    verify_permissions_and_create_entity,
+    verify_permissions_and_delete_entity,
+    verify_permissions_and_get_entity,
+    verify_permissions_and_list_entities,
+    verify_permissions_and_update_entity,
+)
 from zenml.zen_server.rbac.models import ResourceType
 from zenml.zen_server.rbac.utils import (
-    dehydrate_page,
-    dehydrate_response_model,
     get_allowed_resource_ids,
 )
 from zenml.zen_server.utils import (
@@ -80,10 +85,12 @@ def list_workspaces(
     Returns:
         A list of workspaces.
     """
-    workspaces = zen_store().list_workspaces(
-        workspace_filter_model, hydrate=hydrate
+    return verify_permissions_and_list_entities(
+        filter_model=workspace_filter_model,
+        resource_type=ResourceType.WORKSPACE,
+        list_method=zen_store().list_workspaces,
+        hydrate=hydrate,
     )
-    return dehydrate_page(workspaces)
 
 
 @router.post(
@@ -105,8 +112,10 @@ def create_workspace(
     Returns:
         The created workspace.
     """
-    workspace = zen_store().create_workspace(workspace_request)
-    return dehydrate_response_model(workspace)
+    return verify_permissions_and_create_entity(
+        request_model=workspace_request,
+        create_method=zen_store().create_workspace,
+    )
 
 
 @router.get(
@@ -132,10 +141,11 @@ def get_workspace(
     Returns:
         The requested workspace.
     """
-    workspace = zen_store().get_workspace(
-        workspace_name_or_id, hydrate=hydrate
+    return verify_permissions_and_get_entity(
+        id=workspace_name_or_id,
+        get_method=zen_store().get_workspace,
+        hydrate=hydrate,
     )
-    return dehydrate_response_model(workspace)
 
 
 @router.put(
@@ -159,11 +169,12 @@ def update_workspace(
     Returns:
         The updated workspace.
     """
-    workspace = zen_store().get_workspace(workspace_name_or_id, hydrate=False)
-    updated_workspace = zen_store().update_workspace(
-        workspace_id=workspace.id, workspace_update=workspace_update
+    return verify_permissions_and_update_entity(
+        id=workspace_name_or_id,
+        update_model=workspace_update,
+        get_method=zen_store().get_workspace,
+        update_method=zen_store().update_workspace,
     )
-    return dehydrate_response_model(updated_workspace)
 
 
 @router.delete(
@@ -180,7 +191,11 @@ def delete_workspace(
     Args:
         workspace_name_or_id: Name or ID of the workspace.
     """
-    zen_store().delete_workspace(workspace_name_or_id)
+    verify_permissions_and_delete_entity(
+        id=workspace_name_or_id,
+        get_method=zen_store().get_workspace,
+        delete_method=zen_store().delete_workspace,
+    )
 
 
 @router.get(
@@ -204,7 +219,10 @@ def get_workspace_statistics(
     Returns:
         All pipelines within the workspace.
     """
-    workspace = zen_store().get_workspace(workspace_name_or_id)
+    workspace = verify_permissions_and_get_entity(
+        id=workspace_name_or_id,
+        get_method=zen_store().get_workspace,
+    )
 
     user_id = auth_context.user.id
     component_filter = ComponentFilter(workspace_id=workspace.id)
