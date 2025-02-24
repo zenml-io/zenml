@@ -401,12 +401,12 @@ def test_performance_improvement(mocker, clean_client: "Client"):
         # Measure time to save
         start_time = time.time()
         materializer.save(large_collection)
-        save_time = time.time() - start_time
+        time.time() - start_time  # Calculate save time but don't store it
 
         # Load and verify
         start_time = time.time()
         result = materializer.load(list)
-        load_time = time.time() - start_time
+        time.time() - start_time  # Calculate load time but don't store it
 
         # Verify results
         assert len(result) == len(large_collection)
@@ -466,7 +466,7 @@ def test_batch_compression_performance(mocker, clean_client: "Client"):
         # Measure time to save
         start_time = time.time()
         materializer.save(large_collection)
-        save_time = time.time() - start_time
+        time.time() - start_time  # Calculate save time but don't store it
 
         # Check for compressed chunk files
         chunk_files = glob.glob(
@@ -490,7 +490,7 @@ def test_batch_compression_performance(mocker, clean_client: "Client"):
         # Load and verify
         start_time = time.time()
         result = materializer.load(list)
-        load_time = time.time() - start_time
+        time.time() - start_time  # Calculate load time but don't store it
 
         # Verify results
         assert len(result) == len(large_collection)
