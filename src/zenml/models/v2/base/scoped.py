@@ -479,7 +479,7 @@ class TaggableFilter(BaseFilter):
     )
 
     CLI_EXCLUDE_FIELDS = [
-        *BaseFilter.FILTER_EXCLUDE_FIELDS,
+        *BaseFilter.CLI_EXCLUDE_FIELDS,
         "tag",
     ]
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
