@@ -13,9 +13,9 @@
 #  permissions and limitations under the License.
 """Implementation of ZenML's builtin materializer."""
 
-import os
-import io
 import gzip
+import io
+import os
 import pickle
 from typing import (
     TYPE_CHECKING,
@@ -35,11 +35,11 @@ from zenml.constants import (
     handle_bool_env_var,
 )
 from zenml.enums import ArtifactType, VisualizationType
+from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.materializer_registry import materializer_registry
 from zenml.utils import source_utils, yaml_utils
-from zenml.io import fileio
 
 if TYPE_CHECKING:
     from zenml.metadata.metadata_types import MetadataType
@@ -379,7 +379,9 @@ class BuiltInContainerMaterializer(BaseMaterializer):
                             compressed_data = f_raw.read()
                             # Use in-memory buffer for gzip decompression
                             with io.BytesIO(compressed_data) as f_buffer:
-                                with gzip.GzipFile(fileobj=f_buffer, mode="rb") as f_gzip:
+                                with gzip.GzipFile(
+                                    fileobj=f_buffer, mode="rb"
+                                ) as f_gzip:
                                     chunk_data = pickle.load(f_gzip)
                         loaded_chunks[chunk_path] = chunk_data
 
@@ -569,7 +571,9 @@ class BuiltInContainerMaterializer(BaseMaterializer):
                     with fileio.open(chunk_path, "wb") as f_raw:
                         # Use in-memory buffer for gzip compression
                         with io.BytesIO() as f_buffer:
-                            with gzip.GzipFile(fileobj=f_buffer, mode="wb", compresslevel=6) as f_gzip:
+                            with gzip.GzipFile(
+                                fileobj=f_buffer, mode="wb", compresslevel=6
+                            ) as f_gzip:
                                 pickle.dump(
                                     serialized_items,
                                     f_gzip,
