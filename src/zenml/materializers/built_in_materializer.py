@@ -320,8 +320,55 @@ class BuiltInContainerMaterializer(BaseMaterializer):
         else:
             metadata = yaml_utils.read_json(self.metadata_path)
             
+            # V3 format (batch compression, introduced for much better I/O performance)
+            if isinstance(metadata, dict) and metadata.get("version") == "v3":
+                # Pre-allocate a list of the right size
+                max_index = max(element["index"] for element in metadata["elements"]) if metadata["elements"] else -1
+                outputs = [None] * (max_index + 1)
+                
+                # Import required libraries
+                import gzip
+                import pickle
+                
+                # Cache for loaded chunks to avoid loading the same chunk multiple times
+                loaded_chunks = {}
+                
+                # Process elements in the order they appear in metadata
+                for element_info in metadata["elements"]:
+                    idx = element_info["index"]
+                    batch_id = element_info["batch_id"]
+                    
+                    # Find the group this element belongs to
+                    group = next((g for g in metadata["groups"] if g["batch_id"] == batch_id), None)
+                    if not group:
+                        raise RuntimeError(f"Cannot find batch group {batch_id} in metadata")
+                    
+                    # Find which chunk contains this index
+                    chunk_info = None
+                    for chunk in group["chunks"]:
+                        if idx in chunk["indices"]:
+                            chunk_info = chunk
+                            break
+                    
+                    if not chunk_info:
+                        raise RuntimeError(f"Cannot find chunk containing index {idx} in batch {batch_id}")
+                    
+                    # Load the chunk if not already loaded
+                    chunk_path = chunk_info["path"]
+                    if chunk_path not in loaded_chunks:
+                        with gzip.open(chunk_path, 'rb') as f:
+                            chunk_data = pickle.load(f)
+                        loaded_chunks[chunk_path] = chunk_data
+                    
+                    # Find the position of this index in the chunk's indices list
+                    chunk_position = chunk_info["indices"].index(idx)
+                    
+                    # Get the element from the loaded chunk
+                    element = loaded_chunks[chunk_path][chunk_position]
+                    outputs[idx] = element
+            
             # V2 format (optimized for collections, introduced for better performance)
-            if isinstance(metadata, dict) and metadata.get("version") == "v2":
+            elif isinstance(metadata, dict) and metadata.get("version") == "v2":
                 # Pre-allocate a list of the right size
                 max_index = max(element["index"] for element in metadata["elements"]) if metadata["elements"] else -1
                 outputs = [None] * (max_index + 1)
@@ -413,6 +460,9 @@ class BuiltInContainerMaterializer(BaseMaterializer):
         if isinstance(data, dict):
             data = [list(data.keys()), list(data.values())]
 
+        import gzip
+        import pickle
+        
         # Group elements by type to process similar elements together
         # This reduces the overhead of materializer initialization and type checking
         type_groups = {}
@@ -424,14 +474,15 @@ class BuiltInContainerMaterializer(BaseMaterializer):
 
         # Enhanced metadata with format version for backward compatibility
         metadata = {
-            "version": "v2",  # Mark this as the new format
+            "version": "v3",  # Mark this as v3 format with batch compression
+            "groups": [],
             "elements": []
         }
         
-        created_dirs = []
+        created_files = []
         try:
             # Process each type group
-            for element_type, elements in type_groups.items():
+            for group_idx, (element_type, elements) in enumerate(type_groups.items()):
                 # Get the materializer class once for all elements of this type
                 materializer_class = materializer_registry[element_type]
                 
@@ -439,20 +490,59 @@ class BuiltInContainerMaterializer(BaseMaterializer):
                 type_info = source_utils.resolve(element_type).import_path
                 materializer_info = source_utils.resolve(materializer_class).import_path
                 
-                # Process elements of this type
-                for idx, element in elements:
-                    element_path = os.path.join(self.uri, str(idx))
-                    self.artifact_store.mkdir(element_path)
-                    created_dirs.append(element_path)
+                # Create a batch directory for this type
+                batch_id = f"batch_{group_idx}"
+                batch_dir = os.path.join(self.uri, batch_id)
+                self.artifact_store.mkdir(batch_dir)
+                created_files.append(batch_dir)
+                
+                # Add group info to metadata
+                group_metadata = {
+                    "batch_id": batch_id,
+                    "type": type_info,
+                    "materializer": materializer_info,
+                    "indices": [idx for idx, _ in elements],
+                    "chunks": []
+                }
+                metadata["groups"].append(group_metadata)
+                
+                # Process elements in chunks to avoid memory issues with very large collections
+                # A reasonable chunk size balances I/O overhead vs memory usage
+                CHUNK_SIZE = 100  # Number of elements per chunk file
+                
+                for chunk_idx in range(0, len(elements), CHUNK_SIZE):
+                    chunk_elements = elements[chunk_idx:chunk_idx + CHUNK_SIZE]
+                    chunk_indices = [idx for idx, _ in chunk_elements]
                     
-                    # Create and use materializer for this element
-                    materializer = materializer_class(uri=element_path)
-                    materializer.validate_save_type_compatibility(element_type)
-                    materializer.save(element)
+                    # Create chunk file path
+                    chunk_filename = f"chunk_{chunk_idx // CHUNK_SIZE}.pkl.gz"
+                    chunk_path = os.path.join(batch_dir, chunk_filename)
                     
-                    # Add to metadata
+                    # Process objects for serialization
+                    serialized_items = []
+                    
+                    for _, element in chunk_elements:
+                        # Just validate type compatibility but don't serialize yet
+                        materializer = materializer_class(uri="")
+                        materializer.validate_save_type_compatibility(element_type)
+                        serialized_items.append(element)
+                    
+                    # Write compressed batch to a single file
+                    with gzip.open(chunk_path, 'wb', compresslevel=6) as f:
+                        pickle.dump(serialized_items, f, protocol=pickle.HIGHEST_PROTOCOL)
+                    
+                    created_files.append(chunk_path)
+                    
+                    # Record chunk information
+                    group_metadata["chunks"].append({
+                        "path": chunk_path,
+                        "indices": chunk_indices,
+                    })
+                
+                # Add individual element references to metadata
+                for idx, _ in elements:
                     metadata["elements"].append({
-                        "path": element_path,
+                        "batch_id": batch_id,
                         "type": type_info,
                         "materializer": materializer_info,
                         "index": idx  # Store original index for correct ordering
@@ -461,16 +551,19 @@ class BuiltInContainerMaterializer(BaseMaterializer):
             # Write enhanced metadata as JSON
             yaml_utils.write_json(self.metadata_path, metadata)
             
-        # If an error occurs, clean up created directories
+        # If an error occurs, clean up created files
         except Exception as e:
             # Delete metadata file if it exists
             if self.artifact_store.exists(self.metadata_path):
                 self.artifact_store.remove(self.metadata_path)
             
-            # Delete all directories created during this process
-            for dir_path in created_dirs:
-                if self.artifact_store.exists(dir_path):
-                    self.artifact_store.rmtree(dir_path)
+            # Delete all files created during this process
+            for file_path in created_files:
+                if self.artifact_store.exists(file_path):
+                    if self.artifact_store.isdir(file_path):
+                        self.artifact_store.rmtree(file_path)
+                    else:
+                        self.artifact_store.remove(file_path)
             
             raise e
 

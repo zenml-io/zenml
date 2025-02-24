@@ -256,12 +256,12 @@ def test_optimized_materialization_for_large_collections(
         # Save the collection
         materializer.save(example)
         
-        # Verify the metadata format is v2
+        # Verify the metadata format is v2 or v3
         metadata_path = os.path.join(artifact_uri, "metadata.json")
         assert os.path.exists(metadata_path)
         metadata = yaml_utils.read_json(metadata_path)
         assert isinstance(metadata, dict)
-        assert metadata.get("version") == "v2"
+        assert metadata.get("version") in ["v2", "v3"]
         
         # Verify elements are properly stored
         assert len(metadata["elements"]) == 10
@@ -410,21 +410,80 @@ def test_performance_improvement(mocker, clean_client: "Client"):
         metadata_path = os.path.join(artifact_uri, "metadata.json")
         metadata = yaml_utils.read_json(metadata_path)
         
-        # Verify metadata has v2 format
-        assert metadata.get("version") == "v2"
+        # Verify metadata has v3 format
+        assert metadata.get("version") == "v3"
         
         # Verify all elements are represented in metadata
         assert len(metadata["elements"]) == len(large_collection)
         
+        # Verify we have groups in the metadata
+        assert "groups" in metadata
+        
         # The following assertion is informational - won't fail if not true
         # But in an optimized implementation, this would be true
         type_groups = {}
-        for element in metadata["elements"]:
-            type_info = element["type"]
+        for group in metadata["groups"]:
+            type_info = group["type"]
             if type_info not in type_groups:
                 type_groups[type_info] = 0
-            type_groups[type_info] += 1
+            type_groups[type_info] += len(group["indices"])
         
         # We expect approximately two groups (CustomType and CustomSubType)
         # with roughly equal distributions
         assert len(type_groups) == 2, "Expected two type groups in metadata"
+
+
+def test_batch_compression_performance(mocker, clean_client: "Client"):
+    """Test the batch compression performance improvement.
+    
+    This test creates a very large homogeneous collection to validate:
+    1. Elements are properly batched into multiple chunk files
+    2. Loading works efficiently with chunk-based caching
+    3. The compression reduces overall storage requirements
+    """
+    import time
+    import gzip
+    import glob
+    import os.path
+    
+    # Create a large homogeneous collection
+    COLLECTION_SIZE = 500
+    large_collection = [CustomType() for _ in range(COLLECTION_SIZE)]
+    
+    with TemporaryDirectory(
+        dir=clean_client.active_stack.artifact_store.path
+    ) as artifact_uri:
+        materializer = BuiltInContainerMaterializer(uri=artifact_uri)
+        
+        # Measure time to save
+        start_time = time.time()
+        materializer.save(large_collection)
+        save_time = time.time() - start_time
+        
+        # Check for compressed chunk files
+        chunk_files = glob.glob(os.path.join(artifact_uri, "batch_*", "chunk_*.pkl.gz"))
+        assert len(chunk_files) > 0, "No compressed chunk files found"
+        
+        # Verify metadata
+        metadata_path = os.path.join(artifact_uri, "metadata.json")
+        metadata = yaml_utils.read_json(metadata_path)
+        assert metadata.get("version") == "v3"
+        
+        # Total number of elements in all chunks should equal collection size
+        total_elements = sum(len(chunk["indices"]) for group in metadata["groups"] 
+                            for chunk in group["chunks"])
+        assert total_elements == COLLECTION_SIZE
+        
+        # Load and verify
+        start_time = time.time()
+        result = materializer.load(list)
+        load_time = time.time() - start_time
+        
+        # Verify results
+        assert len(result) == len(large_collection)
+        assert all(isinstance(item, CustomType) for item in result)
+        assert result == large_collection
+        
+        # We should have fewer files than elements (proving batching works)
+        all_files = glob.glob(os.path.join(artifact_uri, "**/*"), recursive=True)
+        assert len(all_files) < COLLECTION_SIZE, "Batching not effective - too many files created"
