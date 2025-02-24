@@ -14,6 +14,9 @@
 """Implementation of ZenML's builtin materializer."""
 
 import os
+import io
+import gzip
+import pickle
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -36,6 +39,7 @@ from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.materializer_registry import materializer_registry
 from zenml.utils import source_utils, yaml_utils
+from zenml.io import fileio
 
 if TYPE_CHECKING:
     from zenml.metadata.metadata_types import MetadataType
@@ -370,8 +374,13 @@ class BuiltInContainerMaterializer(BaseMaterializer):
                     # Load the chunk if not already loaded
                     chunk_path = chunk_info["path"]
                     if chunk_path not in loaded_chunks:
-                        with gzip.open(chunk_path, "rb") as f:
-                            chunk_data = pickle.load(f)
+                        with fileio.open(chunk_path, "rb") as f_raw:
+                            # Read the compressed data
+                            compressed_data = f_raw.read()
+                            # Use in-memory buffer for gzip decompression
+                            with io.BytesIO(compressed_data) as f_buffer:
+                                with gzip.GzipFile(fileobj=f_buffer, mode="rb") as f_gzip:
+                                    chunk_data = pickle.load(f_gzip)
                         loaded_chunks[chunk_path] = chunk_data
 
                     # Find the position of this index in the chunk's indices list
@@ -482,8 +491,7 @@ class BuiltInContainerMaterializer(BaseMaterializer):
         if isinstance(data, dict):
             data = [list(data.keys()), list(data.values())]
 
-        import gzip
-        import pickle
+        # Imports already done at the top of the file
 
         # Group elements by type to process similar elements together
         # This reduces the overhead of materializer initialization and type checking
@@ -557,13 +565,20 @@ class BuiltInContainerMaterializer(BaseMaterializer):
                         )
                         serialized_items.append(element)
 
-                    # Write compressed batch to a single file
-                    with gzip.open(chunk_path, "wb", compresslevel=6) as f:
-                        pickle.dump(
-                            serialized_items,
-                            f,
-                            protocol=pickle.HIGHEST_PROTOCOL,
-                        )
+                    # Write compressed batch to a single file using ZenML fileio
+                    with fileio.open(chunk_path, "wb") as f_raw:
+                        # Use in-memory buffer for gzip compression
+                        with io.BytesIO() as f_buffer:
+                            with gzip.GzipFile(fileobj=f_buffer, mode="wb", compresslevel=6) as f_gzip:
+                                pickle.dump(
+                                    serialized_items,
+                                    f_gzip,
+                                    protocol=pickle.HIGHEST_PROTOCOL,
+                                )
+                            # Get the compressed data
+                            compressed_data = f_buffer.getvalue()
+                        # Write to the actual storage
+                        f_raw.write(compressed_data)
 
                     created_files.append(chunk_path)
 
