@@ -11329,7 +11329,9 @@ class SqlZenStore(BaseZenStore):
             An updated tag.
 
         Raises:
-            KeyError: If the tag is not found
+            KeyError: If the tag is not found.
+            RuntimeError: If the tag can not be converted to a singleton due
+                to it being associated to multiple entities.
         """
         with Session(self.engine) as session:
             tag = self._get_tag_schema(
