@@ -50,15 +50,13 @@ COPY src/zenml/__init__.py ./src/zenml/
 # Run pip install before copying the source files to install dependencies in
 # the virtual environment. Also create a requirements.txt file to keep track of
 # dependencies for reproducibility and debugging.
+# NOTE: we uninstall zenml at the end because we install it separately in the
+# final stage
 RUN pip install --upgrade pip \
-  && pip install . \
-  && pip freeze > requirements.txt
-
-# Copy the source code
-COPY src src
-
-# Run pip install again to install the source code in the virtual environment
-RUN pip install --no-deps --no-cache .
+  && pip install uv \
+  && uv pip install . \
+  && uv pip uninstall zenml \
+  && uv pip freeze > requirements.txt
 
 # Inherit from the base image which has the minimal set of updated system
 # software packages
@@ -117,4 +115,12 @@ COPY --from=builder /opt/venv /opt/venv
 # Copy the requirements.txt file from the builder stage
 COPY --from=builder /zenml/requirements.txt /zenml/requirements.txt
 
+# Copy the source code
+COPY README.md pyproject.toml ./
+COPY src src
+
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+
+# Run pip install again to install the source code in the virtual environment
+RUN pip install --no-deps --no-cache . \
+    && rm -rf src README.md pyproject.toml
