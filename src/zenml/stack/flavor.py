@@ -139,7 +139,7 @@ class Flavor:
             flavor = source_utils.load(flavor_model.source)()
         except (ModuleNotFoundError, ImportError, NotImplementedError) as err:
             if flavor_model.is_custom:
-                flavor_module, _ = flavor_model.source.rsplit(".")
+                flavor_module, _ = flavor_model.source.rsplit(".", maxsplit=1)
                 expected_file_path = os.path.join(
                     source_utils.get_source_root(),
                     flavor_module.replace(".", os.path.sep),

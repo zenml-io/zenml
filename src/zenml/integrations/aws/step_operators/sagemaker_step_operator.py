@@ -181,6 +181,11 @@ class SagemakerStepOperator(BaseStepOperator):
                 self.name,
             )
 
+        settings = cast(SagemakerStepOperatorSettings, self.get_settings(info))
+
+        if settings.environment:
+            environment.update(settings.environment)
+
         # Sagemaker does not allow environment variables longer than 512
         # characters to be passed to Estimator steps. If an environment variable
         # is longer than 512 characters, we split it into multiple environment
@@ -193,8 +198,6 @@ class SagemakerStepOperator(BaseStepOperator):
 
         image_name = info.get_image(key=SAGEMAKER_DOCKER_IMAGE_KEY)
         environment[_ENTRYPOINT_ENV_VARIABLE] = " ".join(entrypoint_command)
-
-        settings = cast(SagemakerStepOperatorSettings, self.get_settings(info))
 
         # Get and default fill SageMaker estimator arguments for full ZenML support
         estimator_args = settings.estimator_args
@@ -220,6 +223,9 @@ class SagemakerStepOperator(BaseStepOperator):
         estimator_args.setdefault(
             "instance_type", settings.instance_type or "ml.m5.large"
         )
+
+        # Convert environment to a dict of strings
+        environment = {key: str(value) for key, value in environment.items()}
 
         estimator_args["environment"] = environment
         estimator_args["instance_count"] = 1

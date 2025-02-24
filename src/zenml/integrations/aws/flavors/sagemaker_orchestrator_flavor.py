@@ -71,6 +71,7 @@ class SagemakerOrchestratorSettings(BaseSettings):
             For processor_args.instance_type, check
             https://docs.aws.amazon.com/sagemaker/latest/dg/notebooks-available-instance-types.html
             for a list of available instance types.
+        environment: Environment variables to pass to the container.
         estimator_args: Arguments that are directly passed to the SageMaker
             Estimator for a specific step, allowing for overriding the default
             settings provided when configuring the component. See
@@ -116,6 +117,7 @@ class SagemakerOrchestratorSettings(BaseSettings):
 
     processor_args: Dict[str, Any] = {}
     estimator_args: Dict[str, Any] = {}
+    environment: Dict[str, str] = {}
 
     input_data_s3_mode: str = "File"
     input_data_s3_uri: Optional[Union[str, Dict[str, str]]] = Field(
