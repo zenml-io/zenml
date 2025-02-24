@@ -56,7 +56,12 @@ from zenml.steps.utils import (
     parse_return_type_annotations,
     resolve_type_annotation,
 )
-from zenml.utils import materializer_utils, source_utils, string_utils
+from zenml.utils import (
+    materializer_utils,
+    source_utils,
+    string_utils,
+    tag_utils,
+)
 from zenml.utils.typing_utils import get_origin, is_union
 
 if TYPE_CHECKING:
@@ -639,7 +644,12 @@ class StepRunner:
             tags = step_context.get_output_tags(output_name)
             if tags is not None:
                 if step_context.pipeline_run.config.tags is not None:
-                    tags.extend(step_context.pipeline_run.config.tags)
+                    for tag in step_context.pipeline_run.config.tags:
+                        if (
+                            isinstance(tag, tag_utils.Tag)
+                            and tag.hierarchical is True
+                        ):
+                            tags.append(tag.name)
             else:
                 tags = step_context.pipeline_run.config.tags
 

@@ -45,6 +45,7 @@ from zenml.models.v2.base.scoped import (
 )
 from zenml.models.v2.core.model_version import ModelVersionResponse
 from zenml.models.v2.core.tag import TagResponse
+from zenml.utils.tag_utils import Tag
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
@@ -117,7 +118,7 @@ class PipelineRunRequest(WorkspaceScopedRequest):
         default=None,
         title="ID of the trigger execution that triggered this run.",
     )
-    tags: Optional[List[str]] = Field(
+    tags: Optional[List[Union[str, Tag]]] = Field(
         default=None,
         title="Tags of the pipeline run.",
     )

@@ -14,7 +14,7 @@
 """Pipeline configuration classes."""
 
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 from pydantic import SerializeAsAny, field_validator
 
@@ -23,6 +23,7 @@ from zenml.config.retry_config import StepRetryConfig
 from zenml.config.source import SourceWithValidator
 from zenml.config.strict_base_model import StrictBaseModel
 from zenml.model.model import Model
+from zenml.utils.tag_utils import Tag
 from zenml.utils.time_utils import utc_now
 
 if TYPE_CHECKING:
@@ -41,7 +42,7 @@ class PipelineConfigurationUpdate(StrictBaseModel):
     enable_artifact_visualization: Optional[bool] = None
     enable_step_logs: Optional[bool] = None
     settings: Dict[str, SerializeAsAny[BaseSettings]] = {}
-    tags: Optional[List[str]] = None
+    tags: Optional[List[Union[str, "Tag"]]] = None
     extra: Dict[str, Any] = {}
     failure_hook_source: Optional[SourceWithValidator] = None
     success_hook_source: Optional[SourceWithValidator] = None
