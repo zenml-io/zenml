@@ -308,7 +308,7 @@ class BuiltInContainerMaterializer(BaseMaterializer):
             self.data_path
         ) and not self.artifact_store.exists(self.metadata_path):
             raise RuntimeError(
-                f"Materialization of type {data_type} failed. Expected either"
+                f"Materialization of type {data_type} failed. Expected either "
                 f"{self.data_path} or {self.metadata_path} to exist."
             )
 
@@ -319,10 +319,27 @@ class BuiltInContainerMaterializer(BaseMaterializer):
         # Otherwise, use the metadata to reconstruct the data as a list.
         else:
             metadata = yaml_utils.read_json(self.metadata_path)
-            outputs = []
-
+            
+            # V2 format (optimized for collections, introduced for better performance)
+            if isinstance(metadata, dict) and metadata.get("version") == "v2":
+                # Pre-allocate a list of the right size
+                max_index = max(element["index"] for element in metadata["elements"]) if metadata["elements"] else -1
+                outputs = [None] * (max_index + 1)
+                
+                # Load all elements
+                for element_info in metadata["elements"]:
+                    path_ = element_info["path"]
+                    type_ = source_utils.load(element_info["type"])
+                    materializer_class = source_utils.load(element_info["materializer"])
+                    idx = element_info["index"]
+                    
+                    materializer = materializer_class(uri=path_)
+                    element = materializer.load(type_)
+                    outputs[idx] = element
+            
             # Backwards compatibility for zenml <= 0.37.0
-            if isinstance(metadata, dict):
+            elif isinstance(metadata, dict):
+                outputs = []
                 for path_, type_str in zip(
                     metadata["paths"], metadata["types"]
                 ):
@@ -332,8 +349,9 @@ class BuiltInContainerMaterializer(BaseMaterializer):
                     element = materializer.load(type_)
                     outputs.append(element)
 
-            # New format for zenml > 0.37.0
+            # Format for zenml > 0.37.0 and < v2
             elif isinstance(metadata, list):
+                outputs = []
                 for entry in metadata:
                     path_ = entry["path"]
                     type_ = source_utils.load(entry["type"])
@@ -363,8 +381,10 @@ class BuiltInContainerMaterializer(BaseMaterializer):
         If the object can be serialized to JSON, serialize it.
 
         Otherwise, use the `default_materializer_registry` to find the correct
-        materializer for each element and materialize each element into a
-        subdirectory.
+        materializer for each element and materialize elements efficiently.
+        
+        For large collections, elements are grouped by type and processed together
+        to improve performance.
 
         Tuples and sets are cast to list before materialization.
 
@@ -393,41 +413,65 @@ class BuiltInContainerMaterializer(BaseMaterializer):
         if isinstance(data, dict):
             data = [list(data.keys()), list(data.values())]
 
-        # non-serializable list: Materialize each element into a subfolder.
-        # Get path, type, and corresponding materializer for each element.
-        metadata: List[Dict[str, str]] = []
-        materializers: List[BaseMaterializer] = []
+        # Group elements by type to process similar elements together
+        # This reduces the overhead of materializer initialization and type checking
+        type_groups = {}
+        for i, element in enumerate(data):
+            element_type = type(element)
+            if element_type not in type_groups:
+                type_groups[element_type] = []
+            type_groups[element_type].append((i, element))
+
+        # Enhanced metadata with format version for backward compatibility
+        metadata = {
+            "version": "v2",  # Mark this as the new format
+            "elements": []
+        }
+        
+        created_dirs = []
         try:
-            for i, element in enumerate(data):
-                element_path = os.path.join(self.uri, str(i))
-                self.artifact_store.mkdir(element_path)
-                type_ = type(element)
-                materializer_class = materializer_registry[type_]
-                materializer = materializer_class(uri=element_path)
-                materializers.append(materializer)
-                metadata.append(
-                    {
+            # Process each type group
+            for element_type, elements in type_groups.items():
+                # Get the materializer class once for all elements of this type
+                materializer_class = materializer_registry[element_type]
+                
+                # Save type information for all elements in this group
+                type_info = source_utils.resolve(element_type).import_path
+                materializer_info = source_utils.resolve(materializer_class).import_path
+                
+                # Process elements of this type
+                for idx, element in elements:
+                    element_path = os.path.join(self.uri, str(idx))
+                    self.artifact_store.mkdir(element_path)
+                    created_dirs.append(element_path)
+                    
+                    # Create and use materializer for this element
+                    materializer = materializer_class(uri=element_path)
+                    materializer.validate_save_type_compatibility(element_type)
+                    materializer.save(element)
+                    
+                    # Add to metadata
+                    metadata["elements"].append({
                         "path": element_path,
-                        "type": source_utils.resolve(type_).import_path,
-                        "materializer": source_utils.resolve(
-                            materializer_class
-                        ).import_path,
-                    }
-                )
-            # Write metadata as JSON.
+                        "type": type_info,
+                        "materializer": materializer_info,
+                        "index": idx  # Store original index for correct ordering
+                    })
+                    
+            # Write enhanced metadata as JSON
             yaml_utils.write_json(self.metadata_path, metadata)
-            # Materialize each element.
-            for element, materializer in zip(data, materializers):
-                materializer.validate_save_type_compatibility(type(element))
-                materializer.save(element)
-        # If an error occurs, delete all created files.
+            
+        # If an error occurs, clean up created directories
         except Exception as e:
-            # Delete metadata
+            # Delete metadata file if it exists
             if self.artifact_store.exists(self.metadata_path):
                 self.artifact_store.remove(self.metadata_path)
-            # Delete all elements that were already saved.
-            for entry in metadata:
-                self.artifact_store.rmtree(entry["path"])
+            
+            # Delete all directories created during this process
+            for dir_path in created_dirs:
+                if self.artifact_store.exists(dir_path):
+                    self.artifact_store.rmtree(dir_path)
+            
             raise e
 
     # save dict type objects to JSON file with JSON visualization type
