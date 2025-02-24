@@ -104,19 +104,24 @@ def create_entity_docs(
                 )
 
                 if md_prefix:
-                    file_name = md_prefix + "-" + item.stem
+                    # Create a directory for each module
+                    module_dir = api_doc_file_dir / f"{md_prefix}-{item.stem}"
+                    module_dir.mkdir(parents=True, exist_ok=True)
+                    file_name = "index"
                 else:
-                    file_name = item.stem
+                    module_dir = api_doc_file_dir / item.stem
+                    module_dir.mkdir(parents=True, exist_ok=True)
+                    file_name = "index"
                 to_md_file(
                     module_md,
                     file_name,
-                    out_path=api_doc_file_dir,
+                    out_path=module_dir,
                 )
 
                 if index_file_contents:
                     index_entry = (
                         f"# [{item_name}]"
-                        f"({API_DOCS}/{md_prefix}-{item.stem})\n\n"
+                        f"({API_DOCS}/{md_prefix}-{item.stem}/index.md)\n\n"
                         f"::: {zenml_import_path}.{item.stem}\n"
                         f"    handler: python\n"
                         f"    selection:\n"
@@ -196,7 +201,14 @@ def generate_docs(
         md_prefix="core",
     )
 
-    index_file_str = "\n".join(sorted(index_file_contents))
+    # Fix links in index file to point to index.md instead of just the directory
+    fixed_index_contents = []
+    for line in index_file_contents:
+        # Replace links with trailing slash to have index.md instead
+        line = line.replace(")/", ")/index.md")
+        fixed_index_contents.append(line)
+    
+    index_file_str = "\n".join(sorted(fixed_index_contents))
     to_md_file(
         index_file_str,
         "index.md",
