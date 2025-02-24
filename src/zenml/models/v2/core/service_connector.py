@@ -223,8 +223,6 @@ class ServiceConnectorUpdate(BaseUpdate):
     valid configuration update, not just a partial update. If either is
     set (i.e. not None) in the update, their values are merged together and
     will replace the existing configuration and secrets values.
-    * the `secret_id` field value in the update is ignored, given that
-    secrets are managed internally by the ZenML store.
     * the `labels` field is also a full labels update: if set (i.e. not
     `None`), all existing labels are removed and replaced by the new labels
     in the update.

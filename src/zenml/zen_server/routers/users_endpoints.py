@@ -38,6 +38,7 @@ from zenml.models import (
     UserRequest,
     UserResponse,
     UserUpdate,
+    WorkspaceScopedResponse,
 )
 from zenml.zen_server.auth import (
     AuthContext,
@@ -750,9 +751,6 @@ if server_config().rbac_enabled:
                 "Not allowed to call endpoint with the authenticated user."
             )
 
-        resource_type = ResourceType(resource_type)
-        resource = Resource(type=resource_type, id=resource_id)
-
         schema_class = get_schema_for_resource_type(resource_type)
         model = zen_store().get_entity_by_id(
             entity_id=resource_id, schema_class=schema_class
@@ -763,6 +761,15 @@ if server_config().rbac_enabled:
                 f"Resource of type {resource_type} with ID {resource_id} does "
                 "not exist."
             )
+
+        resource_type = ResourceType(resource_type)
+        workspace_id = None
+        if isinstance(model, WorkspaceScopedResponse):
+            workspace_id = model.workspace.id
+
+        resource = Resource(
+            type=resource_type, id=resource_id, workspace_id=workspace_id
+        )
 
         verify_permission_for_model(model=model, action=Action.SHARE)
         for action in actions:

@@ -346,7 +346,7 @@ def get_allowed_resource_ids(
         raise ValueError(
             "Workspace ID is required to list workspace scoped resources."
         )
-    elif workspace_id:
+    if not ResourceType(resource_type).is_workspace_scoped() and workspace_id:
         raise ValueError(
             "Workspace ID is not allowed to list resources that are not "
             "workspace scoped."
@@ -360,7 +360,7 @@ def get_allowed_resource_ids(
         allowed_ids,
     ) = rbac().list_allowed_resource_ids(
         user=auth_context.user,
-        resource=Resource(type=resource_type),
+        resource=Resource(type=resource_type, workspace_id=workspace_id),
         action=action,
     )
 

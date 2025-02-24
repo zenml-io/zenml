@@ -157,7 +157,7 @@ def list_model_versions(
         model_version_filter_model.model = model_name_or_id
 
     if not model_version_filter_model.model:
-        raise ValueError("Workspace missing from the filter")
+        raise ValueError("Model missing from the filter")
 
     # A workspace scoped request must always be scoped to a specific
     # workspace. This is required for the RBAC check to work.

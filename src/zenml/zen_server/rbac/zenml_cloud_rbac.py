@@ -57,7 +57,7 @@ def _convert_from_cloud_resource(cloud_resource: str) -> Resource:
     Returns:
         The converted resource.
     """
-    scope, workspace_resource_type_and_id = cloud_resource.rsplit(
+    scope, workspace_resource_type_and_id = cloud_resource.split(
         ":", maxsplit=1
     )
 

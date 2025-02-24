@@ -1778,7 +1778,6 @@ def print_service_connector_configuration(
             "AUTH METHOD": connector.auth_method,
             "RESOURCE TYPES": ", ".join(connector.emojified_resource_types),
             "RESOURCE NAME": connector.resource_id or "<multiple>",
-            "SECRET ID": connector.secret_id or "",
             "SESSION DURATION": expiration,
             "EXPIRES IN": (
                 expires_in(
