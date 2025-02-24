@@ -31,6 +31,7 @@ from typing import (
 
 from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
 from zenml.constants import (
+    DEFAULT_COLLECTION_CHUNK_SIZE,
     ENV_ZENML_MATERIALIZER_ALLOW_NON_ASCII_JSON_DUMPS,
     handle_bool_env_var,
 )
@@ -543,17 +544,39 @@ class BuiltInContainerMaterializer(BaseMaterializer):
                 metadata["groups"].append(group_metadata)
 
                 # Process elements in chunks to avoid memory issues with very large collections
-                # A reasonable chunk size balances I/O overhead vs memory usage
-                CHUNK_SIZE = 100  # Number of elements per chunk file
+                # Use the configurable chunk size from constants
+                chunk_size = DEFAULT_COLLECTION_CHUNK_SIZE
 
-                for chunk_idx in range(0, len(elements), CHUNK_SIZE):
+                # Adaptive sizing: if elements are particularly large, reduce chunk size
+                # This is a simple heuristic based on the first few elements
+                if elements and len(elements) > 10:
+                    # Sample the first few elements to estimate size
+                    sample_elements = elements[: min(10, len(elements))]
+                    try:
+                        # Basic size estimation with pickle
+                        avg_size = sum(
+                            len(pickle.dumps(e[1])) for e in sample_elements
+                        ) / len(sample_elements)
+                        # Adjust chunk size based on average element size
+                        # Target max chunk size of ~10MB
+                        target_max_bytes = 10 * 1024 * 1024  # 10MB
+                        if avg_size > 0:
+                            adaptive_chunk_size = max(
+                                1, int(target_max_bytes / avg_size)
+                            )
+                            chunk_size = min(chunk_size, adaptive_chunk_size)
+                    except Exception:
+                        # If size estimation fails, use the default chunk size
+                        pass
+
+                for chunk_idx in range(0, len(elements), chunk_size):
                     chunk_elements = elements[
-                        chunk_idx : chunk_idx + CHUNK_SIZE
+                        chunk_idx : chunk_idx + chunk_size
                     ]
                     chunk_indices = [idx for idx, _ in chunk_elements]
 
                     # Create chunk file path
-                    chunk_filename = f"chunk_{chunk_idx // CHUNK_SIZE}.pkl.gz"
+                    chunk_filename = f"chunk_{chunk_idx // chunk_size}.pkl.gz"
                     chunk_path = os.path.join(batch_dir, chunk_filename)
 
                     # Process objects for serialization

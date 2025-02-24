@@ -113,6 +113,26 @@ If you wish to disable stack validation, set the following environment variable:
 ZENML_SKIP_STACK_VALIDATION=true
 ```
 
+## Configure materializer behavior
+
+### Collection chunk size 
+
+When materializing large collections (lists, dictionaries, etc.), ZenML uses batch compression to improve performance. You can configure the chunk size for these batches:
+
+```bash
+ZENML_MATERIALIZER_COLLECTION_CHUNK_SIZE=100
+```
+
+The default value is 100 elements per chunk. For very large elements, ZenML will automatically reduce this value to prevent memory issues. For small elements, using a larger value can improve performance.
+
+### Non-ASCII JSON 
+
+For JSON dumps in materializers, control whether non-ASCII characters are allowed:
+
+```bash
+ZENML_MATERIALIZER_ALLOW_NON_ASCII_JSON_DUMPS=false
+```
+
 ## Ignore untracked code repository files
 
 When using [code repositories](../how-to/project-setup-and-management/setting-up-a-project-repository/connect-your-git-repository.md),

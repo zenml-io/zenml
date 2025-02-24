@@ -161,18 +161,27 @@ def test_none_values():
 class CustomType:
     """Custom type used for testing the container materializer below."""
 
-    myname = "aria"
+    def __init__(self, large_data: str = ""):
+        """Initialize with optional large data for testing adaptive sizing."""
+        self.myname = "aria"
+        self.large_data = large_data
 
     def __eq__(self, __value: object) -> bool:
         if isinstance(__value, CustomType):
-            return self.myname == __value.myname
+            return (
+                self.myname == __value.myname
+                and self.large_data == __value.large_data
+            )
         return False
 
 
 class CustomSubType(CustomType):
     """Subtype of CustomType."""
 
-    myname = "axl"
+    def __init__(self, large_data: str = ""):
+        """Initialize the subtype."""
+        super().__init__(large_data=large_data)
+        self.myname = "axl"
 
 
 class CustomTypeMaterializer(BaseMaterializer):
@@ -189,7 +198,7 @@ class CustomTypeMaterializer(BaseMaterializer):
 
     def load(self, data_type: Type[CustomType]) -> Optional[CustomType]:
         """Load the data."""
-        return data_type()
+        return data_type(large_data="")
 
 
 def test_container_materializer_for_custom_types(
@@ -449,14 +458,31 @@ def test_batch_compression_performance(mocker, clean_client: "Client"):
     1. Elements are properly batched into multiple chunk files
     2. Loading works efficiently with chunk-based caching
     3. The compression reduces overall storage requirements
+    4. The adaptive chunk sizing works correctly
     """
     import glob
+    import logging
     import os.path
     import time
+
+    # Set up logging to capture debug messages
+    zenml_logger = logging.getLogger(
+        "zenml.materializers.built_in_materializer"
+    )
+    original_level = zenml_logger.level
+    zenml_logger.setLevel(logging.DEBUG)
 
     # Create a large homogeneous collection
     COLLECTION_SIZE = 500
     large_collection = [CustomType() for _ in range(COLLECTION_SIZE)]
+
+    # Create a mixed collection with different sized objects to test adaptive chunking
+    mixed_collection = large_collection.copy()
+    # Add some larger objects to trigger adaptive sizing
+    for _ in range(10):
+        mixed_collection.append(
+            CustomType(large_data="X" * 1000000)
+        )  # 1MB of data
 
     with TemporaryDirectory(
         dir=clean_client.active_stack.artifact_store.path
@@ -504,3 +530,21 @@ def test_batch_compression_performance(mocker, clean_client: "Client"):
         assert len(all_files) < COLLECTION_SIZE, (
             "Batching not effective - too many files created"
         )
+
+        # Test adaptive chunking with mixed collection
+        with TemporaryDirectory(
+            dir=clean_client.active_stack.artifact_store.path
+        ) as mixed_artifact_uri:
+            mixed_materializer = BuiltInContainerMaterializer(
+                uri=mixed_artifact_uri
+            )
+
+            # Save the mixed collection
+            mixed_materializer.save(mixed_collection)
+
+            # Load and verify
+            mixed_result = mixed_materializer.load(list)
+            assert len(mixed_result) == len(mixed_collection)
+
+            # Reset logging level
+            zenml_logger.setLevel(original_level)
