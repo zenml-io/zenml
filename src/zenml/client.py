@@ -7627,6 +7627,7 @@ class Client(metaclass=ClientMetaClass):
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
         logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
@@ -7641,6 +7642,7 @@ class Client(metaclass=ClientMetaClass):
             page: The page of items.
             size: The maximum size of all pages.
             logical_operator: Which logical operator to use [and, or].
+            id: Use the id of stacks to filter by.
             created: Use to filter by time of creation.
             updated: Use the last updated date for filtering.
             name: The name of the tag.
@@ -7658,6 +7660,7 @@ class Client(metaclass=ClientMetaClass):
                 page=page,
                 size=size,
                 logical_operator=logical_operator,
+                id=id,
                 created=created,
                 updated=updated,
                 name=name,

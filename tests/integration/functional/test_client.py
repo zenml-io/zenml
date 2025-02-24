@@ -1311,16 +1311,16 @@ class TestModel:
         model2 = clean_client.create_model(
             name=self.MODEL_NAME + "2", tags=["foo"]
         )
-        ms = clean_client.list_models(tag="foo")
+        ms = clean_client.list_models(tags=["foo"])
         assert len(ms) == 2
         assert model1 in ms
         assert model2 in ms
 
-        ms = clean_client.list_models(tag="bar")
+        ms = clean_client.list_models(tags=["bar"])
         assert len(ms) == 1
         assert model1 in ms
 
-        ms = clean_client.list_models(tag="non_existent_tag")
+        ms = clean_client.list_models(tags=["non_existent_tag"])
         assert len(ms) == 0
 
         ms = clean_client.list_models()
@@ -1328,10 +1328,8 @@ class TestModel:
         assert model1 in ms
         assert model2 in ms
 
-        ms = clean_client.list_models(tag="")
-        assert len(ms) == 2
-        assert model1 in ms
-        assert model2 in ms
+        ms = clean_client.list_models(tags=[""])
+        assert len(ms) == 0
 
 
 class TestModelVersion:
@@ -1556,23 +1554,16 @@ class TestModelVersion:
         model_versions = client_with_model.list_model_versions(
             self.MODEL_NAME,
             name=f"contains:{self.VERSION_NAME}_",
-            tag="foo",
+            tags=["foo"],
         )
         assert len(model_versions) == PAGE_SIZE_DEFAULT
 
         model_versions = client_with_model.list_model_versions(
             self.MODEL_NAME,
             name=f"contains:{self.VERSION_NAME}_",
-            tag="non_existent_tag",
+            tags=["non_existent_tag"],
         )
         assert len(model_versions) == 0
-
-        model_versions = client_with_model.list_model_versions(
-            self.MODEL_NAME,
-            name=f"contains:{self.VERSION_NAME}_",
-            tag="",
-        )
-        assert len(model_versions) == PAGE_SIZE_DEFAULT
 
     def test_delete_model_version_found(self, client_with_model: "Client"):
         client_with_model.delete_model_version(

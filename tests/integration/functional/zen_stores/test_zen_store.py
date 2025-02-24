@@ -4235,17 +4235,17 @@ class TestModel:
         with ModelContext():
             zs = clean_client.zen_store
 
-            ms = zs.list_models(model_filter_model=ModelFilter(tag=""))
+            ms = zs.list_models(model_filter_model=ModelFilter(tags=[""]))
+            assert len(ms) == 0
+
+            ms = zs.list_models(model_filter_model=ModelFilter(tags=["foo"]))
             assert len(ms) == 1
 
-            ms = zs.list_models(model_filter_model=ModelFilter(tag="foo"))
-            assert len(ms) == 1
-
-            ms = zs.list_models(model_filter_model=ModelFilter(tag="bar"))
+            ms = zs.list_models(model_filter_model=ModelFilter(tags=["bar"]))
             assert len(ms) == 1
 
             ms = zs.list_models(
-                model_filter_model=ModelFilter(tag="non_existent_tag")
+                model_filter_model=ModelFilter(tags=["non_existent_tag"])
             )
             assert len(ms) == 0
 
@@ -5180,7 +5180,7 @@ class TestTag:
 
     def test_create_bad_input(self, clean_client: "Client"):
         """Tests that tag creation fails without a name."""
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             clean_client.create_tag(color="yellow")
 
     def test_create_fails_with_invalid_name(self, clean_client: "Client"):
