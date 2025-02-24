@@ -76,6 +76,8 @@ def _convert_from_cloud_resource(cloud_resource: str) -> Resource:
     resource_id: Optional[str] = None
     if "/" in resource_type_and_id:
         resource_type, resource_id = resource_type_and_id.split("/")
+    else:
+        resource_type = resource_type_and_id
 
     if resource_type == ResourceType.WORKSPACE and workspace_id is not None:
         # TODO: For now, we duplicate the workspace ID in the string

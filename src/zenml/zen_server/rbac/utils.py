@@ -538,24 +538,6 @@ def get_resource_type_for_model(
     return mapping.get(type(model))
 
 
-def is_resource_type_workspace_scoped(resource_type: ResourceType) -> bool:
-    """Check if a resource type is workspace scoped.
-
-    Args:
-        resource_type: The resource type to check.
-
-    Returns:
-        Whether the resource type is workspace scoped.
-    """
-    return resource_type in [
-        ResourceType.STACK,
-        ResourceType.PIPELINE,
-        ResourceType.CODE_REPOSITORY,
-        ResourceType.SECRET,
-        ResourceType.MODEL,
-    ]
-
-
 def is_owned_by_authenticated_user(model: AnyModel) -> bool:
     """Returns whether the currently authenticated user owns the model.
 

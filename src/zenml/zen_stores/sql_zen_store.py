@@ -5445,6 +5445,7 @@ class SqlZenStore(BaseZenStore):
                     )
 
                     session.add(run_metadata_schema)
+                    session.commit()
 
                     for resource in run_metadata.resources:
                         rm_resource_link = RunMetadataResourceSchema(
@@ -5453,12 +5454,7 @@ class SqlZenStore(BaseZenStore):
                             run_metadata_id=run_metadata_schema.id,
                         )
                         session.add(rm_resource_link)
-
-                # We can have a single commit at the end, because SQLAlchemy handles
-                # the ID generation and relationship management automatically when
-                # objects are added to the session and this significantly improves
-                # performance.
-                session.commit()
+                        session.commit()
         return None
 
     # ----------------------------- Schedules -----------------------------
@@ -9023,19 +9019,18 @@ class SqlZenStore(BaseZenStore):
         """
         with Session(self.engine) as session:
             if user_name_or_id is None:
-                # Get the active account, depending on the context
-                user = self._get_active_user(session=session)
-            else:
-                # If a UUID is passed, we also allow fetching service accounts
-                # with that ID.
-                service_account: Optional[bool] = False
-                if uuid_utils.is_valid_uuid(user_name_or_id):
-                    service_account = None
-                user = self._get_account_schema(
-                    user_name_or_id,
-                    session=session,
-                    service_account=service_account,
-                )
+                user_name_or_id = self._get_active_user(session=session).id
+
+            # If a UUID is passed, we also allow fetching service accounts
+            # with that ID.
+            service_account: Optional[bool] = False
+            if uuid_utils.is_valid_uuid(user_name_or_id):
+                service_account = None
+            user = self._get_account_schema(
+                user_name_or_id,
+                session=session,
+                service_account=service_account,
+            )
 
             return user.to_model(
                 include_private=include_private,

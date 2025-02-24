@@ -50,6 +50,7 @@ from zenml.zen_server.rbac.utils import (
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
+    set_filter_workspace_scope,
     zen_store,
 )
 
@@ -85,8 +86,14 @@ def list_run_steps(
     Returns:
         The run steps according to query filters.
     """
+    # A workspace scoped request must always be scoped to a specific
+    # workspace. This is required for the RBAC check to work.
+    set_filter_workspace_scope(step_run_filter_model)
+    assert step_run_filter_model.scope_workspace
+
     allowed_pipeline_run_ids = get_allowed_resource_ids(
-        resource_type=ResourceType.PIPELINE_RUN
+        resource_type=ResourceType.PIPELINE_RUN,
+        workspace_id=step_run_filter_model.scope_workspace
     )
     step_run_filter_model.configure_rbac(
         authenticated_user_id=auth_context.user.id,
