@@ -3,12 +3,11 @@
 import os
 import subprocess
 import time
-from typing import Any, ClassVar, Dict, Optional, Type, cast, List
-from uuid import UUID
+import traceback
+from typing import Any, ClassVar, Dict, List, Optional, Type, Union, cast
+from uuid import UUID, uuid4
 
-import requests
 from zenml.client import Client
-from zenml.config.global_config import GlobalConfiguration
 from zenml.integrations.baseten.constants import BASETEN_MODEL_DEPLOYER_FLAVOR
 from zenml.integrations.baseten.flavors.baseten_model_deployer_flavor import (
     BasetenModelDeployerConfig,
@@ -24,12 +23,11 @@ from zenml.integrations.baseten.services.baseten_deployment import (
 from zenml.logger import get_logger
 from zenml.model_deployers import BaseModelDeployer, BaseModelDeployerFlavor
 from zenml.services import (
-    ServiceEndpointProtocol,
+    BaseService,
     ServiceState,
     ServiceStatus,
     ServiceType,
 )
-from zenml.utils import source_utils
 
 logger = get_logger(__name__)
 
@@ -60,18 +58,31 @@ class BasetenModelDeployer(BaseModelDeployer):
 
         Args:
             api_key: The Baseten API key.
+
+        Raises:
+            RuntimeError: If authentication setup fails.
         """
+        # Get API host from config, default to standard Baseten URL
+        api_host = self.config.api_host or "https://app.baseten.co"
+
         # Write to ~/.trussrc in INI format
         truss_config = f"""[default]
 api_key = {api_key}
 remote_provider = baseten
-remote_url = https://app.baseten.co
+remote_url = {api_host}
 """
-        truss_config_path = os.path.expanduser("~/.trussrc")
-        with open(truss_config_path, "w") as f:
-            f.write(truss_config)
+        try:
+            truss_config_path = os.path.expanduser("~/.trussrc")
+            with open(truss_config_path, "w") as f:
+                f.write(truss_config)
 
-        logger.info("Set up Truss authentication")
+            logger.info(
+                f"Set up Truss authentication with API host: {api_host}"
+            )
+        except Exception as e:
+            raise RuntimeError(
+                f"Failed to set up Truss authentication: {str(e)}"
+            )
 
     def _create_deployment_service(
         self,
@@ -121,13 +132,84 @@ remote_url = https://app.baseten.co
 
         return service
 
+    def deploy_model(
+        self,
+        config: Union[Dict[str, Any], BasetenDeploymentConfig],
+        replace: bool = True,
+        timeout: int = DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT,
+        service_type: Optional[ServiceType] = None,
+    ) -> BaseService:
+        """Deploy a model to Baseten.
+
+        Args:
+            config: The deployment configuration.
+            replace: Whether to replace an existing deployment.
+            timeout: The timeout in seconds.
+            service_type: The type of service to create.
+
+        Returns:
+            The deployment service.
+
+        Raises:
+            RuntimeError: If deployment fails.
+        """
+        # Convert config dict to BasetenDeploymentConfig if needed
+        if isinstance(config, dict):
+            config = BasetenDeploymentConfig.from_dict(config)
+
+        # Use the default service type if not specified
+        service_type = service_type or self.SERVICE_TYPE
+
+        # Extract key parameters for service lookup
+        model_name = config.name
+        service_name = config.service_name
+        pipeline_name = config.pipeline_name
+        pipeline_step_name = config.pipeline_step_name
+
+        # Check for existing services if replace is False
+        if not replace:
+            # Try to find an existing service by name or other attributes
+            existing_services = self.find_model_server(
+                service_name=service_name,
+                model_name=model_name,
+                pipeline_name=pipeline_name,
+                pipeline_step_name=pipeline_step_name,
+                service_type=service_type,
+            )
+
+            if existing_services:
+                logger.info(
+                    f"Found existing service: {existing_services[0].id}"
+                )
+                # Verify service status and return it if active
+                existing_service = existing_services[0]
+
+                if existing_service.is_running:
+                    logger.info("Existing service is running, reusing it")
+                    return existing_service
+
+                logger.info(
+                    "Existing service is not running, will be replaced"
+                )
+
+        # If no existing service or replace=True, create a new service ID
+        service_id = uuid4()
+        logger.info(f"Creating new service with ID: {service_id}")
+
+        # Delegate to the internal implementation
+        return self.perform_deploy_model(
+            id=service_id,
+            config=config,
+            timeout=timeout,
+        )
+
     def perform_deploy_model(
         self,
         id: UUID,
         config: BasetenDeploymentConfig,
         timeout: int = DEFAULT_DEPLOYMENT_START_STOP_TIMEOUT,
     ) -> BasetenDeploymentService:
-        """Deploy a model to Baseten.
+        """Internal method to deploy a model to Baseten.
 
         Args:
             id: The UUID to use for the service.
@@ -157,7 +239,7 @@ remote_url = https://app.baseten.co
         if not os.path.exists(truss_dir):
             raise RuntimeError(f"Truss directory not found: {truss_dir}")
 
-        # Deploy to Baseten
+        # Deploy to Baseten with improved command
         cmd = [
             "truss",
             "push",
@@ -166,77 +248,137 @@ remote_url = https://app.baseten.co
             "--model-name",
             config.name,
         ]
+
+        # Add optional parameters if provided in deployer config
+        if self.config.gpu:
+            cmd.extend(["--gpu", self.config.gpu])
+
+        if self.config.cpu:
+            cmd.extend(["--cpu", self.config.cpu])
+
+        if self.config.memory:
+            cmd.extend(["--memory", self.config.memory])
+
+        if self.config.replicas:
+            cmd.extend(["--replicas", str(self.config.replicas)])
+
+        # Add environment variables if specified
+        if self.config.environment_variables:
+            for key, value in self.config.environment_variables.items():
+                cmd.extend(["--env", f"{key}={value}"])
+
+        # Log the command, but hide the API key for security
         logger.info(f"Running command: {' '.join(cmd)}")
 
-        proc = subprocess.run(cmd, capture_output=True, text=True)
-        logger.debug(f"Command stdout: {proc.stdout}")
-        logger.debug(f"Command stderr: {proc.stderr}")
+        try:
+            proc = subprocess.run(cmd, capture_output=True, text=True)
+            logger.debug(f"Command stdout: {proc.stdout}")
+            logger.debug(f"Command stderr: {proc.stderr}")
 
-        if proc.returncode != 0:
-            raise RuntimeError(
-                f"Failed to deploy to Baseten:\nStdout: {proc.stdout}\nStderr: {proc.stderr}"
+            if proc.returncode != 0:
+                raise RuntimeError(
+                    f"Failed to deploy to Baseten:\nStdout: {proc.stdout}\nStderr: {proc.stderr}"
+                )
+
+            # Parse deployment info with improved handling
+            model_id = None
+            endpoint_url = None
+
+            # First try to extract from the command output
+            for line in proc.stdout.split("\n"):
+                if "Model ID:" in line:
+                    model_id = line.split("Model ID:")[1].strip()
+                elif "Deployment URL:" in line:
+                    endpoint_url = line.split("Deployment URL:")[1].strip()
+
+            # If we couldn't extract the info, try to get it from Baseten API
+            if not model_id or not endpoint_url:
+                # We could add API lookup here if needed in the future
+                raise RuntimeError(
+                    "Failed to extract model ID or endpoint from deployment output"
+                )
+
+            logger.info(f"Model ID: {model_id}")
+            logger.info(f"Endpoint URL: {endpoint_url}")
+
+            # Create service with the extracted info
+            service = self._create_deployment_service(
+                id=id,
+                config=config,
+                model_id=model_id,
+                endpoint_url=endpoint_url,
             )
 
-        # Parse deployment info
-        model_id = None
-        endpoint_url = None
-        for line in proc.stdout.split("\n"):
-            if "Model ID:" in line:
-                model_id = line.split("Model ID:")[1].strip()
-            elif "Deployment URL:" in line:
-                endpoint_url = line.split("Deployment URL:")[1].strip()
+            # Wait for deployment to be ready with improved error handling
+            logger.info("Waiting for deployment to be ready...")
+            max_retries = timeout // 10  # Check every 10 seconds
+            retry_delay = 10
+            last_state = None
+            last_error = None
 
-        if not model_id or not endpoint_url:
-            raise RuntimeError(
-                "Failed to extract model ID or endpoint from deployment output"
-            )
+            for attempt in range(max_retries):
+                try:
+                    state, error = service.check_status()
+                    last_state = state
+                    last_error = error
 
-        logger.info(f"Model ID: {model_id}")
-        logger.info(f"Endpoint URL: {endpoint_url}")
-
-        # Create service
-        service = self._create_deployment_service(
-            id=id,
-            config=config,
-            model_id=model_id,
-            endpoint_url=endpoint_url,
-        )
-
-        # Wait for deployment to be ready
-        logger.info("Waiting for deployment to be ready...")
-        max_retries = timeout // 10  # Check every 10 seconds
-        retry_delay = 10
-
-        for attempt in range(max_retries):
-            try:
-                state, error = service.check_status()
-                if state == ServiceState.ACTIVE:
-                    logger.info("Deployment is ready")
-                    break
-                elif state == ServiceState.ERROR:
-                    raise RuntimeError(f"Deployment failed: {error}")
-                else:
+                    if state == ServiceState.ACTIVE:
+                        logger.info("Deployment is ready")
+                        service._update_status(state, "")
+                        break
+                    elif state == ServiceState.ERROR:
+                        raise RuntimeError(f"Deployment failed: {error}")
+                    else:
+                        if attempt < max_retries - 1:
+                            logger.info(
+                                f"Deployment not ready (state: {state}), retrying in {retry_delay}s..."
+                            )
+                            service._update_status(state, error or "")
+                            time.sleep(retry_delay)
+                        else:
+                            raise RuntimeError(
+                                f"Deployment timed out after {timeout}s. Last state: {state}, error: {error}"
+                            )
+                except Exception as e:
                     if attempt < max_retries - 1:
-                        logger.info(
-                            f"Deployment not ready (state: {state}), retrying in {retry_delay}s..."
+                        logger.warning(
+                            f"Failed to check deployment status: {e}, retrying in {retry_delay}s..."
                         )
                         time.sleep(retry_delay)
                     else:
+                        service._update_status(ServiceState.ERROR, str(e))
                         raise RuntimeError(
-                            f"Deployment failed to become ready: {error}"
+                            f"Failed to verify deployment status: {str(e)}"
                         )
-            except Exception as e:
-                if attempt < max_retries - 1:
-                    logger.warning(
-                        f"Failed to check deployment status: {e}, retrying in {retry_delay}s..."
-                    )
-                    time.sleep(retry_delay)
-                else:
-                    raise RuntimeError(
-                        f"Failed to verify deployment status: {str(e)}"
-                    )
 
-        return service
+            # Register the service in ZenML
+            from zenml.client import Client
+
+            client = Client()
+            client.register_service(service)
+
+            return service
+
+        except Exception as e:
+            # Ensure we update status to ERROR if anything goes wrong
+            logger.error(f"Deployment failed: {str(e)}")
+            logger.error(traceback.format_exc())
+
+            # Try to clean up any partial deployment if possible
+            try:
+                if model_id:
+                    logger.warning(
+                        f"Attempting to clean up failed deployment for model {model_id}"
+                    )
+                    # TODO: Add cleanup code using Baseten API if needed
+            except Exception as cleanup_error:
+                logger.error(f"Failed to clean up deployment: {cleanup_error}")
+
+            # Re-raise with more context
+            if isinstance(e, RuntimeError):
+                raise
+            else:
+                raise RuntimeError(f"Deployment failed: {str(e)}")
 
     def get_model_server_info(
         self,

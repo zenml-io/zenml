@@ -1,12 +1,13 @@
 """Implementation of the Baseten deployment service."""
 
 import logging
-from typing import Any, Dict, List, Optional, Tuple, cast, Union, Generator
-from uuid import UUID
 import os
+import random
+import time
+from typing import Any, Dict, Generator, Optional, Tuple
 
 import requests
-from pydantic import ConfigDict, computed_field
+from pydantic import ConfigDict
 
 from zenml.models import ServiceResponse
 from zenml.services import (
@@ -20,7 +21,6 @@ from zenml.services.service import BaseService, ServiceConfig, ServiceStatus
 from zenml.services.service_endpoint import (
     BaseServiceEndpoint,
     ServiceEndpointConfig,
-    ServiceEndpointProtocol,
     ServiceEndpointStatus,
 )
 from zenml.services.service_status import ServiceState
@@ -231,6 +231,32 @@ class BasetenDeploymentService(BaseService):
         """
         return self.endpoint.get_prediction_url() if self.endpoint else None
 
+    @property
+    def baseten_model_id(self) -> Optional[str]:
+        """Get the Baseten model ID.
+
+        Returns:
+            The Baseten model ID or None if not available.
+        """
+        return self.config.baseten_id
+
+    @property
+    def deployment_id(self) -> Optional[str]:
+        """Get the Baseten deployment ID.
+
+        Returns:
+            The Baseten deployment ID or None if not available.
+        """
+        return self.config.baseten_deployment_id
+
+    def get_prediction_url(self) -> Optional[str]:
+        """Get the prediction URL for the service.
+
+        Returns:
+            The prediction URL or None if not available.
+        """
+        return self.prediction_url
+
     def check_status(self) -> Tuple[ServiceState, str]:
         """Check the status of the service.
 
@@ -245,11 +271,39 @@ class BasetenDeploymentService(BaseService):
 
         try:
             # Get deployment status from Baseten API
-            headers = {"Authorization": f"Api-Key {self._get_api_key()}"}
-            url = f"https://app.baseten.co/api/v1/models/{self.config.baseten_id}/deployments/{self.config.baseten_deployment_id}"
-            response = requests.get(url, headers=headers, timeout=10)
-            response.raise_for_status()
-            deployment = response.json()
+            api_key = self._get_api_key()
+            api_host = self._get_api_host()
+            headers = {"Authorization": f"Api-Key {api_key}"}
+            url = f"{api_host}/api/v1/models/{self.config.baseten_id}/deployments/{self.config.baseten_deployment_id}"
+
+            # Add retry logic with exponential backoff for API requests
+            max_retries = 3
+            retry_delay = 1  # starting delay in seconds
+            last_exception = None
+
+            for retry in range(max_retries):
+                try:
+                    response = requests.get(url, headers=headers, timeout=10)
+                    response.raise_for_status()
+                    deployment = response.json()
+                    break
+                except requests.RequestException as e:
+                    last_exception = e
+                    if retry < max_retries - 1:
+                        # Exponential backoff with jitter
+                        sleep_time = retry_delay * (2**retry) + (
+                            0.1 * random.random()
+                        )
+                        logger.warning(
+                            f"API request failed, retrying in {sleep_time:.1f}s: {e}"
+                        )
+                        time.sleep(sleep_time)
+                    else:
+                        # All retries failed
+                        return (
+                            ServiceState.ERROR,
+                            f"Failed to check deployment status after {max_retries} retries: {str(last_exception)}",
+                        )
 
             # Map Baseten status to ZenML ServiceState
             status_mapping = {
@@ -271,21 +325,36 @@ class BasetenDeploymentService(BaseService):
 
             baseten_status = deployment.get("status", "FAILED")
             state = status_mapping.get(baseten_status, ServiceState.ERROR)
-            error = f"Deployment status: {baseten_status}"
 
-            # Update replica count information if available
+            # Build detailed status message
+            status_details = [f"Deployment status: {baseten_status}"]
+
+            # Include more deployment details if available
             if "active_replica_count" in deployment:
-                error += (
-                    f" (active replicas: {deployment['active_replica_count']})"
+                status_details.append(
+                    f"Active replicas: {deployment['active_replica_count']}"
+                )
+
+            if "desired_replica_count" in deployment:
+                status_details.append(
+                    f"Desired replicas: {deployment['desired_replica_count']}"
+                )
+
+            error = ", ".join(status_details)
+
+            # Update the service status in ZenML
+            current_state = self.status.state if self.status else None
+            if current_state != state:
+                self._update_status(
+                    state, "" if state == ServiceState.ACTIVE else error
                 )
 
             return state, "" if state == ServiceState.ACTIVE else error
 
-        except requests.RequestException as e:
-            return (
-                ServiceState.ERROR,
-                f"Failed to check deployment status: {str(e)}",
-            )
+        except Exception as e:
+            error_msg = f"Failed to check deployment status: {str(e)}"
+            self._update_status(ServiceState.ERROR, error_msg)
+            return (ServiceState.ERROR, error_msg)
 
     def _get_api_key(self) -> str:
         """Get the Baseten API key from the config file.
@@ -305,6 +374,24 @@ class BasetenDeploymentService(BaseService):
         except Exception as e:
             raise RuntimeError(f"Failed to get Baseten API key: {str(e)}")
 
+    def _get_api_host(self) -> str:
+        """Get the Baseten API host from the config file.
+
+        Returns:
+            The API host, defaulting to https://app.baseten.co if not found.
+        """
+        try:
+            import configparser
+
+            config = configparser.ConfigParser()
+            config.read(os.path.expanduser("~/.trussrc"))
+            return config["default"].get(
+                "remote_url", "https://app.baseten.co"
+            )
+        except Exception:
+            # Default to standard Baseten URL if not found
+            return "https://app.baseten.co"
+
     def start(self, timeout: int = 300) -> None:
         """Start the service.
 
@@ -314,25 +401,62 @@ class BasetenDeploymentService(BaseService):
         Note:
             In Baseten, models are automatically started when deployed.
             This method activates the deployment if it was deactivated.
+
+        Raises:
+            RuntimeError: If the service fails to start.
         """
         if not self.config.baseten_id or not self.config.baseten_deployment_id:
             raise RuntimeError("No Baseten model/deployment ID available")
 
+        # Update status to DEPLOYING while we're starting
+        self._update_status(ServiceState.DEPLOYING, "Activating deployment...")
+
         try:
             # Call Baseten API to activate the deployment
-            headers = {"Authorization": f"Api-Key {self._get_api_key()}"}
-            url = f"https://app.baseten.co/api/v1/models/{self.config.baseten_id}/deployments/{self.config.baseten_deployment_id}/activate"
-            response = requests.post(url, headers=headers, timeout=timeout)
+            api_key = self._get_api_key()
+            api_host = self._get_api_host()
+            headers = {"Authorization": f"Api-Key {api_key}"}
+            url = f"{api_host}/api/v1/models/{self.config.baseten_id}/deployments/{self.config.baseten_deployment_id}/activate"
+            response = requests.post(url, headers=headers, timeout=30)
             response.raise_for_status()
 
-            # Update service status
-            state, error = self.check_status()
-            self._update_status(state, error)
-        except requests.RequestException as e:
-            self._update_status(
-                ServiceState.ERROR, f"Failed to start deployment: {str(e)}"
+            # Poll until the service is active or timeout
+            logger.info(
+                f"Waiting for deployment to become active (timeout: {timeout}s)..."
             )
-            raise RuntimeError(f"Failed to start deployment: {str(e)}")
+            start_time = time.time()
+            poll_interval = 5  # seconds
+
+            while time.time() - start_time < timeout:
+                state, error = self.check_status()
+
+                if state == ServiceState.ACTIVE:
+                    logger.info("Deployment is now active")
+                    self._update_status(state, "")
+                    return
+                elif state == ServiceState.ERROR:
+                    self._update_status(state, error)
+                    raise RuntimeError(f"Failed to start deployment: {error}")
+                else:
+                    remaining = timeout - int(time.time() - start_time)
+                    logger.info(
+                        f"Deployment not active yet (state: {state}), waiting... ({remaining}s remaining)"
+                    )
+                    time.sleep(poll_interval)
+
+            # If we get here, we timed out
+            self._update_status(
+                ServiceState.ERROR,
+                f"Timed out waiting for deployment to become active after {timeout}s",
+            )
+            raise RuntimeError(
+                f"Timed out waiting for deployment to become active after {timeout}s"
+            )
+
+        except requests.RequestException as e:
+            error_msg = f"Failed to start deployment: {str(e)}"
+            self._update_status(ServiceState.ERROR, error_msg)
+            raise RuntimeError(error_msg)
 
     def stop(self, timeout: int = 300, force: bool = False) -> None:
         """Stop the service.
@@ -343,24 +467,81 @@ class BasetenDeploymentService(BaseService):
 
         Note:
             In Baseten, this deactivates the deployment.
+
+        Raises:
+            RuntimeError: If the service fails to stop and force=False.
         """
         if not self.config.baseten_id or not self.config.baseten_deployment_id:
             raise RuntimeError("No Baseten model/deployment ID available")
 
+        # Only attempt to stop if the service is running or in an error state
+        current_state = self.status.state if self.status else None
+        if current_state not in [ServiceState.ACTIVE, ServiceState.ERROR]:
+            logger.info(
+                f"Service is already stopped or stopping (state: {current_state})"
+            )
+            return
+
+        # Update status to show we're stopping
+        self._update_status(
+            ServiceState.STOPPING, "Deactivating deployment..."
+        )
+
         try:
             # Call Baseten API to deactivate the deployment
-            headers = {"Authorization": f"Api-Key {self._get_api_key()}"}
-            url = f"https://app.baseten.co/api/v1/models/{self.config.baseten_id}/deployments/{self.config.baseten_deployment_id}/deactivate"
-            response = requests.post(url, headers=headers, timeout=timeout)
+            api_key = self._get_api_key()
+            api_host = self._get_api_host()
+            headers = {"Authorization": f"Api-Key {api_key}"}
+            url = f"{api_host}/api/v1/models/{self.config.baseten_id}/deployments/{self.config.baseten_deployment_id}/deactivate"
+            response = requests.post(url, headers=headers, timeout=30)
             response.raise_for_status()
 
-            # Update service status
-            self._update_status(ServiceState.INACTIVE)
-        except requests.RequestException as e:
-            self._update_status(
-                ServiceState.ERROR, f"Failed to stop deployment: {str(e)}"
+            # Poll until the service is inactive or timeout
+            logger.info(
+                f"Waiting for deployment to become inactive (timeout: {timeout}s)..."
             )
-            raise RuntimeError(f"Failed to stop deployment: {str(e)}")
+            start_time = time.time()
+            poll_interval = 5  # seconds
+
+            while time.time() - start_time < timeout:
+                state, error = self.check_status()
+
+                if state == ServiceState.INACTIVE:
+                    logger.info("Deployment is now inactive")
+                    self._update_status(state, "")
+                    return
+                elif state == ServiceState.ERROR and not force:
+                    self._update_status(state, error)
+                    raise RuntimeError(f"Failed to stop deployment: {error}")
+                else:
+                    remaining = timeout - int(time.time() - start_time)
+                    logger.info(
+                        f"Deployment not inactive yet (state: {state}), waiting... ({remaining}s remaining)"
+                    )
+                    time.sleep(poll_interval)
+
+            # If we get here, we timed out
+            error_msg = f"Timed out waiting for deployment to become inactive after {timeout}s"
+            if force:
+                logger.warning(f"{error_msg} (force=True, continuing anyway)")
+                self._update_status(
+                    ServiceState.INACTIVE,
+                    "Forced inactive state after timeout",
+                )
+            else:
+                self._update_status(ServiceState.ERROR, error_msg)
+                raise RuntimeError(error_msg)
+
+        except requests.RequestException as e:
+            error_msg = f"Failed to stop deployment: {str(e)}"
+            if force:
+                logger.warning(f"{error_msg} (force=True, continuing anyway)")
+                self._update_status(
+                    ServiceState.INACTIVE, "Forced inactive state after error"
+                )
+            else:
+                self._update_status(ServiceState.ERROR, error_msg)
+                raise RuntimeError(error_msg)
 
     def delete(self, timeout: int = 300, force: bool = False) -> None:
         """Delete the service.
@@ -368,25 +549,83 @@ class BasetenDeploymentService(BaseService):
         Args:
             timeout: The timeout in seconds.
             force: Whether to force delete the service.
+
+        Raises:
+            RuntimeError: If the service fails to delete and force=False.
         """
         if not self.config.baseten_id or not self.config.baseten_deployment_id:
+            logger.info(
+                "No Baseten model/deployment ID available, nothing to delete"
+            )
+            self._update_status(ServiceState.TERMINATED)
             return
 
+        # Update status to show we're deleting
+        self._update_status(ServiceState.DELETING, "Deleting deployment...")
+
         try:
+            # First try to deactivate the deployment to avoid deletion errors
+            current_state, _ = self.check_status()
+            if current_state == ServiceState.ACTIVE:
+                logger.info("Deactivating deployment before deletion...")
+                try:
+                    self.stop(timeout=timeout // 2, force=True)
+                except Exception as e:
+                    if not force:
+                        raise RuntimeError(
+                            f"Failed to deactivate deployment before deletion: {str(e)}"
+                        )
+                    logger.warning(
+                        f"Failed to deactivate deployment before deletion: {str(e)}"
+                    )
+
             # Call Baseten API to delete the deployment
-            headers = {"Authorization": f"Api-Key {self._get_api_key()}"}
-            url = f"https://app.baseten.co/api/v1/models/{self.config.baseten_id}/deployments/{self.config.baseten_deployment_id}"
-            response = requests.delete(url, headers=headers, timeout=timeout)
+            api_key = self._get_api_key()
+            api_host = self._get_api_host()
+            headers = {"Authorization": f"Api-Key {api_key}"}
+            url = f"{api_host}/api/v1/models/{self.config.baseten_id}/deployments/{self.config.baseten_deployment_id}"
+            response = requests.delete(url, headers=headers, timeout=30)
             response.raise_for_status()
 
             # Update service status
             self._update_status(ServiceState.TERMINATED)
+
+            # Remove from ZenML services registry
+            try:
+                from zenml.client import Client
+
+                client = Client()
+                client.delete_service(self.id)
+                logger.info(f"Removed service {self.id} from ZenML registry")
+            except Exception as e:
+                logger.warning(
+                    f"Failed to remove service from ZenML registry: {str(e)}"
+                )
+
         except requests.RequestException as e:
-            self._update_status(
-                ServiceState.ERROR, f"Failed to delete deployment: {str(e)}"
-            )
-            if not force:
-                raise RuntimeError(f"Failed to delete deployment: {str(e)}")
+            error_msg = f"Failed to delete deployment: {str(e)}"
+            if force:
+                logger.warning(f"{error_msg} (force=True, continuing anyway)")
+                self._update_status(
+                    ServiceState.TERMINATED, "Forced termination after error"
+                )
+
+                # Remove from ZenML services registry even if Baseten deletion failed
+                try:
+                    from zenml.client import Client
+
+                    client = Client()
+                    client.delete_service(self.id)
+                    logger.info(
+                        f"Removed service {self.id} from ZenML registry"
+                    )
+                except Exception as registry_error:
+                    logger.warning(
+                        f"Failed to remove service from ZenML registry: {str(registry_error)}"
+                    )
+            else:
+                self._update_status(ServiceState.ERROR, error_msg)
+                raise RuntimeError(error_msg)
 
     def predict(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Make a prediction using the service.
@@ -400,18 +639,67 @@ class BasetenDeploymentService(BaseService):
         Raises:
             RuntimeError: If the service is not running or prediction fails.
         """
+        # Check if service is active and refresh status if needed
+        if not self.status or self.status.state != ServiceState.ACTIVE:
+            state, error = self.check_status()
+            if state != ServiceState.ACTIVE:
+                # If not active, try to start the service
+                logger.info(
+                    f"Service not active (state: {state}), attempting to start..."
+                )
+                self.start()
+
+        # Double-check that service is running
         if not self.is_running:
-            raise RuntimeError("Service is not running")
+            raise RuntimeError(
+                f"Service is not running (state: {self.status.state if self.status else 'unknown'})"
+            )
 
         prediction_url = self.prediction_url
         if not prediction_url:
             raise RuntimeError("No prediction URL available")
 
         try:
-            response = requests.post(prediction_url, json=data, timeout=30)
-            response.raise_for_status()
-            return response.json()
-        except requests.RequestException as e:
+            # Make prediction request with retry logic
+            max_retries = 3
+            retry_delay = 1  # starting delay in seconds
+            last_exception = None
+
+            for retry in range(max_retries):
+                try:
+                    response = requests.post(
+                        prediction_url, json=data, timeout=60
+                    )
+                    response.raise_for_status()
+                    return response.json()
+                except requests.RequestException as e:
+                    last_exception = e
+                    if retry < max_retries - 1:
+                        # Exponential backoff with jitter
+                        sleep_time = retry_delay * (2**retry) + (
+                            0.1 * random.random()
+                        )
+                        logger.warning(
+                            f"Prediction request failed, retrying in {sleep_time:.1f}s: {e}"
+                        )
+                        time.sleep(sleep_time)
+                    else:
+                        # All retries failed
+                        raise RuntimeError(
+                            f"Prediction failed after {max_retries} retries: {str(last_exception)}"
+                        )
+
+        except Exception as e:
+            # Check if this might be due to service state
+            try:
+                state, _ = self.check_status()
+                if state != ServiceState.ACTIVE:
+                    raise RuntimeError(
+                        f"Prediction failed: service is not active (state: {state})"
+                    )
+            except Exception:
+                pass  # Fall back to the original error
+
             raise RuntimeError(f"Prediction failed: {str(e)}")
 
     @classmethod
