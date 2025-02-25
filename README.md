@@ -1,7 +1,7 @@
 <div align="center">
   <img referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=0fcbab94-8fbe-4a38-93e8-c2348450a42e" />
-  <h1 align="center">Beyond The Demo: Production-Grade LLMOps Systems</h1>
-  <h3 align="center">ZenML brings battle-tested MLOps practices to your LLM applications, handling evaluation, monitoring, and deployment at scale</h3>
+  <h1 align="center">Beyond The Demo: Production-Grade AI Systems</h1>
+  <h3 align="center">ZenML brings battle-tested MLOps practices to your AI applications, handling evaluation, monitoring, and deployment at scale</h3>
 </div>
 
 <!-- PROJECT SHIELDS -->
@@ -100,11 +100,11 @@ Take a tour with the guided quickstart by running:
 zenml go
 ```
 
-## 🪄 From Prototype to Production: LLMOps Made Simple
+## 🪄 From Prototype to Production: AI Made Simple
 
-### Create LLM pipelines with minimal code changes
+### Create AI pipelines with minimal code changes
 
-ZenML is an open-source LLMOps framework for engineers scaling AI beyond prototypes. Automate evaluation loops, track performance, and deploy updates across 100s of pipelines—all while your RAG apps run like clockwork.
+ZenML is an open-source framework that handles MLOps and LLMOps for engineers scaling AI beyond prototypes. Automate evaluation loops, track performance, and deploy updates across 100s of pipelines—all while your RAG apps run like clockwork.
 
 ```python
 from zenml import pipeline, step
@@ -203,7 +203,6 @@ def deploy_rag(index_id: str) -> str:
 ![Exploring ZenML Models](/docs/book/.gitbook/assets/readme_mcp.gif)
 
 ## 🚀 Key LLMOps Capabilities
-
 
 ### Continual RAG Improvement
 **Build production-ready retrieval systems**  
