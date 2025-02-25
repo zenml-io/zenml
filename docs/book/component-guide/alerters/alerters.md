@@ -1,24 +1,24 @@
 ---
-description: Sending automated alerts to chat services.
+description: Sending automated alerts to chat services and email.
 icon: message-exclamation
 ---
 
 # Alerters
 
-**Alerters** allow you to send messages to chat services (like Slack, Discord, Mattermost, etc.) from within your
+**Alerters** allow you to send messages to chat services (like Slack, Discord, Mattermost, etc.) or via email from within your
 pipelines. This is useful to immediately get notified when failures happen, for general monitoring/reporting, and also
 for building human-in-the-loop ML.
 
 ## Alerter Flavors
 
-Currently, the [SlackAlerter](slack.md) and [DiscordAlerter](discord.md) are the available alerter integrations. However, it is straightforward to
-extend ZenML and [build an alerter for other chat services](custom.md).
+Currently, the [SlackAlerter](slack.md), [DiscordAlerter](discord.md), and [SMTP Email Alerter](smtp_email.md) are the available alerter integrations. However, it is straightforward to extend ZenML and [build an alerter for other services](custom.md).
 
-| Alerter                            | Flavor    | Integration | Notes                                                              |
-|------------------------------------|-----------|-------------|--------------------------------------------------------------------|
-| [Slack](slack.md)                  | `slack`   | `slack`     | Interacts with a Slack channel                                     |
-| [Discord](discord.md)              | `discord` | `discord`   | Interacts with a Discord channel                                   |
-| [Custom Implementation](custom.md) | _custom_  |             | Extend the alerter abstraction and provide your own implementation |
+| Alerter                            | Flavor        | Integration   | Notes                                                              |
+|------------------------------------|---------------|---------------|--------------------------------------------------------------------|
+| [Slack](slack.md)                  | `slack`       | `slack`       | Interacts with a Slack channel                                     |
+| [Discord](discord.md)              | `discord`     | `discord`     | Interacts with a Discord channel                                   |
+| [SMTP Email](smtp_email.md)        | `smtp_email`  | `smtp_email`  | Sends email notifications via SMTP                                 |
+| [Custom Implementation](custom.md) | _custom_      |               | Extend the alerter abstraction and provide your own implementation |
 
 {% hint style="info" %}
 If you would like to see the available flavors of alerters in your terminal, you can use the following command:
