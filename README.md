@@ -137,7 +137,7 @@ def llm_pipeline() -> str:
     index = index_generator(embeddings)
     return index
 ```
-![Running a ZenML pipeline](/docs/book/.gitbook/assets/readme_basic_pipeline.gif)
+![Running a ZenML pipeline](/docs/book/.gitbook/assets/readme_simple_pipeline.gif)
 
 ### Easily provision an MLOps stack or reuse your existing infrastructure
 
