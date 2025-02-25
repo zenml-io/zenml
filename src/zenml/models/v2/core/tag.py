@@ -14,7 +14,7 @@
 """Models representing tags."""
 
 import random
-from typing import Optional
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
@@ -28,6 +28,7 @@ from zenml.models.v2.base.base import (
     BaseResponseResources,
 )
 from zenml.models.v2.base.filter import BaseFilter
+from zenml.models.v2.misc.tag import TagResource
 
 # ------------------ Request Model ------------------
 
@@ -46,6 +47,10 @@ class TagRequest(BaseRequest):
     color: Optional[ColorVariants] = Field(
         description="The color variant assigned to the tag.",
         default_factory=lambda: random.choice(list(ColorVariants)),
+    )
+    resources: Optional[List[TagResource]] = Field(
+        description="The resources to tag.",
+        default=None,
     )
 
 

@@ -171,6 +171,7 @@ from zenml.models import (
     StepRunResponse,
     TagFilter,
     TagRequest,
+    TagResource,
     TagResponse,
     TagUpdate,
     TriggerExecutionFilter,
@@ -7527,6 +7528,7 @@ class Client(metaclass=ClientMetaClass):
         name: str,
         singleton: Optional[bool] = False,
         color: Optional[Union[str, ColorVariants]] = None,
+        resources: Optional[List[TagResource]] = None,
     ) -> TagResponse:
         """Creates a new tag.
 
@@ -7552,6 +7554,9 @@ class Client(metaclass=ClientMetaClass):
                 request_model.color = ColorVariants(color)
             else:
                 request_model.color = color
+
+        if resources is not None:
+            request_model.resources = resources
 
         return self.zen_store.create_tag(tag=request_model)
 
