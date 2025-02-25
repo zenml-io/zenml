@@ -11103,7 +11103,7 @@ class SqlZenStore(BaseZenStore):
     def _attach_tag_to_schemas(
         self,
         tag: Union[str, TagSchema, "tag_utils.Tag"],
-        resources: List[AnySchema],
+        resources: List[BaseSchema],
     ) -> None:
         """Creates a tag<>resource link if not present.
 
@@ -11111,45 +11111,48 @@ class SqlZenStore(BaseZenStore):
             tag: The tag to be attached.
             resources: The list of resources to tag.
         """
-        # 1. Get the tag schema
+        # 1. Get the tag model
         try:
             if isinstance(tag, tag_utils.Tag):
-                tag_schema = self.get_tag(tag.name)
+                tag_model = self.get_tag(tag.name)
                 if (
                     tag.singleton is not None
-                    and tag.singleton != tag_schema.singleton
+                    and tag.singleton != tag_model.singleton
                 ):
                     raise RuntimeError(
-                        f"Tag `{tag_schema.name}` has been defined as a "
-                        f"{'singleton' if tag_schema.singleton else 'non-singleton'} "
+                        f"Tag `{tag_model.name}` has been defined as a "
+                        f"{'singleton' if tag_model.singleton else 'non-singleton'} "
                         "tag. Please update it before attaching it to resources."
                     )
             elif isinstance(tag, TagSchema):
-                tag_schema = tag
+                tag_model = self.get_tag(tag.name)
             else:
-                tag_schema = self.get_tag(tag)
+                tag_model = self.get_tag(tag)
         except KeyError:
             if isinstance(tag, tag_utils.Tag):
                 tag_request = tag.to_request()
             else:
                 tag_request = TagRequest(name=tag)
-            tag_schema = self.create_tag(tag_request)
+            tag_model = self.create_tag(tag_request)
 
         # 2. If the tag is a singleton, apply the check and attach/detach accordingly
-        if tag_schema.singleton:
+        if tag_model.singleton:
             for resource in resources:
-                scope_ids = defaultdict(list)
-                detach_resources = []
+                scope_ids: Dict[
+                    TaggableResourceTypes, List[Union[UUID, int]]
+                ] = defaultdict(list)
+                detach_resources: List[Union[TagResource, BaseSchema]] = []
 
                 if isinstance(resource, PipelineRunSchema):
-                    scope_ids[TaggableResourceTypes.PIPELINE_RUN].append(
-                        resource.pipeline_id
-                    )
+                    if resource.pipeline_id:
+                        scope_ids[TaggableResourceTypes.PIPELINE_RUN].append(
+                            resource.pipeline_id
+                        )
                     other_runs_with_same_tag = self.list_runs(
                         PipelineRunFilter(
                             id=f"notequals:{resource.id}",
-                            pipeline_id=resource.pipeline_id,  # type: ignore[attr-defined]
-                            tags=[tag_schema.name],
+                            pipeline_id=resource.pipeline_id,
+                            tags=[tag_model.name],
                         )
                     )
                     if other_runs_with_same_tag.items:
@@ -11160,14 +11163,15 @@ class SqlZenStore(BaseZenStore):
                             )
                         )
                 elif isinstance(resource, ArtifactVersionSchema):
-                    scope_ids[TaggableResourceTypes.ARTIFACT_VERSION].append(
-                        resource.artifact_id
-                    )
+                    if resource.artifact_id:
+                        scope_ids[
+                            TaggableResourceTypes.ARTIFACT_VERSION
+                        ].append(resource.artifact_id)
                     other_versions_with_same_tag = self.list_artifact_versions(
                         ArtifactVersionFilter(
                             id=f"notequals:{resource.id}",
-                            artifact_id=resource.artifact_id,  # type: ignore[attr-defined]
-                            tags=[tag_schema.name],
+                            artifact_id=resource.artifact_id,
+                            tags=[tag_model.name],
                         )
                     )
                     if other_versions_with_same_tag.items:
@@ -11182,7 +11186,7 @@ class SqlZenStore(BaseZenStore):
                     older_templates = self.list_run_templates(
                         RunTemplateFilter(
                             id=f"notequals:{resource.id}",
-                            tags=[tag_schema.name],
+                            tags=[tag_model.name],
                         )
                     )
                     if older_templates.items:
@@ -11211,7 +11215,7 @@ class SqlZenStore(BaseZenStore):
 
                 if detach_resources:
                     self._detach_tag_from_schemas(
-                        tag=tag_schema,
+                        tag=tag_model.name,
                         resources=detach_resources,
                     )
 
@@ -11220,7 +11224,7 @@ class SqlZenStore(BaseZenStore):
             for resource in resources:
                 self.create_tag_resource(
                     TagResourceRequest(
-                        tag_id=tag_schema.id,
+                        tag_id=tag_model.id,
                         resource_id=resource.id,
                         resource_type=tag_utils.get_resource_type_from_schema(
                             type(resource)
@@ -11233,7 +11237,7 @@ class SqlZenStore(BaseZenStore):
     def _detach_tag_from_schemas(
         self,
         tag: Union[str, UUID, TagSchema],
-        resources: List[Union[AnySchema, TagResource]],
+        resources: List[Union[TagResource, BaseSchema]],
     ) -> None:
         """Deletes tag<>resource link if present.
 
@@ -11246,21 +11250,21 @@ class SqlZenStore(BaseZenStore):
         """
         # 1. Fetch the tag schema
         if isinstance(tag, str) or isinstance(tag, UUID):
-            tag_schema = self.get_tag(tag)
+            tag_model = self.get_tag(tag)
         else:
-            tag_schema = tag
+            tag_model = self.get_tag(tag.name)
 
         # 2. Delete the tag resource links
         for resource in resources:
             if isinstance(resource, TagResource):
                 self.delete_tag_resource(
-                    tag_id=tag_schema.id,
+                    tag_id=tag_model.id,
                     resource_id=resource.id,
                     resource_type=resource.type,
                 )
             elif isinstance(resource, BaseSchema):
                 self.delete_tag_resource(
-                    tag_id=tag_schema.id,
+                    tag_id=tag_model.id,
                     resource_id=resource.id,
                     resource_type=tag_utils.get_resource_type_from_schema(
                         type(resource)
@@ -11300,17 +11304,22 @@ class SqlZenStore(BaseZenStore):
             session.commit()
 
             if tag.resources:
-                resource_schemas = []
+                resource_schemas: List[BaseSchema] = []
 
                 for resource in tag.resources:
                     schema = tag_utils.get_schema_from_resource_type(
                         resource_type=resource.type
                     )
-                    resource_schemas.append(
-                        session.exec(
-                            select(schema).where(schema.id == resource.id)
-                        ).first()
-                    )
+
+                    resource_schema = session.exec(
+                        select(schema).where(schema.id == resource.id)
+                    ).first()
+                    if resource_schema is None:
+                        raise KeyError(
+                            f"Unable to create tag {tag.name}: "
+                            f"No resource with ID `{resource.id}` found."
+                        )
+                    resource_schemas.append(resource_schema)
 
                 self._attach_tag_to_schemas(
                     tag=tag_schema,

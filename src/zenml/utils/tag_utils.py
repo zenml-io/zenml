@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Utility functions for tags."""
 
-from typing import TYPE_CHECKING, Optional, Type
+from typing import TYPE_CHECKING, Any, Optional, Type, TypeVar
 
 from pydantic import BaseModel
 
@@ -21,7 +21,9 @@ from zenml.enums import ColorVariants, TaggableResourceTypes
 
 if TYPE_CHECKING:
     from zenml.models import TagRequest
-    from zenml.zen_stores.schemas import AnySchema
+    from zenml.zen_stores.schemas.base_schemas import BaseSchema
+
+    AnySchema = TypeVar("AnySchema", bound=BaseSchema)
 
 
 class Tag(BaseModel):
@@ -51,7 +53,7 @@ class Tag(BaseModel):
 
 def get_schema_from_resource_type(
     resource_type: TaggableResourceTypes,
-) -> Type["AnySchema"]:
+) -> Any:
     """Get the schema for a resource type.
 
     Args:
