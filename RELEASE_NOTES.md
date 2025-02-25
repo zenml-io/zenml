@@ -2,6 +2,38 @@
 
 # 0.75.0
 
+The `0.75.0` release focuses on enhancing documentation, fixing important 
+component functionality, and improving service connector capabilities. 
+Key highlights include improved model artifact handling, enhanced 
+component registration with custom flavors, and expanded authentication 
+options for service connectors.
+
+## Features
+
+- Custom authentication method support during auto-configuration of service connectors
+- Enhanced model artifact retrieval by creation date instead of version name
+- Additional SageMaker environment settings
+
+## Improvements
+
+- Expanded `fastapi` dependency range for better compatibility
+- Improved pipeline source root documentation and logging
+- Better sorting functionality when using custom fetching
+- Prevented inner fsspec logs from being flushed to the artifact store
+
+## Fixes
+
+- Fixed registration of components with custom flavors
+- Fixed sorting logic when using custom fetching criteria
+
+## Documentation
+
+- Added LLM messaging and video resources to documentation
+- Improved formatting for model deployers documentation
+- Fixed GCP service connector docs
+- Added SDK documentation links
+- Enhanced README with LLM messaging
+
 ## What's Changed
 * Adding `0.74.0` to the migration tests by @bcdurak in https://github.com/zenml-io/zenml/pull/3351
 * Fixing the release preparation workflow by @bcdurak in https://github.com/zenml-io/zenml/pull/3348
