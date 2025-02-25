@@ -83,13 +83,13 @@ parameters:
           - 12
         min_samples_leaf:
           range:
-            start: 1
+            start: 2
             end: 10
         n_estimators:
           range:
-            start: 50
-            end: 500
-            step: 25
+            start: 23
+            end: 700
+            step: 27
     decision_tree:
       model_package: sklearn.tree
       model_class: DecisionTreeClassifier
@@ -107,4 +107,4 @@ parameters:
         min_samples_leaf:
           range:
             start: 1
-            end: 10
+            end: 12

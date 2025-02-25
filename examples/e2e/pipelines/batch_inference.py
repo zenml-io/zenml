@@ -39,7 +39,7 @@ from zenml.logger import get_logger
 logger = get_logger(__name__)
 
 
-@pipeline(on_failure=notify_on_failure)
+@pipeline(on_failure=notify_on_failure, enable_cache=False)
 def e2e_use_case_batch_inference(
     batch_size: int = 1000,
     ground_truth_available: bool = False,

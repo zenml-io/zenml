@@ -87,7 +87,6 @@ def batch_inference_with_tracking(
     
     # Track if we have ground truth available
     has_target = ground_truth_available and "target" in dataset_inf.columns
-    breakpoint()
     # Process in batches
     for i in range(0, len(dataset_inf), batch_size):
         batch_start_time = time.time()
@@ -192,5 +191,4 @@ def batch_inference_with_tracking(
     logger.info(f"Processing speed: {len(dataset_inf) / total_time:.2f} records/second")
     if performance_metrics:
         logger.info(f"Performance metrics: Accuracy={performance_metrics['accuracy']:.4f}, F1={performance_metrics['f1_score']:.4f}")
-    breakpoint()
     return result_df, inference_metrics 

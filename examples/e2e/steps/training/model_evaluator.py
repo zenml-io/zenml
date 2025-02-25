@@ -19,7 +19,7 @@
 import pandas as pd
 from sklearn.base import ClassifierMixin
 
-from zenml import step, log_metadata
+from zenml import log_metadata, step
 from zenml.client import Client
 from zenml.logger import get_logger
 
@@ -75,20 +75,21 @@ def model_evaluator(
     Raises:
         RuntimeError: if any of accuracies is lower than respective threshold
     """
+    import json
+    import time
+    from datetime import datetime
+
+    import numpy as np
+    import psutil
     from sklearn.metrics import (
         accuracy_score,
+        classification_report,
+        confusion_matrix,
+        f1_score,
         precision_score,
         recall_score,
-        f1_score,
         roc_auc_score,
-        confusion_matrix,
-        classification_report,
     )
-    import numpy as np
-    import time
-    import psutil
-    import json
-    from datetime import datetime
 
     # Start timing
     start_time = time.time()
@@ -126,18 +127,18 @@ def model_evaluator(
     performance_metrics = {
         "train_accuracy": float(accuracy_score(y_train, y_train_pred)),
         "test_accuracy": float(accuracy_score(y_test, y_test_pred)),
-        "train_precision": float(precision_score(y_train, y_train_pred, average='weighted')),
-        "test_precision": float(precision_score(y_test, y_test_pred, average='weighted')),
-        "train_recall": float(recall_score(y_train, y_train_pred, average='weighted')),
-        "test_recall": float(recall_score(y_test, y_test_pred, average='weighted')),
-        "train_f1": float(f1_score(y_train, y_train_pred, average='weighted')),
-        "test_f1": float(f1_score(y_test, y_test_pred, average='weighted')),
+        "train_precision": float(precision_score(y_train, y_train_pred, average="weighted")),
+        "test_precision": float(precision_score(y_test, y_test_pred, average="weighted")),
+        "train_recall": float(recall_score(y_train, y_train_pred, average="weighted")),
+        "test_recall": float(recall_score(y_test, y_test_pred, average="weighted")),
+        "train_f1": float(f1_score(y_train, y_train_pred, average="weighted")),
+        "test_f1": float(f1_score(y_test, y_test_pred, average="weighted")),
     }
 
     if has_predict_proba:
         performance_metrics.update({
-            "train_roc_auc": float(roc_auc_score(y_train, y_train_proba[:, 1] if y_train_proba.shape[1] == 2 else y_train_proba, multi_class='ovr')),
-            "test_roc_auc": float(roc_auc_score(y_test, y_test_proba[:, 1] if y_test_proba.shape[1] == 2 else y_test_proba, multi_class='ovr')),
+            "train_roc_auc": float(roc_auc_score(y_train, y_train_proba[:, 1] if y_train_proba.shape[1] == 2 else y_train_proba, multi_class="ovr")),
+            "test_roc_auc": float(roc_auc_score(y_test, y_test_proba[:, 1] if y_test_proba.shape[1] == 2 else y_test_proba, multi_class="ovr")),
         })
 
     # Generate confusion matrices - convert to list of lists with Python types
@@ -171,17 +172,6 @@ def model_evaluator(
         "timestamp": datetime.now().isoformat(),
     }
 
-    # Get model parameters if available
-    try:
-        model_params = model.get_params()
-        # Convert any NumPy types in model parameters to Python types
-        for key, value in model_params.items():
-            if hasattr(value, 'item') and callable(getattr(value, "item")):
-                model_params[key] = value.item()
-    except:
-        model_params = {"error": "Could not retrieve model parameters"}
-        logger.warning("Could not log model parameters")
-
     # Log performance metrics at the step level
     log_metadata({"performance": performance_metrics})
     
@@ -207,11 +197,6 @@ def model_evaluator(
         "time": time_metrics
     })
     
-    # Log model parameters
-    log_metadata({
-        "model_parameters": model_params
-    })
-    
     # Log evaluation metrics to the model as well
     log_metadata(
         metadata={
@@ -227,6 +212,25 @@ def model_evaluator(
         },
         infer_model=True,
     )
+    
+    log_metadata(metadata={
+        "train_dataset_size": int(len(dataset_trn)),
+        "test_dataset_size": int(len(dataset_tst)),
+        "train_features_count": int(len(dataset_trn.drop(columns=[target]).columns)),
+        "train_missing_values_pct": float(dataset_trn.isnull().mean().mean() * 100),
+        "test_missing_values_pct": float(dataset_tst.isnull().mean().mean() * 100),
+        "train_accuracy": float(accuracy_score(y_train, y_train_pred)),
+        "test_accuracy": float(accuracy_score(y_test, y_test_pred)),
+        "train_precision": float(precision_score(y_train, y_train_pred, average="weighted")),
+        "test_precision": float(precision_score(y_test, y_test_pred, average="weighted")),
+        "train_recall": float(recall_score(y_train, y_train_pred, average="weighted")),
+        "test_recall": float(recall_score(y_test, y_test_pred, average="weighted")),
+        "train_f1": float(f1_score(y_train, y_train_pred, average="weighted")),
+        "test_f1": float(f1_score(y_test, y_test_pred, average="weighted")),
+        "evaluation_time_seconds": float(end_time - start_time),
+        "evaluation_memory_usage_mb": float(memory_info.rss / 1024 / 1024),
+        "evaluation_cpu_percent": float(process.cpu_percent()),
+    })
 
     # Check accuracy thresholds
     messages = []

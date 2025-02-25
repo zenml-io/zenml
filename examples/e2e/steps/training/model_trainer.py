@@ -101,6 +101,7 @@ def model_trainer(
     
     # Log dataset metrics to step metadata
     log_metadata({"dataset_metrics": dataset_metrics})
+    
 
     # Track initial resource usage
     process = psutil.Process()
@@ -171,6 +172,16 @@ def model_trainer(
         infer_model=True,
     )
     
+    log_metadata(metadata={
+        "train_dataset_size": int(len(dataset_trn)),
+        "train_feature_count": int(len(dataset_trn.drop(columns=[target]).columns)),
+        "training_time_seconds": float(end_time - start_time),
+        "training_memory_usage_mb": float(final_memory),
+        "training_memory_increase_mb": float(final_memory - initial_memory),
+        "training_cpu_percent": float(process.cpu_percent()),
+        "training_timestamp": datetime.now().isoformat(),
+    })
+        
     # Register the model (still using MLflow for the registry as in the original example)
     mlflow_register_model_step.entrypoint(model, name=name)
 

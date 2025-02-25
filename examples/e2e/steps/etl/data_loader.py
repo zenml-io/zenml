@@ -59,7 +59,7 @@ def data_loader(
     """
     # Load dataset
     dataset = load_breast_cancer(as_frame=True)
-    inference_size = int(len(dataset.target) * 0.1)
+    inference_size = int(len(dataset.target) * 0.2)
     target = "target"
     dataset: pd.DataFrame = dataset.frame
     
