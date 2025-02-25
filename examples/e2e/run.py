@@ -117,7 +117,7 @@ Examples:
     "finds that the model is not accurate enough.",
 )
 @click.option(
-    "--only-inference",
+    "--inference",
     is_flag=True,
     default=False,
     help="Whether to run only inference pipeline.",
