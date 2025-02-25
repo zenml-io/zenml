@@ -15,5 +15,8 @@
 # limitations under the License.
 #
 
+from steps.inference.inference_predict import inference_predict
+from steps.inference.batch_inference_with_tracking import batch_inference_with_tracking
+from steps.inference.save_inference import save_inference_results
 
-from .inference_predict import inference_predict
+__all__ = ["inference_predict", "batch_inference_with_tracking", "save_inference_results"]

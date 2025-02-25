@@ -98,9 +98,18 @@ def promote_with_metric_compare(
                 latest_version_model_registry_number
             )
         else:
-            current_version_model_registry_number = (
-                current_version.run_metadata["model_registry_version"]
-            )
+            try:
+                current_version_model_registry_number = (
+                    current_version.run_metadata["model_registry_version"]
+                )
+            except KeyError:
+                # If model_registry_version is not found in metadata, fall back to using the latest version
+                logger.warning(
+                    "model_registry_version not found in current model's metadata. "
+                    "Using latest version's registry number instead."
+                )
+                current_version_model_registry_number = latest_version_model_registry_number
+                
         promote_in_model_registry(
             latest_version=latest_version_model_registry_number,
             current_version=current_version_model_registry_number,
@@ -109,9 +118,17 @@ def promote_with_metric_compare(
         )
         promoted_version = latest_version_model_registry_number
     else:
-        promoted_version = current_version.run_metadata[
-            "model_registry_version"
-        ]
+        try:
+            promoted_version = current_version.run_metadata["model_registry_version"]
+        except KeyError:
+            # If model_registry_version is not found in metadata when not promoting,
+            # we need to get the registry version some other way
+            logger.warning(
+                "model_registry_version not found in current model's metadata. "
+                "This may happen with models created before this metadata field was added."
+            )
+            # Use the current model's number as a fallback (this assumes version numbering is aligned)
+            promoted_version = str(current_version_number)
 
     logger.info(
         f"Current model version in `{target_env}` is `{promoted_version}` registered in Model Registry"

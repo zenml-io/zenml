@@ -36,9 +36,14 @@ steps:
 # configuration of the Model Control Plane
 model:
   name: e2e_use_case
-  version: staging
+  version: production
 
 # pipeline level extra configurations
 extra:
   notify_on_failure: True
 
+# pipeline level parameters
+parameters:
+  batch_size: 1000
+  ground_truth_available: False
+  output_path: None

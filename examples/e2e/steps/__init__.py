@@ -25,7 +25,7 @@ from .etl import (
     train_data_splitter,
 )
 from .hp_tuning import hp_tuning_select_best_model, hp_tuning_single_search
-from .inference import inference_predict
+from .inference import inference_predict, batch_inference_with_tracking, save_inference_results
 from .promotion import (
     compute_performance_metrics_on_current_data,
     promote_with_metric_compare,

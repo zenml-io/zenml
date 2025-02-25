@@ -15,12 +15,19 @@
 # limitations under the License.
 #
 
+import platform
+import time
+from datetime import datetime
+
 import mlflow
+import numpy as np
 import pandas as pd
+import psutil
 from sklearn.base import ClassifierMixin
+from sklearn.model_selection import cross_val_score
 from typing_extensions import Annotated
 
-from zenml import ArtifactConfig, get_step_context, step
+from zenml import ArtifactConfig, get_step_context, log_metadata, step
 from zenml.client import Client
 from zenml.integrations.mlflow.experiment_trackers import (
     MLFlowExperimentTracker,
@@ -82,10 +89,24 @@ def model_trainer(
     Returns:
         The trained model artifact.
     """
+    # Start timing
+    start_time = time.time()
 
-    ### ADD YOUR OWN CODE HERE - THIS IS JUST AN EXAMPLE ###
-    # Initialize the model with the hyperparameters indicated in the step
-    # parameters and train it on the training set.
+    # Collect dataset characteristics
+    dataset_metrics = {
+        "dataset_size": int(len(dataset_trn)),
+        "feature_count": int(len(dataset_trn.drop(columns=[target]).columns)),
+        "class_count": int(len(dataset_trn[target].unique())),
+    }
+    
+    # Log dataset metrics to step metadata
+    log_metadata({"dataset_metrics": dataset_metrics})
+
+    # Track initial resource usage
+    process = psutil.Process()
+    initial_memory = process.memory_info().rss / 1024 / 1024  # MB
+
+    # Train the model
     logger.info(f"Training model {model}...")
     mlflow.sklearn.autolog()
     model.fit(
@@ -93,20 +114,80 @@ def model_trainer(
         dataset_trn[target],
     )
 
-    # register mlflow model
-    mlflow_register_model_step.entrypoint(
-        model,
-        name=name,
+    # Calculate training time and resource usage
+    end_time = time.time()
+    final_memory = process.memory_info().rss / 1024 / 1024  # MB
+
+    resource_metrics = {
+        "training_time_seconds": float(end_time - start_time),
+        "memory_usage_mb": float(final_memory),
+        "memory_increase_mb": float(final_memory - initial_memory),
+        "cpu_percent": float(process.cpu_percent()),
+        "timestamp": datetime.now().isoformat(),
+    }
+    
+    # Log resource metrics
+    log_metadata({"resource_metrics": resource_metrics})
+
+    # Get model parameters
+    try:
+        model_params = model.get_params()
+        # Convert any NumPy types in model parameters to Python types
+        for key, value in model_params.items():
+            if hasattr(value, "item") and callable(getattr(value, "item")):
+                model_params[key] = value.item()
+    except:
+        model_params = {"error": "Could not retrieve model parameters"}
+        logger.warning("Could not log model parameters")
+    
+    # Build comprehensive model metadata
+    model_metadata = {
+        "model_name": name,
+        "model_type": type(model).__name__,
+        "model_framework": type(model).__module__.split('.')[0],
+        "model_parameters": model_params,
+        "training_timestamp": datetime.now().isoformat(),
+        "python_version": platform.python_version(),
+        "system_platform": platform.platform(),
+    }
+    
+    # Log model metadata to step
+    log_metadata({"model_metadata": model_metadata})
+    
+    # Log individual metadata groups to the model artifact itself
+    # This avoids the type error with nested dictionaries
+    log_metadata(
+        metadata={"dataset_metrics": dataset_metrics},
+        infer_model=True,
     )
-    # keep track of mlflow version for future use
+    
+    log_metadata(
+        metadata={"resource_metrics": resource_metrics},
+        infer_model=True,
+    )
+    
+    log_metadata(
+        metadata={"model_info": model_metadata},
+        infer_model=True,
+    )
+    
+    # Register the model (still using MLflow for the registry as in the original example)
+    mlflow_register_model_step.entrypoint(model, name=name)
+
+    # Keep track of mlflow version for future use
     model_registry = Client().active_stack.model_registry
     if model_registry:
-        version = model_registry.get_latest_model_version(
-            name=name, stage=None
-        )
+        version = model_registry.get_latest_model_version(name=name, stage=None)
         if version:
-            model_ = get_step_context().model
-            model_.log_metadata({"model_registry_version": version.version})
-    ### YOUR CODE ENDS HERE ###
+            # Add registry version to model metadata
+            log_metadata(
+                metadata={"model_registry_version": str(version.version)},
+                infer_model=True,
+            )
+
+    # Log some summary information for easy access
+    logger.info(f"Model '{name}' training completed")
+    logger.info(f"Dataset size: {dataset_metrics['dataset_size']} samples")
+    logger.info(f"Training time: {resource_metrics['training_time_seconds']:.2f} seconds")
 
     return model
