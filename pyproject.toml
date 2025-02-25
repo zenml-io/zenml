@@ -159,6 +159,7 @@ mkdocs = { version = ">=1.4.0,<2.0.0", optional = true }
 mkdocs-material = { version = ">=9.0.0,<10.0.0", optional = true }
 mkdocs-awesome-pages-plugin = { version = "^2.6.1", optional = true }
 mkdocstrings = { version = ">=0.20.0,<1.0.0", optional = true }
+mkdocstrings-python = { version = ">=1.1.0,<2.0.0", optional = true }
 mkdocs-autorefs = { version = ">=0.4.1,<1.0.0", optional = true }
 mike = { version = ">=1.1.2,<2.0.0", optional = true }
 
@@ -256,6 +257,7 @@ dev = [
     "mkdocs-material",
     "mkdocs-awesome-pages-plugin",
     "mkdocstrings",
+    "mkdocstrings-python",
     "mkdocs-autorefs",
     "mike",
     "maison",
