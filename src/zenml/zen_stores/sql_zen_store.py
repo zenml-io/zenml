@@ -11238,7 +11238,7 @@ class SqlZenStore(BaseZenStore):
         """Deletes tag<>resource link if present.
 
         Args:
-            tag_names: The list of names of the tags.
+            tag: The tag to be detached.
             resources: The list of resources to detach the tag from.
 
         Raises:
