@@ -131,7 +131,7 @@ def index_generator(
     
 
 @pipeline
-def llm_pipeline() -> str:
+def rag_pipeline() -> str:
     documents = load_rag_documents()
     embeddings = generate_embeddings(documents)
     index = index_generator(embeddings)
