@@ -7540,6 +7540,7 @@ class Client(metaclass=ClientMetaClass):
                     - an artifact version within the scope of an artifact
                     - within the scope of run templates
             color: the color of the tag
+            resources: the resources to tag
 
         Returns:
             The newly created tag.

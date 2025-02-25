@@ -11239,8 +11239,7 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             tag_names: The list of names of the tags.
-            resource_id: The id of the resource.
-            resource_type: The type of the resource to create link with.
+            resources: The list of resources to detach the tag from.
 
         Raises:
             ValueError: If the resource type is not supported.
