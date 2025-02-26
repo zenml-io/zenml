@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for tags."""
 
-from typing import Optional, Union
+from typing import Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -119,7 +119,6 @@ def list_tags(
 @handle_exceptions
 def get_tag(
     tag_name_or_id: Union[str, UUID],
-    workspace_id: Optional[UUID] = None,
     hydrate: bool = True,
     _: AuthContext = Security(authorize),
 ) -> TagResponse:
@@ -127,8 +126,6 @@ def get_tag(
 
     Args:
         tag_name_or_id: The name or ID of the tag to get.
-        workspace_id: The ID of the workspace to get the tag from. Required
-            if `tag_name_or_id` is a tag name.
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
 
@@ -139,7 +136,6 @@ def get_tag(
         id=tag_name_or_id,
         get_method=zen_store().get_tag,
         hydrate=hydrate,
-        workspace_id=workspace_id,
     )
 
 
@@ -152,7 +148,6 @@ def get_tag(
 def update_tag(
     tag_id: UUID,
     tag_update_model: TagUpdate,
-    workspace_id: Optional[UUID] = None,
     _: AuthContext = Security(authorize),
 ) -> TagResponse:
     """Updates a tag.
@@ -160,29 +155,15 @@ def update_tag(
     Args:
         tag_id: Id or name of the tag.
         tag_update_model: Tag to use for the update.
-        workspace_id: The ID of the workspace to update the tag in. Required
-            if `tag_id` is a tag name.
 
     Returns:
         The updated tag.
     """
-
-    def get_workspace_tag(
-        tag_name_or_id: Union[str, UUID],
-        hydrate: bool = True,
-    ) -> TagResponse:
-        return zen_store().get_tag(
-            tag_name_or_id=tag_name_or_id,
-            workspace_id=workspace_id,
-            hydrate=hydrate,
-        )
-
     return verify_permissions_and_update_entity(
         id=tag_id,
         update_model=tag_update_model,
-        get_method=get_workspace_tag,
+        get_method=zen_store().get_tag,
         update_method=zen_store().update_tag,
-        workspace_id=workspace_id,
     )
 
 
@@ -193,30 +174,15 @@ def update_tag(
 @handle_exceptions
 def delete_tag(
     tag_name_or_id: Union[str, UUID],
-    workspace_id: Optional[UUID] = None,
     _: AuthContext = Security(authorize),
 ) -> None:
     """Delete a tag by name or ID.
 
     Args:
         tag_name_or_id: The name or ID of the tag to delete.
-        workspace_id: The ID of the workspace to delete the tag from. Required
-            if `tag_name_or_id` is a tag name.
     """
-
-    def get_workspace_tag(
-        tag_name_or_id: Union[str, UUID],
-        hydrate: bool = True,
-    ) -> TagResponse:
-        return zen_store().get_tag(
-            tag_name_or_id=tag_name_or_id,
-            workspace_id=workspace_id,
-            hydrate=hydrate,
-        )
-
     verify_permissions_and_delete_entity(
         id=tag_name_or_id,
-        get_method=get_workspace_tag,
+        get_method=zen_store().get_tag,
         delete_method=zen_store().delete_tag,
-        workspace_id=workspace_id,
     )

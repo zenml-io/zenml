@@ -74,9 +74,7 @@ def upgrade() -> None:
         )
 
     with op.batch_alter_table("tag", schema=None) as batch_op:
-        batch_op.create_unique_constraint(
-            "unique_tag_name_in_workspace", ["name", "workspace_id"]
-        )
+        batch_op.create_unique_constraint("unique_tag_name", ["name"])
 
     with op.batch_alter_table("trigger", schema=None) as batch_op:
         batch_op.create_unique_constraint(

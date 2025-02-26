@@ -22,18 +22,18 @@ from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import ColorVariants
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
-    WorkspaceScopedFilter,
-    WorkspaceScopedRequest,
-    WorkspaceScopedResponse,
-    WorkspaceScopedResponseBody,
-    WorkspaceScopedResponseMetadata,
-    WorkspaceScopedResponseResources,
+    UserScopedFilter,
+    UserScopedRequest,
+    UserScopedResponse,
+    UserScopedResponseBody,
+    UserScopedResponseMetadata,
+    UserScopedResponseResources,
 )
 
 # ------------------ Request Model ------------------
 
 
-class TagRequest(WorkspaceScopedRequest):
+class TagRequest(UserScopedRequest):
     """Request model for tags."""
 
     name: str = Field(
@@ -59,7 +59,7 @@ class TagUpdate(BaseUpdate):
 # ------------------ Response Model ------------------
 
 
-class TagResponseBody(WorkspaceScopedResponseBody):
+class TagResponseBody(UserScopedResponseBody):
     """Response body for tags."""
 
     color: ColorVariants = Field(
@@ -71,16 +71,16 @@ class TagResponseBody(WorkspaceScopedResponseBody):
     )
 
 
-class TagResponseMetadata(WorkspaceScopedResponseMetadata):
+class TagResponseMetadata(UserScopedResponseMetadata):
     """Response metadata for tags."""
 
 
-class TagResponseResources(WorkspaceScopedResponseResources):
+class TagResponseResources(UserScopedResponseResources):
     """Class for all resource models associated with the tag entity."""
 
 
 class TagResponse(
-    WorkspaceScopedResponse[
+    UserScopedResponse[
         TagResponseBody, TagResponseMetadata, TagResponseResources
     ]
 ):
@@ -123,7 +123,7 @@ class TagResponse(
 # ------------------ Filter Model ------------------
 
 
-class TagFilter(WorkspaceScopedFilter):
+class TagFilter(UserScopedFilter):
     """Model to enable advanced filtering of all tags."""
 
     name: Optional[str] = Field(

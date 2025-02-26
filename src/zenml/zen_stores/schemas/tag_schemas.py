@@ -37,7 +37,6 @@ from zenml.zen_stores.schemas.schema_utils import (
     build_index,
 )
 from zenml.zen_stores.schemas.user_schemas import UserSchema
-from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 
 class TagSchema(NamedSchema, table=True):
@@ -47,20 +46,9 @@ class TagSchema(NamedSchema, table=True):
     __table_args__ = (
         UniqueConstraint(
             "name",
-            "workspace_id",
-            name="unique_tag_name_in_workspace",
+            name="unique_tag_name",
         ),
     )
-
-    workspace_id: UUID = build_foreign_key_field(
-        source=__tablename__,
-        target=WorkspaceSchema.__tablename__,
-        source_column="workspace_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=False,
-    )
-    workspace: "WorkspaceSchema" = Relationship(back_populates="tags")
 
     user_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -91,7 +79,6 @@ class TagSchema(NamedSchema, table=True):
         return cls(
             name=request.name,
             color=request.color.value,
-            workspace_id=request.workspace,
             user_id=request.user,
         )
 
@@ -114,9 +101,7 @@ class TagSchema(NamedSchema, table=True):
         """
         metadata = None
         if include_metadata:
-            metadata = TagResponseMetadata(
-                workspace=self.workspace.to_model(),
-            )
+            metadata = TagResponseMetadata()
         return TagResponse(
             id=self.id,
             name=self.name,

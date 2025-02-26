@@ -10034,81 +10034,6 @@ class SqlZenStore(BaseZenStore):
 
         raise KeyError(error_msg)
 
-    def _get_tag_schema(
-        self,
-        tag_name_or_id: Union[str, UUID],
-        session: Session,
-        workspace_id: Optional[UUID] = None,
-    ) -> TagSchema:
-        """Gets a tag schema by name or ID.
-
-        This is a helper method that is used in various places to find a tag
-        by its name and workspace or ID.
-
-        Args:
-            tag_name_or_id: The name or ID of the tag to get.
-            session: The database session to use.
-            workspace_id: The ID of the workspace to filter by. Required if the
-                tag_name_or_id argument is a tag name instead of an ID.
-
-        Returns:
-            The tag schema.
-
-        Raises:
-            ValueError: If the tag name is a string and the workspace ID is
-                not provided.
-        """
-        if isinstance(tag_name_or_id, str) and workspace_id is None:
-            raise ValueError(
-                "If the tag name is a string, the workspace ID must be "
-                "provided."
-            )
-
-        return self._get_schema_by_name_or_id(
-            object_name_or_id=tag_name_or_id,
-            schema_class=TagSchema,
-            session=session,
-            workspace_id=workspace_id,
-        )
-
-    def _get_tag_model_schema(
-        self,
-        tag_id: UUID,
-        resource_id: UUID,
-        resource_type: TaggableResourceTypes,
-        session: Session,
-    ) -> TagResourceSchema:
-        """Gets a tag model schema by tag and resource.
-
-        Args:
-            tag_id: The ID of the tag to get.
-            resource_id: The ID of the resource to get.
-            resource_type: The type of the resource to get.
-            session: The database session to use.
-
-        Returns:
-            The tag resource schema.
-
-        Raises:
-            KeyError: if entity not found.
-        """
-        with Session(self.engine) as session:
-            schema = session.exec(
-                select(TagResourceSchema).where(
-                    TagResourceSchema.tag_id == tag_id,
-                    TagResourceSchema.resource_id == resource_id,
-                    TagResourceSchema.resource_type == resource_type.value,
-                )
-            ).first()
-            if schema is None:
-                raise KeyError(
-                    f"Unable to get {TagResourceSchema.__tablename__} with IDs "
-                    f"`tag_id`='{tag_id}' and `resource_id`='{resource_id}' and "
-                    f"`resource_type`='{resource_type.value}': No "
-                    f"{TagResourceSchema.__tablename__} with these IDs found."
-                )
-            return schema
-
     # ----------------------------- Models -----------------------------
 
     @track_decorator(AnalyticsEvent.CREATED_MODEL)
@@ -11255,6 +11180,29 @@ class SqlZenStore(BaseZenStore):
 
         return resource_types[type(resource)]
 
+    def _get_tag_schema(
+        self,
+        tag_name_or_id: Union[str, UUID],
+        session: Session,
+    ) -> TagSchema:
+        """Gets a tag schema by name or ID.
+
+        This is a helper method that is used in various places to find a tag
+        by its name and workspace or ID.
+
+        Args:
+            tag_name_or_id: The name or ID of the tag to get.
+            session: The database session to use.
+
+        Returns:
+            The tag schema.
+        """
+        return self._get_schema_by_name_or_id(
+            object_name_or_id=tag_name_or_id,
+            schema_class=TagSchema,
+            session=session,
+        )
+
     def _attach_tags_to_resource(
         self, tag_names: List[str], resource: BaseSchema
     ) -> None:
@@ -11263,19 +11211,8 @@ class SqlZenStore(BaseZenStore):
         Args:
             tag_names: The list of names of the tags.
             resource: The resource to attach the tags to.
-
-        Raises:
-            RuntimeError: If the resource is not workspace-scoped.
         """
         resource_type = self._get_taggable_resource_type(resource=resource)
-        if not hasattr(resource, "workspace_id"):
-            # Shouldn't happen, given that we maintain a tight list of
-            # taggable resources in `_get_taggable_resource_type`, but just in
-            # case
-            raise RuntimeError(
-                f"Only workspace-scoped resources can be tagged. Resource "
-                f"{resource} is not workspace scoped."
-            )
 
         with Session(self.engine) as session:
             for tag_name in tag_names:
@@ -11283,13 +11220,11 @@ class SqlZenStore(BaseZenStore):
                     tag = self._get_tag_schema(
                         tag_name_or_id=tag_name,
                         session=session,
-                        workspace_id=resource.workspace_id,
                     )
                 except KeyError:
                     tag = self._create_tag_schema(
                         TagRequest(
                             name=tag_name,
-                            workspace=resource.workspace_id,
                         ),
                         session=session,
                     )
@@ -11321,22 +11256,12 @@ class SqlZenStore(BaseZenStore):
         """
         resource_type = self._get_taggable_resource_type(resource=resource)
 
-        if not hasattr(resource, "workspace_id"):
-            # Shouldn't happen, given that we maintain a tight list of
-            # taggable resources in `_get_taggable_resource_type`, but just in
-            # case
-            raise RuntimeError(
-                f"Only workspace-scoped resources can be tagged. Resource "
-                f"{resource} is not workspace scoped."
-            )
-
         with Session(self.engine) as session:
             for tag_name in tag_names:
                 try:
                     tag = self._get_tag_schema(
                         tag_name_or_id=tag_name,
                         session=session,
-                        workspace_id=resource.workspace_id,
                     )
                 except KeyError:
                     continue
@@ -11398,20 +11323,16 @@ class SqlZenStore(BaseZenStore):
     def delete_tag(
         self,
         tag_name_or_id: Union[str, UUID],
-        workspace_id: Optional[UUID] = None,
     ) -> None:
         """Deletes a tag.
 
         Args:
             tag_name_or_id: name or id of the tag to delete.
-            workspace_id: ID of the workspace to delete the tag from. Required
-                if `tag_name_or_id` is a tag name.
         """
         with Session(self.engine) as session:
             tag = self._get_tag_schema(
                 tag_name_or_id=tag_name_or_id,
                 session=session,
-                workspace_id=workspace_id,
             )
             session.delete(tag)
             session.commit()
@@ -11419,15 +11340,12 @@ class SqlZenStore(BaseZenStore):
     def get_tag(
         self,
         tag_name_or_id: Union[str, UUID],
-        workspace_id: Optional[UUID] = None,
         hydrate: bool = True,
     ) -> TagResponse:
         """Get an existing tag.
 
         Args:
             tag_name_or_id: name or id of the tag to be retrieved.
-            workspace_id: ID of the workspace to get the tag from. Required
-                if `tag_name_or_id` is a tag name.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -11438,7 +11356,6 @@ class SqlZenStore(BaseZenStore):
             tag = self._get_tag_schema(
                 tag_name_or_id=tag_name_or_id,
                 session=session,
-                workspace_id=workspace_id,
             )
         return tag.to_model(include_metadata=hydrate, include_resources=True)
 
@@ -11458,10 +11375,6 @@ class SqlZenStore(BaseZenStore):
             A page of all tags.
         """
         with Session(self.engine) as session:
-            self._set_filter_workspace_id(
-                filter_model=tag_filter_model,
-                session=session,
-            )
             query = select(TagSchema)
             return self.filter_and_paginate(
                 session=session,
@@ -11475,15 +11388,12 @@ class SqlZenStore(BaseZenStore):
         self,
         tag_name_or_id: Union[str, UUID],
         tag_update_model: TagUpdate,
-        workspace_id: Optional[UUID] = None,
     ) -> TagResponse:
         """Update tag.
 
         Args:
             tag_name_or_id: name or id of the tag to be updated.
             tag_update_model: Tag to use for the update.
-            workspace_id: ID of the workspace to update the tag in. Required
-                if `tag_name_or_id` is a tag name.
 
         Returns:
             An updated tag.
@@ -11492,7 +11402,6 @@ class SqlZenStore(BaseZenStore):
             tag = self._get_tag_schema(
                 tag_name_or_id=tag_name_or_id,
                 session=session,
-                workspace_id=workspace_id,
             )
 
             self._verify_name_uniqueness(
@@ -11512,6 +11421,44 @@ class SqlZenStore(BaseZenStore):
     ####################
     # Tags <> resources
     ####################
+
+    def _get_tag_model_schema(
+        self,
+        tag_id: UUID,
+        resource_id: UUID,
+        resource_type: TaggableResourceTypes,
+        session: Session,
+    ) -> TagResourceSchema:
+        """Gets a tag model schema by tag and resource.
+
+        Args:
+            tag_id: The ID of the tag to get.
+            resource_id: The ID of the resource to get.
+            resource_type: The type of the resource to get.
+            session: The database session to use.
+
+        Returns:
+            The tag resource schema.
+
+        Raises:
+            KeyError: if entity not found.
+        """
+        with Session(self.engine) as session:
+            schema = session.exec(
+                select(TagResourceSchema).where(
+                    TagResourceSchema.tag_id == tag_id,
+                    TagResourceSchema.resource_id == resource_id,
+                    TagResourceSchema.resource_type == resource_type.value,
+                )
+            ).first()
+            if schema is None:
+                raise KeyError(
+                    f"Unable to get {TagResourceSchema.__tablename__} with IDs "
+                    f"`tag_id`='{tag_id}' and `resource_id`='{resource_id}' and "
+                    f"`resource_type`='{resource_type.value}': No "
+                    f"{TagResourceSchema.__tablename__} with these IDs found."
+                )
+            return schema
 
     def _create_tag_resource(
         self, tag_resource: TagResourceRequest, session: Session

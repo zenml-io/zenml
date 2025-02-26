@@ -3000,14 +3000,11 @@ class ZenStoreInterface(ABC):
     def delete_tag(
         self,
         tag_name_or_id: Union[str, UUID],
-        workspace_id: Optional[UUID] = None,
     ) -> None:
         """Deletes a tag.
 
         Args:
             tag_name_or_id: name or id of the tag to delete.
-            workspace_id: ID of the workspace to delete the tag from. Required
-                if `tag_name_or_id` is a tag name.
 
         Raises:
             KeyError: specified ID or name not found.
@@ -3017,15 +3014,12 @@ class ZenStoreInterface(ABC):
     def get_tag(
         self,
         tag_name_or_id: Union[str, UUID],
-        workspace_id: Optional[UUID] = None,
         hydrate: bool = True,
     ) -> TagResponse:
         """Get an existing tag.
 
         Args:
             tag_name_or_id: name or id of the tag to be retrieved.
-            workspace_id: ID of the workspace to get the tag from. Required
-                if `tag_name_or_id` is a tag name.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -3058,15 +3052,12 @@ class ZenStoreInterface(ABC):
         self,
         tag_name_or_id: Union[str, UUID],
         tag_update_model: TagUpdate,
-        workspace_id: Optional[UUID] = None,
     ) -> TagResponse:
         """Update tag.
 
         Args:
             tag_name_or_id: name or id of the tag to be updated.
             tag_update_model: Tag to use for the update.
-            workspace_id: ID of the workspace to update the tag in. Required
-                if `tag_name_or_id` is a tag name.
 
         Returns:
             An updated tag.

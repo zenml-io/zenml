@@ -3893,36 +3893,26 @@ class RestZenStore(BaseZenStore):
     def delete_tag(
         self,
         tag_name_or_id: Union[str, UUID],
-        workspace_id: Optional[UUID] = None,
     ) -> None:
         """Deletes a tag.
 
         Args:
             tag_name_or_id: name or id of the tag to delete.
-            workspace_id: ID of the workspace to delete the tag from. Required
-                if `tag_name_or_id` is a tag name.
         """
-        params = {}
-        if workspace_id:
-            params["workspace_id"] = workspace_id
         self._delete_resource(
             resource_id=tag_name_or_id,
             route=TAGS,
-            params=params,
         )
 
     def get_tag(
         self,
         tag_name_or_id: Union[str, UUID],
-        workspace_id: Optional[UUID] = None,
         hydrate: bool = True,
     ) -> TagResponse:
         """Get an existing tag.
 
         Args:
             tag_name_or_id: name or id of the tag to be retrieved.
-            workspace_id: ID of the workspace to get the tag from. Required
-                if `tag_name_or_id` is a tag name.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -3930,8 +3920,6 @@ class RestZenStore(BaseZenStore):
             The tag of interest.
         """
         params: Dict[str, Any] = {"hydrate": hydrate}
-        if workspace_id:
-            params["workspace_id"] = workspace_id
 
         return self._get_resource(
             resource_id=tag_name_or_id,
@@ -3966,29 +3954,22 @@ class RestZenStore(BaseZenStore):
         self,
         tag_name_or_id: Union[str, UUID],
         tag_update_model: TagUpdate,
-        workspace_id: Optional[UUID] = None,
     ) -> TagResponse:
         """Update tag.
 
         Args:
             tag_name_or_id: name or id of the tag to be updated.
             tag_update_model: Tag to use for the update.
-            workspace_id: ID of the workspace to update the tag in. Required
-                if `tag_name_or_id` is a tag name.
 
         Returns:
             An updated tag.
         """
-        params = {}
-        if workspace_id:
-            params["workspace_id"] = workspace_id
-        tag = self.get_tag(tag_name_or_id, workspace_id=workspace_id)
+        tag = self.get_tag(tag_name_or_id)
         return self._update_resource(
             resource_id=tag.id,
             resource_update=tag_update_model,
             route=TAGS,
             response_model=TagResponse,
-            params=params,
         )
 
     # =======================

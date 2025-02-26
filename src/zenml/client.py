@@ -7628,74 +7628,53 @@ class Client(metaclass=ClientMetaClass):
     def delete_tag(
         self,
         tag_name_or_id: Union[str, UUID],
-        workspace: Optional[Union[str, UUID]] = None,
     ) -> None:
         """Deletes a tag.
 
         Args:
             tag_name_or_id: name or id of the tag to be deleted.
-            workspace: The workspace name/ID to filter by.
         """
-        if workspace and not isinstance(workspace, UUID):
-            workspace = self.get_workspace(workspace).id
-
-        assert isinstance(workspace, UUID)
         self.zen_store.delete_tag(
             tag_name_or_id=tag_name_or_id,
-            workspace_id=workspace or self.active_workspace.id,
         )
 
     def update_tag(
         self,
         tag_name_or_id: Union[str, UUID],
         tag_update_model: TagUpdate,
-        workspace: Optional[Union[str, UUID]] = None,
     ) -> TagResponse:
         """Updates an existing tag.
 
         Args:
             tag_name_or_id: name or UUID of the tag to be updated.
             tag_update_model: the tag to be updated.
-            workspace: The workspace name/ID to filter by.
 
         Returns:
             The updated tag.
         """
-        if workspace and not isinstance(workspace, UUID):
-            workspace = self.get_workspace(workspace).id
-
-        assert isinstance(workspace, UUID)
         return self.zen_store.update_tag(
             tag_name_or_id=tag_name_or_id,
             tag_update_model=tag_update_model,
-            workspace_id=workspace or self.active_workspace.id,
         )
 
     def get_tag(
         self,
         tag_name_or_id: Union[str, UUID],
-        workspace: Optional[Union[str, UUID]] = None,
         hydrate: bool = True,
     ) -> TagResponse:
         """Get an existing tag.
 
         Args:
             tag_name_or_id: name or id of the tag to be retrieved.
-            workspace: The workspace name/ID to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
         Returns:
             The tag of interest.
         """
-        if workspace and not isinstance(workspace, UUID):
-            workspace = self.get_workspace(workspace).id
-
-        assert isinstance(workspace, UUID)
         return self.zen_store.get_tag(
             tag_name_or_id=tag_name_or_id,
             hydrate=hydrate,
-            workspace_id=workspace or self.active_workspace.id,
         )
 
     def list_tags(
@@ -7714,9 +7693,6 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             A page of all tags.
         """
-        tag_filter_model.workspace = (
-            tag_filter_model.workspace or self.active_workspace.id
-        )
         return self.zen_store.list_tags(
             tag_filter_model=tag_filter_model, hydrate=hydrate
         )

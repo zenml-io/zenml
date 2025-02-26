@@ -92,6 +92,7 @@ class ResourceType(StrEnum):
             self.SERVICE_CONNECTOR,
             self.STACK,
             self.STACK_COMPONENT,
+            self.TAG,
             self.SERVICE_ACCOUNT,
             self.WORKSPACE,
             # Deactivated for now
