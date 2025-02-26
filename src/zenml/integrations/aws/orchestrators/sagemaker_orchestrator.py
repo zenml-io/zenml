@@ -32,7 +32,10 @@ import sagemaker
 from botocore.exceptions import WaiterError
 from sagemaker.network import NetworkConfig
 from sagemaker.processing import ProcessingInput, ProcessingOutput
-from sagemaker.workflow.execution_variables import ExecutionVariables
+from sagemaker.workflow.execution_variables import (
+    ExecutionVariable,
+    ExecutionVariables,
+)
 from sagemaker.workflow.pipeline import Pipeline
 from sagemaker.workflow.steps import ProcessingStep, TrainingStep
 from sagemaker.workflow.triggers import PipelineSchedule
@@ -473,7 +476,7 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
             # Convert environment to a dict of strings
             environment = {
                 key: str(value)
-                if not isinstance(value, ExecutionVariables)
+                if not isinstance(value, ExecutionVariable)
                 else value
                 for key, value in environment.items()
             }
