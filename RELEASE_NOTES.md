@@ -2,7 +2,7 @@
 
 # 0.75.0
 
-The `0.75.0` release introduces dashboard enhancements for stack components 
+The `0.75.0` release introduces dashboard enhancements for stack component
 management along with improvements to documentation and service connector 
 capabilities. Users can now create and update stack components directly 
 from the dashboard.
