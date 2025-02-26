@@ -472,7 +472,10 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
 
             # Convert environment to a dict of strings
             environment = {
-                key: str(value) for key, value in environment.items()
+                key: str(value)
+                if not isinstance(value, ExecutionVariables)
+                else value
+                for key, value in environment.items()
             }
 
             if use_training_step:
