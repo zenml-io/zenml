@@ -80,7 +80,6 @@ from zenml.exceptions import (
     DoesNotExistException,
     EntityExistsError,
     IllegalOperationError,
-    StackExistsError,
 )
 from zenml.logging.step_logging import fetch_logs, prepare_logs_uri
 from zenml.metadata.metadata_types import MetadataTypeEnum
@@ -2652,7 +2651,7 @@ def test_register_stack_fails_when_stack_exists():
                     workspace=client.active_workspace.id,
                     user=client.active_user.id,
                 )
-                with pytest.raises(StackExistsError):
+                with pytest.raises(EntityExistsError):
                     # TODO: [server] inject user and workspace into stack as well
                     store.create_stack(
                         stack=new_stack,
@@ -5468,7 +5467,7 @@ class TestRunMetadata:
                     },
                 )
             )
-            pr = client.zen_store.create_run(
+            pr = client.zen_store.get_or_create_run(
                 PipelineRunRequest(
                     user=client.active_user.id,
                     workspace=client.active_workspace.id,

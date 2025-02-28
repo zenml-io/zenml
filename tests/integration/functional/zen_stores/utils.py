@@ -773,7 +773,7 @@ class ModelContext:
             )
             self.deployments.append(deployment)
             self.prs.append(
-                client.zen_store.create_run(
+                client.zen_store.get_or_create_run(
                     PipelineRunRequest(
                         id=uuid.uuid4(),
                         name=sample_name("sample_pipeline_run"),

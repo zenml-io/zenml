@@ -9791,7 +9791,7 @@ class SqlZenStore(BaseZenStore):
                 resource_type=reference_type,
             )
         except KeyError:
-            if resource_workspace_name:
+            if reference_workspace_filter:
                 error_msg += f" in the '{resource_workspace_name}' workspace"
 
             raise KeyError(error_msg)

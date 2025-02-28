@@ -51,8 +51,6 @@ from zenml.exceptions import (
     EntityExistsError,
     IllegalOperationError,
     InitializationException,
-    StackComponentExistsError,
-    StackExistsError,
 )
 from zenml.io import fileio
 from zenml.model.model import Model
@@ -270,7 +268,7 @@ def test_registering_a_stack_with_existing_name(clean_client):
     orchestrator = _create_local_orchestrator(clean_client)
     artifact_store = _create_local_artifact_store(clean_client)
 
-    with pytest.raises(StackExistsError):
+    with pytest.raises(EntityExistsError):
         clean_client.create_stack(
             name="axels_super_awesome_stack_of_fluffyness",
             components={
@@ -380,7 +378,7 @@ def test_registering_a_stack_component_with_existing_name(clean_client):
     _create_local_orchestrator(
         client=clean_client, orchestrator_name="axels_orchestration_laboratory"
     )
-    with pytest.raises(StackComponentExistsError):
+    with pytest.raises(EntityExistsError):
         clean_client.create_stack_component(
             name="axels_orchestration_laboratory",
             flavor="local",
