@@ -335,10 +335,6 @@ def get_allowed_resource_ids(
     Returns:
         A list of resource IDs or `None` if the user has full access to the
         all instances of the resource.
-
-    Raises:
-        ValueError: If the resource type is workspace scoped and no workspace ID
-            is provided.
     """
     if not server_config().rbac_enabled:
         return None

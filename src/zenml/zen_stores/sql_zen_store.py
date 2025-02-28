@@ -61,7 +61,6 @@ from sqlalchemy.engine import URL, Engine, make_url
 from sqlalchemy.exc import (
     ArgumentError,
     IntegrityError,
-    NoResultFound,
 )
 from sqlalchemy.orm import Mapped, noload
 from sqlalchemy.util import immutabledict
@@ -3198,10 +3197,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The newly created code repository.
-
-        Raises:
-            EntityExistsError: If a code repository with the given name already
-                exists.
         """
         with Session(self.engine) as session:
             self._set_request_user_id(
@@ -3341,10 +3336,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The created stack component.
-
-        Raises:
-            KeyError: if the stack component references a non-existent
-                connector.
         """
         validate_name(component)
         with Session(self.engine) as session:
@@ -4100,32 +4091,29 @@ class SqlZenStore(BaseZenStore):
             IllegalOperationError: if the flavor is used by a stack component.
         """
         with Session(self.engine) as session:
-            try:
-                flavor_in_db = self._get_schema_by_id(
-                    resource_id=flavor_id,
-                    schema_class=FlavorSchema,
-                    session=session,
+            flavor_in_db = self._get_schema_by_id(
+                resource_id=flavor_id,
+                schema_class=FlavorSchema,
+                session=session,
+            )
+            components_of_flavor = session.exec(
+                select(StackComponentSchema).where(
+                    StackComponentSchema.flavor == flavor_in_db.name
                 )
-                components_of_flavor = session.exec(
-                    select(StackComponentSchema).where(
-                        StackComponentSchema.flavor == flavor_in_db.name
-                    )
-                ).all()
-                if len(components_of_flavor) > 0:
-                    raise IllegalOperationError(
-                        f"Stack Component `{flavor_in_db.name}` of type "
-                        f"`{flavor_in_db.type} cannot be "
-                        f"deleted as it is used by "
-                        f"{len(components_of_flavor)} "
-                        f"components. Before deleting this "
-                        f"flavor, make sure to delete all "
-                        f"associated components."
-                    )
-                else:
-                    session.delete(flavor_in_db)
-                    session.commit()
-            except NoResultFound as error:
-                raise KeyError from error
+            ).all()
+            if len(components_of_flavor) > 0:
+                raise IllegalOperationError(
+                    f"Stack Component `{flavor_in_db.name}` of type "
+                    f"`{flavor_in_db.type} cannot be "
+                    f"deleted as it is used by "
+                    f"{len(components_of_flavor)} "
+                    f"components. Before deleting this "
+                    f"flavor, make sure to delete all "
+                    f"associated components."
+                )
+            else:
+                session.delete(flavor_in_db)
+                session.commit()
 
     # ------------------------ Logs ------------------------
 
@@ -4638,11 +4626,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The newly created template.
-
-        Raises:
-            EntityExistsError: If a template with the same name already exists.
-            ValueError: If the source deployment does not exist or does not
-                have an associated build.
         """
         with Session(self.engine) as session:
             self._set_request_user_id(request_model=template, session=session)
@@ -6156,6 +6139,8 @@ class SqlZenStore(BaseZenStore):
             KeyError: if the secret doesn't exist.
             EntityExistsError: If a secret with the same name already exists in
                 the same scope.
+            IllegalOperationError: if the secret is private and the current user
+                is not the owner of the secret.
         """
         with Session(self.engine) as session:
             existing_secret = session.exec(
@@ -6922,34 +6907,31 @@ class SqlZenStore(BaseZenStore):
                 by one or more stack components.
         """
         with Session(self.engine) as session:
-            try:
-                service_connector = self._get_schema_by_id(
-                    resource_id=service_connector_id,
-                    schema_class=ServiceConnectorSchema,
-                    session=session,
+            service_connector = self._get_schema_by_id(
+                resource_id=service_connector_id,
+                schema_class=ServiceConnectorSchema,
+                session=session,
+            )
+
+            if len(service_connector.components) > 0:
+                raise IllegalOperationError(
+                    f"Service connector with ID {service_connector_id} "
+                    f"cannot be deleted as it is still referenced by "
+                    f"{len(service_connector.components)} "
+                    "stack components. Before deleting this service "
+                    "connector, make sure to remove it from all stack "
+                    "components."
                 )
+            else:
+                session.delete(service_connector)
 
-                if len(service_connector.components) > 0:
-                    raise IllegalOperationError(
-                        f"Service connector with ID {service_connector_id} "
-                        f"cannot be deleted as it is still referenced by "
-                        f"{len(service_connector.components)} "
-                        "stack components. Before deleting this service "
-                        "connector, make sure to remove it from all stack "
-                        "components."
-                    )
-                else:
-                    session.delete(service_connector)
-
-                if service_connector.secret_id:
-                    try:
-                        self.delete_secret(service_connector.secret_id)
-                    except KeyError:
-                        # If the secret doesn't exist anymore, we can ignore
-                        # this error
-                        pass
-            except NoResultFound as error:
-                raise KeyError from error
+            if service_connector.secret_id:
+                try:
+                    self.delete_secret(service_connector.secret_id)
+                except KeyError:
+                    # If the secret doesn't exist anymore, we can ignore
+                    # this error
+                    pass
 
             session.commit()
 
@@ -6963,7 +6945,6 @@ class SqlZenStore(BaseZenStore):
         Args:
             connector_name: The name of the service connector for which to
                 create a secret.
-            user: The ID of the user who owns the service connector.
             secrets: The secret credentials to store.
 
         Returns:
@@ -7931,7 +7912,6 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             EntityExistsError: if the step run already exists.
-            KeyError: if the pipeline run doesn't exist.
         """
         with Session(self.engine) as session:
             self._set_request_user_id(request_model=step_run, session=session)
@@ -8239,9 +8219,6 @@ class SqlZenStore(BaseZenStore):
             child_step_run: The child step run to set the parent for.
             parent_id: The ID of the parent step run to set a child for.
             session: The database session to use.
-
-        Raises:
-            KeyError: if the child step run or parent step run doesn't exist.
         """
         parent_step_run = self._get_reference_schema_by_id(
             resource=child_step_run,
@@ -8283,9 +8260,6 @@ class SqlZenStore(BaseZenStore):
             name: The name of the input in the step run.
             input_type: In which way the artifact was loaded in the step.
             session: The database session to use.
-
-        Raises:
-            KeyError: if the step run or artifact doesn't exist.
         """
         # Check if the artifact exists.
         artifact = self._get_reference_schema_by_id(
@@ -8332,9 +8306,6 @@ class SqlZenStore(BaseZenStore):
             artifact_version_id: The ID of the artifact version.
             name: The name of the output in the step run.
             session: The database session to use.
-
-        Raises:
-            KeyError: if the step run or artifact doesn't exist.
         """
         # Check if the artifact exists.
         artifact = self._get_reference_schema_by_id(
@@ -8919,6 +8890,9 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The active user.
+
+        Raises:
+            RuntimeError: If no active user is found.
         """
         if handle_bool_env_var(ENV_ZENML_SERVER):
             # Running inside server
@@ -9317,9 +9291,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The newly created workspace.
-
-        Raises:
-            EntityExistsError: If a workspace with the given name already exists.
         """
         with Session(self.engine) as session:
             # Check if workspace with the given name already exists
@@ -9405,7 +9376,6 @@ class SqlZenStore(BaseZenStore):
             The updated workspace.
 
         Raises:
-            IllegalOperationError: if the workspace is the default workspace.
             KeyError: if the workspace does not exist.
         """
         with Session(self.engine) as session:
@@ -9654,7 +9624,6 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             KeyError: if the object couldn't be found.
-            ValueError: if the schema_name isn't provided.
         """
         schema_name = get_resource_type_name(schema_class)
         if uuid_utils.is_valid_uuid(object_name_or_id):
@@ -9725,6 +9694,7 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             RuntimeError: If the schema has no workspace_id attribute.
+            KeyError: If the referenced resource is not found.
         """
         if reference_id is None:
             return None
@@ -9828,6 +9798,9 @@ class SqlZenStore(BaseZenStore):
             workspace_name_or_id: The workspace to set the scope for. If not
                 provided, the workspace scope is determined from the request
                 workspace filter or the default workspace, in that order.
+
+        Raises:
+            ValueError: If the workspace scope is missing from the filter.
         """
         if workspace_name_or_id:
             workspace = self._get_schema_by_name_or_id(
@@ -10666,9 +10639,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The model version of interest.
-
-        Raises:
-            KeyError: specified ID or name not found.
         """
         with Session(self.engine) as session:
             model_version = self._get_schema_by_id(
@@ -11250,9 +11220,6 @@ class SqlZenStore(BaseZenStore):
         Args:
             tag_names: The list of names of the tags.
             resource: The resource to detach the tags from.
-
-        Raises:
-            RuntimeError: If the resource is not workspace-scoped.
         """
         resource_type = self._get_taggable_resource_type(resource=resource)
 
@@ -11283,9 +11250,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The newly created tag schema.
-
-        Raises:
-            EntityExistsError: If a tag with the given name already exists.
         """
         validate_name(tag)
         self._set_request_user_id(request_model=tag, session=session)
@@ -11310,9 +11274,6 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The newly created tag.
-
-        Raises:
-            EntityExistsError: If a tag with the given name already exists.
         """
         with Session(self.engine) as session:
             tag_schema = self._create_tag_schema(tag=tag, session=session)

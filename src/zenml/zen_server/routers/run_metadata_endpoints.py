@@ -65,9 +65,6 @@ def create_run_metadata(
         workspace_name_or_id: Optional name or ID of the workspace.
         auth_context: Authentication context.
 
-    Returns:
-        None
-
     Raises:
         RuntimeError: If the resource type is not supported.
     """

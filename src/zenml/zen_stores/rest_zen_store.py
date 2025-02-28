@@ -2005,9 +2005,6 @@ class RestZenStore(BaseZenStore):
 
         Args:
             run_metadata: The run metadata to create.
-
-        Returns:
-            The created run metadata.
         """
         self.post(RUN_METADATA, body=run_metadata)
 

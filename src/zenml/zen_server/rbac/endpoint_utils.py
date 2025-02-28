@@ -229,10 +229,6 @@ def verify_permissions_and_list_entities(
 
     Returns:
         A page of entity models.
-
-    Raises:
-        RuntimeError: If the workspace ID is not set for workspace-scoped
-            resources.
     """
     auth_context = get_auth_context()
     assert auth_context

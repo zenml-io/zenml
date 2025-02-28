@@ -152,6 +152,9 @@ def list_model_versions(
 
     Returns:
         The model versions according to query filters.
+
+    Raises:
+        ValueError: If the model is missing from the filter.
     """
     if model_name_or_id:
         model_version_filter_model.model = model_name_or_id

@@ -80,9 +80,6 @@ class ResourceType(StrEnum):
     def is_workspace_scoped(self) -> bool:
         """Check if a resource type is workspace scoped.
 
-        Args:
-            resource_type: The resource type to check.
-
         Returns:
             Whether the resource type is workspace scoped.
         """

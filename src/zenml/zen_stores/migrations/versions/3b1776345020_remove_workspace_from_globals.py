@@ -17,7 +17,11 @@ depends_on = None
 
 
 def upgrade() -> None:
-    """Upgrade database schema and/or data, creating a new revision."""
+    """Upgrade database schema and/or data, creating a new revision.
+
+    Raises:
+        RuntimeError: If more than one workspace exists.
+    """
     # If more than one workspace exists, we fail the migration because it
     # would mean merging together resources from different workspaces, which
     # can lead to naming conflicts.

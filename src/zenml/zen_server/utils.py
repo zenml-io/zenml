@@ -651,9 +651,6 @@ def set_filter_workspace_scope(
         workspace_name_or_id: The workspace to set the scope for. If not
             provided, the workspace scope is determined from the request
             workspace filter or the default workspace, in that order.
-
-    Raises:
-        ValueError: If the workspace scope is missing from the filter.
     """
     zen_store().set_filter_workspace_id(
         filter_model=filter_model,

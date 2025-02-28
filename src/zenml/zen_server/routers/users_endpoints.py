@@ -806,6 +806,9 @@ def update_user_default_workspace(
     Args:
         workspace_name_or_id: Name or ID of the workspace.
         auth_context: Authentication context.
+
+    Returns:
+        The updated user.
     """
     workspace = verify_permissions_and_get_entity(
         id=workspace_name_or_id,
