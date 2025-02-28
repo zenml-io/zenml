@@ -2,6 +2,11 @@
 description: Run distributed training with Hugging Face's Accelerate library in ZenML pipelines.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Distributed training with 🤗 Accelerate
 
 There are several reasons why you might want to scale your machine learning pipelines to utilize distributed training, such as leveraging multiple GPUs or training across multiple nodes. ZenML now integrates with [Hugging Face's Accelerate library](https://github.com/huggingface/accelerate) to make this process seamless and efficient.

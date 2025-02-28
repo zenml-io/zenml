@@ -2,6 +2,11 @@
 description: How to set the logging format in ZenML.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Set logging format
 
 If you want to change the default ZenML logging format, you can do so with the following environment variable:

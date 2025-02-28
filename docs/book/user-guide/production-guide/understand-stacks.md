@@ -2,6 +2,11 @@
 description: Learning how to switch the infrastructure backend of your code.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Understanding stacks
 
 Now that we have ZenML deployed, we can take the next steps in making sure that our machine learning workflows are production-ready. As you were running [your first pipelines](../starter-guide/create-an-ml-pipeline.md), you might have already noticed the term `stack` in the logs and on the dashboard.
