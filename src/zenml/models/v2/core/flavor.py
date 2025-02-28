@@ -99,7 +99,7 @@ class FlavorRequest(UserScopedRequest):
 
 
 class BuiltinFlavorRequest(FlavorRequest):
-    """Internal flavor request model used only for buit-in flavors."""
+    """Internal flavor request model used only for built-in flavors."""
 
 
 # ------------------ Update Model ------------------
