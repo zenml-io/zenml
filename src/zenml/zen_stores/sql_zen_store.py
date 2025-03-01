@@ -2570,6 +2570,7 @@ class SqlZenStore(BaseZenStore):
                 self._attach_tags_to_resource(
                     tag_names=artifact.tags,
                     resource=artifact_schema,
+                    session=session,
                 )
 
             session.add(artifact_schema)
@@ -2659,11 +2660,13 @@ class SqlZenStore(BaseZenStore):
                 self._attach_tags_to_resource(
                     tag_names=artifact_update.add_tags,
                     resource=existing_artifact,
+                    session=session,
                 )
             if artifact_update.remove_tags:
                 self._detach_tags_from_resource(
                     tag_names=artifact_update.remove_tags,
                     resource=existing_artifact,
+                    session=session,
                 )
 
             # Update the schema itself.
@@ -2897,6 +2900,7 @@ class SqlZenStore(BaseZenStore):
                 self._attach_tags_to_resource(
                     tag_names=artifact_version.tags,
                     resource=artifact_version_schema,
+                    session=session,
                 )
 
             # Save metadata of the artifact
@@ -3039,11 +3043,13 @@ class SqlZenStore(BaseZenStore):
                 self._attach_tags_to_resource(
                     tag_names=artifact_version_update.add_tags,
                     resource=existing_artifact_version,
+                    session=session,
                 )
             if artifact_version_update.remove_tags:
                 self._detach_tags_from_resource(
                     tag_names=artifact_version_update.remove_tags,
                     resource=existing_artifact_version,
+                    session=session,
                 )
 
             # Update the schema itself.
@@ -4165,6 +4171,7 @@ class SqlZenStore(BaseZenStore):
                 self._attach_tags_to_resource(
                     tag_names=pipeline.tags,
                     resource=new_pipeline,
+                    session=session,
                 )
 
             session.add(new_pipeline)
@@ -4275,12 +4282,14 @@ class SqlZenStore(BaseZenStore):
                 self._attach_tags_to_resource(
                     tag_names=pipeline_update.add_tags,
                     resource=existing_pipeline,
+                    session=session,
                 )
             pipeline_update.add_tags = None
             if pipeline_update.remove_tags:
                 self._detach_tags_from_resource(
                     tag_names=pipeline_update.remove_tags,
                     resource=existing_pipeline,
+                    session=session,
                 )
             pipeline_update.remove_tags = None
 
@@ -4652,6 +4661,7 @@ class SqlZenStore(BaseZenStore):
                 self._attach_tags_to_resource(
                     tag_names=template.tags,
                     resource=template_schema,
+                    session=session,
                 )
 
             session.add(template_schema)
@@ -4740,6 +4750,7 @@ class SqlZenStore(BaseZenStore):
                 self._attach_tags_to_resource(
                     tag_names=template_update.add_tags,
                     resource=template,
+                    session=session,
                 )
             template_update.add_tags = None
 
@@ -4747,6 +4758,7 @@ class SqlZenStore(BaseZenStore):
                 self._detach_tags_from_resource(
                     tag_names=template_update.remove_tags,
                     resource=template,
+                    session=session,
                 )
             template_update.remove_tags = None
 
@@ -4959,12 +4971,13 @@ class SqlZenStore(BaseZenStore):
     # ----------------------------- Pipeline runs -----------------------------
 
     def _create_run(
-        self, pipeline_run: PipelineRunRequest
+        self, pipeline_run: PipelineRunRequest, session: Session
     ) -> PipelineRunResponse:
         """Creates a pipeline run.
 
         Args:
             pipeline_run: The pipeline run to create.
+            session: SQLAlchemy session.
 
         Returns:
             The created pipeline run.
@@ -4972,68 +4985,64 @@ class SqlZenStore(BaseZenStore):
         Raises:
             EntityExistsError: If a run with the same name already exists.
         """
-        with Session(self.engine) as session:
-            self._set_request_user_id(
-                request_model=pipeline_run, session=session
-            )
-            self._get_reference_schema_by_id(
-                resource=pipeline_run,
-                reference_schema=PipelineDeploymentSchema,
-                reference_id=pipeline_run.deployment,
+        self._set_request_user_id(request_model=pipeline_run, session=session)
+        self._get_reference_schema_by_id(
+            resource=pipeline_run,
+            reference_schema=PipelineDeploymentSchema,
+            reference_id=pipeline_run.deployment,
+            session=session,
+        )
+
+        self._get_reference_schema_by_id(
+            resource=pipeline_run,
+            reference_schema=PipelineSchema,
+            reference_id=pipeline_run.pipeline,
+            session=session,
+        )
+
+        new_run = PipelineRunSchema.from_request(pipeline_run)
+
+        if pipeline_run.tags:
+            self._attach_tags_to_resource(
+                tag_names=pipeline_run.tags,
+                resource=new_run,
                 session=session,
             )
 
-            self._get_reference_schema_by_id(
+        session.add(new_run)
+        try:
+            session.commit()
+        except IntegrityError:
+            # This can fail if the name is taken by a different run
+            self._verify_name_uniqueness(
                 resource=pipeline_run,
-                reference_schema=PipelineSchema,
-                reference_id=pipeline_run.pipeline,
+                schema=PipelineRunSchema,
                 session=session,
             )
 
-            new_run = PipelineRunSchema.from_request(pipeline_run)
+            # ... or if the deployment_id and orchestrator_run_id are used
+            # by an existing run
+            raise EntityExistsError(
+                "Unable to create pipeline run: A pipeline run with "
+                "the same deployment_id and orchestrator_run_id "
+                "already exists."
+            )
 
-            if pipeline_run.tags:
-                self._attach_tags_to_resource(
-                    tag_names=pipeline_run.tags,
-                    resource=new_run,
-                )
-
+        if model_version_id := self._get_or_create_model_version_for_run(
+            new_run
+        ):
+            new_run.model_version_id = model_version_id
             session.add(new_run)
-            try:
-                session.commit()
-            except IntegrityError:
-                # This can fail if the name is taken by a different run
-                self._verify_name_uniqueness(
-                    resource=pipeline_run,
-                    schema=PipelineRunSchema,
-                    session=session,
+            session.commit()
+
+            self.create_model_version_pipeline_run_link(
+                ModelVersionPipelineRunRequest(
+                    model_version=model_version_id, pipeline_run=new_run.id
                 )
-
-                # ... or if the deployment_id and orchestrator_run_id are used
-                # by an existing run
-                raise EntityExistsError(
-                    "Unable to create pipeline run: A pipeline run with "
-                    "the same deployment_id and orchestrator_run_id "
-                    "already exists."
-                )
-
-            if model_version_id := self._get_or_create_model_version_for_run(
-                new_run
-            ):
-                new_run.model_version_id = model_version_id
-                session.add(new_run)
-                session.commit()
-
-                self.create_model_version_pipeline_run_link(
-                    ModelVersionPipelineRunRequest(
-                        model_version=model_version_id, pipeline_run=new_run.id
-                    )
-                )
-                session.refresh(new_run)
-
-            return new_run.to_model(
-                include_metadata=True, include_resources=True
             )
+            session.refresh(new_run)
+
+        return new_run.to_model(include_metadata=True, include_resources=True)
 
     def get_run(
         self, run_id: UUID, hydrate: bool = True
@@ -5061,12 +5070,14 @@ class SqlZenStore(BaseZenStore):
     def _replace_placeholder_run(
         self,
         pipeline_run: PipelineRunRequest,
+        session: Session,
         pre_replacement_hook: Optional[Callable[[], None]] = None,
     ) -> PipelineRunResponse:
         """Replace a placeholder run with the requested pipeline run.
 
         Args:
             pipeline_run: Pipeline run request.
+            session: SQLAlchemy session.
             pre_replacement_hook: Optional function to run before replacing the
                 pipeline run.
 
@@ -5076,60 +5087,57 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The run model.
         """
-        with Session(self.engine) as session:
-            run_schema = session.exec(
-                select(PipelineRunSchema)
-                # The following line locks the row in the DB, so anyone else
-                # calling `SELECT ... FOR UPDATE` will wait until the first
-                # transaction to do so finishes. After the first transaction
-                # finishes, the subsequent queries will not be able to find a
-                # placeholder run anymore, as we already updated the
-                # orchestrator_run_id.
-                # Note: This only locks a single row if the where clause of
-                # the query is indexed (we have a unique index due to the
-                # unique constraint on those columns). Otherwise, this will lock
-                # multiple rows or even the complete table which we want to
-                # avoid.
-                .with_for_update()
-                .where(
-                    PipelineRunSchema.deployment_id == pipeline_run.deployment
-                )
-                .where(
-                    PipelineRunSchema.orchestrator_run_id.is_(None)  # type: ignore[union-attr]
-                )
-                .where(
-                    PipelineRunSchema.workspace_id == pipeline_run.workspace
-                )
-            ).first()
+        run_schema = session.exec(
+            select(PipelineRunSchema)
+            # The following line locks the row in the DB, so anyone else
+            # calling `SELECT ... FOR UPDATE` will wait until the first
+            # transaction to do so finishes. After the first transaction
+            # finishes, the subsequent queries will not be able to find a
+            # placeholder run anymore, as we already updated the
+            # orchestrator_run_id.
+            # Note: This only locks a single row if the where clause of
+            # the query is indexed (we have a unique index due to the
+            # unique constraint on those columns). Otherwise, this will lock
+            # multiple rows or even the complete table which we want to
+            # avoid.
+            .with_for_update()
+            .where(PipelineRunSchema.deployment_id == pipeline_run.deployment)
+            .where(
+                PipelineRunSchema.orchestrator_run_id.is_(None)  # type: ignore[union-attr]
+            )
+            .where(PipelineRunSchema.workspace_id == pipeline_run.workspace)
+        ).first()
 
-            if not run_schema:
-                raise KeyError("No placeholder run found.")
+        if not run_schema:
+            raise KeyError("No placeholder run found.")
 
-            if pre_replacement_hook:
-                pre_replacement_hook()
-            run_schema.update_placeholder(pipeline_run)
+        if pre_replacement_hook:
+            pre_replacement_hook()
+        run_schema.update_placeholder(pipeline_run)
 
-            if pipeline_run.tags:
-                self._attach_tags_to_resource(
-                    tag_names=pipeline_run.tags,
-                    resource=run_schema,
-                )
-
-            session.add(run_schema)
-            session.commit()
-
-            return run_schema.to_model(
-                include_metadata=True, include_resources=True
+        if pipeline_run.tags:
+            self._attach_tags_to_resource(
+                tag_names=pipeline_run.tags,
+                resource=run_schema,
+                session=session,
             )
 
+        session.add(run_schema)
+        session.commit()
+
+        return run_schema.to_model(
+            include_metadata=True, include_resources=True
+        )
+
     def _get_run_by_orchestrator_run_id(
-        self, orchestrator_run_id: str, deployment_id: UUID
+        self, orchestrator_run_id: str, deployment_id: UUID, session: Session
     ) -> PipelineRunResponse:
         """Get a pipeline run based on deployment and orchestrator run ID.
 
         Args:
             orchestrator_run_id: The orchestrator run ID.
             deployment_id: The deployment ID.
+            session: SQLAlchemy session.
 
         Raises:
             KeyError: If no run exists for the deployment and orchestrator run
@@ -5138,25 +5146,23 @@ class SqlZenStore(BaseZenStore):
         Returns:
             The pipeline run.
         """
-        with Session(self.engine) as session:
-            run_schema = session.exec(
-                select(PipelineRunSchema)
-                .where(PipelineRunSchema.deployment_id == deployment_id)
-                .where(
-                    PipelineRunSchema.orchestrator_run_id
-                    == orchestrator_run_id
-                )
-            ).first()
-
-            if not run_schema:
-                raise KeyError(
-                    f"Unable to get run for orchestrator run ID "
-                    f"{orchestrator_run_id} and deployment ID {deployment_id}."
-                )
-
-            return run_schema.to_model(
-                include_metadata=True, include_resources=True
+        run_schema = session.exec(
+            select(PipelineRunSchema)
+            .where(PipelineRunSchema.deployment_id == deployment_id)
+            .where(
+                PipelineRunSchema.orchestrator_run_id == orchestrator_run_id
             )
+        ).first()
+
+        if not run_schema:
+            raise KeyError(
+                f"Unable to get run for orchestrator run ID "
+                f"{orchestrator_run_id} and deployment ID {deployment_id}."
+            )
+
+        return run_schema.to_model(
+            include_metadata=True, include_resources=True
+        )
 
     def get_or_create_run(
         self,
@@ -5182,83 +5188,88 @@ class SqlZenStore(BaseZenStore):
             The pipeline run, and a boolean indicating whether the run was
             created or not.
         """
-        if pipeline_run.orchestrator_run_id:
+        with Session(self.engine) as session:
+            if pipeline_run.orchestrator_run_id:
+                try:
+                    # We first try the most likely case that the run was already
+                    # created by a previous step in the same pipeline run.
+                    return (
+                        self._get_run_by_orchestrator_run_id(
+                            orchestrator_run_id=pipeline_run.orchestrator_run_id,
+                            deployment_id=pipeline_run.deployment,
+                            session=session,
+                        ),
+                        False,
+                    )
+                except KeyError:
+                    pass
+
             try:
-                # We first try the most likely case that the run was already
-                # created by a previous step in the same pipeline run.
                 return (
-                    self._get_run_by_orchestrator_run_id(
-                        orchestrator_run_id=pipeline_run.orchestrator_run_id,
-                        deployment_id=pipeline_run.deployment,
+                    self._replace_placeholder_run(
+                        pipeline_run=pipeline_run,
+                        pre_replacement_hook=pre_creation_hook,
+                        session=session,
                     ),
-                    False,
+                    True,
                 )
             except KeyError:
+                # We were not able to find/replace a placeholder run. This could
+                # be due to one of the following three reasons:
+                # (1) There never was a placeholder run for the deployment. This
+                #     is the case if the user ran the pipeline on a schedule.
+                # (2) There was a placeholder run, but a previous pipeline run
+                #     already used it. This is the case if users rerun a
+                #     pipeline run e.g. from the orchestrator UI, as they will
+                #     use the same deployment_id with a new orchestrator_run_id.
+                # (3) A step of the same pipeline run already replaced the
+                #     placeholder run.
                 pass
 
-        try:
-            return (
-                self._replace_placeholder_run(
-                    pipeline_run=pipeline_run,
-                    pre_replacement_hook=pre_creation_hook,
-                ),
-                True,
-            )
-        except KeyError:
-            # We were not able to find/replace a placeholder run. This could be
-            # due to one of the following three reasons:
-            # (1) There never was a placeholder run for the deployment. This is
-            #     the case if the user ran the pipeline on a schedule.
-            # (2) There was a placeholder run, but a previous pipeline run
-            #     already used it. This is the case if users rerun a pipeline
-            #     run e.g. from the orchestrator UI, as they will use the same
-            #     deployment_id with a new orchestrator_run_id.
-            # (3) A step of the same pipeline run already replaced the
-            #     placeholder run.
-            pass
-
-        try:
-            # We now try to create a new run. The following will happen in the
-            # three cases described above:
-            # (1) The behavior depends on whether we're the first step of the
-            #     pipeline run that's trying to create the run. If yes, the
-            #     `self._create_run(...)` will succeed. If no, a run with the
-            #     same deployment_id and orchestrator_run_id already exists and
-            #     the `self._create_run(...)` call will fail due to the unique
-            #     constraint on those columns.
-            # (2) Same as (1).
-            # (3) A step of the same pipeline run replaced the placeholder
-            #     run, which now contains the deployment_id and
-            #     orchestrator_run_id of the run that we're trying to create.
-            #     -> The `self._create_run(...) call will fail due to the unique
-            #     constraint on those columns.
-            if pre_creation_hook:
-                pre_creation_hook()
-            return self._create_run(pipeline_run), True
-        except EntityExistsError as create_error:
-            if not pipeline_run.orchestrator_run_id:
-                raise
-            # Creating the run failed because
-            # - a run with the same deployment_id and orchestrator_run_id
-            #   exists. We now fetch and return that run.
-            # - a run with the same name already exists. This could be either a
-            #   different run (in which case we want to fail) or a run created
-            #   by a step of the same pipeline run (in which case we want to
-            #   return it).
             try:
-                return (
-                    self._get_run_by_orchestrator_run_id(
-                        orchestrator_run_id=pipeline_run.orchestrator_run_id,
-                        deployment_id=pipeline_run.deployment,
-                    ),
-                    False,
-                )
-            except KeyError:
-                # We should only get here if the run creation failed because
-                # of a name conflict. We raise the error that happened during
-                # creation in any case to forward the error message to the
-                # user.
-                raise create_error
+                # We now try to create a new run. The following will happen in
+                # the three cases described above:
+                # (1) The behavior depends on whether we're the first step of
+                #     the pipeline run that's trying to create the run. If yes,
+                #     the `self._create_run(...)` call will succeed. If no, a
+                #     run with the same deployment_id and orchestrator_run_id
+                #     already exists and the `self._create_run(...)` call will
+                #     fail due to the unique constraint on those columns.
+                # (2) Same as (1).
+                # (3) A step of the same pipeline run replaced the placeholder
+                #     run, which now contains the deployment_id and
+                #     orchestrator_run_id of the run that we're trying to
+                #     create.
+                #     -> The `self._create_run(...)` call will fail due to the
+                #     unique constraint on those columns.
+                if pre_creation_hook:
+                    pre_creation_hook()
+                return self._create_run(pipeline_run, session=session), True
+            except EntityExistsError as create_error:
+                if not pipeline_run.orchestrator_run_id:
+                    raise
+                # Creating the run failed because
+                # - a run with the same deployment_id and orchestrator_run_id
+                #   exists. We now fetch and return that run.
+                # - a run with the same name already exists. This could be
+                #   either a different run (in which case we want to fail) or a
+                #   run created by a step of the same pipeline run (in which
+                #   case we want to return it).
+                try:
+                    return (
+                        self._get_run_by_orchestrator_run_id(
+                            orchestrator_run_id=pipeline_run.orchestrator_run_id,
+                            deployment_id=pipeline_run.deployment,
+                            session=session,
+                        ),
+                        False,
+                    )
+                except KeyError:
+                    # We should only get here if the run creation failed because
+                    # of a name conflict. We raise the error that happened
+                    # during creation in any case to forward the error message
+                    # to the user.
+                    raise create_error
 
     def list_runs(
         self,
@@ -5314,12 +5325,14 @@ class SqlZenStore(BaseZenStore):
                 self._attach_tags_to_resource(
                     tag_names=run_update.add_tags,
                     resource=existing_run,
+                    session=session,
                 )
             run_update.add_tags = None
             if run_update.remove_tags:
                 self._detach_tags_from_resource(
                     tag_names=run_update.remove_tags,
                     resource=existing_run,
+                    session=session,
                 )
             run_update.remove_tags = None
 
@@ -9376,7 +9389,8 @@ class SqlZenStore(BaseZenStore):
             The updated workspace.
 
         Raises:
-            KeyError: if the workspace does not exist.
+            IllegalOperationError: If the request tries to update the name of
+                the default workspace.
         """
         with Session(self.engine) as session:
             existing_workspace = self._get_schema_by_id(
@@ -10039,6 +10053,7 @@ class SqlZenStore(BaseZenStore):
                 self._attach_tags_to_resource(
                     tag_names=model.tags,
                     resource=model_schema,
+                    session=session,
                 )
             try:
                 session.commit()
@@ -10187,12 +10202,14 @@ class SqlZenStore(BaseZenStore):
                 self._attach_tags_to_resource(
                     tag_names=model_update.add_tags,
                     resource=existing_model,
+                    session=session,
                 )
             model_update.add_tags = None
             if model_update.remove_tags:
                 self._detach_tags_from_resource(
                     tag_names=model_update.remove_tags,
                     resource=existing_model,
+                    session=session,
                 )
             model_update.remove_tags = None
 
@@ -10254,6 +10271,7 @@ class SqlZenStore(BaseZenStore):
 
     def _model_version_exists(
         self,
+        session: Session,
         model_id: UUID,
         version: Optional[str] = None,
         producer_run_id: Optional[UUID] = None,
@@ -10261,6 +10279,7 @@ class SqlZenStore(BaseZenStore):
         """Check if a model version with a certain version exists.
 
         Args:
+            session: SQLAlchemy session.
             model_id: The model ID of the version.
             version: The version name.
             producer_run_id: The producer run ID. If given, checks if a numeric
@@ -10560,6 +10579,7 @@ class SqlZenStore(BaseZenStore):
                     if has_custom_name and self._model_version_exists(
                         model_id=model.id,
                         version=cast(str, model_version.name),
+                        session=session,
                     ):
                         # We failed not because of a version number conflict,
                         # but because the user requested a version name that
@@ -10572,7 +10592,9 @@ class SqlZenStore(BaseZenStore):
                             "same name and version already exists."
                         )
                     elif producer_run_id and self._model_version_exists(
-                        model_id=model.id, producer_run_id=producer_run_id
+                        model_id=model.id,
+                        producer_run_id=producer_run_id,
+                        session=session,
                     ):
                         raise RuntimeError(
                             "Auto-incremented model version already exists for "
@@ -10603,14 +10625,15 @@ class SqlZenStore(BaseZenStore):
                         )
                         time.sleep(sleep_duration)
 
-        assert model_version_schema is not None
-        if model_version.tags:
-            self._attach_tags_to_resource(
-                tag_names=model_version.tags,
-                resource=model_version_schema,
-            )
+            assert model_version_schema is not None
+            if model_version.tags:
+                self._attach_tags_to_resource(
+                    tag_names=model_version.tags,
+                    resource=model_version_schema,
+                    session=session,
+                )
 
-        return self.get_model_version(model_version_schema.id)
+            return self.get_model_version(model_version_schema.id)
 
     @track_decorator(AnalyticsEvent.CREATED_MODEL_VERSION)
     def create_model_version(
@@ -10647,9 +10670,9 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-        return model_version.to_model(
-            include_metadata=hydrate, include_resources=True
-        )
+            return model_version.to_model(
+                include_metadata=hydrate, include_resources=True
+            )
 
     def _set_filter_model_id(
         self,
@@ -10809,11 +10832,13 @@ class SqlZenStore(BaseZenStore):
                 self._attach_tags_to_resource(
                     tag_names=model_version_update_model.add_tags,
                     resource=existing_model_version,
+                    session=session,
                 )
             if model_version_update_model.remove_tags:
                 self._detach_tags_from_resource(
                     tag_names=model_version_update_model.remove_tags,
                     resource=existing_model_version,
+                    session=session,
                 )
 
             existing_model_version.update(
@@ -11174,70 +11199,72 @@ class SqlZenStore(BaseZenStore):
         )
 
     def _attach_tags_to_resource(
-        self, tag_names: List[str], resource: BaseSchema
+        self, tag_names: List[str], resource: BaseSchema, session: Session
     ) -> None:
         """Creates a tag<>resource link if not present.
 
         Args:
             tag_names: The list of names of the tags.
             resource: The resource to attach the tags to.
+            session: The database session to use.
         """
         resource_type = self._get_taggable_resource_type(resource=resource)
 
-        with Session(self.engine) as session:
-            for tag_name in tag_names:
-                try:
-                    tag = self._get_tag_schema(
-                        tag_name_or_id=tag_name,
-                        session=session,
-                    )
-                except KeyError:
-                    tag = self._create_tag_schema(
-                        TagRequest(
-                            name=tag_name,
-                        ),
-                        session=session,
-                    )
-                try:
-                    self._create_tag_resource(
-                        TagResourceRequest(
-                            tag_id=tag.id,
-                            resource_id=resource.id,
-                            resource_type=resource_type,
-                        ),
-                        session=session,
-                    )
-                except EntityExistsError:
-                    pass
+        for tag_name in tag_names:
+            try:
+                tag = self._get_tag_schema(
+                    tag_name_or_id=tag_name,
+                    session=session,
+                )
+            except KeyError:
+                tag = self._create_tag_schema(
+                    TagRequest(
+                        name=tag_name,
+                    ),
+                    session=session,
+                )
+            try:
+                self._create_tag_resource(
+                    TagResourceRequest(
+                        tag_id=tag.id,
+                        resource_id=resource.id,
+                        resource_type=resource_type,
+                    ),
+                    session=session,
+                )
+            except EntityExistsError:
+                pass
 
     def _detach_tags_from_resource(
         self,
         tag_names: List[str],
         resource: BaseSchema,
+        session: Session,
     ) -> None:
         """Deletes tag<>resource link if present.
 
         Args:
             tag_names: The list of names of the tags.
             resource: The resource to detach the tags from.
+            session: The database session to use.
         """
         resource_type = self._get_taggable_resource_type(resource=resource)
 
-        with Session(self.engine) as session:
-            for tag_name in tag_names:
-                try:
-                    tag = self._get_tag_schema(
-                        tag_name_or_id=tag_name,
-                        session=session,
-                    )
-                except KeyError:
-                    continue
-
-                self.delete_tag_resource(
-                    tag_id=tag.id,
-                    resource_id=resource.id,
-                    resource_type=resource_type,
+        for tag_name in tag_names:
+            try:
+                tag = self._get_tag_schema(
+                    tag_name_or_id=tag_name,
+                    session=session,
                 )
+            except KeyError:
+                continue
+
+            self._delete_tag_resource(
+                tag_id=tag.id,
+                resource_id=resource.id,
+                resource_type=resource_type,
+                session=session,
+            )
 
     def _create_tag_schema(
         self, tag: TagRequest, session: Session
@@ -11404,22 +11431,21 @@ class SqlZenStore(BaseZenStore):
         Raises:
             KeyError: if entity not found.
         """
-        with Session(self.engine) as session:
-            schema = session.exec(
-                select(TagResourceSchema).where(
-                    TagResourceSchema.tag_id == tag_id,
-                    TagResourceSchema.resource_id == resource_id,
-                    TagResourceSchema.resource_type == resource_type.value,
-                )
-            ).first()
-            if schema is None:
-                raise KeyError(
-                    f"Unable to get {TagResourceSchema.__tablename__} with IDs "
-                    f"`tag_id`='{tag_id}' and `resource_id`='{resource_id}' and "
-                    f"`resource_type`='{resource_type.value}': No "
-                    f"{TagResourceSchema.__tablename__} with these IDs found."
-                )
-            return schema
+        schema = session.exec(
+            select(TagResourceSchema).where(
+                TagResourceSchema.tag_id == tag_id,
+                TagResourceSchema.resource_id == resource_id,
+                TagResourceSchema.resource_type == resource_type.value,
+            )
+        ).first()
+        if schema is None:
+            raise KeyError(
+                f"Unable to get {TagResourceSchema.__tablename__} with IDs "
+                f"`tag_id`='{tag_id}' and `resource_id`='{resource_id}' and "
+                f"`resource_type`='{resource_type.value}': No "
+                f"{TagResourceSchema.__tablename__} with these IDs found."
+            )
+        return schema
 
     def _create_tag_resource(
         self, tag_resource: TagResourceRequest, session: Session
@@ -11463,11 +11489,12 @@ class SqlZenStore(BaseZenStore):
             include_metadata=True, include_resources=True
         )
 
-    def delete_tag_resource(
+    def _delete_tag_resource(
         self,
         tag_id: UUID,
         resource_id: UUID,
         resource_type: TaggableResourceTypes,
+        session: Session,
     ) -> None:
         """Deletes a tag resource relationship.
 
@@ -11475,23 +11502,23 @@ class SqlZenStore(BaseZenStore):
             tag_id: The ID of the tag to delete.
             resource_id: The ID of the resource to delete.
             resource_type: The type of the resource to delete.
+            session: The database session to use.
 
         Raises:
             KeyError: specified ID not found.
         """
-        with Session(self.engine) as session:
-            tag_model = self._get_tag_model_schema(
-                tag_id=tag_id,
-                resource_id=resource_id,
-                resource_type=resource_type,
-                session=session,
+        tag_model = self._get_tag_model_schema(
+            tag_id=tag_id,
+            resource_id=resource_id,
+            resource_type=resource_type,
+            session=session,
+        )
+        if tag_model is None:
+            raise KeyError(
+                f"Unable to delete tag<>resource with IDs: "
+                f"`tag_id`='{tag_id}' and `resource_id`='{resource_id}' "
+                f"and `resource_type`='{resource_type.value}': No "
+                "tag<>resource with these IDs found."
             )
-            if tag_model is None:
-                raise KeyError(
-                    f"Unable to delete tag<>resource with IDs: "
-                    f"`tag_id`='{tag_id}' and `resource_id`='{resource_id}' "
-                    f"and `resource_type`='{resource_type.value}': No "
-                    "tag<>resource with these IDs found."
-                )
-            session.delete(tag_model)
-            session.commit()
+        session.delete(tag_model)
+        session.commit()
