@@ -92,6 +92,7 @@ from zenml.utils import (
     source_utils,
     yaml_utils,
 )
+from zenml.utils.stack_utils import temporary_active_stack
 from zenml.utils.string_utils import format_name_template
 
 if TYPE_CHECKING:
@@ -565,19 +566,26 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             if settings:
                 compile_args["settings"] = settings
 
-            deployment, _, _ = self._compile(**compile_args)
-            pipeline_id = self._register().id
-
-            local_repo = code_repository_utils.find_active_code_repository()
-            code_repository = build_utils.verify_local_repository_context(
-                deployment=deployment, local_repo_context=local_repo
+            _from_config_file = self._parse_config_file(
+                config_path=config_path,
+                matcher=list(PipelineRunConfiguration.model_fields.keys()),
             )
+            run_config = PipelineRunConfiguration(**_from_config_file)
 
-            return build_utils.create_pipeline_build(
-                deployment=deployment,
-                pipeline_id=pipeline_id,
-                code_repository=code_repository,
-            )
+            with temporary_active_stack(stack_name_or_id=run_config.stack):
+                deployment, _, _ = self._compile(**compile_args)
+                pipeline_id = self._register().id
+
+                local_repo = code_repository_utils.find_active_code_repository()
+                code_repository = build_utils.verify_local_repository_context(
+                    deployment=deployment, local_repo_context=local_repo
+                )
+
+                return build_utils.create_pipeline_build(
+                    deployment=deployment,
+                    pipeline_id=pipeline_id,
+                    code_repository=code_repository,
+                )
 
     def _create_deployment(
         self,
@@ -800,35 +808,42 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         logger.info(f"Initiating a new run for the pipeline: `{self.name}`.")
 
         with track_handler(AnalyticsEvent.RUN_PIPELINE) as analytics_handler:
-            stack = Client().active_stack
-            deployment = self._create_deployment(**self._run_args)
-
-            self.log_pipeline_deployment_metadata(deployment)
-            run = create_placeholder_run(deployment=deployment)
-
-            analytics_handler.metadata = self._get_pipeline_analytics_metadata(
-                deployment=deployment,
-                stack=stack,
-                run_id=run.id if run else None,
+            _from_config_file = self._parse_config_file(
+                config_path=self._run_args.get("config_path"),
+                matcher=list(PipelineRunConfiguration.model_fields.keys()),
             )
+            run_config = PipelineRunConfiguration(**_from_config_file)
 
-            if run:
-                run_url = dashboard_utils.get_run_url(run)
-                if run_url:
-                    logger.info(f"Dashboard URL for Pipeline Run: {run_url}")
-                else:
-                    logger.info(
-                        "You can visualize your pipeline runs in the `ZenML "
-                        "Dashboard`. In order to try it locally, please run "
-                        "`zenml login --local`."
-                    )
+            with temporary_active_stack(stack_name_or_id=run_config.stack):
+                stack = Client().active_stack
+                deployment = self._create_deployment(**self._run_args)
 
-            deploy_pipeline(
-                deployment=deployment, stack=stack, placeholder_run=run
-            )
-            if run:
-                return Client().get_pipeline_run(run.id)
-            return None
+                self.log_pipeline_deployment_metadata(deployment)
+                run = create_placeholder_run(deployment=deployment)
+
+                analytics_handler.metadata = self._get_pipeline_analytics_metadata(
+                    deployment=deployment,
+                    stack=stack,
+                    run_id=run.id if run else None,
+                )
+
+                if run:
+                    run_url = dashboard_utils.get_run_url(run)
+                    if run_url:
+                        logger.info(f"Dashboard URL for Pipeline Run: {run_url}")
+                    else:
+                        logger.info(
+                            "You can visualize your pipeline runs in the `ZenML "
+                            "Dashboard`. In order to try it locally, please run "
+                            "`zenml login --local`."
+                        )
+
+                deploy_pipeline(
+                    deployment=deployment, stack=stack, placeholder_run=run
+                )
+                if run:
+                    return Client().get_pipeline_run(run.id)
+                return None
 
     @staticmethod
     def log_pipeline_deployment_metadata(
