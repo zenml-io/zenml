@@ -18,13 +18,13 @@ from tests.harness.harness import TestHarness
 from zenml.cli import cli
 from zenml.cli.utils import (
     parse_name_and_extra_arguments,
-    temporary_active_stack,
 )
 from zenml.client import Client
 from zenml.models import (
     ProjectResponse,
     UserResponse,
 )
+from zenml.utils.stack_utils import temporary_active_stack
 from zenml.utils.string_utils import random_str
 
 SAMPLE_CUSTOM_ARGUMENTS = [
