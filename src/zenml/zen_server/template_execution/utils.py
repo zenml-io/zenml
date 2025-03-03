@@ -149,9 +149,10 @@ def run_template(
     )
 
     def _task() -> None:
-        pypi_requirements, apt_packages = (
-            requirements_utils.get_requirements_for_stack(stack=stack)
-        )
+        (
+            pypi_requirements,
+            apt_packages,
+        ) = requirements_utils.get_requirements_for_stack(stack=stack)
 
         if build.python_version:
             version_info = version.parse(build.python_version)

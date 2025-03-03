@@ -150,17 +150,20 @@ class RBACSqlZenStore(SqlZenStore):
 
         try:
             verify_permission(
-                resource_type=ResourceType.MODEL_VERSION, action=Action.CREATE
+                resource_type=ResourceType.MODEL_VERSION,
+                action=Action.CREATE,
+                workspace_id=model_version_request.workspace,
             )
         except Exception as e:
             allow_creation = False
             error = e
 
         if allow_creation:
-            created, model_version_response = (
-                super()._get_or_create_model_version(
-                    model_version_request, producer_run_id=producer_run_id
-                )
+            (
+                created,
+                model_version_response,
+            ) = super()._get_or_create_model_version(
+                model_version_request, producer_run_id=producer_run_id
             )
         else:
             try:

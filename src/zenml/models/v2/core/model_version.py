@@ -571,6 +571,7 @@ class ModelVersionFilter(TaggableFilter):
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *TaggableFilter.FILTER_EXCLUDE_FIELDS,
         "model",
+        "scope_model",
         "run_metadata",
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [

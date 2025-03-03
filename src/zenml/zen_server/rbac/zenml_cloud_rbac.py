@@ -66,9 +66,10 @@ def _convert_from_cloud_resource(cloud_resource: str) -> Resource:
 
     workspace_id: Optional[str] = None
     if ":" in workspace_resource_type_and_id:
-        workspace_id, resource_type_and_id = (
-            workspace_resource_type_and_id.split(":", maxsplit=1)
-        )
+        (
+            workspace_id,
+            resource_type_and_id,
+        ) = workspace_resource_type_and_id.split(":", maxsplit=1)
     else:
         workspace_id = None
         resource_type_and_id = workspace_resource_type_and_id

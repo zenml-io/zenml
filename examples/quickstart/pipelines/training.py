@@ -47,9 +47,11 @@ def english_translation_pipeline(
     tokenized_dataset, tokenizer = tokenize_data(
         dataset=full_dataset, model_type=model_type
     )
-    tokenized_train_dataset, tokenized_eval_dataset, tokenized_test_dataset = (
-        split_dataset(tokenized_dataset)
-    )
+    (
+        tokenized_train_dataset,
+        tokenized_eval_dataset,
+        tokenized_test_dataset,
+    ) = split_dataset(tokenized_dataset)
     model = train_model(
         tokenized_dataset=tokenized_train_dataset,
         model_type=model_type,

@@ -86,8 +86,6 @@ def create_stack(
     Returns:
         The created stack.
     """
-    stack.user = auth_context.user.id
-
     # Check the service connector creation
     is_connector_create_needed = False
     for connector_id_or_info in stack.service_connectors:

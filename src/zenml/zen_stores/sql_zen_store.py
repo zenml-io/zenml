@@ -2736,6 +2736,9 @@ class SqlZenStore(BaseZenStore):
                     session.commit()
                 session.refresh(artifact)
             except IntegrityError:
+                # We have to rollback the failed session first in order to
+                # continue using it
+                session.rollback()
                 # We failed to create the artifact due to the unique constraint
                 # for artifact names -> The artifact was already created, we can
                 # just fetch it from the DB now
@@ -2838,6 +2841,9 @@ class SqlZenStore(BaseZenStore):
                         session.add(artifact_version_schema)
                         session.commit()
                     except IntegrityError:
+                        # We have to rollback the failed session first in order
+                        # to continue using it
+                        session.rollback()
                         if remaining_tries == 0:
                             raise EntityCreationError(
                                 f"Failed to create version for artifact "
@@ -5013,6 +5019,9 @@ class SqlZenStore(BaseZenStore):
         try:
             session.commit()
         except IntegrityError:
+            # We have to rollback the failed session first in order to
+            # continue using it
+            session.rollback()
             # This can fail if the name is taken by a different run
             self._verify_name_uniqueness(
                 resource=pipeline_run,
@@ -10576,6 +10585,9 @@ class SqlZenStore(BaseZenStore):
                     session.commit()
                     break
                 except IntegrityError:
+                    # We have to rollback the failed session first in order to
+                    # continue using it
+                    session.rollback()
                     if has_custom_name and self._model_version_exists(
                         model_id=model.id,
                         version=cast(str, model_version.name),

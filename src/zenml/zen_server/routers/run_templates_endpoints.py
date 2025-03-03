@@ -260,9 +260,12 @@ if server_config().workload_manager_enabled:
             verify_permission(
                 resource_type=ResourceType.PIPELINE_DEPLOYMENT,
                 action=Action.CREATE,
+                workspace_id=template.workspace.id,
             )
             verify_permission(
-                resource_type=ResourceType.PIPELINE_RUN, action=Action.CREATE
+                resource_type=ResourceType.PIPELINE_RUN,
+                action=Action.CREATE,
+                workspace_id=template.workspace.id,
             )
 
             return run_template(

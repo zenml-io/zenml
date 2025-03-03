@@ -164,7 +164,6 @@ class UserScopedFilter(BaseFilter):
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *BaseFilter.CLI_EXCLUDE_FIELDS,
-        "user_id",
         "scope_user",
     ]
     CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [

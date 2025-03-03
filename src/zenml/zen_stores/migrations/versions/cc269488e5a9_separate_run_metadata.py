@@ -41,10 +41,12 @@ def upgrade() -> None:
     connection = op.get_bind()
 
     run_metadata_data = connection.execute(
-        sa.text("""
+        sa.text(
+            """
             SELECT id, resource_id, resource_type
             FROM run_metadata
-        """)
+        """
+        )
     ).fetchall()
 
     # Prepare data with new UUIDs for bulk insert
@@ -107,20 +109,24 @@ def downgrade() -> None:
 
     # Fetch data from `run_metadata_resource`
     run_metadata_resource_data = connection.execute(
-        sa.text("""
+        sa.text(
+            """
             SELECT resource_id, resource_type, run_metadata_id
             FROM run_metadata_resource
-        """)
+        """
+        )
     ).fetchall()
 
     # Update `run_metadata` with the data from `run_metadata_resource`
     for row in run_metadata_resource_data:
         connection.execute(
-            sa.text("""
+            sa.text(
+                """
                 UPDATE run_metadata
                 SET resource_id = :resource_id, resource_type = :resource_type
                 WHERE id = :run_metadata_id
-            """),
+            """
+            ),
             {
                 "resource_id": row.resource_id,
                 "resource_type": row.resource_type,
