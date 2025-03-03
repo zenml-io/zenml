@@ -16,7 +16,6 @@
 import copy
 import hashlib
 import inspect
-from abc import abstractmethod
 from collections import defaultdict
 from typing import (
     TYPE_CHECKING,
@@ -27,6 +26,7 @@ from typing import (
     List,
     Mapping,
     Optional,
+    Protocol,
     Sequence,
     Tuple,
     Type,
@@ -97,7 +97,20 @@ T = TypeVar("T", bound="BaseStep[Any]")
 F = TypeVar("F", bound=Callable[..., Any])
 
 
-class BaseStep(Generic[F]):
+class _AbstractEntrypoint(Protocol[F]):
+    entrypoint: F
+    """Abstract method for core step logic.
+
+        Args:
+            *args: Positional arguments passed to the step.
+            **kwargs: Keyword arguments passed to the step.
+
+        Returns:
+            The output of the step.
+    """
+
+
+class BaseStep(Generic[F], _AbstractEntrypoint[F]):
     """Abstract base class for all ZenML steps."""
 
     def __init__(
@@ -213,20 +226,6 @@ class BaseStep(Generic[F]):
         )
 
         notebook_utils.try_to_save_notebook_cell_code(self.source_object)
-
-    @abstractmethod
-    def entrypoint(self, *args: Any, **kwargs: Any) -> Any:
-        """Abstract method for core step logic.
-
-        Args:
-            *args: Positional arguments passed to the step.
-            **kwargs: Keyword arguments passed to the step.
-
-        Returns:
-            The output of the step.
-        """
-
-    entrypoint: F  # type:ignore[no-redef]
 
     @classmethod
     def load_from_source(cls, source: Union[Source, str]) -> "BaseStep[F]":
