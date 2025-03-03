@@ -356,10 +356,9 @@ def add_tags(
             artifact_name = step_output_names[0]
 
         step_context.add_output_tags(
-            tags=tags,
+            tags=[t.name if isinstance(t, Tag) else t for t in tags],
             output_name=artifact_name,
         )
-        return
 
     # If every additional value is None, that means we are calling it bare bones
     # and this call needs to happen during a step execution. We will use the
@@ -428,10 +427,13 @@ def add_tags(
             else:
                 tag_model = client.get_tag(tag)
 
-            client.attach_tag(
-                tag_name_or_id=tag_model.name,
-                resources=[TagResource(id=resource_id, type=resource_type)],
-            )
+            if resource_id:
+                client.attach_tag(
+                    tag_name_or_id=tag_model.name,
+                    resources=[
+                        TagResource(id=resource_id, type=resource_type)
+                    ],
+                )
 
         except KeyError:
             if isinstance(tag, Tag):
@@ -439,10 +441,13 @@ def add_tags(
             else:
                 tag_model = client.create_tag(name=tag)
 
-            client.attach_tag(
-                tag_name_or_id=tag_model.name,
-                resources=[TagResource(id=resource_id, type=resource_type)],
-            )
+            if resource_id:
+                client.attach_tag(
+                    tag_name_or_id=tag_model.name,
+                    resources=[
+                        TagResource(id=resource_id, type=resource_type)
+                    ],
+                )
 
 
 @overload
