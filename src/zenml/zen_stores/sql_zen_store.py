@@ -9572,7 +9572,10 @@ class SqlZenStore(BaseZenStore):
 
             to_model = getattr(schema, "to_model", None)
             if callable(to_model):
-                return cast(AnyIdentifiedResponse, to_model(hydrate=True))
+                return cast(
+                    AnyIdentifiedResponse,
+                    to_model(include_metadata=True, include_resources=True),
+                )
             else:
                 raise RuntimeError("Unable to convert schema to model.")
 
