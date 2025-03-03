@@ -39,7 +39,6 @@ from zenml.enums import (
     ArtifactSaveType,
     ArtifactType,
     PluginSubType,
-    SecretScope,
     StackComponentType,
 )
 from zenml.exceptions import IllegalOperationError
@@ -415,11 +414,9 @@ class StackContext:
         self,
         components: Dict[StackComponentType, List[uuid.UUID]],
         stack_name: str = "aria",
-        user_id: Optional[uuid.UUID] = None,
         delete: bool = True,
     ):
         self.stack_name = sample_name(stack_name)
-        self.user_id = user_id
         self.components = components
         self.client = Client()
         self.store = self.client.zen_store
@@ -427,8 +424,6 @@ class StackContext:
 
     def __enter__(self):
         new_stack = StackRequest(
-            user=self.user_id if self.user_id else self.client.active_user.id,
-            workspace=self.client.active_workspace.id,
             name=self.stack_name,
             components=self.components,
         )
@@ -453,22 +448,18 @@ class ComponentContext:
         config: Dict[str, Any],
         flavor: str,
         component_name: str = "aria",
-        user_id: Optional[uuid.UUID] = None,
         delete: bool = True,
     ):
         self.component_name = sample_name(component_name)
         self.flavor = flavor
         self.component_type = c_type
         self.config = config
-        self.user_id = user_id
         self.client = Client()
         self.store = self.client.zen_store
         self.delete = delete
 
     def __enter__(self):
         new_component = ComponentRequest(
-            user=self.user_id if self.user_id else self.client.active_user.id,
-            workspace=self.client.active_workspace.id,
             name=self.component_name,
             type=self.component_type,
             flavor=self.flavor,
@@ -531,23 +522,19 @@ class SecretContext:
     def __init__(
         self,
         secret_name: Optional[str] = None,
-        scope: SecretScope = SecretScope.WORKSPACE,
+        private: bool = False,
         values: Dict[str, str] = {
             "sleep": "yes",
             "food": "hell yeah",
             "bath": "NO!",
         },
-        user_id: Optional[uuid.UUID] = None,
-        workspace_id: Optional[uuid.UUID] = None,
         delete: bool = True,
     ):
         self.secret_name = (
             sample_name("axls-secrets") if not secret_name else secret_name
         )
-        self.scope = scope
+        self.private = private
         self.values = values
-        self.user_id = user_id
-        self.workspace_id = workspace_id
         self.client = Client()
         self.store = self.client.zen_store
         self.delete = delete
@@ -555,10 +542,8 @@ class SecretContext:
     def __enter__(self):
         new_secret = SecretRequest(
             name=self.secret_name,
-            scope=self.scope,
+            private=self.private,
             values=self.values,
-            user=self.user_id or self.client.active_user.id,
-            workspace=self.workspace_id or self.client.active_workspace.id,
         )
         self.created_secret = self.store.create_secret(new_secret)
         return self.created_secret
@@ -577,12 +562,10 @@ class SecretContext:
 class CodeRepositoryContext:
     def __init__(
         self,
-        user_id: Optional[uuid.UUID] = None,
         workspace_id: Optional[uuid.UUID] = None,
         delete: bool = True,
     ):
         self.code_repo_name = sample_name("code_repo")
-        self.user_id = user_id
         self.workspace_id = workspace_id
         self.client = Client()
         self.store = self.client.zen_store
@@ -597,7 +580,6 @@ class CodeRepositoryContext:
                 "attribute": "StubCodeRepository",
                 "type": "user",
             },
-            user=self.user_id or self.client.active_user.id,
             workspace=self.workspace_id or self.client.active_workspace.id,
         )
 
@@ -628,7 +610,6 @@ class ServiceConnectorContext:
         expires_at: Optional[datetime] = None,
         expires_skew_tolerance: Optional[int] = None,
         expiration_seconds: Optional[int] = None,
-        user_id: Optional[uuid.UUID] = None,
         workspace_id: Optional[uuid.UUID] = None,
         labels: Optional[Dict[str, str]] = None,
         client: Optional[Client] = None,
@@ -644,7 +625,6 @@ class ServiceConnectorContext:
         self.expires_at = expires_at
         self.expires_skew_tolerance = expires_skew_tolerance
         self.expiration_seconds = expiration_seconds
-        self.user_id = user_id
         self.workspace_id = workspace_id
         self.labels = labels
         self.client = client or Client()
@@ -664,8 +644,6 @@ class ServiceConnectorContext:
             expires_skew_tolerance=self.expires_skew_tolerance,
             expiration_seconds=self.expiration_seconds,
             labels=self.labels or {},
-            user=self.user_id or self.client.active_user.id,
-            workspace=self.workspace_id or self.client.active_workspace.id,
         )
 
         self.connector = self.store.create_service_connector(request)
@@ -688,13 +666,11 @@ class ModelContext:
         create_version: bool = False,
         create_artifacts: int = 0,
         create_prs: int = 0,
-        user_id: Optional[uuid.UUID] = None,
         artifact_types: Optional[List[ArtifactType]] = None,
         delete: bool = True,
     ):
         client = Client()
         self.workspace = client.active_workspace.id
-        self.user = user_id or client.active_user.id
         self.model = sample_name("su_model")
         self.model_version = "2.0.0"
 
@@ -717,7 +693,6 @@ class ModelContext:
     def __enter__(self):
         client = Client()
         ws = client.get_workspace(self.workspace)
-        user = client.get_user(self.user)
         stack = client.active_stack
         try:
             model = client.get_model(self.model)
@@ -729,7 +704,6 @@ class ModelContext:
             except KeyError:
                 mv = client.zen_store.create_model_version(
                     ModelVersionRequest(
-                        user=user.id,
                         workspace=ws.id,
                         model=model.id,
                         name=self.model_version,
@@ -741,6 +715,7 @@ class ModelContext:
                 ArtifactRequest(
                     name=sample_name("sample_artifact"),
                     has_custom_name=True,
+                    workspace=ws.id,
                 )
             )
             client.get_artifact(artifact.id)
@@ -753,7 +728,6 @@ class ModelContext:
                     materializer="module.class",
                     type=self.artifact_types[i],
                     uri="",
-                    user=user.id,
                     workspace=ws.id,
                     save_type=ArtifactSaveType.STEP_OUTPUT,
                 )
@@ -762,7 +736,6 @@ class ModelContext:
         for _ in range(self.create_prs):
             deployment = client.zen_store.create_deployment(
                 PipelineDeploymentRequest(
-                    user=user.id,
                     workspace=ws.id,
                     stack=stack.id,
                     run_name_template="",
@@ -775,15 +748,13 @@ class ModelContext:
             self.prs.append(
                 client.zen_store.get_or_create_run(
                     PipelineRunRequest(
-                        id=uuid.uuid4(),
                         name=sample_name("sample_pipeline_run"),
                         status="running",
                         config=PipelineConfiguration(name="aria_pipeline"),
-                        user=user.id,
                         workspace=ws.id,
                         deployment=deployment.id,
                     )
-                )
+                )[0]
             )
         if self.create_version:
             if self.create_artifacts:
@@ -1098,7 +1069,6 @@ flavor_crud_test_config = CrudTestConfig(
         integration="",
         source="",
         config_schema={},
-        user=uuid.uuid4(),
         workspace=uuid.uuid4(),
     ),
     filter_model=FlavorFilter,
@@ -1110,7 +1080,6 @@ component_crud_test_config = CrudTestConfig(
         type=StackComponentType.ORCHESTRATOR,
         flavor="local",
         configuration={},
-        user=uuid.uuid4(),
         workspace=uuid.uuid4(),
     ),
     update_model=ComponentUpdate(name=sample_name("updated_sample_component")),
@@ -1120,7 +1089,6 @@ component_crud_test_config = CrudTestConfig(
 pipeline_crud_test_config = CrudTestConfig(
     create_model=PipelineRequest(
         name=sample_name("sample_pipeline"),
-        user=uuid.uuid4(),
         workspace=uuid.uuid4(),
         description="Pipeline description",
     ),
@@ -1136,7 +1104,7 @@ pipeline_crud_test_config = CrudTestConfig(
 #         name=sample_name("sample_pipeline_run"),
 #         status=ExecutionStatus.RUNNING,
 #         config=PipelineConfiguration(name="aria_pipeline"),
-#         user=uuid.uuid4(),
+#
 #         workspace=uuid.uuid4(),
 #     ),
 #     update_model=PipelineRunUpdateModel(status=ExecutionStatus.COMPLETED),
@@ -1146,6 +1114,7 @@ pipeline_crud_test_config = CrudTestConfig(
 artifact_crud_test_config = CrudTestConfig(
     entity_name="artifact",
     create_model=ArtifactRequest(
+        workspace=uuid.uuid4(),
         name=sample_name("sample_artifact"),
         has_custom_name=True,
     ),
@@ -1164,7 +1133,6 @@ artifact_version_crud_test_config = CrudTestConfig(
         materializer="module.class",
         type=ArtifactType.DATA,
         uri="",
-        user=uuid.uuid4(),
         workspace=uuid.uuid4(),
         save_type=ArtifactSaveType.STEP_OUTPUT,
     ),
@@ -1176,8 +1144,6 @@ secret_crud_test_config = CrudTestConfig(
     create_model=SecretRequest(
         name=sample_name("sample_secret"),
         values={"key": "value"},
-        user=uuid.uuid4(),
-        workspace=uuid.uuid4(),
     ),
     filter_model=SecretFilter,
     entity_name="secret",
@@ -1188,8 +1154,6 @@ remote_orchestrator_crud_test_config = CrudTestConfig(
         type=StackComponentType.ORCHESTRATOR,
         flavor="kubernetes",
         configuration={},
-        user=uuid.uuid4(),
-        workspace=uuid.uuid4(),
     ),
     filter_model=ComponentFilter,
     entity_name="stack_component",
@@ -1200,16 +1164,12 @@ remote_artifact_store_crud_test_config = CrudTestConfig(
         type=StackComponentType.ARTIFACT_STORE,
         flavor="s3",
         configuration={"path": "s3://bucket"},
-        user=uuid.uuid4(),
-        workspace=uuid.uuid4(),
     ),
     filter_model=ComponentFilter,
     entity_name="stack_component",
 )
 remote_stack_crud_test_config = CrudTestConfig(
     create_model=StackRequest(
-        user=uuid.uuid4(),
-        workspace=uuid.uuid4(),
         name=sample_name("remote_stack"),
         components={},
     ),
@@ -1222,7 +1182,6 @@ remote_stack_crud_test_config = CrudTestConfig(
 )
 build_crud_test_config = CrudTestConfig(
     create_model=PipelineBuildRequest(
-        user=uuid.uuid4(),
         workspace=uuid.uuid4(),
         images={},
         is_local=False,
@@ -1234,7 +1193,6 @@ build_crud_test_config = CrudTestConfig(
 )
 deployment_crud_test_config = CrudTestConfig(
     create_model=PipelineDeploymentRequest(
-        user=uuid.uuid4(),
         workspace=uuid.uuid4(),
         stack=uuid.uuid4(),
         run_name_template="template",
@@ -1249,7 +1207,6 @@ deployment_crud_test_config = CrudTestConfig(
 )
 code_repository_crud_test_config = CrudTestConfig(
     create_model=CodeRepositoryRequest(
-        user=uuid.uuid4(),
         workspace=uuid.uuid4(),
         name=sample_name("sample_code_repository"),
         config={},
@@ -1275,8 +1232,6 @@ service_account_crud_test_config = CrudTestConfig(
 )
 service_connector_crud_test_config = CrudTestConfig(
     create_model=ServiceConnectorRequest(
-        user=uuid.uuid4(),
-        workspace=uuid.uuid4(),
         name=sample_name("sample_service_connector"),
         connector_type="docker",
         auth_method="password",
@@ -1293,7 +1248,6 @@ service_connector_crud_test_config = CrudTestConfig(
 )
 model_crud_test_config = CrudTestConfig(
     create_model=ModelRequest(
-        user=uuid.uuid4(),
         workspace=uuid.uuid4(),
         name=sample_name("super_model"),
         license="who cares",
@@ -1315,7 +1269,6 @@ model_crud_test_config = CrudTestConfig(
 )
 remote_deployment_crud_test_config = CrudTestConfig(
     create_model=PipelineDeploymentRequest(
-        user=uuid.uuid4(),
         workspace=uuid.uuid4(),
         stack=uuid.uuid4(),
         build=uuid.uuid4(),  # will be overridden in create()
@@ -1337,7 +1290,6 @@ run_template_test_config = CrudTestConfig(
         name=sample_name("run_template"),
         description="Test run template.",
         source_deployment_id=uuid.uuid4(),  # will be overridden in create()
-        user=uuid.uuid4(),
         workspace=uuid.uuid4(),
     ),
     update_model=RunTemplateUpdate(name=sample_name("updated_run_template")),
@@ -1354,7 +1306,6 @@ event_source_crud_test_config = CrudTestConfig(
         description="Best event source ever",
         flavor="github",  # TODO: Implementations can be parametrized later
         plugin_subtype=PluginSubType.WEBHOOK,
-        user=uuid.uuid4(),
         workspace=uuid.uuid4(),
     ),
     update_model=EventSourceUpdate(
@@ -1372,7 +1323,6 @@ action_crud_test_config = CrudTestConfig(
         configuration={"template_id": uuid.uuid4()},
         plugin_subtype=PluginSubType.PIPELINE_RUN,
         flavor="builtin",
-        user=uuid.uuid4(),
         workspace=uuid.uuid4(),
     ),
     update_model=ActionUpdate(name=sample_name("updated_blupus_feeder")),
@@ -1391,7 +1341,6 @@ trigger_crud_test_config = CrudTestConfig(
         action_id=uuid.uuid4(),  # will be overridden in create()
         event_filter={},
         event_source_id=uuid.uuid4(),  # will be overridden in create()
-        user=uuid.uuid4(),
         workspace=uuid.uuid4(),
     ),
     update_model=TriggerUpdate(name=sample_name("updated_sample_component")),
@@ -1412,7 +1361,7 @@ trigger_crud_test_config = CrudTestConfig(
 #             config=StepConfiguration(name="sample_step_run")
 #         ),
 #         status=ExecutionStatus.RUNNING,
-#         user=uuid.uuid4(),
+#
 #         workspace=uuid.uuid4(),
 #         pipeline_run_id=uuid.uuid4()   # Pipeline run with id needs to exist
 #     ),

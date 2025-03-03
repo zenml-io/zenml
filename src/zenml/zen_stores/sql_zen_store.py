@@ -11357,7 +11357,7 @@ class SqlZenStore(BaseZenStore):
                 tag_name_or_id=tag_name_or_id,
                 session=session,
             )
-        return tag.to_model(include_metadata=hydrate, include_resources=True)
+            return tag.to_model(include_metadata=hydrate, include_resources=True)
 
     def list_tags(
         self,

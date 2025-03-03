@@ -6245,6 +6245,7 @@ class Client(metaclass=ClientMetaClass):
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
+        id: Optional[Union[UUID, str]] = None,
         user: Optional[Union[UUID, str]] = None,
         workspace: Optional[Union[str, UUID]] = None,
         hydrate: bool = False,
@@ -6260,6 +6261,7 @@ class Client(metaclass=ClientMetaClass):
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
             name: The name of the model to filter by.
+            id: The id of the model to filter by.
             user: Filter by user name/ID.
             workspace: The workspace name/ID to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
@@ -6271,6 +6273,7 @@ class Client(metaclass=ClientMetaClass):
         """
         filter = ModelFilter(
             name=name,
+            id=id,
             sort_by=sort_by,
             page=page,
             size=size,
