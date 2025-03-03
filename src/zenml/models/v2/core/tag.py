@@ -40,8 +40,8 @@ class TagRequest(BaseRequest):
         description="The unique title of the tag.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    singleton: Optional[bool] = Field(
-        description="The flag signifying whether the tag is a singleton.",
+    rolling: Optional[bool] = Field(
+        description="The flag signifying whether the tag is a rolling tag.",
         default=False,
     )
     color: Optional[ColorVariants] = Field(
@@ -61,7 +61,7 @@ class TagUpdate(BaseModel):
     """Update model for tags."""
 
     name: Optional[str] = None
-    singleton: Optional[bool] = None
+    rolling: Optional[bool] = None
     color: Optional[ColorVariants] = None
 
 
@@ -75,8 +75,8 @@ class TagResponseBody(BaseDatedResponseBody):
         description="The color variant assigned to the tag.",
         default_factory=lambda: random.choice(list(ColorVariants)),
     )
-    singleton: bool = Field(
-        description="The flag signifying whether the tag is a singleton."
+    rolling: bool = Field(
+        description="The flag signifying whether the tag is a rolling tag."
     )
     tagged_count: int = Field(
         description="The count of resources tagged with this tag."
@@ -119,13 +119,13 @@ class TagResponse(
         return self.get_body().color
 
     @property
-    def singleton(self) -> bool:
-        """The `singleton` property.
+    def rolling(self) -> bool:
+        """The `rolling` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_body().singleton
+        return self.get_body().rolling
 
     @property
     def tagged_count(self) -> int:
@@ -149,7 +149,7 @@ class TagFilter(BaseFilter):
     color: Optional[ColorVariants] = Field(
         description="The color variant assigned to the tag.", default=None
     )
-    singleton: Optional[bool] = Field(
-        description="The flag signifying whether the tag is a singleton.",
+    rolling: Optional[bool] = Field(
+        description="The flag signifying whether the tag is a rolling tag.",
         default=None,
     )

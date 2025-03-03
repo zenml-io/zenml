@@ -7527,7 +7527,7 @@ class Client(metaclass=ClientMetaClass):
     def create_tag(
         self,
         name: str,
-        singleton: Optional[bool] = False,
+        rolling: Optional[bool] = False,
         color: Optional[Union[str, ColorVariants]] = None,
         resources: Optional[List[TagResource]] = None,
     ) -> TagResponse:
@@ -7535,21 +7535,21 @@ class Client(metaclass=ClientMetaClass):
 
         Args:
             name: the name of the tag.
-            singleton: the boolean to decide whether the tag is a singleton.
-                A singleton means that the tag can exist only for:
+            rolling: the boolean to decide whether the tag is a rolling tag.
+                A rolling tag means that the tag can exist only for:
                     - a pipeline run within the scope of a pipeline
                     - an artifact version within the scope of an artifact
                     - within the scope of run templates
             color: the color of the tag
             resources: the resources to tag
 
-        Returns:
+        Returns:    
             The newly created tag.
         """
         request_model = TagRequest(name=name)
 
-        if singleton is not None:
-            request_model.singleton = singleton
+        if rolling is not None:
+            request_model.rolling = rolling
 
         if color is not None:
             if isinstance(color, str):
@@ -7574,7 +7574,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         tag_name_or_id: Union[str, UUID],
         name: Optional[str] = None,
-        singleton: Optional[bool] = None,
+        rolling: Optional[bool] = None,
         color: Optional[Union[str, ColorVariants]] = None,
     ) -> TagResponse:
         """Updates an existing tag.
@@ -7582,11 +7582,11 @@ class Client(metaclass=ClientMetaClass):
         Args:
             tag_name_or_id: name or UUID of the tag to be updated.
             name: the name of the tag.
-            singleton: the boolean to decide whether the tag is a singleton.
-                A singleton means that the tag can be associated with only one:
-                    - pipeline run within the scope of a pipeline
-                    - artifact version within the scope of an artifact
-                    - run template
+            rolling: the boolean to decide whether the tag is a rolling tag.
+                A rolling tag means that the tag can be associated with multiple:
+                    - pipeline runs within the scope of a pipeline
+                    - artifact versions within the scope of an artifact
+                    - run templates
             color: the color of the tag
 
         Returns:
@@ -7597,8 +7597,8 @@ class Client(metaclass=ClientMetaClass):
         if name is not None:
             update_model.name = name
 
-        if singleton is not None:
-            update_model.singleton = singleton
+        if rolling is not None:
+            update_model.rolling = rolling
 
         if color is not None:
             if isinstance(color, str):
@@ -7639,7 +7639,7 @@ class Client(metaclass=ClientMetaClass):
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
         color: Optional[Union[str, ColorVariants]] = None,
-        singleton: Optional[bool] = None,
+        rolling: Optional[bool] = None,
         hydrate: bool = False,
     ) -> Page[TagResponse]:
         """Get tags by filter.
@@ -7654,7 +7654,7 @@ class Client(metaclass=ClientMetaClass):
             updated: Use the last updated date for filtering.
             name: The name of the tag.
             color: The color of the tag.
-            singleton: Flag indicating whether the tag is singleton.
+            rolling: Flag indicating whether the tag is rolling.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -7672,7 +7672,7 @@ class Client(metaclass=ClientMetaClass):
                 updated=updated,
                 name=name,
                 color=color,
-                singleton=singleton,
+                rolling=rolling,
             ),
             hydrate=hydrate,
         )

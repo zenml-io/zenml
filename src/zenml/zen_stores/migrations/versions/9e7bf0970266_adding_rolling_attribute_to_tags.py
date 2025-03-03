@@ -1,4 +1,4 @@
-"""adding singletons to tags [9e7bf0970266].
+"""adding rolling attribute to tags [9e7bf0970266].
 
 Revision ID: 9e7bf0970266
 Revises: 0.75.0
@@ -21,7 +21,7 @@ def upgrade() -> None:
     op.add_column(
         "tag",
         sa.Column(
-            "singleton",
+            "rolling",
             sa.Boolean(),
             nullable=False,
             server_default=sa.false(),
@@ -31,4 +31,4 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     """Downgrade database schema and/or data back to the previous revision."""
-    op.drop_column("tag", "singleton")
+    op.drop_column("tag", "rolling")

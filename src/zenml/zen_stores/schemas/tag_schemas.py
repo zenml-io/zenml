@@ -43,7 +43,7 @@ class TagSchema(NamedSchema, table=True):
     __tablename__ = "tag"
 
     color: str = Field(sa_column=Column(VARCHAR(255), nullable=False))
-    singleton: bool = Field(default=False)
+    rolling: bool = Field(default=False)
 
     links: List["TagResourceSchema"] = Relationship(
         back_populates="tag",
@@ -63,7 +63,7 @@ class TagSchema(NamedSchema, table=True):
         return cls(
             name=request.name,
             color=request.color.value if request.color else None,
-            singleton=request.singleton,
+            rolling=request.rolling,
         )
 
     def to_model(
@@ -90,7 +90,7 @@ class TagSchema(NamedSchema, table=True):
                 created=self.created,
                 updated=self.updated,
                 color=ColorVariants(self.color),
-                singleton=self.singleton,
+                rolling=self.rolling,
                 tagged_count=len(self.links),
             ),
         )

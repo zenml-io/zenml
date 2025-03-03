@@ -44,7 +44,7 @@ class Tag(BaseModel):
 
     name: str
     color: Optional[ColorVariants] = None
-    singleton: Optional[bool] = None
+    rolling: Optional[bool] = None
     hierarchical: Optional[bool] = None
 
     def to_request(self) -> "TagRequest":
@@ -59,8 +59,8 @@ class Tag(BaseModel):
         if self.color is not None:
             request.color = self.color
 
-        if self.singleton is not None:
-            request.singleton = self.singleton
+        if self.rolling is not None:
+            request.rolling = self.rolling
         return request
 
 
@@ -134,7 +134,7 @@ def get_resource_type_from_schema(
 @overload
 def add_tags(
     tags: List[str],
-    singleton: Optional[bool] = None,
+    rolling: Optional[bool] = None,
 ) -> None: ...
 
 
@@ -143,7 +143,7 @@ def add_tags(
     *,
     tags: List[str],
     run: Union[UUID, str],
-    singleton: Optional[bool] = None,
+    rolling: Optional[bool] = None,
 ) -> None: ...
 
 
@@ -152,7 +152,7 @@ def add_tags(
     *,
     tags: List[str],
     artifact_version_id: UUID,
-    singleton: Optional[bool] = None,
+    rolling: Optional[bool] = None,
 ) -> None: ...
 
 
@@ -162,7 +162,7 @@ def add_tags(
     tags: List[str],
     artifact_name: str,
     artifact_version: Optional[str] = None,
-    singleton: Optional[bool] = None,
+    rolling: Optional[bool] = None,
 ) -> None: ...
 
 
@@ -172,7 +172,7 @@ def add_tags(
     tags: List[str],
     infer_artifact: bool = False,
     artifact_name: Optional[str] = None,
-    singleton: Optional[bool] = None,
+    rolling: Optional[bool] = None,
 ) -> None: ...
 
 
@@ -189,13 +189,13 @@ def add_tags(
     *,
     tags: List[str],
     run_template: Union[UUID, str],
-    singleton: Optional[bool] = None,
+    rolling: Optional[bool] = None,
 ) -> None: ...
 
 
 def add_tags(
     tags: List[str],
-    singleton: Optional[bool] = None,
+    rolling: Optional[bool] = None,
     # Pipelines
     pipeline: Optional[Union[UUID, str]] = None,
     # Runs
@@ -212,7 +212,7 @@ def add_tags(
 
     Args:
         tags: The tags to add.
-        singleton: Whether the tag is a singleton. Only applicable to
+        rolling: Whether the tag is a rolling. Only applicable to
             pipeline runs, artifact versions and run templates.
         run: The id, name or prefix of the run.
         artifact_version_id: The ID of the artifact version.
@@ -225,7 +225,7 @@ def add_tags(
 
     Raises:
         ValueError: If no identifiers are provided and the function is not
-            called from within a step, or if singleton is provided for a
+            called from within a step, or if rolling is provided for a
             resource type that doesn't support it.
     """
     from zenml.client import Client
@@ -339,13 +339,13 @@ def add_tags(
                 add_tags(tags=[...])
                 
                 # Manual tagging to a pipeline run
-                add_tags(tags=[...], run_id_name_or_prefix=..., singleton=...)
+                add_tags(tags=[...], run_id_name_or_prefix=..., rolling=...)
                 
                 # Manual tagging to a pipeline
                 add_tags(tags=[...], pipeline_id=...)
                 
                 # Manual tagging to a run template
-                add_tags(tags=[...], run_template_id=..., singleton=...)
+                add_tags(tags=[...], run_template_id=..., rolling=...)
                 
                 # Automatic tagging to a model (within a step)
                 add_tags(tags=[...], infer_model=True)
@@ -355,12 +355,12 @@ def add_tags(
                 add_tags(tags=[...], model_version_id=...)
                 
                 # Automatic tagging to an artifact (within a step)
-                add_tags(tags=[...], infer_artifact=True, singleton=...)  # step with single output
-                add_tags(tags=[...], artifact_name=..., infer_artifact=True, singleton=...)  # specific output of a step
+                add_tags(tags=[...], infer_artifact=True, rolling=...)  # step with single output
+                add_tags(tags=[...], artifact_name=..., infer_artifact=True, rolling=...)  # specific output of a step
             
                 # Manual tagging to an artifact
-                add_tags(tags=[...], artifact_name=..., artifact_version=..., singleton=...)
-                add_tags(tags=[...], artifact_version_id=..., singleton=...)
+                add_tags(tags=[...], artifact_name=..., artifact_version=..., rolling=...)
+                add_tags(tags=[...], artifact_version_id=..., rolling=...)
                 """
             )
 
@@ -378,13 +378,13 @@ def add_tags(
             add_tags(tags=[...])
             
             # Manual tagging to a pipeline run
-            add_tags(tags=[...], run_id_name_or_prefix=..., singleton=...)
+            add_tags(tags=[...], run_id_name_or_prefix=..., rolling=...)
             
             # Manual tagging to a pipeline
             add_tags(tags=[...], pipeline_id=...)
             
             # Manual tagging to a run template
-            add_tags(tags=[...], run_template_id=..., singleton=...)
+            add_tags(tags=[...], run_template_id=..., rolling=...)
             
             # Automatic tagging to a model (within a step)
             add_tags(tags=[...], infer_model=True)
@@ -394,17 +394,17 @@ def add_tags(
             add_tags(tags=[...], model_version_id=...)
             
             # Automatic tagging to an artifact (within a step)
-            add_tags(tags=[...], infer_artifact=True, singleton=...)  # step with single output
-            add_tags(tags=[...], artifact_name=..., infer_artifact=True, singleton=...)  # specific output of a step
+            add_tags(tags=[...], infer_artifact=True, rolling=...)  # step with single output
+            add_tags(tags=[...], artifact_name=..., infer_artifact=True, rolling=...)  # specific output of a step
             
             # Manual tagging to an artifact
-            add_tags(tags=[...], artifact_name=..., artifact_version=..., singleton=...)
-            add_tags(tags=[...], artifact_version_id=..., singleton=...)
+            add_tags(tags=[...], artifact_name=..., artifact_version=..., rolling=...)
+            add_tags(tags=[...], artifact_version_id=..., rolling=...)
             """
         )
 
-    # Validate singleton parameter for resource type
-    if singleton and resource_type not in [
+    # Validate rolling parameter for resource type
+    if rolling and resource_type not in [
         TaggableResourceTypes.PIPELINE_RUN,
         TaggableResourceTypes.ARTIFACT_VERSION,
         TaggableResourceTypes.RUN_TEMPLATE,
@@ -419,10 +419,10 @@ def add_tags(
         try:
             tag_model = client.get_tag(tag_name)
 
-            if singleton != tag_model.singleton:
+            if rolling != tag_model.rolling:
                 raise ValueError(
                     f"The tag `{tag_name}` is a "
-                    f"{'singleton' if tag_model.singleton else 'non-singleton'} "
+                    f"{'rolling' if tag_model.rolling else 'non-rolling'} "
                     "tag. Please update it before attaching it to a resource."
                 )
 
@@ -434,7 +434,7 @@ def add_tags(
         except KeyError:
             tag_model = client.create_tag(
                 name=tag_name,
-                singleton=singleton,
+                rolling=rolling,
             )
             client.attach_tag(
                 tag_name_or_id=tag_model.name,
