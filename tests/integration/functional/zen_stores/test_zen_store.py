@@ -4456,7 +4456,7 @@ class TestModelVersion:
 
     def test_update_not_found(self):
         """Test that update fails if not found."""
-        with ModelContext() as model:
+        with ModelContext():
             zs = Client().zen_store
             with pytest.raises(KeyError):
                 zs.update_model_version(

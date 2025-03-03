@@ -57,7 +57,8 @@ def upgrade() -> None:
 
     with op.batch_alter_table("secret", schema=None) as batch_op:
         batch_op.create_unique_constraint(
-            "unique_secret_name_and_private_scope", ["name", "private"]
+            "unique_secret_name_private_scope_user",
+            ["name", "private", "user_id"],
         )
 
     with op.batch_alter_table("service_connector", schema=None) as batch_op:

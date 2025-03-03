@@ -153,7 +153,6 @@ from zenml.models.v2.core.device import (
     OAuthDeviceInternalResponse,
 )
 from zenml.models.v2.core.flavor import (
-    BuiltinFlavorRequest,
     FlavorRequest,
     FlavorUpdate,
     FlavorFilter,
@@ -548,7 +547,6 @@ __all__ = [
     "ArtifactVisualizationResponse",
     "ArtifactVisualizationResponseBody",
     "ArtifactVisualizationResponseMetadata",
-    "BuiltinFlavorRequest",
     "CodeReferenceRequest",
     "CodeReferenceResponse",
     "CodeReferenceResponseBody",

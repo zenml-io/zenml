@@ -56,7 +56,8 @@ class SecretSchema(NamedSchema, table=True):
         UniqueConstraint(
             "name",
             "private",
-            name="unique_secret_name_and_private_scope",
+            "user_id",
+            name="unique_secret_name_private_scope_user",
         ),
     )
 

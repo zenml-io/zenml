@@ -3530,7 +3530,7 @@ class RestZenStore(BaseZenStore):
         return self._create_resource(
             resource=model_version,
             response_model=ModelVersionResponse,
-            route=f"{MODELS}/{model_version.model}{MODEL_VERSIONS}",
+            route=MODEL_VERSIONS,
         )
 
     def delete_model_version(
@@ -3544,7 +3544,7 @@ class RestZenStore(BaseZenStore):
         """
         self._delete_resource(
             resource_id=model_version_id,
-            route=f"{MODEL_VERSIONS}",
+            route=MODEL_VERSIONS,
         )
 
     def get_model_version(

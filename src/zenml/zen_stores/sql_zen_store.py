@@ -166,7 +166,6 @@ from zenml.models import (
     BaseRequest,
     BaseResponse,
     BaseUpdate,
-    BuiltinFlavorRequest,
     CodeReferenceRequest,
     CodeReferenceResponse,
     CodeRepositoryFilter,
@@ -3931,7 +3930,7 @@ class SqlZenStore(BaseZenStore):
             ValueError: In case the config_schema string exceeds the max length.
         """
         with Session(self.engine) as session:
-            if isinstance(flavor, BuiltinFlavorRequest):
+            if flavor.is_custom is False:
                 # Set the user to None for built-in flavors
                 flavor.user = None
             else:
@@ -9861,6 +9860,10 @@ class SqlZenStore(BaseZenStore):
                 except KeyError:
                     raise ValueError("Workspace scope missing from the filter")
 
+        # It's important to remove the workspace from the filters because it is
+        # often used in combination with other filters with an OR operator and
+        # the workspace is a mandatory scoping mechanism.
+        filter_model.workspace = None
         filter_model.set_scope_workspace(workspace_id)
 
     def _verify_name_uniqueness(
@@ -11357,7 +11360,9 @@ class SqlZenStore(BaseZenStore):
                 tag_name_or_id=tag_name_or_id,
                 session=session,
             )
-            return tag.to_model(include_metadata=hydrate, include_resources=True)
+            return tag.to_model(
+                include_metadata=hydrate, include_resources=True
+            )
 
     def list_tags(
         self,
