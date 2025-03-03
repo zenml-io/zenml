@@ -33,7 +33,7 @@ class StepInvocation:
     def __init__(
         self,
         id: str,
-        step: "BaseStep",
+        step: "BaseStep[Any]",
         input_artifacts: Dict[str, "StepArtifact"],
         external_artifacts: Dict[
             str, Union["ExternalArtifact", "ArtifactVersionResponse"]

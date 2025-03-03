@@ -32,12 +32,13 @@ from zenml.utils.function_utils import _cli_arg_name, create_cli_wrapped_script
 
 logger = get_logger(__name__)
 F = TypeVar("F", bound=Callable[..., Any])
+T = TypeVar("T", bound=BaseStep[Any])
 
 
 def run_with_accelerate(
-    step_function_top_level: Optional[BaseStep] = None,
+    step_function_top_level: Optional[T] = None,
     **accelerate_launch_kwargs: Any,
-) -> Union[Callable[[BaseStep], BaseStep], BaseStep]:
+) -> Union[Callable[[T], T], T]:
     """Run a function with accelerate.
 
     Accelerate package: https://huggingface.co/docs/accelerate/en/index
@@ -70,7 +71,7 @@ def run_with_accelerate(
         The accelerate-enabled version of the step.
     """
 
-    def _decorator(step_function: BaseStep) -> BaseStep:
+    def _decorator(step_function: T) -> T:
         def _wrapper(
             entrypoint: F, accelerate_launch_kwargs: Dict[str, Any]
         ) -> F:

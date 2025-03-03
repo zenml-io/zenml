@@ -132,10 +132,10 @@ def step(
         The step instance.
     """
 
-    def inner_decorator(func: "F") -> "BaseStep":
+    def inner_decorator(func: "F") -> "BaseStep[F]":
         from zenml.steps.decorated_step import _DecoratedStep
 
-        class_: Type["BaseStep"] = type(
+        class_: Type["BaseStep[F]"] = type(
             func.__name__,
             (_DecoratedStep,),
             {

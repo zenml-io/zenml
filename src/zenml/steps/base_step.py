@@ -93,7 +93,7 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-T = TypeVar("T", bound="BaseStep")
+T = TypeVar("T", bound="BaseStep[Any]")
 F = TypeVar("F", bound=Callable[..., Any])
 
 
@@ -226,10 +226,10 @@ class BaseStep(Generic[F]):
             The output of the step.
         """
 
-    entrypoint: F
+    entrypoint: F  # type:ignore[no-redef]
 
     @classmethod
-    def load_from_source(cls, source: Union[Source, str]) -> "BaseStep":
+    def load_from_source(cls, source: Union[Source, str]) -> "BaseStep[F]":
         """Loads a step from source.
 
         Args:
@@ -738,7 +738,7 @@ class BaseStep(Generic[F]):
         model: Optional["Model"] = None,
         merge: bool = True,
         substitutions: Optional[Dict[str, str]] = None,
-    ) -> "BaseStep":
+    ) -> "BaseStep[F]":
         """Copies the step and applies the given configurations.
 
         Args:
@@ -794,7 +794,7 @@ class BaseStep(Generic[F]):
         )
         return step_copy
 
-    def copy(self) -> "BaseStep":
+    def copy(self) -> "BaseStep[F]":
         """Copies the step.
 
         Returns:

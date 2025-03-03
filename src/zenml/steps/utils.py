@@ -499,7 +499,7 @@ def log_step_metadata(
 
 
 def run_as_single_step_pipeline(
-    __step: "BaseStep", *args: Any, **kwargs: Any
+    __step: "BaseStep[Any]", *args: Any, **kwargs: Any
 ) -> Any:
     """Runs the step as a single step pipeline.
 
