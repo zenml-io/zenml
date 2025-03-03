@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Internal BaseStep subclass used by the step decorator."""
 
-from typing import Any, Callable, TypeVar
+from typing import Any
 
 from zenml.config.source import Source
 from zenml.steps import BaseStep
