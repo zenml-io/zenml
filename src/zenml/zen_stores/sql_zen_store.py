@@ -11110,6 +11110,12 @@ class SqlZenStore(BaseZenStore):
         Args:
             tag: The tag to be attached.
             resources: The list of resources to tag.
+
+        Raises:
+            RuntimeError: If the tag can not be converted to a rolling tag due
+                to an existing tag with the same name that is not rolling.
+            ValueError: If the tag is a rolling tag and the resources are not
+                supported.
         """
         # 1. Get the tag model
         try:
@@ -11287,6 +11293,7 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             EntityExistsError: If a tag with the given name already exists.
+            KeyError: If resources are provided but not found.
         """
         validate_name(tag)
         with Session(self.engine) as session:

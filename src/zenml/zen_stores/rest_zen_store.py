@@ -4037,7 +4037,14 @@ class RestZenStore(BaseZenStore):
     def batch_create_tag_resource(
         self, tag_resources: List[TagResourceRequest]
     ) -> List[TagResourceResponse]:
-        """Create a batch of tag resource relationships."""
+        """Create a batch of tag resource relationships.
+
+        Args:
+            tag_resources: The tag resource relationships to be created.
+
+        Returns:
+            The newly created tag resource relationships.
+        """
         return self._batch_create_resources(
             resources=tag_resources,
             response_model=TagResourceResponse,
@@ -4063,7 +4070,11 @@ class RestZenStore(BaseZenStore):
     def batch_delete_tag_resource(
         self, tag_resources: List[Tuple[UUID, UUID, TaggableResourceTypes]]
     ) -> None:
-        """Delete a batch of tag resources."""
+        """Delete a batch of tag resources.
+
+        Args:
+            tag_resources: The tag resource relationships to be deleted.
+        """
         for tag_id, resource_id, resource_type in tag_resources:
             self.delete_tag_resource(
                 tag_id=tag_id,
