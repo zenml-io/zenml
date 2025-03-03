@@ -172,6 +172,7 @@ from zenml.models import (
     TagFilter,
     TagRequest,
     TagResource,
+    TagResourceRequest,
     TagResponse,
     TagUpdate,
     TriggerExecutionFilter,
@@ -7674,4 +7675,57 @@ class Client(metaclass=ClientMetaClass):
                 singleton=singleton,
             ),
             hydrate=hydrate,
+        )
+
+    def attach_tag(
+        self,
+        tag_name_or_id: Union[str, UUID],
+        resources: List[TagResource],
+    ) -> None:
+        """Attach a tag to resources.
+
+        Args:
+            tag_name_or_id: name or id of the tag to be attached.
+            resources: the resources to attach the tag to.
+        """
+        try:
+            tag_model = self.get_tag(tag_name_or_id)
+        except KeyError:
+            if isinstance(tag_name_or_id, str):
+                tag_model = self.create_tag(name=tag_name_or_id)
+            else:
+                raise KeyError(
+                    f"Tag with id {tag_name_or_id} not found. "
+                    "Please create the tag first."
+                )
+
+        self.zen_store.batch_create_tag_resource(
+            tag_resources=[
+                TagResourceRequest(
+                    tag_id=tag_model.id,
+                    resource_id=resource.id,
+                    resource_type=resource.type,
+                )
+                for resource in resources
+            ]
+        )
+
+    def detach_tag(
+        self,
+        tag_name_or_id: Union[str, UUID],
+        resources: List[TagResource],
+    ) -> None:
+        """Detach a tag from resources.
+
+        Args:
+            tag_name_or_id: name or id of the tag to be detached.
+            resources: the resources to detach the tag from.
+        """
+        tag_model = self.get_tag(tag_name_or_id)
+
+        self.zen_store.batch_delete_tag_resource(
+            tag_resources=[
+                (tag_model.id, resource.id, resource.type)
+                for resource in resources
+            ]
         )

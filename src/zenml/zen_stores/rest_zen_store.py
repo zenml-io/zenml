@@ -102,6 +102,7 @@ from zenml.constants import (
     STACK_DEPLOYMENT,
     STACKS,
     STEPS,
+    TAG_RESOURCES,
     TAGS,
     TRIGGER_EXECUTIONS,
     TRIGGERS,
@@ -114,6 +115,7 @@ from zenml.enums import (
     OAuthGrantTypes,
     StackDeploymentProvider,
     StoreType,
+    TaggableResourceTypes,
 )
 from zenml.exceptions import (
     AuthorizationException,
@@ -244,6 +246,8 @@ from zenml.models import (
     StepRunUpdate,
     TagFilter,
     TagRequest,
+    TagResourceRequest,
+    TagResourceResponse,
     TagResponse,
     TagUpdate,
     TriggerExecutionFilter,
@@ -4009,6 +4013,63 @@ class RestZenStore(BaseZenStore):
             route=TAGS,
             response_model=TagResponse,
         )
+
+    # ---------------------------- Tag Resource ----------------------------
+
+    def create_tag_resource(
+        self,
+        tag_resource: TagResourceRequest,
+    ) -> TagResourceResponse:
+        """Create a new tag resource.
+
+        Args:
+            tag_resource: The tag resource to be created.
+
+        Returns:
+            The newly created tag resource.
+        """
+        return self._create_resource(
+            resource=tag_resource,
+            response_model=TagResourceResponse,
+            route=TAG_RESOURCES,
+        )
+
+    def batch_create_tag_resource(
+        self, tag_resources: List[TagResourceRequest]
+    ) -> List[TagResourceResponse]:
+        """Create a batch of tag resource relationships."""
+        return self._batch_create_resources(
+            resources=tag_resources,
+            response_model=TagResourceResponse,
+            route=TAG_RESOURCES,
+        )
+
+    def delete_tag_resource(
+        self,
+        tag_id: UUID,
+        resource_id: UUID,
+        resource_type: TaggableResourceTypes,
+    ) -> None:
+        """Delete a tag resource.
+
+        Args:
+            tag_id: The ID of the tag.
+            resource_id: The ID of the resource.
+            resource_type: The type of the resource.
+        """
+        # TODO: Fix
+        self.delete(f"{TAG_RESOURCES}/{tag_id}/{resource_id}/{resource_type}")
+
+    def batch_delete_tag_resource(
+        self, tag_resources: List[Tuple[UUID, UUID, TaggableResourceTypes]]
+    ) -> None:
+        """Delete a batch of tag resources."""
+        for tag_id, resource_id, resource_type in tag_resources:
+            self.delete_tag_resource(
+                tag_id=tag_id,
+                resource_id=resource_id,
+                resource_type=resource_type,
+            )
 
     # =======================
     # Internal helper methods

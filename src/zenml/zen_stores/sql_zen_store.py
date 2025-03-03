@@ -9980,7 +9980,7 @@ class SqlZenStore(BaseZenStore):
             session=session,
         )
 
-    def _get_tag_model_schema(
+    def _get_tag_resource_model_schema(
         self,
         tag_id: UUID,
         resource_id: UUID,
@@ -11556,6 +11556,22 @@ class SqlZenStore(BaseZenStore):
                 include_metadata=True, include_resources=True
             )
 
+    def batch_create_tag_resource(
+        self, tag_resources: List[TagResourceRequest]
+    ) -> List[TagResourceResponse]:
+        """Create a batch of tag resource relationships.
+
+        Args:
+            tag_resources: The tag resource relationships to be created.
+
+        Returns:
+            The newly created tag resource relationships.
+        """
+        return [
+            self.create_tag_resource(tag_resource)
+            for tag_resource in tag_resources
+        ]
+
     def delete_tag_resource(
         self,
         tag_id: UUID,
@@ -11573,18 +11589,33 @@ class SqlZenStore(BaseZenStore):
             KeyError: specified ID not found.
         """
         with Session(self.engine) as session:
-            tag_model = self._get_tag_model_schema(
+            tag_resource_model = self._get_tag_resource_model_schema(
                 tag_id=tag_id,
                 resource_id=resource_id,
                 resource_type=resource_type,
                 session=session,
             )
-            if tag_model is None:
+            if tag_resource_model is None:
                 raise KeyError(
                     f"Unable to delete tag<>resource with IDs: "
                     f"`tag_id`='{tag_id}' and `resource_id`='{resource_id}' "
                     f"and `resource_type`='{resource_type.value}': No "
                     "tag<>resource with these IDs found."
                 )
-            session.delete(tag_model)
+            session.delete(tag_resource_model)
             session.commit()
+
+    def batch_delete_tag_resource(
+        self, tag_resources: List[Tuple[UUID, UUID, TaggableResourceTypes]]
+    ) -> None:
+        """Delete a batch of tag resource relationships.
+
+        Args:
+            tag_resources: The tag resource relationships to be deleted.
+        """
+        for tag_id, resource_id, resource_type in tag_resources:
+            self.delete_tag_resource(
+                tag_id=tag_id,
+                resource_id=resource_id,
+                resource_type=resource_type,
+            )

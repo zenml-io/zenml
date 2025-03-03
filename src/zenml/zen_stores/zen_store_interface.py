@@ -19,7 +19,7 @@ from typing import List, Optional, Tuple, Union
 from uuid import UUID
 
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
-from zenml.enums import StackDeploymentProvider
+from zenml.enums import StackDeploymentProvider, TaggableResourceTypes
 from zenml.models import (
     ActionFilter,
     ActionRequest,
@@ -132,6 +132,8 @@ from zenml.models import (
     StepRunUpdate,
     TagFilter,
     TagRequest,
+    TagResourceRequest,
+    TagResourceResponse,
     TagResponse,
     TagUpdate,
     TriggerExecutionFilter,
@@ -3087,4 +3089,57 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: If the tag is not found
+        """
+
+    # -------------------- Tag Resources --------------------
+
+    @abstractmethod
+    def create_tag_resource(
+        self, tag_resource: TagResourceRequest
+    ) -> TagResourceResponse:
+        """Create a new tag resource relationship.
+
+        Args:
+            tag_resource: The tag resource relationship to be created.
+
+        Returns:
+            The newly created tag resource relationship.
+        """
+
+    @abstractmethod
+    def batch_create_tag_resource(
+        self, tag_resources: List[TagResourceRequest]
+    ) -> List[TagResourceResponse]:
+        """Create a new tag resource relationship.
+
+        Args:
+            tag_resources: The tag resource relationships to be created.
+
+        Returns:
+            The newly created tag resource relationships.
+        """
+
+    @abstractmethod
+    def delete_tag_resource(
+        self,
+        tag_id: UUID,
+        resource_id: UUID,
+        resource_type: TaggableResourceTypes,
+    ) -> None:
+        """Delete a tag resource relationship.
+
+        Args:
+            tag_id: The ID of the tag to delete.
+            resource_id: The ID of the resource to delete.
+            resource_type: The type of the resource to delete.
+        """
+
+    @abstractmethod
+    def batch_delete_tag_resource(
+        self, tag_resources: List[Tuple[UUID, UUID, TaggableResourceTypes]]
+    ) -> None:
+        """Delete a batch of tag resource relationships.
+
+        Args:
+            tag_resources: The tag resource relationships to be deleted.
         """
