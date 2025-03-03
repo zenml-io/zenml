@@ -151,8 +151,7 @@ def show_dashboard(url: str) -> None:
     """
     environment = get_environment()
     if environment in (EnvironmentType.NOTEBOOK, EnvironmentType.COLAB):
-        from IPython.core.display import display
-        from IPython.display import IFrame
+        from IPython.display import IFrame, display
 
         display(IFrame(src=url, width="100%", height=720))
 
