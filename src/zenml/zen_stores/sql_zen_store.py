@@ -11116,12 +11116,12 @@ class SqlZenStore(BaseZenStore):
             if isinstance(tag, tag_utils.Tag):
                 tag_model = self.get_tag(tag.name)
                 if (
-                    tag.singleton is not None
-                    and tag.singleton != tag_model.singleton
+                    tag.rolling is not None
+                    and tag.rolling != tag_model.rolling
                 ):
                     raise RuntimeError(
                         f"Tag `{tag_model.name}` has been defined as a "
-                        f"{'singleton' if tag_model.singleton else 'non-singleton'} "
+                        f"{'rolling' if tag_model.rolling else 'non-rolling'} "
                         "tag. Please update it before attaching it to resources."
                     )
             elif isinstance(tag, TagSchema):
@@ -11135,8 +11135,8 @@ class SqlZenStore(BaseZenStore):
                 tag_request = TagRequest(name=tag)
             tag_model = self.create_tag(tag_request)
 
-        # 2. If the tag is a singleton, apply the check and attach/detach accordingly
-        if tag_model.singleton:
+        # 2. If the tag is a rolling tag, apply the check and attach/detach accordingly
+        if tag_model.rolling:
             for resource in resources:
                 scope_ids: Dict[
                     TaggableResourceTypes, List[Union[UUID, int]]
@@ -11198,7 +11198,7 @@ class SqlZenStore(BaseZenStore):
                         )
                 else:
                     logger.debug(
-                        "Singleton tag functionality only works: for "
+                        "Rolling tag functionality only works: for "
                         "templates, for pipeline runs (within the scope of "
                         "pipelines) and for artifact versions (within the "
                         "scope of artifacts)."
@@ -11208,7 +11208,7 @@ class SqlZenStore(BaseZenStore):
                 for resource_type, id_list in scope_ids.items():
                     if len(id_list) != len(set(id_list)):
                         raise ValueError(
-                            f"You are trying to attach a singleton tag to "
+                            f"You are trying to attach a rolling tag to "
                             f"multiple {resource_type.value}s within the "
                             "same scope. This is not allowed."
                         )
@@ -11424,7 +11424,7 @@ class SqlZenStore(BaseZenStore):
 
         Raises:
             KeyError: If the tag is not found.
-            RuntimeError: If the tag can not be converted to a singleton due
+            RuntimeError: If the tag can not be converted to a rolling tag due
                 to it being associated to multiple entities.
         """
         with Session(self.engine) as session:
@@ -11432,7 +11432,7 @@ class SqlZenStore(BaseZenStore):
                 tag_name_or_id=tag_name_or_id, session=session
             )
 
-            if tag_update_model.singleton is True:
+            if tag_update_model.rolling is True:
                 error_messages = []
                 for resource_type, resource_id, scope_id in [
                     (
@@ -11451,7 +11451,7 @@ class SqlZenStore(BaseZenStore):
                         RunTemplateSchema.id,
                     ),
                 ]:
-                    check, error = self._singleton_check_for_existing_tags(
+                    check, error = self._rolling_check_for_existing_tags(
                         tag=tag,
                         session=session,
                         resource_type=resource_type,
@@ -11464,7 +11464,7 @@ class SqlZenStore(BaseZenStore):
                 if error_messages:
                     raise RuntimeError(
                         "\n".join(error_messages)
-                        + "\nYou can only convert a tag into a singleton "
+                        + "\nYou can only convert a tag into a rolling tag "
                         "if the conflicts mentioned above are resolved."
                     )
             if not tag:
@@ -11479,7 +11479,7 @@ class SqlZenStore(BaseZenStore):
             return tag.to_model(include_metadata=True, include_resources=True)
 
     @staticmethod
-    def _singleton_check_for_existing_tags(
+    def _rolling_check_for_existing_tags(
         tag: TagSchema,
         session: Session,
         resource_type: TaggableResourceTypes,

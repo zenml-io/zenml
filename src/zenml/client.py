@@ -7543,7 +7543,7 @@ class Client(metaclass=ClientMetaClass):
             color: the color of the tag
             resources: the resources to tag
 
-        Returns:    
+        Returns:
             The newly created tag.
         """
         request_model = TagRequest(name=name)
