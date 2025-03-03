@@ -21,7 +21,9 @@ from collections import defaultdict
 from typing import (
     TYPE_CHECKING,
     Any,
+    Callable,
     Dict,
+    Generic,
     List,
     Mapping,
     Optional,
@@ -92,9 +94,10 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 T = TypeVar("T", bound="BaseStep")
+F = TypeVar("F", bound=Callable[..., Any])
 
 
-class BaseStep:
+class BaseStep(Generic[F]):
     """Abstract base class for all ZenML steps."""
 
     def __init__(
@@ -222,6 +225,8 @@ class BaseStep:
         Returns:
             The output of the step.
         """
+
+    entrypoint: F
 
     @classmethod
     def load_from_source(cls, source: Union[Source, str]) -> "BaseStep":

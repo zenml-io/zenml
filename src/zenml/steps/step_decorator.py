@@ -53,7 +53,7 @@ logger = get_logger(__name__)
 
 
 @overload
-def step(_func: "F") -> "BaseStep": ...
+def step(_func: "F") -> "BaseStep[F]": ...
 
 
 @overload
@@ -74,7 +74,7 @@ def step(
     model: Optional["Model"] = None,
     retry: Optional["StepRetryConfig"] = None,
     substitutions: Optional[Dict[str, str]] = None,
-) -> Callable[["F"], "BaseStep"]: ...
+) -> Callable[["F"], "BaseStep[F]"]: ...
 
 
 def step(
@@ -95,7 +95,7 @@ def step(
     model: Optional["Model"] = None,
     retry: Optional["StepRetryConfig"] = None,
     substitutions: Optional[Dict[str, str]] = None,
-) -> Union["BaseStep", Callable[["F"], "BaseStep"]]:
+) -> Union["BaseStep[F]", Callable[["F"], "BaseStep[F]"]]:
     """Decorator to create a ZenML step.
 
     Args:
