@@ -608,7 +608,7 @@ def remove_tags(
 
         step_context.remove_output_tags(
             tags=tags,
-            artifact_name=artifact_name,
+            output_name=artifact_name,
         )
         return
 
