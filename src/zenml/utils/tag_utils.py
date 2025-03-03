@@ -375,6 +375,8 @@ def add_tags(
         ]
     ):
         try:
+            from zenml.steps.step_context import get_step_context
+
             step_context = get_step_context()
         except RuntimeError:
             raise ValueError(
