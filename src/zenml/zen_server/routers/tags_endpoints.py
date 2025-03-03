@@ -59,7 +59,6 @@ router = APIRouter(
 
 @router.post(
     "",
-    response_model=TagResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -83,7 +82,6 @@ def create_tag(
 
 @router.get(
     "",
-    response_model=Page[TagResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -113,7 +111,6 @@ def list_tags(
 
 @router.get(
     "/{tag_name_or_id}",
-    response_model=TagResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -141,7 +138,6 @@ def get_tag(
 
 @router.put(
     "/{tag_id}",
-    response_model=TagResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions

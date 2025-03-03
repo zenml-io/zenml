@@ -58,7 +58,6 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=Page[TriggerResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -90,7 +89,6 @@ def list_triggers(
 
 @router.get(
     "/{trigger_id}",
-    response_model=TriggerResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -116,7 +114,6 @@ def get_trigger(
 
 @router.post(
     "",
-    response_model=TriggerResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -168,7 +165,6 @@ def create_trigger(
 
 @router.put(
     "/{trigger_id}",
-    response_model=TriggerResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions

@@ -57,7 +57,6 @@ event_source_router = APIRouter(
 
 @event_source_router.get(
     "",
-    response_model=Page[EventSourceResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -132,7 +131,6 @@ def list_event_sources(
 
 @event_source_router.get(
     "/{event_source_id}",
-    response_model=EventSourceResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -185,7 +183,6 @@ def get_event_source(
 
 @event_source_router.post(
     "",
-    response_model=EventSourceResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -228,7 +225,6 @@ def create_event_source(
 
 @event_source_router.put(
     "/{event_source_id}",
-    response_model=EventSourceResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions

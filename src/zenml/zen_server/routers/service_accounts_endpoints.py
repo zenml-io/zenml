@@ -67,7 +67,6 @@ router = APIRouter(
 
 @router.post(
     "",
-    response_model=ServiceAccountResponse,
     responses={
         401: error_response,
         409: error_response,
@@ -95,7 +94,6 @@ def create_service_account(
 
 @router.get(
     "/{service_account_name_or_id}",
-    response_model=ServiceAccountResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -123,7 +121,6 @@ def get_service_account(
 
 @router.get(
     "",
-    response_model=Page[ServiceAccountResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -155,7 +152,6 @@ def list_service_accounts(
 
 @router.put(
     "/{service_account_name_or_id}",
-    response_model=ServiceAccountResponse,
     responses={
         401: error_response,
         404: error_response,
@@ -213,7 +209,6 @@ def delete_service_account(
 
 @router.post(
     "/{service_account_id}" + API_KEYS,
-    response_model=APIKeyResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -252,7 +247,6 @@ def create_api_key(
 
 @router.get(
     "/{service_account_id}" + API_KEYS + "/{api_key_name_or_id}",
-    response_model=APIKeyResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -286,7 +280,6 @@ def get_api_key(
 
 @router.get(
     "/{service_account_id}" + API_KEYS,
-    response_model=Page[APIKeyResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -321,7 +314,6 @@ def list_api_keys(
 
 @router.put(
     "/{service_account_id}" + API_KEYS + "/{api_key_name_or_id}",
-    response_model=APIKeyResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -356,7 +348,6 @@ def update_api_key(
     + API_KEYS
     + "/{api_key_name_or_id}"
     + API_KEY_ROTATE,
-    response_model=APIKeyResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions

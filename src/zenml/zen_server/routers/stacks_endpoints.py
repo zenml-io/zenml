@@ -58,14 +58,12 @@ router = APIRouter(
 
 @router.post(
     "",
-    response_model=StackResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 # TODO: the workspace scoped endpoint is only kept for dashboard compatibility
 # and can be removed after the migration
 @workspace_router.post(
     "/{workspace_name_or_id}" + STACKS,
-    response_model=StackResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
     deprecated=True,
     tags=["stacks"],
@@ -130,14 +128,12 @@ def create_stack(
 
 @router.get(
     "",
-    response_model=Page[StackResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 # TODO: the workspace scoped endpoint is only kept for dashboard compatibility
 # and can be removed after the migration
 @workspace_router.get(
     "/{workspace_name_or_id}" + STACKS,
-    response_model=Page[StackResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
     deprecated=True,
     tags=["stacks"],
@@ -171,7 +167,6 @@ def list_stacks(
 
 @router.get(
     "/{stack_id}",
-    response_model=StackResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -197,7 +192,6 @@ def get_stack(
 
 @router.put(
     "/{stack_id}",
-    response_model=StackResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions

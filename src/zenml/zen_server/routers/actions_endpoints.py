@@ -58,7 +58,6 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=Page[ActionResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -130,7 +129,6 @@ def list_actions(
 
 @router.get(
     "/{action_id}",
-    response_model=ActionResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -178,7 +176,6 @@ def get_action(
 
 @router.post(
     "",
-    response_model=ActionResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -225,7 +222,6 @@ def create_action(
 
 @router.put(
     "/{action_id}",
-    response_model=ActionResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions

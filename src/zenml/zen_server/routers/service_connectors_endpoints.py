@@ -83,14 +83,12 @@ types_router = APIRouter(
 
 @router.post(
     "",
-    response_model=ServiceConnectorResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 # TODO: the workspace scoped endpoint is only kept for dashboard compatibility
 # and can be removed after the migration
 @workspace_router.post(
     "/{workspace_name_or_id}" + SERVICE_CONNECTORS,
-    response_model=ServiceConnectorResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
     deprecated=True,
     tags=["service_connectors"],
@@ -118,14 +116,12 @@ def create_service_connector(
 
 @router.get(
     "",
-    response_model=Page[ServiceConnectorResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 # TODO: the workspace scoped endpoint is only kept for dashboard compatibility
 # and can be removed after the migration
 @workspace_router.get(
     "/{workspace_name_or_id}" + SERVICE_CONNECTORS,
-    response_model=Page[ServiceConnectorResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
     deprecated=True,
     tags=["service_connectors"],
@@ -194,7 +190,6 @@ def list_service_connectors(
 
 @router.get(
     "/{connector_id}",
-    response_model=ServiceConnectorResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -237,7 +232,6 @@ def get_service_connector(
 
 @router.put(
     "/{connector_id}",
-    response_model=ServiceConnectorResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -286,7 +280,6 @@ def delete_service_connector(
 
 @router.post(
     SERVICE_CONNECTOR_VERIFY,
-    response_model=ServiceConnectorResourcesModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -320,14 +313,12 @@ def validate_and_verify_service_connector_config(
 
 @router.get(
     SERVICE_CONNECTOR_RESOURCES,
-    response_model=List[ServiceConnectorResourcesModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 # TODO: the workspace scoped endpoint is only kept for dashboard compatibility
 # and can be removed after the migration
 @workspace_router.get(
     "/{workspace_name_or_id}" + SERVICE_CONNECTOR_RESOURCES,
-    response_model=List[ServiceConnectorResourcesModel],
     responses={401: error_response, 404: error_response, 422: error_response},
     deprecated=True,
     tags=["service_connectors"],
@@ -366,7 +357,6 @@ def list_service_connector_resources(
 
 @router.put(
     "/{connector_id}" + SERVICE_CONNECTOR_VERIFY,
-    response_model=ServiceConnectorResourcesModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -408,7 +398,6 @@ def validate_and_verify_service_connector(
 
 @router.get(
     "/{connector_id}" + SERVICE_CONNECTOR_CLIENT,
-    response_model=ServiceConnectorResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -446,7 +435,6 @@ def get_service_connector_client(
 
 @types_router.get(
     "",
-    response_model=List[ServiceConnectorTypeModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -477,7 +465,6 @@ def list_service_connector_types(
 
 @types_router.get(
     "/{connector_type}",
-    response_model=ServiceConnectorTypeModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions

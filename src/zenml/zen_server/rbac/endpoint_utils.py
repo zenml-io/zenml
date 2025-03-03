@@ -235,7 +235,7 @@ def verify_permissions_and_list_entities(
 
     workspace_id: Optional[UUID] = None
     if isinstance(filter_model, WorkspaceScopedFilter):
-        # A workspace scoped request must always be scoped to a specific
+        # A workspace scoped filter must always be scoped to a specific
         # workspace. This is required for the RBAC check to work.
         set_filter_workspace_scope(filter_model)
         workspace_id = filter_model.scope_workspace

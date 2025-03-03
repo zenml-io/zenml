@@ -91,7 +91,6 @@ current_user_router = APIRouter(
 
 @router.get(
     "",
-    response_model=Page[UserResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -137,7 +136,6 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
     @router.post(
         "",
-        response_model=UserResponse,
         responses={
             401: error_response,
             409: error_response,
@@ -191,7 +189,6 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
 @router.get(
     "/{user_name_or_id}",
-    response_model=UserResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -236,7 +233,6 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
     @router.put(
         "/{user_name_or_id}",
-        response_model=UserResponse,
         responses={
             401: error_response,
             404: error_response,
@@ -406,7 +402,6 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
     @activation_router.put(
         "/{user_name_or_id}" + ACTIVATE,
-        response_model=UserResponse,
         responses={
             401: error_response,
             404: error_response,
@@ -467,7 +462,6 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
     @router.put(
         "/{user_name_or_id}" + DEACTIVATE,
-        response_model=UserResponse,
         responses={
             401: error_response,
             404: error_response,
@@ -558,7 +552,6 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
     @router.put(
         "/{user_name_or_id}" + EMAIL_ANALYTICS,
-        response_model=UserResponse,
         responses={
             401: error_response,
             404: error_response,
@@ -611,7 +604,6 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
 @current_user_router.get(
     "/current-user",
-    response_model=UserResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -635,7 +627,6 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
     @current_user_router.put(
         "/current-user",
-        response_model=UserResponse,
         responses={
             401: error_response,
             404: error_response,
@@ -789,7 +780,6 @@ if server_config().rbac_enabled:
 
 @current_user_router.put(
     "/default-workspace",
-    response_model=UserResponse,
     responses={
         401: error_response,
         404: error_response,

@@ -59,7 +59,6 @@ artifact_version_router = APIRouter(
 
 @artifact_version_router.get(
     "",
-    response_model=Page[ArtifactVersionResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -104,7 +103,6 @@ def list_artifact_versions(
 
 @artifact_version_router.post(
     "",
-    response_model=ArtifactVersionResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -151,7 +149,6 @@ def batch_create_artifact_version(
 
 @artifact_version_router.get(
     "/{artifact_version_id}",
-    response_model=ArtifactVersionResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -179,7 +176,6 @@ def get_artifact_version(
 
 @artifact_version_router.put(
     "/{artifact_version_id}",
-    response_model=ArtifactVersionResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -255,7 +251,6 @@ def prune_artifact_versions(
 
 @artifact_version_router.get(
     "/{artifact_version_id}" + VISUALIZE,
-    response_model=LoadedVisualization,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions

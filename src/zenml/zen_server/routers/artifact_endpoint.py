@@ -38,7 +38,6 @@ from zenml.zen_server.rbac.models import ResourceType
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
-    set_filter_workspace_scope,
     zen_store,
 )
 
@@ -51,7 +50,6 @@ artifact_router = APIRouter(
 
 @artifact_router.get(
     "",
-    response_model=Page[ArtifactResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -73,7 +71,6 @@ def list_artifacts(
     Returns:
         The artifacts according to query filters.
     """
-    set_filter_workspace_scope(artifact_filter_model)
     return verify_permissions_and_list_entities(
         filter_model=artifact_filter_model,
         resource_type=ResourceType.ARTIFACT,
@@ -84,7 +81,6 @@ def list_artifacts(
 
 @artifact_router.post(
     "",
-    response_model=ArtifactResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -108,7 +104,6 @@ def create_artifact(
 
 @artifact_router.get(
     "/{artifact_id}",
-    response_model=ArtifactResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -136,7 +131,6 @@ def get_artifact(
 
 @artifact_router.put(
     "/{artifact_id}",
-    response_model=ArtifactResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions

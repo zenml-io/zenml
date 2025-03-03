@@ -49,14 +49,12 @@ router = APIRouter(
 
 @router.post(
     "",
-    response_model=ScheduleResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 # TODO: the workspace scoped endpoint is only kept for dashboard compatibility
 # and can be removed after the migration
 @workspace_router.post(
     "/{workspace_name_or_id}" + SCHEDULES,
-    response_model=ScheduleResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
     deprecated=True,
     tags=["schedules"],
@@ -91,14 +89,12 @@ def create_schedule(
 
 @router.get(
     "",
-    response_model=Page[ScheduleResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 # TODO: the workspace scoped endpoint is only kept for dashboard compatibility
 # and can be removed after the migration
 @workspace_router.get(
     "/{workspace_name_or_id}" + SCHEDULES,
-    response_model=Page[ScheduleResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
     deprecated=True,
     tags=["schedules"],
@@ -135,7 +131,6 @@ def list_schedules(
 
 @router.get(
     "/{schedule_id}",
-    response_model=ScheduleResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -162,7 +157,6 @@ def get_schedule(
 
 @router.put(
     "/{schedule_id}",
-    response_model=ScheduleResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions

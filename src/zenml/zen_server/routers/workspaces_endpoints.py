@@ -63,7 +63,6 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=Page[WorkspaceResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -120,7 +119,6 @@ def create_workspace(
 
 @router.get(
     "/{workspace_name_or_id}",
-    response_model=WorkspaceResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -200,7 +198,6 @@ def delete_workspace(
 
 @router.get(
     "/{workspace_name_or_id}" + STATISTICS,
-    response_model=Dict[str, int],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions

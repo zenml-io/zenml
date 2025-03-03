@@ -72,14 +72,12 @@ logger = get_logger(__name__)
 
 @router.post(
     "",
-    response_model=Tuple[PipelineRunResponse, bool],
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 # TODO: the workspace scoped endpoint is only kept for dashboard compatibility
 # and can be removed after the migration
 @workspace_router.post(
     "/{workspace_name_or_id}" + RUNS,
-    response_model=Tuple[PipelineRunResponse, bool],
     responses={401: error_response, 409: error_response, 422: error_response},
     deprecated=True,
     tags=["runs"],
@@ -112,14 +110,12 @@ def get_or_create_pipeline_run(
 
 @router.get(
     "",
-    response_model=Page[PipelineRunResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 # TODO: the workspace scoped endpoint is only kept for dashboard compatibility
 # and can be removed after the migration
 @workspace_router.get(
     "/{workspace_name_or_id}" + RUNS,
-    response_model=Page[PipelineRunResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
     deprecated=True,
     tags=["runs"],
@@ -157,7 +153,6 @@ def list_runs(
 
 @router.get(
     "/{run_id}",
-    response_model=PipelineRunResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -218,7 +213,6 @@ def get_run(
 
 @router.put(
     "/{run_id}",
-    response_model=PipelineRunResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -267,7 +261,6 @@ def delete_run(
 
 @router.get(
     "/{run_id}" + STEPS,
-    response_model=Page[StepRunResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -297,7 +290,6 @@ def get_run_steps(
 
 @router.get(
     "/{run_id}" + PIPELINE_CONFIGURATION,
-    response_model=Dict[str, Any],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -321,7 +313,6 @@ def get_pipeline_configuration(
 
 @router.get(
     "/{run_id}" + STATUS,
-    response_model=ExecutionStatus,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions

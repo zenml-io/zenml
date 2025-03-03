@@ -62,14 +62,12 @@ types_router = APIRouter(
 
 @router.post(
     "",
-    response_model=ComponentResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 # TODO: the workspace scoped endpoint is only kept for dashboard compatibility
 # and can be removed after the migration
 @workspace_router.post(
     "/{workspace_name_or_id}" + STACK_COMPONENTS,
-    response_model=ComponentResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
     deprecated=True,
     tags=["stack_components"],
@@ -114,14 +112,12 @@ def create_stack_component(
 
 @router.get(
     "",
-    response_model=Page[ComponentResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 # TODO: the workspace scoped endpoint is only kept for dashboard compatibility
 # and can be removed after the migration
 @workspace_router.get(
     "/{workspace_name_or_id}" + STACK_COMPONENTS,
-    response_model=Page[ComponentResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
     deprecated=True,
     tags=["stack_components"],
@@ -157,7 +153,6 @@ def list_stack_components(
 
 @router.get(
     "/{component_id}",
-    response_model=ComponentResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -185,7 +180,6 @@ def get_stack_component(
 
 @router.put(
     "/{component_id}",
-    response_model=ComponentResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -253,7 +247,6 @@ def deregister_stack_component(
 
 @types_router.get(
     "",
-    response_model=List[str],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions

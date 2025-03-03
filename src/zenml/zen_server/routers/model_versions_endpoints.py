@@ -79,14 +79,12 @@ router = APIRouter(
 
 @router.post(
     "",
-    response_model=ModelVersionResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 # TODO: the workspace scoped endpoint is only kept for dashboard compatibility
 # and can be removed after the migration
 @workspace_router.post(
     "/{workspace_name_or_id}" + MODELS + "/{model_id}" + MODEL_VERSIONS,
-    response_model=ModelVersionResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
     deprecated=True,
     tags=["model_versions"],
@@ -123,12 +121,10 @@ def create_model_version(
 
 @model_router.get(
     "/{model_name_or_id}" + MODEL_VERSIONS,
-    response_model=Page[ModelVersionResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @router.get(
     "",
-    response_model=Page[ModelVersionResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -188,7 +184,6 @@ def list_model_versions(
 
 @router.get(
     "/{model_version_id}",
-    response_model=ModelVersionResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -217,7 +212,6 @@ def get_model_version(
 
 @router.put(
     "/{model_version_id}",
-    response_model=ModelVersionResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -312,7 +306,6 @@ def create_model_version_artifact_link(
 
 @model_version_artifacts_router.get(
     "",
-    response_model=Page[ModelVersionArtifactResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -436,7 +429,6 @@ def create_model_version_pipeline_run_link(
 
 @model_version_pipeline_runs_router.get(
     "",
-    response_model=Page[ModelVersionPipelineRunResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions

@@ -52,14 +52,12 @@ router = APIRouter(
 
 @router.post(
     "",
-    response_model=PipelineBuildResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 # TODO: the workspace scoped endpoint is only kept for dashboard compatibility
 # and can be removed after the migration
 @workspace_router.post(
     "/{workspace_name_or_id}" + PIPELINE_BUILDS,
-    response_model=PipelineBuildResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
     deprecated=True,
     tags=["builds"],
@@ -91,14 +89,12 @@ def create_build(
 
 @router.get(
     "",
-    response_model=Page[PipelineBuildResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 # TODO: the workspace scoped endpoint is only kept for dashboard compatibility
 # and can be removed after the migration
 @workspace_router.get(
     "/{workspace_name_or_id}" + PIPELINE_BUILDS,
-    response_model=Page[PipelineBuildResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
     deprecated=True,
     tags=["builds"],
@@ -137,7 +133,6 @@ def list_builds(
 
 @router.get(
     "/{build_id}",
-    response_model=PipelineBuildResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions

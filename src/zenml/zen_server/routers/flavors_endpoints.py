@@ -51,7 +51,6 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=Page[FlavorResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -81,7 +80,6 @@ def list_flavors(
 
 @router.get(
     "/{flavor_id}",
-    response_model=FlavorResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -107,7 +105,6 @@ def get_flavor(
 
 @router.post(
     "",
-    response_model=FlavorResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -131,7 +128,6 @@ def create_flavor(
 
 @router.put(
     "/{flavor_id}",
-    response_model=FlavorResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions

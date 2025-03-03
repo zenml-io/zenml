@@ -63,7 +63,6 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=Page[StepRunResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -108,7 +107,6 @@ def list_run_steps(
 
 @router.post(
     "",
-    response_model=StepRunResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -136,7 +134,6 @@ def create_run_step(
 
 @router.get(
     "/{step_id}",
-    response_model=StepRunResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -170,7 +167,6 @@ def get_step(
 
 @router.put(
     "/{step_id}",
-    response_model=StepRunResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -200,7 +196,6 @@ def update_step(
 
 @router.get(
     "/{step_id}" + STEP_CONFIGURATION,
-    response_model=Dict[str, Any],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -225,7 +220,6 @@ def get_step_configuration(
 
 @router.get(
     "/{step_id}" + STATUS,
-    response_model=ExecutionStatus,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -250,7 +244,6 @@ def get_step_status(
 
 @router.get(
     "/{step_id}" + LOGS,
-    response_model=str,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
