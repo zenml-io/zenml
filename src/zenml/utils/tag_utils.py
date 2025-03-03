@@ -30,6 +30,65 @@ from pydantic import BaseModel
 from zenml.enums import ColorVariants, TaggableResourceTypes
 from zenml.logger import get_logger
 
+add_tags_warning = """
+# Automatic tagging to a pipeline run (within a step)
+add_tags(tags=[...])
+
+# Manual tagging to a pipeline run
+add_tags(tags=[...], run=...)
+
+# Manual tagging to a pipeline
+add_tags(tags=[...], pipeline=...)
+
+# Manual tagging to a run template
+add_tags(tags=[...], run_template=...)
+
+# Automatic tagging to a model (within a step)
+add_tags(tags=[...], infer_model=True)
+
+# Manual tagging to a model
+add_tags(tags=[...], model_name=..., model_version=...)
+add_tags(tags=[...], model_version_id=...)
+
+# Automatic tagging to an artifact (within a step)
+add_tags(tags=[...], infer_artifact=True)  # step with single output
+add_tags(tags=[...], artifact_name=..., infer_artifact=True)  # specific output of a step
+
+# Manual tagging to an artifact
+add_tags(tags=[...], artifact_name=..., artifact_version=...)
+add_tags(tags=[...], artifact_version_id=...)
+"""
+
+remove_tags_warning = """
+# Automatic tag removal from a pipeline run (within a step)
+remove_tags(tags=[...])
+
+# Manual tag removal from a pipeline run
+remove_tags(tags=[...], run=...)
+
+# Manual tag removal from a pipeline
+remove_tags(tags=[...], pipeline=...)
+
+# Manual tag removal from a run template
+remove_tags(tags=[...], run_template=...)
+
+# Automatic tag removal from a model (within a step)
+remove_tags(tags=[...], infer_model=True)
+
+# Manual tag removal from a model
+remove_tags(tags=[...], model_name=..., model_version=...)
+remove_tags(tags=[...], model_version_id=...)
+
+# Automatic tag removal from an artifact (within a step)
+remove_tags(tags=[...], infer_artifact=True)  # step with single output
+remove_tags(tags=[...], artifact_name=..., infer_artifact=True)  # specific output of a step
+
+# Manual tag removal from an artifact
+remove_tags(tags=[...], artifact_name=..., artifact_version=...)
+remove_tags(tags=[...], artifact_version_id=...)
+"""
+
+
 if TYPE_CHECKING:
     from zenml.models import TagRequest
     from zenml.zen_stores.schemas.base_schemas import BaseSchema
@@ -133,53 +192,48 @@ def get_resource_type_from_schema(
 
 @overload
 def add_tags(
-    tags: List[str],
-    rolling: Optional[bool] = None,
+    tags: List[Union[str, Tag]],
 ) -> None: ...
 
 
 @overload
 def add_tags(
     *,
-    tags: List[str],
+    tags: List[Union[str, Tag]],
     run: Union[UUID, str],
-    rolling: Optional[bool] = None,
 ) -> None: ...
 
 
 @overload
 def add_tags(
     *,
-    tags: List[str],
+    tags: List[Union[str, Tag]],
     artifact_version_id: UUID,
-    rolling: Optional[bool] = None,
 ) -> None: ...
 
 
 @overload
 def add_tags(
     *,
-    tags: List[str],
+    tags: List[Union[str, Tag]],
     artifact_name: str,
     artifact_version: Optional[str] = None,
-    rolling: Optional[bool] = None,
 ) -> None: ...
 
 
 @overload
 def add_tags(
     *,
-    tags: List[str],
+    tags: List[Union[str, Tag]],
     infer_artifact: bool = False,
     artifact_name: Optional[str] = None,
-    rolling: Optional[bool] = None,
 ) -> None: ...
 
 
 @overload
 def add_tags(
     *,
-    tags: List[str],
+    tags: List[Union[str, Tag]],
     pipeline: Union[UUID, str],
 ) -> None: ...
 
@@ -187,15 +241,13 @@ def add_tags(
 @overload
 def add_tags(
     *,
-    tags: List[str],
+    tags: List[Union[str, Tag]],
     run_template: Union[UUID, str],
-    rolling: Optional[bool] = None,
 ) -> None: ...
 
 
 def add_tags(
-    tags: List[str],
-    rolling: Optional[bool] = None,
+    tags: List[Union[str, Tag]],
     # Pipelines
     pipeline: Optional[Union[UUID, str]] = None,
     # Runs
@@ -212,8 +264,6 @@ def add_tags(
 
     Args:
         tags: The tags to add.
-        rolling: Whether the tag is a rolling. Only applicable to
-            pipeline runs, artifact versions and run templates.
         run: The id, name or prefix of the run.
         artifact_version_id: The ID of the artifact version.
         artifact_name: The name of the artifact.
@@ -329,38 +379,11 @@ def add_tags(
             step_context = get_step_context()
         except RuntimeError:
             raise ValueError(
-                """
+                f"""
                 You are calling 'add_tags()' outside of a step execution. 
                 If you would like to add tags to a ZenML entity outside 
                 of the step execution, please provide the required 
-                identifiers.
-                
-                # Automatic tagging to a pipeline run (within a step)
-                add_tags(tags=[...])
-                
-                # Manual tagging to a pipeline run
-                add_tags(tags=[...], run_id_name_or_prefix=..., rolling=...)
-                
-                # Manual tagging to a pipeline
-                add_tags(tags=[...], pipeline_id=...)
-                
-                # Manual tagging to a run template
-                add_tags(tags=[...], run_template_id=..., rolling=...)
-                
-                # Automatic tagging to a model (within a step)
-                add_tags(tags=[...], infer_model=True)
-                
-                # Manual tagging to a model
-                add_tags(tags=[...], model_name=..., model_version=...)
-                add_tags(tags=[...], model_version_id=...)
-                
-                # Automatic tagging to an artifact (within a step)
-                add_tags(tags=[...], infer_artifact=True, rolling=...)  # step with single output
-                add_tags(tags=[...], artifact_name=..., infer_artifact=True, rolling=...)  # specific output of a step
-            
-                # Manual tagging to an artifact
-                add_tags(tags=[...], artifact_name=..., artifact_version=..., rolling=...)
-                add_tags(tags=[...], artifact_version_id=..., rolling=...)
+                identifiers.\n{add_tags_warning}
                 """
             )
 
@@ -370,61 +393,40 @@ def add_tags(
 
     else:
         raise ValueError(
-            """
+            f"""
             Unsupported way to call the `add_tags`. Possible combinations "
-            include:
-            
-            # Automatic tagging to a pipeline run (within a step)
-            add_tags(tags=[...])
-            
-            # Manual tagging to a pipeline run
-            add_tags(tags=[...], run_id_name_or_prefix=..., rolling=...)
-            
-            # Manual tagging to a pipeline
-            add_tags(tags=[...], pipeline_id=...)
-            
-            # Manual tagging to a run template
-            add_tags(tags=[...], run_template_id=..., rolling=...)
-            
-            # Automatic tagging to a model (within a step)
-            add_tags(tags=[...], infer_model=True)
-            
-            # Manual tagging to a model
-            add_tags(tags=[...], model_name=..., model_version=...)
-            add_tags(tags=[...], model_version_id=...)
-            
-            # Automatic tagging to an artifact (within a step)
-            add_tags(tags=[...], infer_artifact=True, rolling=...)  # step with single output
-            add_tags(tags=[...], artifact_name=..., infer_artifact=True, rolling=...)  # specific output of a step
-            
-            # Manual tagging to an artifact
-            add_tags(tags=[...], artifact_name=..., artifact_version=..., rolling=...)
-            add_tags(tags=[...], artifact_version_id=..., rolling=...)
+            include: \n{add_tags_warning}
             """
-        )
-
-    # Validate rolling parameter for resource type
-    if rolling and resource_type not in [
-        TaggableResourceTypes.PIPELINE_RUN,
-        TaggableResourceTypes.ARTIFACT_VERSION,
-        TaggableResourceTypes.RUN_TEMPLATE,
-    ]:
-        raise ValueError(
-            f"Singleton tags are only applicable to pipeline runs, "
-            f"artifact versions and run templates, not {resource_type}."
         )
 
     # Create tag resources and add tags
-    for tag_name in tags:
+    for tag in tags:
         try:
-            tag_model = client.get_tag(tag_name)
+            if isinstance(tag, Tag):
+                tag_model = client.get_tag(tag.name)
 
-            if rolling != tag_model.rolling:
-                raise ValueError(
-                    f"The tag `{tag_name}` is a "
-                    f"{'rolling' if tag_model.rolling else 'non-rolling'} "
-                    "tag. Please update it before attaching it to a resource."
-                )
+                if tag.rolling and resource_type not in [
+                    TaggableResourceTypes.PIPELINE_RUN,
+                    TaggableResourceTypes.ARTIFACT_VERSION,
+                    TaggableResourceTypes.RUN_TEMPLATE,
+                ]:
+                    raise ValueError(
+                        f"Singleton tags are only applicable to pipeline runs, "
+                        f"artifact versions and run templates, not {resource_type}."
+                    )
+                if tag.rolling != tag_model.rolling:
+                    raise ValueError(
+                        f"The tag `{tag.name}` is a "
+                        f"{'rolling' if tag_model.rolling else 'non-rolling'} "
+                        "tag. Please update it before attaching it to a resource."
+                    )
+                if tag.hierarchical is not None:
+                    raise ValueError(
+                        "Hierarchical tags can only be used with the "
+                        "pipeline decorator."
+                    )
+            else:
+                tag_model = client.get_tag(tag)
 
             client.attach_tag(
                 tag_name_or_id=tag_model.name,
@@ -432,10 +434,11 @@ def add_tags(
             )
 
         except KeyError:
-            tag_model = client.create_tag(
-                name=tag_name,
-                rolling=rolling,
-            )
+            if isinstance(tag, Tag):
+                tag_model = client.create_tag(name=tag.name)
+            else:
+                tag_model = client.create_tag(name=tag)
+
             client.attach_tag(
                 tag_name_or_id=tag_model.name,
                 resources=[TagResource(id=resource_id, type=resource_type)],
@@ -632,38 +635,11 @@ def remove_tags(
             step_context = get_step_context()
         except RuntimeError:
             raise ValueError(
-                """
+                f"""
                 You are calling 'remove_tags()' outside of a step execution. 
                 If you would like to remove tags from a ZenML entity outside 
                 of the step execution, please provide the required 
-                identifiers.
-                
-                # Automatic tag removal from a pipeline run (within a step)
-                remove_tags(tags=[...])
-                
-                # Manual tag removal from a pipeline run
-                remove_tags(tags=[...], run_id_name_or_prefix=...)
-                
-                # Manual tag removal from a pipeline
-                remove_tags(tags=[...], pipeline_id=...)
-                
-                # Manual tag removal from a run template
-                remove_tags(tags=[...], run_template_id=...)
-                
-                # Automatic tag removal from a model (within a step)
-                remove_tags(tags=[...], infer_model=True)
-                
-                # Manual tag removal from a model
-                remove_tags(tags=[...], model_name=..., model_version=...)
-                remove_tags(tags=[...], model_version_id=...)
-                
-                # Automatic tag removal from an artifact (within a step)
-                remove_tags(tags=[...], infer_artifact=True)  # step with single output
-                remove_tags(tags=[...], artifact_name=..., infer_artifact=True)  # specific output of a step
-            
-                # Manual tag removal from an artifact
-                remove_tags(tags=[...], artifact_name=..., artifact_version=...)
-                remove_tags(tags=[...], artifact_version_id=...)
+                identifiers. \n{remove_tags_warning}
                 """
             )
 
@@ -673,36 +649,9 @@ def remove_tags(
 
     else:
         raise ValueError(
-            """
+            f"""
             Unsupported way to call the `remove_tags`. Possible combinations "
-            include:
-            
-            # Automatic tag removal from a pipeline run (within a step)
-            remove_tags(tags=[...])
-            
-            # Manual tag removal from a pipeline run
-            remove_tags(tags=[...], run_id_name_or_prefix=...)
-            
-            # Manual tag removal from a pipeline
-            remove_tags(tags=[...], pipeline_id=...)
-            
-            # Manual tag removal from a run template
-            remove_tags(tags=[...], run_template_id=...)
-            
-            # Automatic tag removal from a model (within a step)
-            remove_tags(tags=[...], infer_model=True)
-            
-            # Manual tag removal from a model
-            remove_tags(tags=[...], model_name=..., model_version=...)
-            remove_tags(tags=[...], model_version_id=...)
-            
-            # Automatic tag removal from an artifact (within a step)
-            remove_tags(tags=[...], infer_artifact=True)  # step with single output
-            remove_tags(tags=[...], artifact_name=..., infer_artifact=True)  # specific output of a step
-            
-            # Manual tag removal from an artifact
-            remove_tags(tags=[...], artifact_name=..., artifact_version=...)
-            remove_tags(tags=[...], artifact_version_id=...)
+            include: \n{remove_tags_warning}
             """
         )
 
