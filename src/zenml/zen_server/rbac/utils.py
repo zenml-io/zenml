@@ -374,7 +374,7 @@ def get_resource_for_model(model: AnyModel) -> Optional[Resource]:
 
     workspace_id: Optional[UUID] = None
     if isinstance(model, WorkspaceScopedResponse):
-        # A workspace scoped request is always scoped to a specific workspace
+        # A workspace scoped response is always scoped to a specific workspace
         workspace_id = model.workspace.id
     elif isinstance(model, WorkspaceScopedRequest):
         # A workspace scoped request is always scoped to a specific workspace
