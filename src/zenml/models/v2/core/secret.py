@@ -154,7 +154,7 @@ class SecretResponse(
 ):
     """Response model for secrets."""
 
-    ANALYTICS_FIELDS: ClassVar[List[str]] = ["scope"]
+    ANALYTICS_FIELDS: ClassVar[List[str]] = ["private"]
 
     name: str = Field(
         title="The name of the secret.",

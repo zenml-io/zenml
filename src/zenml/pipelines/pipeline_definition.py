@@ -1012,6 +1012,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             for component_type, component in stack.components.items()
         }
         return {
+            "workspace_id": deployment.workspace.id,
             "store_type": Client().zen_store.type.value,
             **stack_metadata,
             "total_steps": len(self.invocations),

@@ -244,12 +244,17 @@ if server_config().workload_manager_enabled:
         """
         from zenml.zen_server.template_execution.utils import run_template
 
-        with track_handler(event=AnalyticsEvent.EXECUTED_RUN_TEMPLATE):
+        with track_handler(
+            event=AnalyticsEvent.EXECUTED_RUN_TEMPLATE,
+        ) as analytics_handler:
             template = verify_permissions_and_get_entity(
                 id=template_id,
                 get_method=zen_store().get_run_template,
                 hydrate=True,
             )
+            analytics_handler.metadata = {
+                "workspace_id": template.workspace.id,
+            }
 
             verify_permission(
                 resource_type=ResourceType.PIPELINE_DEPLOYMENT,

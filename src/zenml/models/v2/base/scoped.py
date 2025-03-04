@@ -318,6 +318,18 @@ class WorkspaceScopedResponse(
     Used as a base class for all domain models that are workspace-scoped.
     """
 
+    # Analytics
+    def get_analytics_metadata(self) -> Dict[str, Any]:
+        """Fetches the analytics metadata for workspace scoped models.
+
+        Returns:
+            The analytics metadata.
+        """
+        metadata = super().get_analytics_metadata()
+        if self.workspace is not None:
+            metadata["workspace_id"] = self.workspace.id
+        return metadata
+
     # Body and metadata properties
     @property
     def workspace(self) -> "WorkspaceResponse":
