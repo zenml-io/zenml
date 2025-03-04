@@ -8441,6 +8441,7 @@ class SqlZenStore(BaseZenStore):
                     AnalyticsEvent.RUN_PIPELINE_ENDED
                 ) as analytics_handler:
                     analytics_handler.metadata = {
+                        "workspace_id": pipeline_run.workspace_id,
                         "pipeline_run_id": pipeline_run_id,
                         "template_id": pipeline_run.deployment.template_id,
                         "status": new_status,
@@ -10420,7 +10421,10 @@ class SqlZenStore(BaseZenStore):
                 model_version=model_version_request,
                 producer_run_id=producer_run_id,
             )
-            track(event=AnalyticsEvent.CREATED_MODEL_VERSION)
+            track(
+                event=AnalyticsEvent.CREATED_MODEL_VERSION,
+                metadata={"workspace_id": model_version.workspace.id},
+            )
             return True, model_version
         except EntityCreationError:
             # Need to explicitly re-raise this here as otherwise the catching
