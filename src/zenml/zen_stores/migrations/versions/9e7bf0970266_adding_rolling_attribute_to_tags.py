@@ -1,7 +1,7 @@
 """adding rolling attribute to tags [9e7bf0970266].
 
 Revision ID: 9e7bf0970266
-Revises: 0.75.0
+Revises: 9e7bf0970266
 Create Date: 2025-03-03 15:17:49.341208
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "9e7bf0970266"
-down_revision = "0.75.0"
+down_revision = "9e7bf0970266"
 branch_labels = None
 depends_on = None
 
