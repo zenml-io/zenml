@@ -266,14 +266,15 @@ def add_tags(
 
     Args:
         tags: The tags to add.
+        pipeline: The ID or the name of the pipeline.
         run: The id, name or prefix of the run.
+        run_template: The ID or the name of the run template.
+        artifact: The ID or the name of the artifact.
         artifact_version_id: The ID of the artifact version.
         artifact_name: The name of the artifact.
         artifact_version: The version of the artifact.
         infer_artifact: Flag deciding whether the artifact version should be
             inferred from the step context.
-        pipeline: The ID or the name of the pipeline.
-        run_template: The ID or the name of the run template.
 
     Raises:
         ValueError: If no identifiers are provided and the function is not
@@ -489,6 +490,7 @@ def remove_tags(
     run_template: Union[UUID, str],
 ) -> None: ...
 
+
 @overload
 def remove_tags(
     *,
@@ -543,14 +545,15 @@ def remove_tags(
 
     Args:
         tags: The tags to remove.
+        pipeline: The ID or the name of the pipeline.
         run: The id, name or prefix of the run.
+        run_template: The ID or the name of the run template.
+        artifact: The ID or the name of the artifact.
         artifact_version_id: The ID of the artifact version.
         artifact_name: The name of the artifact.
         artifact_version: The version of the artifact.
         infer_artifact: Flag deciding whether the artifact version should be
             inferred from the step context.
-        pipeline: The ID or the name of the pipeline.
-        run_template: The ID or the name of the run template.
 
     Raises:
         ValueError: If no identifiers are provided and the function is not
