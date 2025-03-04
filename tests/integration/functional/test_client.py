@@ -46,6 +46,7 @@ from zenml.enums import (
     ModelStages,
     SecretScope,
     StackComponentType,
+    TaggableResourceTypes,
 )
 from zenml.exceptions import (
     EntityExistsError,
@@ -65,6 +66,7 @@ from zenml.models import (
     PipelineRequest,
     RunMetadataResource,
     StackResponse,
+    TagResource,
 )
 from zenml.utils import io_utils
 from zenml.utils.string_utils import random_str
@@ -1664,3 +1666,22 @@ class TestModelVersion:
         )
         assert mv.name == "bar"
         assert mv.description == "bar"
+
+
+def test_attach_and_detach_tag_pipeline_run(clean_client_with_run: Client):
+    run = clean_client_with_run.get_pipeline_run("connected_two_step_pipeline")
+    tag = clean_client_with_run.create_tag(name="foo")
+    clean_client_with_run.attach_tag(
+        tag.id,
+        [TagResource(id=run.id, type=TaggableResourceTypes.PIPELINE_RUN)],
+    )
+
+    run = clean_client_with_run.get_pipeline_run(run.id)
+    assert "foo" in [t.name for t in run.tags]
+
+    clean_client_with_run.detach_tag(
+        tag.id,
+        [TagResource(id=run.id, type=TaggableResourceTypes.PIPELINE_RUN)],
+    )
+    run = clean_client_with_run.get_pipeline_run(run.id)
+    assert "foo" not in [t.name for t in run.tags]
