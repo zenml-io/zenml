@@ -961,7 +961,6 @@ def logout(
         pro: Log out from ZenML Pro.
         pro_api_url: Custom URL for the ZenML Pro API.
     """
-    cli_utils.declare("Logging `out` from ZenML Pro...")
     from zenml.login.credentials_store import get_credentials_store
 
     _fail_if_authentication_environment_variables_set()
