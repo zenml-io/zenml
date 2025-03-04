@@ -38,7 +38,6 @@ from zenml.console import console
 from zenml.constants import SECRET_VALUES
 from zenml.enums import (
     CliCategories,
-    SecretScope,
 )
 from zenml.exceptions import EntityExistsError, ZenKeyError
 from zenml.logger import get_logger
@@ -59,11 +58,12 @@ def secret() -> None:
 )
 @click.argument("name", type=click.STRING)
 @click.option(
-    "--scope",
-    "-s",
-    "scope",
-    type=click.Choice([scope.value for scope in list(SecretScope)]),
-    default=SecretScope.WORKSPACE.value,
+    "--private",
+    "-p",
+    "private",
+    is_flag=True,
+    help="Whether the secret is private. A private secret is only accessible "
+    "to the user who creates it.",
 )
 @click.option(
     "--interactive",
@@ -84,13 +84,13 @@ def secret() -> None:
 )
 @click.argument("args", nargs=-1, type=click.UNPROCESSED)
 def create_secret(
-    name: str, scope: str, interactive: bool, values: str, args: List[str]
+    name: str, private: bool, interactive: bool, values: str, args: List[str]
 ) -> None:
     """Create a secret.
 
     Args:
         name: The name of the secret to create.
-        scope: The scope of the secret to create.
+        private: Whether the secret is private.
         interactive: Whether to use interactive mode to enter the secret values.
         values: Secret key-value pairs to be passed as JSON or YAML.
         args: The arguments to pass to the secret.
@@ -152,7 +152,7 @@ def create_secret(
         with console.status(f"Saving secret `{name}`..."):
             try:
                 client.create_secret(
-                    name=name, values=parsed_args, scope=SecretScope(scope)
+                    name=name, values=parsed_args, private=private
                 )
                 declare(f"Secret '{name}' successfully created.")
             except EntityExistsError as e:
@@ -186,7 +186,7 @@ def list_secrets(**kwargs: Any) -> None:
             dict(
                 name=secret.name,
                 id=str(secret.id),
-                scope=secret.scope.value,
+                private=secret.private,
             )
             for secret in secrets.items
         ]
@@ -200,22 +200,26 @@ def list_secrets(**kwargs: Any) -> None:
     type=click.STRING,
 )
 @click.option(
-    "--scope",
-    "-s",
-    type=click.Choice([scope.value for scope in list(SecretScope)]),
-    default=None,
+    "--private",
+    "-p",
+    "private",
+    type=click.BOOL,
+    required=False,
+    help="Use this flag to explicitly fetch a private secret or a public secret.",
 )
-def get_secret(name_id_or_prefix: str, scope: Optional[str] = None) -> None:
+def get_secret(name_id_or_prefix: str, private: Optional[bool] = None) -> None:
     """Get a secret and print it to the console.
 
     Args:
         name_id_or_prefix: The name of the secret to get.
-        scope: The scope of the secret to get.
+        private: Private status of the secret to filter for.
     """
-    secret = _get_secret(name_id_or_prefix, scope)
+    secret = _get_secret(name_id_or_prefix, private)
+    scope = ""
+    if private is not None:
+        scope = "private " if private else "public "
     declare(
-        f"Fetched secret with name `{secret.name}` and ID `{secret.id}` in "
-        f"scope `{secret.scope.value}`:"
+        f"Fetched {scope}secret with name `{secret.name}` and ID `{secret.id}`:"
     )
     if not secret.secret_values:
         warning(f"Secret with name `{name_id_or_prefix}` is empty.")
@@ -224,25 +228,22 @@ def get_secret(name_id_or_prefix: str, scope: Optional[str] = None) -> None:
 
 
 def _get_secret(
-    name_id_or_prefix: str, scope: Optional[str] = None
+    name_id_or_prefix: str, private: Optional[bool] = None
 ) -> SecretResponse:
     """Get a secret with a given name, prefix or id.
 
     Args:
         name_id_or_prefix: The name of the secret to get.
-        scope: The scope of the secret to get.
+        private: Private status of the secret to filter for.
 
     Returns:
         The secret response model.
     """
     client = Client()
     try:
-        if scope:
-            return client.get_secret(
-                name_id_or_prefix=name_id_or_prefix, scope=SecretScope(scope)
-            )
-        else:
-            return client.get_secret(name_id_or_prefix=name_id_or_prefix)
+        return client.get_secret(
+            name_id_or_prefix=name_id_or_prefix, private=private
+        )
     except ZenKeyError as e:
         error(
             f"Error fetching secret with name id or prefix "
@@ -267,9 +268,12 @@ def _get_secret(
     type=click.STRING,
 )
 @click.option(
-    "--new-scope",
-    "-s",
-    type=click.Choice([scope.value for scope in list(SecretScope)]),
+    "--private",
+    "-p",
+    "private",
+    type=click.BOOL,
+    required=False,
+    help="Update the private status of the secret.",
 )
 @click.option(
     "--interactive",
@@ -293,7 +297,7 @@ def _get_secret(
 def update_secret(
     name_or_id: str,
     extra_args: List[str],
-    new_scope: Optional[str] = None,
+    private: Optional[bool] = None,
     remove_keys: List[str] = [],
     interactive: bool = False,
     values: str = "",
@@ -302,7 +306,7 @@ def update_secret(
 
     Args:
         name_or_id: The name or id of the secret to update.
-        new_scope: The new scope of the secret.
+        private: Private status of the secret to update.
         extra_args: The arguments to pass to the secret.
         interactive: Whether to use interactive mode to update the secret.
         remove_keys: The keys to remove from the secret.
@@ -331,10 +335,7 @@ def update_secret(
         except NotImplementedError as e:
             error(f"Centralized secrets management is disabled: {str(e)}")
 
-    declare(
-        f"Updating secret with name '{secret.name}' and ID '{secret.id}' in "
-        f"scope '{secret.scope.value}:"
-    )
+    declare(f"Updating secret with name '{secret.name}' and ID '{secret.id}'")
 
     if "name" in parsed_args:
         error("The word 'name' cannot be used as a key for a secret.")
@@ -388,7 +389,7 @@ def update_secret(
 
     client.update_secret(
         name_id_or_prefix=secret.id,
-        new_scope=SecretScope(new_scope) if new_scope else None,
+        update_private=private,
         add_or_update_values=secret_args_add_update,
         remove_values=remove_keys,
     )
@@ -492,10 +493,12 @@ def delete_secret(name_or_id: str, yes: bool = False) -> None:
     type=click.STRING,
 )
 @click.option(
-    "--scope",
-    "-s",
-    type=click.Choice([scope.value for scope in list(SecretScope)]),
-    default=None,
+    "--private",
+    "-p",
+    "private",
+    type=click.BOOL,
+    required=False,
+    help="Use this flag to explicitly fetch a private secret or a public secret.",
 )
 @click.option(
     "--filename",
@@ -509,7 +512,7 @@ def delete_secret(name_or_id: str, yes: bool = False) -> None:
 )
 def export_secret(
     name_id_or_prefix: str,
-    scope: Optional[str] = None,
+    private: Optional[bool] = None,
     filename: Optional[str] = None,
 ) -> None:
     """Export a secret as a YAML file.
@@ -519,12 +522,12 @@ def export_secret(
 
     Args:
         name_id_or_prefix: The name of the secret to export.
-        scope: The scope of the secret to export.
+        private: Private status of the secret to export.
         filename: The name of the file to export the secret to.
     """
     from zenml.utils.yaml_utils import write_yaml
 
-    secret = _get_secret(name_id_or_prefix=name_id_or_prefix, scope=scope)
+    secret = _get_secret(name_id_or_prefix=name_id_or_prefix, private=private)
     if not secret.secret_values:
         warning(f"Secret with name `{name_id_or_prefix}` is empty.")
         return

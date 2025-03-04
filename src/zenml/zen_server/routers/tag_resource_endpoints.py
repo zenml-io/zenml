@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for the link between tags and resources."""
 
-from typing import Any, List, Tuple
+from typing import Any, List
 from uuid import UUID
 
 from fastapi import APIRouter, Security
@@ -147,29 +147,27 @@ def batch_create_tag_resource(
 )
 @handle_exceptions
 def delete_tag_resource(
-    tag_id: UUID,
-    resource_id: UUID,
-    resource_type: TaggableResourceTypes,
+    tag_resource: TagResourceRequest,
     _: AuthContext = Security(authorize),
 ) -> None:
     """Detach a tag from a resource.
 
     Args:
-        tag_id: The ID of the tag to delete.
-        resource_id: The ID of the resource to delete.
-        resource_type: The type of the resource to delete.
+        tag_resource: The tag resource relationship to delete.
     """
     verify_models = []
-    verify_models.append(zen_store().get_tag(tag_id))
-    verify_models.append(_get_resource_model(resource_id, resource_type))
+    verify_models.append(zen_store().get_tag(tag_resource.tag_id))
+    verify_models.append(
+        _get_resource_model(
+            tag_resource.resource_id, tag_resource.resource_type
+        )
+    )
 
     batch_verify_permissions_for_models(
         models=verify_models,
         action=Action.UPDATE,
     )
-    zen_store().delete_tag_resource(
-        tag_id=tag_id, resource_id=resource_id, resource_type=resource_type
-    )
+    zen_store().delete_tag_resource(tag_resource=tag_resource)
 
 
 @router.delete(
@@ -178,7 +176,7 @@ def delete_tag_resource(
 )
 @handle_exceptions
 def batch_delete_tag_resource(
-    tag_resources: List[Tuple[UUID, UUID, TaggableResourceTypes]],
+    tag_resources: List[TagResourceRequest],
     _: AuthContext = Security(authorize),
 ) -> None:
     """Detach different tags from different resources.
@@ -187,16 +185,17 @@ def batch_delete_tag_resource(
         tag_resources: A list of tag resource requests.
     """
     verify_models = []
-    for tag_id, resource_id, resource_type in tag_resources:
-        verify_models.append(zen_store().get_tag(tag_id))
-        verify_models.append(_get_resource_model(resource_id, resource_type))
+    for tag_resource in tag_resources:
+        verify_models.append(zen_store().get_tag(tag_resource.tag_id))
+        verify_models.append(
+            _get_resource_model(
+                tag_resource.resource_id, tag_resource.resource_type
+            )
+        )
 
     batch_verify_permissions_for_models(
         models=verify_models,
         action=Action.UPDATE,
     )
 
-    for tag_id, resource_id, resource_type in tag_resources:
-        zen_store().delete_tag_resource(
-            tag_id=tag_id, resource_id=resource_id, resource_type=resource_type
-        )
+    zen_store().batch_delete_tag_resource(tag_resources=tag_resources)

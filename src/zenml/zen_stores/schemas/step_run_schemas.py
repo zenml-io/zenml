@@ -102,7 +102,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    deployment_id: UUID = build_foreign_key_field(
+    deployment_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
         target=PipelineDeploymentSchema.__tablename__,
         source_column="deployment_id",
@@ -134,7 +134,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
-    model_version_id: UUID = build_foreign_key_field(
+    model_version_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
         target=MODEL_VERSION_TABLENAME,
         source_column="model_version_id",
@@ -186,11 +186,14 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
     model_config = ConfigDict(protected_namespaces=())  # type: ignore[assignment]
 
     @classmethod
-    def from_request(cls, request: StepRunRequest) -> "StepRunSchema":
+    def from_request(
+        cls, request: StepRunRequest, deployment_id: Optional[UUID]
+    ) -> "StepRunSchema":
         """Create a step run schema from a step run request model.
 
         Args:
             request: The step run request model.
+            deployment_id: The deployment ID.
 
         Returns:
             The step run schema.
@@ -202,14 +205,13 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             start_time=request.start_time,
             end_time=request.end_time,
             status=request.status.value,
+            deployment_id=deployment_id,
             original_step_run_id=request.original_step_run_id,
             pipeline_run_id=request.pipeline_run_id,
-            deployment_id=request.deployment,
             docstring=request.docstring,
             cache_key=request.cache_key,
             code_hash=request.code_hash,
             source_code=request.source_code,
-            model_version_id=request.model_version_id,
         )
 
     def to_model(
@@ -355,9 +357,6 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 self.status = value.value
             if key == "end_time":
                 self.end_time = value
-            if key == "model_version_id":
-                if value and self.model_version_id is None:
-                    self.model_version_id = value
 
         self.updated = utc_now()
 

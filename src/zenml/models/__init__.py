@@ -133,7 +133,8 @@ from zenml.models.v2.core.component import (
     ComponentResponse,
     ComponentResponseBody,
     ComponentResponseMetadata,
-    ComponentResponseResources
+    ComponentResponseResources,
+    DefaultComponentRequest,
 )
 from zenml.models.v2.core.event_source_flavor import (
     EventSourceFlavorResponse,
@@ -275,6 +276,7 @@ from zenml.models.v2.core.service_connector import (
     ServiceConnectorResponseMetadata,
 )
 from zenml.models.v2.core.stack import (
+    DefaultStackRequest,
     StackRequest,
     StackUpdate,
     StackFilter,
@@ -295,6 +297,7 @@ from zenml.models.v2.core.tag import (
     TagFilter,
     TagResponse,
     TagResponseBody,
+    TagResponseMetadata,
     TagRequest,
     TagUpdate,
 )
@@ -566,6 +569,8 @@ __all__ = [
     "ComponentResponseBody",
     "ComponentResponseMetadata",
     "ComponentResponseResources",
+    "DefaultComponentRequest",
+    "DefaultStackRequest",
     "EventSourceFlavorResponse",
     "EventSourceFlavorResponseBody",
     "EventSourceFlavorResponseMetadata",
@@ -699,6 +704,7 @@ __all__ = [
     "TagResourceRequest",
     "TagResponse",
     "TagResponseBody",
+    "TagResponseMetadata",
     "TagRequest",
     "TagUpdate",
     "TriggerResponse",

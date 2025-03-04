@@ -17,7 +17,7 @@ import json
 from typing import Any, Optional
 from uuid import UUID
 
-from sqlalchemy import TEXT, Column
+from sqlalchemy import TEXT, Column, UniqueConstraint
 from sqlmodel import Field, Relationship
 
 from zenml.models import (
@@ -42,6 +42,13 @@ class CodeRepositorySchema(NamedSchema, table=True):
     """SQL Model for code repositories."""
 
     __tablename__ = "code_repository"
+    __table_args__ = (
+        UniqueConstraint(
+            "name",
+            "workspace_id",
+            name="unique_code_repository_name_in_workspace",
+        ),
+    )
 
     workspace_id: UUID = build_foreign_key_field(
         source=__tablename__,

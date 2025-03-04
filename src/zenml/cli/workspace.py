@@ -20,9 +20,9 @@ import click
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
+    check_zenml_pro_workspace_availability,
     is_sorted_or_filtered,
     list_options,
-    warn_unsupported_non_default_workspace,
 )
 from zenml.client import Client
 from zenml.console import console
@@ -35,7 +35,7 @@ def workspace() -> None:
     """Commands for workspace management."""
 
 
-@workspace.command("list", hidden=True)
+@workspace.command("list")
 @list_options(WorkspaceFilter)
 @click.pass_context
 def list_workspaces(ctx: click.Context, **kwargs: Any) -> None:
@@ -45,7 +45,7 @@ def list_workspaces(ctx: click.Context, **kwargs: Any) -> None:
         ctx: The click context object
         **kwargs: Keyword arguments to filter the list of workspaces.
     """
-    warn_unsupported_non_default_workspace()
+    check_zenml_pro_workspace_availability()
     client = Client()
     with console.status("Listing workspaces...\n"):
         workspaces = client.list_workspaces(**kwargs)
@@ -60,7 +60,45 @@ def list_workspaces(ctx: click.Context, **kwargs: Any) -> None:
             cli_utils.declare("No workspaces found for the given filter.")
 
 
-@workspace.command("describe", hidden=True)
+@workspace.command("register")
+@click.argument("workspace_name", type=str, required=True)
+def register_workspace(workspace_name: str) -> None:
+    """Register a new workspace.
+
+    Args:
+        workspace_name: The name of the workspace to register.
+    """
+    check_zenml_pro_workspace_availability()
+    client = Client()
+    with console.status("Creating workspace...\n"):
+        try:
+            client.create_workspace(workspace_name, description="")
+            cli_utils.declare("Workspace created successfully.")
+        except Exception as e:
+            cli_utils.error(str(e))
+
+
+@workspace.command("set")
+@click.argument("workspace_name", type=str, required=True)
+def set_workspace(workspace_name: str) -> None:
+    """Set the active workspace.
+
+    Args:
+        workspace_name: The name of the workspace to set as active.
+    """
+    check_zenml_pro_workspace_availability()
+    client = Client()
+    with console.status("Setting workspace...\n"):
+        try:
+            client.set_active_workspace(workspace_name)
+            cli_utils.declare(
+                f"The active workspace has been set to {workspace_name}"
+            )
+        except Exception as e:
+            cli_utils.error(str(e))
+
+
+@workspace.command("describe")
 @click.argument("workspace_name_or_id", type=str, required=False)
 def describe_workspace(workspace_name_or_id: Optional[str] = None) -> None:
     """Get the workspace.
@@ -68,7 +106,7 @@ def describe_workspace(workspace_name_or_id: Optional[str] = None) -> None:
     Args:
         workspace_name_or_id: The name or ID of the workspace to set as active.
     """
-    warn_unsupported_non_default_workspace()
+    check_zenml_pro_workspace_availability()
     client = Client()
     if not workspace_name_or_id:
         active_workspace = client.active_workspace

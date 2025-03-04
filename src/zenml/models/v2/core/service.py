@@ -27,10 +27,11 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import ConfigDict, Field
 from sqlalchemy.sql.elements import ColumnElement
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
+from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -43,6 +44,8 @@ from zenml.services.service_status import ServiceState
 from zenml.services.service_type import ServiceType
 
 if TYPE_CHECKING:
+    from zenml.models.v2.core.model_version import ModelVersionResponse
+    from zenml.models.v2.core.pipeline_run import PipelineRunResponse
     from zenml.zen_stores.schemas import BaseSchema
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
@@ -101,10 +104,9 @@ class ServiceRequest(WorkspaceScopedRequest):
         default=None,
         title="The model version id linked to the service.",
     )
-    pipeline_run_id: Optional[Union[UUID, str]] = Field(
+    pipeline_run_id: Optional[UUID] = Field(
         default=None,
-        description="By the event source this trigger is attached to.",
-        union_mode="left_to_right",
+        title="The pipeline run id linked to the service.",
     )
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
@@ -119,7 +121,7 @@ class ServiceRequest(WorkspaceScopedRequest):
 # ------------------ Update Model ------------------
 
 
-class ServiceUpdate(BaseModel):
+class ServiceUpdate(BaseUpdate):
     """Update model for stack components."""
 
     name: Optional[str] = Field(
@@ -229,6 +231,23 @@ class ServiceResponseMetadata(WorkspaceScopedResponseMetadata):
 
 class ServiceResponseResources(WorkspaceScopedResponseResources):
     """Class for all resource models associated with the service entity."""
+
+    pipeline_run: Optional["PipelineRunResponse"] = Field(
+        default=None,
+        title="The pipeline run associated with the service.",
+    )
+    model_version: Optional["ModelVersionResponse"] = Field(
+        default=None,
+        title="The model version associated with the service.",
+    )
+
+    # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
+    #  fields defined under base models. If not handled, this raises a warning.
+    #  It is possible to suppress this warning message with the following
+    #  configuration, however the ultimate solution is to rename these fields.
+    #  Even though they do not cause any problems right now, if we are not
+    #  careful we might overwrite some fields protected by pydantic.
+    model_config = ConfigDict(protected_namespaces=())
 
 
 class ServiceResponse(
@@ -363,18 +382,30 @@ class ServiceResponse(
         """
         return self.get_body().state
 
+    @property
+    def pipeline_run(self) -> Optional["PipelineRunResponse"]:
+        """The `pipeline_run` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().pipeline_run
+
+    @property
+    def model_version(self) -> Optional["ModelVersionResponse"]:
+        """The `model_version` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_resources().model_version
+
 
 # ------------------ Filter Model ------------------
 
 
 class ServiceFilter(WorkspaceScopedFilter):
-    """Model to enable advanced filtering of services.
-
-    The Service needs additional scoping. As such the `_scope_user` field
-    can be set to the user that is doing the filtering. The
-    `generate_filter()` method of the baseclass is overwritten to include the
-    scoping.
-    """
+    """Model to enable advanced filtering of services."""
 
     name: Optional[str] = Field(
         default=None,

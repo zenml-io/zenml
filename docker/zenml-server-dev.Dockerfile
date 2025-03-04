@@ -37,12 +37,14 @@ RUN groupadd --gid $USER_GID $USERNAME && \
   mkdir -p $VIRTUAL_ENV && \
   chown -R $USER_UID:$USER_GID $VIRTUAL_ENV
 
+WORKDIR /zenml
+
+RUN chown -R $USER_UID:$USER_GID .
+
 # Switch to non-privileged user
 USER $USERNAME
 
 ENV PATH="$VIRTUAL_ENV/bin:/home/$USERNAME/.local/bin:$PATH"
-
-WORKDIR /zenml
 
 FROM base AS builder
 

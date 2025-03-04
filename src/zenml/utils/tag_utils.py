@@ -15,10 +15,8 @@
 
 from typing import (
     TYPE_CHECKING,
-    Any,
     List,
     Optional,
-    Type,
     TypeVar,
     Union,
     overload,
@@ -113,73 +111,6 @@ class Tag(BaseModel):
         if self.rolling is not None:
             request.rolling = self.rolling
         return request
-
-
-def get_schema_from_resource_type(
-    resource_type: TaggableResourceTypes,
-) -> Any:
-    """Get the schema for a resource type.
-
-    Args:
-        resource_type: The type of the resource.
-
-    Returns:
-        The schema for the resource type.
-    """
-    from zenml.zen_stores.schemas import (
-        ArtifactSchema,
-        ArtifactVersionSchema,
-        ModelSchema,
-        ModelVersionSchema,
-        PipelineRunSchema,
-        PipelineSchema,
-        RunTemplateSchema,
-    )
-
-    resource_type_to_schema_mapping = {
-        TaggableResourceTypes.ARTIFACT: ArtifactSchema,
-        TaggableResourceTypes.ARTIFACT_VERSION: ArtifactVersionSchema,
-        TaggableResourceTypes.MODEL: ModelSchema,
-        TaggableResourceTypes.MODEL_VERSION: ModelVersionSchema,
-        TaggableResourceTypes.PIPELINE: PipelineSchema,
-        TaggableResourceTypes.PIPELINE_RUN: PipelineRunSchema,
-        TaggableResourceTypes.RUN_TEMPLATE: RunTemplateSchema,
-    }
-
-    return resource_type_to_schema_mapping[resource_type]
-
-
-def get_resource_type_from_schema(
-    schema: Type["AnySchema"],
-) -> TaggableResourceTypes:
-    """Get the resource type from a schema.
-
-    Args:
-        schema: The schema of the resource.
-
-    Returns:
-        The resource type for the schema.
-    """
-    from zenml.zen_stores.schemas import (
-        ArtifactSchema,
-        ArtifactVersionSchema,
-        ModelSchema,
-        ModelVersionSchema,
-        PipelineRunSchema,
-        PipelineSchema,
-        RunTemplateSchema,
-    )
-
-    schema_to_resource_type_mapping = {
-        ArtifactSchema: TaggableResourceTypes.ARTIFACT,
-        ArtifactVersionSchema: TaggableResourceTypes.ARTIFACT_VERSION,
-        ModelSchema: TaggableResourceTypes.MODEL,
-        ModelVersionSchema: TaggableResourceTypes.MODEL_VERSION,
-        PipelineSchema: TaggableResourceTypes.PIPELINE,
-        PipelineRunSchema: TaggableResourceTypes.PIPELINE_RUN,
-        RunTemplateSchema: TaggableResourceTypes.RUN_TEMPLATE,
-    }
-    return schema_to_resource_type_mapping[schema]
 
 
 @overload

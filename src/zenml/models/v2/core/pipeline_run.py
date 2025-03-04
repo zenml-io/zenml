@@ -28,15 +28,15 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import ConfigDict, Field
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus
 from zenml.metadata.metadata_types import MetadataType
+from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
     TaggableFilter,
-    WorkspaceScopedFilter,
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
@@ -122,11 +122,6 @@ class PipelineRunRequest(WorkspaceScopedRequest):
         default=None,
         title="Tags of the pipeline run.",
     )
-    model_version_id: Optional[UUID] = Field(
-        title="The ID of the model version that was "
-        "configured by this pipeline run explicitly.",
-        default=None,
-    )
 
     model_config = ConfigDict(protected_namespaces=())
 
@@ -134,16 +129,11 @@ class PipelineRunRequest(WorkspaceScopedRequest):
 # ------------------ Update Model ------------------
 
 
-class PipelineRunUpdate(BaseModel):
+class PipelineRunUpdate(BaseUpdate):
     """Pipeline run update model."""
 
     status: Optional[ExecutionStatus] = None
     end_time: Optional[datetime] = None
-    model_version_id: Optional[UUID] = Field(
-        title="The ID of the model version that was "
-        "configured by this pipeline run explicitly.",
-        default=None,
-    )
     # TODO: we should maybe have a different update model here, the upper
     #  three attributes should only be for internal use
     add_tags: Optional[List[str]] = Field(
@@ -591,11 +581,10 @@ class PipelineRunResponse(
 # ------------------ Filter Model ------------------
 
 
-class PipelineRunFilter(WorkspaceScopedFilter, TaggableFilter):
+class PipelineRunFilter(TaggableFilter):
     """Model to enable advanced filtering of all Workspaces."""
 
     CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
-        *WorkspaceScopedFilter.CUSTOM_SORTING_OPTIONS,
         *TaggableFilter.CUSTOM_SORTING_OPTIONS,
         "tag",
         "stack",
@@ -604,7 +593,6 @@ class PipelineRunFilter(WorkspaceScopedFilter, TaggableFilter):
         "model_version",
     ]
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
         *TaggableFilter.FILTER_EXCLUDE_FIELDS,
         "unlisted",
         "code_repository_id",
@@ -620,10 +608,6 @@ class PipelineRunFilter(WorkspaceScopedFilter, TaggableFilter):
         "pipeline_name",
         "templatable",
         "run_metadata",
-    ]
-    CLI_EXCLUDE_FIELDS = [
-        *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
-        *TaggableFilter.CLI_EXCLUDE_FIELDS,
     ]
 
     name: Optional[str] = Field(

@@ -248,6 +248,9 @@ class ModelSchema(NamedSchema, table=True):
         for field, value in model_update.model_dump(
             exclude_unset=True, exclude_none=True
         ).items():
+            if field in ["add_tags", "remove_tags"]:
+                # Tags are handled separately
+                continue
             setattr(self, field, value)
         self.updated = utc_now()
         return self

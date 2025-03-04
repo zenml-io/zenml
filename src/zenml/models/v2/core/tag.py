@@ -14,50 +14,46 @@
 """Models representing tags."""
 
 import random
-from typing import List, Optional
+from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import ColorVariants
-from zenml.models.v2.base.base import (
-    BaseDatedResponseBody,
-    BaseIdentifiedResponse,
-    BaseRequest,
-    BaseResponseMetadata,
-    BaseResponseResources,
+from zenml.models.v2.base.base import BaseUpdate
+from zenml.models.v2.base.scoped import (
+    UserScopedFilter,
+    UserScopedRequest,
+    UserScopedResponse,
+    UserScopedResponseBody,
+    UserScopedResponseMetadata,
+    UserScopedResponseResources,
 )
-from zenml.models.v2.base.filter import BaseFilter
-from zenml.models.v2.misc.tag import TagResource
 
 # ------------------ Request Model ------------------
 
 
-class TagRequest(BaseRequest):
+class TagRequest(UserScopedRequest):
     """Request model for tags."""
 
     name: str = Field(
         description="The unique title of the tag.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    rolling: Optional[bool] = Field(
+    rolling: bool = Field(
         description="The flag signifying whether the tag is a rolling tag.",
         default=False,
     )
-    color: Optional[ColorVariants] = Field(
+    color: ColorVariants = Field(
         description="The color variant assigned to the tag.",
         default_factory=lambda: random.choice(list(ColorVariants)),
-    )
-    resources: Optional[List[TagResource]] = Field(
-        description="The resources to tag.",
-        default=None,
     )
 
 
 # ------------------ Update Model ------------------
 
 
-class TagUpdate(BaseModel):
+class TagUpdate(BaseUpdate):
     """Update model for tags."""
 
     name: Optional[str] = None
@@ -68,7 +64,7 @@ class TagUpdate(BaseModel):
 # ------------------ Response Model ------------------
 
 
-class TagResponseBody(BaseDatedResponseBody):
+class TagResponseBody(UserScopedResponseBody):
     """Response body for tags."""
 
     color: ColorVariants = Field(
@@ -83,13 +79,17 @@ class TagResponseBody(BaseDatedResponseBody):
     )
 
 
-class TagResponseResources(BaseResponseResources):
+class TagResponseMetadata(UserScopedResponseMetadata):
+    """Response metadata for tags."""
+
+
+class TagResponseResources(UserScopedResponseResources):
     """Class for all resource models associated with the tag entity."""
 
 
 class TagResponse(
-    BaseIdentifiedResponse[
-        TagResponseBody, BaseResponseMetadata, TagResponseResources
+    UserScopedResponse[
+        TagResponseBody, TagResponseMetadata, TagResponseResources
     ]
 ):
     """Response model for tags."""
@@ -140,7 +140,7 @@ class TagResponse(
 # ------------------ Filter Model ------------------
 
 
-class TagFilter(BaseFilter):
+class TagFilter(UserScopedFilter):
     """Model to enable advanced filtering of all tags."""
 
     name: Optional[str] = Field(

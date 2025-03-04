@@ -18,7 +18,8 @@ import json
 from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
-from sqlmodel import Relationship, SQLModel
+from sqlalchemy import UniqueConstraint
+from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.models import (
     StackResponse,
@@ -30,7 +31,6 @@ from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
-from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.component_schemas import (
@@ -76,18 +76,16 @@ class StackSchema(NamedSchema, table=True):
     """SQL Model for stacks."""
 
     __tablename__ = "stack"
+    __table_args__ = (
+        UniqueConstraint(
+            "name",
+            name="unique_stack_name",
+        ),
+    )
+
+    description: Optional[str] = Field(default=None)
     stack_spec_path: Optional[str]
     labels: Optional[bytes]
-
-    workspace_id: UUID = build_foreign_key_field(
-        source=__tablename__,
-        target=WorkspaceSchema.__tablename__,
-        source_column="workspace_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=False,
-    )
-    workspace: "WorkspaceSchema" = Relationship(back_populates="stacks")
 
     user_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -123,7 +121,7 @@ class StackSchema(NamedSchema, table=True):
             The updated StackSchema.
         """
         for field, value in stack_update.model_dump(
-            exclude_unset=True, exclude={"workspace", "user"}
+            exclude_unset=True, exclude={"user"}
         ).items():
             if field == "components":
                 self.components = components
@@ -150,7 +148,6 @@ class StackSchema(NamedSchema, table=True):
             include_resources: Whether the resources will be filled.
             **kwargs: Keyword arguments to allow schema specific logic
 
-
         Returns:
             The converted model.
         """
@@ -162,12 +159,12 @@ class StackSchema(NamedSchema, table=True):
         metadata = None
         if include_metadata:
             metadata = StackResponseMetadata(
-                workspace=self.workspace.to_model(),
                 components={c.type: [c.to_model()] for c in self.components},
                 stack_spec_path=self.stack_spec_path,
                 labels=json.loads(base64.b64decode(self.labels).decode())
                 if self.labels
                 else None,
+                description=self.description,
             )
 
         return StackResponse(

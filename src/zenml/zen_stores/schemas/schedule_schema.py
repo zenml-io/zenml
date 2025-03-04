@@ -17,6 +17,7 @@ from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
+from sqlalchemy import UniqueConstraint
 from sqlmodel import Field, Relationship
 
 from zenml.enums import MetadataResourceTypes
@@ -49,6 +50,13 @@ class ScheduleSchema(NamedSchema, RunMetadataInterface, table=True):
     """SQL Model for schedules."""
 
     __tablename__ = "schedule"
+    __table_args__ = (
+        UniqueConstraint(
+            "name",
+            "workspace_id",
+            name="unique_schedule_name_in_workspace",
+        ),
+    )
 
     workspace_id: UUID = build_foreign_key_field(
         source=__tablename__,
@@ -154,20 +162,7 @@ class ScheduleSchema(NamedSchema, RunMetadataInterface, table=True):
         """
         if schedule_update.name is not None:
             self.name = schedule_update.name
-        if schedule_update.active is not None:
-            self.active = schedule_update.active
-        if schedule_update.cron_expression is not None:
-            self.cron_expression = schedule_update.cron_expression
-        if schedule_update.start_time is not None:
-            self.start_time = schedule_update.start_time
-        if schedule_update.end_time is not None:
-            self.end_time = schedule_update.end_time
-        if schedule_update.interval_second is not None:
-            self.interval_second = (
-                schedule_update.interval_second.total_seconds()
-            )
-        if schedule_update.catchup is not None:
-            self.catchup = schedule_update.catchup
+
         self.updated = utc_now()
         return self
 
