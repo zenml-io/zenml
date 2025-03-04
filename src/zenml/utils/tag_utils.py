@@ -43,18 +43,14 @@ add_tags(tags=[...], pipeline=...)
 # Manual tagging to a run template
 add_tags(tags=[...], run_template=...)
 
-# Automatic tagging to a model (within a step)
-add_tags(tags=[...], infer_model=True)
+# Manual tagging to an artifact
+add_tags(tags=[...], artifact=...)
 
-# Manual tagging to a model
-add_tags(tags=[...], model_name=..., model_version=...)
-add_tags(tags=[...], model_version_id=...)
-
-# Automatic tagging to an artifact (within a step)
+# Automatic tagging to an artifact version(within a step)
 add_tags(tags=[...], infer_artifact=True)  # step with single output
 add_tags(tags=[...], artifact_name=..., infer_artifact=True)  # specific output of a step
 
-# Manual tagging to an artifact
+# Manual tagging to an artifact version
 add_tags(tags=[...], artifact_name=..., artifact_version=...)
 add_tags(tags=[...], artifact_version_id=...)
 """
@@ -72,18 +68,14 @@ remove_tags(tags=[...], pipeline=...)
 # Manual tag removal from a run template
 remove_tags(tags=[...], run_template=...)
 
-# Automatic tag removal from a model (within a step)
-remove_tags(tags=[...], infer_model=True)
+# Manual tag removal from an artifact
+remove_tags(tags=[...], artifact=...)
 
-# Manual tag removal from a model
-remove_tags(tags=[...], model_name=..., model_version=...)
-remove_tags(tags=[...], model_version_id=...)
-
-# Automatic tag removal from an artifact (within a step)
+# Automatic tag removal from an artifact version (within a step)
 remove_tags(tags=[...], infer_artifact=True)  # step with single output
 remove_tags(tags=[...], artifact_name=..., infer_artifact=True)  # specific output of a step
 
-# Manual tag removal from an artifact
+# Manual tag removal from an artifact version
 remove_tags(tags=[...], artifact_name=..., artifact_version=...)
 remove_tags(tags=[...], artifact_version_id=...)
 """
@@ -208,6 +200,14 @@ def add_tags(
 def add_tags(
     *,
     tags: List[Union[str, Tag]],
+    artifact: Union[UUID, str],
+) -> None: ...
+
+
+@overload
+def add_tags(
+    *,
+    tags: List[Union[str, Tag]],
     artifact_version_id: UUID,
 ) -> None: ...
 
@@ -255,6 +255,8 @@ def add_tags(
     # Run Templates
     run_template: Optional[Union[UUID, str]] = None,
     # Artifacts
+    artifact: Optional[Union[UUID, str]] = None,
+    # Artifact Versions
     artifact_version_id: Optional[UUID] = None,
     artifact_name: Optional[str] = None,
     artifact_version: Optional[str] = None,
@@ -304,6 +306,12 @@ def add_tags(
         )
         resource_id = run_template_model.id
         resource_type = TaggableResourceTypes.RUN_TEMPLATE
+
+    # Tag an artifact
+    elif artifact is not None:
+        artifact_model = client.get_artifact(name_id_or_prefix=artifact)
+        resource_id = artifact_model.id
+        resource_type = TaggableResourceTypes.ARTIFACT
 
     # Tag an artifact version by its name and version
     elif artifact_name is not None and artifact_version is not None:
@@ -481,6 +489,13 @@ def remove_tags(
     run_template: Union[UUID, str],
 ) -> None: ...
 
+@overload
+def remove_tags(
+    *,
+    tags: List[str],
+    artifact: Union[UUID, str],
+) -> None: ...
+
 
 @overload
 def remove_tags(
@@ -517,6 +532,8 @@ def remove_tags(
     # Run Templates
     run_template: Optional[Union[UUID, str]] = None,
     # Artifacts
+    artifact: Optional[Union[UUID, str]] = None,
+    # Artifact Versions
     artifact_version_id: Optional[UUID] = None,
     artifact_name: Optional[str] = None,
     artifact_version: Optional[str] = None,
@@ -546,13 +563,13 @@ def remove_tags(
     resource_id = None
     resource_type = None
 
-    # Tag a pipeline
+    # Remove tags from a pipeline
     if pipeline is not None:
         pipeline_model = client.get_pipeline(name_id_or_prefix=pipeline)
         resource_id = pipeline_model.id
         resource_type = TaggableResourceTypes.PIPELINE
 
-    # Tag a run template
+    # Remove tags from a run template
     elif run_template is not None:
         run_template_model = client.get_run_template(
             name_id_or_prefix=run_template
@@ -560,13 +577,19 @@ def remove_tags(
         resource_id = run_template_model.id
         resource_type = TaggableResourceTypes.RUN_TEMPLATE
 
-    # Tag a run by ID
+    # Remove tags from a run
     elif run is not None:
         run_model = client.get_pipeline_run(name_id_or_prefix=run)
         resource_id = run_model.id
         resource_type = TaggableResourceTypes.PIPELINE_RUN
 
-    # Tag an artifact version by its name and version
+    # Remove tags from an artifact
+    elif artifact is not None:
+        artifact_model = client.get_artifact(name_id_or_prefix=artifact)
+        resource_id = artifact_model.id
+        resource_type = TaggableResourceTypes.ARTIFACT
+
+    # Remove tags from an artifact version by its name and version
     elif artifact_name is not None and artifact_version is not None:
         artifact_version_model = client.get_artifact_version(
             name_id_or_prefix=artifact_name, version=artifact_version
@@ -574,12 +597,12 @@ def remove_tags(
         resource_id = artifact_version_model.id
         resource_type = TaggableResourceTypes.ARTIFACT_VERSION
 
-    # Tag an artifact version by its ID
+    # Remove tags from an artifact version by its ID
     elif artifact_version_id is not None:
         resource_id = artifact_version_id
         resource_type = TaggableResourceTypes.ARTIFACT_VERSION
 
-    # Tag an artifact version through the step context
+    # Remove tags from an artifact version through the step context
     elif infer_artifact is True:
         try:
             from zenml.steps.step_context import get_step_context
@@ -624,7 +647,7 @@ def remove_tags(
 
     # If every additional value is None, that means we are calling it bare bones
     # and this call needs to happen during a step execution. We will use the
-    # step context to fetch the run and attach the tags accordingly.
+    # step context to fetch the run and detach the tags accordingly.
     elif all(
         v is None
         for v in [
