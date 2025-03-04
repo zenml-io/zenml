@@ -961,6 +961,7 @@ def logout(
         pro: Log out from ZenML Pro.
         pro_api_url: Custom URL for the ZenML Pro API.
     """
+    cli_utils.declare("Logging `out` from ZenML Pro...")
     from zenml.login.credentials_store import get_credentials_store
 
     _fail_if_authentication_environment_variables_set()
@@ -1042,7 +1043,7 @@ def logout(
                 credentials_store.clear_credentials(server_url=server)
             cli_utils.declare(
                 "Logged out from ZenML Pro.\n"
-                f"Hint: You can run 'zenml login \"{credentials.server_name}\"' to "
+                f"Hint: You can run `zenml login '{credentials.server_name}'` to "
                 "login again to the same ZenML Pro server or 'zenml server "
                 "list' to view other available servers that you can connect to "
                 "with 'zenml login <server-id-name-or-url>'."
@@ -1053,7 +1054,7 @@ def logout(
                 credentials_store.clear_credentials(server_url=server)
             cli_utils.declare(
                 f"Logged out from {server}."
-                f"Hint: You can run 'zenml login \"{server}\"' to log in again "
+                f"Hint: You can run `zenml login '{server}'` to log in again "
                 "to the same server or 'zenml server list' to view other available "
                 "servers that you can connect to with 'zenml login <server-url>'."
             )
