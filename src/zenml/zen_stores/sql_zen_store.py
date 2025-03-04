@@ -816,7 +816,7 @@ class SqlZenStore(BaseZenStore):
     _backup_secrets_store: Optional[BaseSecretsStore] = None
     _should_send_user_enriched_events: bool = False
     _cached_onboarding_state: Optional[Set[str]] = None
-    _default_user: Optional[UserSchema] = None
+    _default_user: Optional[UserResponse] = None
 
     @property
     def secrets_store(self) -> "BaseSecretsStore":
@@ -2882,6 +2882,9 @@ class SqlZenStore(BaseZenStore):
                     session.add(artifact_version_schema)
                     session.commit()
                 except IntegrityError:
+                    # We have to rollback the failed session first in order
+                    # to continue using it
+                    session.rollback()
                     raise EntityExistsError(
                         f"Unable to create artifact version "
                         f"{artifact_schema.name} (version "
@@ -4183,6 +4186,9 @@ class SqlZenStore(BaseZenStore):
             try:
                 session.commit()
             except IntegrityError:
+                # We have to rollback the failed session first in order
+                # to continue using it
+                session.rollback()
                 raise EntityExistsError(
                     f"Unable to create pipeline in workspace "
                     f"'{pipeline.workspace}': A pipeline with the name "
@@ -7125,8 +7131,6 @@ class SqlZenStore(BaseZenStore):
             The list of resources that the service connector configuration has
             access to.
         """
-        self._set_request_user_id(request_model=service_connector)
-
         connector_instance = service_connector_registry.instantiate_connector(
             model=service_connector
         )
@@ -7961,6 +7965,9 @@ class SqlZenStore(BaseZenStore):
             try:
                 session.commit()
             except IntegrityError:
+                # We have to rollback the failed session first in order
+                # to continue using it
+                session.rollback()
                 raise EntityExistsError(
                     f"Unable to create step `{step_run.name}`: A step with "
                     f"this name already exists in the pipeline run with ID "
@@ -8861,9 +8868,7 @@ class SqlZenStore(BaseZenStore):
 
         return False
 
-    def _get_default_user(
-        self, session: Optional[Session] = None
-    ) -> UserSchema:
+    def _get_default_user(self, session: Session) -> UserResponse:
         """Get the default user.
 
         Args:
@@ -8877,25 +8882,17 @@ class SqlZenStore(BaseZenStore):
                 ENV_ZENML_DEFAULT_USER_NAME, DEFAULT_USERNAME
             )
 
-            if session is None:
-                with Session(self.engine) as session:
-                    self._default_user = self._get_account_schema(
-                        account_name_or_id=default_username,
-                        session=session,
-                        service_account=False,
-                    )
-            else:
-                self._default_user = self._get_account_schema(
-                    account_name_or_id=default_username,
-                    session=session,
-                    service_account=False,
-                )
+            self._default_user = self._get_account_schema(
+                account_name_or_id=default_username,
+                session=session,
+                service_account=False,
+            ).to_model(include_metadata=True, include_resources=True)
 
         return self._default_user
 
     def _get_active_user(
         self,
-        session: Optional[Session] = None,
+        session: Session,
     ) -> UserResponse:
         """Get the active user.
 
@@ -8926,7 +8923,7 @@ class SqlZenStore(BaseZenStore):
 
             user = auth_context.user
         else:
-            user = self._get_default_user(session).to_model()
+            user = self._get_default_user(session)
 
         return user
 
@@ -9794,7 +9791,7 @@ class SqlZenStore(BaseZenStore):
     def _set_request_user_id(
         self,
         request_model: BaseRequest,
-        session: Optional[Session] = None,
+        session: Session,
     ) -> None:
         """Set the user ID on a request model to the active user.
 
@@ -10073,6 +10070,9 @@ class SqlZenStore(BaseZenStore):
             try:
                 session.commit()
             except IntegrityError:
+                # We have to rollback the failed session first in order
+                # to continue using it
+                session.rollback()
                 raise EntityExistsError(
                     f"Unable to create model {model.name}: "
                     "A model with this name already exists."
@@ -10720,6 +10720,10 @@ class SqlZenStore(BaseZenStore):
         else:
             raise ValueError("Model ID missing from the filter")
 
+        # It's important to remove the model from the filters because it is
+        # often used in combination with other filters with an OR operator and
+        # the model is a mandatory scoping mechanism.
+        filter_model.model = None
         filter_model.set_scope_model(model.id)
 
     def list_model_versions(

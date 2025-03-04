@@ -4383,9 +4383,8 @@ class TestModelVersion:
                     model=model.id,
                 ),
             )
-            assert len(mvs) == 2
+            assert len(mvs) == 1
             assert mv1 in mvs
-            assert mv2 in mvs
 
             mvs = zs.list_model_versions(
                 model_version_filter_model=ModelVersionFilter(
@@ -4396,15 +4395,6 @@ class TestModelVersion:
             assert len(mvs) == 2
             assert mv1 in mvs
             assert mv2 in mvs
-
-            mvs = zs.list_model_versions(
-                model_version_filter_model=ModelVersionFilter(
-                    tag="tag1",
-                    model=model.id,
-                ),
-            )
-            assert len(mvs) == 1
-            assert mv1 in mvs
 
             mvs = zs.list_model_versions(
                 model_version_filter_model=ModelVersionFilter(

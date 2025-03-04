@@ -6208,6 +6208,7 @@ class Client(metaclass=ClientMetaClass):
         model_name_or_id: Union[str, UUID],
         workspace: Optional[Union[str, UUID]] = None,
         hydrate: bool = True,
+        bypass_lazy_loader: bool = False,
     ) -> ModelResponse:
         """Get an existing model from Model Control Plane.
 
@@ -6216,17 +6217,19 @@ class Client(metaclass=ClientMetaClass):
             workspace: The workspace name/ID to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
+            bypass_lazy_loader: Whether to bypass the lazy loader.
 
         Returns:
             The model of interest.
         """
-        if cll := client_lazy_loader(
-            "get_model",
-            model_name_or_id=model_name_or_id,
-            hydrate=hydrate,
-            workspace=workspace,
-        ):
-            return cll  # type: ignore[return-value]
+        if not bypass_lazy_loader:
+            if cll := client_lazy_loader(
+                "get_model",
+                model_name_or_id=model_name_or_id,
+                hydrate=hydrate,
+                workspace=workspace,
+            ):
+                return cll  # type: ignore[return-value]
 
         return self._get_entity_by_id_or_name_or_prefix(
             get_method=self.zen_store.get_model,

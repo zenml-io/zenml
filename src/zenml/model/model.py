@@ -535,7 +535,9 @@ class Model(BaseModel):
             # TODO: This whole thing needs to be refactored as a get_or_create
             # REST API call.
             try:
-                model = zenml_client.get_model(model_name_or_id=self.name)
+                model = zenml_client.get_model(
+                    model_name_or_id=self.name, bypass_lazy_loader=True
+                )
             except KeyError:
                 model_request = ModelRequest(
                     name=self.name,
@@ -558,7 +560,9 @@ class Model(BaseModel):
                         f"New model `{self.name}` was created implicitly."
                     )
                 except EntityExistsError:
-                    model = zenml_client.get_model(model_name_or_id=self.name)
+                    model = zenml_client.get_model(
+                        model_name_or_id=self.name, bypass_lazy_loader=True
+                    )
 
         self._model_id = model.id
         return model

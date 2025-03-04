@@ -165,7 +165,21 @@ def test_get_private_secret():
     with cleanup_secrets() as secret_name:
         result1 = runner.invoke(
             secret_get_command,
-            [secret_name, "--private"],
+            [secret_name],
+        )
+        assert result1.exit_code != 0
+        assert "Could not find a secret" in result1.output
+
+        result1 = runner.invoke(
+            secret_get_command,
+            [secret_name, "--private", "true"],
+        )
+        assert result1.exit_code != 0
+        assert "Could not find a secret" in result1.output
+
+        result1 = runner.invoke(
+            secret_get_command,
+            [secret_name, "--private", "false"],
         )
         assert result1.exit_code != 0
         assert "Could not find a secret" in result1.output
@@ -182,7 +196,15 @@ def test_get_private_secret():
 
         result2 = runner.invoke(
             secret_get_command,
-            [secret_name, "--private"],
+            [secret_name],
+        )
+        assert result2.exit_code == 0
+        assert "test_value" in result2.output
+        assert "test_value2" in result2.output
+
+        result2 = runner.invoke(
+            secret_get_command,
+            [secret_name, "--private", "true"],
         )
         assert result2.exit_code == 0
         assert "test_value" in result2.output
@@ -190,7 +212,7 @@ def test_get_private_secret():
 
         result3 = runner.invoke(
             secret_get_command,
-            [secret_name, "--private"],
+            [secret_name, "--private", "false"],
         )
         assert result3.exit_code != 0
         assert "Could not find a secret" in result3.output
@@ -326,7 +348,7 @@ def test_update_secret_works():
 
         result5 = runner.invoke(
             secret_update_command,
-            [secret_name, "-s", "user"],
+            [secret_name, "--private", "true"],
         )
         assert result5.exit_code == 0
         assert "updated" in result5.output
