@@ -40,6 +40,7 @@ def baseten_model_deployer_step(
     service_name: Optional[str] = None,
     environment_variables: Optional[Dict[str, str]] = None,
     resources: Optional[Dict[str, Any]] = None,
+    environment: str = "development",
 ) -> BaseService:
     """Model deployer pipeline step for Baseten.
 
@@ -55,6 +56,7 @@ def baseten_model_deployer_step(
         service_name: Optional custom name for the service.
         environment_variables: Optional environment variables for the deployment.
         resources: Optional resource requirements (cpu, memory, use_gpu).
+        environment: The deployment environment to use ('development' or 'production').
 
     Returns:
         The Baseten deployment service.
@@ -160,12 +162,14 @@ def baseten_model_deployer_step(
         run_name=run_id,
         pipeline_step_name=step_name,
         service_name=service_name,
+        environment=environment,
     )
 
     # Deploy the model with detailed logging
     logger.info(f"Deploying model '{model_name}' to Baseten...")
     logger.info(f"Truss directory: {truss_dir}")
     logger.info(f"Service name: {service_name}")
+    logger.info(f"Environment: {environment}")
     logger.info(f"Timeout: {timeout} seconds")
     logger.info(f"Replace existing: {replace}")
 
@@ -178,7 +182,7 @@ def baseten_model_deployer_step(
 
         logger.info(
             f"Model '{model_name}' successfully deployed to Baseten. "
-            f"Service ID: {service.id}"
+            f"Service ID: {service.uuid}"
         )
 
         # Log the prediction URL

@@ -31,6 +31,7 @@ from zenml.services import (
     ServiceStatus,
     ServiceType,
 )
+from zenml.models import ServiceRequest, ServiceResponse
 
 logger = get_logger(__name__)
 
@@ -92,6 +93,7 @@ remote_url = {api_host}
         id: UUID,
         config: BasetenDeploymentConfig,
         model_id: str,
+        deployment_id: str,
         endpoint_url: str,
     ) -> BasetenDeploymentService:
         """Create a new deployment service.
@@ -100,16 +102,19 @@ remote_url = {api_host}
             id: The UUID for the service.
             config: The deployment configuration.
             model_id: The Baseten model ID.
+            deployment_id: The Baseten deployment ID.
             endpoint_url: The deployment endpoint URL.
 
         Returns:
             The created deployment service.
         """
-        # Update config with model ID
+        # Update config with model ID and deployment ID
         config.baseten_id = model_id
-        config.baseten_deployment_id = (
-            model_id  # In Baseten, these are the same
-        )
+        config.baseten_deployment_id = deployment_id
+        
+        # Ensure service_name is set
+        if not config.service_name:
+            config.service_name = f"zenml-baseten-{config.name}"
 
         # Create endpoint
         endpoint = BasetenEndpoint(
@@ -202,11 +207,12 @@ remote_url = {api_host}
         except Exception as e:
             raise RuntimeError(f"Failed to get model by ID: {str(e)}")
 
-    def _get_model_deployment_url(self, model_id: str) -> str:
+    def _get_model_deployment_url(self, model_id: str, environment: str = "development") -> str:
         """Get the deployment URL for a model.
 
         Args:
             model_id: The ID of the model.
+            environment: The deployment environment (development or production).
 
         Returns:
             The deployment URL.
@@ -214,8 +220,46 @@ remote_url = {api_host}
         Raises:
             RuntimeError: If the API request fails.
         """
-        # For Baseten, the prediction URL follows a standard format
-        return f"https://model.baseten.co/models/{model_id}/predict"
+        # Use the Baseten URL format based on their example
+        # Format: https://model-{model_id}.api.baseten.co/{environment}
+        # The endpoint config will add the /predict path
+        if environment not in ["development", "production"]:
+            logger.warning(f"Invalid environment: {environment}, using 'development'")
+            environment = "development"
+        
+        return f"https://model-{model_id}.api.baseten.co/{environment}"
+        
+    def _register_service(self, service: BasetenDeploymentService) -> ServiceResponse:
+        """Register a service with ZenML.
+        
+        Args:
+            service: The service to register.
+            
+        Returns:
+            The service response.
+        """
+        # Register the service in ZenML
+        client = Client()
+        
+        # Create a ServiceRequest with the service_source directly
+        service_source = f"{service.__class__.__module__}.{service.__class__.__name__}"
+        service_request = ServiceRequest(
+            name=service.config.service_name,
+            service_type=self.SERVICE_TYPE,
+            service_source=service_source,  # Set service_source explicitly
+            config=service.config.model_dump(),
+            admin_state=service.admin_state,
+            status=service.status.model_dump() if service.status else None,
+            endpoint=service.endpoint.model_dump() if service.endpoint else None,
+            prediction_url=service.get_prediction_url(),
+            health_check_url=service.get_healthcheck_url(),
+            # Add required user and workspace fields
+            user=client.active_user.id,
+            workspace=client.active_workspace.id,
+        )
+        
+        # Create the service
+        return client.zen_store.create_service(service_request)
 
     def deploy_model(
         self,
@@ -369,7 +413,8 @@ remote_url = {api_host}
                     logger.warning("Continuing with deployment process despite wait error")
                 
                 # Get the deployment URL
-                endpoint_url = self._get_model_deployment_url(model_id)
+                environment = getattr(config, "environment", "development")
+                endpoint_url = self._get_model_deployment_url(model_id, environment)
                 logger.info(f"Deployment URL: {endpoint_url}")
                 
                 # Create service with the extracted info
@@ -377,26 +422,15 @@ remote_url = {api_host}
                     id=id,
                     config=config,
                     model_id=model_id,
+                    deployment_id=deployment_id,  # Pass the deployment_id separately
                     endpoint_url=endpoint_url,
                 )
                 
-                # Register the service in ZenML
-                client = Client()
+                # Register the service in ZenML using the helper method
+                service_response = self._register_service(service)
                 
-                # Create the service using the client's create_service method
-                service_response = client.create_service(
-                    config=service.config.model_dump(),
-                    service_type=self.SERVICE_TYPE,
-                    model_version_id=None,  # Add model version ID if needed
-                    service_source=f"{service.__class__.__module__}.{service.__class__.__name__}",
-                    service_name=service.config.service_name,
-                    prediction_url=service.get_prediction_url(),
-                    health_check_url=service.get_healthcheck_url(),
-                    admin_state=service.admin_state,
-                    status=service.status.model_dump() if service.status else None,
-                    endpoint=service.endpoint.model_dump() if service.endpoint else None,
-                    id=service.uuid,  # Use uuid instead of id
-                )
+                # Update service with the database-assigned UUID
+                service.uuid = service_response.id
                 
                 # Check the actual status using our own method which uses the Baseten API directly
                 logger.info("Checking deployment status via Baseten API...")
@@ -438,8 +472,10 @@ remote_url = {api_host}
                             # Don't raise an exception, as the model might still be usable
                 
                 # Update the service in ZenML with the latest status
-                client.update_service(
-                    id=service.uuid,  # Use uuid instead of id
+                # Create a new client instance to avoid scope issues
+                update_client = Client()
+                update_client.update_service(
+                    id=service_response.id,
                     status=service.status.model_dump() if service.status else None,
                     endpoint=service.endpoint.model_dump() if service.endpoint else None,
                     prediction_url=service.get_prediction_url(),
@@ -494,20 +530,28 @@ remote_url = {api_host}
                         f"Failed to deploy to Baseten:\nStdout: {proc.stdout}\nStderr: {proc.stderr}"
                     )
                 
-                # Parse the output to extract the model ID
+                # Parse the output to extract the model ID and deployment ID
                 model_id = None
+                deployment_id = None
                 for line in proc.stdout.split("\n"):
                     if "Model ID:" in line:
                         model_id = line.split("Model ID:")[1].strip()
-                        break
+                    if "Deployment ID:" in line:
+                        deployment_id = line.split("Deployment ID:")[1].strip()
                 
                 if not model_id:
                     raise RuntimeError("Failed to extract model ID from deployment output")
                 
-                logger.info(f"Extracted model ID: {model_id}")
+                # For CLI approach, if deployment_id isn't found, we'll use model_id as a fallback
+                if not deployment_id:
+                    logger.warning("Deployment ID not found in output, using model ID as fallback")
+                    deployment_id = model_id
+                
+                logger.info(f"Extracted model ID: {model_id}, deployment ID: {deployment_id}")
                 
                 # Get the deployment URL
-                endpoint_url = self._get_model_deployment_url(model_id)
+                environment = getattr(config, "environment", "development")
+                endpoint_url = self._get_model_deployment_url(model_id, environment)
                 logger.info(f"Deployment URL: {endpoint_url}")
                 
                 # Create service with the extracted info
@@ -515,6 +559,7 @@ remote_url = {api_host}
                     id=id,
                     config=config,
                     model_id=model_id,
+                    deployment_id=deployment_id,
                     endpoint_url=endpoint_url,
                 )
                 
@@ -564,20 +609,25 @@ remote_url = {api_host}
                 # Register the service in ZenML
                 client = Client()
                 
-                # Create the service using the client's create_service method
-                service_response = client.create_service(
-                    config=service.config.model_dump(),
+                # Create a ServiceRequest with the service_source directly
+                service_source = f"{service.__class__.__module__}.{service.__class__.__name__}"
+                service_request = ServiceRequest(
+                    name=service.config.service_name,
                     service_type=self.SERVICE_TYPE,
-                    model_version_id=None,  # Add model version ID if needed
-                    service_source=f"{service.__class__.__module__}.{service.__class__.__name__}",
-                    service_name=service.config.service_name,
-                    prediction_url=service.get_prediction_url(),
-                    health_check_url=service.get_healthcheck_url(),
+                    service_source=service_source,  # Set service_source explicitly
+                    config=service.config.model_dump(),
                     admin_state=service.admin_state,
                     status=service.status.model_dump() if service.status else None,
                     endpoint=service.endpoint.model_dump() if service.endpoint else None,
-                    id=service.uuid,  # Use uuid instead of id
+                    prediction_url=service.get_prediction_url(),
+                    health_check_url=service.get_healthcheck_url(),
                 )
+                
+                # Create the service
+                service_response = client.zen_store.create_service(service_request)
+                
+                # Update service with the database-assigned UUID
+                service.uuid = service_response.id
                 
                 return service
 
@@ -769,8 +819,10 @@ remote_url = {api_host}
                     continue
 
                 # Check if service matches criteria
-                if service_uuid and service.id != service_uuid:
-                    continue
+                if service_uuid:
+                    logger.debug(f"Comparing service.id {service.id} with requested UUID {service_uuid}")
+                    if str(service.id) != str(service_uuid):
+                        continue
 
                 # Check config-based criteria
                 service_config = deployment_service.config
