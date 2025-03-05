@@ -35,7 +35,7 @@ zenml alerter register email_alerter \
     --smtp_server=smtp.gmail.com \
     --smtp_port=587 \
     --sender_email=<YOUR_EMAIL_ADDRESS> \
-    --password={{email_credentials.smtp_password}} \
+    --password="{{email_credentials.smtp_password}}" \
     --recipient_email=<RECIPIENT_EMAIL_ADDRESS>
 ```
 
