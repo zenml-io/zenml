@@ -60,7 +60,14 @@ class UserScopedRequest(BaseRequest):
     Used as a base class for all domain models that are "owned" by a user.
     """
 
-    user: UUID = Field(title="The id of the user that created this resource.")
+    user: Optional[UUID] = Field(
+        default=None,
+        title="The id of the user that created this resource. Set "
+        "automatically by the server.",
+        # This field is set automatically by the server, so the client doesn't
+        # need to set it and it will not be serialized.
+        exclude=True,
+    )
 
     def get_analytics_metadata(self) -> Dict[str, Any]:
         """Fetches the analytics metadata for user scoped models.
@@ -161,7 +168,6 @@ class UserScopedFilter(BaseFilter):
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *BaseFilter.CLI_EXCLUDE_FIELDS,
-        "user_id",
         "scope_user",
     ]
     CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
@@ -173,14 +179,10 @@ class UserScopedFilter(BaseFilter):
         default=None,
         description="The user to scope this query to.",
     )
-    user_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="UUID of the user that created the entity.",
-        union_mode="left_to_right",
-    )
     user: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Name/ID of the user that created the entity.",
+        union_mode="left_to_right",
     )
 
     def set_scope_user(self, user_id: UUID) -> None:
@@ -320,6 +322,18 @@ class WorkspaceScopedResponse(
     Used as a base class for all domain models that are workspace-scoped.
     """
 
+    # Analytics
+    def get_analytics_metadata(self) -> Dict[str, Any]:
+        """Fetches the analytics metadata for workspace scoped models.
+
+        Returns:
+            The analytics metadata.
+        """
+        metadata = super().get_analytics_metadata()
+        if self.workspace is not None:
+            metadata["workspace_id"] = self.workspace.id
+        return metadata
+
     # Body and metadata properties
     @property
     def workspace(self) -> "WorkspaceResponse":
@@ -329,6 +343,9 @@ class WorkspaceScopedResponse(
             the value of the property.
         """
         return self.get_metadata().workspace
+
+
+# ---------------------- Filter Models ----------------------
 
 
 class WorkspaceScopedFilter(UserScopedFilter):
@@ -341,8 +358,6 @@ class WorkspaceScopedFilter(UserScopedFilter):
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *UserScopedFilter.CLI_EXCLUDE_FIELDS,
-        "workspace_id",
-        "workspace",
         "scope_workspace",
     ]
     CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
@@ -353,14 +368,10 @@ class WorkspaceScopedFilter(UserScopedFilter):
         default=None,
         description="The workspace to scope this query to.",
     )
-    workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="UUID of the workspace that this entity belongs to.",
-        union_mode="left_to_right",
-    )
     workspace: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Name/ID of the workspace that this entity belongs to.",
+        union_mode="left_to_right",
     )
 
     def set_scope_workspace(self, workspace_id: UUID) -> None:
@@ -413,17 +424,22 @@ class WorkspaceScopedFilter(UserScopedFilter):
 
         Returns:
             The query with filter applied.
+
+        Raises:
+            RuntimeError: If the workspace scope is missing from the filter.
         """
         from sqlmodel import or_
 
         query = super().apply_filter(query=query, table=table)
 
-        if self.scope_workspace:
-            scope_filter = or_(
-                getattr(table, "workspace_id") == self.scope_workspace,
-                getattr(table, "workspace_id").is_(None),
-            )
-            query = query.where(scope_filter)
+        if not self.scope_workspace:
+            raise RuntimeError("Workspace scope missing from the filter.")
+
+        scope_filter = or_(
+            getattr(table, "workspace_id") == self.scope_workspace,
+            getattr(table, "workspace_id").is_(None),
+        )
+        query = query.where(scope_filter)
 
         return query
 
@@ -468,7 +484,7 @@ class WorkspaceScopedFilter(UserScopedFilter):
         return super().apply_sorting(query=query, table=table)
 
 
-class TaggableFilter(BaseFilter):
+class TaggableFilter(WorkspaceScopedFilter):
     """Model to enable filtering and sorting by tags."""
 
     tag: Optional[str] = Field(
@@ -483,12 +499,12 @@ class TaggableFilter(BaseFilter):
         "tag",
     ]
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *BaseFilter.FILTER_EXCLUDE_FIELDS,
+        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
         "tag",
         "tags",
     ]
     CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
-        *BaseFilter.CUSTOM_SORTING_OPTIONS,
+        *WorkspaceScopedFilter.CUSTOM_SORTING_OPTIONS,
         "tags",
     ]
 

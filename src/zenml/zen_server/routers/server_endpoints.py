@@ -60,7 +60,6 @@ def version() -> str:
 
 @router.get(
     INFO,
-    response_model=ServerModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions

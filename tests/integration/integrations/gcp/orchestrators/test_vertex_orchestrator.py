@@ -260,4 +260,31 @@ def test_vertex_orchestrator_configure_container_resources(
     if "resourceMemoryLimit" not in job_spec["resources"]:
         expected_resources.pop("resourceMemoryLimit", None)
 
-    assert job_spec["resources"] == expected_resources
+    def assert_dict_equal(actual, expected):
+        """Compare two dictionaries ignoring the order of items.
+
+        Args:
+            actual: The actual dictionary to compare
+            expected: The expected dictionary to compare against
+
+        Raises:
+            AssertionError: If dictionaries don't match
+        """
+        if actual is None or expected is None:
+            assert actual == expected
+            return
+        d1_set = set(actual.items())
+        d2_set = set(expected.items())
+
+        # Now we can directly compare them
+        assert d1_set == d2_set, (
+            f"Dictionaries don't match.\nExpected: {expected}\nActual: {actual}"
+        )
+
+    assert_dict_equal(
+        job_spec["resources"].get("accelerator"),
+        expected_resources.get("accelerator"),
+    )
+    job_spec["resources"].pop("accelerator", None)
+    expected_resources.pop("accelerator", None)
+    assert_dict_equal(job_spec["resources"], expected_resources)

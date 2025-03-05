@@ -42,7 +42,6 @@ router = APIRouter(
 
 @router.get(
     "/{logs_id}",
-    response_model=LogsResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions

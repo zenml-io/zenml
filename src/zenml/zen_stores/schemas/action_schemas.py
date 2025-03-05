@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
 from pydantic.json import pydantic_encoder
-from sqlalchemy import TEXT, Column
+from sqlalchemy import TEXT, Column, UniqueConstraint
 from sqlmodel import Field, Relationship
 
 from zenml.models import (
@@ -44,6 +44,13 @@ class ActionSchema(NamedSchema, table=True):
     """SQL Model for actions."""
 
     __tablename__ = "action"
+    __table_args__ = (
+        UniqueConstraint(
+            "name",
+            "workspace_id",
+            name="unique_action_name_in_workspace",
+        ),
+    )
 
     workspace_id: UUID = build_foreign_key_field(
         source=__tablename__,

@@ -15,10 +15,8 @@
 
 from typing import (
     TYPE_CHECKING,
-    Any,
     List,
     Optional,
-    Type,
     TypeVar,
     Union,
     overload,
@@ -115,73 +113,6 @@ class Tag(BaseModel):
         return request
 
 
-def get_schema_from_resource_type(
-    resource_type: TaggableResourceTypes,
-) -> Any:
-    """Get the schema for a resource type.
-
-    Args:
-        resource_type: The type of the resource.
-
-    Returns:
-        The schema for the resource type.
-    """
-    from zenml.zen_stores.schemas import (
-        ArtifactSchema,
-        ArtifactVersionSchema,
-        ModelSchema,
-        ModelVersionSchema,
-        PipelineRunSchema,
-        PipelineSchema,
-        RunTemplateSchema,
-    )
-
-    resource_type_to_schema_mapping = {
-        TaggableResourceTypes.ARTIFACT: ArtifactSchema,
-        TaggableResourceTypes.ARTIFACT_VERSION: ArtifactVersionSchema,
-        TaggableResourceTypes.MODEL: ModelSchema,
-        TaggableResourceTypes.MODEL_VERSION: ModelVersionSchema,
-        TaggableResourceTypes.PIPELINE: PipelineSchema,
-        TaggableResourceTypes.PIPELINE_RUN: PipelineRunSchema,
-        TaggableResourceTypes.RUN_TEMPLATE: RunTemplateSchema,
-    }
-
-    return resource_type_to_schema_mapping[resource_type]
-
-
-def get_resource_type_from_schema(
-    schema: Type["AnySchema"],
-) -> TaggableResourceTypes:
-    """Get the resource type from a schema.
-
-    Args:
-        schema: The schema of the resource.
-
-    Returns:
-        The resource type for the schema.
-    """
-    from zenml.zen_stores.schemas import (
-        ArtifactSchema,
-        ArtifactVersionSchema,
-        ModelSchema,
-        ModelVersionSchema,
-        PipelineRunSchema,
-        PipelineSchema,
-        RunTemplateSchema,
-    )
-
-    schema_to_resource_type_mapping = {
-        ArtifactSchema: TaggableResourceTypes.ARTIFACT,
-        ArtifactVersionSchema: TaggableResourceTypes.ARTIFACT_VERSION,
-        ModelSchema: TaggableResourceTypes.MODEL,
-        ModelVersionSchema: TaggableResourceTypes.MODEL_VERSION,
-        PipelineSchema: TaggableResourceTypes.PIPELINE,
-        PipelineRunSchema: TaggableResourceTypes.PIPELINE_RUN,
-        RunTemplateSchema: TaggableResourceTypes.RUN_TEMPLATE,
-    }
-    return schema_to_resource_type_mapping[schema]
-
-
 @overload
 def add_tags(
     tags: List[Union[str, Tag]],
@@ -266,14 +197,15 @@ def add_tags(
 
     Args:
         tags: The tags to add.
+        pipeline: The ID or the name of the pipeline.
         run: The id, name or prefix of the run.
+        run_template: The ID or the name of the run template.
+        artifact: The ID or the name of the artifact.
         artifact_version_id: The ID of the artifact version.
         artifact_name: The name of the artifact.
         artifact_version: The version of the artifact.
         infer_artifact: Flag deciding whether the artifact version should be
             inferred from the step context.
-        pipeline: The ID or the name of the pipeline.
-        run_template: The ID or the name of the run template.
 
     Raises:
         ValueError: If no identifiers are provided and the function is not
@@ -489,6 +421,7 @@ def remove_tags(
     run_template: Union[UUID, str],
 ) -> None: ...
 
+
 @overload
 def remove_tags(
     *,
@@ -543,14 +476,15 @@ def remove_tags(
 
     Args:
         tags: The tags to remove.
+        pipeline: The ID or the name of the pipeline.
         run: The id, name or prefix of the run.
+        run_template: The ID or the name of the run template.
+        artifact: The ID or the name of the artifact.
         artifact_version_id: The ID of the artifact version.
         artifact_name: The name of the artifact.
         artifact_version: The version of the artifact.
         infer_artifact: Flag deciding whether the artifact version should be
             inferred from the step context.
-        pipeline: The ID or the name of the pipeline.
-        run_template: The ID or the name of the run template.
 
     Raises:
         ValueError: If no identifiers are provided and the function is not
