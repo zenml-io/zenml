@@ -5120,7 +5120,7 @@ class TestTag:
         tag = clean_client.create_tag(name="bar", color="yellow")
         assert tag.name == "bar"
         assert tag.color == ColorVariants.YELLOW.name.lower()
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             clean_client.create_tag(color="yellow")
 
     def test_create_bad_input(self, clean_client: "Client"):
@@ -5191,146 +5191,184 @@ class TestTag:
 class TestTagResource:
     def test_create_tag_resource_pass(self, clean_client: "Client"):
         """Tests creating tag<>resource mapping pass."""
-        if clean_client.zen_store.type != StoreType.SQL:
-            pytest.skip("Only SQL Zen Stores support tagging resources")
         tag = clean_client.create_tag(name="foo", color="red")
+        model = clean_client.create_model(name="bar")
         mapping = clean_client.zen_store.create_tag_resource(
             TagResourceRequest(
                 tag_id=tag.id,
-                resource_id=uuid4(),
+                resource_id=model.id,
                 resource_type=TaggableResourceTypes.MODEL,
             )
         )
         assert isinstance(mapping.tag_id, UUID)
         assert isinstance(mapping.resource_id, UUID)
 
-    def test_create_tag_resource_fails_on_duplicate(
+    def test_create_tag_resource_pass_on_duplicate(
         self, clean_client: "Client"
     ):
         """Tests creating tag<>resource mapping fails on duplicate."""
-        if clean_client.zen_store.type != StoreType.SQL:
-            pytest.skip("Only SQL Zen Stores support tagging resources")
         tag = clean_client.create_tag(name="foo", color="red")
+        model = clean_client.create_model(name="bar")
         mapping = clean_client.zen_store.create_tag_resource(
             TagResourceRequest(
                 tag_id=tag.id,
-                resource_id=uuid4(),
+                resource_id=model.id,
                 resource_type=TaggableResourceTypes.MODEL,
             )
         )
 
-        with pytest.raises(EntityExistsError):
-            clean_client.zen_store.create_tag_resource(
-                TagResourceRequest(
-                    tag_id=mapping.tag_id,
-                    resource_id=mapping.resource_id,
-                    resource_type=TaggableResourceTypes.MODEL,
-                )
+        # Creating a duplicate tag resource should not raise an error
+        clean_client.zen_store.create_tag_resource(
+            TagResourceRequest(
+                tag_id=mapping.tag_id,
+                resource_id=mapping.resource_id,
+                resource_type=TaggableResourceTypes.MODEL,
             )
+        )
+
+    def test_batch_create_tag_resource_pass(self, clean_client: "Client"):
+        """Tests batch creating tag<>resource mapping pass."""
+        tag1 = clean_client.create_tag(name="foo1", color="red")
+        tag2 = clean_client.create_tag(name="foo2", color="green")
+        model1 = clean_client.create_model(name="bar1")
+        model2 = clean_client.create_model(name="bar2")
+        clean_client.zen_store.batch_create_tag_resource(
+            [
+                TagResourceRequest(
+                    tag_id=tag1.id,
+                    resource_id=model1.id,
+                    resource_type=TaggableResourceTypes.MODEL,
+                ),
+                TagResourceRequest(
+                    tag_id=tag2.id,
+                    resource_id=model2.id,
+                    resource_type=TaggableResourceTypes.MODEL,
+                ),
+            ]
+        )
 
     def test_delete_tag_resource_pass(self, clean_client: "Client"):
         """Tests deleting tag<>resource mapping pass."""
         if clean_client.zen_store.type != StoreType.SQL:
             pytest.skip("Only SQL Zen Stores support tagging resources")
         tag = clean_client.create_tag(name="foo", color="red")
-        resource_id = uuid4()
+        model = clean_client.create_model(name="bar")
+
         clean_client.zen_store.create_tag_resource(
             TagResourceRequest(
                 tag_id=tag.id,
-                resource_id=resource_id,
+                resource_id=model.id,
                 resource_type=TaggableResourceTypes.MODEL,
             )
         )
         clean_client.zen_store.delete_tag_resource(
             TagResourceRequest(
                 tag_id=tag.id,
-                resource_id=resource_id,
+                resource_id=model.id,
                 resource_type=TaggableResourceTypes.MODEL,
             )
         )
-        with pytest.raises(KeyError):
-            clean_client.zen_store.delete_tag_resource(
-                TagResourceRequest(
-                    tag_id=tag.id,
-                    resource_id=resource_id,
-                    resource_type=TaggableResourceTypes.MODEL,
-                )
+
+    def test_delete_tag_resource_pass_on_non_existing(
+        self, clean_client: "Client"
+    ):
+        """Tests deleting tag<>resource mapping pass on non-existing resource."""
+        tag = clean_client.create_tag(name="foo", color="red")
+        model = clean_client.create_model(name="bar")
+
+        clean_client.zen_store.delete_tag_resource(
+            TagResourceRequest(
+                tag_id=tag.id,
+                resource_id=model.id,
+                resource_type=TaggableResourceTypes.MODEL,
             )
+        )
+        # Removing a non-existing tag resource should not raise an error
+        clean_client.zen_store.delete_tag_resource(
+            TagResourceRequest(
+                tag_id=tag.id,
+                resource_id=model.id,
+                resource_type=TaggableResourceTypes.MODEL,
+            )
+        )
+
+    def test_batch_delete_tag_resource_pass(self, clean_client: "Client"):
+        """Tests batch deleting tag<>resource mapping pass."""
+        tag1 = clean_client.create_tag(name="foo1", color="red")
+        tag2 = clean_client.create_tag(name="foo2", color="green")
+        model1 = clean_client.create_model(name="bar1")
+        model2 = clean_client.create_model(name="bar2")
+        clean_client.zen_store.batch_create_tag_resource(
+            [
+                TagResourceRequest(
+                    tag_id=tag1.id,
+                    resource_id=model1.id,
+                    resource_type=TaggableResourceTypes.MODEL,
+                ),
+                TagResourceRequest(
+                    tag_id=tag2.id,
+                    resource_id=model2.id,
+                    resource_type=TaggableResourceTypes.MODEL,
+                ),
+            ]
+        )
+        clean_client.zen_store.batch_delete_tag_resource(
+            [
+                TagResourceRequest(
+                    tag_id=tag1.id,
+                    resource_id=model1.id,
+                    resource_type=TaggableResourceTypes.MODEL,
+                ),
+                TagResourceRequest(
+                    tag_id=tag2.id,
+                    resource_id=model2.id,
+                    resource_type=TaggableResourceTypes.MODEL,
+                ),
+            ]
+        )
 
     def test_delete_tag_resource_mismatch(self, clean_client: "Client"):
         """Tests deleting tag<>resource mapping pass."""
-        if clean_client.zen_store.type != StoreType.SQL:
-            pytest.skip("Only SQL Zen Stores support tagging resources")
 
         class MockTaggableResourceTypes(StrEnum):
             APPLE = "apple"
 
         tag = clean_client.create_tag(name="foo", color="red")
-        resource_id = uuid4()
+        model = clean_client.create_model(name="bar")
         clean_client.zen_store.create_tag_resource(
             TagResourceRequest(
                 tag_id=tag.id,
-                resource_id=resource_id,
+                resource_id=model.id,
                 resource_type=TaggableResourceTypes.MODEL,
             )
         )
-        with pytest.raises(KeyError):
+        with pytest.raises(ValueError):
             clean_client.zen_store.delete_tag_resource(
                 TagResourceRequest(
                     tag_id=tag.id,
-                    resource_id=resource_id,
+                    resource_id=model.id,
                     resource_type=MockTaggableResourceTypes.APPLE,
                 )
             )
 
-    @pytest.mark.parametrize(
-        "use_model,use_tag",
-        [[True, False], [False, True]],
-        ids=["delete_model", "delete_tag"],
-    )
-    def test_cascade_deletion(
-        self, use_model, use_tag, clean_client: "Client"
-    ):
+    def test_cascade_deletion(self, clean_client: "Client"):
         """Test that link is deleted on tag deletion."""
-        if clean_client.zen_store.type != StoreType.SQL:
-            pytest.skip("Only SQL Zen Stores support tagging resources")
-        with ModelContext() as model:
-            tag = clean_client.create_tag(
-                name="test_cascade_deletion", color="red"
-            )
-            fake_model_id = uuid4() if not use_model else model.id
-            clean_client.zen_store.create_tag_resource(
-                TagResourceRequest(
-                    tag_id=tag.id,
-                    resource_id=fake_model_id,
-                    resource_type=TaggableResourceTypes.MODEL,
-                )
-            )
+        tag = clean_client.create_tag(
+            name="test_cascade_deletion", color="red"
+        )
+        model = clean_client.create_model(name="bar")
 
-            # duplicate
-            with pytest.raises(EntityExistsError):
-                clean_client.zen_store.create_tag_resource(
-                    TagResourceRequest(
-                        tag_id=tag.id,
-                        resource_id=fake_model_id,
-                        resource_type=TaggableResourceTypes.MODEL,
-                    )
-                )
-            if use_tag:
-                clean_client.delete_tag(tag.id)
-                tag = clean_client.create_tag(
-                    name="test_cascade_deletion", color="red"
-                )
-            else:
-                clean_client.delete_model(model.id)
-            # should pass
-            clean_client.zen_store.create_tag_resource(
-                TagResourceRequest(
-                    tag_id=tag.id,
-                    resource_id=fake_model_id,
-                    resource_type=TaggableResourceTypes.MODEL,
-                )
+        clean_client.zen_store.create_tag_resource(
+            TagResourceRequest(
+                tag_id=tag.id,
+                resource_id=model.id,
+                resource_type=TaggableResourceTypes.MODEL,
             )
+        )
+
+        clean_client.delete_tag(tag.id)
+        udpated_model = clean_client.get_model(model.id)
+        assert tag.name not in [t.names for t in udpated_model.tags]
 
 
 class TestRunMetadata:
