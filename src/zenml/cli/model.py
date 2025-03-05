@@ -398,13 +398,24 @@ def version() -> None:
 
 @cli_utils.list_options(ModelVersionFilter)
 @version.command("list", help="List model versions with filter.")
-def list_model_versions(**kwargs: Any) -> None:
+@click.option(
+    "--model-name",
+    "-n",
+    help="The name of the parent model.",
+    type=str,
+    required=False,
+)
+def list_model_versions(model_name: str, **kwargs: Any) -> None:
     """List model versions with filter in the Model Control Plane.
 
     Args:
+        model_name: The name of the parent model.
         **kwargs: Keyword arguments to filter models.
     """
-    model_versions = Client().list_model_versions(**kwargs)
+    model_versions = Client().list_model_versions(
+        model_name_or_id=model_name,
+        **kwargs,
+    )
 
     if not model_versions:
         cli_utils.declare("No model versions found.")
