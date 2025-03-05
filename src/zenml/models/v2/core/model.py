@@ -26,6 +26,7 @@ from zenml.constants import (
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
     TaggableFilter,
+    WorkspaceScopedFilter,
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
@@ -325,7 +326,7 @@ class ModelResponse(
 # ------------------ Filter Model ------------------
 
 
-class ModelFilter(TaggableFilter):
+class ModelFilter(WorkspaceScopedFilter, TaggableFilter):
     """Model to enable advanced filtering of all Workspaces."""
 
     name: Optional[str] = Field(
@@ -333,9 +334,18 @@ class ModelFilter(TaggableFilter):
         description="Name of the Model",
     )
 
+    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
+        *TaggableFilter.FILTER_EXCLUDE_FIELDS,
+    ]
     CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
+        *WorkspaceScopedFilter.CUSTOM_SORTING_OPTIONS,
         *TaggableFilter.CUSTOM_SORTING_OPTIONS,
         SORT_BY_LATEST_VERSION_KEY,
+    ]
+    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
+        *TaggableFilter.CLI_EXCLUDE_FIELDS,
     ]
 
     def apply_sorting(
