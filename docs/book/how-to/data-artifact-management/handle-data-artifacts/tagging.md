@@ -12,7 +12,7 @@ tags as a flexible tool to classify and filter your ML assets.
 
 ## Tagging different entities
 
-ZenML allows you to tag various entities in your ML workflow. These entities include:
+ZenML allows you to tag different types of entities in your ML workflow:
 
 - [Artifacts](#assigning-tags-to-artifacts)
 - [Artifact versions](#assigning-tags-to-artifact-versions)
@@ -59,12 +59,16 @@ or the `add_tags` utility function:
 ```python
 from zenml import add_tags
 
-# Automatic tagging to an artifact (within a step)
-add_tags(tags=["my_tag"], infer_artifact=True)  # step with single output
-add_tags(tags=["my_tag"], artifact_name="my_output", infer_artifact=True)  # specific output of a step
+# Automatic tagging to an artifact version within a step execution
+## A step with a single output
+add_tags(tags=["my_tag"], infer_artifact=True)
+## A step with multiple outputs (need to specify the output name)
+add_tags(tags=["my_tag"], artifact_name="my_output", infer_artifact=True)
 
-# Manual tagging to an artifact (can happen in a step or outside of it)
+# Manual tagging to an artifact version (can happen in a step or outside of it)
+## By specifying the artifact name and version
 add_tags(tags=["my_tag"], artifact_name="my_output", artifact_version="v1")
+## By specifying the artifact version ID
 add_tags(tags=["my_tag"], artifact_version_id="artifact_version_uuid")
 ```
 
@@ -79,7 +83,6 @@ zenml artifacts versions update iris_dataset raw_2023 -t sklearn
 In the upcoming chapters, you will also learn how to use [an hierarchical tag](#hierarchical-tags) to tag an artifact version as well.
 {% endhint %}
 
-
 ### Assigning tags to pipelines
 
 Assigning tags to pipelines is only possible through the Python SDK and you can use the `add_tags` utility function:
@@ -92,7 +95,7 @@ add_tags(tags=["my_tag"], pipeline="pipeline_name_or_id")
 
 ### Assigning tags to runs
 
-To assign tags to runs, you can use the `add_tags` utility function:
+To assign tags to a pipeline run in ZenML, you can use the `add_tags` utility function:
 
 ```python
 from zenml import add_tags
@@ -268,7 +271,7 @@ Client().list_pipelines(tags=["contains:wo", "startswith:Thr", "equals:Four"])
 
 The example above shows how you can use multiple tag conditions to filter an entity. In ZenML, the default logical operator is `AND`, which means that the entity will be returned only if there is at least one tag that matches all the conditions.
 
-#### Removing Tags
+### Removing Tags
 
 Similar to the `add_tags` utility function, you can use the `remove_tags` utility function to remove tags from an entity.
 
