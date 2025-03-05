@@ -110,7 +110,9 @@ class ArtifactSchema(NamedSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    user: Optional["UserSchema"] = Relationship()
+    user: Optional["UserSchema"] = Relationship(
+        back_populates="artifacts",
+    )
 
     @property
     def latest_version(self) -> Optional["ArtifactVersionSchema"]:

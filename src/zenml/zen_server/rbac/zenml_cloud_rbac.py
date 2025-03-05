@@ -27,6 +27,7 @@ if TYPE_CHECKING:
 PERMISSIONS_ENDPOINT = "/rbac/check_permissions"
 ALLOWED_RESOURCE_IDS_ENDPOINT = "/rbac/allowed_resource_ids"
 RESOURCE_MEMBERSHIP_ENDPOINT = "/rbac/resource_members"
+RESOURCES_ENDPOINT = "/rbac/resources"
 
 SERVER_SCOPE_IDENTIFIER = "server"
 
@@ -201,3 +202,17 @@ class ZenMLCloudRBAC(RBACInterface):
             "actions": [str(action) for action in actions],
         }
         self._connection.post(endpoint=RESOURCE_MEMBERSHIP_ENDPOINT, data=data)
+
+    def delete_resources(self, resources: List[Resource]) -> None:
+        """Delete resource membership information for a list of resources.
+
+        Args:
+            resources: The resources for which to delete the resource membership
+                information.
+        """
+        params = {
+            "resources": [
+                _convert_to_cloud_resource(resource) for resource in resources
+            ],
+        }
+        self._connection.delete(endpoint=RESOURCES_ENDPOINT, params=params)

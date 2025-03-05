@@ -34,7 +34,6 @@ from zenml.models import (
     Page,
     UserResponse,
     UserScopedResponse,
-    WorkspaceResponse,
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
 )
@@ -476,6 +475,8 @@ def get_resource_type_for_model(
         TriggerExecutionResponse,
         TriggerRequest,
         TriggerResponse,
+        WorkspaceRequest,
+        WorkspaceResponse,
     )
 
     mapping: Dict[
@@ -528,6 +529,7 @@ def get_resource_type_for_model(
         TriggerExecutionRequest: ResourceType.TRIGGER_EXECUTION,
         TriggerExecutionResponse: ResourceType.TRIGGER_EXECUTION,
         WorkspaceResponse: ResourceType.WORKSPACE,
+        WorkspaceRequest: ResourceType.WORKSPACE,
         # UserResponse: ResourceType.USER,
     }
 
@@ -704,3 +706,39 @@ def update_resource_membership(
     rbac().update_resource_membership(
         user=user, resource=resource, actions=actions
     )
+
+
+def delete_model_resource(model: AnyModel) -> None:
+    """Delete resource membership information for a model.
+
+    Args:
+        model: The model for which to delete the resource membership information.
+    """
+    delete_model_resources(models=[model])
+
+
+def delete_model_resources(models: List[AnyModel]) -> None:
+    """Delete resource membership information for a list of models.
+
+    Args:
+        models: The models for which to delete the resource membership information.
+    """
+    resources = set()
+    for model in models:
+        if resource := get_resource_for_model(model):
+            resources.add(resource)
+
+    delete_resources(resources=list(resources))
+
+
+def delete_resources(resources: List[Resource]) -> None:
+    """Delete resource membership information for a list of resources.
+
+    Args:
+        resources: The resources for which to delete the resource membership
+            information.
+    """
+    if not server_config().rbac_enabled:
+        return
+
+    rbac().delete_resources(resources=resources)

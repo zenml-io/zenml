@@ -45,6 +45,7 @@ from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_create_entity,
+    verify_permissions_and_delete_entity,
 )
 from zenml.zen_server.rbac.models import Action
 from zenml.zen_server.rbac.utils import (
@@ -258,9 +259,11 @@ def delete_model_version(
     Args:
         model_version_id: The name or ID of the model version to delete.
     """
-    model_version = zen_store().get_model_version(model_version_id)
-    verify_permission_for_model(model_version, action=Action.DELETE)
-    zen_store().delete_model_version(model_version_id)
+    verify_permissions_and_delete_entity(
+        id=model_version_id,
+        get_method=zen_store().get_model_version,
+        delete_method=zen_store().delete_model_version,
+    )
 
 
 ##########################

@@ -40,6 +40,7 @@ from zenml.zen_server.rbac.endpoint_utils import (
 from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import (
     dehydrate_response_model,
+    delete_model_resource,
     verify_permission_for_model,
 )
 from zenml.zen_server.utils import (
@@ -317,3 +318,5 @@ def delete_action(
         action=action,
         force=force,
     )
+
+    delete_model_resource(action)
