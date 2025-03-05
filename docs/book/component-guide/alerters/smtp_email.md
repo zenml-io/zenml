@@ -237,6 +237,11 @@ These specialized hooks automatically:
 - Include relevant pipeline and step information
 - Set descriptive email subjects
 - Use structured layout for better readability
+- Format error tracebacks for better legibility in email clients
+- Support Markdown-style formatting (backticks, asterisks)
+- Display traceback code in monospaced font with proper formatting
+
+These hooks are strongly recommended when using SMTP email alerters, as they provide a significantly better user experience compared to the standard hooks which were primarily designed for chat services.
 
 ### Using the Predefined Step
 

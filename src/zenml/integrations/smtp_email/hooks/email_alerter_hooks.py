@@ -15,6 +15,7 @@
 
 import io
 import sys
+import traceback
 from typing import Optional
 
 from rich.console import Console
@@ -61,39 +62,25 @@ def smtp_email_alerter_failure_hook(exception: BaseException) -> None:
             "Using alerter.post() directly which may result in formatting issues."
         )
         # Fall back to standard message format
-        output_captured = io.StringIO()
-        original_stdout = sys.stdout
-        sys.stdout = output_captured
-        console = Console()
-        console.print_exception(show_locals=False)
-
-        sys.stdout = original_stdout
-        rich_traceback = output_captured.getvalue()
+        tb_lines = traceback.format_exception(type(exception), exception, exception.__traceback__)
+        plain_traceback = ''.join(tb_lines).strip()
 
         message = "*Failure Hook Notification! Step failed!*" + "\n\n"
         message += f"Pipeline name: `{context.pipeline.name}`" + "\n"
         message += f"Run name: `{context.pipeline_run.name}`" + "\n"
         message += f"Step name: `{context.step_run.name}`" + "\n"
         message += f"Parameters: `{context.step_run.config.parameters}`" + "\n"
-        message += (
-            f"Exception: `({type(exception)}) {rich_traceback}`" + "\n\n"
-        )
+        message += f"Exception: `({type(exception).__name__}) {str(exception)}`" + "\n\n"
+        message += f"{plain_traceback}"
         alerter.post(message)
         return
 
-    # Capture rich traceback
-    output_captured = io.StringIO()
-    original_stdout = sys.stdout
-    sys.stdout = output_captured
-    console = Console()
-    console.print_exception(show_locals=False)
-
-    sys.stdout = original_stdout
-    rich_traceback = output_captured.getvalue()
+    # Get a standard Python traceback instead of a Rich one 
+    tb_lines = traceback.format_exception(type(exception), exception, exception.__traceback__)
+    plain_traceback = ''.join(tb_lines)
     
     # Clean up the traceback to remove any leading/trailing whitespace
-    # and handle any special cases that might appear in the rich traceback
-    rich_traceback = rich_traceback.strip()
+    plain_traceback = plain_traceback.strip()
 
     # Create a clean exception string without the traceback
     exception_str = str(exception)
@@ -108,7 +95,7 @@ Stack: {Client().active_stack.name}
 
 Error: {exception_str}
 
-{rich_traceback}
+{plain_traceback}
 """
 
     # For HTML email, we need to create a custom HTML body to properly format the traceback
@@ -147,7 +134,7 @@ Error: {exception_str}
             <p style="margin-top: 10px; color: #e53935;">{exception_str}</p>
           </div>
           <div style="background-color: #f8f8f8; padding: 15px; border-radius: 5px; margin-bottom: 20px; overflow-x: auto;">
-            <pre style="margin: 0; font-family: monospace; white-space: pre-wrap; font-size: 12px; padding: 10px; background-color: #f0f0f0; border-radius: 3px;">{rich_traceback}</pre>
+            <pre style="margin: 0; font-family: monospace; white-space: pre-wrap; font-size: 12px; padding: 10px; background-color: #f0f0f0; border-radius: 3px;">{plain_traceback}</pre>
           </div>
           <div style="text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd; color: #777; font-size: 12px;">
             <p>This is an automated message from ZenML. Please do not reply to this email.</p>
