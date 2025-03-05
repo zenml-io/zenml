@@ -6,71 +6,126 @@ description: Use tags to organize tags in ZenML.
 
 Organizing and categorizing your machine learning artifacts and models can
 streamline your workflow and enhance discoverability. ZenML enables the use of
-tags as a flexible tool to classify and filter your ML assets. In this guide,
-we'll demonstrate how to assign tags to both artifacts and models within the
-ZenML ecosystem.
+tags as a flexible tool to classify and filter your ML assets. 
 
 ![Tags are visible in the ZenML Dashboard](../../../.gitbook/assets/tags-in-dashboard.png)
 
-## Assigning tags to artifacts
+## Tagging different entities
+### Assigning tags to artifacts
 
-If you want to tag the artifact versions of a step or pipeline that is executed
-repeatedly, you can use the `tags` property of `ArtifactConfig` to assign an arbitrary number of tags to the created artifacts:
+You can tag artifacts by using the `add_tags` utility function:
 
-{% tabs %}
-{% tab title="Python SDK" %}
+```python
+from zenml import add_tags
+
+add_tags(tags=["my_tag"], artifact="my_artifact_name_or_id")
+```
+
+Alternatively, you can tag an artifact by using CLI as well:
+
+```bash
+zenml artifacts update my_artifact -t my_tag
+```
+
+### Assigning tags to artifact versions
+
+In order to tag an artifact through the Python SDK, you can use either use
+the `ArtifactConfig` object:
 
 ```python
 from zenml import step, ArtifactConfig
 
 @step
-def training_data_loader() -> (
-    Annotated[pd.DataFrame, ArtifactConfig(tags=["sklearn", "pre-training"])]
+def data_loader() -> (
+    Annotated[pd.DataFrame, ArtifactConfig(name="my_output", tags=["my_tag"])]
 ):
     ...
 ```
 
-{% endtab %}
-{% tab title="CLI" %}
-You can use the `zenml artifacts` CLI to add tags:
+or the `add_tags` utility function:
 
-```shell
-# Tag the artifact
-zenml artifacts update iris_dataset -t sklearn
+```python
+from zenml import add_tags
 
+# Automatic tagging to an artifact (within a step)
+add_tags(tags=["my_tag"], infer_artifact=True)  # step with single output
+add_tags(tags=["my_tag"], artifact_name="my_output", infer_artifact=True)  # specific output of a step
+
+# Manual tagging to an artifact (can happen in a step or outside of it)
+add_tags(tags=["my_tag"], artifact_name="my_output", artifact_version="v1")
+add_tags(tags=["my_tag"], artifact_version_id="artifact_version_uuid")
+```
+
+Morever, you can tag an artifact version by using the CLI:
+
+```bash
 # Tag the artifact version
 zenml artifacts versions update iris_dataset raw_2023 -t sklearn
 ```
 
-{% endtab %}
-{% endtabs %}
+{% hint style="info" %}
+In the upcoming chapters, you will also learn how to use [an hierarchical tag](#hierarchical-tags) to tag an artifact version as well.
+{% endhint %}
 
-This will assign tags `sklearn` and `pre-training` to all artifacts created by
-this step, which can later be used to filter and organize these artifacts.
 
-Note that [ZenML Pro](https://zenml.io/pro) users can tag artifacts directly in the cloud dashboard.
+### Assigning tags to pipelines
 
-## Assigning tags to models
+Assigning tags to pipelines is only possible through the Python SDK and you can use the `add_tags` utility function:
 
-Just like artifacts, you can also tag your models to organize them semantically. Here's how to use tags with models in the ZenML Python SDK and CLI (or in the [ZenML Pro Dashboard directly](https://zenml.io/pro)).
+```python
+from zenml import add_tags
+
+add_tags(tags=["my_tag"], pipeline="pipeline_name_or_id")
+```
+
+### Assigning tags to runs
+
+To assign tags to runs, you can use the `add_tags` utility function:
+
+```python
+from zenml import add_tags
+
+# Manual tagging to a run
+add_tags(tags=["my_tag"], run="run_name_or_id")
+```
+
+Alternatively, you can use the same function within a step without 
+specifying any arguments, which will automatically tag the run:
+
+```python
+from zenml import step
+
+@step
+def my_step():
+    add_tags(tags=["my_tag"])
+```
+
+You can also use the pipeline decorator to tag the run:
+
+```python
+from zenml import pipeline
+
+@pipeline(tags=["my_tag"])
+def my_pipeline():
+    ...
+```
+
+### Assigning tags to models and model versions
 
 When creating a model version using the `Model` object, you can specify tags as key-value pairs that will be attached to the model version upon creation.
+
 {% hint style="warning" %}
 During pipeline run a model can be also implicitly created (if not exists), in such cases it will not get the `tags` from the `Model` class.
-You can manipulate the model tags using SDK (see below) or the ZenML Pro UI.
 {% endhint %}
 
 ```python
 from zenml.models import Model
 
-# Define tags to be added to the model version
-tags = ["experiment", "v1", "classification-task"]
-
 # Create a model version with tags
 model = Model(
     name="iris_classifier",
     version="1.0.0",
-    tags=tags,
+    tags=["experiment", "v1", "classification-task"],
 )
 
 # Use this tagged model in your steps and pipelines as needed
@@ -107,6 +162,112 @@ zenml model update iris_logistic_regression --tag "classification"
 
 # Tag a specific model version
 zenml model version update iris_logistic_regression 2 --tag "experiment3"
+```
+
+### Assigning tags to run templates
+
+Assigning tags to run templates is only possible through the Python SDK and you can use the `add_tags` utility function:
+
+```python
+from zenml import add_tags
+
+add_tags(tags=["my_tag"], run_template="run_template_name_or_id")
+```
+
+## Advanced Usage
+
+ZenML provides several advanced tagging features to help you better organize and manage your ML assets.
+
+### Rolling Tags
+
+Rolling tags are special tags that can be associated with only one instance of a specific entity type within a certain scope at a time. When you apply a rolling tag to a new entity, it's automatically removed from any previous entity of the same type that had this tag. Rolling tags can be used with:
+
+- One pipeline run per pipeline
+- One artifact version per artifact
+- One run template within a project
+
+The recommended way to create rolling tags is using the `Tag` object:
+
+```python
+from zenml import pipeline, Tag
+
+@pipeline(tags=["not_a_rolling_tag", Tag("a_rolling_tag", rolling=True)])
+def my_pipeline():
+    ...
+```
+
+Alternatively, you can also create a rolling tag separately and use it later:
+
+```python
+# 1. Create a rolling tag and then use it
+from zenml.client import Client
+Client().create_tag("a_rolling_tag", rolling=True)
+
+@pipeline(tags=["a_rolling_tag"])
+def my_pipeline():
+    ...
+
+# 2. Update an existing tag to make it rolling
+@pipeline(tags=["a_rolling_tag"])
+def my_pipeline():
+    ...
+```
+
+{% hint style="warning" %}
+The `rolling` parameter belongs to the configuration of the tag and this information is stored in the backend. This means, that it will not lose its `rolling` functionality even if it is being used without the explicit `rolling=True` parameter in future calls.
+{% endhint %}
+
+### Hierarchical Tags
+
+Hierarchical tags allow you to associate a tag from a pipeline with all artifact versions created during its execution. 
+
+```python
+from zenml import pipeline, Tag
+
+@pipeline(tags=["normal_tag", Tag("hierarchical_tag", hierarchical=True)])
+def my_pipeline():
+    ...
+```
+
+{% hint style="warning" %}
+Unlike the `rolling` parameter, the `hierarchical` parameter is a runtime configuration and does not stored with the `tag` object. This means that the tag will **not** have its `hierarchical` functionality if it is not used with the `hierarchical=True` parameter in future calls.
+{% endhint %}
+
+When this pipeline runs, the `hierarchical_tag` will be automatically applied to all artifact versions created during the pipeline execution.
+
+### Filtering
+
+ZenML allows you to filter taggable objects using multiple tag conditions:
+
+```python
+from zenml import add_tags
+
+from zenml.client import Client
+
+# Add tags to a pipeline
+add_tags(tags=["one", "two", "three"], pipeline="my_pipeline")
+
+# Will return `my_pipeline`
+Client().list_pipelines(tags=["contains:wo", "startswith:Thr", "equals:Three"])
+
+# Will not return `my_pipeline`
+Client().list_pipelines(tags=["contains:wo", "startswith:Thr", "equals:Four"])
+```
+
+The example above shows how you can use multiple tag conditions to filter an entity. In ZenML, the default logical operator is `AND`, which means that the entity will be returned only if there is at least one tag that matches all the conditions.
+
+#### Removing Tags
+
+Similar to the `add_tags` utility function, you can use the `remove_tags` utility function to remove tags from an entity.
+
+```python
+from zenml.utils.tag_utils import remove_tags
+
+# Remove tags from a pipeline
+remove_tags(tags=["one", "two"], pipeline="my_pipeline")
+
+# Remove tags from an artifact
+remove_tags(tags=["three"], artifact="my_artifact")
 ```
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
