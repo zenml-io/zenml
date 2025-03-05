@@ -34,15 +34,20 @@ def alerter_failure_hook(exception: BaseException) -> None:
     alerter = Client().active_stack.alerter
     if alerter:
         # Use standard Python traceback instead of Rich traceback
-        tb_lines = traceback.format_exception(type(exception), exception, exception.__traceback__)
-        plain_traceback = ''.join(tb_lines).strip()
+        tb_lines = traceback.format_exception(
+            type(exception), exception, exception.__traceback__
+        )
+        plain_traceback = "".join(tb_lines).strip()
 
         message = "*Failure Hook Notification! Step failed!*" + "\n\n"
         message += f"Pipeline name: `{context.pipeline.name}`" + "\n"
         message += f"Run name: `{context.pipeline_run.name}`" + "\n"
         message += f"Step name: `{context.step_run.name}`" + "\n"
         message += f"Parameters: `{context.step_run.config.parameters}`" + "\n"
-        message += f"Exception: `({type(exception).__name__}) {str(exception)}`" + "\n\n"
+        message += (
+            f"Exception: `({type(exception).__name__}) {str(exception)}`"
+            + "\n\n"
+        )
         message += f"{plain_traceback}"
         alerter.post(message)
     else:

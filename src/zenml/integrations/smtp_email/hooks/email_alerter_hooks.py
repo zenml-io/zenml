@@ -14,7 +14,6 @@
 """Functionality for SMTP Email alerter hooks."""
 
 import traceback
-from typing import Optional
 
 from zenml import get_step_context
 from zenml.client import Client
@@ -42,45 +41,52 @@ def smtp_email_alerter_failure_hook(exception: BaseException) -> None:
         SMTPEmailAlerterParameters,
         SMTPEmailAlerterPayload,
     )
-    
+
     context = get_step_context()
     alerter = Client().active_stack.alerter
-    
+
     if not alerter:
         logger.warning(
             "Specified SMTP email failure hook but no alerter configured in the stack. Skipping.."
         )
         return
-        
+
     if not isinstance(alerter, SMTPEmailAlerter):
         logger.warning(
             "Specified SMTP email failure hook but alerter is not an SMTP Email alerter. "
             "Using alerter.post() directly which may result in formatting issues."
         )
         # Fall back to standard message format
-        tb_lines = traceback.format_exception(type(exception), exception, exception.__traceback__)
-        plain_traceback = ''.join(tb_lines).strip()
+        tb_lines = traceback.format_exception(
+            type(exception), exception, exception.__traceback__
+        )
+        plain_traceback = "".join(tb_lines).strip()
 
         message = "*Failure Hook Notification! Step failed!*" + "\n\n"
         message += f"Pipeline name: `{context.pipeline.name}`" + "\n"
         message += f"Run name: `{context.pipeline_run.name}`" + "\n"
         message += f"Step name: `{context.step_run.name}`" + "\n"
         message += f"Parameters: `{context.step_run.config.parameters}`" + "\n"
-        message += f"Exception: `({type(exception).__name__}) {str(exception)}`" + "\n\n"
+        message += (
+            f"Exception: `({type(exception).__name__}) {str(exception)}`"
+            + "\n\n"
+        )
         message += f"{plain_traceback}"
         alerter.post(message)
         return
 
-    # Get a standard Python traceback instead of a Rich one 
-    tb_lines = traceback.format_exception(type(exception), exception, exception.__traceback__)
-    plain_traceback = ''.join(tb_lines)
-    
+    # Get a standard Python traceback instead of a Rich one
+    tb_lines = traceback.format_exception(
+        type(exception), exception, exception.__traceback__
+    )
+    plain_traceback = "".join(tb_lines)
+
     # Clean up the traceback to remove any leading/trailing whitespace
     plain_traceback = plain_traceback.strip()
 
     # Create a clean exception string without the traceback
     exception_str = str(exception)
-    
+
     # Prepare plain text message for email body - this is for the plain text part
     message = f"""Pipeline Failure Alert
 
@@ -150,9 +156,11 @@ Error: {exception_str}
     # Create parameters with HTML enabled and a clear subject
     # Remove any potential Markdown formatting (*bold*, `code`, etc.) from the subject
     # as email subjects can't render formatting
-    clean_pipeline_name = context.pipeline.name.replace('*', '').replace('`', '')
-    clean_step_name = context.step_run.name.replace('*', '').replace('`', '')
-    
+    clean_pipeline_name = context.pipeline.name.replace("*", "").replace(
+        "`", ""
+    )
+    clean_step_name = context.step_run.name.replace("*", "").replace("`", "")
+
     params = SMTPEmailAlerterParameters(
         subject=f"ZenML Pipeline Failure: {clean_pipeline_name} - {clean_step_name}",
         include_html=True,
@@ -177,16 +185,16 @@ def smtp_email_alerter_success_hook() -> None:
         SMTPEmailAlerterParameters,
         SMTPEmailAlerterPayload,
     )
-    
+
     context = get_step_context()
     alerter = Client().active_stack.alerter
-    
+
     if not alerter:
         logger.warning(
             "Specified SMTP email success hook but no alerter configured in the stack. Skipping.."
         )
         return
-        
+
     if not isinstance(alerter, SMTPEmailAlerter):
         logger.warning(
             "Specified SMTP email success hook but alerter is not an SMTP Email alerter. "
@@ -263,9 +271,11 @@ The step has completed successfully.
     # Create parameters with HTML enabled and a clear subject
     # Remove any potential Markdown formatting (*bold*, `code`, etc.) from the subject
     # as email subjects can't render formatting
-    clean_pipeline_name = context.pipeline.name.replace('*', '').replace('`', '')
-    clean_step_name = context.step_run.name.replace('*', '').replace('`', '')
-    
+    clean_pipeline_name = context.pipeline.name.replace("*", "").replace(
+        "`", ""
+    )
+    clean_step_name = context.step_run.name.replace("*", "").replace("`", "")
+
     params = SMTPEmailAlerterParameters(
         subject=f"ZenML Pipeline Success: {clean_pipeline_name} - {clean_step_name}",
         include_html=True,
