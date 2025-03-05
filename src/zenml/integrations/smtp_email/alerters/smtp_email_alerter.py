@@ -389,9 +389,6 @@ class SMTPEmailAlerter(BaseAlerter):
             question: Not used.
             params: Not used.
 
-        Returns:
-            Never returns as an exception is raised.
-
         Raises:
             NotImplementedError: Always raised as this functionality is not supported.
         """
