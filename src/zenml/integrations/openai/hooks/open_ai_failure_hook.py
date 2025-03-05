@@ -55,7 +55,6 @@ def _format_markdown_for_html(markdown_text: str) -> str:
         pattern = r"```([\w\+\#\-\.]+)?\s*\n?([\s\S]*?)\n?\s*```"
 
         def replacer(match: Match[str]) -> str:
-            language = match.group(1) or ""
             # Get the code and unescape HTML entities since we escaped everything earlier
             code = html.unescape(match.group(2))
             return f'<pre style="background-color: #f5f5f5; padding: 10px; border-radius: 5px; font-family: monospace; overflow-x: auto; margin: 10px 0;"><code>{code}</code></pre>'
