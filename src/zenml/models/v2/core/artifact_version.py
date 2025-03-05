@@ -42,6 +42,7 @@ from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.filter import FilterGenerator, StrFilter
 from zenml.models.v2.base.scoped import (
     TaggableFilter,
+    WorkspaceScopedFilter,
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
@@ -469,10 +470,11 @@ class ArtifactVersionResponse(
 # ------------------ Filter Model ------------------
 
 
-class ArtifactVersionFilter(TaggableFilter):
+class ArtifactVersionFilter(WorkspaceScopedFilter, TaggableFilter):
     """Model to enable advanced filtering of artifact versions."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
         *TaggableFilter.FILTER_EXCLUDE_FIELDS,
         "name",
         "only_unused",
@@ -481,6 +483,14 @@ class ArtifactVersionFilter(TaggableFilter):
         "pipeline_run",
         "model_version_id",
         "run_metadata",
+    ]
+    CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
+        *WorkspaceScopedFilter.CUSTOM_SORTING_OPTIONS,
+        *TaggableFilter.CUSTOM_SORTING_OPTIONS,
+    ]
+    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
+        *TaggableFilter.CLI_EXCLUDE_FIELDS,
     ]
 
     artifact_id: Optional[Union[UUID, str]] = Field(

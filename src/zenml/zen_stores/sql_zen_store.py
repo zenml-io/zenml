@@ -45,6 +45,7 @@ from typing import (
     Union,
     cast,
     get_origin,
+    overload,
 )
 from uuid import UUID
 
@@ -4655,7 +4656,6 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            assert deployment is not None
             template_utils.validate_deployment_is_templatable(deployment)
 
             template_schema = RunTemplateSchema.from_request(request=template)
@@ -7722,8 +7722,7 @@ class SqlZenStore(BaseZenStore):
                             session=session,
                             reference_type=f"{str(component_type)} stack component",
                         )
-                        if component:
-                            components.append(component)
+                        components.append(component)
 
             existing_stack.update(
                 stack_update=stack_update,
@@ -7928,7 +7927,6 @@ class SqlZenStore(BaseZenStore):
                 reference_id=step_run.pipeline_run_id,
                 session=session,
             )
-            assert run is not None
 
             self._get_reference_schema_by_id(
                 resource=step_run,
@@ -8235,7 +8233,6 @@ class SqlZenStore(BaseZenStore):
             session=session,
             reference_type="parent step",
         )
-        assert parent_step_run is not None
 
         # Check if the parent step is already set.
         assignment = session.exec(
@@ -8270,14 +8267,13 @@ class SqlZenStore(BaseZenStore):
             session: The database session to use.
         """
         # Check if the artifact exists.
-        artifact = self._get_reference_schema_by_id(
+        self._get_reference_schema_by_id(
             resource=step_run,
             reference_schema=ArtifactVersionSchema,
             reference_id=artifact_version_id,
             session=session,
             reference_type="input artifact",
         )
-        assert artifact is not None
 
         # Check if the input is already set.
         assignment = session.exec(
@@ -8316,14 +8312,13 @@ class SqlZenStore(BaseZenStore):
             session: The database session to use.
         """
         # Check if the artifact exists.
-        artifact = self._get_reference_schema_by_id(
+        self._get_reference_schema_by_id(
             resource=step_run,
             reference_schema=ArtifactVersionSchema,
             reference_id=artifact_version_id,
             session=session,
             reference_type="output artifact",
         )
-        assert artifact is not None
 
         # Check if the output is already set.
         assignment = session.exec(
@@ -9655,6 +9650,26 @@ class SqlZenStore(BaseZenStore):
         if schema is None:
             raise KeyError(error_msg)
         return schema
+
+    @overload
+    def _get_reference_schema_by_id(
+        self,
+        session: Session,
+        resource: Union[BaseRequest, BaseSchema],
+        reference_schema: Type[AnySchema],
+        reference_id: UUID,
+        reference_type: Optional[str] = None,
+    ) -> AnySchema: ...
+
+    @overload
+    def _get_reference_schema_by_id(
+        self,
+        session: Session,
+        resource: Union[BaseRequest, BaseSchema],
+        reference_schema: Type[AnySchema],
+        reference_id: None,
+        reference_type: Optional[str] = None,
+    ) -> None: ...
 
     def _get_reference_schema_by_id(
         self,

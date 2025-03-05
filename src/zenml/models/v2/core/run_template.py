@@ -34,6 +34,7 @@ from zenml.enums import ExecutionStatus
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
     TaggableFilter,
+    WorkspaceScopedFilter,
     WorkspaceScopedRequest,
     WorkspaceScopedResponse,
     WorkspaceScopedResponseBody,
@@ -307,10 +308,11 @@ class RunTemplateResponse(
 # ------------------ Filter Model ------------------
 
 
-class RunTemplateFilter(TaggableFilter):
+class RunTemplateFilter(WorkspaceScopedFilter, TaggableFilter):
     """Model for filtering of run templates."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
         *TaggableFilter.FILTER_EXCLUDE_FIELDS,
         "code_repository_id",
         "stack_id",
@@ -318,6 +320,14 @@ class RunTemplateFilter(TaggableFilter):
         "pipeline_id",
         "pipeline",
         "stack",
+    ]
+    CUSTOM_SORTING_OPTIONS = [
+        *WorkspaceScopedFilter.CUSTOM_SORTING_OPTIONS,
+        *TaggableFilter.CUSTOM_SORTING_OPTIONS,
+    ]
+    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
+        *TaggableFilter.CLI_EXCLUDE_FIELDS,
     ]
 
     name: Optional[str] = Field(
