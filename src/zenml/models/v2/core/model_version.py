@@ -576,6 +576,7 @@ class ModelVersionFilter(TaggableFilter):
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *TaggableFilter.CLI_EXCLUDE_FIELDS,
+        "model",
         "scope_model",
     ]
     CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
