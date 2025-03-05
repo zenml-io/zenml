@@ -11248,6 +11248,7 @@ class SqlZenStore(BaseZenStore):
         Raises:
             ValueError: If a tag exists but doesn't match the same rolling
                 setting.
+            KeyError: If an existing tag identified by a UUID is not found.
         """
         if tags is None:
             return
@@ -11621,6 +11622,10 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The newly created tag resource relationships.
+
+        Raises:
+            ValueError: If a rolling tag is being attached to multiple resources
+                of the same type within the same scope.
         """
         tag_resource_schemas = []
         for tag_schema, resource_type, resource in tag_resources:

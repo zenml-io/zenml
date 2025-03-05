@@ -7795,6 +7795,9 @@ class Client(metaclass=ClientMetaClass):
         Args:
             tag_name_or_id: name or id of the tag to be attached.
             resources: the resources to attach the tag to.
+
+        Raises:
+            KeyError: If the tag is not found.
         """
         try:
             tag_model = self.get_tag(tag_name_or_id)
