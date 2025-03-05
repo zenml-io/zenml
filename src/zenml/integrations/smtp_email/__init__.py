@@ -46,3 +46,21 @@ class SMTPEmailIntegration(Integration):
 
 
 SMTPEmailIntegration.check_installation()
+
+# Import hooks AFTER integration registration to avoid circular imports
+# These are imported here for convenience but should be imported directly from
+# zenml.integrations.smtp_email.hooks in user code
+try:
+    from zenml.integrations.smtp_email.hooks import (
+        smtp_email_alerter_failure_hook,
+        smtp_email_alerter_success_hook,
+    )
+
+    __all__ = [
+        "smtp_email_alerter_failure_hook",
+        "smtp_email_alerter_success_hook",
+    ]
+except ImportError:
+    # In case of circular imports during initialization, these will be importable
+    # directly from the hooks module
+    __all__ = []

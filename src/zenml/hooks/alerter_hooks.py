@@ -43,16 +43,15 @@ def alerter_failure_hook(exception: BaseException) -> None:
         console.print_exception(show_locals=False)
 
         sys.stdout = original_stdout
-        rich_traceback = output_captured.getvalue()
+        rich_traceback = output_captured.getvalue().strip()
 
         message = "*Failure Hook Notification! Step failed!*" + "\n\n"
         message += f"Pipeline name: `{context.pipeline.name}`" + "\n"
         message += f"Run name: `{context.pipeline_run.name}`" + "\n"
         message += f"Step name: `{context.step_run.name}`" + "\n"
         message += f"Parameters: `{context.step_run.config.parameters}`" + "\n"
-        message += (
-            f"Exception: `({type(exception)}) {rich_traceback}`" + "\n\n"
-        )
+        message += f"Exception: `({type(exception).__name__}) {str(exception)}`" + "\n\n"
+        message += f"{rich_traceback}"
         alerter.post(message)
     else:
         logger.warning(

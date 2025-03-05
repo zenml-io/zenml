@@ -197,6 +197,58 @@ class SMTPEmailAlerter(BaseAlerter):
         ):
             return params.html_body
 
+        # Properly format the message for HTML
+        # - Replace newlines with <br> tags
+        # - Add <pre> tags for code blocks
+        # - Convert Markdown-style formatting to HTML (backticks, asterisks)
+        formatted_message = message
+        if message:
+            # Helper function to process markdown-style formatting
+            def process_markdown_line(line):
+                # Handle backticks for code
+                import re
+                # Process inline code with backticks - replace `code` with <code>code</code>
+                line = re.sub(r'`([^`]+)`', r'<code style="background-color: #f5f5f5; padding: 2px 4px; border-radius: 3px; font-family: monospace;">\1</code>', line)
+                
+                # Process bold with asterisks - replace *text* with <strong>text</strong>
+                line = re.sub(r'\*([^*\n]+)\*', r'<strong>\1</strong>', line)
+                
+                # Process italic with underscores - replace _text_ with <em>text</em>
+                line = re.sub(r'_([^_\n]+)_', r'<em>\1</em>', line)
+                
+                return line
+            
+            # Check if the message contains a traceback or code block
+            if "Traceback" in message or "File " in message:
+                # For tracebacks, use <pre> to preserve formatting
+                formatted_parts = []
+                in_traceback = False
+                for line in message.split("\n"):
+                    if "Traceback" in line or in_traceback or "File " in line:
+                        in_traceback = True
+                        if not formatted_parts or not formatted_parts[-1].startswith("<pre"):
+                            formatted_parts.append("<pre style='font-family: monospace; white-space: pre-wrap; font-size: 12px; background-color: #f8f8f8; padding: 10px; border-radius: 3px;'>")
+                        formatted_parts[-1] += line + "\n"
+                    else:
+                        if formatted_parts and formatted_parts[-1].startswith("<pre"):
+                            formatted_parts[-1] += "</pre>"
+                        # Process markdown formatting on non-traceback lines
+                        formatted_line = process_markdown_line(line)
+                        formatted_parts.append(formatted_line + "<br>")
+                
+                # Close the last pre tag if needed
+                if formatted_parts and formatted_parts[-1].startswith("<pre"):
+                    formatted_parts[-1] += "</pre>"
+                    
+                formatted_message = "".join(formatted_parts)
+            else:
+                # For regular messages, process each line for markdown and replace newlines with <br> tags
+                formatted_lines = []
+                for line in message.split("\n"):
+                    formatted_line = process_markdown_line(line)
+                    formatted_lines.append(formatted_line)
+                formatted_message = "<br>".join(formatted_lines)
+
         if (
             params
             and isinstance(params, SMTPEmailAlerterParameters)
@@ -227,7 +279,7 @@ class SMTPEmailAlerter(BaseAlerter):
                   </table>
                   <div style="background-color: #f3f3f3; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
                     <p style="margin: 0;"><strong>Message:</strong></p>
-                    <p style="margin-top: 10px;">{message}</p>
+                    <div style="margin-top: 10px;">{formatted_message}</div>
                   </div>
                   <div style="text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd; color: #777; font-size: 12px;">
                     <p>This is an automated message from ZenML. Please do not reply to this email.</p>
@@ -243,7 +295,7 @@ class SMTPEmailAlerter(BaseAlerter):
         <html>
           <body style="font-family: Arial, sans-serif;">
             <h2>ZenML Notification</h2>
-            <p>{message}</p>
+            <div>{formatted_message}</div>
             <p><em>This is an automated message from ZenML.</em></p>
           </body>
         </html>

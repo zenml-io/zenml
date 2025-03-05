@@ -179,7 +179,11 @@ def send_custom_html_email() -> None:
 
 ### Using with Failure and Success Hooks
 
-Email alerts are particularly useful when combined with step hooks for success and failure notifications:
+Email alerts are particularly useful when combined with step hooks for success and failure notifications. There are two types of hooks you can use:
+
+#### Standard Alerter Hooks
+
+These work with any alerter but may not provide optimal formatting for emails:
 
 ```python
 from zenml import pipeline, step
@@ -187,7 +191,7 @@ from zenml.hooks import alerter_failure_hook, alerter_success_hook
 
 @step(on_failure=alerter_failure_hook, on_success=alerter_success_hook)
 def risky_step() -> None:
-    # This step will trigger email alerts on either success or failure
+    # This step will trigger alerts on either success or failure
     import random
     if random.random() < 0.5:
         raise RuntimeError("Step failed with a simulated error")
@@ -200,6 +204,39 @@ def my_pipeline():
 if __name__ == "__main__":
     my_pipeline()
 ```
+
+#### Email-Specific Hooks (Recommended)
+
+The SMTP Email integration provides specialized hooks that format messages specifically for email, with proper HTML formatting and structure:
+
+```python
+from zenml import pipeline, step
+from zenml.integrations.smtp_email.hooks import (
+    smtp_email_alerter_failure_hook,
+    smtp_email_alerter_success_hook
+)
+
+@step(on_failure=smtp_email_alerter_failure_hook, on_success=smtp_email_alerter_success_hook)
+def risky_step() -> None:
+    # This step will trigger email-optimized alerts
+    import random
+    if random.random() < 0.5:
+        raise RuntimeError("Step failed with a simulated error")
+    return "Step completed successfully"
+
+@pipeline(enable_cache=False)
+def my_pipeline():
+    risky_step()
+
+if __name__ == "__main__":
+    my_pipeline()
+```
+
+These specialized hooks automatically:
+- Format messages with proper HTML for email clients
+- Include relevant pipeline and step information
+- Set descriptive email subjects
+- Use structured layout for better readability
 
 ### Using the Predefined Step
 
