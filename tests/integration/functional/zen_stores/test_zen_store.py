@@ -5367,8 +5367,8 @@ class TestTagResource:
         )
 
         clean_client.delete_tag(tag.id)
-        udpated_model = clean_client.get_model(model.id)
-        assert tag.name not in [t.names for t in udpated_model.tags]
+        updated_model = clean_client.get_model(model.id)
+        assert tag.name not in [t.names for t in updated_model.tags]
 
 
 class TestRunMetadata:

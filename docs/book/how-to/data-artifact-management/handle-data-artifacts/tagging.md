@@ -61,7 +61,7 @@ add_tags(tags=["my_tag"], artifact_name="my_output", artifact_version="v1")
 add_tags(tags=["my_tag"], artifact_version_id="artifact_version_uuid")
 ```
 
-Morever, you can tag an artifact version by using the CLI:
+Moreover, you can tag an artifact version by using the CLI:
 
 ```bash
 # Tag the artifact version
@@ -247,10 +247,10 @@ from zenml.client import Client
 add_tags(tags=["one", "two", "three"], pipeline="my_pipeline")
 
 # Will return `my_pipeline`
-Client().list_pipelines(tags=["contains:wo", "startswith:Thr", "equals:Three"])
+Client().list_pipelines(tags=["contains:wo", "startswith:t", "equals:three"])
 
 # Will not return `my_pipeline`
-Client().list_pipelines(tags=["contains:wo", "startswith:Thr", "equals:Four"])
+Client().list_pipelines(tags=["contains:wo", "startswith:t", "equals:four"])
 ```
 
 The example above shows how you can use multiple tag conditions to filter an entity. In ZenML, the default logical operator is `AND`, which means that the entity will be returned only if there is at least one tag that matches all the conditions.
