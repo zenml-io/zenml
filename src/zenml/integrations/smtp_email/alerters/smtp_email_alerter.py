@@ -16,7 +16,7 @@
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from typing import Optional, Type, cast
+from typing import List, Optional, Type, cast
 
 from pydantic import BaseModel
 
@@ -204,7 +204,7 @@ class SMTPEmailAlerter(BaseAlerter):
         formatted_message = message
         if message:
             # Helper function to process markdown-style formatting
-            def process_markdown_line(line):
+            def process_markdown_line(line: str) -> str:
                 # Handle backticks for code
                 import re
 
@@ -226,7 +226,7 @@ class SMTPEmailAlerter(BaseAlerter):
             # Check if the message contains a traceback or code block
             if "Traceback" in message or "File " in message:
                 # For tracebacks, use <pre> to preserve formatting
-                formatted_parts = []
+                formatted_parts: List[str] = []
                 in_traceback = False
                 for line in message.split("\n"):
                     if "Traceback" in line or in_traceback or "File " in line:
