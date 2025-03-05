@@ -319,18 +319,20 @@ class SMTPEmailAlerter(BaseAlerter):
         """Method not supported for email alerters.
 
         Email doesn't support interactive approvals like chat services.
-        This method is implemented to satisfy the BaseAlerter interface but
-        will always return False and log a warning.
+        This method raises a NotImplementedError as this functionality
+        is not available for SMTP Email alerters.
 
         Args:
             question: Not used.
             params: Not used.
 
         Returns:
-            Always False.
+            Never returns as an exception is raised.
+
+        Raises:
+            NotImplementedError: Always raised as this functionality is not supported.
         """
-        logger.warning(
+        raise NotImplementedError(
             "The ask() method is not supported for SMTP Email alerters. "
-            "Email doesn't support interactive approvals. Returning False."
+            "Email doesn't support interactive approvals."
         )
-        return False
