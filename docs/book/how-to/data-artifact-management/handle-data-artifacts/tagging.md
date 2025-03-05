@@ -228,11 +228,11 @@ def my_pipeline():
     ...
 ```
 
-{% hint style="warning" %}
-Unlike the `rolling` parameter, the `hierarchical` parameter is a runtime configuration and does not stored with the `tag` object. This means that the tag will **not** have its `hierarchical` functionality if it is not used with the `hierarchical=True` parameter in future calls.
-{% endhint %}
-
 When this pipeline runs, the `hierarchical_tag` will be automatically applied to all artifact versions created during the pipeline execution.
+
+{% hint style="warning" %}
+Unlike the `rolling` parameter, the `hierarchical` parameter is a runtime configuration and does not get stored with the `tag` object. This means that the tag will **not** have its `hierarchical` functionality if it is not used with the `hierarchical=True` parameter in future calls.
+{% endhint %}
 
 ### Filtering
 
