@@ -11,9 +11,21 @@ tags as a flexible tool to classify and filter your ML assets.
 ![Tags are visible in the ZenML Dashboard](../../../.gitbook/assets/tags-in-dashboard.png)
 
 ## Tagging different entities
+
+ZenML allows you to tag various entities in your ML workflow. These entities include:
+
+- [Artifacts](#assigning-tags-to-artifacts)
+- [Artifact versions](#assigning-tags-to-artifact-versions)
+- [Pipelines](#assigning-tags-to-pipelines)
+- [Pipeline runs](#assigning-tags-to-runs)
+- [Run templates](#assigning-tags-to-run-templates)
+- [Models](#assigning-tags-to-models-and-model-versions)
+- [Model versions](#assigning-tags-to-models-and-model-versions)
+
+
 ### Assigning tags to artifacts
 
-You can tag artifacts by using the `add_tags` utility function:
+You can tag artifact versionss by using the `add_tags` utility function:
 
 ```python
 from zenml import add_tags
