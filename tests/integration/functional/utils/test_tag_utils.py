@@ -96,7 +96,6 @@ def test_tag_utils(clean_client):
 
     second_run = pipeline_to_tag()
     second_run_tags = [t.name for t in second_run.tags]
-    print(second_run_tags)
     assert all(
         tag in second_run_tags
         for tag in ["normal_tag", "hierarchical_tag", "rolling_tag", "axl"]
@@ -119,7 +118,7 @@ def test_tag_utils(clean_client):
 
     remove_tags(
         tags=["hierarchical_tag", "rolling_tag"],
-        pipeline=second_run.id,
+        run=second_run.id,
     )
     run = clean_client.get_pipeline_run(second_run.id)
     second_run_tags = [t.name for t in run.tags]
