@@ -496,7 +496,7 @@ class TaggableFilter(BaseFilter):
 
     CLI_EXCLUDE_FIELDS = [
         *BaseFilter.CLI_EXCLUDE_FIELDS,
-        "tag",
+        "tags",
     ]
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *BaseFilter.FILTER_EXCLUDE_FIELDS,
@@ -516,11 +516,6 @@ class TaggableFilter(BaseFilter):
             self
         """
         if self.tag is not None:
-            logger.warning(
-                "The `tag` attribute is deprecated. Please use `tags` when "
-                "filtering objects by tags."
-            )
-
             if self.tags is not None:
                 self.tags.append(self.tag)
             else:
