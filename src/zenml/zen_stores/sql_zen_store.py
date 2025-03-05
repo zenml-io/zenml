@@ -11234,7 +11234,7 @@ class SqlZenStore(BaseZenStore):
 
     def _attach_tags_to_resources(
         self,
-        tags: Optional[Sequence[Union[str, UUID, tag_utils.Tag]]],
+        tags: Optional[Sequence[Union[str, tag_utils.Tag]]],
         resources: Union[BaseSchema, List[BaseSchema]],
         session: Session,
     ) -> None:
@@ -11277,12 +11277,17 @@ class SqlZenStore(BaseZenStore):
             except KeyError:
                 if isinstance(tag, tag_utils.Tag):
                     tag_request = tag.to_request()
-                elif not isinstance(tag, str):
-                    raise
                 else:
                     tag_request = TagRequest(name=tag)
                 tag_schemas.append(
-                    self._create_tag_schema(tag=tag_request, session=session)
+                    self._create_tag_schema(
+                        tag=tag_request,
+                        session=session,
+                        # Don't commit the tag yet, because we want to have one
+                        # big mega-transaction with all tags and all tag
+                        # resources created below in _create_tag_resource_schemas.
+                        commit=False,
+                    )
                 )
 
         resources = (
@@ -11356,13 +11361,14 @@ class SqlZenStore(BaseZenStore):
         )
 
     def _create_tag_schema(
-        self, tag: TagRequest, session: Session
+        self, tag: TagRequest, session: Session, commit: bool = True
     ) -> TagSchema:
         """Creates a new tag schema.
 
         Args:
             session: The database session to use.
             tag: the tag to be created.
+            commit: whether to commit the session after creating the tag.
 
         Returns:
             The newly created tag schema.
@@ -11378,7 +11384,8 @@ class SqlZenStore(BaseZenStore):
         tag_schema = TagSchema.from_request(tag)
         session.add(tag_schema)
 
-        session.commit()
+        if commit:
+            session.commit()
         return tag_schema
 
     @track_decorator(AnalyticsEvent.CREATED_TAG)
