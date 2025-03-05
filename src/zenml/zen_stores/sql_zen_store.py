@@ -11248,7 +11248,6 @@ class SqlZenStore(BaseZenStore):
         Raises:
             ValueError: If a tag exists but doesn't match the same rolling
                 setting.
-            KeyError: If an existing tag identified by a UUID is not found.
         """
         if tags is None:
             return
