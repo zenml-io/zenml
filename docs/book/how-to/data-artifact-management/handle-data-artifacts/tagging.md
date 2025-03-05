@@ -214,15 +214,10 @@ def my_pipeline():
 Alternatively, you can also create a rolling tag separately and use it later:
 
 ```python
-# 1. Create a rolling tag and then use it
 from zenml.client import Client
-Client().create_tag("a_rolling_tag", rolling=True)
 
-@pipeline(tags=["a_rolling_tag"])
-def my_pipeline():
-    ...
+Client().create_tag(name="a_rolling_tag", rolling=True)
 
-# 2. Update an existing tag to make it rolling
 @pipeline(tags=["a_rolling_tag"])
 def my_pipeline():
     ...
