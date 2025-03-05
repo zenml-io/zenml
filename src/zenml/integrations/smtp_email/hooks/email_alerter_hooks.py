@@ -13,12 +13,8 @@
 #  permissions and limitations under the License.
 """Functionality for SMTP Email alerter hooks."""
 
-import io
-import sys
 import traceback
 from typing import Optional
-
-from rich.console import Console
 
 from zenml import get_step_context
 from zenml.client import Client

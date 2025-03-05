@@ -13,10 +13,7 @@
 #  permissions and limitations under the License.
 """Functionality for standard hooks."""
 
-import io
-import sys
-
-from rich.console import Console
+import traceback
 
 from zenml import get_step_context
 from zenml.client import Client
@@ -36,14 +33,9 @@ def alerter_failure_hook(exception: BaseException) -> None:
     context = get_step_context()
     alerter = Client().active_stack.alerter
     if alerter:
-        output_captured = io.StringIO()
-        original_stdout = sys.stdout
-        sys.stdout = output_captured
-        console = Console()
-        console.print_exception(show_locals=False)
-
-        sys.stdout = original_stdout
-        rich_traceback = output_captured.getvalue().strip()
+        # Use standard Python traceback instead of Rich traceback
+        tb_lines = traceback.format_exception(type(exception), exception, exception.__traceback__)
+        plain_traceback = ''.join(tb_lines).strip()
 
         message = "*Failure Hook Notification! Step failed!*" + "\n\n"
         message += f"Pipeline name: `{context.pipeline.name}`" + "\n"
@@ -51,7 +43,7 @@ def alerter_failure_hook(exception: BaseException) -> None:
         message += f"Step name: `{context.step_run.name}`" + "\n"
         message += f"Parameters: `{context.step_run.config.parameters}`" + "\n"
         message += f"Exception: `({type(exception).__name__}) {str(exception)}`" + "\n\n"
-        message += f"{rich_traceback}"
+        message += f"{plain_traceback}"
         alerter.post(message)
     else:
         logger.warning(
