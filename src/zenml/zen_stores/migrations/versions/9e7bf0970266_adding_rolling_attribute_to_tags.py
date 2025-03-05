@@ -18,15 +18,28 @@ depends_on = None
 
 def upgrade() -> None:
     """Upgrade database schema and/or data, creating a new revision."""
-    op.add_column(
-        "tag",
-        sa.Column(
+    # Use batch_alter_table for safer schema modifications
+    with op.batch_alter_table("tag") as batch_op:
+        # First add the column as nullable
+        batch_op.add_column(
+            sa.Column(
+                "rolling",
+                sa.Boolean(),
+                nullable=True,
+            ),
+        )
+
+    # Update existing rows with default value
+    op.execute("UPDATE tag SET rolling = FALSE WHERE rolling IS NULL")
+
+    # Then alter the column to be non-nullable with a default
+    with op.batch_alter_table("tag") as batch_op:
+        batch_op.alter_column(
             "rolling",
-            sa.Boolean(),
+            existing_type=sa.Boolean(),
             nullable=False,
             server_default=sa.false(),
-        ),
-    )
+        )
 
 
 def downgrade() -> None:
