@@ -6464,7 +6464,6 @@ class Client(metaclass=ClientMetaClass):
 
     def list_model_versions(
         self,
-        model_name_or_id: Optional[Union[str, UUID]] = None,
         sort_by: str = "number",
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
@@ -6472,8 +6471,11 @@ class Client(metaclass=ClientMetaClass):
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
+        id: Optional[Union[UUID, str]] = None,
         number: Optional[int] = None,
         stage: Optional[Union[str, ModelStages]] = None,
+        run_metadata: Optional[Dict[str, str]] = None,
+        model: Optional[Union[str, UUID]] = None,
         user: Optional[Union[UUID, str]] = None,
         hydrate: bool = False,
         tag: Optional[str] = None,
@@ -6482,8 +6484,6 @@ class Client(metaclass=ClientMetaClass):
         """Get model versions by filter from Model Control Plane.
 
         Args:
-            model_name_or_id: name or id of the model containing the model
-                version.
             sort_by: The column to sort by
             page: The page of items
             size: The maximum size of all pages
@@ -6491,8 +6491,11 @@ class Client(metaclass=ClientMetaClass):
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
             name: name or id of the model version.
+            id: id of the model version.
             number: number of the model version.
             stage: stage of the model version.
+            run_metadata: run metadata of the model version.
+            model: name or id of the model containing the model version.
             user: Filter by user name/ID.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
@@ -6510,11 +6513,13 @@ class Client(metaclass=ClientMetaClass):
             created=created,
             updated=updated,
             name=name,
+            id=id,
             number=number,
             stage=stage,
+            run_metadata=run_metadata,
             tag=tag,
             user=user,
-            model=model_name_or_id,
+            model=model,
             workspace=workspace or self.active_workspace.id,
         )
 
