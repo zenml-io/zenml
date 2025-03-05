@@ -148,8 +148,13 @@ Error: {exception_str}
     )
 
     # Create parameters with HTML enabled and a clear subject
+    # Remove any potential Markdown formatting (*bold*, `code`, etc.) from the subject
+    # as email subjects can't render formatting
+    clean_pipeline_name = context.pipeline.name.replace('*', '').replace('`', '')
+    clean_step_name = context.step_run.name.replace('*', '').replace('`', '')
+    
     params = SMTPEmailAlerterParameters(
-        subject=f"ZenML Pipeline Failure: {context.pipeline.name} - {context.step_run.name}",
+        subject=f"ZenML Pipeline Failure: {clean_pipeline_name} - {clean_step_name}",
         include_html=True,
         payload=payload,
         html_body=html_body,  # Use our custom HTML template instead of the default
@@ -256,8 +261,13 @@ The step has completed successfully.
     )
 
     # Create parameters with HTML enabled and a clear subject
+    # Remove any potential Markdown formatting (*bold*, `code`, etc.) from the subject
+    # as email subjects can't render formatting
+    clean_pipeline_name = context.pipeline.name.replace('*', '').replace('`', '')
+    clean_step_name = context.step_run.name.replace('*', '').replace('`', '')
+    
     params = SMTPEmailAlerterParameters(
-        subject=f"ZenML Pipeline Success: {context.pipeline.name} - {context.step_run.name}",
+        subject=f"ZenML Pipeline Success: {clean_pipeline_name} - {clean_step_name}",
         include_html=True,
         payload=payload,
         html_body=html_body,  # Use our custom HTML template instead of the default
