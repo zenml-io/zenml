@@ -272,9 +272,9 @@ class BasetenDeploymentService(BaseService):
         try:
             # Get deployment status from Baseten API
             api_key = self._get_api_key()
-            api_host = self._get_api_host()
+            api_host = "https://api.baseten.co"  # Use the API base URL
             headers = {"Authorization": f"Api-Key {api_key}"}
-            url = f"{api_host}/api/v1/models/{self.config.baseten_id}/deployments/{self.config.baseten_deployment_id}"
+            url = f"{api_host}/v1/models/{self.config.baseten_id}/deployments/{self.config.baseten_deployment_id}"
 
             # Add retry logic with exponential backoff for API requests
             max_retries = 3
@@ -414,9 +414,9 @@ class BasetenDeploymentService(BaseService):
         try:
             # Call Baseten API to activate the deployment
             api_key = self._get_api_key()
-            api_host = self._get_api_host()
+            api_host = "https://api.baseten.co"  # Use the API base URL
             headers = {"Authorization": f"Api-Key {api_key}"}
-            url = f"{api_host}/api/v1/models/{self.config.baseten_id}/deployments/{self.config.baseten_deployment_id}/activate"
+            url = f"{api_host}/v1/models/{self.config.baseten_id}/deployments/{self.config.baseten_deployment_id}/activate"
             response = requests.post(url, headers=headers, timeout=30)
             response.raise_for_status()
 
@@ -490,9 +490,9 @@ class BasetenDeploymentService(BaseService):
         try:
             # Call Baseten API to deactivate the deployment
             api_key = self._get_api_key()
-            api_host = self._get_api_host()
+            api_host = "https://api.baseten.co"  # Use the API base URL
             headers = {"Authorization": f"Api-Key {api_key}"}
-            url = f"{api_host}/api/v1/models/{self.config.baseten_id}/deployments/{self.config.baseten_deployment_id}/deactivate"
+            url = f"{api_host}/v1/models/{self.config.baseten_id}/deployments/{self.config.baseten_deployment_id}/deactivate"
             response = requests.post(url, headers=headers, timeout=30)
             response.raise_for_status()
 
@@ -581,9 +581,9 @@ class BasetenDeploymentService(BaseService):
 
             # Call Baseten API to delete the deployment
             api_key = self._get_api_key()
-            api_host = self._get_api_host()
+            api_host = "https://api.baseten.co"  # Use the API base URL
             headers = {"Authorization": f"Api-Key {api_key}"}
-            url = f"{api_host}/api/v1/models/{self.config.baseten_id}/deployments/{self.config.baseten_deployment_id}"
+            url = f"{api_host}/v1/models/{self.config.baseten_id}/deployments/{self.config.baseten_deployment_id}"
             response = requests.delete(url, headers=headers, timeout=30)
             response.raise_for_status()
 
@@ -595,8 +595,8 @@ class BasetenDeploymentService(BaseService):
                 from zenml.client import Client
 
                 client = Client()
-                client.delete_service(self.id)
-                logger.info(f"Removed service {self.id} from ZenML registry")
+                client.delete_service(self.uuid)
+                logger.info(f"Removed service {self.uuid} from ZenML registry")
             except Exception as e:
                 logger.warning(
                     f"Failed to remove service from ZenML registry: {str(e)}"
@@ -615,9 +615,9 @@ class BasetenDeploymentService(BaseService):
                     from zenml.client import Client
 
                     client = Client()
-                    client.delete_service(self.id)
+                    client.delete_service(self.uuid)
                     logger.info(
-                        f"Removed service {self.id} from ZenML registry"
+                        f"Removed service {self.uuid} from ZenML registry"
                     )
                 except Exception as registry_error:
                     logger.warning(
@@ -702,6 +702,26 @@ class BasetenDeploymentService(BaseService):
 
             raise RuntimeError(f"Prediction failed: {str(e)}")
 
+    def get_logs(
+        self,
+        follow: bool = False,
+        tail: Optional[int] = None,
+    ) -> Generator[str, bool, None]:
+        """Get logs from the service.
+
+        Args:
+            follow: Whether to follow the logs.
+            tail: Number of lines to get from the end of the logs.
+
+        Returns:
+            A generator that yields log lines.
+
+        Note:
+            Currently not implemented for Baseten as they don't expose logs via API.
+        """
+        logger.warning("Logs are not available for Baseten deployments")
+        return iter([])
+
     @classmethod
     def from_model(cls, model: ServiceResponse) -> "BasetenDeploymentService":
         """Create a service instance from a model response.
@@ -758,9 +778,9 @@ class BasetenDeploymentService(BaseService):
                 else None,
             )
 
-            # Create service
+            # Create service - use id parameter instead of uuid
             service = cls(
-                id=model.id,
+                uuid=model.id,  # This is the key change - use uuid instead of id
                 config=config,
                 endpoint=endpoint,
                 status=status,
@@ -773,23 +793,3 @@ class BasetenDeploymentService(BaseService):
             raise ValueError(
                 f"Failed to create BasetenDeploymentService from model response: {str(e)}"
             ) from e
-
-    def get_logs(
-        self,
-        follow: bool = False,
-        tail: Optional[int] = None,
-    ) -> Generator[str, bool, None]:
-        """Get logs from the service.
-
-        Args:
-            follow: Whether to follow the logs.
-            tail: Number of lines to get from the end of the logs.
-
-        Returns:
-            A generator that yields log lines.
-
-        Note:
-            Currently not implemented for Baseten as they don't expose logs via API.
-        """
-        logger.warning("Logs are not available for Baseten deployments")
-        return iter([])

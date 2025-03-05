@@ -39,6 +39,7 @@ class BasetenModelDeployerConfig(BaseModelDeployerConfig):
         timeout: Optional timeout in seconds for deployment operations.
         max_retries: Optional maximum number of retries for API operations.
         api_host: Optional API host for Baseten (default: 'https://app.baseten.co').
+        remote: Optional remote name to use for Truss deployment (default: 'default').
     """
 
     baseten_api_key: Optional[str] = None
@@ -51,6 +52,7 @@ class BasetenModelDeployerConfig(BaseModelDeployerConfig):
     timeout: Optional[int] = 300
     max_retries: Optional[int] = 3
     api_host: Optional[str] = "https://app.baseten.co"
+    remote: Optional[str] = "default"
 
     def __init__(self, **kwargs):
         """Initialize the configuration with validation.
