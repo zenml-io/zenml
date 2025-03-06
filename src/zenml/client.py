@@ -7646,24 +7646,24 @@ class Client(metaclass=ClientMetaClass):
     def create_tag(
         self,
         name: str,
-        rolling: bool = False,
+        exclusive: bool = False,
         color: Optional[Union[str, ColorVariants]] = None,
     ) -> TagResponse:
         """Creates a new tag.
 
         Args:
             name: the name of the tag.
-            rolling: the boolean to decide whether the tag is a rolling tag.
-                A rolling tag means that the tag can exist only for:
-                    - a pipeline run within the scope of a pipeline
-                    - an artifact version within the scope of an artifact
-                    - within the scope of run templates
+            exclusive: the boolean to decide whether the tag is an exclusive tag.
+                An exclusive tag means that the tag can exist only for a single:
+                    - pipeline run within the scope of a pipeline
+                    - artifact version within the scope of an artifact
+                    - run template
             color: the color of the tag
 
         Returns:
             The newly created tag.
         """
-        request_model = TagRequest(name=name, rolling=rolling)
+        request_model = TagRequest(name=name, exclusive=exclusive)
 
         if color is not None:
             if isinstance(color, ColorVariants):
@@ -7690,7 +7690,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         tag_name_or_id: Union[str, UUID],
         name: Optional[str] = None,
-        rolling: Optional[bool] = None,
+        exclusive: Optional[bool] = None,
         color: Optional[Union[str, ColorVariants]] = None,
     ) -> TagResponse:
         """Updates an existing tag.
@@ -7698,11 +7698,11 @@ class Client(metaclass=ClientMetaClass):
         Args:
             tag_name_or_id: name or UUID of the tag to be updated.
             name: the name of the tag.
-            rolling: the boolean to decide whether the tag is a rolling tag.
-                A rolling tag means that the tag can be associated with multiple:
-                    - pipeline runs within the scope of a pipeline
-                    - artifact versions within the scope of an artifact
-                    - run templates
+            exclusive: the boolean to decide whether the tag is an exclusive tag.
+                An exclusive tag means that the tag can exist only for a single:
+                    - pipeline run within the scope of a pipeline
+                    - artifact version within the scope of an artifact
+                    - run template
             color: the color of the tag
 
         Returns:
@@ -7713,8 +7713,8 @@ class Client(metaclass=ClientMetaClass):
         if name is not None:
             update_model.name = name
 
-        if rolling is not None:
-            update_model.rolling = rolling
+        if exclusive is not None:
+            update_model.exclusive = exclusive
 
         if color is not None:
             if isinstance(color, str):
@@ -7759,7 +7759,7 @@ class Client(metaclass=ClientMetaClass):
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
         color: Optional[Union[str, ColorVariants]] = None,
-        rolling: Optional[bool] = None,
+        exclusive: Optional[bool] = None,
         hydrate: bool = False,
     ) -> Page[TagResponse]:
         """Get tags by filter.
@@ -7775,7 +7775,7 @@ class Client(metaclass=ClientMetaClass):
             updated: Use the last updated date for filtering.
             name: The name of the tag.
             color: The color of the tag.
-            rolling: Flag indicating whether the tag is rolling.
+            exclusive: Flag indicating whether the tag is exclusive.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -7794,7 +7794,7 @@ class Client(metaclass=ClientMetaClass):
                 updated=updated,
                 name=name,
                 color=color,
-                rolling=rolling,
+                exclusive=exclusive,
             ),
             hydrate=hydrate,
         )

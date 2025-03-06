@@ -40,8 +40,8 @@ class TagRequest(UserScopedRequest):
         description="The unique title of the tag.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    rolling: bool = Field(
-        description="The flag signifying whether the tag is a rolling tag.",
+    exclusive: bool = Field(
+        description="The flag signifying whether the tag is an exclusive tag.",
         default=False,
     )
     color: ColorVariants = Field(
@@ -57,7 +57,7 @@ class TagUpdate(BaseUpdate):
     """Update model for tags."""
 
     name: Optional[str] = None
-    rolling: Optional[bool] = None
+    exclusive: Optional[bool] = None
     color: Optional[ColorVariants] = None
 
 
@@ -71,8 +71,8 @@ class TagResponseBody(UserScopedResponseBody):
         description="The color variant assigned to the tag.",
         default_factory=lambda: random.choice(list(ColorVariants)),
     )
-    rolling: bool = Field(
-        description="The flag signifying whether the tag is a rolling tag."
+    exclusive: bool = Field(
+        description="The flag signifying whether the tag is an exclusive tag."
     )
     tagged_count: int = Field(
         description="The count of resources tagged with this tag."
@@ -119,13 +119,13 @@ class TagResponse(
         return self.get_body().color
 
     @property
-    def rolling(self) -> bool:
-        """The `rolling` property.
+    def exclusive(self) -> bool:
+        """The `exclusive` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_body().rolling
+        return self.get_body().exclusive
 
     @property
     def tagged_count(self) -> int:
@@ -149,7 +149,7 @@ class TagFilter(UserScopedFilter):
     color: Optional[ColorVariants] = Field(
         description="The color variant assigned to the tag.", default=None
     )
-    rolling: Optional[bool] = Field(
-        description="The flag signifying whether the tag is a rolling tag.",
+    exclusive: Optional[bool] = Field(
+        description="The flag signifying whether the tag is an exclusive tag.",
         default=None,
     )

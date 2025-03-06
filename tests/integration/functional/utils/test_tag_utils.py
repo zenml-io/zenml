@@ -20,13 +20,13 @@ from zenml import ArtifactConfig, Tag, add_tags, pipeline, remove_tags, step
 
 @step
 def step_no_output() -> None:
-    """Step calls add_tags"""
+    """Step calls add_tags."""
     add_tags(tags=["axl"])
 
 
 @step
 def step_single_output() -> Annotated[int, "single"]:
-    """Step calls add_tags"""
+    """Step calls add_tags."""
     add_tags(tags=["aria"], infer_artifact=True)
     return 1
 
@@ -35,7 +35,7 @@ def step_single_output() -> Annotated[int, "single"]:
 def step_multiple_outputs() -> Tuple[
     Annotated[int, "first"], Annotated[int, "second"]
 ]:
-    """Step calls add_tags"""
+    """Step calls add_tags."""
     add_tags(tags=["blupus"], infer_artifact=True, artifact_name="first")
     return 1, 2
 
@@ -44,15 +44,15 @@ def step_multiple_outputs() -> Tuple[
 def step_artifact_config() -> Annotated[
     int, ArtifactConfig(name="luna", tags=["nova"])
 ]:
-    """Step calls add_tags"""
+    """Step calls add_tags."""
     return 1
 
 
 @pipeline(
     tags=[
         "normal_tag",
-        Tag(name="hierarchical_tag", hierarchical=True),
-        Tag(name="rolling_tag", rolling=True),
+        Tag(name="cascade_tag", cascade=True),
+        Tag(name="exclusive_tag", exclusive=True),
     ],
     enable_cache=False,
 )
@@ -71,7 +71,7 @@ def test_tag_utils(clean_client):
     first_run_tags = [t.name for t in first_run.tags]
     assert all(
         tag in first_run_tags
-        for tag in ["normal_tag", "hierarchical_tag", "rolling_tag", "axl"]
+        for tag in ["normal_tag", "cascade_tag", "exclusive_tag", "axl"]
     )
 
     single_output_tags = [
@@ -81,7 +81,7 @@ def test_tag_utils(clean_client):
         .tags
     ]
     assert all(
-        tag in single_output_tags for tag in ["hierarchical_tag", "aria"]
+        tag in single_output_tags for tag in ["cascade_tag", "aria"]
     )
 
     multiple_output_tags = [
@@ -91,36 +91,36 @@ def test_tag_utils(clean_client):
         .tags
     ]
     assert all(
-        tag in multiple_output_tags for tag in ["hierarchical_tag", "blupus"]
+        tag in multiple_output_tags for tag in ["cascade_tag", "blupus"]
     )
 
     second_run = pipeline_to_tag()
     second_run_tags = [t.name for t in second_run.tags]
     assert all(
         tag in second_run_tags
-        for tag in ["normal_tag", "hierarchical_tag", "rolling_tag", "axl"]
+        for tag in ["normal_tag", "cascade_tag", "exclusive_tag", "axl"]
     )
 
     run = clean_client.get_pipeline_run(first_run.id)
     first_run_tags = [t.name for t in run.tags]
-    assert "rolling_tag" not in first_run_tags
+    assert "exclusive_tag" not in first_run_tags
 
     runs = clean_client.list_pipeline_runs(
-        tags=["startswith:hier", "equals:rolling_tag"]
+        tags=["startswith:c", "equals:exclusive_tag"]
     )
     assert len(runs.items) == 1
     assert runs.items[0].id == second_run.id
 
     runs = clean_client.list_pipeline_runs(
-        tags=["startswith:wrong", "equals:rolling_tag"]
+        tags=["startswith:wrong", "equals:exclusive_tag"]
     )
     assert len(runs.items) == 0
 
     remove_tags(
-        tags=["hierarchical_tag", "rolling_tag"],
+        tags=["cascade_tag", "exclusive_tag"],
         run=second_run.id,
     )
     run = clean_client.get_pipeline_run(second_run.id)
     second_run_tags = [t.name for t in run.tags]
-    assert "hierarchical_tag" not in second_run_tags
-    assert "rolling_tag" not in second_run_tags
+    assert "cascade_tag" not in second_run_tags
+    assert "exclusive_tag" not in second_run_tags

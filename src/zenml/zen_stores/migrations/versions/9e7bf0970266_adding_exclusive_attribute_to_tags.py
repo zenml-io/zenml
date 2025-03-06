@@ -1,4 +1,4 @@
-"""adding rolling attribute to tags [9e7bf0970266].
+"""adding exclusive attribute to tags [9e7bf0970266].
 
 Revision ID: 9e7bf0970266
 Revises: 2e695a26fe7a
@@ -23,19 +23,19 @@ def upgrade() -> None:
         # First add the column as nullable
         batch_op.add_column(
             sa.Column(
-                "rolling",
+                "exclusive",
                 sa.Boolean(),
                 nullable=True,
             ),
         )
 
     # Update existing rows with default value
-    op.execute("UPDATE tag SET rolling = FALSE WHERE rolling IS NULL")
+    op.execute("UPDATE tag SET exclusive = FALSE WHERE exclusive IS NULL")
 
     # Then alter the column to be non-nullable with a default
     with op.batch_alter_table("tag") as batch_op:
         batch_op.alter_column(
-            "rolling",
+            "exclusive",
             existing_type=sa.Boolean(),
             nullable=False,
             server_default=sa.false(),
@@ -44,4 +44,4 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     """Downgrade database schema and/or data back to the previous revision."""
-    op.drop_column("tag", "rolling")
+    op.drop_column("tag", "exclusive")

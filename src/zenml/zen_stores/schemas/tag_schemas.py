@@ -61,7 +61,7 @@ class TagSchema(NamedSchema, table=True):
     user: Optional["UserSchema"] = Relationship(back_populates="tags")
 
     color: str = Field(sa_column=Column(VARCHAR(255), nullable=False))
-    rolling: bool = Field(default=False)
+    exclusive: bool = Field(default=False)
 
     links: List["TagResourceSchema"] = Relationship(
         back_populates="tag",
@@ -80,7 +80,7 @@ class TagSchema(NamedSchema, table=True):
         """
         return cls(
             name=request.name,
-            rolling=request.rolling,
+            exclusive=request.exclusive,
             color=request.color.value,
             user_id=request.user,
         )
@@ -113,7 +113,7 @@ class TagSchema(NamedSchema, table=True):
                 created=self.created,
                 updated=self.updated,
                 color=ColorVariants(self.color),
-                rolling=self.rolling,
+                exclusive=self.exclusive,
                 tagged_count=len(self.links),
             ),
             metadata=metadata,

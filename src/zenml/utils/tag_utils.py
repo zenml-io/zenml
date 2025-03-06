@@ -93,8 +93,8 @@ class Tag(BaseModel):
 
     name: str
     color: Optional[ColorVariants] = None
-    rolling: Optional[bool] = None
-    hierarchical: Optional[bool] = None
+    exclusive: Optional[bool] = None
+    cascade: Optional[bool] = None
 
     def to_request(self) -> "TagRequest":
         """Convert the tag to a TagRequest.
@@ -108,8 +108,8 @@ class Tag(BaseModel):
         if self.color is not None:
             request.color = self.color
 
-        if self.rolling is not None:
-            request.rolling = self.rolling
+        if self.exclusive is not None:
+            request.exclusive = self.exclusive
         return request
 
 
@@ -209,7 +209,7 @@ def add_tags(
 
     Raises:
         ValueError: If no identifiers are provided and the function is not
-            called from within a step, or if rolling is provided for a
+            called from within a step, or if exclusive is provided for a
             resource type that doesn't support it.
     """
     from zenml.client import Client
@@ -346,24 +346,24 @@ def add_tags(
             if isinstance(tag, Tag):
                 tag_model = client.get_tag(tag.name)
 
-                if tag.rolling and resource_type not in [
+                if tag.exclusive and resource_type not in [
                     TaggableResourceTypes.PIPELINE_RUN,
                     TaggableResourceTypes.ARTIFACT_VERSION,
                     TaggableResourceTypes.RUN_TEMPLATE,
                 ]:
                     raise ValueError(
-                        f"Singleton tags are only applicable to pipeline runs, "
+                        f"Exclusive tags are only applicable to pipeline runs, "
                         f"artifact versions and run templates, not {resource_type}."
                     )
-                if tag.rolling != tag_model.rolling:
+                if tag.exclusive != tag_model.exclusive:
                     raise ValueError(
-                        f"The tag `{tag.name}` is a "
-                        f"{'rolling' if tag_model.rolling else 'non-rolling'} "
+                        f"The tag `{tag.name}` is an "
+                        f"{'exclusive' if tag_model.exclusive else 'non-exclusive'} "
                         "tag. Please update it before attaching it to a resource."
                     )
-                if tag.hierarchical is not None:
+                if tag.cascade is not None:
                     raise ValueError(
-                        "Hierarchical tags can only be used with the "
+                        "Cascading tags can only be used with the "
                         "pipeline decorator."
                     )
             else:

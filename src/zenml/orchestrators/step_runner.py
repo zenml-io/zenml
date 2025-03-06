@@ -647,7 +647,7 @@ class StepRunner:
                     for tag in step_context.pipeline_run.config.tags:
                         if (
                             isinstance(tag, tag_utils.Tag)
-                            and tag.hierarchical is True
+                            and tag.cascade is True
                         ):
                             tags.append(tag.name)
             else:

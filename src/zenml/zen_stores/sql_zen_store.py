@@ -11261,7 +11261,7 @@ class SqlZenStore(BaseZenStore):
             session: The database session to use.
 
         Raises:
-            ValueError: If a tag exists but doesn't match the same rolling
+            ValueError: If a tag exists but doesn't match the same exclusive
                 setting.
         """
         if tags is None:
@@ -11273,12 +11273,12 @@ class SqlZenStore(BaseZenStore):
                 if isinstance(tag, tag_utils.Tag):
                     tag_schema = self._get_tag_schema(tag.name, session)
                     if (
-                        tag.rolling is not None
-                        and tag.rolling != tag_schema.rolling
+                        tag.exclusive is not None
+                        and tag.exclusive != tag_schema.exclusive
                     ):
                         raise ValueError(
                             f"Tag `{tag_schema.name}` has been defined as a "
-                            f"{'rolling' if tag_schema.rolling else 'non-rolling'} "
+                            f"{'exclusive' if tag_schema.exclusive else 'non-exclusive'} "
                             "tag. Please update it before attaching it to resources."
                         )
                     tag_schemas.append(tag_schema)
@@ -11499,7 +11499,7 @@ class SqlZenStore(BaseZenStore):
             An updated tag.
 
         Raises:
-            RuntimeError: If the tag can not be converted to a rolling tag due
+            RuntimeError: If the tag can not be converted to an exclusive tag due
                 to it being associated to multiple entities.
         """
         with Session(self.engine) as session:
@@ -11513,7 +11513,7 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            if tag_update_model.rolling is True:
+            if tag_update_model.exclusive is True:
                 error_messages = []
                 for resource_type, resource_id, scope_id in [
                     (
@@ -11532,7 +11532,7 @@ class SqlZenStore(BaseZenStore):
                         RunTemplateSchema.id,
                     ),
                 ]:
-                    check, error = self._rolling_check_for_existing_tags(
+                    check, error = self._exclusive_check_for_existing_tags(
                         tag=tag,
                         session=session,
                         resource_type=resource_type,
@@ -11545,7 +11545,7 @@ class SqlZenStore(BaseZenStore):
                 if error_messages:
                     raise RuntimeError(
                         "\n".join(error_messages)
-                        + "\nYou can only convert a tag into a rolling tag "
+                        + "\nYou can only convert a tag into an exclusive tag "
                         "if the conflicts mentioned above are resolved."
                     )
 
@@ -11558,7 +11558,7 @@ class SqlZenStore(BaseZenStore):
             return tag.to_model(include_metadata=True, include_resources=True)
 
     @staticmethod
-    def _rolling_check_for_existing_tags(
+    def _exclusive_check_for_existing_tags(
         tag: TagSchema,
         session: Session,
         resource_type: TaggableResourceTypes,
@@ -11645,7 +11645,7 @@ class SqlZenStore(BaseZenStore):
             The newly created tag resource relationships.
 
         Raises:
-            ValueError: If a rolling tag is being attached to multiple resources
+            ValueError: If an exclusive tag is being attached to multiple resources
                 of the same type within the same scope.
         """
         tag_resource_schemas = []
@@ -11680,8 +11680,8 @@ class SqlZenStore(BaseZenStore):
             session.add(tag_resource_schema)
             tag_resource_schemas.append(tag_resource_schema)
 
-            # If the tag is a rolling tag, apply the check and attach/detach accordingly
-            if tag_schema.rolling:
+            # If the tag is an exclusive tag, apply the check and attach/detach accordingly
+            if tag_schema.exclusive:
                 scope_ids: Dict[
                     TaggableResourceTypes, List[Union[UUID, int]]
                 ] = defaultdict(list)
@@ -11749,7 +11749,7 @@ class SqlZenStore(BaseZenStore):
                         )
                 else:
                     logger.debug(
-                        "Rolling tag functionality only works: for "
+                        "Exclusive tag functionality only works: for "
                         "templates, for pipeline runs (within the scope of "
                         "pipelines) and for artifact versions (within the "
                         "scope of artifacts)."
@@ -11759,7 +11759,7 @@ class SqlZenStore(BaseZenStore):
                 for resource_type, id_list in scope_ids.items():
                     if len(id_list) != len(set(id_list)):
                         raise ValueError(
-                            f"You are trying to attach a rolling tag to "
+                            f"You are trying to attach an exclusive tag to "
                             f"multiple {resource_type.value}s within the "
                             "same scope. This is not allowed."
                         )
