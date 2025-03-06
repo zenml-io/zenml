@@ -16,6 +16,7 @@
 import os
 import re
 from typing import Any, Dict, Optional
+from urllib.parse import urlparse
 from uuid import uuid4
 
 from gitlab import Gitlab
@@ -175,8 +176,13 @@ class GitLabCodeRepository(BaseCodeRepository):
         Returns:
             Whether the remote url is correct.
         """
-        https_url = f"https://{self.config.host}/{self.config.group}/{self.config.project}.git"
-        if url == https_url:
+        parsed_url = urlparse(url)
+        if (
+            parsed_url.scheme == "https"
+            and parsed_url.hostname == self.config.host
+            and parsed_url.path
+            == f"/{self.config.group}/{self.config.project}.git"
+        ):
             return True
 
         ssh_regex = re.compile(
