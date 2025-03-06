@@ -9,6 +9,7 @@ Create Date: 2025-02-19 15:16:42.954792
 import sqlalchemy as sa
 import sqlmodel
 from alembic import op
+from sqlalchemy.orm import Session
 
 # revision identifiers, used by Alembic.
 revision = "288f4fb6e112"
@@ -32,6 +33,35 @@ def upgrade() -> None:
             ["user_id"],
             ["id"],
             ondelete="SET NULL",
+        )
+
+    bind = op.get_bind()
+    session = Session(bind=bind)
+
+    tags = session.execute(
+        sa.text("""
+            SELECT t.id, tr.resource_id, tr.resource_type
+            FROM tag t
+            JOIN tag_resource tr ON t.id = tr.tag_id
+        """)
+    )
+
+    tag_ids = []
+    for tag_id, resource_id, resource_type in tags:
+        if tag_id in tag_ids:
+            continue
+        tag_ids.append(tag_id)
+        session.execute(
+            sa.text(f"""
+                UPDATE tag
+                SET user_id = (
+                    SELECT r.user_id
+                    FROM {resource_type} r
+                    WHERE r.id = :resource_id
+                )
+                WHERE id = :tag_id
+            """),
+            params={"resource_id": resource_id, "tag_id": tag_id},
         )
 
 
