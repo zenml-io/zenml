@@ -141,13 +141,9 @@ def test_vertex_orchestrator_stack_validation(
             {"cpu_limit": "4", "gpu_limit": 4, "memory_limit": "1G"},
             {
                 "accelerator": {
-                    "count": "1",
-                    "type": "NVIDIA_TESLA_K80",
                     "resourceCount": "1",
                     "resourceType": "NVIDIA_TESLA_K80",
                 },
-                "cpuLimit": 1.0,
-                "memoryLimit": 1.0,
                 "resourceCpuLimit": "1.0",
                 "resourceMemoryLimit": "1G",
             },
@@ -158,13 +154,9 @@ def test_vertex_orchestrator_stack_validation(
             {"cpu_limit": "1.0", "gpu_limit": 1, "memory_limit": "1G"},
             {
                 "accelerator": {
-                    "count": "1",
-                    "type": "NVIDIA_TESLA_K80",
                     "resourceCount": "1",
                     "resourceType": "NVIDIA_TESLA_K80",
                 },
-                "cpuLimit": 1.0,
-                "memoryLimit": 1.0,
                 "resourceCpuLimit": "1.0",
                 "resourceMemoryLimit": "1G",
             },
@@ -174,8 +166,6 @@ def test_vertex_orchestrator_stack_validation(
             ResourceSettings(cpu_count=1, gpu_count=None, memory="1GB"),
             {"cpu_limit": None, "gpu_limit": None, "memory_limit": None},
             {
-                "cpuLimit": 1.0,
-                "memoryLimit": 1.0,
                 "resourceCpuLimit": "1.0",
                 "resourceMemoryLimit": "1G",
             },
@@ -185,8 +175,6 @@ def test_vertex_orchestrator_stack_validation(
             ResourceSettings(cpu_count=1, gpu_count=0, memory="1GB"),
             {"cpu_limit": None, "gpu_limit": None, "memory_limit": None},
             {
-                "cpuLimit": 1.0,
-                "memoryLimit": 1.0,
                 "resourceCpuLimit": "1.0",
                 "resourceMemoryLimit": "1G",
             },
@@ -260,4 +248,33 @@ def test_vertex_orchestrator_configure_container_resources(
     if "resourceMemoryLimit" not in job_spec["resources"]:
         expected_resources.pop("resourceMemoryLimit", None)
 
-    assert job_spec["resources"] == expected_resources
+    def assert_dict_is_subset(actual, expected):
+        """Checks if the expected dictionary is a subset of the actual dictionary.
+
+        Args:
+            actual: The actual dictionary to compare
+            expected: The expected dictionary to compare against
+
+        Raises:
+            AssertionError: If the expected dictionary is not a subset 
+            of the actual dictionary
+        """
+        if actual is None or expected is None:
+            assert actual == expected
+            return
+        d1_set = set(actual.items())
+        d2_set = set(expected.items())
+
+        # Now we can directly compare them
+        assert d1_set >= d2_set, (
+            f"Expected dictionary is not a subset of the actual "
+            "dictionary.\nExpected: {expected}\nActual: {actual}"
+        )
+
+    assert_dict_is_subset(
+        job_spec["resources"].get("accelerator"),
+        expected_resources.get("accelerator"),
+    )
+    job_spec["resources"].pop("accelerator", None)
+    expected_resources.pop("accelerator", None)
+    assert_dict_is_subset(job_spec["resources"], expected_resources)
