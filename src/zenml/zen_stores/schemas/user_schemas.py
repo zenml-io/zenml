@@ -41,6 +41,7 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
         ActionSchema,
         APIKeySchema,
+        ArtifactSchema,
         ArtifactVersionSchema,
         CodeRepositorySchema,
         EventSourceSchema,
@@ -53,6 +54,7 @@ if TYPE_CHECKING:
         PipelineRunSchema,
         PipelineSchema,
         RunMetadataSchema,
+        RunTemplateSchema,
         ScheduleSchema,
         SecretSchema,
         ServiceConnectorSchema,
@@ -111,8 +113,12 @@ class UserSchema(NamedSchema, table=True):
         back_populates="user",
     )
     runs: List["PipelineRunSchema"] = Relationship(back_populates="user")
+    run_templates: List["RunTemplateSchema"] = Relationship(
+        back_populates="user",
+    )
     step_runs: List["StepRunSchema"] = Relationship(back_populates="user")
     builds: List["PipelineBuildSchema"] = Relationship(back_populates="user")
+    artifacts: List["ArtifactSchema"] = Relationship(back_populates="user")
     artifact_versions: List["ArtifactVersionSchema"] = Relationship(
         back_populates="user"
     )

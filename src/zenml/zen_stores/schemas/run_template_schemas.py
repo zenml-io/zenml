@@ -91,7 +91,9 @@ class RunTemplateSchema(NamedSchema, table=True):
         nullable=True,
     )
 
-    user: Optional["UserSchema"] = Relationship()
+    user: Optional["UserSchema"] = Relationship(
+        back_populates="run_templates",
+    )
     workspace: "WorkspaceSchema" = Relationship()
     source_deployment: Optional["PipelineDeploymentSchema"] = Relationship(
         sa_relationship_kwargs={

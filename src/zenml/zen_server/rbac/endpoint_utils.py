@@ -36,6 +36,7 @@ from zenml.zen_server.rbac.utils import (
     dehydrate_page,
     dehydrate_response_model,
     dehydrate_response_model_batch,
+    delete_model_resource,
     get_allowed_resource_ids,
     get_resource_type_for_model,
     verify_permission,
@@ -299,6 +300,7 @@ def verify_permissions_and_delete_entity(
     model = get_method(id, False)
     verify_permission_for_model(model, action=Action.DELETE)
     delete_method(model.id, **delete_method_kwargs)
+    delete_model_resource(model)
 
     return model
 

@@ -1141,13 +1141,15 @@ class Client(metaclass=ClientMetaClass):
             )
 
         if workspace.name != DEFAULT_WORKSPACE_NAME:
-            logger.warning(
-                f"You are running with a non-default workspace "
-                f"'{workspace.name}'. The ZenML workspace feature is available "
-                "only on ZenML Pro. Pipelines, pipeline runs and artifacts "
-                "produced in this workspace will not be accessible through the "
-                "dashboard. Please visit https://zenml.io/pro to learn more."
-            )
+            if not self.zen_store.get_store_info().is_pro_server():
+                logger.warning(
+                    f"You are running with a non-default workspace "
+                    f"'{workspace.name}'. The ZenML workspace feature is "
+                    "available only in ZenML Pro. Pipelines, pipeline runs and "
+                    "artifacts produced in this workspace will not be "
+                    "accessible through the dashboard. Please visit "
+                    "https://zenml.io/pro to learn more."
+                )
         return workspace
 
     # --------------------------------- Stacks ---------------------------------
@@ -4125,6 +4127,7 @@ class Client(metaclass=ClientMetaClass):
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
         has_custom_name: Optional[bool] = None,
+        user: Optional[Union[UUID, str]] = None,
         workspace: Optional[Union[str, UUID]] = None,
         hydrate: bool = False,
         tag: Optional[str] = None,
@@ -4142,6 +4145,7 @@ class Client(metaclass=ClientMetaClass):
             updated: Use the last updated date for filtering
             name: The name of the artifact to filter by.
             has_custom_name: Filter artifacts with/without custom names.
+            user: Filter by user name or ID.
             workspace: The workspace name/ID to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
@@ -4163,6 +4167,7 @@ class Client(metaclass=ClientMetaClass):
             has_custom_name=has_custom_name,
             tag=tag,
             tags=tags,
+            user=user,
             workspace=workspace or self.active_workspace.id,
         )
         return self.zen_store.list_artifacts(

@@ -61,12 +61,22 @@ def list_workspaces(ctx: click.Context, **kwargs: Any) -> None:
 
 
 @workspace.command("register")
+@click.option(
+    "--set",
+    "set_workspace",
+    is_flag=True,
+    help="Immediately set this workspace as active.",
+    type=click.BOOL,
+)
 @click.argument("workspace_name", type=str, required=True)
-def register_workspace(workspace_name: str) -> None:
+def register_workspace(
+    workspace_name: str, set_workspace: bool = False
+) -> None:
     """Register a new workspace.
 
     Args:
         workspace_name: The name of the workspace to register.
+        set_workspace: Whether to set the workspace as active.
     """
     check_zenml_pro_workspace_availability()
     client = Client()
@@ -77,22 +87,28 @@ def register_workspace(workspace_name: str) -> None:
         except Exception as e:
             cli_utils.error(str(e))
 
+    if set_workspace:
+        client.set_active_workspace(workspace_name)
+        cli_utils.declare(
+            f"The active workspace has been set to {workspace_name}"
+        )
+
 
 @workspace.command("set")
-@click.argument("workspace_name", type=str, required=True)
-def set_workspace(workspace_name: str) -> None:
+@click.argument("workspace_name_or_id", type=str, required=True)
+def set_workspace(workspace_name_or_id: str) -> None:
     """Set the active workspace.
 
     Args:
-        workspace_name: The name of the workspace to set as active.
+        workspace_name_or_id: The name or ID of the workspace to set as active.
     """
     check_zenml_pro_workspace_availability()
     client = Client()
     with console.status("Setting workspace...\n"):
         try:
-            client.set_active_workspace(workspace_name)
+            client.set_active_workspace(workspace_name_or_id)
             cli_utils.declare(
-                f"The active workspace has been set to {workspace_name}"
+                f"The active workspace has been set to {workspace_name_or_id}"
             )
         except Exception as e:
             cli_utils.error(str(e))
@@ -122,3 +138,23 @@ def describe_workspace(workspace_name_or_id: Optional[str] = None) -> None:
             cli_utils.print_pydantic_models(
                 [workspace_], exclude_columns=["created", "updated"]
             )
+
+
+@workspace.command("delete")
+@click.argument("workspace_name_or_id", type=str, required=True)
+def delete_workspace(workspace_name_or_id: str) -> None:
+    """Delete a workspace.
+
+    Args:
+        workspace_name_or_id: The name or ID of the workspace to delete.
+    """
+    check_zenml_pro_workspace_availability()
+    client = Client()
+    with console.status("Deleting workspace...\n"):
+        try:
+            client.delete_workspace(workspace_name_or_id)
+            cli_utils.declare(
+                f"Workspace '{workspace_name_or_id}' deleted successfully."
+            )
+        except Exception as e:
+            cli_utils.error(str(e))

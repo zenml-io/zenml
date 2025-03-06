@@ -240,9 +240,11 @@ def delete_trigger(
     Args:
         trigger_id: Name of the trigger.
     """
-    trigger = zen_store().get_trigger(trigger_id=trigger_id)
-    verify_permission_for_model(trigger, action=Action.DELETE)
-    zen_store().delete_trigger(trigger_id=trigger_id)
+    verify_permissions_and_delete_entity(
+        id=trigger_id,
+        get_method=zen_store().get_trigger,
+        delete_method=zen_store().delete_trigger,
+    )
 
 
 executions_router = APIRouter(
