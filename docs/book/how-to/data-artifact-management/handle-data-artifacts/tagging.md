@@ -69,7 +69,7 @@ zenml artifacts versions update iris_dataset raw_2023 -t sklearn
 ```
 
 {% hint style="info" %}
-In the upcoming chapters, you will also learn how to use [an hierarchical tag](#hierarchical-tags) to tag an artifact version as well.
+In the upcoming chapters, you will also learn how to use [an cascade tag](#cascade-tags) to tag an artifact version as well.
 {% endhint %}
 
 ### Assigning tags to pipelines
@@ -182,56 +182,56 @@ add_tags(tags=["my_tag"], run_template="run_template_name_or_id")
 
 ZenML provides several advanced tagging features to help you better organize and manage your ML assets.
 
-### Rolling Tags
+### Exclusive Tags
 
-Rolling tags are special tags that can be associated with only one instance of a specific entity type within a certain scope at a time. When you apply a rolling tag to a new entity, it's automatically removed from any previous entity of the same type that had this tag. Rolling tags can be used with:
+Exclusive tags are special tags that can be associated with only one instance of a specific entity type within a certain scope at a time. When you apply an exclusive tag to a new entity, it's automatically removed from any previous entity of the same type that had this tag. Exclusive tags can be used with:
 
 - One pipeline run per pipeline
 - One artifact version per artifact
 - One run template within a project
 
-The recommended way to create rolling tags is using the `Tag` object:
+The recommended way to create exclusive tags is using the `Tag` object:
 
 ```python
 from zenml import pipeline, Tag
 
-@pipeline(tags=["not_a_rolling_tag", Tag("a_rolling_tag", rolling=True)])
+@pipeline(tags=["not_an_exclusive_tag", Tag("an_exclusive_tag", exclusive=True)])
 def my_pipeline():
     ...
 ```
 
-Alternatively, you can also create a rolling tag separately and use it later:
+Alternatively, you can also create an exclusive tag separately and use it later:
 
 ```python
 from zenml.client import Client
 
-Client().create_tag(name="a_rolling_tag", rolling=True)
+Client().create_tag(name="an_exclusive_tag", exclusive=True)
 
-@pipeline(tags=["a_rolling_tag"])
+@pipeline(tags=["an_exclusive_tag"])
 def my_pipeline():
     ...
 ```
 
 {% hint style="warning" %}
-The `rolling` parameter belongs to the configuration of the tag and this information is stored in the backend. This means, that it will not lose its `rolling` functionality even if it is being used without the explicit `rolling=True` parameter in future calls.
+The `exclusive` parameter belongs to the configuration of the tag and this information is stored in the backend. This means, that it will not lose its `exclusive` functionality even if it is being used without the explicit `exclusive=True` parameter in future calls.
 {% endhint %}
 
-### Hierarchical Tags
+### Cascade Tags
 
-Hierarchical tags allow you to associate a tag from a pipeline with all artifact versions created during its execution. 
+Cascade tags allow you to associate a tag from a pipeline with all artifact versions created during its execution. 
 
 ```python
 from zenml import pipeline, Tag
 
-@pipeline(tags=["normal_tag", Tag("hierarchical_tag", hierarchical=True)])
+@pipeline(tags=["normal_tag", Tag("cascade_tag", cascade=True)])
 def my_pipeline():
     ...
 ```
 
-When this pipeline runs, the `hierarchical_tag` will be automatically applied to all artifact versions created during the pipeline execution.
+When this pipeline runs, the `cascade_tag` will be automatically applied to all artifact versions created during the pipeline execution.
 
 {% hint style="warning" %}
-Unlike the `rolling` parameter, the `hierarchical` parameter is a runtime configuration and does not get stored with the `tag` object. This means that the tag will **not** have its `hierarchical` functionality if it is not used with the `hierarchical=True` parameter in future calls.
+Unlike the `exclusive` parameter, the `cascade` parameter is a runtime configuration and does not get stored with the `tag` object. This means that the tag will **not** have its `cascade` functionality if it is not used with the `cascade=True` parameter in future calls.
 {% endhint %}
 
 ### Filtering
