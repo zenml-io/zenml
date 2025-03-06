@@ -80,9 +80,7 @@ def test_tag_utils(clean_client):
         .outputs["single"][0]
         .tags
     ]
-    assert all(
-        tag in single_output_tags for tag in ["cascade_tag", "aria"]
-    )
+    assert all(tag in single_output_tags for tag in ["cascade_tag", "aria"])
 
     multiple_output_tags = [
         t.name
