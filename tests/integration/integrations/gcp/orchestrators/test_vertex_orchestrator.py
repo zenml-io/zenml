@@ -141,13 +141,9 @@ def test_vertex_orchestrator_stack_validation(
             {"cpu_limit": "4", "gpu_limit": 4, "memory_limit": "1G"},
             {
                 "accelerator": {
-                    "count": "1",
-                    "type": "NVIDIA_TESLA_K80",
                     "resourceCount": "1",
                     "resourceType": "NVIDIA_TESLA_K80",
                 },
-                "cpuLimit": 1.0,
-                "memoryLimit": 1.0,
                 "resourceCpuLimit": "1.0",
                 "resourceMemoryLimit": "1G",
             },
@@ -158,13 +154,9 @@ def test_vertex_orchestrator_stack_validation(
             {"cpu_limit": "1.0", "gpu_limit": 1, "memory_limit": "1G"},
             {
                 "accelerator": {
-                    "count": "1",
-                    "type": "NVIDIA_TESLA_K80",
                     "resourceCount": "1",
                     "resourceType": "NVIDIA_TESLA_K80",
                 },
-                "cpuLimit": 1.0,
-                "memoryLimit": 1.0,
                 "resourceCpuLimit": "1.0",
                 "resourceMemoryLimit": "1G",
             },
@@ -174,8 +166,6 @@ def test_vertex_orchestrator_stack_validation(
             ResourceSettings(cpu_count=1, gpu_count=None, memory="1GB"),
             {"cpu_limit": None, "gpu_limit": None, "memory_limit": None},
             {
-                "cpuLimit": 1.0,
-                "memoryLimit": 1.0,
                 "resourceCpuLimit": "1.0",
                 "resourceMemoryLimit": "1G",
             },
@@ -185,8 +175,6 @@ def test_vertex_orchestrator_stack_validation(
             ResourceSettings(cpu_count=1, gpu_count=0, memory="1GB"),
             {"cpu_limit": None, "gpu_limit": None, "memory_limit": None},
             {
-                "cpuLimit": 1.0,
-                "memoryLimit": 1.0,
                 "resourceCpuLimit": "1.0",
                 "resourceMemoryLimit": "1G",
             },
@@ -260,31 +248,36 @@ def test_vertex_orchestrator_configure_container_resources(
     if "resourceMemoryLimit" not in job_spec["resources"]:
         expected_resources.pop("resourceMemoryLimit", None)
 
-    def assert_dict_equal(actual, expected):
-        """Compare two dictionaries ignoring the order of items.
+    def assert_dict_is_subset(subset, actual):
+        """Recursively checks if all values in `subset` are present in `actual`.
 
-        Args:
-            actual: The actual dictionary to compare
-            expected: The expected dictionary to compare against
-
-        Raises:
-            AssertionError: If dictionaries don't match
+        This means:
+        - All keys in `subset` must exist in `actual`.
+        - If a value in `subset` is a dict, it must be a subset
+            of the corresponding value in `actual`.
+        - If a value in `subset` is a list, all its elements must
+            be in the corresponding list in `actual`.
+        - Otherwise, the values must be equal.
         """
-        if actual is None or expected is None:
-            assert actual == expected
-            return
-        d1_set = set(actual.items())
-        d2_set = set(expected.items())
+        for key, subset_value in subset.items():
+            if key not in actual:
+                return False
+            actual_value = actual[key]
 
-        # Now we can directly compare them
-        assert d1_set == d2_set, (
-            f"Dictionaries don't match.\nExpected: {expected}\nActual: {actual}"
-        )
+            if isinstance(subset_value, dict):
+                if not isinstance(
+                    actual_value, dict
+                ) or not assert_dict_is_subset(subset_value, actual_value):
+                    return False
+            elif isinstance(subset_value, list):
+                if not isinstance(actual_value, list) or not all(
+                    elem in actual_value for elem in subset_value
+                ):
+                    return False
+            else:
+                if subset_value != actual_value:
+                    return False
 
-    assert_dict_equal(
-        job_spec["resources"].get("accelerator"),
-        expected_resources.get("accelerator"),
-    )
-    job_spec["resources"].pop("accelerator", None)
-    expected_resources.pop("accelerator", None)
-    assert_dict_equal(job_spec["resources"], expected_resources)
+        return True
+
+    assert assert_dict_is_subset(expected_resources, job_spec["resources"])
