@@ -668,7 +668,6 @@ def register_service_connector(
         else:
             auto_configure = False
 
-        auth_method = None
         connector_model: Optional[
             Union[ServiceConnectorRequest, ServiceConnectorResponse]
         ] = None
@@ -685,6 +684,7 @@ def register_service_connector(
                         description=description or "",
                         connector_type=connector_type,
                         resource_type=resource_type,
+                        auth_method=auth_method,
                         expires_skew_tolerance=expires_skew_tolerance,
                         auto_configure=True,
                         verify=True,

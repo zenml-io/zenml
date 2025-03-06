@@ -143,7 +143,7 @@ List of some possible additional flags:
 
 * `--cache`: Set to `false` to disable caching. Defaults to `true`.
 * `--cache-dir`: Set the directory where to store cached layers. Defaults to `/cache`.
-* `--cache-repo`: Set the repository where to store cached layers. Defaults to `gcr.io/kaniko-project/executor`.
+* `--cache-repo`: Set the repository where to store cached layers.
 * `--cache-ttl`: Set the cache expiration time. Defaults to `24h`.
 * `--cleanup`: Set to `false` to disable cleanup of the working directory. Defaults to `true`.
 * `--compressed-caching`: Set to `false` to disable compressed caching. Defaults to `true`.
