@@ -723,6 +723,9 @@ def delete_model_resources(models: List[AnyModel]) -> None:
     Args:
         models: The models for which to delete the resource membership information.
     """
+    if not server_config().rbac_enabled:
+        return
+
     resources = set()
     for model in models:
         if resource := get_resource_for_model(model):
