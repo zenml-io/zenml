@@ -128,6 +128,7 @@ class GitLabCodeRepository(BaseCodeRepository):
         contents = self.gitlab_project.repository_tree(
             ref=commit,
             path=repo_sub_directory or "",
+            iterator=True
         )
         for content in contents:
             logger.debug(f"Processing {content['path']}")
