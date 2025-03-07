@@ -48,7 +48,6 @@ if TYPE_CHECKING:
         Mapping[str, MaterializerClassOrSource],
         Mapping[str, Sequence[MaterializerClassOrSource]],
     ]
-    F = TypeVar("F", bound=Callable[..., Any])
     P = ParamSpec("P")
     R = TypeVar("R")
 
@@ -57,7 +56,7 @@ logger = get_logger(__name__)
 
 
 @overload
-def step(_func: Callable[P, R]) -> "BaseStep[P,R]": ...
+def step(_func: "Callable[P, R]") -> "BaseStep[P, R]": ...
 
 
 @overload
@@ -78,11 +77,11 @@ def step(
     model: Optional["Model"] = None,
     retry: Optional["StepRetryConfig"] = None,
     substitutions: Optional[Dict[str, str]] = None,
-) -> Callable[[Callable[P, R]], "BaseStep[P,R]"]: ...
+) -> Callable[["Callable[P, R]"], "BaseStep[P,R]"]: ...
 
 
 def step(
-    _func: Optional[Callable[P, R]] = None,
+    _func: Optional["Callable[P, R]"] = None,
     *,
     name: Optional[str] = None,
     enable_cache: Optional[bool] = None,
@@ -99,7 +98,7 @@ def step(
     model: Optional["Model"] = None,
     retry: Optional["StepRetryConfig"] = None,
     substitutions: Optional[Dict[str, str]] = None,
-) -> Union["BaseStep[P,R]", Callable[[Callable[P, R]], "BaseStep[P,R]"]]:
+) -> Union["BaseStep[P,R]", Callable[["Callable[P, R]"], "BaseStep[P,R]"]]:
     """Decorator to create a ZenML step.
 
     Args:
@@ -136,7 +135,7 @@ def step(
         The step instance.
     """
 
-    def inner_decorator(func: Callable[P, R]) -> "BaseStep[P,R]":
+    def inner_decorator(func: "Callable[P, R]") -> "BaseStep[P,R]":
         from zenml.steps.decorated_step import _DecoratedStep
 
         class_: Type["BaseStep[P,R]"] = type(
