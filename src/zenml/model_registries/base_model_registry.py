@@ -71,6 +71,15 @@ class ModelRegistryModelMetadata(BaseModel):
     zenml_workspace: Optional[str] = None
 
     @property
+    def managed_by(self) -> str:
+        """Returns the managed by attribute.
+
+        Returns:
+            The managed by attribute.
+        """
+        return "zenml"
+
+    @property
     def custom_attributes(self) -> Dict[str, str]:
         """Returns a dictionary of custom attributes.
 
