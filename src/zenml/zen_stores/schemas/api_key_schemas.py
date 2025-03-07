@@ -19,7 +19,7 @@ from typing import Any, Optional, Tuple
 from uuid import UUID
 
 from passlib.context import CryptContext
-from sqlalchemy import TEXT, Column
+from sqlalchemy import TEXT, Column, UniqueConstraint
 from sqlmodel import Field, Relationship
 
 from zenml.models import (
@@ -42,6 +42,13 @@ class APIKeySchema(NamedSchema, table=True):
     """SQL Model for API keys."""
 
     __tablename__ = "api_key"
+    __table_args__ = (
+        UniqueConstraint(
+            "name",
+            "service_account_id",
+            name="unique_api_key_name_in_service_account",
+        ),
+    )
 
     description: str = Field(sa_column=Column(TEXT))
     key: str

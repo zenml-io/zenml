@@ -18,11 +18,12 @@ from typing import Optional, Union
 from uuid import UUID
 
 from passlib.context import CryptContext
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from zenml.enums import OAuthDeviceStatus
 from zenml.models.v2.base.base import (
     BaseRequest,
+    BaseUpdate,
 )
 from zenml.models.v2.base.scoped import (
     UserScopedFilter,
@@ -81,7 +82,7 @@ class OAuthDeviceInternalRequest(BaseRequest):
 # ------------------ Update Model ------------------
 
 
-class OAuthDeviceUpdate(BaseModel):
+class OAuthDeviceUpdate(BaseUpdate):
     """OAuth2 device update model."""
 
     locked: Optional[bool] = Field(

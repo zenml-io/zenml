@@ -35,9 +35,8 @@ class LogsRequest(BaseRequest):
 
     uri: str = Field(title="The uri of the logs file")
 
-    artifact_store_id: Union[str, UUID] = Field(
+    artifact_store_id: UUID = Field(
         title="The artifact store ID to associate the logs with.",
-        union_mode="left_to_right",
     )
 
     @field_validator("uri")

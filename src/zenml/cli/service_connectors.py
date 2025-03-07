@@ -1131,7 +1131,6 @@ def describe_service_connector(
             )
 
         connector = connector_client.to_response_model(
-            workspace=client.active_workspace,
             user=client.active_user,
         )
     else:

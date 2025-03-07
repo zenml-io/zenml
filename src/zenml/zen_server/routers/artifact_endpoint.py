@@ -50,7 +50,6 @@ artifact_router = APIRouter(
 
 @artifact_router.get(
     "",
-    response_model=Page[ArtifactResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -82,7 +81,6 @@ def list_artifacts(
 
 @artifact_router.post(
     "",
-    response_model=ArtifactResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -100,14 +98,12 @@ def create_artifact(
     """
     return verify_permissions_and_create_entity(
         request_model=artifact,
-        resource_type=ResourceType.ARTIFACT,
         create_method=zen_store().create_artifact,
     )
 
 
 @artifact_router.get(
     "/{artifact_id}",
-    response_model=ArtifactResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -135,7 +131,6 @@ def get_artifact(
 
 @artifact_router.put(
     "/{artifact_id}",
-    response_model=ArtifactResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions

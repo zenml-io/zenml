@@ -1778,7 +1778,6 @@ def print_service_connector_configuration(
             "AUTH METHOD": connector.auth_method,
             "RESOURCE TYPES": ", ".join(connector.emojified_resource_types),
             "RESOURCE NAME": connector.resource_id or "<multiple>",
-            "SECRET ID": connector.secret_id or "",
             "SESSION DURATION": expiration,
             "EXPIRES IN": (
                 expires_in(
@@ -1795,7 +1794,6 @@ def print_service_connector_configuration(
                 else "N/A"
             ),
             "OWNER": user_name,
-            "WORKSPACE": connector.workspace.name,
             "CREATED_AT": connector.created,
             "UPDATED_AT": connector.updated,
         }
@@ -2161,9 +2159,6 @@ def print_debug_stack() -> None:
     console.print(f"ID: {str(stack.id)}")
     if stack.user and stack.user.name and stack.user.id:  # mypy check
         console.print(f"User: {stack.user.name} / {str(stack.user.id)}")
-    console.print(
-        f"Workspace: {stack.workspace.name} / {str(stack.workspace.id)}"
-    )
 
     for component_type, components in stack.components.items():
         component = components[0]
@@ -2190,9 +2185,6 @@ def print_debug_stack() -> None:
             console.print(
                 f"User: {component_response.user.name} / {str(component_response.user.id)}"
             )
-        console.print(
-            f"Workspace: {component_response.workspace.name} / {str(component_response.workspace.id)}"
-        )
 
 
 def _component_display_name(
@@ -2275,22 +2267,13 @@ def print_pipeline_runs_table(
     print_table(runs_dicts)
 
 
-def warn_unsupported_non_default_workspace() -> None:
-    """Warning for unsupported non-default workspace."""
-    from zenml.constants import (
-        ENV_ZENML_DISABLE_WORKSPACE_WARNINGS,
-        handle_bool_env_var,
-    )
-
-    disable_warnings = handle_bool_env_var(
-        ENV_ZENML_DISABLE_WORKSPACE_WARNINGS, False
-    )
-    if not disable_warnings:
+def check_zenml_pro_workspace_availability() -> None:
+    """Check if the ZenML Pro workspace feature is available."""
+    client = Client()
+    if not client.zen_store.get_store_info().is_pro_server():
         warning(
-            "Currently the concept of `workspace` is not supported "
-            "within the Dashboard. The Project functionality will be "
-            "completed in the coming weeks. For the time being it "
-            "is recommended to stay within the `default` workspace."
+            "The ZenML workspace feature is available only on ZenML Pro. "
+            "Please visit https://zenml.io/pro to learn more."
         )
 
 

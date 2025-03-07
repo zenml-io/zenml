@@ -532,9 +532,11 @@ class Model(BaseModel):
             )
             model = mv.model
         else:
+            # TODO: This whole thing needs to be refactored as a get_or_create
+            # REST API call.
             try:
-                model = zenml_client.zen_store.get_model(
-                    model_name_or_id=self.name
+                model = zenml_client.get_model(
+                    model_name_or_id=self.name, bypass_lazy_loader=True
                 )
             except KeyError:
                 model_request = ModelRequest(
@@ -546,7 +548,6 @@ class Model(BaseModel):
                     limitations=self.limitations,
                     trade_offs=self.trade_offs,
                     ethics=self.ethics,
-                    user=zenml_client.active_user.id,
                     workspace=zenml_client.active_workspace.id,
                     save_models_to_registry=self.save_models_to_registry,
                 )
@@ -559,8 +560,8 @@ class Model(BaseModel):
                         f"New model `{self.name}` was created implicitly."
                     )
                 except EntityExistsError:
-                    model = zenml_client.zen_store.get_model(
-                        model_name_or_id=self.name
+                    model = zenml_client.get_model(
+                        model_name_or_id=self.name, bypass_lazy_loader=True
                     )
 
         self._model_id = model.id
@@ -701,7 +702,6 @@ class Model(BaseModel):
 
             client = Client()
             model_version_request = ModelVersionRequest(
-                user=client.active_user.id,
                 workspace=client.active_workspace.id,
                 name=str(self.version) if self.version else None,
                 description=self.description,

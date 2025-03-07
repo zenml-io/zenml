@@ -27,7 +27,6 @@ from typing import (
 from uuid import UUID
 
 from pydantic import (
-    BaseModel,
     ConfigDict,
     Field,
     field_validator,
@@ -39,6 +38,7 @@ from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ArtifactSaveType, ArtifactType, GenericFilterOps
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
+from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.filter import FilterGenerator, StrFilter
 from zenml.models.v2.base.scoped import (
     TaggableFilter,
@@ -165,7 +165,7 @@ class ArtifactVersionRequest(WorkspaceScopedRequest):
 # ------------------ Update Model ------------------
 
 
-class ArtifactVersionUpdate(BaseModel):
+class ArtifactVersionUpdate(BaseUpdate):
     """Artifact version update model."""
 
     name: Optional[str] = None
@@ -484,11 +484,11 @@ class ArtifactVersionFilter(WorkspaceScopedFilter, TaggableFilter):
         "model_version_id",
         "run_metadata",
     ]
-    CUSTOM_SORTING_OPTIONS = [
+    CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
         *WorkspaceScopedFilter.CUSTOM_SORTING_OPTIONS,
         *TaggableFilter.CUSTOM_SORTING_OPTIONS,
     ]
-    CLI_EXCLUDE_FIELDS = [
+    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
         *TaggableFilter.CLI_EXCLUDE_FIELDS,
     ]
@@ -544,10 +544,6 @@ class ArtifactVersionFilter(WorkspaceScopedFilter, TaggableFilter):
     has_custom_name: Optional[bool] = Field(
         default=None,
         description="Filter only artifacts with/without custom names.",
-    )
-    user: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="Name/ID of the user that created the artifact version.",
     )
     model: Optional[Union[UUID, str]] = Field(
         default=None,

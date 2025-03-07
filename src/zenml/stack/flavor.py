@@ -17,7 +17,6 @@ import os
 from abc import abstractmethod
 from typing import Any, Dict, Optional, Type, cast
 
-from zenml.client import Client
 from zenml.enums import StackComponentType
 from zenml.exceptions import CustomFlavorImportError
 from zenml.models import (
@@ -25,7 +24,6 @@ from zenml.models import (
     FlavorResponse,
     ServiceConnectorRequirements,
 )
-from zenml.models.v2.core.flavor import InternalFlavorRequest
 from zenml.stack.stack_component import StackComponent, StackComponentConfig
 from zenml.utils import source_utils
 from zenml.utils.package_utils import is_latest_zenml_version
@@ -167,8 +165,7 @@ class Flavor:
 
         Args:
             integration: The integration to use for the model.
-            is_custom: Whether the flavor is a custom flavor. Custom flavors
-                are then scoped by user and workspace
+            is_custom: Whether the flavor is a custom flavor.
 
         Returns:
             The model.
@@ -189,16 +186,8 @@ class Flavor:
             if connector_requirements
             else None
         )
-        user = None
-        workspace = None
-        if is_custom:
-            user = Client().active_user.id
-            workspace = Client().active_workspace.id
 
-        model_class = FlavorRequest if is_custom else InternalFlavorRequest
-        model = model_class(
-            user=user,
-            workspace=workspace,
+        model = FlavorRequest(
             name=self.name,
             type=self.type,
             source=source_utils.resolve(self.__class__).import_path,

@@ -117,7 +117,7 @@ def get_cached_step_run(cache_key: str) -> Optional["StepRunResponse"]:
     client = Client()
 
     cache_candidates = client.list_run_steps(
-        workspace_id=client.active_workspace.id,
+        workspace=client.active_workspace.id,
         cache_key=cache_key,
         status=ExecutionStatus.COMPLETED,
         sort_by=f"{SorterOps.DESCENDING}:created",

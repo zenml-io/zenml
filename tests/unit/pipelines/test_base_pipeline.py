@@ -525,11 +525,6 @@ def test_running_pipeline_creates_and_uses_placeholder_run(
 ):
     """Tests that running a pipeline creates a placeholder run and later
     replaces it with the actual run."""
-    mock_create_run = mocker.patch.object(
-        type(clean_client.zen_store),
-        "create_run",
-        wraps=clean_client.zen_store.create_run,
-    )
     mock_get_or_create_run = mocker.patch.object(
         type(clean_client.zen_store),
         "get_or_create_run",
@@ -541,11 +536,7 @@ def test_running_pipeline_creates_and_uses_placeholder_run(
 
     pipeline_instance()
 
-    mock_create_run.assert_called_once()
-    mock_get_or_create_run.assert_called_once()
-
-    placeholder_run_request = mock_create_run.call_args[0][0]  # First arg
-    assert is_placeholder_request(placeholder_run_request)
+    assert mock_get_or_create_run.call_count == 2
 
     replace_request = mock_get_or_create_run.call_args[0][0]  # First arg
     assert not is_placeholder_request(replace_request)
@@ -569,11 +560,6 @@ def test_rerunning_deloyment_does_not_fail(
     empty_pipeline,  # noqa: F811
 ):
     """Tests that a deployment can be re-run without issues."""
-    mock_create_run = mocker.patch.object(
-        type(clean_client.zen_store),
-        "create_run",
-        wraps=clean_client.zen_store.create_run,
-    )
     mock_get_or_create_run = mocker.patch.object(
         type(clean_client.zen_store),
         "get_or_create_run",
@@ -592,13 +578,12 @@ def test_rerunning_deloyment_does_not_fail(
     # Simulate re-running the deployment
     stack.deploy_pipeline(deployment)
 
-    assert mock_create_run.call_count == 2
-    assert mock_get_or_create_run.call_count == 2
+    assert mock_get_or_create_run.call_count == 3
 
-    placeholder_request = mock_create_run.call_args_list[0][0][0]
+    placeholder_request = mock_get_or_create_run.call_args_list[0][0][0]
     assert is_placeholder_request(placeholder_request)
 
-    run_request = mock_create_run.call_args_list[1][0][0]
+    run_request = mock_get_or_create_run.call_args_list[1][0][0]
     assert not is_placeholder_request(run_request)
 
     runs = clean_client.list_pipeline_runs(deployment_id=deployment.id)
@@ -612,10 +597,10 @@ def test_failure_during_initialization_marks_placeholder_run_as_failed(
 ):
     """Tests that when a pipeline run fails during initialization, the
     placeholder run is marked as failed."""
-    mock_create_run = mocker.patch.object(
+    mock_get_or_create_run = mocker.patch.object(
         type(clean_client.zen_store),
-        "create_run",
-        wraps=clean_client.zen_store.create_run,
+        "get_or_create_run",
+        wraps=clean_client.zen_store.get_or_create_run,
     )
 
     pipeline_instance = empty_pipeline
@@ -628,7 +613,7 @@ def test_failure_during_initialization_marks_placeholder_run_as_failed(
     with pytest.raises(RuntimeError):
         pipeline_instance()
 
-    mock_create_run.assert_called_once()
+    mock_get_or_create_run.assert_called_once()
 
     runs = clean_client.list_pipeline_runs()
     assert len(runs) == 1
@@ -642,10 +627,10 @@ def test_running_scheduled_pipeline_does_not_create_placeholder_run(
 ):
     """Tests that running a scheduled pipeline does not create a placeholder run
     in the database."""
-    mock_create_run = mocker.patch.object(
+    mock_get_or_create_run = mocker.patch.object(
         type(clean_client.zen_store),
-        "create_run",
-        wraps=clean_client.zen_store.create_run,
+        "get_or_create_run",
+        wraps=clean_client.zen_store.get_or_create_run,
     )
     pipeline_instance = empty_pipeline
 
@@ -658,8 +643,8 @@ def test_running_scheduled_pipeline_does_not_create_placeholder_run(
         )
         scheduled_pipeline_instance()
 
-    mock_create_run.assert_called_once()
-    run_request = mock_create_run.call_args[0][0]  # First arg
+    mock_get_or_create_run.assert_called_once()
+    run_request = mock_get_or_create_run.call_args[0][0]  # First arg
     assert not is_placeholder_request(run_request)
 
 
