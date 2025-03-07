@@ -127,8 +127,7 @@ class GitLabCodeRepository(BaseCodeRepository):
             repo_sub_directory: The sub directory to download from.
         """
         contents = self.gitlab_project.repository_tree(
-            ref=commit,
-            path=repo_sub_directory or "",
+            ref=commit, path=repo_sub_directory or "", iterator=True
         )
         for content in contents:
             logger.debug(f"Processing {content['path']}")
