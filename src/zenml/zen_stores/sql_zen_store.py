@@ -986,6 +986,7 @@ class SqlZenStore(BaseZenStore):
             RuntimeError: if the schema does not have a `to_model` method.
         """
         query = filter_model.apply_filter(query=query, table=table)
+        query = filter_model.apply_sorting(query=query, table=table)
         query = query.distinct()
 
         # Get the total amount of items in the database for a given query
@@ -1004,9 +1005,6 @@ class SqlZenStore(BaseZenStore):
                 total = result
             else:
                 total = 0
-
-        # Sorting
-        query = filter_model.apply_sorting(query=query, table=table)
 
         # Get the total amount of pages in the database for a given query
         if total == 0:
