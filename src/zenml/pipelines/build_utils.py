@@ -15,6 +15,7 @@
 
 import hashlib
 import platform
+import time
 from typing import (
     TYPE_CHECKING,
     Dict,
@@ -327,6 +328,7 @@ def create_pipeline_build(
         "Building Docker image(s) for pipeline `%s`.",
         deployment.pipeline_configuration.name,
     )
+    start_time = time.time()
 
     docker_image_builder = PipelineDockerImageBuilder()
     images: Dict[str, BuildItem] = {}
@@ -409,6 +411,7 @@ def create_pipeline_build(
 
     logger.info("Finished building Docker image(s).")
 
+    duration = round(time.time() - start_time)
     is_local = stack.container_registry is None
     contains_code = any(item.contains_code for item in images.values())
     build_checksum = compute_build_checksum(
@@ -427,6 +430,7 @@ def create_pipeline_build(
         python_version=platform.python_version(),
         checksum=build_checksum,
         stack_checksum=stack_checksum,
+        duration=duration,
     )
     return client.zen_store.create_build(build_request)
 

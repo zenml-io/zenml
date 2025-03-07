@@ -72,6 +72,9 @@ class PipelineBuildBase(BaseZenModel):
     python_version: Optional[str] = Field(
         title="The Python version used for this build.", default=None
     )
+    duration: Optional[int] = Field(
+        title="The duration of the build in seconds.", default=None
+    )
 
     # Helper methods
     @property
@@ -222,6 +225,9 @@ class PipelineBuildResponseMetadata(WorkspaceScopedResponseMetadata):
     )
     contains_code: bool = Field(
         title="Whether any image of the build contains user code.",
+    )
+    duration: Optional[int] = Field(
+        title="The duration of the build in seconds.", default=None
     )
 
 
@@ -453,6 +459,15 @@ class PipelineBuildResponse(
             the value of the property.
         """
         return self.get_metadata().contains_code
+
+    @property
+    def duration(self) -> Optional[int]:
+        """The `duration` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().duration
 
 
 # ------------------ Filter Model ------------------
