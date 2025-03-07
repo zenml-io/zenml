@@ -77,6 +77,16 @@ class DummyGitLabCodeRepository(GitLabCodeRepository):
             "https://private-gitlab.example.com/example/test.invalid",
             False,
         ),
+        (
+            CONFIG_II,
+            "https://gitlab-ci-token:[MASKED]@private-gitlab.example.com/example/test.git",
+            True,
+        ),
+        (
+            CONFIG_II,
+            "https://gitlab-ci-token:[MASKED]@private-gitlab.example.com/example/test.invalid",
+            False,
+        ),
     ],
 )
 def test_check_remote_url(
