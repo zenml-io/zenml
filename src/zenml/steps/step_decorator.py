@@ -20,13 +20,14 @@ from typing import (
     Dict,
     Mapping,
     Optional,
-    ParamSpec,
     Sequence,
     Type,
     TypeVar,
     Union,
     overload,
 )
+
+from typing_extensions import ParamSpec
 
 from zenml.logger import get_logger
 

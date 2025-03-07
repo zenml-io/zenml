@@ -24,7 +24,6 @@ from typing import (
     Callable,
     Dict,
     Optional,
-    ParamSpec,
     Tuple,
     TypeVar,
     Union,
@@ -32,7 +31,7 @@ from typing import (
 from uuid import UUID
 
 from pydantic import BaseModel
-from typing_extensions import Annotated
+from typing_extensions import Annotated, ParamSpec
 
 from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.client import Client

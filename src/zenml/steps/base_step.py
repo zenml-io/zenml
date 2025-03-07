@@ -26,7 +26,6 @@ from typing import (
     List,
     Mapping,
     Optional,
-    ParamSpec,
     Sequence,
     Tuple,
     Type,
@@ -35,6 +34,7 @@ from typing import (
 )
 
 from pydantic import BaseModel, ConfigDict, ValidationError
+from typing_extensions import ParamSpec
 
 from zenml.client_lazy_loader import ClientLazyLoader
 from zenml.config.retry_config import StepRetryConfig

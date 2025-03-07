@@ -22,7 +22,6 @@ from typing import (
     Callable,
     Dict,
     Optional,
-    ParamSpec,
     TypeVar,
     Union,
     cast,
@@ -34,6 +33,7 @@ from accelerate.commands.launch import (
     launch_command,
     launch_command_parser,
 )
+from typing_extensions import ParamSpec
 
 from zenml import get_pipeline_context
 from zenml.logger import get_logger
