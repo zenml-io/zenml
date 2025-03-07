@@ -4354,11 +4354,10 @@ class TestModelVersion:
             assert mv1 in mvs
             assert mv2 in mvs
 
-    def test_list_by_tags(self):
+    def test_list_by_tags(self, clean_client: "Client"):
         """Test list using tag filter."""
         with ModelContext() as model:
-            zs = Client().zen_store
-            mv1 = zs.create_model_version(
+            mv1 = clean_client.zen_store.create_model_version(
                 ModelVersionRequest(
                     workspace=model.workspace.id,
                     model=model.id,
@@ -4366,7 +4365,7 @@ class TestModelVersion:
                     tags=["tag1", "tag2"],
                 )
             )
-            mv2 = zs.create_model_version(
+            mv2 = clean_client.zen_store.create_model_version(
                 ModelVersionRequest(
                     workspace=model.workspace.id,
                     model=model.id,
@@ -4374,7 +4373,7 @@ class TestModelVersion:
                     tags=["tag3", "tag2"],
                 )
             )
-            mvs = zs.list_model_versions(
+            mvs = clean_client.zen_store.list_model_versions(
                 model_version_filter_model=ModelVersionFilter(
                     tag="tag1",
                     model=model.id,
@@ -4383,7 +4382,7 @@ class TestModelVersion:
             assert len(mvs) == 1
             assert mv1 in mvs
 
-            mvs = zs.list_model_versions(
+            mvs = clean_client.zen_store.list_model_versions(
                 model_version_filter_model=ModelVersionFilter(
                     tag="tag2",
                     model=model.id,
@@ -4393,7 +4392,7 @@ class TestModelVersion:
             assert mv1 in mvs
             assert mv2 in mvs
 
-            mvs = zs.list_model_versions(
+            mvs = clean_client.zen_store.list_model_versions(
                 model_version_filter_model=ModelVersionFilter(
                     tag="tag3",
                     model=model.id,
@@ -4402,7 +4401,7 @@ class TestModelVersion:
             assert len(mvs) == 1
             assert mv2 in mvs
 
-            mvs = zs.list_model_versions(
+            mvs = clean_client.zen_store.list_model_versions(
                 model_version_filter_model=ModelVersionFilter(
                     tag="non_existent_tag",
                     model=model.id,
