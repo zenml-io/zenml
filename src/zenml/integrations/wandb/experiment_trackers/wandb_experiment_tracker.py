@@ -146,6 +146,9 @@ class WandbExperimentTracker(BaseExperimentTracker):
             f"Initializing wandb with entity {self.config.entity}, project "
             f"name: {self.config.project_name}, run_name: {run_name}."
         )
+        settings = cast(
+            WandbExperimentTrackerSettings, self.get_settings(info)
+        )
         wandb.init(
             entity=self.config.entity,
             project=self.config.project_name,
@@ -156,5 +159,10 @@ class WandbExperimentTracker(BaseExperimentTracker):
 
         if settings.enable_weave:
             import weave
-
-            weave.init(project_name=self.config.project_name)
+            if self.config.project_name:
+                weave.init(project_name=self.config.project_name)
+            else:
+                logger.info(
+                    "Weave enabled but no project_name specified. "
+                    "Skipping weave initialization."
+                )
