@@ -133,6 +133,7 @@ class WandbExperimentTracker(BaseExperimentTracker):
         self,
         run_name: str,
         tags: List[str],
+        info: Optional["StepRunInfo"] = None,
         settings: Union["Settings", Dict[str, Any], None] = None,
     ) -> None:
         """Initializes a wandb run.
@@ -140,14 +141,16 @@ class WandbExperimentTracker(BaseExperimentTracker):
         Args:
             run_name: Name of the wandb run to create.
             tags: Tags to attach to the wandb run.
+            info: Optional step run information.
             settings: Additional settings for the wandb run.
         """
         logger.info(
             f"Initializing wandb with entity {self.config.entity}, project "
             f"name: {self.config.project_name}, run_name: {run_name}."
         )
-        settings = cast(
-            WandbExperimentTrackerSettings, self.get_settings(info)
+        tracker_settings = cast(
+            WandbExperimentTrackerSettings,
+            self.get_settings(info) if info else settings,
         )
         wandb.init(
             entity=self.config.entity,
@@ -157,8 +160,13 @@ class WandbExperimentTracker(BaseExperimentTracker):
             settings=settings,
         )
 
-        if settings.enable_weave:
+        if (
+            tracker_settings
+            and hasattr(tracker_settings, "enable_weave")
+            and tracker_settings.enable_weave
+        ):
             import weave
+
             if self.config.project_name:
                 weave.init(project_name=self.config.project_name)
             else:
