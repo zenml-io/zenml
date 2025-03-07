@@ -1138,7 +1138,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
     def add_step_invocation(
         self,
-        step: "BaseStep[Any]",
+        step: "BaseStep[..., Any]",
         input_artifacts: Dict[str, StepArtifact],
         external_artifacts: Dict[
             str, Union["ExternalArtifact", "ArtifactVersionResponse"]
@@ -1208,7 +1208,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
     def _compute_invocation_id(
         self,
-        step: "BaseStep[Any]",
+        step: "BaseStep[..., Any]",
         custom_id: Optional[str] = None,
         allow_suffix: bool = True,
     ) -> str:

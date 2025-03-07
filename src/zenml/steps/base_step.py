@@ -16,17 +16,17 @@
 import copy
 import hashlib
 import inspect
+from abc import abstractmethod
 from collections import defaultdict
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
     Dict,
     Generic,
     List,
     Mapping,
     Optional,
-    Protocol,
+    ParamSpec,
     Sequence,
     Tuple,
     Type,
@@ -93,24 +93,11 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-T = TypeVar("T", bound="BaseStep[Any]")
-F = TypeVar("F", bound=Callable[..., Any])
+P = ParamSpec("P")
+R = TypeVar("R")
 
 
-class _AbstractEntrypoint(Protocol[F]):
-    entrypoint: F
-    """Abstract method for core step logic.
-
-        Args:
-            *args: Positional arguments passed to the step.
-            **kwargs: Keyword arguments passed to the step.
-
-        Returns:
-            The output of the step.
-    """
-
-
-class BaseStep(Generic[F], _AbstractEntrypoint[F]):
+class BaseStep(Generic[P, R]):
     """Abstract base class for all ZenML steps."""
 
     def __init__(
@@ -227,8 +214,20 @@ class BaseStep(Generic[F], _AbstractEntrypoint[F]):
 
         notebook_utils.try_to_save_notebook_cell_code(self.source_object)
 
+    @abstractmethod
+    def entrypoint(self, *args: P.args, **kwargs: P.kwargs) -> R:
+        """Abstract method for core step logic.
+
+        Args:
+            *args: Positional arguments passed to the step.
+            **kwargs: Keyword arguments passed to the step.
+
+        Returns:
+            The output of the step.
+        """
+
     @classmethod
-    def load_from_source(cls, source: Union[Source, str]) -> "BaseStep[F]":
+    def load_from_source(cls, source: Union[Source, str]) -> "BaseStep[P, R]":
         """Loads a step from source.
 
         Args:
@@ -585,7 +584,7 @@ class BaseStep(Generic[F], _AbstractEntrypoint[F]):
         return self._configuration
 
     def configure(
-        self: T,
+        self: "BaseStep[P,R]",
         enable_cache: Optional[bool] = None,
         enable_artifact_metadata: Optional[bool] = None,
         enable_artifact_visualization: Optional[bool] = None,
@@ -604,7 +603,7 @@ class BaseStep(Generic[F], _AbstractEntrypoint[F]):
         merge: bool = True,
         retry: Optional[StepRetryConfig] = None,
         substitutions: Optional[Dict[str, str]] = None,
-    ) -> T:
+    ) -> "BaseStep[P,R]":
         """Configures the step.
 
         Configuration merging example:
@@ -737,7 +736,7 @@ class BaseStep(Generic[F], _AbstractEntrypoint[F]):
         model: Optional["Model"] = None,
         merge: bool = True,
         substitutions: Optional[Dict[str, str]] = None,
-    ) -> "BaseStep[F]":
+    ) -> "BaseStep[P, R]":
         """Copies the step and applies the given configurations.
 
         Args:
@@ -793,7 +792,7 @@ class BaseStep(Generic[F], _AbstractEntrypoint[F]):
         )
         return step_copy
 
-    def copy(self) -> "BaseStep[F]":
+    def copy(self) -> "BaseStep[P, R]":
         """Copies the step.
 
         Returns:

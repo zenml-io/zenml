@@ -17,7 +17,17 @@
 """Step function to run any ZenML step using Accelerate."""
 
 import functools
-from typing import Any, Callable, Dict, Optional, TypeVar, Union, cast
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Optional,
+    ParamSpec,
+    TypeVar,
+    Union,
+    cast,
+    overload,
+)
 
 import cloudpickle as pickle
 from accelerate.commands.launch import (
@@ -32,13 +42,27 @@ from zenml.utils.function_utils import _cli_arg_name, create_cli_wrapped_script
 
 logger = get_logger(__name__)
 F = TypeVar("F", bound=Callable[..., Any])
-T = TypeVar("T", bound=BaseStep[Any])
+P = ParamSpec("P")
+R = TypeVar("R")
+
+
+@overload
+def run_with_accelerate(
+    **accelerate_launch_kwargs: Any,
+) -> Callable[[BaseStep[P, R]], BaseStep[P, R]]: ...
+
+
+@overload
+def run_with_accelerate(
+    step_function_top_level: BaseStep[P, R],
+    /,
+) -> BaseStep[P, R]: ...
 
 
 def run_with_accelerate(
-    step_function_top_level: Optional[T] = None,
+    step_function_top_level: Optional[BaseStep[P, R]] = None,
     **accelerate_launch_kwargs: Any,
-) -> Union[Callable[[T], T], T]:
+) -> Union[Callable[[BaseStep[P, R]], BaseStep[P, R]], BaseStep[P, R]]:
     """Run a function with accelerate.
 
     Accelerate package: https://huggingface.co/docs/accelerate/en/index
@@ -71,9 +95,10 @@ def run_with_accelerate(
         The accelerate-enabled version of the step.
     """
 
-    def _decorator(step_function: T) -> T:
+    def _decorator(step_function: BaseStep[P, R]) -> BaseStep[P, R]:
         def _wrapper(
-            entrypoint: F, accelerate_launch_kwargs: Dict[str, Any]
+            entrypoint: F,
+            accelerate_launch_kwargs: Dict[str, Any],
         ) -> F:
             @functools.wraps(entrypoint)
             def inner(*args: Any, **kwargs: Any) -> Any:

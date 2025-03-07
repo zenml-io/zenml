@@ -24,7 +24,9 @@ from typing import (
     Callable,
     Dict,
     Optional,
+    ParamSpec,
     Tuple,
+    TypeVar,
     Union,
 )
 from uuid import UUID
@@ -48,6 +50,9 @@ from zenml.utils import settings_utils, source_code_utils, typing_utils
 
 if TYPE_CHECKING:
     from zenml.steps import BaseStep
+
+    P = ParamSpec("P")
+    R = TypeVar("R")
 
 
 logger = get_logger(__name__)
@@ -499,7 +504,7 @@ def log_step_metadata(
 
 
 def run_as_single_step_pipeline(
-    __step: "BaseStep[Any]", *args: Any, **kwargs: Any
+    __step: "BaseStep[P,R]", *args: Any, **kwargs: Any
 ) -> Any:
     """Runs the step as a single step pipeline.
 

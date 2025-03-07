@@ -185,7 +185,7 @@ class StepRunRequestFactory:
         """
         from zenml.steps.base_step import BaseStep
 
-        step_instance = BaseStep[Any].load_from_source(step.spec.source)
+        step_instance = BaseStep[..., Any].load_from_source(step.spec.source)
 
         docstring = step_instance.docstring
         if docstring and len(docstring) > TEXT_FIELD_MAX_LENGTH:
