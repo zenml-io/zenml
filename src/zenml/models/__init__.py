@@ -398,6 +398,9 @@ from zenml.models.v2.misc.stack_deployment import (
     StackDeploymentConfig,
     StackDeploymentInfo,
 )
+from zenml.models.v2.misc.tag import (
+    TagResource,
+)
 from zenml.models.v2.misc.info_models import (
     ComponentInfo,
     ServiceConnectorInfo,
@@ -443,6 +446,7 @@ PipelineDeploymentRequest.model_rebuild()
 PipelineDeploymentResponseBody.model_rebuild()
 PipelineDeploymentResponseMetadata.model_rebuild()
 PipelineDeploymentResponseResources.model_rebuild()
+PipelineRunRequest.model_rebuild()
 PipelineRunResponseBody.model_rebuild()
 PipelineRunResponseMetadata.model_rebuild()
 PipelineRunResponseResources.model_rebuild()
@@ -763,6 +767,7 @@ __all__ = [
     "ComponentInfo",
     "ServiceConnectorInfo",
     "ServiceConnectorResourcesInfo",
+    "TagResource",
     "ResourcesInfo",
     "RunMetadataEntry",
     "RunMetadataResource",

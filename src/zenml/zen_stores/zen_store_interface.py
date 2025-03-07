@@ -132,6 +132,8 @@ from zenml.models import (
     StepRunUpdate,
     TagFilter,
     TagRequest,
+    TagResourceRequest,
+    TagResourceResponse,
     TagResponse,
     TagUpdate,
     TriggerExecutionFilter,
@@ -2477,7 +2479,7 @@ class ZenStoreInterface(ABC):
         trigger_execution_id: UUID,
         hydrate: bool = True,
     ) -> TriggerExecutionResponse:
-        """Get an trigger execution by ID.
+        """Get a trigger execution by ID.
 
         Args:
             trigger_execution_id: The ID of the trigger execution to get.
@@ -2978,9 +2980,7 @@ class ZenStoreInterface(ABC):
             KeyError: specified ID not found.
         """
 
-    #################
-    # Tags
-    #################
+    # -------------------- Tags --------------------
 
     @abstractmethod
     def create_tag(self, tag: TagRequest) -> TagResponse:
@@ -3064,4 +3064,53 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: If the tag is not found
+        """
+
+    # -------------------- Tag Resources --------------------
+
+    @abstractmethod
+    def create_tag_resource(
+        self, tag_resource: TagResourceRequest
+    ) -> TagResourceResponse:
+        """Create a new tag resource relationship.
+
+        Args:
+            tag_resource: The tag resource relationship to be created.
+
+        Returns:
+            The newly created tag resource relationship.
+        """
+
+    @abstractmethod
+    def batch_create_tag_resource(
+        self, tag_resources: List[TagResourceRequest]
+    ) -> List[TagResourceResponse]:
+        """Create a new tag resource relationship.
+
+        Args:
+            tag_resources: The tag resource relationships to be created.
+
+        Returns:
+            The newly created tag resource relationships.
+        """
+
+    @abstractmethod
+    def delete_tag_resource(
+        self,
+        tag_resource: TagResourceRequest,
+    ) -> None:
+        """Delete a tag resource relationship.
+
+        Args:
+            tag_resource: The tag resource relationship to delete.
+        """
+
+    @abstractmethod
+    def batch_delete_tag_resource(
+        self, tag_resources: List[TagResourceRequest]
+    ) -> None:
+        """Delete a batch of tag resource relationships.
+
+        Args:
+            tag_resources: The tag resource relationships to be deleted.
         """

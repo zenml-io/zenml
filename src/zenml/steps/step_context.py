@@ -384,6 +384,25 @@ class StepContext(metaclass=SingletonMetaClass):
             output.tags = []
         output.tags += tags
 
+    def remove_output_tags(
+        self,
+        tags: List[str],
+        output_name: Optional[str] = None,
+    ) -> None:
+        """Removes tags for a given step output.
+
+        Args:
+            tags: The tags to remove.
+            output_name: Optional name of the output for which to remove the
+                tags. If no name is given and the step only has a single
+                output, the tags of this output will be removed. If the
+                step has multiple outputs, an exception will be raised.
+        """
+        output = self._get_output(output_name)
+        if not output.tags:
+            return
+        output.tags = [tag for tag in output.tags if tag not in tags]
+
 
 class StepContextOutput:
     """Represents a step output in the step context."""
