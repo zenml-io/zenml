@@ -99,6 +99,11 @@ def generate_cache_key(
         hash_.update(key.encode())
         hash_.update(str(value).encode())
 
+    # User-defined environment variables
+    for key, value in sorted(step.config.environment.items()):
+        hash_.update(key.encode())
+        hash_.update(str(value).encode())
+
     return hash_.hexdigest()
 
 

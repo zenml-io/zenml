@@ -110,6 +110,7 @@ class BaseStep:
         output_materializers: Optional[
             "OutputMaterializersSpecification"
         ] = None,
+        environment: Optional[Dict[str, Any]] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
@@ -135,7 +136,8 @@ class BaseStep:
                 given as a dict, the keys must be a subset of the output names
                 of this step. If a single value (type or string) is given, the
                 materializer will be used for all outputs.
-            settings: settings for this step.
+            environment: Environment variables to set when running this step.
+            settings: Settings for this step.
             extra: Extra configurations for this step.
             on_failure: Callback function in event of failure of the step. Can
                 be a function with a single argument of type `BaseException`, or
@@ -200,6 +202,7 @@ class BaseStep:
             step_operator=step_operator,
             output_materializers=output_materializers,
             parameters=parameters,
+            environment=environment,
             settings=settings,
             extra=extra,
             on_failure=on_failure,
@@ -592,6 +595,7 @@ class BaseStep:
         output_materializers: Optional[
             "OutputMaterializersSpecification"
         ] = None,
+        environment: Optional[Dict[str, Any]] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
@@ -627,7 +631,8 @@ class BaseStep:
                 given as a dict, the keys must be a subset of the output names
                 of this step. If a single value (type or string) is given, the
                 materializer will be used for all outputs.
-            settings: settings for this step.
+            environment: Environment variables to set when running this step.
+            settings: Settings for this step.
             extra: Extra configurations for this step.
             on_failure: Callback function in event of failure of the step. Can
                 be a function with a single argument of type `BaseException`, or
@@ -700,6 +705,7 @@ class BaseStep:
                 "experiment_tracker": experiment_tracker,
                 "step_operator": step_operator,
                 "parameters": parameters,
+                "environment": environment,
                 "settings": settings,
                 "outputs": outputs or None,
                 "extra": extra,
@@ -726,6 +732,7 @@ class BaseStep:
         output_materializers: Optional[
             "OutputMaterializersSpecification"
         ] = None,
+        environment: Optional[Dict[str, Any]] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
@@ -750,7 +757,8 @@ class BaseStep:
                 given as a dict, the keys must be a subset of the output names
                 of this step. If a single value (type or string) is given, the
                 materializer will be used for all outputs.
-            settings: settings for this step.
+            environment: Environment variables to set when running this step.
+            settings: Settings for this step.
             extra: Extra configurations for this step.
             on_failure: Callback function in event of failure of the step. Can
                 be a function with a single argument of type `BaseException`, or
@@ -779,6 +787,7 @@ class BaseStep:
             step_operator=step_operator,
             parameters=parameters,
             output_materializers=output_materializers,
+            environment=environment,
             settings=settings,
             extra=extra,
             on_failure=on_failure,
