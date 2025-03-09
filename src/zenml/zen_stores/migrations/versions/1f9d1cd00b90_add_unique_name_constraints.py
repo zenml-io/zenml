@@ -24,7 +24,14 @@ depends_on = None
 def resolve_duplicate_names(
     table_name: str, other_columns: list[str], session: Session
 ) -> None:
-    """Resolve duplicate entities."""
+    """Resolve duplicate entities.
+
+    Args:
+        table_name: The name of the table to resolve duplicate entities for.
+        other_columns: The columns that are part of the unique constraint,
+            excluding the name column.
+        session: The SQLAlchemy session to use.
+    """
     columns = ["name"] + other_columns
     duplicates = session.execute(
         sa.text(f"""
