@@ -74,7 +74,6 @@ class WandbExperimentTracker(BaseExperimentTracker):
         wandb_run_name = (
             settings.run_name or f"{info.run_name}_{info.pipeline_step_name}"
         )
-        breakpoint()
         self._initialize_wandb(run_name=wandb_run_name, tags=tags, info=info)
 
     def get_step_run_metadata(
@@ -165,4 +164,13 @@ class WandbExperimentTracker(BaseExperimentTracker):
                 logger.info(
                     "Weave enabled but no project_name specified. "
                     "Skipping weave initialization."
+                )
+        elif settings and not settings.enable_weave:
+            import weave
+
+            logger.info("Disabling weave")
+            if self.config.project_name:
+                weave.init(
+                    project_name=self.config.project_name,
+                    settings={"disabled": True},
                 )
