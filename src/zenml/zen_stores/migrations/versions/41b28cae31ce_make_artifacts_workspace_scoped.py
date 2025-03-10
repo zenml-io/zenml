@@ -77,10 +77,12 @@ def upgrade() -> None:
     bind = op.get_bind()
     session = Session(bind=bind)
 
-    # Set the artifact owner to the owner of the latest artifact version
-    session.execute(
-        sa.text(
-            """
+    # Set the artifact owner to the owner of the latest artifact version.
+    # NOTE: we skip this for SQLite because the subquery will fail.
+    if bind.dialect.name != "sqlite":
+        session.execute(
+            sa.text(
+                """
                 UPDATE artifact a
                 SET user_id = (
                     SELECT v.user_id
@@ -90,8 +92,8 @@ def upgrade() -> None:
                     LIMIT 1
                 )
             """
-        ),
-    )
+            ),
+        )
 
     # Now make workspace_id non-nullable
     with op.batch_alter_table("artifact", schema=None) as batch_op:
