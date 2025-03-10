@@ -687,7 +687,7 @@ class Model(BaseModel):
                     "model version in given stage exists. It might be missing, if "
                     "the pipeline promoting model version to this stage failed,"
                     " as an example. You can explore model versions using "
-                    f"`zenml model version list -n {self.name}` CLI command."
+                    f"`zenml model version list {self.name}` CLI command."
                 )
             if str(self.version).isnumeric():
                 raise RuntimeError(
@@ -697,7 +697,7 @@ class Model(BaseModel):
                     "model version with given number exists. It might be missing, if "
                     "the pipeline creating model version failed,"
                     " as an example. You can explore model versions using "
-                    f"`zenml model version list -n {self.name}` CLI command."
+                    f"`zenml model version list {self.name}` CLI command."
                 )
 
             client = Client()

@@ -88,11 +88,11 @@ def list_run_steps(
     # A workspace scoped request must always be scoped to a specific
     # workspace. This is required for the RBAC check to work.
     set_filter_workspace_scope(step_run_filter_model)
-    assert step_run_filter_model.scope_workspace
+    assert isinstance(step_run_filter_model.workspace, UUID)
 
     allowed_pipeline_run_ids = get_allowed_resource_ids(
         resource_type=ResourceType.PIPELINE_RUN,
-        workspace_id=step_run_filter_model.scope_workspace,
+        workspace_id=step_run_filter_model.workspace,
     )
     step_run_filter_model.configure_rbac(
         authenticated_user_id=auth_context.user.id,

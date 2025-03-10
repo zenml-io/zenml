@@ -84,11 +84,11 @@ def list_artifact_versions(
     # A workspace scoped request must always be scoped to a specific
     # workspace. This is required for the RBAC check to work.
     set_filter_workspace_scope(artifact_version_filter_model)
-    assert artifact_version_filter_model.scope_workspace
+    assert isinstance(artifact_version_filter_model.workspace, UUID)
 
     allowed_artifact_ids = get_allowed_resource_ids(
         resource_type=ResourceType.ARTIFACT,
-        workspace_id=artifact_version_filter_model.scope_workspace,
+        workspace_id=artifact_version_filter_model.workspace,
     )
     artifact_version_filter_model.configure_rbac(
         authenticated_user_id=auth_context.user.id,

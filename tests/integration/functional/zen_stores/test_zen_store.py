@@ -2821,7 +2821,7 @@ def test_count_runs():
     if not isinstance(store, SqlZenStore):
         pytest.skip("Test only applies to SQL store")
     active_workspace = client.active_workspace
-    filter_model = PipelineRunFilter(scope_workspace=active_workspace.id)
+    filter_model = PipelineRunFilter(workspace=active_workspace.id)
     num_runs = store.list_runs(filter_model).total
 
     # At baseline this should be the same
@@ -2831,7 +2831,7 @@ def test_count_runs():
         assert (
             store.count_runs(filter_model)
             == store.list_runs(
-                PipelineRunFilter(scope_workspace=active_workspace.id)
+                PipelineRunFilter(workspace=active_workspace.id)
             ).total
         )
         assert store.count_runs(filter_model) == num_runs + 5

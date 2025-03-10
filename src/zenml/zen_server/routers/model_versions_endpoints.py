@@ -162,11 +162,11 @@ def list_model_versions(
     # A workspace scoped request must always be scoped to a specific
     # workspace. This is required for the RBAC check to work.
     set_filter_workspace_scope(model_version_filter_model)
-    assert model_version_filter_model.scope_workspace
+    assert isinstance(model_version_filter_model.workspace, UUID)
 
     model = zen_store().get_model_by_name_or_id(
         model_version_filter_model.model,
-        workspace=model_version_filter_model.scope_workspace,
+        workspace=model_version_filter_model.workspace,
     )
 
     # Check read permissions on the model

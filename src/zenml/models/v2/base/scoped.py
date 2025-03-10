@@ -350,33 +350,15 @@ class WorkspaceScopedFilter(UserScopedFilter):
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *UserScopedFilter.FILTER_EXCLUDE_FIELDS,
         "workspace",
-        "scope_workspace",
     ]
-    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *UserScopedFilter.CLI_EXCLUDE_FIELDS,
-        "scope_workspace",
-    ]
-    CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
-        *UserScopedFilter.CUSTOM_SORTING_OPTIONS,
-        "workspace",
-    ]
-    scope_workspace: Optional[UUID] = Field(
-        default=None,
-        description="The workspace to scope this query to.",
-    )
     workspace: Optional[Union[UUID, str]] = Field(
         default=None,
-        description="Name/ID of the workspace that this entity belongs to.",
+        description="Name/ID of the workspace which the search is scoped to. "
+        "This field must always be set and is always applied in addition to "
+        "the other filters, regardless of the value of the "
+        "logical_operator field.",
         union_mode="left_to_right",
     )
-
-    def set_scope_workspace(self, workspace_id: UUID) -> None:
-        """Set the workspace to scope this response.
-
-        Args:
-            workspace_id: The workspace to scope this response to.
-        """
-        self.scope_workspace = workspace_id
 
     def get_custom_filters(
         self, table: Type["AnySchema"]
@@ -422,62 +404,33 @@ class WorkspaceScopedFilter(UserScopedFilter):
             The query with filter applied.
 
         Raises:
-            RuntimeError: If the workspace scope is missing from the filter.
+            ValueError: If the workspace scope is missing from the filter.
         """
-        from sqlmodel import or_
-
         query = super().apply_filter(query=query, table=table)
 
-        if not self.scope_workspace:
-            raise RuntimeError("Workspace scope missing from the filter.")
+        # The workspace scope must always be set and must be a UUID. If the
+        # client sets this to a string, the server will try to resolve it to a
+        # workspace ID.
+        #
+        # If not set by the client, the server will fall back to using the
+        # user's default workspace or even the server's default workspace, if
+        # they are configured. If this also fails to yield a workspace, this
+        # method will raise a ValueError.
+        #
+        # See: SqlZenStore._set_filter_workspace_id
 
-        scope_filter = or_(
-            getattr(table, "workspace_id") == self.scope_workspace,
-            getattr(table, "workspace_id").is_(None),
-        )
+        if not self.workspace:
+            raise ValueError("Workspace scope missing from the filter.")
+
+        if not isinstance(self.workspace, UUID):
+            raise ValueError(
+                f"Workspace scope must be a UUID, got {type(self.workspace)}."
+            )
+
+        scope_filter = getattr(table, "workspace_id") == self.workspace
         query = query.where(scope_filter)
 
         return query
-
-    def apply_sorting(
-        self,
-        query: AnyQuery,
-        table: Type["AnySchema"],
-    ) -> AnyQuery:
-        """Apply sorting to the query.
-
-        Args:
-            query: The query to which to apply the sorting.
-            table: The query table.
-
-        Returns:
-            The query with sorting applied.
-        """
-        from sqlmodel import asc, desc
-
-        from zenml.enums import SorterOps
-        from zenml.zen_stores.schemas import WorkspaceSchema
-
-        sort_by, operand = self.sorting_params
-
-        if sort_by == "workspace":
-            column = WorkspaceSchema.name
-
-            query = query.join(
-                WorkspaceSchema,
-                getattr(table, "workspace_id") == WorkspaceSchema.id,
-            )
-
-            query = query.add_columns(WorkspaceSchema.name)
-
-            if operand == SorterOps.ASCENDING:
-                query = query.order_by(asc(column))
-            else:
-                query = query.order_by(desc(column))
-
-            return query
-
-        return super().apply_sorting(query=query, table=table)
 
 
 class TaggableFilter(BaseFilter):

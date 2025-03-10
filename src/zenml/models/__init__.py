@@ -284,6 +284,10 @@ from zenml.models.v2.core.stack import (
     StackResponseBody,
     StackResponseMetadata,
 )
+from zenml.models.v2.misc.statistics import (
+    WorkspaceStatistics,
+    ServerStatistics,
+)
 from zenml.models.v2.core.step_run import (
     StepRunRequest,
     StepRunUpdate,
@@ -751,6 +755,7 @@ __all__ = [
     "ServerModel",
     "ServerDatabaseType",
     "ServerDeploymentType",
+    "ServerStatistics",
     "StackDeploymentConfig",
     "StackDeploymentInfo",
     "OAuthDeviceAuthorizationRequest",
@@ -766,4 +771,5 @@ __all__ = [
     "ResourcesInfo",
     "RunMetadataEntry",
     "RunMetadataResource",
+    "WorkspaceStatistics",
 ]

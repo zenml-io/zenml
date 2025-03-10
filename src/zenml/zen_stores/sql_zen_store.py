@@ -1155,8 +1155,21 @@ class SqlZenStore(BaseZenStore):
 
     def _initialize_database(self) -> None:
         """Initialize the database if not already initialized."""
-        # Make sure the default workspace exists
-        self._get_or_create_default_workspace()
+        # When running in a Pro ZenML server, the default workspace is not
+        # created on database initialization but on server onboarding.
+        create_default_workspace = True
+        if ENV_ZENML_SERVER in os.environ:
+            from zenml.config.server_config import ServerConfiguration
+
+            if (
+                ServerConfiguration.get_server_config().deployment_type
+                != ServerDeploymentType.CLOUD
+            ):
+                create_default_workspace = False
+
+        if create_default_workspace:
+            # Make sure the default workspace exists
+            self._get_or_create_default_workspace()
         # Make sure the default stack exists
         self._get_or_create_default_stack()
         # Make sure the server is activated and the default user exists, if
@@ -9449,6 +9462,21 @@ class SqlZenStore(BaseZenStore):
             session.delete(workspace)
             session.commit()
 
+    def count_workspaces(
+        self, filter_model: Optional[WorkspaceFilter] = None
+    ) -> int:
+        """Count all workspaces.
+
+        Args:
+            filter_model: The filter model to use for counting workspaces.
+
+        Returns:
+            The number of workspaces.
+        """
+        return self._count_entity(
+            schema=WorkspaceSchema, filter_model=filter_model
+        )
+
     def set_filter_workspace_id(
         self,
         filter_model: WorkspaceScopedFilter,
@@ -9625,7 +9653,7 @@ class SqlZenStore(BaseZenStore):
         object_name_or_id: Union[str, UUID],
         schema_class: Type[AnyNamedSchema],
         session: Session,
-        workspace_id: Optional[UUID] = None,
+        workspace_name_or_id: Optional[Union[UUID, str]] = None,
     ) -> AnyNamedSchema:
         """Query a schema by its 'name' or 'id' field.
 
@@ -9633,9 +9661,9 @@ class SqlZenStore(BaseZenStore):
             object_name_or_id: The name or ID of the object to query.
             schema_class: The schema class to query. E.g., `WorkspaceSchema`.
             session: The database session to use.
-            workspace_id: The ID of the workspace to filter by. Required if the
-                resource is workspace-scoped and the object_name_or_id is not a
-                UUID.
+            workspace_name_or_id: The name or ID of the workspace to filter by.
+                Required if the resource is workspace-scoped and the
+                object_name_or_id is not a UUID.
 
         Returns:
             The schema object.
@@ -9659,9 +9687,17 @@ class SqlZenStore(BaseZenStore):
             )
 
         query = select(schema_class).where(filter_params)
-        if workspace_id and hasattr(schema_class, "workspace_id"):
-            query = query.where(schema_class.workspace_id == workspace_id)  # type: ignore[attr-defined]
-            error_msg += f" in workspace `{workspace_id}`."
+        if workspace_name_or_id and hasattr(schema_class, "workspace_id"):
+            if uuid_utils.is_valid_uuid(workspace_name_or_id):
+                query = query.where(
+                    schema_class.workspace_id == workspace_name_or_id  # type: ignore[attr-defined]
+                )
+            else:
+                # Join the workspace table to get the workspace name
+                query = query.join(WorkspaceSchema).where(
+                    WorkspaceSchema.name == workspace_name_or_id
+                )
+            error_msg += f" in workspace `{workspace_name_or_id}`."
         else:
             error_msg += "."
 
@@ -9847,10 +9883,6 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
             workspace_id = workspace.id
-        elif filter_model.scope_workspace:
-            # The filter already has a workspace ID set, so we don't need to
-            # do anything.
-            return
         elif filter_model.workspace:
             workspace = self._get_schema_by_name_or_id(
                 object_name_or_id=filter_model.workspace,
@@ -9876,11 +9908,7 @@ class SqlZenStore(BaseZenStore):
                 except KeyError:
                     raise ValueError("Workspace scope missing from the filter")
 
-        # It's important to remove the workspace from the filters because it is
-        # often used in combination with other filters with an OR operator and
-        # the workspace is a mandatory scoping mechanism.
-        filter_model.workspace = None
-        filter_model.set_scope_workspace(workspace_id)
+        filter_model.workspace = workspace_id
 
     def _verify_name_uniqueness(
         self,
@@ -10145,7 +10173,7 @@ class SqlZenStore(BaseZenStore):
                 object_name_or_id=model_name_or_id,
                 schema_class=ModelSchema,
                 session=session,
-                workspace_id=workspace,
+                workspace_name_or_id=workspace,
             )
 
             return model.to_model(
@@ -10725,25 +10753,17 @@ class SqlZenStore(BaseZenStore):
         Raises:
             ValueError: if the filter is not scoped to a model.
         """
-        if filter_model.scope_model:
-            # The filter already has a model ID set, so we don't need to
-            # do anything.
-            return
-        elif filter_model.model:
+        if filter_model.model:
             model = self._get_schema_by_name_or_id(
                 object_name_or_id=filter_model.model,
                 schema_class=ModelSchema,
-                workspace_id=filter_model.scope_workspace,
+                workspace_name_or_id=filter_model.workspace,
                 session=session,
             )
         else:
             raise ValueError("Model ID missing from the filter")
 
-        # It's important to remove the model from the filters because it is
-        # often used in combination with other filters with an OR operator and
-        # the model is a mandatory scoping mechanism.
-        filter_model.model = None
-        filter_model.set_scope_model(model.id)
+        filter_model.model = model.id
 
     def list_model_versions(
         self,

@@ -444,7 +444,7 @@ class ModelVersionResponse(
         artifact_versions = Client().list_artifact_versions(
             sort_by="desc:created",
             size=1,
-            name=name,
+            artifact=name,
             version=version,
             model_version_id=self.id,
             type=type,
@@ -573,19 +573,16 @@ class ModelVersionFilter(WorkspaceScopedFilter, TaggableFilter):
         *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
         *TaggableFilter.FILTER_EXCLUDE_FIELDS,
         "model",
-        "scope_model",
         "run_metadata",
     ]
     CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
         *WorkspaceScopedFilter.CUSTOM_SORTING_OPTIONS,
         *TaggableFilter.CUSTOM_SORTING_OPTIONS,
-        "model",
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
         *TaggableFilter.CLI_EXCLUDE_FIELDS,
         "model",
-        "scope_model",
     ]
 
     name: Optional[str] = Field(
@@ -607,21 +604,12 @@ class ModelVersionFilter(WorkspaceScopedFilter, TaggableFilter):
     )
     model: Optional[Union[str, UUID]] = Field(
         default=None,
-        description="The name or ID of the model to filter the model versions by.",
+        description="The name or ID of the model which the search is scoped "
+        "to. This field must always be set and is always applied in addition "
+        "to the other filters, regardless of the value of the "
+        "logical_operator field.",
         union_mode="left_to_right",
     )
-    scope_model: Optional[UUID] = Field(
-        default=None,
-        description="The ID of the model to scope this query to.",
-    )
-
-    def set_scope_model(self, model_id: UUID) -> None:
-        """Set the model to scope this query to.
-
-        Args:
-            model_id: The model to scope this query to.
-        """
-        self.scope_model = model_id
 
     def get_custom_filters(
         self, table: Type["AnySchema"]
@@ -639,21 +627,10 @@ class ModelVersionFilter(WorkspaceScopedFilter, TaggableFilter):
         from sqlmodel import and_
 
         from zenml.zen_stores.schemas import (
-            ModelSchema,
             ModelVersionSchema,
             RunMetadataResourceSchema,
             RunMetadataSchema,
         )
-
-        if self.model:
-            model_filter = and_(
-                getattr(table, "model_id") == ModelSchema.id,
-                self.generate_name_or_id_query_conditions(
-                    value=self.model,
-                    table=ModelSchema,
-                ),
-            )
-            custom_filters.append(model_filter)
 
         if self.run_metadata is not None:
             from zenml.enums import MetadataResourceTypes
@@ -691,13 +668,26 @@ class ModelVersionFilter(WorkspaceScopedFilter, TaggableFilter):
             The query with filter applied.
 
         Raises:
-            RuntimeError: if the filter is not scoped to a model.
+            ValueError: if the filter is not scoped to a model.
         """
         query = super().apply_filter(query=query, table=table)
 
-        if not self.scope_model:
-            raise RuntimeError("Model scope missing from the filter")
+        # The model scope must always be set and must be a UUID. If the
+        # client sets this to a string, the server will try to resolve it to a
+        # model ID.
+        #
+        # If not set by the client, the server will raise a ValueError.
+        #
+        # See: SqlZenStore._set_filter_model_id
 
-        query = query.where(getattr(table, "model_id") == self.scope_model)
+        if not self.model:
+            raise ValueError("Model scope missing from the filter.")
+
+        if not isinstance(self.model, UUID):
+            raise ValueError(
+                f"Model scope must be a UUID, got {type(self.model)}."
+            )
+
+        query = query.where(getattr(table, "model_id") == self.model)
 
         return query

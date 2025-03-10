@@ -178,7 +178,7 @@ class ArtifactResponse(
         """
         from zenml.client import Client
 
-        responses = Client().list_artifact_versions(name=self.name)
+        responses = Client().list_artifact_versions(artifact=self.name)
         return {str(response.version): response for response in responses}
 
 

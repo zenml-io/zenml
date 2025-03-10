@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for workspaces."""
 
-from typing import Dict, Union
+from typing import Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -25,14 +25,13 @@ from zenml.constants import (
     WORKSPACES,
 )
 from zenml.models import (
-    ComponentFilter,
     Page,
     PipelineFilter,
     PipelineRunFilter,
-    StackFilter,
     WorkspaceFilter,
     WorkspaceRequest,
     WorkspaceResponse,
+    WorkspaceStatistics,
     WorkspaceUpdate,
 )
 from zenml.zen_server.auth import AuthContext, authorize
@@ -204,7 +203,7 @@ def delete_workspace(
 def get_workspace_statistics(
     workspace_name_or_id: Union[str, UUID],
     auth_context: AuthContext = Security(authorize),
-) -> Dict[str, int]:
+) -> WorkspaceStatistics:
     """Gets statistics of a workspace.
 
     # noqa: DAR401
@@ -222,19 +221,6 @@ def get_workspace_statistics(
     )
 
     user_id = auth_context.user.id
-    component_filter = ComponentFilter(workspace_id=workspace.id)
-    component_filter.configure_rbac(
-        authenticated_user_id=user_id,
-        id=get_allowed_resource_ids(
-            resource_type=ResourceType.STACK_COMPONENT
-        ),
-    )
-
-    stack_filter = StackFilter(workspace_id=workspace.id)
-    stack_filter.configure_rbac(
-        authenticated_user_id=user_id,
-        id=get_allowed_resource_ids(resource_type=ResourceType.STACK),
-    )
 
     run_filter = PipelineRunFilter(workspace=workspace.id)
     run_filter.configure_rbac(
@@ -248,11 +234,7 @@ def get_workspace_statistics(
         id=get_allowed_resource_ids(resource_type=ResourceType.PIPELINE),
     )
 
-    return {
-        "stacks": zen_store().count_stacks(filter_model=stack_filter),
-        "components": zen_store().count_stack_components(
-            filter_model=component_filter
-        ),
-        "pipelines": zen_store().count_pipelines(filter_model=pipeline_filter),
-        "runs": zen_store().count_runs(filter_model=run_filter),
-    }
+    return WorkspaceStatistics(
+        pipelines=zen_store().count_pipelines(filter_model=pipeline_filter),
+        runs=zen_store().count_runs(filter_model=run_filter),
+    )
