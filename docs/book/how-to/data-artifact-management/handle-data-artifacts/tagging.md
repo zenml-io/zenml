@@ -187,8 +187,8 @@ ZenML provides several advanced tagging features to help you better organize and
 Exclusive tags are special tags that can be associated with only one instance of a specific entity type within a certain scope at a time. When you apply an exclusive tag to a new entity, it's automatically removed from any previous entity of the same type that had this tag. Exclusive tags can be used with:
 
 - One pipeline run per pipeline
+- One run template per pipeline
 - One artifact version per artifact
-- One run template within a project
 
 The recommended way to create exclusive tags is using the `Tag` object:
 
