@@ -34,25 +34,29 @@ def resolve_duplicate_names(
     """
     columns = ["name"] + other_columns
     duplicates = session.execute(
-        sa.text(f"""
-            SELECT id, name
-            FROM {table_name}
-            WHERE ({", ".join(columns)}) IN (
-                SELECT {", ".join(columns)}
-                FROM {table_name}
-                GROUP BY {", ".join(columns)}
-                HAVING COUNT(*) > 1
-            )
-        """)
+        sa.text(
+            f"""
+                SELECT id, name
+                FROM `{table_name}`
+                WHERE ({", ".join(columns)}) IN (
+                    SELECT {", ".join(columns)}
+                    FROM `{table_name}`
+                    GROUP BY {", ".join(columns)}
+                    HAVING COUNT(*) > 1
+                )
+            """  # nosec B608
+        )
     )
     for id_, name in list(duplicates)[1:]:
         logger.warning(f"Duplicate {table_name}: {name} (id: {id_})")
         session.execute(
-            sa.text(f"""
-                UPDATE {table_name}
-                SET name = :new_name
-                WHERE id = :id_
-            """),
+            sa.text(
+                f"""
+                    UPDATE {table_name}
+                    SET name = :new_name
+                    WHERE id = :id_
+                """  # nosec B608
+            ),
             params={"id_": id_, "new_name": f"{name}_{id_[:6]}"},
         )
 

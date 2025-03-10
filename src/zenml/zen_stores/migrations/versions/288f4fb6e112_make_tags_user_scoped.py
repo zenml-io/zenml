@@ -52,15 +52,17 @@ def upgrade() -> None:
             continue
         tag_ids.append(tag_id)
         session.execute(
-            sa.text(f"""
-                UPDATE tag
-                SET user_id = (
-                    SELECT r.user_id
-                    FROM {resource_type} r
-                    WHERE r.id = :resource_id
-                )
-                WHERE id = :tag_id
-            """),
+            sa.text(
+                f"""
+                    UPDATE tag
+                    SET user_id = (
+                        SELECT r.user_id
+                        FROM {resource_type} r
+                        WHERE r.id = :resource_id
+                    )
+                    WHERE id = :tag_id
+                """  # nosec B608
+            ),
             params={"resource_id": resource_id, "tag_id": tag_id},
         )
 
