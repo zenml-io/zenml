@@ -279,6 +279,7 @@ class ServerConfiguration(BaseModel):
         DEFAULT_ZENML_SERVER_GENERIC_API_TOKEN_MAX_LIFETIME
     )
 
+    external_cookie_name: Optional[str] = None
     external_login_url: Optional[str] = None
     external_user_info_url: Optional[str] = None
     external_server_id: Optional[UUID] = None
