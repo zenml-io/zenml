@@ -260,6 +260,8 @@ def add_tags(
 
     # Tag an artifact version through the step context
     elif infer_artifact is True:
+        resource_type = TaggableResourceTypes.ARTIFACT_VERSION
+
         try:
             from zenml.steps.step_context import get_step_context
 
@@ -346,15 +348,6 @@ def add_tags(
             if isinstance(tag, Tag):
                 tag_model = client.get_tag(tag.name)
 
-                if tag.exclusive and resource_type not in [
-                    TaggableResourceTypes.PIPELINE_RUN,
-                    TaggableResourceTypes.ARTIFACT_VERSION,
-                    TaggableResourceTypes.RUN_TEMPLATE,
-                ]:
-                    raise ValueError(
-                        f"Exclusive tags are only applicable to pipeline runs, "
-                        f"artifact versions and run templates, not {resource_type}."
-                    )
                 if tag.exclusive != tag_model.exclusive:
                     raise ValueError(
                         f"The tag `{tag.name}` is an "
@@ -368,6 +361,18 @@ def add_tags(
                     )
             else:
                 tag_model = client.get_tag(tag)
+
+            if tag_model.exclusive and resource_type not in [
+                TaggableResourceTypes.PIPELINE_RUN,
+                TaggableResourceTypes.ARTIFACT_VERSION,
+                TaggableResourceTypes.RUN_TEMPLATE,
+            ]:
+                logger.warning(
+                    "The tag will be added, however, please keep in mind that "
+                    "the functionalty of having exclusive tags is only "
+                    "applicable for pipeline runs, artifact versions and run "
+                    f"templates, not {resource_type.value}s."
+                )
 
             if resource_id:
                 client.attach_tag(
