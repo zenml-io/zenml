@@ -115,6 +115,7 @@ class Compiler:
         pipeline_environment = finalize_environment_variables(
             pipeline.configuration.environment
         )
+        pipeline_secrets = pipeline.configuration.secrets.copy()
         pipeline_settings = self._filter_and_validate_settings(
             settings=pipeline.configuration.settings,
             configuration_level=ConfigurationLevel.PIPELINE,
@@ -123,6 +124,7 @@ class Compiler:
         with pipeline.__suppress_configure_warnings__():
             pipeline.configure(
                 environment=pipeline_environment,
+                secrets=pipeline_secrets,
                 settings=pipeline_settings,
                 merge=False,
             )
@@ -137,6 +139,7 @@ class Compiler:
             invocation_id: self._compile_step_invocation(
                 invocation=invocation,
                 pipeline_environment=pipeline_environment,
+                pipeline_secrets=pipeline_secrets,
                 pipeline_settings=settings_to_passdown,
                 pipeline_extra=pipeline.configuration.extra,
                 stack=stack,
@@ -445,6 +448,7 @@ class Compiler:
         self,
         invocation: "StepInvocation",
         pipeline_environment: Optional[Dict[str, Any]],
+        pipeline_secrets: List[str],
         pipeline_settings: Dict[str, "BaseSettings"],
         pipeline_extra: Dict[str, Any],
         stack: "Stack",
@@ -458,6 +462,7 @@ class Compiler:
             invocation: The step invocation to compile.
             pipeline_environment: Environment variables configured for the
                 pipeline.
+            pipeline_secrets: Secrets configured for the pipeline.
             pipeline_settings: Settings configured on the
                 pipeline of the step.
             pipeline_extra: Extra values configured on the pipeline of the step.
@@ -486,6 +491,10 @@ class Compiler:
         step_environment = finalize_environment_variables(
             step.configuration.environment
         )
+        step_secrets = pipeline_secrets + step.configuration.secrets
+        # Remove duplicates and preserve the order
+        step_secrets = list(dict.fromkeys(step_secrets))
+
         step_settings = self._filter_and_validate_settings(
             settings=step.configuration.settings,
             configuration_level=ConfigurationLevel.STEP,
@@ -505,6 +514,7 @@ class Compiler:
         )
         step.configure(
             environment=step_environment,
+            secrets=step_secrets,
             settings=step_settings,
             extra=step_extra,
             on_failure=step_on_failure_hook_source,

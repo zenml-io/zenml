@@ -45,6 +45,7 @@ class PipelineRunConfiguration(
     )
     steps: Dict[str, StepConfigurationUpdate] = {}
     environment: Dict[str, Any] = {}
+    secrets: List[str] = []
     settings: Dict[str, SerializeAsAny[BaseSettings]] = {}
     tags: Optional[List[str]] = None
     extra: Dict[str, Any] = {}

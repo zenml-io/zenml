@@ -50,6 +50,8 @@ def generate_cache_key(
     - the names and source codes of the output artifacts of the step,
     - the source codes of the output materializers of the step.
     - additional custom caching parameters of the step.
+    - the environment variables defined for the step.
+    - the secrets defined for the step.
 
     Args:
         step: The step to generate the cache key for.
@@ -103,6 +105,10 @@ def generate_cache_key(
     for key, value in sorted(step.config.environment.items()):
         hash_.update(key.encode())
         hash_.update(str(value).encode())
+
+    # User-defined secrets
+    for name in sorted(step.config.secrets):
+        hash_.update(name.encode())
 
     return hash_.hexdigest()
 
