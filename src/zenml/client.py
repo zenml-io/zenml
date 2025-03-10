@@ -7810,7 +7810,7 @@ class Client(metaclass=ClientMetaClass):
         if isinstance(tag_name_or_id, str):
             try:
                 tag_model = self.create_tag(name=tag_name_or_id)
-            except KeyError:
+            except EntityExistsError:
                 tag_model = self.get_tag(tag_name_or_id)
         else:
             tag_model = self.get_tag(tag_name_or_id)
