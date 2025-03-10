@@ -40,6 +40,10 @@ class TagRequest(UserScopedRequest):
         description="The unique title of the tag.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
+    exclusive: bool = Field(
+        description="The flag signifying whether the tag is an exclusive tag.",
+        default=False,
+    )
     color: ColorVariants = Field(
         description="The color variant assigned to the tag.",
         default_factory=lambda: random.choice(list(ColorVariants)),
@@ -53,6 +57,7 @@ class TagUpdate(BaseUpdate):
     """Update model for tags."""
 
     name: Optional[str] = None
+    exclusive: Optional[bool] = None
     color: Optional[ColorVariants] = None
 
 
@@ -65,6 +70,9 @@ class TagResponseBody(UserScopedResponseBody):
     color: ColorVariants = Field(
         description="The color variant assigned to the tag.",
         default_factory=lambda: random.choice(list(ColorVariants)),
+    )
+    exclusive: bool = Field(
+        description="The flag signifying whether the tag is an exclusive tag."
     )
     tagged_count: int = Field(
         description="The count of resources tagged with this tag."
@@ -111,6 +119,15 @@ class TagResponse(
         return self.get_body().color
 
     @property
+    def exclusive(self) -> bool:
+        """The `exclusive` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().exclusive
+
+    @property
     def tagged_count(self) -> int:
         """The `tagged_count` property.
 
@@ -131,4 +148,8 @@ class TagFilter(UserScopedFilter):
     )
     color: Optional[ColorVariants] = Field(
         description="The color variant assigned to the tag.", default=None
+    )
+    exclusive: Optional[bool] = Field(
+        description="The flag signifying whether the tag is an exclusive tag.",
+        default=None,
     )

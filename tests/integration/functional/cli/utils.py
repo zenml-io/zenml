@@ -22,8 +22,6 @@ from zenml.cli.utils import (
 )
 from zenml.client import Client
 from zenml.models import (
-    TagFilter,
-    TagRequest,
     UserResponse,
     WorkspaceResponse,
 )
@@ -159,11 +157,9 @@ def test_temporarily_setting_the_active_stack(clean_workspace):
 def tags_killer(tag_create_count: int = 5):
     tags = []
     for _ in range(tag_create_count):
-        tags.append(
-            Client().create_tag(TagRequest(name=random_resource_name()))
-        )
+        tags.append(Client().create_tag(name=random_resource_name()))
     yield tags
-    for tag in Client().list_tags(TagFilter(size=999)).items:
+    for tag in Client().list_tags(size=999).items:
         Client().delete_tag(tag.id)
 
 

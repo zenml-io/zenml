@@ -33,13 +33,10 @@ from zenml.models import (
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
-    verify_permissions_and_create_entity,
     verify_permissions_and_delete_entity,
     verify_permissions_and_get_entity,
-    verify_permissions_and_list_entities,
     verify_permissions_and_update_entity,
 )
-from zenml.zen_server.rbac.models import ResourceType
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -74,10 +71,7 @@ def create_tag(
     Returns:
         The created tag.
     """
-    return verify_permissions_and_create_entity(
-        request_model=tag,
-        create_method=zen_store().create_tag,
-    )
+    return zen_store().create_tag(tag=tag)
 
 
 @router.get(
@@ -101,10 +95,8 @@ def list_tags(
     Returns:
         The tags according to query filters.
     """
-    return verify_permissions_and_list_entities(
-        filter_model=tag_filter_model,
-        resource_type=ResourceType.TAG,
-        list_method=zen_store().list_tags,
+    return zen_store().list_tags(
+        tag_filter_model=tag_filter_model,
         hydrate=hydrate,
     )
 
