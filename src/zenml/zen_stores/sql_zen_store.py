@@ -2587,6 +2587,7 @@ class SqlZenStore(BaseZenStore):
                 resources=artifact_schema,
                 session=session,
             )
+            session.refresh(artifact_schema)
 
             return artifact_schema.to_model(
                 include_metadata=True, include_resources=True
@@ -2685,7 +2686,7 @@ class SqlZenStore(BaseZenStore):
                 resources=existing_artifact,
                 session=session,
             )
-
+            session.refresh(existing_artifact)
             return existing_artifact.to_model(
                 include_metadata=True, include_resources=True
             )
@@ -3078,6 +3079,7 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
+            session.refresh(existing_artifact_version)
             return existing_artifact_version.to_model(
                 include_metadata=True, include_resources=True
             )
@@ -4206,6 +4208,8 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
+            session.refresh(new_pipeline)
+
             return new_pipeline.to_model(
                 include_metadata=True, include_resources=True
             )
@@ -4314,6 +4318,7 @@ class SqlZenStore(BaseZenStore):
                 resources=existing_pipeline,
                 session=session,
             )
+            session.refresh(existing_pipeline)
 
             return existing_pipeline.to_model(
                 include_metadata=True, include_resources=True
@@ -4683,6 +4688,8 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
+            session.refresh(template_schema)
+
             return template_schema.to_model(
                 include_metadata=True, include_resources=True
             )
@@ -4776,6 +4783,8 @@ class SqlZenStore(BaseZenStore):
                 resources=template,
                 session=session,
             )
+
+            session.refresh(template)
 
             return template.to_model(
                 include_metadata=True, include_resources=True
@@ -5054,6 +5063,8 @@ class SqlZenStore(BaseZenStore):
             session=session,
         )
 
+        session.refresh(new_run)
+
         return new_run.to_model(include_metadata=True, include_resources=True)
 
     def get_run(
@@ -5135,6 +5146,8 @@ class SqlZenStore(BaseZenStore):
             resources=run_schema,
             session=session,
         )
+
+        session.refresh(run_schema)
 
         return run_schema.to_model(
             include_metadata=True, include_resources=True
@@ -5347,7 +5360,7 @@ class SqlZenStore(BaseZenStore):
                 resources=existing_run,
                 session=session,
             )
-
+            session.refresh(existing_run)
             return existing_run.to_model(
                 include_metadata=True, include_resources=True
             )
@@ -10102,6 +10115,8 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
+            session.refresh(model_schema)
+
             return model_schema.to_model(
                 include_metadata=True, include_resources=True
             )
@@ -10255,6 +10270,8 @@ class SqlZenStore(BaseZenStore):
                 resources=existing_model,
                 session=session,
             )
+
+            session.refresh(existing_model)
 
             return existing_model.to_model(
                 include_metadata=True, include_resources=True
@@ -10673,7 +10690,7 @@ class SqlZenStore(BaseZenStore):
                 resources=model_version_schema,
                 session=session,
             )
-
+            session.refresh(model_version_schema)
             return self.get_model_version(model_version_schema.id)
 
     @track_decorator(AnalyticsEvent.CREATED_MODEL_VERSION)
@@ -10884,7 +10901,7 @@ class SqlZenStore(BaseZenStore):
                 resources=existing_model_version,
                 session=session,
             )
-
+            session.refresh(existing_model_version)
             return existing_model_version.to_model(
                 include_metadata=True, include_resources=True
             )
