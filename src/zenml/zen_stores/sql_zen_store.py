@@ -11271,28 +11271,10 @@ class SqlZenStore(BaseZenStore):
         for tag in tags:
             try:
                 if isinstance(tag, tag_utils.Tag):
-                    tag_schema = self._get_tag_schema(tag.name, session)
-                    if (
-                        tag.exclusive is not None
-                        and tag.exclusive != tag_schema.exclusive
-                    ):
-                        raise ValueError(
-                            f"Tag `{tag_schema.name}` has been defined as a "
-                            f"{'exclusive' if tag_schema.exclusive else 'non-exclusive'} "
-                            "tag. Please update it before attaching it to resources."
-                        )
-                    tag_schemas.append(tag_schema)
-                else:
-                    tag_schemas.append(
-                        self._get_tag_schema(
-                            tag_name_or_id=tag, session=session
-                        )
-                    )
-            except KeyError:
-                if isinstance(tag, tag_utils.Tag):
                     tag_request = tag.to_request()
                 else:
                     tag_request = TagRequest(name=tag)
+
                 tag_schemas.append(
                     self._create_tag_schema(
                         tag=tag_request,
@@ -11303,6 +11285,22 @@ class SqlZenStore(BaseZenStore):
                         commit=False,
                     )
                 )
+            except KeyError:
+                if isinstance(tag, tag_utils.Tag):
+                    tag_schema = self._get_tag_schema(tag.name, session)
+                    if (
+                        tag.exclusive is not None
+                        and tag.exclusive != tag_schema.exclusive
+                    ):
+                        raise ValueError(
+                            f"Tag `{tag_schema.name}` has been defined as a "
+                            f"{'exclusive' if tag_schema.exclusive else 'non-exclusive'} "
+                            "tag. Please update it before attaching it to resources."
+                        )
+                else:
+                    tag_schema = self._get_tag_schema(tag, session)
+
+                tag_schemas.append(tag_schema)
 
         resources = (
             [resources] if isinstance(resources, BaseSchema) else resources

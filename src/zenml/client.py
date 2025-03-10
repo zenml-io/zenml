@@ -7806,20 +7806,14 @@ class Client(metaclass=ClientMetaClass):
         Args:
             tag_name_or_id: name or id of the tag to be attached.
             resources: the resources to attach the tag to.
-
-        Raises:
-            KeyError: If the tag is not found.
         """
-        try:
-            tag_model = self.get_tag(tag_name_or_id)
-        except KeyError:
-            if isinstance(tag_name_or_id, str):
+        if isinstance(tag_name_or_id, str):
+            try:
                 tag_model = self.create_tag(name=tag_name_or_id)
-            else:
-                raise KeyError(
-                    f"Tag with id {tag_name_or_id} not found. "
-                    "Please create the tag first."
-                )
+            except KeyError:
+                tag_model = self.get_tag(tag_name_or_id)
+        else:
+            tag_model = self.get_tag(tag_name_or_id)
 
         self.zen_store.batch_create_tag_resource(
             tag_resources=[
