@@ -336,6 +336,7 @@ class StackComponent:
         workspace: UUID,
         created: datetime,
         updated: datetime,
+        environment: Dict[str, str],
         labels: Optional[Dict[str, Any]] = None,
         connector_requirements: Optional[ServiceConnectorRequirements] = None,
         connector: Optional[UUID] = None,
@@ -355,6 +356,8 @@ class StackComponent:
             workspace: The ID of the workspace the component belongs to.
             created: The creation time of the component.
             updated: The last update time of the component.
+            environment: Environment variables to set when running on this
+                component.
             labels: The labels of the component.
             connector_requirements: The requirements for the connector.
             connector: The ID of a connector linked to the component.
@@ -382,6 +385,7 @@ class StackComponent:
         self.created = created
         self.updated = updated
         self.labels = labels
+        self.environment = environment
         self.connector_requirements = connector_requirements
         self.connector = connector
         self.connector_resource_id = connector_resource_id
@@ -421,6 +425,7 @@ class StackComponent:
                 name=component_model.name,
                 id=component_model.id,
                 config=configuration,
+                environment=component_model.environment,
                 labels=component_model.labels,
                 flavor=component_model.flavor_name,
                 type=component_model.type,

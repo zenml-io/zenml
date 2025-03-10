@@ -230,6 +230,7 @@ class Compiler:
                 enable_artifact_visualization=config.enable_artifact_visualization,
                 enable_step_logs=config.enable_step_logs,
                 environment=config.environment,
+                secrets=config.secrets,
                 settings=config.settings,
                 tags=config.tags,
                 extra=config.extra,
@@ -491,10 +492,7 @@ class Compiler:
         step_environment = finalize_environment_variables(
             step.configuration.environment
         )
-        step_secrets = pipeline_secrets + step.configuration.secrets
-        # Remove duplicates and preserve the order
-        step_secrets = list(dict.fromkeys(step_secrets))
-
+        step_secrets = step.configuration.secrets
         step_settings = self._filter_and_validate_settings(
             settings=step.configuration.settings,
             configuration_level=ConfigurationLevel.STEP,
@@ -507,6 +505,7 @@ class Compiler:
         step.configure(
             environment=pipeline_environment,
             settings=pipeline_settings,
+            secrets=pipeline_secrets,
             extra=pipeline_extra,
             on_failure=pipeline_failure_hook_source,
             on_success=pipeline_success_hook_source,

@@ -309,8 +309,8 @@ class Pipeline:
         on_success: Optional["HookSpecification"] = None,
         model: Optional["Model"] = None,
         parameters: Optional[Dict[str, Any]] = None,
-        merge: bool = True,
         substitutions: Optional[Dict[str, str]] = None,
+        merge: bool = True,
     ) -> Self:
         """Configures the pipeline.
 
@@ -344,14 +344,14 @@ class Pipeline:
             on_success: Callback function in event of success of the step. Can
                 be a function with no arguments, or a source path to such a
                 function (e.g. `module.my_function`).
+            model: configuration of the model version in the Model Control Plane.
+            parameters: input parameters for the pipeline.
+            substitutions: Extra placeholders to use in the name templates.
             merge: If `True`, will merge the given dictionary configurations
                 like `extra` and `settings` with existing
                 configurations. If `False` the given configurations will
                 overwrite all existing ones. See the general description of this
                 method for an example.
-            model: configuration of the model version in the Model Control Plane.
-            parameters: input parameters for the pipeline.
-            substitutions: Extra placeholders to use in the name templates.
 
         Returns:
             The pipeline instance that this method was called on.
@@ -370,6 +370,9 @@ class Pipeline:
             # Merge tags explicitly here as the recursive update later only
             # merges dicts
             tags = self._configuration.tags + tags
+
+        if merge and secrets and self._configuration.secrets:
+            secrets = self._configuration.secrets + secrets
 
         values = dict_utils.remove_none_values(
             {

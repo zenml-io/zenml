@@ -703,6 +703,9 @@ class BaseStep:
             # string of on_success hook function to be used for this step
             success_hook_source = resolve_and_validate_hook(on_success)
 
+        if merge and secrets and self._configuration.secrets:
+            secrets = self._configuration.secrets + secrets
+
         values = dict_utils.remove_none_values(
             {
                 "enable_cache": enable_cache,
