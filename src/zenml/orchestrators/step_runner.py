@@ -642,16 +642,10 @@ class StepRunner:
 
             # Get full set of tags
             tags = step_context.get_output_tags(output_name)
-            if tags is not None:
-                if step_context.pipeline_run.config.tags is not None:
-                    for tag in step_context.pipeline_run.config.tags:
-                        if (
-                            isinstance(tag, tag_utils.Tag)
-                            and tag.cascade is True
-                        ):
-                            tags.append(tag.name)
-            else:
-                tags = step_context.pipeline_run.config.tags
+            if step_context.pipeline_run.config.tags is not None:
+                for tag in step_context.pipeline_run.config.tags:
+                    if isinstance(tag, tag_utils.Tag) and tag.cascade is True:
+                        tags.append(tag.name)
 
             artifact_request = _store_artifact_data_and_prepare_request(
                 name=artifact_name,

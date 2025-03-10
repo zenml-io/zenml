@@ -89,7 +89,7 @@ logger = get_logger(__name__)
 
 
 class Tag(BaseModel):
-    """A tag is a label that can be applied to a pipeline run."""
+    """A model representing a tag."""
 
     name: str
     color: Optional[ColorVariants] = None

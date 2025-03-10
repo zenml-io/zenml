@@ -7666,10 +7666,7 @@ class Client(metaclass=ClientMetaClass):
         request_model = TagRequest(name=name, exclusive=exclusive)
 
         if color is not None:
-            if isinstance(color, ColorVariants):
-                request_model.color = color
-            else:
-                request_model.color = ColorVariants(color)
+            request_model.color = ColorVariants(color)
 
         return self.zen_store.create_tag(tag=request_model)
 
