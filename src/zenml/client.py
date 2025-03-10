@@ -464,7 +464,8 @@ class Client(metaclass=ClientMetaClass):
             config_name="repo",
         )
         self._config.set_active_stack(active_stack)
-        self._config.set_active_workspace(active_workspace)
+        if active_workspace:
+            self._config.set_active_workspace(active_workspace)
 
     def _load_config(self) -> Optional[ClientConfiguration]:
         """Loads the client configuration from disk.
@@ -4372,9 +4373,6 @@ class Client(metaclass=ClientMetaClass):
             A list of artifact versions.
         """
         if name:
-            logger.warning(
-                "The `name` argument is deprecated. Use `artifact` instead."
-            )
             artifact = name
 
         artifact_version_filter_model = ArtifactVersionFilter(

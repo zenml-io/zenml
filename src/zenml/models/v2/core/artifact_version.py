@@ -507,7 +507,6 @@ class ArtifactVersionFilter(WorkspaceScopedFilter, TaggableFilter):
         default=None,
         description="[Deprecated] Use 'artifact' instead. ID of the artifact to which this version belongs.",
         union_mode="left_to_right",
-        deprecated=True,
     )
     version: Optional[str] = Field(
         default=None,

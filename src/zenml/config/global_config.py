@@ -397,8 +397,13 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             self.active_stack_id,
             config_name="global",
         )
-        self.active_workspace_name = active_workspace.name
-        self._active_workspace = active_workspace
+        if active_workspace:
+            self.active_workspace_name = active_workspace.name
+            self._active_workspace = active_workspace
+        else:
+            self.active_workspace_name = None
+            self._active_workspace = None
+
         self.set_active_stack(active_stack)
 
     @property
