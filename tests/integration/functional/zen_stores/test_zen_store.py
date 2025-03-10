@@ -3039,7 +3039,7 @@ def test_list_custom_named_artifacts():
     ).total
     num_matching_named_before = store.list_artifact_versions(
         ArtifactVersionFilter(
-            has_custom_name=True, name="contains:test_step_output"
+            has_custom_name=True, artifact="contains:test_step_output"
         )
     ).total
     num_runs = 1
@@ -3055,7 +3055,7 @@ def test_list_custom_named_artifacts():
 
         artifact_versions = store.list_artifact_versions(
             ArtifactVersionFilter(
-                has_custom_name=True, name="contains:test_step_output"
+                has_custom_name=True, artifact="contains:test_step_output"
             )
         )
         assert (
