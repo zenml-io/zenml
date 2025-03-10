@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 """Base Step for ZenML."""
 
+from __future__ import annotations
+
 import copy
 import hashlib
 import inspect

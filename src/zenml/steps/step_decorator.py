@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 """Step decorator function."""
 
+from __future__ import annotations
+
 from typing import (
     TYPE_CHECKING,
     Any,

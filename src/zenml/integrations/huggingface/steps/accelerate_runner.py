@@ -16,6 +16,8 @@
 #
 """Step function to run any ZenML step using Accelerate."""
 
+from __future__ import annotations
+
 import functools
 from typing import (
     Any,

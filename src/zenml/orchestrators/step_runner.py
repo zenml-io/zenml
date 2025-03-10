@@ -14,6 +14,8 @@
 
 """Class to run steps."""
 
+from __future__ import annotations
+
 import copy
 import inspect
 from contextlib import nullcontext
@@ -310,7 +312,7 @@ class StepRunner:
         """
         from zenml.steps import BaseStep
 
-        step_instance = BaseStep[..., Any].load_from_source(
+        step_instance = BaseStep[Any, Any].load_from_source(
             self._step.spec.source
         )
         step_instance = copy.deepcopy(step_instance)

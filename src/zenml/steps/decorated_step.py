@@ -13,13 +13,20 @@
 #  permissions and limitations under the License.
 """Internal BaseStep subclass used by the step decorator."""
 
-from typing import Any
+from __future__ import annotations
+
+from typing import Any, TypeVar
+
+from typing_extensions import ParamSpec
 
 from zenml.config.source import Source
 from zenml.steps import BaseStep
 
+P = ParamSpec("P")
+R = TypeVar("R")
 
-class _DecoratedStep(BaseStep[..., Any]):
+
+class _DecoratedStep(BaseStep[P, R]):
     """Internal BaseStep subclass used by the step decorator."""
 
     @property

@@ -14,6 +14,8 @@
 
 """Utility functions and classes to run ZenML steps."""
 
+from __future__ import annotations
+
 import ast
 import contextlib
 import inspect

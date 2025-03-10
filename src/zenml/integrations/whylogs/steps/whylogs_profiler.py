@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 """Implementation of the whylogs profiler step."""
 
+from __future__ import annotations
+
 import datetime
 from typing import Any, Optional, cast
 
