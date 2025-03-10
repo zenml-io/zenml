@@ -576,7 +576,9 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 deployment, _, _ = self._compile(**compile_args)
                 pipeline_id = self._register().id
 
-                local_repo = code_repository_utils.find_active_code_repository()
+                local_repo = (
+                    code_repository_utils.find_active_code_repository()
+                )
                 code_repository = build_utils.verify_local_repository_context(
                     deployment=deployment, local_repo_context=local_repo
                 )
@@ -821,16 +823,20 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 self.log_pipeline_deployment_metadata(deployment)
                 run = create_placeholder_run(deployment=deployment)
 
-                analytics_handler.metadata = self._get_pipeline_analytics_metadata(
-                    deployment=deployment,
-                    stack=stack,
-                    run_id=run.id if run else None,
+                analytics_handler.metadata = (
+                    self._get_pipeline_analytics_metadata(
+                        deployment=deployment,
+                        stack=stack,
+                        run_id=run.id if run else None,
+                    )
                 )
 
                 if run:
                     run_url = dashboard_utils.get_run_url(run)
                     if run_url:
-                        logger.info(f"Dashboard URL for Pipeline Run: {run_url}")
+                        logger.info(
+                            f"Dashboard URL for Pipeline Run: {run_url}"
+                        )
                     else:
                         logger.info(
                             "You can visualize your pipeline runs in the `ZenML "
