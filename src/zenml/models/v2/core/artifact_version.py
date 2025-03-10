@@ -684,9 +684,6 @@ class ArtifactVersionFilter(WorkspaceScopedFilter, TaggableFilter):
     def _validate_request(self) -> "ArtifactVersionFilter":
         """Validate the request values.
 
-        Raises:
-            ValueError: If the request is invalid.
-
         Returns:
             The validated request.
         """
