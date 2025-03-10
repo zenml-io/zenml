@@ -11749,7 +11749,7 @@ class SqlZenStore(BaseZenStore):
                         )
                 else:
                     logger.debug(
-                        "Exclusive tag functionality only works: for "
+                        "Exclusive tag functionality only works for "
                         "templates, for pipeline runs (within the scope of "
                         "pipelines) and for artifact versions (within the "
                         "scope of artifacts)."
