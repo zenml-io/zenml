@@ -1163,7 +1163,7 @@ class SqlZenStore(BaseZenStore):
 
             if (
                 ServerConfiguration.get_server_config().deployment_type
-                != ServerDeploymentType.CLOUD
+                == ServerDeploymentType.CLOUD
             ):
                 create_default_workspace = False
 
