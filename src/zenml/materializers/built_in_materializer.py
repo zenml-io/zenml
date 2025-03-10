@@ -13,14 +13,16 @@
 #  permissions and limitations under the License.
 """Implementation of ZenML's builtin materializer."""
 
+import gzip
+import io
 import os
+import pickle
 from typing import (
     TYPE_CHECKING,
     Any,
     ClassVar,
     Dict,
     Iterable,
-    List,
     Optional,
     Tuple,
     Type,
@@ -29,10 +31,12 @@ from typing import (
 
 from zenml.artifact_stores.base_artifact_store import BaseArtifactStore
 from zenml.constants import (
+    DEFAULT_COLLECTION_CHUNK_SIZE,
     ENV_ZENML_MATERIALIZER_ALLOW_NON_ASCII_JSON_DUMPS,
     handle_bool_env_var,
 )
 from zenml.enums import ArtifactType, VisualizationType
+from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.materializers.materializer_registry import materializer_registry
@@ -308,7 +312,7 @@ class BuiltInContainerMaterializer(BaseMaterializer):
             self.data_path
         ) and not self.artifact_store.exists(self.metadata_path):
             raise RuntimeError(
-                f"Materialization of type {data_type} failed. Expected either"
+                f"Materialization of type {data_type} failed. Expected either "
                 f"{self.data_path} or {self.metadata_path} to exist."
             )
 
@@ -319,10 +323,104 @@ class BuiltInContainerMaterializer(BaseMaterializer):
         # Otherwise, use the metadata to reconstruct the data as a list.
         else:
             metadata = yaml_utils.read_json(self.metadata_path)
-            outputs = []
+
+            # V3 format (batch compression, introduced for much better I/O performance)
+            if isinstance(metadata, dict) and metadata.get("version") == "v3":
+                # Pre-allocate a list of the right size
+                max_index = (
+                    max(element["index"] for element in metadata["elements"])
+                    if metadata["elements"]
+                    else -1
+                )
+                outputs = [None] * (max_index + 1)
+
+                # Import required libraries
+                import gzip
+                import pickle
+
+                # Cache for loaded chunks to avoid loading the same chunk multiple times
+                loaded_chunks = {}
+
+                # Process elements in the order they appear in metadata
+                for element_info in metadata["elements"]:
+                    idx = element_info["index"]
+                    batch_id = element_info["batch_id"]
+
+                    # Find the group this element belongs to
+                    group = next(
+                        (
+                            g
+                            for g in metadata["groups"]
+                            if g["batch_id"] == batch_id
+                        ),
+                        None,
+                    )
+                    if not group:
+                        raise RuntimeError(
+                            f"Cannot find batch group {batch_id} in metadata"
+                        )
+
+                    # Find which chunk contains this index
+                    chunk_info = None
+                    for chunk in group["chunks"]:
+                        if idx in chunk["indices"]:
+                            chunk_info = chunk
+                            break
+
+                    if not chunk_info:
+                        raise RuntimeError(
+                            f"Cannot find chunk containing index {idx} in batch {batch_id}"
+                        )
+
+                    # Load the chunk if not already loaded
+                    chunk_path = chunk_info["path"]
+                    if chunk_path not in loaded_chunks:
+                        with fileio.open(chunk_path, "rb") as f_raw:
+                            # Read the compressed data
+                            compressed_data = f_raw.read()
+                            # Use in-memory buffer for gzip decompression
+                            with io.BytesIO(compressed_data) as f_buffer:
+                                with gzip.GzipFile(
+                                    fileobj=f_buffer, mode="rb"
+                                ) as f_gzip:
+                                    chunk_data = pickle.load(f_gzip)
+                        loaded_chunks[chunk_path] = chunk_data
+
+                    # Find the position of this index in the chunk's indices list
+                    chunk_position = chunk_info["indices"].index(idx)
+
+                    # Get the element from the loaded chunk
+                    element = loaded_chunks[chunk_path][chunk_position]
+                    outputs[idx] = element
+
+            # V2 format (optimized for collections, introduced for better performance)
+            elif (
+                isinstance(metadata, dict) and metadata.get("version") == "v2"
+            ):
+                # Pre-allocate a list of the right size
+                max_index = (
+                    max(element["index"] for element in metadata["elements"])
+                    if metadata["elements"]
+                    else -1
+                )
+                outputs = [None] * (max_index + 1)
+
+                # Load all elements
+                for element_info in metadata["elements"]:
+                    path_ = element_info["path"]
+                    type_ = source_utils.load(element_info["type"])
+                    materializer_class = source_utils.load(
+                        element_info["materializer"]
+                    )
+                    idx = element_info["index"]
+
+                    materializer = materializer_class(uri=path_)
+                    element = materializer.load(type_)
+                    outputs[idx] = element
 
             # Backwards compatibility for zenml <= 0.37.0
-            if isinstance(metadata, dict):
+            elif isinstance(metadata, dict):
+                outputs = []
                 for path_, type_str in zip(
                     metadata["paths"], metadata["types"]
                 ):
@@ -332,8 +430,9 @@ class BuiltInContainerMaterializer(BaseMaterializer):
                     element = materializer.load(type_)
                     outputs.append(element)
 
-            # New format for zenml > 0.37.0
+            # Format for zenml > 0.37.0 and < v2
             elif isinstance(metadata, list):
+                outputs = []
                 for entry in metadata:
                     path_ = entry["path"]
                     type_ = source_utils.load(entry["type"])
@@ -363,8 +462,10 @@ class BuiltInContainerMaterializer(BaseMaterializer):
         If the object can be serialized to JSON, serialize it.
 
         Otherwise, use the `default_materializer_registry` to find the correct
-        materializer for each element and materialize each element into a
-        subdirectory.
+        materializer for each element and materialize elements efficiently.
+
+        For large collections, elements are grouped by type and processed together
+        to improve performance.
 
         Tuples and sets are cast to list before materialization.
 
@@ -393,41 +494,157 @@ class BuiltInContainerMaterializer(BaseMaterializer):
         if isinstance(data, dict):
             data = [list(data.keys()), list(data.values())]
 
-        # non-serializable list: Materialize each element into a subfolder.
-        # Get path, type, and corresponding materializer for each element.
-        metadata: List[Dict[str, str]] = []
-        materializers: List[BaseMaterializer] = []
+        # Imports already done at the top of the file
+
+        # Group elements by type to process similar elements together
+        # This reduces the overhead of materializer initialization and type checking
+        type_groups = {}
+        for i, element in enumerate(data):
+            element_type = type(element)
+            if element_type not in type_groups:
+                type_groups[element_type] = []
+            type_groups[element_type].append((i, element))
+
+        # Enhanced metadata with format version for backward compatibility
+        metadata = {
+            "version": "v3",  # Mark this as v3 format with batch compression
+            "groups": [],
+            "elements": [],
+        }
+
+        created_files = []
         try:
-            for i, element in enumerate(data):
-                element_path = os.path.join(self.uri, str(i))
-                self.artifact_store.mkdir(element_path)
-                type_ = type(element)
-                materializer_class = materializer_registry[type_]
-                materializer = materializer_class(uri=element_path)
-                materializers.append(materializer)
-                metadata.append(
-                    {
-                        "path": element_path,
-                        "type": source_utils.resolve(type_).import_path,
-                        "materializer": source_utils.resolve(
-                            materializer_class
-                        ).import_path,
-                    }
-                )
-            # Write metadata as JSON.
+            # Process each type group
+            for group_idx, (element_type, elements) in enumerate(
+                type_groups.items()
+            ):
+                # Get the materializer class once for all elements of this type
+                materializer_class = materializer_registry[element_type]
+
+                # Save type information for all elements in this group
+                type_info = source_utils.resolve(element_type).import_path
+                materializer_info = source_utils.resolve(
+                    materializer_class
+                ).import_path
+
+                # Create a batch directory for this type
+                batch_id = f"batch_{group_idx}"
+                batch_dir = os.path.join(self.uri, batch_id)
+                self.artifact_store.mkdir(batch_dir)
+                created_files.append(batch_dir)
+
+                # Add group info to metadata
+                group_metadata = {
+                    "batch_id": batch_id,
+                    "type": type_info,
+                    "materializer": materializer_info,
+                    "indices": [idx for idx, _ in elements],
+                    "chunks": [],
+                }
+                metadata["groups"].append(group_metadata)
+
+                # Process elements in chunks to avoid memory issues with very large collections
+                # Use the configurable chunk size from constants
+                chunk_size = DEFAULT_COLLECTION_CHUNK_SIZE
+
+                # Adaptive sizing: if elements are particularly large, reduce chunk size
+                # This is a simple heuristic based on the first few elements
+                if elements and len(elements) > 10:
+                    # Sample the first few elements to estimate size
+                    sample_elements = elements[: min(10, len(elements))]
+                    try:
+                        # Basic size estimation with pickle
+                        avg_size = sum(
+                            len(pickle.dumps(e[1])) for e in sample_elements
+                        ) / len(sample_elements)
+                        # Adjust chunk size based on average element size
+                        # Target max chunk size of ~10MB
+                        target_max_bytes = 10 * 1024 * 1024  # 10MB
+                        if avg_size > 0:
+                            adaptive_chunk_size = max(
+                                1, int(target_max_bytes / avg_size)
+                            )
+                            chunk_size = min(chunk_size, adaptive_chunk_size)
+                    except Exception:
+                        # If size estimation fails, use the default chunk size
+                        pass
+
+                for chunk_idx in range(0, len(elements), chunk_size):
+                    chunk_elements = elements[
+                        chunk_idx : chunk_idx + chunk_size
+                    ]
+                    chunk_indices = [idx for idx, _ in chunk_elements]
+
+                    # Create chunk file path
+                    chunk_filename = f"chunk_{chunk_idx // chunk_size}.pkl.gz"
+                    chunk_path = os.path.join(batch_dir, chunk_filename)
+
+                    # Process objects for serialization
+                    serialized_items = []
+
+                    for _, element in chunk_elements:
+                        # Just validate type compatibility but don't serialize yet
+                        materializer = materializer_class(uri="")
+                        materializer.validate_save_type_compatibility(
+                            element_type
+                        )
+                        serialized_items.append(element)
+
+                    # Write compressed batch to a single file using ZenML fileio
+                    with fileio.open(chunk_path, "wb") as f_raw:
+                        # Use in-memory buffer for gzip compression
+                        with io.BytesIO() as f_buffer:
+                            with gzip.GzipFile(
+                                fileobj=f_buffer, mode="wb", compresslevel=6
+                            ) as f_gzip:
+                                pickle.dump(
+                                    serialized_items,
+                                    f_gzip,
+                                    protocol=pickle.HIGHEST_PROTOCOL,
+                                )
+                            # Get the compressed data
+                            compressed_data = f_buffer.getvalue()
+                        # Write to the actual storage
+                        f_raw.write(compressed_data)
+
+                    created_files.append(chunk_path)
+
+                    # Record chunk information
+                    group_metadata["chunks"].append(
+                        {
+                            "path": chunk_path,
+                            "indices": chunk_indices,
+                        }
+                    )
+
+                # Add individual element references to metadata
+                for idx, _ in elements:
+                    metadata["elements"].append(
+                        {
+                            "batch_id": batch_id,
+                            "type": type_info,
+                            "materializer": materializer_info,
+                            "index": idx,  # Store original index for correct ordering
+                        }
+                    )
+
+            # Write enhanced metadata as JSON
             yaml_utils.write_json(self.metadata_path, metadata)
-            # Materialize each element.
-            for element, materializer in zip(data, materializers):
-                materializer.validate_save_type_compatibility(type(element))
-                materializer.save(element)
-        # If an error occurs, delete all created files.
+
+        # If an error occurs, clean up created files
         except Exception as e:
-            # Delete metadata
+            # Delete metadata file if it exists
             if self.artifact_store.exists(self.metadata_path):
                 self.artifact_store.remove(self.metadata_path)
-            # Delete all elements that were already saved.
-            for entry in metadata:
-                self.artifact_store.rmtree(entry["path"])
+
+            # Delete all files created during this process
+            for file_path in created_files:
+                if self.artifact_store.exists(file_path):
+                    if self.artifact_store.isdir(file_path):
+                        self.artifact_store.rmtree(file_path)
+                    else:
+                        self.artifact_store.remove(file_path)
+
             raise e
 
     # save dict type objects to JSON file with JSON visualization type
