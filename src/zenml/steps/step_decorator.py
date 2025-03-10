@@ -18,6 +18,7 @@ from typing import (
     Any,
     Callable,
     Dict,
+    List,
     Mapping,
     Optional,
     Sequence,
@@ -67,6 +68,8 @@ def step(
     experiment_tracker: Optional[str] = None,
     step_operator: Optional[str] = None,
     output_materializers: Optional["OutputMaterializersSpecification"] = None,
+    environment: Optional[Dict[str, Any]] = None,
+    secrets: Optional[List[str]] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
     on_failure: Optional["HookSpecification"] = None,
@@ -88,6 +91,8 @@ def step(
     experiment_tracker: Optional[str] = None,
     step_operator: Optional[str] = None,
     output_materializers: Optional["OutputMaterializersSpecification"] = None,
+    environment: Optional[Dict[str, Any]] = None,
+    secrets: Optional[List[str]] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     extra: Optional[Dict[str, Any]] = None,
     on_failure: Optional["HookSpecification"] = None,
@@ -116,6 +121,8 @@ def step(
             given as a dict, the keys must be a subset of the output names
             of this step. If a single value (type or string) is given, the
             materializer will be used for all outputs.
+        environment: Environment variables to set when running this step.
+        secrets: Secrets to set as environment variables when running this step.
         settings: Settings for this step.
         extra: Extra configurations for this step.
         on_failure: Callback function in event of failure of the step. Can be a
@@ -154,6 +161,8 @@ def step(
             experiment_tracker=experiment_tracker,
             step_operator=step_operator,
             output_materializers=output_materializers,
+            environment=environment,
+            secrets=secrets,
             settings=settings,
             extra=extra,
             on_failure=on_failure,

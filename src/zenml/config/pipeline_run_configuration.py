@@ -44,6 +44,8 @@ class PipelineRunConfiguration(
         default=None, union_mode="left_to_right"
     )
     steps: Dict[str, StepConfigurationUpdate] = {}
+    environment: Dict[str, Any] = {}
+    secrets: List[str] = []
     settings: Dict[str, SerializeAsAny[BaseSettings]] = {}
     tags: Optional[List[str]] = None
     extra: Dict[str, Any] = {}
