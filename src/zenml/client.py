@@ -4325,7 +4325,7 @@ class Client(metaclass=ClientMetaClass):
         id: Optional[Union[UUID, str]] = None,
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
-        artifact_id: Optional[Union[str, UUID]] = None,
+        artifact: Optional[Union[str, UUID]] = None,
         name: Optional[str] = None,
         version: Optional[Union[str, int]] = None,
         version_number: Optional[int] = None,
@@ -4356,7 +4356,7 @@ class Client(metaclass=ClientMetaClass):
             id: Use the id of artifact version to filter by.
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
-            artifact_id: The id of the artifact to filter by.
+            artifact: The name or ID of the artifact to filter by.
             name: The name of the artifact to filter by.
             version: The version of the artifact to filter by.
             version_number: The version number of the artifact to filter by.
@@ -4382,6 +4382,12 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             A list of artifact versions.
         """
+        if name:
+            logger.warning(
+                "The `name` argument is deprecated. Use `artifact` instead."
+            )
+            artifact = name
+
         artifact_version_filter_model = ArtifactVersionFilter(
             sort_by=sort_by,
             page=page,
@@ -4390,8 +4396,7 @@ class Client(metaclass=ClientMetaClass):
             id=id,
             created=created,
             updated=updated,
-            artifact_id=artifact_id,
-            name=name,
+            artifact=artifact,
             version=str(version) if version else None,
             version_number=version_number,
             artifact_store_id=artifact_store_id,

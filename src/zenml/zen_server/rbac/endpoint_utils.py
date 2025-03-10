@@ -230,6 +230,9 @@ def verify_permissions_and_list_entities(
 
     Returns:
         A page of entity models.
+
+    Raises:
+        ValueError: If the filter's workspace scope is not set or is not a UUID.
     """
     auth_context = get_auth_context()
     assert auth_context
@@ -239,7 +242,14 @@ def verify_permissions_and_list_entities(
         # A workspace scoped filter must always be scoped to a specific
         # workspace. This is required for the RBAC check to work.
         set_filter_workspace_scope(filter_model)
-        workspace_id = filter_model.scope_workspace
+        if not filter_model.workspace or not isinstance(
+            filter_model.workspace, UUID
+        ):
+            raise ValueError(
+                "Workspace scope must be a UUID, got "
+                f"{type(filter_model.workspace)}."
+            )
+        workspace_id = filter_model.workspace
 
     allowed_ids = get_allowed_resource_ids(
         resource_type=resource_type, workspace_id=workspace_id

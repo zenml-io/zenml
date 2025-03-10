@@ -2818,7 +2818,7 @@ def test_count_runs():
     if not isinstance(store, SqlZenStore):
         pytest.skip("Test only applies to SQL store")
     active_workspace = client.active_workspace
-    filter_model = PipelineRunFilter(scope_workspace=active_workspace.id)
+    filter_model = PipelineRunFilter(workspace=active_workspace.id)
     num_runs = store.list_runs(filter_model).total
 
     # At baseline this should be the same
@@ -2828,7 +2828,7 @@ def test_count_runs():
         assert (
             store.count_runs(filter_model)
             == store.list_runs(
-                PipelineRunFilter(scope_workspace=active_workspace.id)
+                PipelineRunFilter(workspace=active_workspace.id)
             ).total
         )
         assert store.count_runs(filter_model) == num_runs + 5
@@ -3036,7 +3036,7 @@ def test_list_custom_named_artifacts():
     ).total
     num_matching_named_before = store.list_artifact_versions(
         ArtifactVersionFilter(
-            has_custom_name=True, name="contains:test_step_output"
+            has_custom_name=True, artifact="contains:test_step_output"
         )
     ).total
     num_runs = 1
@@ -3052,7 +3052,7 @@ def test_list_custom_named_artifacts():
 
         artifact_versions = store.list_artifact_versions(
             ArtifactVersionFilter(
-                has_custom_name=True, name="contains:test_step_output"
+                has_custom_name=True, artifact="contains:test_step_output"
             )
         )
         assert (
