@@ -11710,7 +11710,7 @@ class SqlZenStore(BaseZenStore):
                 except KeyError:
                     pass
                 else:
-                    logger.warning(
+                    logger.debug(
                         f"Tag `{tag_schema.name}` is already assigned to "
                         f"{resource_type.value} with ID: `{resource.id}`."
                     )
