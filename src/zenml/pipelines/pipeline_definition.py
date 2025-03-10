@@ -588,7 +588,9 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 deployment, _, _ = self._compile(**compile_args)
                 pipeline_id = self._register().id
 
-                local_repo = code_repository_utils.find_active_code_repository()
+                local_repo = (
+                    code_repository_utils.find_active_code_repository()
+                )
                 code_repository = build_utils.verify_local_repository_context(
                     deployment=deployment, local_repo_context=local_repo
                 )

@@ -22,7 +22,7 @@ from tests.unit.conftest_new import empty_pipeline  # noqa
 from zenml.client import Client
 from zenml.config.compiler import Compiler
 from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
-from zenml.enums import ExecutionStatus, StackComponentType
+from zenml.enums import ExecutionStatus
 from zenml.exceptions import (
     StackValidationError,
 )
@@ -673,7 +673,13 @@ def test_run_tagging(clean_client, tmp_path, empty_pipeline):  # noqa: F811
     assert {tag.name for tag in run.tags} == {"tag_1", "tag_2", "tag_3"}
 
 
-def test_run_temporary_active_stack_config_file(local_stack, local_orchestrator, local_artifact_store, one_step_pipeline, empty_step):  # noqa: F811
+def test_run_temporary_active_stack_config_file(
+    local_stack,
+    local_orchestrator,
+    local_artifact_store,
+    one_step_pipeline,
+    empty_step,
+):  # noqa: F811
     """Test we run a pipeline on a different stack, provided through config file."""
     # Activate the default stack.
     Client().activate_stack(stack_name_id_or_prefix=local_stack.id)
@@ -687,7 +693,14 @@ def test_run_temporary_active_stack_config_file(local_stack, local_orchestrator,
     assert Client().active_stack.id == local_stack.id
 
 
-def test_run_temporary_active_stack_options(local_stack, local_orchestrator, local_artifact_store, tmp_path, one_step_pipeline, empty_step):  # noqa: F811
+def test_run_temporary_active_stack_options(
+    local_stack,
+    local_orchestrator,
+    local_artifact_store,
+    tmp_path,
+    one_step_pipeline,
+    empty_step,
+):  # noqa: F811
     """Test we run a pipeline on a different stack, directly provided through options."""
     # Activate the default stack.
     Client().activate_stack(stack_name_id_or_prefix=local_stack.id)

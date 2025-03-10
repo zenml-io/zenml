@@ -26,7 +26,6 @@ from zenml.config.step_configurations import StepConfigurationUpdate
 from zenml.config.strict_base_model import StrictBaseModel
 from zenml.model.model import Model
 from zenml.models import PipelineBuildBase
-from zenml.stack.stack import Stack
 from zenml.utils import pydantic_utils
 from zenml.utils.tag_utils import Tag
 
