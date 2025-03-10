@@ -35,6 +35,7 @@ from zenml.models import (
 )
 from zenml.pipelines.pipeline_definition import Pipeline
 from zenml.utils import source_utils, uuid_utils
+from zenml.utils.stack_utils import temporary_active_stack
 from zenml.utils.yaml_utils import write_yaml
 
 logger = get_logger(__name__)
@@ -190,7 +191,7 @@ def build_pipeline(
             "your source code root."
         )
 
-    with cli_utils.temporary_active_stack(stack_name_or_id=stack_name_or_id):
+    with temporary_active_stack(stack_name_or_id=stack_name_or_id):
         pipeline_instance = _import_pipeline(source=source)
 
         pipeline_instance = pipeline_instance.with_options(
@@ -276,7 +277,7 @@ def run_pipeline(
             "your source code root."
         )
 
-    with cli_utils.temporary_active_stack(stack_name_or_id=stack_name_or_id):
+    with temporary_active_stack(stack_name_or_id=stack_name_or_id):
         pipeline_instance = _import_pipeline(source=source)
 
         build: Union[str, PipelineBuildBase, None] = None
@@ -353,7 +354,7 @@ def create_run_template(
             "init` at your source code root."
         )
 
-    with cli_utils.temporary_active_stack(stack_name_or_id=stack_name_or_id):
+    with temporary_active_stack(stack_name_or_id=stack_name_or_id):
         pipeline_instance = _import_pipeline(source=source)
 
         pipeline_instance = pipeline_instance.with_options(
