@@ -360,35 +360,6 @@ class WorkspaceScopedFilter(UserScopedFilter):
         union_mode="left_to_right",
     )
 
-    def get_custom_filters(
-        self, table: Type["AnySchema"]
-    ) -> List["ColumnElement[bool]"]:
-        """Get custom filters.
-
-        Args:
-            table: The query table.
-
-        Returns:
-            A list of custom filters.
-        """
-        custom_filters = super().get_custom_filters(table)
-
-        from sqlmodel import and_
-
-        from zenml.zen_stores.schemas import WorkspaceSchema
-
-        if self.workspace:
-            workspace_filter = and_(
-                getattr(table, "workspace_id") == WorkspaceSchema.id,
-                self.generate_name_or_id_query_conditions(
-                    value=self.workspace,
-                    table=WorkspaceSchema,
-                ),
-            )
-            custom_filters.append(workspace_filter)
-
-        return custom_filters
-
     def apply_filter(
         self,
         query: AnyQuery,
