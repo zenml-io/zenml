@@ -177,7 +177,8 @@ from zenml.integrations.wandb.flavors.wandb_experiment_tracker_flavor import Wan
 
 wandb_settings = WandbExperimentTrackerSettings(
     settings=wandb.Settings(...),
-    tags=["some_tag"]
+    tags=["some_tag"],
+    enable_weave=True, # Enable Weave integration
 )
 
 
