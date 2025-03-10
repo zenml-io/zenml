@@ -139,6 +139,28 @@ class ArtifactVersionRequest(WorkspaceScopedRequest):
         )
         return value
 
+    @model_validator(mode="after")
+    def _validate_request(self) -> "ArtifactVersionRequest":
+        """Validate the request values.
+
+        Raises:
+            ValueError: If the request is invalid.
+
+        Returns:
+            The validated request.
+        """
+        if self.artifact_id and self.artifact_name:
+            raise ValueError(
+                "Only one of artifact_name and artifact_id can be set."
+            )
+
+        if not (self.artifact_id or self.artifact_name):
+            raise ValueError(
+                "Either artifact_name or artifact_id must be set."
+            )
+
+        return self
+
 
 # ------------------ Update Model ------------------
 
@@ -681,11 +703,11 @@ class ArtifactVersionFilter(WorkspaceScopedFilter, TaggableFilter):
         return custom_filters
 
     @model_validator(mode="after")
-    def _validate_request(self) -> "ArtifactVersionFilter":
-        """Validate the request values.
+    def _migrate_artifact_id(self) -> "ArtifactVersionFilter":
+        """Migrate value from the deprecated artifact_id attribute.
 
         Returns:
-            The validated request.
+            The filter with migrated value.
         """
         # Handle deprecated artifact_id field
         if self.artifact_id is not None:
