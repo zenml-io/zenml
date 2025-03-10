@@ -26,7 +26,7 @@ from zenml.models.v2.base.base import (
     BaseResponseBody,
     BaseResponseMetadata,
     BaseResponseResources,
-    BaseZenModel,
+    BaseUpdate,
 )
 
 # ------------------ Base Model ------------------
@@ -34,7 +34,7 @@ from zenml.models.v2.base.base import (
 # ------------------ Update Model ------------------
 
 
-class ServerSettingsUpdate(BaseZenModel):
+class ServerSettingsUpdate(BaseUpdate):
     """Model for updating server settings."""
 
     server_name: Optional[str] = Field(

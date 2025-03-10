@@ -66,11 +66,6 @@ def test_sorting_entities(clean_client):
     clean_client.list_pipeline_runs(sort_by="asc:user")
     clean_client.list_pipeline_runs(sort_by="desc:user")
 
-    # Sorting runs by the name of the workspace
-    clean_client.list_pipeline_runs(sort_by="workspace")
-    clean_client.list_pipeline_runs(sort_by="asc:workspace")
-    clean_client.list_pipeline_runs(sort_by="desc:workspace")
-
     # Sorting any taggable entity by tags
     results = clean_client.list_pipeline_runs(sort_by="asc:tags")
     assert results[0].id == second_pipeline_first_run.id

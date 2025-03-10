@@ -67,7 +67,6 @@ router = APIRouter(
 
 @router.post(
     "",
-    response_model=ServiceAccountResponse,
     responses={
         401: error_response,
         409: error_response,
@@ -89,14 +88,12 @@ def create_service_account(
     """
     return verify_permissions_and_create_entity(
         request_model=service_account,
-        resource_type=ResourceType.SERVICE_ACCOUNT,
         create_method=zen_store().create_service_account,
     )
 
 
 @router.get(
     "/{service_account_name_or_id}",
-    response_model=ServiceAccountResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -124,7 +121,6 @@ def get_service_account(
 
 @router.get(
     "",
-    response_model=Page[ServiceAccountResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -156,7 +152,6 @@ def list_service_accounts(
 
 @router.put(
     "/{service_account_name_or_id}",
-    response_model=ServiceAccountResponse,
     responses={
         401: error_response,
         404: error_response,
@@ -214,7 +209,6 @@ def delete_service_account(
 
 @router.post(
     "/{service_account_id}" + API_KEYS,
-    response_model=APIKeyResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -233,18 +227,26 @@ def create_api_key(
     Returns:
         The created API key.
     """
+
+    def create_api_key_wrapper(
+        api_key: APIKeyRequest,
+    ) -> APIKeyResponse:
+        return zen_store().create_api_key(
+            service_account_id=service_account_id,
+            api_key=api_key,
+        )
+
     service_account = zen_store().get_service_account(service_account_id)
-    verify_permission_for_model(service_account, action=Action.UPDATE)
-    created_api_key = zen_store().create_api_key(
-        service_account_id=service_account_id,
-        api_key=api_key,
+
+    return verify_permissions_and_create_entity(
+        request_model=api_key,
+        create_method=create_api_key_wrapper,
+        surrogate_models=[service_account],
     )
-    return created_api_key
 
 
 @router.get(
     "/{service_account_id}" + API_KEYS + "/{api_key_name_or_id}",
-    response_model=APIKeyResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -278,7 +280,6 @@ def get_api_key(
 
 @router.get(
     "/{service_account_id}" + API_KEYS,
-    response_model=Page[APIKeyResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -313,7 +314,6 @@ def list_api_keys(
 
 @router.put(
     "/{service_account_id}" + API_KEYS + "/{api_key_name_or_id}",
-    response_model=APIKeyResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -348,7 +348,6 @@ def update_api_key(
     + API_KEYS
     + "/{api_key_name_or_id}"
     + API_KEY_ROTATE,
-    response_model=APIKeyResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions

@@ -16,7 +16,11 @@
 from typing import Optional
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    model_validator,
+)
 
 from zenml.utils.enum_utils import StrEnum
 
@@ -69,9 +73,28 @@ class ResourceType(StrEnum):
     TAG = "tag"
     TRIGGER = "trigger"
     TRIGGER_EXECUTION = "trigger_execution"
+    WORKSPACE = "workspace"
     # Deactivated for now
     # USER = "user"
-    # WORKSPACE = "workspace"
+
+    def is_workspace_scoped(self) -> bool:
+        """Check if a resource type is workspace scoped.
+
+        Returns:
+            Whether the resource type is workspace scoped.
+        """
+        return self not in [
+            self.FLAVOR,
+            self.SECRET,
+            self.SERVICE_CONNECTOR,
+            self.STACK,
+            self.STACK_COMPONENT,
+            self.TAG,
+            self.SERVICE_ACCOUNT,
+            self.WORKSPACE,
+            # Deactivated for now
+            # self.USER,
+        ]
 
 
 class Resource(BaseModel):
@@ -79,6 +102,7 @@ class Resource(BaseModel):
 
     type: str
     id: Optional[UUID] = None
+    workspace_id: Optional[UUID] = None
 
     def __str__(self) -> str:
         """Convert to a string.
@@ -86,10 +110,48 @@ class Resource(BaseModel):
         Returns:
             Resource string representation.
         """
-        representation = self.type
+        workspace_id = self.workspace_id
+        if self.type == ResourceType.WORKSPACE and self.id:
+            # TODO: For now, we duplicate the workspace ID in the string
+            # representation when describing a workspace instance, because
+            # this is what is expected by the RBAC implementation.
+            workspace_id = self.id
+
+        if workspace_id:
+            representation = f"{workspace_id}:"
+        else:
+            representation = ""
+        representation += self.type
         if self.id:
             representation += f"/{self.id}"
 
         return representation
+
+    @model_validator(mode="after")
+    def validate_workspace_id(self) -> "Resource":
+        """Validate that workspace_id is set in combination with workspace-scoped resource types.
+
+        Raises:
+            ValueError: If workspace_id is not set for a workspace-scoped
+                resource or set for an unscoped resource.
+
+        Returns:
+            The validated resource.
+        """
+        resource_type = ResourceType(self.type)
+
+        if resource_type.is_workspace_scoped() and not self.workspace_id:
+            raise ValueError(
+                "workspace_id must be set for workspace-scoped resource type "
+                f"'{self.type}'"
+            )
+
+        if not resource_type.is_workspace_scoped() and self.workspace_id:
+            raise ValueError(
+                "workspace_id must not be set for global resource type "
+                f"'{self.type}'"
+            )
+
+        return self
 
     model_config = ConfigDict(frozen=True)

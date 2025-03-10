@@ -24,12 +24,12 @@ from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.logger import get_logger
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
-    WorkspaceScopedFilter,
-    WorkspaceScopedRequest,
-    WorkspaceScopedResponse,
-    WorkspaceScopedResponseBody,
-    WorkspaceScopedResponseMetadata,
-    WorkspaceScopedResponseResources,
+    UserScopedFilter,
+    UserScopedRequest,
+    UserScopedResponse,
+    UserScopedResponseBody,
+    UserScopedResponseMetadata,
+    UserScopedResponseResources,
 )
 from zenml.models.v2.misc.service_connector_type import (
     ServiceConnectorTypeModel,
@@ -41,7 +41,7 @@ logger = get_logger(__name__)
 # ------------------ Request Model ------------------
 
 
-class ServiceConnectorRequest(WorkspaceScopedRequest):
+class ServiceConnectorRequest(UserScopedRequest):
     """Request model for service connectors."""
 
     name: str = Field(
@@ -223,8 +223,6 @@ class ServiceConnectorUpdate(BaseUpdate):
     valid configuration update, not just a partial update. If either is
     set (i.e. not None) in the update, their values are merged together and
     will replace the existing configuration and secrets values.
-    * the `secret_id` field value in the update is ignored, given that
-    secrets are managed internally by the ZenML store.
     * the `labels` field is also a full labels update: if set (i.e. not
     `None`), all existing labels are removed and replaced by the new labels
     in the update.
@@ -400,7 +398,7 @@ class ServiceConnectorUpdate(BaseUpdate):
 # ------------------ Response Model ------------------
 
 
-class ServiceConnectorResponseBody(WorkspaceScopedResponseBody):
+class ServiceConnectorResponseBody(UserScopedResponseBody):
     """Response body for service connectors."""
 
     description: str = Field(
@@ -446,7 +444,7 @@ class ServiceConnectorResponseBody(WorkspaceScopedResponseBody):
     )
 
 
-class ServiceConnectorResponseMetadata(WorkspaceScopedResponseMetadata):
+class ServiceConnectorResponseMetadata(UserScopedResponseMetadata):
     """Response metadata for service connectors."""
 
     configuration: Dict[str, Any] = Field(
@@ -475,12 +473,12 @@ class ServiceConnectorResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
-class ServiceConnectorResponseResources(WorkspaceScopedResponseResources):
+class ServiceConnectorResponseResources(UserScopedResponseResources):
     """Class for all resource models associated with the service connector entity."""
 
 
 class ServiceConnectorResponse(
-    WorkspaceScopedResponse[
+    UserScopedResponse[
         ServiceConnectorResponseBody,
         ServiceConnectorResponseMetadata,
         ServiceConnectorResponseResources,
@@ -781,18 +779,18 @@ class ServiceConnectorResponse(
 # ------------------ Filter Model ------------------
 
 
-class ServiceConnectorFilter(WorkspaceScopedFilter):
+class ServiceConnectorFilter(UserScopedFilter):
     """Model to enable advanced filtering of service connectors."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
+        *UserScopedFilter.FILTER_EXCLUDE_FIELDS,
         "scope_type",
         "resource_type",
         "labels_str",
         "labels",
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
+        *UserScopedFilter.CLI_EXCLUDE_FIELDS,
         "scope_type",
         "labels_str",
         "labels",

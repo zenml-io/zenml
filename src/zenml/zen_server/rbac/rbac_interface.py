@@ -73,3 +73,12 @@ class RBACInterface(ABC):
             actions: The actions that the user should be able to perform on the
                 resource.
         """
+
+    @abstractmethod
+    def delete_resources(self, resources: List[Resource]) -> None:
+        """Delete resource membership information for a list of resources.
+
+        Args:
+            resources: The resources for which to delete the resource membership
+                information.
+        """

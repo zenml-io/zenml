@@ -18,7 +18,7 @@ import json
 from typing import Any, Dict, Optional, cast
 from uuid import UUID
 
-from sqlalchemy import TEXT, Column
+from sqlalchemy import TEXT, Column, UniqueConstraint
 from sqlalchemy_utils.types.encrypted.encrypted_type import (
     AesGcmEngine,
     InvalidCiphertextError,
@@ -26,7 +26,6 @@ from sqlalchemy_utils.types.encrypted.encrypted_type import (
 from sqlmodel import Field, Relationship
 
 from zenml.constants import TEXT_FIELD_MAX_LENGTH
-from zenml.enums import SecretScope
 from zenml.models import (
     SecretRequest,
     SecretResponse,
@@ -38,7 +37,6 @@ from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
-from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 
 class SecretDecodeError(Exception):
@@ -54,20 +52,18 @@ class SecretSchema(NamedSchema, table=True):
     """
 
     __tablename__ = "secret"
+    __table_args__ = (
+        UniqueConstraint(
+            "name",
+            "private",
+            "user_id",
+            name="unique_secret_name_private_scope_user",
+        ),
+    )
 
-    scope: str
+    private: bool
 
     values: Optional[bytes] = Field(sa_column=Column(TEXT, nullable=True))
-
-    workspace_id: UUID = build_foreign_key_field(
-        source=__tablename__,
-        target=WorkspaceSchema.__tablename__,
-        source_column="workspace_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=False,
-    )
-    workspace: "WorkspaceSchema" = Relationship(back_populates="secrets")
 
     user_id: UUID = build_foreign_key_field(
         source=__tablename__,
@@ -177,8 +173,7 @@ class SecretSchema(NamedSchema, table=True):
         assert secret.user is not None, "User must be set for secret creation."
         return cls(
             name=secret.name,
-            scope=secret.scope.value,
-            workspace_id=secret.workspace,
+            private=secret.private,
             user_id=secret.user,
             # Don't store secret values implicitly in the secret. The
             # SQL secret store will call `store_secret_values` to store the
@@ -202,12 +197,9 @@ class SecretSchema(NamedSchema, table=True):
         # SQL secret store will call `set_secret_values` to update the
         # values separately if SQL is used as the secrets store.
         for field, value in secret_update.model_dump(
-            exclude_unset=True, exclude={"workspace", "user", "values"}
+            exclude_unset=True, exclude={"user", "values"}
         ).items():
-            if field == "scope":
-                setattr(self, field, value.value)
-            else:
-                setattr(self, field, value)
+            setattr(self, field, value)
 
         self.updated = utc_now()
         return self
@@ -231,9 +223,7 @@ class SecretSchema(NamedSchema, table=True):
         """
         metadata = None
         if include_metadata:
-            metadata = SecretResponseMetadata(
-                workspace=self.workspace.to_model(),
-            )
+            metadata = SecretResponseMetadata()
 
         # Don't load the secret values implicitly in the secret. The
         # SQL secret store will call `get_secret_values` to load the
@@ -242,7 +232,7 @@ class SecretSchema(NamedSchema, table=True):
             user=self.user.to_model() if self.user else None,
             created=self.created,
             updated=self.updated,
-            scope=SecretScope(self.scope),
+            private=self.private,
         )
         return SecretResponse(
             id=self.id,

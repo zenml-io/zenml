@@ -59,7 +59,6 @@ router = APIRouter(
 
 @router.post(
     "",
-    response_model=TagResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -77,14 +76,12 @@ def create_tag(
     """
     return verify_permissions_and_create_entity(
         request_model=tag,
-        resource_type=ResourceType.TAG,
         create_method=zen_store().create_tag,
     )
 
 
 @router.get(
     "",
-    response_model=Page[TagResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -114,7 +111,6 @@ def list_tags(
 
 @router.get(
     "/{tag_name_or_id}",
-    response_model=TagResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -134,13 +130,14 @@ def get_tag(
         The tag with the given name or ID.
     """
     return verify_permissions_and_get_entity(
-        id=tag_name_or_id, get_method=zen_store().get_tag, hydrate=hydrate
+        id=tag_name_or_id,
+        get_method=zen_store().get_tag,
+        hydrate=hydrate,
     )
 
 
 @router.put(
     "/{tag_id}",
-    response_model=TagResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions

@@ -133,7 +133,8 @@ from zenml.models.v2.core.component import (
     ComponentResponse,
     ComponentResponseBody,
     ComponentResponseMetadata,
-    ComponentResponseResources
+    ComponentResponseResources,
+    DefaultComponentRequest,
 )
 from zenml.models.v2.core.event_source_flavor import (
     EventSourceFlavorResponse,
@@ -275,12 +276,17 @@ from zenml.models.v2.core.service_connector import (
     ServiceConnectorResponseMetadata,
 )
 from zenml.models.v2.core.stack import (
+    DefaultStackRequest,
     StackRequest,
     StackUpdate,
     StackFilter,
     StackResponse,
     StackResponseBody,
     StackResponseMetadata,
+)
+from zenml.models.v2.misc.statistics import (
+    WorkspaceStatistics,
+    ServerStatistics,
 )
 from zenml.models.v2.core.step_run import (
     StepRunRequest,
@@ -295,6 +301,7 @@ from zenml.models.v2.core.tag import (
     TagFilter,
     TagResponse,
     TagResponseBody,
+    TagResponseMetadata,
     TagRequest,
     TagUpdate,
 )
@@ -562,6 +569,8 @@ __all__ = [
     "ComponentResponseBody",
     "ComponentResponseMetadata",
     "ComponentResponseResources",
+    "DefaultComponentRequest",
+    "DefaultStackRequest",
     "EventSourceFlavorResponse",
     "EventSourceFlavorResponseBody",
     "EventSourceFlavorResponseMetadata",
@@ -695,6 +704,7 @@ __all__ = [
     "TagResourceRequest",
     "TagResponse",
     "TagResponseBody",
+    "TagResponseMetadata",
     "TagRequest",
     "TagUpdate",
     "TriggerResponse",
@@ -745,6 +755,7 @@ __all__ = [
     "ServerModel",
     "ServerDatabaseType",
     "ServerDeploymentType",
+    "ServerStatistics",
     "StackDeploymentConfig",
     "StackDeploymentInfo",
     "OAuthDeviceAuthorizationRequest",
@@ -760,4 +771,5 @@ __all__ = [
     "ResourcesInfo",
     "RunMetadataEntry",
     "RunMetadataResource",
+    "WorkspaceStatistics",
 ]

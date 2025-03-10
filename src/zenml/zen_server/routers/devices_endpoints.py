@@ -54,7 +54,6 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=Page[OAuthDeviceResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -85,7 +84,6 @@ def list_authorized_devices(
 
 @router.get(
     "/{device_id}",
-    response_model=OAuthDeviceResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -136,7 +134,6 @@ def get_authorization_device(
 
 @router.put(
     "/{device_id}",
-    response_model=OAuthDeviceResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -173,7 +170,6 @@ def update_authorized_device(
 
 @router.put(
     "/{device_id}" + DEVICE_VERIFY,
-    response_model=OAuthDeviceResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions

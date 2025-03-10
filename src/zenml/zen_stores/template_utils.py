@@ -63,7 +63,7 @@ def validate_deployment_is_templatable(
                 "associated stack has no flavor."
             )
 
-        if component.flavor_schema.workspace_id:
+        if component.flavor_schema.is_custom:
             raise ValueError(
                 "Unable to create run template as a component of the "
                 "associated stack has a custom flavor."

@@ -38,6 +38,7 @@ from zenml.models import (
     UserRequest,
     UserResponse,
     UserUpdate,
+    WorkspaceScopedResponse,
 )
 from zenml.zen_server.auth import (
     AuthContext,
@@ -46,6 +47,9 @@ from zenml.zen_server.auth import (
 )
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rate_limit import RequestLimiter
+from zenml.zen_server.rbac.endpoint_utils import (
+    verify_permissions_and_get_entity,
+)
 from zenml.zen_server.rbac.models import Action, Resource, ResourceType
 from zenml.zen_server.rbac.utils import (
     dehydrate_page,
@@ -87,7 +91,6 @@ current_user_router = APIRouter(
 
 @router.get(
     "",
-    response_model=Page[UserResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -133,7 +136,6 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
     @router.post(
         "",
-        response_model=UserResponse,
         responses={
             401: error_response,
             409: error_response,
@@ -174,7 +176,6 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
         # new_user = verify_permissions_and_create_entity(
         #     request_model=user,
-        #     resource_type=ResourceType.USER,
         #     create_method=zen_store().create_user,
         # )
         new_user = zen_store().create_user(user)
@@ -188,7 +189,6 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
 @router.get(
     "/{user_name_or_id}",
-    response_model=UserResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -233,7 +233,6 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
     @router.put(
         "/{user_name_or_id}",
-        response_model=UserResponse,
         responses={
             401: error_response,
             404: error_response,
@@ -403,7 +402,6 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
     @activation_router.put(
         "/{user_name_or_id}" + ACTIVATE,
-        response_model=UserResponse,
         responses={
             401: error_response,
             404: error_response,
@@ -464,7 +462,6 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
     @router.put(
         "/{user_name_or_id}" + DEACTIVATE,
-        response_model=UserResponse,
         responses={
             401: error_response,
             404: error_response,
@@ -555,7 +552,6 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
     @router.put(
         "/{user_name_or_id}" + EMAIL_ANALYTICS,
-        response_model=UserResponse,
         responses={
             401: error_response,
             404: error_response,
@@ -608,7 +604,6 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
 @current_user_router.get(
     "/current-user",
-    response_model=UserResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -632,7 +627,6 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
     @current_user_router.put(
         "/current-user",
-        response_model=UserResponse,
         responses={
             401: error_response,
             404: error_response,
@@ -752,8 +746,6 @@ if server_config().rbac_enabled:
             )
 
         resource_type = ResourceType(resource_type)
-        resource = Resource(type=resource_type, id=resource_id)
-
         schema_class = get_schema_for_resource_type(resource_type)
         model = zen_store().get_entity_by_id(
             entity_id=resource_id, schema_class=schema_class
@@ -764,6 +756,14 @@ if server_config().rbac_enabled:
                 f"Resource of type {resource_type} with ID {resource_id} does "
                 "not exist."
             )
+
+        workspace_id = None
+        if isinstance(model, WorkspaceScopedResponse):
+            workspace_id = model.workspace.id
+
+        resource = Resource(
+            type=resource_type, id=resource_id, workspace_id=workspace_id
+        )
 
         verify_permission_for_model(model=model, action=Action.SHARE)
         for action in actions:
@@ -776,3 +776,38 @@ if server_config().rbac_enabled:
             resource=resource,
             actions=[Action(action) for action in actions],
         )
+
+
+@current_user_router.put(
+    "/default-workspace",
+    responses={
+        401: error_response,
+        404: error_response,
+        422: error_response,
+    },
+)
+@handle_exceptions
+def update_user_default_workspace(
+    workspace_name_or_id: Union[str, UUID],
+    auth_context: AuthContext = Security(authorize),
+) -> UserResponse:
+    """Updates the default workspace of the current user.
+
+    Args:
+        workspace_name_or_id: Name or ID of the workspace.
+        auth_context: Authentication context.
+
+    Returns:
+        The updated user.
+    """
+    workspace = verify_permissions_and_get_entity(
+        id=workspace_name_or_id,
+        get_method=zen_store().get_workspace,
+    )
+
+    user = zen_store().update_user(
+        user_id=auth_context.user.id,
+        user_update=UserUpdate(default_workspace_id=workspace.id),
+    )
+
+    return dehydrate_response_model(user)
