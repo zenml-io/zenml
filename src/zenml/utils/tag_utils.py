@@ -386,7 +386,7 @@ def add_tags(
         ]:
             logger.warning(
                 "The tag will be added, however, please keep in mind that "
-                "the functionalty of having exclusive tags is only "
+                "the functionality of having exclusive tags is only "
                 "applicable for pipeline runs, artifact versions and run "
                 f"templates, not {resource_type.value}s."
             )
