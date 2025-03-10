@@ -517,6 +517,9 @@ class PipelineBuildFilter(WorkspaceScopedFilter):
     stack_checksum: Optional[str] = Field(
         description="The stack checksum.", default=None
     )
+    duration: Optional[Union[int, str]] = Field(
+        description="The duration of the build in seconds.", default=None
+    )
 
     def get_custom_filters(
         self,
