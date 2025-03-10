@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 """Base Step for ZenML."""
 
+from __future__ import annotations
+
 import copy
 import hashlib
 import inspect
@@ -22,6 +24,7 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Dict,
+    Generic,
     List,
     Mapping,
     Optional,
@@ -33,6 +36,7 @@ from typing import (
 )
 
 from pydantic import BaseModel, ConfigDict, ValidationError
+from typing_extensions import ParamSpec
 
 from zenml.client_lazy_loader import ClientLazyLoader
 from zenml.config.retry_config import StepRetryConfig
@@ -91,10 +95,11 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
-T = TypeVar("T", bound="BaseStep")
+P = ParamSpec("P")
+R = TypeVar("R")
 
 
-class BaseStep:
+class BaseStep(Generic[P, R]):
     """Abstract base class for all ZenML steps."""
 
     def __init__(
@@ -212,7 +217,7 @@ class BaseStep:
         notebook_utils.try_to_save_notebook_cell_code(self.source_object)
 
     @abstractmethod
-    def entrypoint(self, *args: Any, **kwargs: Any) -> Any:
+    def entrypoint(self, *args: P.args, **kwargs: P.kwargs) -> R:
         """Abstract method for core step logic.
 
         Args:
@@ -224,7 +229,7 @@ class BaseStep:
         """
 
     @classmethod
-    def load_from_source(cls, source: Union[Source, str]) -> "BaseStep":
+    def load_from_source(cls, source: Union[Source, str]) -> "BaseStep[P, R]":
         """Loads a step from source.
 
         Args:
@@ -581,7 +586,7 @@ class BaseStep:
         return self._configuration
 
     def configure(
-        self: T,
+        self: "BaseStep[P,R]",
         enable_cache: Optional[bool] = None,
         enable_artifact_metadata: Optional[bool] = None,
         enable_artifact_visualization: Optional[bool] = None,
@@ -600,7 +605,7 @@ class BaseStep:
         merge: bool = True,
         retry: Optional[StepRetryConfig] = None,
         substitutions: Optional[Dict[str, str]] = None,
-    ) -> T:
+    ) -> "BaseStep[P,R]":
         """Configures the step.
 
         Configuration merging example:
@@ -733,7 +738,7 @@ class BaseStep:
         model: Optional["Model"] = None,
         merge: bool = True,
         substitutions: Optional[Dict[str, str]] = None,
-    ) -> "BaseStep":
+    ) -> "BaseStep[P, R]":
         """Copies the step and applies the given configurations.
 
         Args:
@@ -789,7 +794,7 @@ class BaseStep:
         )
         return step_copy
 
-    def copy(self) -> "BaseStep":
+    def copy(self) -> "BaseStep[P, R]":
         """Copies the step.
 
         Returns:
