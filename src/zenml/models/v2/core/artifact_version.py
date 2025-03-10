@@ -681,11 +681,11 @@ class ArtifactVersionFilter(WorkspaceScopedFilter, TaggableFilter):
         return custom_filters
 
     @model_validator(mode="after")
-    def _validate_request(self) -> "ArtifactVersionFilter":
-        """Validate the request values.
+    def _migrate_artifact_id(self) -> "ArtifactVersionFilter":
+        """Migrate value from the deprecated artifact_id attribute.
 
         Returns:
-            The validated request.
+            The filter with migrated value.
         """
         # Handle deprecated artifact_id field
         if self.artifact_id is not None:
