@@ -322,7 +322,7 @@ class BaseZenStore(
                 active_workspace = self.get_workspace(
                     active_workspace_name_or_id
                 )
-            except KeyError:
+            except (KeyError, IllegalOperationError):
                 active_workspace_name_or_id = None
                 logger.warning(
                     f"The current {config_name} active workspace is no longer "
@@ -332,7 +332,7 @@ class BaseZenStore(
         if active_workspace is None:
             try:
                 active_workspace = self._get_default_workspace()
-            except KeyError:
+            except (KeyError, IllegalOperationError):
                 logger.warning(
                     "An active workspace is not set. Please set the active "
                     "workspace by running `zenml workspace set "
