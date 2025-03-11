@@ -100,6 +100,8 @@ class PipelineBuildSchema(BaseSchema, table=True):
     python_version: Optional[str]
     checksum: Optional[str]
     stack_checksum: Optional[str]
+    # Build duration in seconds
+    duration: Optional[int] = None
 
     @classmethod
     def from_request(
@@ -125,6 +127,7 @@ class PipelineBuildSchema(BaseSchema, table=True):
             python_version=request.python_version,
             checksum=request.checksum,
             stack_checksum=request.stack_checksum,
+            duration=request.duration,
         )
 
     def to_model(
@@ -162,6 +165,7 @@ class PipelineBuildSchema(BaseSchema, table=True):
                 stack_checksum=self.stack_checksum,
                 is_local=self.is_local,
                 contains_code=self.contains_code,
+                duration=self.duration,
             )
         return PipelineBuildResponse(
             id=self.id,
