@@ -5747,9 +5747,9 @@ class SqlZenStore(BaseZenStore):
         """
         if self.backup_secrets_store:
             # We attempt either an update or a create operation depending on
-            # whether the secret values are already stored in the backup secrets
-            # store. This is to account for any inconsistencies in the backup
-            # secrets store without impairing the backup functionality.
+            # whether the secret values are already stored in the backup
+            # secrets store. This is to account for any inconsistencies in the
+            # backup secrets store without impairing the backup functionality.
             try:
                 self.backup_secrets_store.get_secret_values(
                     secret_id=secret_id,
@@ -9842,7 +9842,7 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             request_model: The request model to set the user ID on.
-            session: The DB session to use to use for queries.
+            session: The DB session to use for queries.
         """
         if not isinstance(request_model, UserScopedRequest):
             # If the request model is not a UserScopedRequest, we don't need to
@@ -9861,7 +9861,7 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             filter_model: The filter model to set the workspace ID on.
-            session: The DB session to use to use for queries.
+            session: The DB session to use for queries.
             workspace_name_or_id: The workspace to set the scope for. If not
                 provided, the workspace scope is determined from the request
                 workspace filter or the default workspace, in that order.
@@ -11563,18 +11563,49 @@ class SqlZenStore(BaseZenStore):
                     (
                         TaggableResourceTypes.RUN_TEMPLATE,
                         RunTemplateSchema.id,
-                        RunTemplateSchema.id,
+                        None,  # Special case - will be handled differently
                     ),
                 ]:
-                    check, error = self._exclusive_check_for_existing_tags(
-                        tag=tag,
-                        session=session,
-                        resource_type=resource_type,
-                        resource_id_column=resource_id,
-                        scope_id_column=scope_id,
-                    )
-                    if check is False:
-                        error_messages.append(error)
+                    # Special handling for run templates as they don't have direct pipeline_id
+                    if resource_type == TaggableResourceTypes.RUN_TEMPLATE:
+                        # Instead of using aliases, we start the query from RunTemplateSchema
+                        query = (
+                            select(PipelineDeploymentSchema.pipeline_id, func.count().label("count"))
+                            .select_from(RunTemplateSchema)
+                            .join(
+                                TagResourceSchema,
+                                and_(
+                                    TagResourceSchema.resource_id == RunTemplateSchema.id,
+                                    TagResourceSchema.resource_type == "run_template",
+                                ),
+                            )
+                            .join(
+                                PipelineDeploymentSchema,
+                                RunTemplateSchema.source_deployment_id == PipelineDeploymentSchema.id,
+                            )
+                            .where(TagResourceSchema.tag_id == tag.id)
+                            .group_by(PipelineDeploymentSchema.pipeline_id)
+                        )
+                        
+                        results = session.exec(query).all()
+                        conflicts = [k for k, v in results if v > 1]
+                        if conflicts:
+                            error_message = (
+                                f"The tag `{tag.name}` is associated with multiple entries of "
+                                f"`{resource_type.value}`s that share the same pipeline_id"
+                            )
+                            error_message += f": {conflicts}"
+                            error_messages.append(error_message)
+                    else:
+                        check, error = self._exclusive_check_for_existing_tags(
+                            tag=tag,
+                            session=session,
+                            resource_type=resource_type,
+                            resource_id_column=resource_id,
+                            scope_id_column=scope_id,
+                        )
+                        if check is False:
+                            error_messages.append(error)
 
                 if error_messages:
                     raise RuntimeError(
@@ -11739,47 +11770,49 @@ class SqlZenStore(BaseZenStore):
                             scope_ids[
                                 TaggableResourceTypes.PIPELINE_RUN
                             ].append(resource.pipeline_id)
-                        other_runs_with_same_tag = self.list_runs(
-                            PipelineRunFilter(
-                                id=f"notequals:{resource.id}",
-                                pipeline_id=resource.pipeline_id,
-                                tags=[tag_schema.name],
-                            )
-                        )
-                        if other_runs_with_same_tag.items:
-                            detach_resources.append(
-                                TagResourceRequest(
-                                    tag_id=tag_schema.id,
-                                    resource_id=other_runs_with_same_tag.items[
-                                        0
-                                    ].id,
-                                    resource_type=TaggableResourceTypes.PIPELINE_RUN,
+
+                            other_runs_with_same_tag = self.list_runs(
+                                PipelineRunFilter(
+                                    id=f"notequals:{resource.id}",
+                                    pipeline_id=resource.pipeline_id,
+                                    tags=[tag_schema.name],
                                 )
                             )
+                            if other_runs_with_same_tag.items:
+                                detach_resources.append(
+                                    TagResourceRequest(
+                                        tag_id=tag_schema.id,
+                                        resource_id=other_runs_with_same_tag.items[
+                                            0
+                                        ].id,
+                                        resource_type=TaggableResourceTypes.PIPELINE_RUN,
+                                    )
+                                )
                     elif isinstance(resource, ArtifactVersionSchema):
                         if resource.artifact_id:
                             scope_ids[
                                 TaggableResourceTypes.ARTIFACT_VERSION
                             ].append(resource.artifact_id)
-                        other_versions_with_same_tag = (
-                            self.list_artifact_versions(
-                                ArtifactVersionFilter(
-                                    id=f"notequals:{resource.id}",
-                                    artifact_id=resource.artifact_id,
-                                    tags=[tag_schema.name],
+
+                            other_versions_with_same_tag = (
+                                self.list_artifact_versions(
+                                    ArtifactVersionFilter(
+                                        id=f"notequals:{resource.id}",
+                                        artifact_id=resource.artifact_id,
+                                        tags=[tag_schema.name],
+                                    )
                                 )
                             )
-                        )
-                        if other_versions_with_same_tag.items:
-                            detach_resources.append(
-                                TagResourceRequest(
-                                    tag_id=tag_schema.id,
-                                    resource_id=other_versions_with_same_tag.items[
-                                        0
-                                    ].id,
-                                    resource_type=TaggableResourceTypes.ARTIFACT_VERSION,
+                            if other_versions_with_same_tag.items:
+                                detach_resources.append(
+                                    TagResourceRequest(
+                                        tag_id=tag_schema.id,
+                                        resource_id=other_versions_with_same_tag.items[
+                                            0
+                                        ].id,
+                                        resource_type=TaggableResourceTypes.ARTIFACT_VERSION,
+                                    )
                                 )
-                            )
                     elif isinstance(resource, RunTemplateSchema):
                         scope_id = None
                         if resource.source_deployment:
@@ -11791,21 +11824,21 @@ class SqlZenStore(BaseZenStore):
                                     TaggableResourceTypes.RUN_TEMPLATE
                                 ].append(scope_id)
 
-                        older_templates = self.list_run_templates(
-                            RunTemplateFilter(
-                                id=f"notequals:{resource.id}",
-                                pipeline_id=scope_id,
-                                tags=[tag_schema.name],
-                            )
-                        )
-                        if older_templates.items:
-                            detach_resources.append(
-                                TagResourceRequest(
-                                    tag_id=tag_schema.id,
-                                    resource_id=older_templates.items[0].id,
-                                    resource_type=TaggableResourceTypes.RUN_TEMPLATE,
+                                older_templates = self.list_run_templates(
+                                    RunTemplateFilter(
+                                        id=f"notequals:{resource.id}",
+                                        pipeline_id=scope_id,
+                                        tags=[tag_schema.name],
+                                    )
                                 )
-                            )
+                                if older_templates.items:
+                                    detach_resources.append(
+                                        TagResourceRequest(
+                                            tag_id=tag_schema.id,
+                                            resource_id=older_templates.items[0].id,
+                                            resource_type=TaggableResourceTypes.RUN_TEMPLATE,
+                                        )
+                                    )
                     else:
                         logger.debug(
                             "Exclusive tag functionality only works for "
