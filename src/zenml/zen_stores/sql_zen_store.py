@@ -11533,7 +11533,7 @@ class SqlZenStore(BaseZenStore):
             An updated tag.
 
         Raises:
-            RuntimeError: If the tag can not be converted to an exclusive tag due
+            IllegalOperationError: If the tag can not be converted to an exclusive tag due
                 to it being associated to multiple entities.
         """
         with Session(self.engine) as session:
@@ -11613,7 +11613,7 @@ class SqlZenStore(BaseZenStore):
                             error_messages.append(error)
 
                 if error_messages:
-                    raise RuntimeError(
+                    raise IllegalOperationError(
                         "\n".join(error_messages)
                         + "\nYou can only convert a tag into an exclusive tag "
                         "if the conflicts mentioned above are resolved."

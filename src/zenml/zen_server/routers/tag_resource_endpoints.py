@@ -51,6 +51,9 @@ def create_tag_resource(
 
     Args:
         tag_resource: A tag resource request.
+
+    Returns:
+        A tag resource response.
     """
     return zen_store().create_tag_resource(tag_resource=tag_resource)
 
@@ -68,6 +71,9 @@ def batch_create_tag_resource(
 
     Args:
         tag_resources: A list of tag resource requests.
+
+    Returns:
+        A list of tag resource responses.
     """
     return [
         zen_store().create_tag_resource(tag_resource=tag_resource)
