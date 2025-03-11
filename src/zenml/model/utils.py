@@ -28,7 +28,6 @@ from zenml.models import (
     ModelVersionResponse,
     ServiceUpdate,
 )
-from zenml.steps.step_context import get_step_context
 
 logger = get_logger(__name__)
 
@@ -113,6 +112,8 @@ def link_artifact_to_model(
     Raises:
         RuntimeError: If called outside a step.
     """
+    from zenml.steps.step_context import get_step_context
+
     if not model:
         is_issue = False
         try:
