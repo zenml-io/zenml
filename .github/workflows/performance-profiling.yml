@@ -1,0 +1,130 @@
+---
+name: ZenML CLI Performance Profiling
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review]
+  workflow_dispatch:
+
+jobs:
+  profile-cli-performance:
+    name: Profile ZenML CLI Performance
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    env:
+      ZENML_DEBUG: 1
+      ZENML_ANALYTICS_OPT_IN: false
+      PYTHONIOENCODING: utf-8
+      UV_HTTP_TIMEOUT: 600
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.2.2
+        with:
+          fetch-depth: 0  # Fetch all history for all branches and tags
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5.3.0
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y time bc
+          python -m pip install --upgrade setuptools wheel pip uv
+      
+      - name: Get target branch name
+        id: get-target-branch
+        run: |
+          echo "TARGET_BRANCH=${{ github.base_ref }}" >> $GITHUB_ENV
+      
+      # Profile target branch
+      - name: Checkout target branch
+        run: |
+          git checkout ${{ github.base_ref }}
+      
+      - name: Install ZenML target branch
+        run: |
+          # Install ZenML in editable mode
+          uv pip install -e ".[server,templates]"
+          zenml --version
+      
+      - name: Profile target branch
+        id: profile-target
+        run: |
+          echo "Running profiling for target branch (${{ github.base_ref }})"
+          chmod +x scripts/profile-cli.sh
+          ./scripts/profile-cli.sh -v "zenml stack list"
+          echo "TARGET_AVG_TIME=$AVG_TIME" >> $GITHUB_ENV
+          echo "TARGET_STD_DEV=$STD_DEV" >> $GITHUB_ENV
+      
+      - name: Uninstall ZenML target branch
+        run: |
+          pip uninstall -y zenml
+      
+      # Profile current branch
+      - name: Checkout current branch
+        run: |
+          git checkout ${{ github.head_ref }}
+      
+      - name: Install ZenML current branch
+        run: |
+          # Install ZenML in editable mode
+          uv pip install -e ".[server,templates]"
+          zenml --version
+      
+      - name: Profile current branch
+        id: profile-current
+        run: |
+          echo "Running profiling for current branch (${{ github.head_ref }})"
+          chmod +x scripts/profile-cli.sh
+          ./scripts/profile-cli.sh -v "zenml stack list"
+          echo "CURRENT_AVG_TIME=$AVG_TIME" >> $GITHUB_ENV
+          echo "CURRENT_STD_DEV=$STD_DEV" >> $GITHUB_ENV
+      
+      - name: Calculate performance difference
+        id: calc-diff
+        run: |
+          PERF_DIFF=$(echo "scale=1; (($TARGET_AVG_TIME - $CURRENT_AVG_TIME) / $TARGET_AVG_TIME) * 100" | bc)
+          echo "PERF_DIFF=$PERF_DIFF" >> $GITHUB_ENV
+          
+          if (( $(echo "$PERF_DIFF > 0" | bc -l) )); then
+            echo "PERF_STATUS=✅ Improved" >> $GITHUB_ENV
+          elif (( $(echo "$PERF_DIFF < 0" | bc -l) )); then
+            echo "PERF_STATUS=❌ Degraded" >> $GITHUB_ENV
+          else
+            echo "PERF_STATUS=⚠️ No change" >> $GITHUB_ENV
+          fi
+      
+      - name: Create performance comment
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const issue_number = context.issue.number;
+            const targetBranch = process.env.TARGET_BRANCH;
+            const targetTime = parseFloat(process.env.TARGET_AVG_TIME).toFixed(3);
+            const targetStdDev = parseFloat(process.env.TARGET_STD_DEV).toFixed(3);
+            const currentTime = parseFloat(process.env.CURRENT_AVG_TIME).toFixed(3);
+            const currentStdDev = parseFloat(process.env.CURRENT_STD_DEV).toFixed(3);
+            const perfDiff = parseFloat(process.env.PERF_DIFF).toFixed(1);
+            const perfStatus = process.env.PERF_STATUS;
+            
+            const comment = `## ZenML CLI Performance Comparison
+            
+            | Branch | Average Time (s) | Standard Deviation | Runs |
+            |--------|-----------------|-------------------|------|
+            | ${targetBranch} | ${targetTime} | ±${targetStdDev} | 5 |
+            | ${context.payload.pull_request.head.ref} | ${currentTime} | ±${currentStdDev} | 5 |
+            
+            **Performance Difference**: ${perfDiff}% ${perfStatus}
+            
+            *Command: \`zenml stack list\`*
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: issue_number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            }); 
