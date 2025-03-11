@@ -29,7 +29,6 @@ from typing import (
     Union,
     cast,
 )
-from urllib.parse import urlparse
 from uuid import UUID
 
 from pydantic import BaseModel, ValidationError
@@ -43,16 +42,10 @@ from zenml.constants import (
     INFO,
     VERSION_1,
 )
-from zenml.enums import StoreType
 from zenml.exceptions import IllegalOperationError, OAuthError
 from zenml.logger import get_logger
 from zenml.models.v2.base.scoped import WorkspaceScopedFilter
-from zenml.plugins.plugin_flavor_registry import PluginFlavorRegistry
 from zenml.zen_server.cache import MemoryCache
-from zenml.zen_server.deploy.deployment import (
-    LocalServerDeployment,
-)
-from zenml.zen_server.deploy.exceptions import ServerDeploymentNotFoundError
 from zenml.zen_server.exceptions import http_exception_from_error
 from zenml.zen_server.feature_gate.feature_gate_interface import (
     FeatureGateInterface,
@@ -66,13 +59,15 @@ from zenml.zen_stores.sql_zen_store import SqlZenStore
 if TYPE_CHECKING:
     from fastapi import Request
 
+    from zenml.plugins.plugin_flavor_registry import PluginFlavorRegistry
+
 logger = get_logger(__name__)
 
 _zen_store: Optional["SqlZenStore"] = None
 _rbac: Optional[RBACInterface] = None
 _feature_gate: Optional[FeatureGateInterface] = None
 _workload_manager: Optional[WorkloadManagerInterface] = None
-_plugin_flavor_registry: Optional[PluginFlavorRegistry] = None
+_plugin_flavor_registry: Optional["PluginFlavorRegistry"] = None
 _memcache: Optional[MemoryCache] = None
 
 
@@ -91,13 +86,16 @@ def zen_store() -> "SqlZenStore":
     return _zen_store
 
 
-def plugin_flavor_registry() -> PluginFlavorRegistry:
+def plugin_flavor_registry() -> "PluginFlavorRegistry":
     """Get the plugin flavor registry.
 
     Returns:
         The plugin flavor registry.
     """
     global _plugin_flavor_registry
+
+    from zenml.plugins.plugin_flavor_registry import PluginFlavorRegistry
+
     if _plugin_flavor_registry is None:
         _plugin_flavor_registry = PluginFlavorRegistry()
         _plugin_flavor_registry.initialize_plugins()
@@ -267,86 +265,6 @@ def server_config() -> ServerConfiguration:
     if _server_config is None:
         _server_config = ServerConfiguration.get_server_config()
     return _server_config
-
-
-def get_local_server() -> Optional["LocalServerDeployment"]:
-    """Get the active local server.
-
-    Call this function to retrieve the local server deployed on this machine.
-
-    Returns:
-        The local server deployment or None, if no local server deployment was
-        found.
-    """
-    from zenml.zen_server.deploy.deployer import LocalServerDeployer
-
-    deployer = LocalServerDeployer()
-    try:
-        return deployer.get_server()
-    except ServerDeploymentNotFoundError:
-        return None
-
-
-def connected_to_local_server() -> bool:
-    """Check if the client is connected to a local server.
-
-    Returns:
-        True if the client is connected to a local server, False otherwise.
-    """
-    from zenml.zen_server.deploy.deployer import LocalServerDeployer
-
-    deployer = LocalServerDeployer()
-    return deployer.is_connected_to_server()
-
-
-def show_dashboard(
-    local: bool = False,
-    ngrok_token: Optional[str] = None,
-) -> None:
-    """Show the ZenML dashboard.
-
-    Args:
-        local: Whether to show the dashboard for the local server or the
-            one for the active server.
-        ngrok_token: An ngrok auth token to use for exposing the ZenML
-            dashboard on a public domain. Primarily used for accessing the
-            dashboard in Colab.
-
-    Raises:
-        RuntimeError: If no server is connected.
-    """
-    from zenml.utils.dashboard_utils import show_dashboard
-    from zenml.utils.networking_utils import get_or_create_ngrok_tunnel
-
-    url: Optional[str] = None
-    if not local:
-        gc = GlobalConfiguration()
-        if gc.store_configuration.type == StoreType.REST:
-            url = gc.store_configuration.url
-
-    if not url:
-        # Else, check for local servers
-        server = get_local_server()
-        if server and server.status and server.status.url:
-            url = server.status.url
-
-    if not url:
-        raise RuntimeError(
-            "ZenML is not connected to any server right now. Please use "
-            "`zenml login` to connect to a server or spin up a new local server "
-            "via `zenml login --local`."
-        )
-
-    if ngrok_token:
-        parsed_url = urlparse(url)
-
-        ngrok_url = get_or_create_ngrok_tunnel(
-            ngrok_token=ngrok_token, port=parsed_url.port or 80
-        )
-        logger.debug(f"Tunneling dashboard from {url} to {ngrok_url}.")
-        url = ngrok_url
-
-    show_dashboard(url)
 
 
 F = TypeVar("F", bound=Callable[..., Any])
