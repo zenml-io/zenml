@@ -11,6 +11,7 @@ import os
 import sqlalchemy as sa
 import sqlmodel
 from alembic import op
+from sqlalchemy.orm import Session
 from sqlalchemy.sql import column, table
 
 from zenml.constants import (
@@ -72,6 +73,27 @@ def upgrade() -> None:
     op.execute(
         artifact_table.update().values(workspace_id=default_workspace_id)
     )
+
+    bind = op.get_bind()
+    session = Session(bind=bind)
+
+    # Set the artifact owner to the owner of the latest artifact version.
+    # NOTE: we skip this for SQLite because the subquery will fail.
+    if bind.dialect.name != "sqlite":
+        session.execute(
+            sa.text(
+                """
+                UPDATE artifact a
+                SET user_id = (
+                    SELECT v.user_id
+                    FROM `artifact_version` v
+                    WHERE v.artifact_id = a.id
+                    ORDER BY v.created DESC
+                    LIMIT 1
+                )
+            """
+            ),
+        )
 
     # Now make workspace_id non-nullable
     with op.batch_alter_table("artifact", schema=None) as batch_op:
