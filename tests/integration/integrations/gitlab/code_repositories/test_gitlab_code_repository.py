@@ -79,12 +79,12 @@ class DummyGitLabCodeRepository(GitLabCodeRepository):
         ),
         (
             CONFIG_II,
-            "https://gitlab-ci-token:[MASKED]@private-gitlab.example.com/example/test.git",
+            "https://gitlab-ci-token:test@private-gitlab.example.com/example/test.git",
             True,
         ),
         (
             CONFIG_II,
-            "https://gitlab-ci-token:[MASKED]@private-gitlab.example.com/example/test.invalid",
+            "https://gitlab-ci-token:test@private-gitlab.example.com/example/test.invalid",
             False,
         ),
     ],
