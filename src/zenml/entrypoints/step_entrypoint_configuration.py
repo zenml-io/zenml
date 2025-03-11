@@ -21,7 +21,6 @@ from zenml.client import Client
 from zenml.entrypoints.base_entrypoint_configuration import (
     BaseEntrypointConfiguration,
 )
-from zenml.integrations.registry import integration_registry
 from zenml.logger import get_logger
 
 if TYPE_CHECKING:
@@ -151,6 +150,8 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
 
         # Activate all the integrations. This makes sure that all materializers
         # and stack component flavors are registered.
+        from zenml.integrations.registry import integration_registry
+
         integration_registry.activate_integrations()
 
         step_name = self.entrypoint_args[STEP_NAME_OPTION]
