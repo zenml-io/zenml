@@ -15,7 +15,6 @@
 
 from typing import TYPE_CHECKING, List, Set, Tuple
 
-
 if TYPE_CHECKING:
     from zenml.models import ComponentResponse, StackResponse
 

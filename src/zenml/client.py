@@ -162,6 +162,7 @@ from zenml.models import (
     ServiceFilter,
     ServiceRequest,
     ServiceResponse,
+    ServiceType,
     ServiceUpdate,
     StackFilter,
     StackRequest,
@@ -169,6 +170,7 @@ from zenml.models import (
     StackUpdate,
     StepRunFilter,
     StepRunResponse,
+    StepRunUpdate,
     TagFilter,
     TagRequest,
     TagResource,
@@ -190,8 +192,6 @@ from zenml.models import (
     WorkspaceResponse,
     WorkspaceUpdate,
 )
-from zenml.models.v2.core.step_run import StepRunUpdate
-from zenml.models.v2.misc.service import ServiceType
 from zenml.utils import io_utils, source_utils
 from zenml.utils.dict_utils import dict_to_bytes
 from zenml.utils.filesync_model import FileSyncModel
