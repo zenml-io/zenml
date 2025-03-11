@@ -15,10 +15,12 @@
 
 import os
 from typing import Optional
+from urllib.parse import urlparse
 from uuid import UUID
 
 from zenml import constants
 from zenml.client import Client
+from zenml.config.global_config import GlobalConfiguration
 from zenml.enums import EnvironmentType, StoreType
 from zenml.environment import get_environment
 from zenml.logger import get_logger
@@ -28,6 +30,8 @@ from zenml.models import (
     ServerDeploymentType,
     StackResponse,
 )
+from zenml.utils.server_utils import get_local_server
+from zenml.zen_server.utils import logger
 
 logger = get_logger(__name__)
 
@@ -202,3 +206,52 @@ def show_dashboard(url: str) -> None:
 
     else:
         logger.info(f"The ZenML dashboard is available at {url}.")
+
+
+def show_dashboard_url(
+    local: bool = False,
+    ngrok_token: Optional[str] = None,
+) -> None:
+    """Show the ZenML dashboard.
+
+    Args:
+        local: Whether to show the dashboard for the local server or the
+            one for the active server.
+        ngrok_token: An ngrok auth token to use for exposing the ZenML
+            dashboard on a public domain. Primarily used for accessing the
+            dashboard in Colab.
+
+    Raises:
+        RuntimeError: If no server is connected.
+    """
+    from zenml.utils.networking_utils import get_or_create_ngrok_tunnel
+
+    url: Optional[str] = None
+    if not local:
+        gc = GlobalConfiguration()
+        if gc.store_configuration.type == StoreType.REST:
+            url = gc.store_configuration.url
+
+    if not url:
+        # Else, check for local servers
+        server = get_local_server()
+        if server and server.status and server.status.url:
+            url = server.status.url
+
+    if not url:
+        raise RuntimeError(
+            "ZenML is not connected to any server right now. Please use "
+            "`zenml login` to connect to a server or spin up a new local server "
+            "via `zenml login --local`."
+        )
+
+    if ngrok_token:
+        parsed_url = urlparse(url)
+
+        ngrok_url = get_or_create_ngrok_tunnel(
+            ngrok_token=ngrok_token, port=parsed_url.port or 80
+        )
+        logger.debug(f"Tunneling dashboard from {url} to {ngrok_url}.")
+        url = ngrok_url
+
+    show_dashboard(url)
