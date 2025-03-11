@@ -11569,23 +11569,29 @@ class SqlZenStore(BaseZenStore):
                     # Special handling for run templates as they don't have direct pipeline_id
                     if resource_type == TaggableResourceTypes.RUN_TEMPLATE:
                         query = (
-                            select(PipelineDeploymentSchema.pipeline_id, func.count().label("count"))
+                            select(
+                                PipelineDeploymentSchema.pipeline_id,
+                                func.count().label("count"),
+                            )
                             .select_from(RunTemplateSchema)
                             .join(
                                 TagResourceSchema,
                                 and_(
-                                    TagResourceSchema.resource_id == RunTemplateSchema.id,
-                                    TagResourceSchema.resource_type == "run_template",
+                                    TagResourceSchema.resource_id
+                                    == RunTemplateSchema.id,
+                                    TagResourceSchema.resource_type
+                                    == "run_template",
                                 ),
                             )
                             .join(
                                 PipelineDeploymentSchema,
-                                RunTemplateSchema.source_deployment_id == PipelineDeploymentSchema.id,
+                                RunTemplateSchema.source_deployment_id  # type: ignore[arg-type]
+                                == PipelineDeploymentSchema.id,
                             )
                             .where(TagResourceSchema.tag_id == tag.id)
-                            .group_by(PipelineDeploymentSchema.pipeline_id)
+                            .group_by(PipelineDeploymentSchema.pipeline_id)  # type: ignore[arg-type]
                         )
-                        
+
                         results = session.exec(query).all()
                         conflicts = [k for k, v in results if v > 1]
                         if conflicts:
@@ -11834,7 +11840,9 @@ class SqlZenStore(BaseZenStore):
                                     detach_resources.append(
                                         TagResourceRequest(
                                             tag_id=tag_schema.id,
-                                            resource_id=older_templates.items[0].id,
+                                            resource_id=older_templates.items[
+                                                0
+                                            ].id,
                                             resource_type=TaggableResourceTypes.RUN_TEMPLATE,
                                         )
                                     )
