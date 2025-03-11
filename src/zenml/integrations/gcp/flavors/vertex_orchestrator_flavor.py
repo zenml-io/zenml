@@ -13,12 +13,15 @@
 #  permissions and limitations under the License.
 """Vertex orchestrator flavor."""
 
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Type
+from typing import TYPE_CHECKING, Dict, Optional, Tuple, Type
 
 from zenml.config.base_settings import BaseSettings
 from zenml.integrations.gcp import (
     GCP_RESOURCE_TYPE,
     GCP_VERTEX_ORCHESTRATOR_FLAVOR,
+)
+from zenml.integrations.gcp.custom_job_parameters import (
+    VertexCustomJobParameters,
 )
 from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsConfigMixin,
@@ -61,7 +64,7 @@ class VertexOrchestratorSettings(BaseSettings):
     node_selector_constraint: Optional[Tuple[str, str]] = None
     pod_settings: Optional[KubernetesPodSettings] = None
 
-    custom_job_parameters: Optional[Dict[str, Any]] = None
+    custom_job_parameters: Optional[VertexCustomJobParameters] = None
 
     _node_selector_deprecation = (
         deprecation_utils.deprecate_pydantic_attributes(

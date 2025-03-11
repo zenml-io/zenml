@@ -65,6 +65,9 @@ from zenml.integrations.gcp import GCP_ARTIFACT_STORE_FLAVOR
 from zenml.integrations.gcp.constants import (
     GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL,
 )
+from zenml.integrations.gcp.custom_job_parameters import (
+    VertexCustomJobParameters,
+)
 from zenml.integrations.gcp.flavors.vertex_orchestrator_flavor import (
     VertexOrchestratorConfig,
     VertexOrchestratorSettings,
@@ -326,18 +329,16 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             create_custom_training_job_from_component,
         )
 
-        custom_job_parameters = settings.custom_job_parameters or {}
-        custom_job_parameters.setdefault("env", [])
-        custom_job_parameters["env"].extend(
-            [
-                {"name": key, "value": value}
-                for key, value in environment.items()
-            ]
+        custom_job_parameters = (
+            settings.custom_job_parameters or VertexCustomJobParameters()
         )
-
         custom_job_component = create_custom_training_job_from_component(
             component_spec=component,
-            **custom_job_parameters,
+            env=[
+                {"name": key, "value": value}
+                for key, value in environment.items()
+            ],
+            **custom_job_parameters.model_dump(),
         )
 
         return custom_job_component
