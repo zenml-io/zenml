@@ -298,7 +298,7 @@ from zenml.models import (
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
 )
-from zenml.stack.flavor_registry import FlavorRegistry
+
 from zenml.stack_deployments.utils import get_stack_deployment_class
 from zenml.utils import tag_utils, uuid_utils
 from zenml.utils.enum_utils import StrEnum
@@ -1597,6 +1597,8 @@ class SqlZenStore(BaseZenStore):
 
     def _sync_flavors(self) -> None:
         """Purge all in-built and integration flavors from the DB and sync."""
+        from zenml.stack.flavor_registry import FlavorRegistry
+
         FlavorRegistry().register_flavors(store=self)
 
     def get_store_info(self) -> ServerModel:

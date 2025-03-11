@@ -15,7 +15,6 @@
 
 from typing import TYPE_CHECKING, List, Set, Tuple
 
-from zenml.integrations.utils import get_integration_for_module
 
 if TYPE_CHECKING:
     from zenml.models import ComponentResponse, StackResponse
@@ -61,6 +60,8 @@ def get_requirements_for_component(
     Returns:
         Tuple of PyPI and APT requirements of the component.
     """
+    from zenml.integrations.utils import get_integration_for_module
+
     integration = get_integration_for_module(
         module_name=component.flavor.source
     )
