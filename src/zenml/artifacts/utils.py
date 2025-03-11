@@ -761,7 +761,6 @@ def _load_artifact_from_uri(
     Raises:
         ModuleNotFoundError: If the materializer or data type cannot be found.
     """
-
     from zenml.client import Client
     from zenml.materializers.base_materializer import BaseMaterializer
 

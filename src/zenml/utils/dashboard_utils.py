@@ -31,7 +31,6 @@ from zenml.models import (
     StackResponse,
 )
 from zenml.utils.server_utils import get_local_server
-from zenml.zen_server.utils import logger
 
 logger = get_logger(__name__)
 

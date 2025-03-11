@@ -65,6 +65,7 @@ from zenml.enums import (
     OAuthDeviceStatus,
     PluginSubType,
     PluginType,
+    ServiceState,
     SorterOps,
     StackComponentType,
     StoreType,
@@ -191,7 +192,6 @@ from zenml.models import (
 )
 from zenml.models.v2.core.step_run import StepRunUpdate
 from zenml.services.service import ServiceConfig
-from zenml.services.service_status import ServiceState
 from zenml.services.service_type import ServiceType
 from zenml.utils import io_utils, source_utils
 from zenml.utils.dict_utils import dict_to_bytes

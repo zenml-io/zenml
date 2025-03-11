@@ -31,6 +31,7 @@ from pydantic import ConfigDict, Field
 from sqlalchemy.sql.elements import ColumnElement
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
+from zenml.enums import ServiceState
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
     WorkspaceScopedFilter,
@@ -40,7 +41,6 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponseResources,
 )
-from zenml.services.service_status import ServiceState
 from zenml.services.service_type import ServiceType
 
 if TYPE_CHECKING:

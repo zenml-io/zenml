@@ -20,11 +20,11 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
+from zenml.enums import ServiceState
 from zenml.login.pro.constants import ZENML_PRO_API_URL, ZENML_PRO_URL
 from zenml.login.pro.tenant.models import TenantRead, TenantStatus
 from zenml.models import ServerModel
 from zenml.models.v2.misc.server_models import ServerDeploymentType
-from zenml.services.service_status import ServiceState
 from zenml.utils.enum_utils import StrEnum
 from zenml.utils.string_utils import get_human_readable_time
 from zenml.utils.time_utils import to_local_tz, utc_now

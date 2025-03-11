@@ -23,6 +23,7 @@ from bentoml.client import Client
 
 from zenml.client import Client as ZenMLClient
 from zenml.constants import DEFAULT_LOCAL_SERVICE_IP_ADDRESS
+from zenml.enums import ServiceState
 from zenml.integrations.bentoml.constants import (
     BENTOML_DEFAULT_PORT,
     BENTOML_HEALTHCHECK_URL_PATH,
@@ -43,7 +44,6 @@ from zenml.services.service_monitor import (
     HTTPEndpointHealthMonitor,
     HTTPEndpointHealthMonitorConfig,
 )
-from zenml.services.service_status import ServiceState
 from zenml.services.service_type import ServiceType
 
 logger = get_logger(__name__)
