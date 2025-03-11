@@ -11568,7 +11568,6 @@ class SqlZenStore(BaseZenStore):
                 ]:
                     # Special handling for run templates as they don't have direct pipeline_id
                     if resource_type == TaggableResourceTypes.RUN_TEMPLATE:
-                        # Instead of using aliases, we start the query from RunTemplateSchema
                         query = (
                             select(PipelineDeploymentSchema.pipeline_id, func.count().label("count"))
                             .select_from(RunTemplateSchema)
