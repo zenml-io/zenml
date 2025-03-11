@@ -191,8 +191,7 @@ from zenml.models import (
     WorkspaceUpdate,
 )
 from zenml.models.v2.core.step_run import StepRunUpdate
-from zenml.services.service import ServiceConfig
-from zenml.services.service_type import ServiceType
+from zenml.models.v2.misc.service import ServiceType
 from zenml.utils import io_utils, source_utils
 from zenml.utils.dict_utils import dict_to_bytes
 from zenml.utils.filesync_model import FileSyncModel
@@ -202,6 +201,7 @@ from zenml.utils.uuid_utils import is_valid_uuid
 if TYPE_CHECKING:
     from zenml.metadata.metadata_types import MetadataType, MetadataTypeEnum
     from zenml.service_connectors.service_connector import ServiceConnector
+    from zenml.services.service import ServiceConfig
     from zenml.stack import Stack
     from zenml.zen_stores.base_zen_store import BaseZenStore
 
@@ -1607,7 +1607,7 @@ class Client(metaclass=ClientMetaClass):
 
     def create_service(
         self,
-        config: ServiceConfig,
+        config: "ServiceConfig",
         service_type: ServiceType,
         model_version_id: Optional[UUID] = None,
     ) -> ServiceResponse:

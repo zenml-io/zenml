@@ -39,7 +39,8 @@ from zenml.integrations.databricks.utils.databricks_utils import (
     sanitize_labels,
 )
 from zenml.logger import get_logger
-from zenml.services import ServiceStatus, ServiceType
+from zenml.models.v2.misc.service import ServiceType
+from zenml.services import ServiceStatus
 from zenml.services.service import BaseDeploymentService, ServiceConfig
 
 logger = get_logger(__name__)

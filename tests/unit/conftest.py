@@ -78,11 +78,11 @@ from zenml.models.v2.core.service import (
     ServiceResponseBody,
     ServiceResponseMetadata,
 )
+from zenml.models.v2.misc.service import ServiceType
 from zenml.orchestrators.base_orchestrator import BaseOrchestratorConfig
 from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
 from zenml.pipelines import pipeline
 from zenml.pipelines.pipeline_definition import Pipeline
-from zenml.services.service_type import ServiceType
 from zenml.stack.stack import Stack
 from zenml.stack.stack_component import (
     StackComponentConfig,

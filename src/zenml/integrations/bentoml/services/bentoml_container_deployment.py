@@ -30,6 +30,7 @@ from zenml.integrations.bentoml.constants import (
     BENTOML_PREDICTION_URL_PATH,
 )
 from zenml.logger import get_logger
+from zenml.models.v2.misc.service import ServiceType
 from zenml.services.container.container_service import (
     ContainerService,
     ContainerServiceConfig,
@@ -44,7 +45,6 @@ from zenml.services.service_monitor import (
     HTTPEndpointHealthMonitor,
     HTTPEndpointHealthMonitorConfig,
 )
-from zenml.services.service_type import ServiceType
 
 logger = get_logger(__name__)
 

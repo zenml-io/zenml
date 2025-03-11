@@ -31,9 +31,9 @@ from zenml.integrations.seldon.seldon_client import (
     SeldonResourceRequirements,
 )
 from zenml.logger import get_logger
+from zenml.models.v2.misc.service import ServiceType
 from zenml.services.service import BaseDeploymentService, ServiceConfig
 from zenml.services.service_status import ServiceStatus
-from zenml.services.service_type import ServiceType
 
 logger = get_logger(__name__)
 

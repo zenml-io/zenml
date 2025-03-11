@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Utility functions for ZenML servers."""
 
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     from zenml.zen_server.deploy import LocalServerDeployment
@@ -29,7 +29,9 @@ def get_local_server() -> Optional["LocalServerDeployment"]:
         found.
     """
     from zenml.zen_server.deploy.deployer import LocalServerDeployer
-    from zenml.zen_server.deploy.exceptions import ServerDeploymentNotFoundError
+    from zenml.zen_server.deploy.exceptions import (
+        ServerDeploymentNotFoundError,
+    )
 
     deployer = LocalServerDeployer()
     try:

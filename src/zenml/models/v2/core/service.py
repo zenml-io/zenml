@@ -41,7 +41,7 @@ from zenml.models.v2.base.scoped import (
     WorkspaceScopedResponseMetadata,
     WorkspaceScopedResponseResources,
 )
-from zenml.services.service_type import ServiceType
+from zenml.models.v2.misc.service import ServiceType
 
 if TYPE_CHECKING:
     from zenml.models.v2.core.model_version import ModelVersionResponse
