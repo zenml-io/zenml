@@ -275,7 +275,6 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         command: List[str],
         arguments: List[str],
         component_name: str,
-        env: Dict[str, str],
     ) -> BaseComponent:
         """Creates a container component for a Vertex pipeline.
 
@@ -434,7 +433,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                     )
                 )
                 component = self._create_container_component(
-                    image, command, arguments, step_name, environment
+                    image, command, arguments, step_name
                 )
                 step_settings = cast(
                     VertexOrchestratorSettings, self.get_settings(step)
