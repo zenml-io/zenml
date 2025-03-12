@@ -47,7 +47,7 @@ from tests.integration.functional.zen_stores.utils import (
 from tests.unit.pipelines.test_build_utils import (
     StubLocalRepositoryContext,
 )
-from zenml import Model, log_metadata, pipeline, step
+from zenml import Model, Tag, add_tags, log_metadata, pipeline, step
 from zenml.artifacts.utils import (
     _load_artifact_store,
 )
@@ -5580,3 +5580,55 @@ def test_updating_the_pipeline_run_status(step_status, expected_run_status):
         )
         run_status = Client().get_pipeline_run(run_context.runs[-1].id).status
         assert run_status == expected_run_status
+
+
+@step
+def produce_artifact() -> int:
+    """Produces an artifact and tags it."""
+    add_tags(tags=["tag2"], infer_artifact=True)
+    return 42
+
+
+@pipeline(tags=["tag3", Tag(name="tag4", cascade=True)])
+def tag_filter_test_pipeline():
+    """Pipeline that produces an artifact and tags it."""
+    _ = produce_artifact()
+
+
+def test_tag_filter_with_resource_type():
+    """Tests that tags can be filtered by resource type."""
+    client = Client()
+
+    # Create some tags to use
+    _ = client.create_tag(name="tag1", color="red")
+
+    # Run the pipeline
+    tag_filter_test_pipeline()
+
+    # Test filtering tags by pipeline run resource type
+    tags = client.list_tags(resource_type=TaggableResourceTypes.PIPELINE_RUN)
+    assert len(tags) == 2
+    assert {t.name for t in tags} == {"tag3", "tag4"}
+
+    # Test filtering tags by artifact version resource type
+    tags = client.list_tags(
+        resource_type=TaggableResourceTypes.ARTIFACT_VERSION
+    )
+    assert len(tags) == 2
+    assert {t.name for t in tags} == {"tag2", "tag4"}
+
+    # Test default behavior (no resource type filter)
+    tags = client.list_tags()
+    assert len(tags) == 4
+    assert {t.name for t in tags} == {"tag1", "tag2", "tag3", "tag4"}
+
+    # Test combining resource type filter with name filter
+    tags = client.list_tags(
+        resource_type=TaggableResourceTypes.ARTIFACT_VERSION, name="tag2"
+    )
+    assert len(tags) == 1
+    assert tags[0].name == "tag2"
+
+    # Test filtering for a resource type that doesn't have tags
+    tags = client.list_tags(resource_type=TaggableResourceTypes.MODEL)
+    assert len(tags) == 0

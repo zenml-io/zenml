@@ -68,6 +68,7 @@ from zenml.enums import (
     SorterOps,
     StackComponentType,
     StoreType,
+    TaggableResourceTypes,
 )
 from zenml.exceptions import (
     AuthorizationException,
@@ -7763,6 +7764,7 @@ class Client(metaclass=ClientMetaClass):
         name: Optional[str] = None,
         color: Optional[Union[str, ColorVariants]] = None,
         exclusive: Optional[bool] = None,
+        resource_type: Optional[Union[str, TaggableResourceTypes]] = None,
         hydrate: bool = False,
     ) -> Page[TagResponse]:
         """Get tags by filter.
@@ -7770,7 +7772,7 @@ class Client(metaclass=ClientMetaClass):
         Args:
             sort_by: The column to sort by.
             page: The page of items.
-            size: The maximum size of all pages.
+            size: The maximum size of all pages
             logical_operator: Which logical operator to use [and, or].
             id: Use the id of stacks to filter by.
             user: Use the user to filter by.
@@ -7779,6 +7781,7 @@ class Client(metaclass=ClientMetaClass):
             name: The name of the tag.
             color: The color of the tag.
             exclusive: Flag indicating whether the tag is exclusive.
+            resource_type: Filter tags associated with a specific resource type.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -7798,6 +7801,7 @@ class Client(metaclass=ClientMetaClass):
                 name=name,
                 color=color,
                 exclusive=exclusive,
+                resource_type=resource_type,
             ),
             hydrate=hydrate,
         )
