@@ -270,7 +270,7 @@ class PipelineFilter(WorkspaceScopedFilter, TaggableFilter):
         *TaggableFilter.FILTER_EXCLUDE_FIELDS,
         "latest_run_status",
     ]
-    CLI_EXCLUDE_FIELDS = [
+    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
         *TaggableFilter.CLI_EXCLUDE_FIELDS,
     ]

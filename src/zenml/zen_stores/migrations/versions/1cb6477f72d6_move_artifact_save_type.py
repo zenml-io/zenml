@@ -23,7 +23,8 @@ def upgrade() -> None:
         batch_op.add_column(sa.Column("save_type", sa.TEXT(), nullable=True))
 
     # Step 2: Move data from step_run_output_artifact.type to artifact_version.save_type
-    op.execute("""
+    op.execute(
+        """
         UPDATE artifact_version
         SET save_type = (
             SELECT max(step_run_output_artifact.type)
@@ -31,17 +32,22 @@ def upgrade() -> None:
             WHERE step_run_output_artifact.artifact_id = artifact_version.id
             GROUP BY artifact_id
         )
-    """)
-    op.execute("""
+    """
+    )
+    op.execute(
+        """
         UPDATE artifact_version
         SET save_type = 'step_output'
         WHERE artifact_version.save_type = 'default'
-    """)
-    op.execute("""
+    """
+    )
+    op.execute(
+        """
         UPDATE artifact_version
         SET save_type = 'external'
         WHERE save_type is NULL
-    """)
+    """
+    )
 
     # # Step 3: Set save_type to non-nullable
     with op.batch_alter_table("artifact_version", schema=None) as batch_op:
@@ -69,7 +75,8 @@ def downgrade() -> None:
         )
 
     # Move data back from artifact_version.save_type to step_run_output_artifact.type
-    op.execute("""
+    op.execute(
+        """
         UPDATE step_run_output_artifact
         SET type = (
             SELECT max(artifact_version.save_type)
@@ -77,12 +84,15 @@ def downgrade() -> None:
             WHERE step_run_output_artifact.artifact_id = artifact_version.id
             GROUP BY artifact_id
         )
-    """)
-    op.execute("""
+    """
+    )
+    op.execute(
+        """
         UPDATE step_run_output_artifact
         SET type = 'default'
         WHERE step_run_output_artifact.type = 'step_output'
-    """)
+    """
+    )
 
     # Set type to non-nullable
     with op.batch_alter_table(

@@ -148,7 +148,9 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
     template_id: Optional[UUID] = None
 
     # SQLModel Relationships
-    user: Optional["UserSchema"] = Relationship()
+    user: Optional["UserSchema"] = Relationship(
+        back_populates="deployments",
+    )
     workspace: "WorkspaceSchema" = Relationship()
     stack: Optional["StackSchema"] = Relationship()
     pipeline: Optional["PipelineSchema"] = Relationship()

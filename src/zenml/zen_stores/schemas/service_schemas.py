@@ -135,7 +135,6 @@ class ServiceSchema(NamedSchema, table=True):
         """
         body = ServiceResponseBody(
             user=self.user.to_model() if self.user else None,
-            workspace=self.workspace.to_model(),
             created=self.created,
             updated=self.updated,
             service_type=json.loads(self.service_type),

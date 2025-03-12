@@ -318,7 +318,6 @@ class RunTemplateFilter(WorkspaceScopedFilter, TaggableFilter):
         "stack_id",
         "build_id",
         "pipeline_id",
-        "user",
         "pipeline",
         "stack",
     ]
@@ -326,7 +325,7 @@ class RunTemplateFilter(WorkspaceScopedFilter, TaggableFilter):
         *WorkspaceScopedFilter.CUSTOM_SORTING_OPTIONS,
         *TaggableFilter.CUSTOM_SORTING_OPTIONS,
     ]
-    CLI_EXCLUDE_FIELDS = [
+    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
         *TaggableFilter.CLI_EXCLUDE_FIELDS,
     ]
