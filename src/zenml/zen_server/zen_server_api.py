@@ -86,6 +86,7 @@ from zenml.zen_server.routers import (
     stack_deployment_endpoints,
     stacks_endpoints,
     steps_endpoints,
+    tag_resource_endpoints,
     tags_endpoints,
     triggers_endpoints,
     users_endpoints,
@@ -489,6 +490,7 @@ app.include_router(stack_components_endpoints.router)
 app.include_router(stack_components_endpoints.types_router)
 app.include_router(steps_endpoints.router)
 app.include_router(tags_endpoints.router)
+app.include_router(tag_resource_endpoints.router)
 app.include_router(triggers_endpoints.router)
 app.include_router(users_endpoints.router)
 app.include_router(users_endpoints.current_user_router)

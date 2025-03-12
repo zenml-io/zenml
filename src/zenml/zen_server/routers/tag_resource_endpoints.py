@@ -23,7 +23,7 @@ from zenml.constants import (
     TAG_RESOURCES,
     VERSION_1,
 )
-from zenml.models import TagResourceRequest
+from zenml.models import TagResourceRequest, TagResourceResponse
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.utils import (
@@ -46,13 +46,16 @@ router = APIRouter(
 def create_tag_resource(
     tag_resource: TagResourceRequest,
     _: AuthContext = Security(authorize),
-) -> None:
+) -> TagResourceResponse:
     """Attach different tags to different resources.
 
     Args:
         tag_resource: A tag resource request.
+
+    Returns:
+        A tag resource response.
     """
-    zen_store().create_tag_resource(tag_resource=tag_resource)
+    return zen_store().create_tag_resource(tag_resource=tag_resource)
 
 
 @router.post(
@@ -63,14 +66,19 @@ def create_tag_resource(
 def batch_create_tag_resource(
     tag_resources: List[TagResourceRequest],
     _: AuthContext = Security(authorize),
-) -> None:
+) -> List[TagResourceResponse]:
     """Attach different tags to different resources.
 
     Args:
         tag_resources: A list of tag resource requests.
+
+    Returns:
+        A list of tag resource responses.
     """
-    for tag_resource in tag_resources:
+    return [
         zen_store().create_tag_resource(tag_resource=tag_resource)
+        for tag_resource in tag_resources
+    ]
 
 
 @router.delete(
