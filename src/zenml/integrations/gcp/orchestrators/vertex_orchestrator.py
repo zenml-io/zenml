@@ -513,6 +513,20 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                     )
 
                     if use_custom_training_job:
+                        if not step.config.resource_settings.empty:
+                            logger.warning(
+                                "Ignoring resource settings because "
+                                "the step is running as a custom training job. "
+                                "Use `custom_job_parameters.machine_type` "
+                                "to configure the machine type instead."
+                            )
+                        if step_settings.node_selector_constraint:
+                            logger.warning(
+                                "Ignoring node selector constraint because "
+                                "the step is running as a custom training job. "
+                                "Use `custom_job_parameters.accelerator_type` "
+                                "to configure the accelerator type instead."
+                            )
                         component = self._convert_to_custom_training_job(
                             component,
                             settings=step_settings,
