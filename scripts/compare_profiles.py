@@ -285,6 +285,12 @@ def main():
     improved_commands = 0
     degraded_commands = 0
     unchanged_commands = 0
+    failed_commands = 0
+    timeout_commands = 0
+    slow_commands = 0
+    new_failures = []
+    new_timeouts = []
+    new_slow = []
     all_improved = True  # Track if all commands improved or stayed the same
 
     # Process each command
@@ -293,10 +299,28 @@ def main():
     )
 
     for cmd in all_commands:
-        # Skip commands that failed or timed out on either branch for timing comparison
+        # Track failures and timeouts separately
         target_status = target_results.get(cmd, {}).get("status", "missing")
         current_status = current_results.get(cmd, {}).get("status", "missing")
 
+        # Count failures and timeouts
+        if current_status == "failed":
+            failed_commands += 1
+            if target_status != "failed" and target_status != "timeout":
+                new_failures.append(cmd)
+        
+        if current_status == "timeout":
+            timeout_commands += 1
+            if target_status != "timeout" and target_status != "failed":
+                new_timeouts.append(cmd)
+
+        # Count slow commands
+        if current_status == "slow":
+            slow_commands += 1
+            if target_status != "slow" and target_status != "failed" and target_status != "timeout":
+                new_slow.append(cmd)
+
+        # Skip commands that failed or timed out on either branch for timing comparison
         if target_status in ["failed", "timeout"] or current_status in [
             "failed",
             "timeout",
@@ -364,17 +388,36 @@ def main():
                 current_time = current_results[cmd]["avg_time"]
                 formatted_diff = format_time_diff(target_time, current_time)
 
+                # Count this command in our timing comparison stats
+                total_commands += 1
+                
                 if target_status == "slow" and current_status == "success":
                     status_str = "✅ No longer slow"
+                    improved_commands += 1
                 elif target_status == "success" and current_status == "slow":
                     status_str = "⚠️ Now slow"
                     all_improved = False
+                    # If we're beyond threshold, mark as degraded
+                    time_diff = target_time - current_time
+                    if time_diff <= -args.threshold:
+                        degraded_commands += 1
+                    else:
+                        unchanged_commands += 1
                 elif target_status == "slow" and current_status == "slow":
+                    time_diff = target_time - current_time
                     if current_time < target_time:
                         status_str = "⚠️ Improved but still slow"
+                        if time_diff >= args.threshold:
+                            improved_commands += 1
+                        else:
+                            unchanged_commands += 1
                     else:
                         status_str = "⚠️ Still slow and worse"
                         all_improved = False
+                        if time_diff <= -args.threshold:
+                            degraded_commands += 1
+                        else:
+                            unchanged_commands += 1
 
                 markdown += f"| `{cmd}` | {target_time:.6f} ± {target_results[cmd]['std_dev']:.6f} | {current_time:.6f} ± {current_results[cmd]['std_dev']:.6f} | {formatted_diff} | {status_str} |\n"
             elif cmd in target_results:
@@ -420,13 +463,19 @@ def main():
             markdown += f"| `{cmd}` | Not tested | {current_results[cmd]['avg_time']:.6f} | N/A | ❓ New |\n"
 
     # Add summary
-    if total_commands > 0:
+    if len(all_commands) > 0:
         markdown += "\n### Summary\n\n"
-        markdown += f"* Commands tested: {total_commands}\n"
-        markdown += f"* Commands improved: {improved_commands} ({improved_commands / total_commands * 100:.1f}%)\n"
-        markdown += f"* Commands degraded: {degraded_commands} ({degraded_commands / total_commands * 100:.1f}%)\n"
-        markdown += f"* Commands unchanged: {unchanged_commands} ({unchanged_commands / total_commands * 100:.1f}%)\n"
-        markdown += f"* Slow commands: {len(current_slow)}\n"
+        markdown += f"* Total commands analyzed: {len(all_commands)}\n"
+        if total_commands > 0:
+            markdown += f"* Commands compared for timing: {total_commands}\n"
+            markdown += f"* Commands improved: {improved_commands} ({improved_commands / total_commands * 100:.1f}% of compared)\n"
+            markdown += f"* Commands degraded: {degraded_commands} ({degraded_commands / total_commands * 100:.1f}% of compared)\n"
+            markdown += f"* Commands unchanged: {unchanged_commands} ({unchanged_commands / total_commands * 100:.1f}% of compared)\n"
+        
+        # Add counts for problematic commands
+        markdown += f"* Failed commands: {failed_commands}{' (NEW FAILURES INTRODUCED)' if new_failures else ''}\n"
+        markdown += f"* Timed out commands: {timeout_commands}{' (NEW TIMEOUTS INTRODUCED)' if new_timeouts else ''}\n"
+        markdown += f"* Slow commands: {slow_commands}{' (NEW SLOW COMMANDS INTRODUCED)' if new_slow else ''}\n"
 
         # Add motivational message if all commands improved or stayed the same
         if all_improved and total_commands > 0 and improved_commands > 0:
