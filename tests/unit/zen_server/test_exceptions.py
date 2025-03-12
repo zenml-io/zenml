@@ -26,9 +26,6 @@ from zenml.exceptions import (
     DuplicateRunNameError,
     EntityExistsError,
     IllegalOperationError,
-    SecretExistsError,
-    StackComponentExistsError,
-    StackExistsError,
     ValidationError,
     ZenKeyError,
 )
@@ -58,9 +55,9 @@ def get_exception(exception_type: Type[Exception]) -> Exception:
 @pytest.mark.parametrize(
     "exception_type",
     [
-        StackExistsError,
-        StackComponentExistsError,
-        SecretExistsError,
+        EntityExistsError,
+        EntityExistsError,
+        EntityExistsError,
         DuplicateRunNameError,
         EntityExistsError,
         IllegalOperationError,
@@ -105,9 +102,9 @@ def test_http_exception_reconstruction(exception_type: Type[Exception]):
 @pytest.mark.parametrize(
     "exception_type",
     [
-        StackExistsError,
-        StackComponentExistsError,
-        SecretExistsError,
+        EntityExistsError,
+        EntityExistsError,
+        EntityExistsError,
         DuplicateRunNameError,
         EntityExistsError,
         IllegalOperationError,

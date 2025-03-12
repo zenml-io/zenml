@@ -19,7 +19,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, cast
 from uuid import UUID
 
-from sqlalchemy import TEXT, Column
+from sqlalchemy import TEXT, Column, UniqueConstraint
 from sqlmodel import Field, Relationship
 
 from zenml.models import (
@@ -33,7 +33,6 @@ from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
-from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
@@ -43,6 +42,12 @@ class ServiceConnectorSchema(NamedSchema, table=True):
     """SQL Model for service connectors."""
 
     __tablename__ = "service_connector"
+    __table_args__ = (
+        UniqueConstraint(
+            "name",
+            name="unique_service_connector_name",
+        ),
+    )
 
     connector_type: str = Field(sa_column=Column(TEXT))
     description: str
@@ -56,18 +61,6 @@ class ServiceConnectorSchema(NamedSchema, table=True):
     expires_skew_tolerance: Optional[int]
     expiration_seconds: Optional[int]
     labels: Optional[bytes]
-
-    workspace_id: UUID = build_foreign_key_field(
-        source=__tablename__,
-        target=WorkspaceSchema.__tablename__,
-        source_column="workspace_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=False,
-    )
-    workspace: "WorkspaceSchema" = Relationship(
-        back_populates="service_connectors"
-    )
 
     user_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -146,7 +139,6 @@ class ServiceConnectorSchema(NamedSchema, table=True):
         """
         assert connector_request.user is not None, "User must be set."
         return cls(
-            workspace_id=connector_request.workspace,
             user_id=connector_request.user,
             name=connector_request.name,
             description=connector_request.description,
@@ -189,7 +181,7 @@ class ServiceConnectorSchema(NamedSchema, table=True):
         """
         for field, value in connector_update.model_dump(
             exclude_unset=False,
-            exclude={"workspace", "user", "secrets"},
+            exclude={"user", "secrets"},
         ).items():
             if value is None:
                 if field == "resource_id":
@@ -264,7 +256,6 @@ class ServiceConnectorSchema(NamedSchema, table=True):
         metadata = None
         if include_metadata:
             metadata = ServiceConnectorResponseMetadata(
-                workspace=self.workspace.to_model(),
                 configuration=json.loads(
                     base64.b64decode(self.configuration).decode()
                 )

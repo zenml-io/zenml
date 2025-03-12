@@ -13,10 +13,10 @@
 #  permissions and limitations under the License.
 """SQLModel implementation of tag tables."""
 
-from typing import Any, List
+from typing import Any, List, Optional
 from uuid import UUID
 
-from sqlalchemy import VARCHAR, Column
+from sqlalchemy import VARCHAR, Column, UniqueConstraint
 from sqlmodel import Field, Relationship
 
 from zenml.enums import ColorVariants, TaggableResourceTypes
@@ -27,6 +27,7 @@ from zenml.models import (
     TagResourceResponseBody,
     TagResponse,
     TagResponseBody,
+    TagResponseMetadata,
     TagUpdate,
 )
 from zenml.utils.time_utils import utc_now
@@ -35,14 +36,33 @@ from zenml.zen_stores.schemas.schema_utils import (
     build_foreign_key_field,
     build_index,
 )
+from zenml.zen_stores.schemas.user_schemas import UserSchema
 
 
 class TagSchema(NamedSchema, table=True):
     """SQL Model for tag."""
 
     __tablename__ = "tag"
+    __table_args__ = (
+        UniqueConstraint(
+            "name",
+            name="unique_tag_name",
+        ),
+    )
+
+    user_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=UserSchema.__tablename__,
+        source_column="user_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
+    user: Optional["UserSchema"] = Relationship(back_populates="tags")
 
     color: str = Field(sa_column=Column(VARCHAR(255), nullable=False))
+    exclusive: bool = Field(default=False)
+
     links: List["TagResourceSchema"] = Relationship(
         back_populates="tag",
         sa_relationship_kwargs={"overlaps": "tags", "cascade": "delete"},
@@ -60,7 +80,9 @@ class TagSchema(NamedSchema, table=True):
         """
         return cls(
             name=request.name,
+            exclusive=request.exclusive,
             color=request.color.value,
+            user_id=request.user,
         )
 
     def to_model(
@@ -80,15 +102,21 @@ class TagSchema(NamedSchema, table=True):
         Returns:
             The created `TagResponse`.
         """
+        metadata = None
+        if include_metadata:
+            metadata = TagResponseMetadata()
         return TagResponse(
             id=self.id,
             name=self.name,
             body=TagResponseBody(
+                user=self.user.to_model() if self.user else None,
                 created=self.created,
                 updated=self.updated,
                 color=ColorVariants(self.color),
+                exclusive=self.exclusive,
                 tagged_count=len(self.links),
             ),
+            metadata=metadata,
         )
 
     def update(self, update: TagUpdate) -> "TagSchema":

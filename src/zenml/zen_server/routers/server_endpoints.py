@@ -25,20 +25,27 @@ from zenml.constants import (
     LOAD_INFO,
     ONBOARDING_STATE,
     SERVER_SETTINGS,
+    STATISTICS,
     VERSION_1,
 )
 from zenml.enums import AuthScheme
 from zenml.exceptions import IllegalOperationError
 from zenml.models import (
+    ComponentFilter,
     ServerActivationRequest,
     ServerLoadInfo,
     ServerModel,
     ServerSettingsResponse,
     ServerSettingsUpdate,
+    ServerStatistics,
+    StackFilter,
     UserResponse,
+    WorkspaceFilter,
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.rbac.models import ResourceType
+from zenml.zen_server.rbac.utils import get_allowed_resource_ids
 from zenml.zen_server.utils import handle_exceptions, server_config, zen_store
 
 router = APIRouter(
@@ -60,7 +67,6 @@ def version() -> str:
 
 @router.get(
     INFO,
-    response_model=ServerModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -234,3 +240,49 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
             The default admin user that was created during activation, if any.
         """
         return zen_store().activate_server(activate_request)
+
+
+@router.get(
+    STATISTICS,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def get_server_statistics(
+    auth_context: AuthContext = Security(authorize),
+) -> ServerStatistics:
+    """Gets server statistics.
+
+    Args:
+        auth_context: Authentication context.
+
+    Returns:
+        Statistics of the server.
+    """
+    user_id = auth_context.user.id
+    component_filter = ComponentFilter()
+    component_filter.configure_rbac(
+        authenticated_user_id=user_id,
+        id=get_allowed_resource_ids(
+            resource_type=ResourceType.STACK_COMPONENT
+        ),
+    )
+
+    workspace_filter = WorkspaceFilter()
+    workspace_filter.configure_rbac(
+        authenticated_user_id=user_id,
+        id=get_allowed_resource_ids(resource_type=ResourceType.WORKSPACE),
+    )
+
+    stack_filter = StackFilter()
+    stack_filter.configure_rbac(
+        authenticated_user_id=user_id,
+        id=get_allowed_resource_ids(resource_type=ResourceType.STACK),
+    )
+
+    return ServerStatistics(
+        stacks=zen_store().count_stacks(filter_model=stack_filter),
+        components=zen_store().count_stack_components(
+            filter_model=component_filter
+        ),
+        workspaces=zen_store().count_workspaces(filter_model=workspace_filter),
+    )

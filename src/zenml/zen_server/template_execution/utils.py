@@ -149,9 +149,10 @@ def run_template(
     )
 
     def _task() -> None:
-        pypi_requirements, apt_packages = (
-            requirements_utils.get_requirements_for_stack(stack=stack)
-        )
+        (
+            pypi_requirements,
+            apt_packages,
+        ) = requirements_utils.get_requirements_for_stack(stack=stack)
 
         if build.python_version:
             version_info = version.parse(build.python_version)
@@ -406,7 +407,6 @@ def deployment_request_from_template(
     assert deployment.stack
     assert deployment.build
     deployment_request = PipelineDeploymentRequest(
-        user=user_id,
         workspace=deployment.workspace.id,
         run_name_template=config.run_name
         or get_default_run_name(pipeline_name=pipeline_configuration.name),
@@ -463,6 +463,7 @@ def get_pipeline_run_analytics_metadata(
     }
 
     return {
+        "workspace_id": deployment.workspace.id,
         "store_type": "rest",  # This method is called from within a REST endpoint
         **stack_metadata,
         "total_steps": len(deployment.step_configurations),

@@ -16,13 +16,14 @@
 from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Type, TypeVar
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from zenml.constants import (
     SORT_BY_LATEST_VERSION_KEY,
     STR_FIELD_MAX_LENGTH,
     TEXT_FIELD_MAX_LENGTH,
 )
+from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
     TaggableFilter,
     WorkspaceScopedFilter,
@@ -101,7 +102,7 @@ class ModelRequest(WorkspaceScopedRequest):
 # ------------------ Update Model ------------------
 
 
-class ModelUpdate(BaseModel):
+class ModelUpdate(BaseUpdate):
     """Update model for models."""
 
     name: Optional[str] = None
@@ -312,7 +313,9 @@ class ModelResponse(
 
         client = Client()
         model_versions = depaginate(
-            client.list_model_versions, model_name_or_id=self.id
+            client.list_model_versions,
+            model_name_or_id=self.id,
+            workspace=self.workspace.id,
         )
         return [
             mv.to_model_class(suppress_class_validation_warnings=True)
@@ -340,7 +343,7 @@ class ModelFilter(WorkspaceScopedFilter, TaggableFilter):
         *TaggableFilter.CUSTOM_SORTING_OPTIONS,
         SORT_BY_LATEST_VERSION_KEY,
     ]
-    CLI_EXCLUDE_FIELDS = [
+    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
         *TaggableFilter.CLI_EXCLUDE_FIELDS,
     ]

@@ -295,16 +295,16 @@ class BaseZenStore(
         active_workspace_name_or_id: Optional[Union[str, UUID]] = None,
         active_stack_id: Optional[UUID] = None,
         config_name: str = "",
-    ) -> Tuple[WorkspaceResponse, StackResponse]:
+    ) -> Tuple[Optional[WorkspaceResponse], StackResponse]:
         """Validate the active configuration.
 
         Call this method to validate the supplied active workspace and active
         stack values.
 
-        This method is guaranteed to return valid workspace ID and stack ID
-        values. If the supplied workspace and stack are not set or are not valid
-        (e.g. they do not exist or are not accessible), the default workspace and
-        default workspace stack will be returned in their stead.
+        This method returns a valid workspace and stack values. If the
+        supplied workspace and stack are not set or are not valid (e.g. they
+        do not exist or are not accessible), the default workspace and default
+        stack will be returned in their stead.
 
         Args:
             active_workspace_name_or_id: The name or ID of the active workspace.
@@ -315,28 +315,34 @@ class BaseZenStore(
         Returns:
             A tuple containing the active workspace and active stack.
         """
-        active_workspace: WorkspaceResponse
+        active_workspace: Optional[WorkspaceResponse] = None
 
         if active_workspace_name_or_id:
             try:
                 active_workspace = self.get_workspace(
                     active_workspace_name_or_id
                 )
-            except KeyError:
-                active_workspace = self._get_default_workspace()
-
+            except (KeyError, IllegalOperationError):
+                active_workspace_name_or_id = None
                 logger.warning(
                     f"The current {config_name} active workspace is no longer "
-                    f"available. Resetting the active workspace to "
-                    f"'{active_workspace.name}'."
+                    f"available."
                 )
-        else:
-            active_workspace = self._get_default_workspace()
 
-            logger.info(
-                f"Setting the {config_name} active workspace "
-                f"to '{active_workspace.name}'."
-            )
+        if active_workspace is None:
+            try:
+                active_workspace = self._get_default_workspace()
+            except (KeyError, IllegalOperationError):
+                logger.warning(
+                    "An active workspace is not set. Please set the active "
+                    "workspace by running `zenml workspace set "
+                    "<workspace-name>`."
+                )
+            else:
+                logger.info(
+                    f"Setting the {config_name} active workspace "
+                    f"to '{active_workspace.name}'."
+                )
 
         active_stack: StackResponse
 
@@ -351,28 +357,14 @@ class BaseZenStore(
                     "Resetting the active stack to default.",
                     config_name,
                 )
-                active_stack = self._get_default_stack(
-                    workspace_id=active_workspace.id
-                )
-            else:
-                if active_stack.workspace.id != active_workspace.id:
-                    logger.warning(
-                        "The current %s active stack is not part of the active "
-                        "workspace. Resetting the active stack to default.",
-                        config_name,
-                    )
-                    active_stack = self._get_default_stack(
-                        workspace_id=active_workspace.id
-                    )
+                active_stack = self._get_default_stack()
 
         else:
             logger.warning(
                 "Setting the %s active stack to default.",
                 config_name,
             )
-            active_stack = self._get_default_stack(
-                workspace_id=active_workspace.id
-            )
+            active_stack = self._get_default_stack()
 
         return active_workspace, active_stack
 
@@ -462,29 +454,22 @@ class BaseZenStore(
 
     def _get_default_stack(
         self,
-        workspace_id: UUID,
     ) -> StackResponse:
-        """Get the default stack for a user in a workspace.
-
-        Args:
-            workspace_id: ID of the workspace.
+        """Get the default stack.
 
         Returns:
-            The default stack in the workspace.
+            The default stack.
 
         Raises:
-            KeyError: if the workspace or default stack doesn't exist.
+            KeyError: if the default stack doesn't exist.
         """
         default_stacks = self.list_stacks(
             StackFilter(
-                workspace_id=workspace_id,
                 name=DEFAULT_STACK_AND_COMPONENT_NAME,
             )
         )
         if default_stacks.total == 0:
-            raise KeyError(
-                f"No default stack found in workspace {workspace_id}."
-            )
+            raise KeyError("No default stack found.")
         return default_stacks.items[0]
 
     def get_external_user(self, user_id: UUID) -> UserResponse:

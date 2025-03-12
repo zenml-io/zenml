@@ -27,8 +27,9 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import Field
+from pydantic import Field, model_validator
 
+from zenml.logger import get_logger
 from zenml.models.v2.base.base import (
     BaseDatedResponseBody,
     BaseIdentifiedResponse,
@@ -47,6 +48,9 @@ if TYPE_CHECKING:
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
 
+logger = get_logger(__name__)
+
+
 # ---------------------- Request Models ----------------------
 
 
@@ -56,7 +60,14 @@ class UserScopedRequest(BaseRequest):
     Used as a base class for all domain models that are "owned" by a user.
     """
 
-    user: UUID = Field(title="The id of the user that created this resource.")
+    user: Optional[UUID] = Field(
+        default=None,
+        title="The id of the user that created this resource. Set "
+        "automatically by the server.",
+        # This field is set automatically by the server, so the client doesn't
+        # need to set it and it will not be serialized.
+        exclude=True,
+    )
 
     def get_analytics_metadata(self) -> Dict[str, Any]:
         """Fetches the analytics metadata for user scoped models.
@@ -157,7 +168,6 @@ class UserScopedFilter(BaseFilter):
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *BaseFilter.CLI_EXCLUDE_FIELDS,
-        "user_id",
         "scope_user",
     ]
     CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
@@ -169,14 +179,10 @@ class UserScopedFilter(BaseFilter):
         default=None,
         description="The user to scope this query to.",
     )
-    user_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="UUID of the user that created the entity.",
-        union_mode="left_to_right",
-    )
     user: Optional[Union[UUID, str]] = Field(
         default=None,
         description="Name/ID of the user that created the entity.",
+        union_mode="left_to_right",
     )
 
     def set_scope_user(self, user_id: UUID) -> None:
@@ -316,6 +322,18 @@ class WorkspaceScopedResponse(
     Used as a base class for all domain models that are workspace-scoped.
     """
 
+    # Analytics
+    def get_analytics_metadata(self) -> Dict[str, Any]:
+        """Fetches the analytics metadata for workspace scoped models.
+
+        Returns:
+            The analytics metadata.
+        """
+        metadata = super().get_analytics_metadata()
+        if self.workspace is not None:
+            metadata["workspace_id"] = self.workspace.id
+        return metadata
+
     # Body and metadata properties
     @property
     def workspace(self) -> "WorkspaceResponse":
@@ -327,74 +345,24 @@ class WorkspaceScopedResponse(
         return self.get_metadata().workspace
 
 
+# ---------------------- Filter Models ----------------------
+
+
 class WorkspaceScopedFilter(UserScopedFilter):
     """Model to enable advanced scoping with workspace."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *UserScopedFilter.FILTER_EXCLUDE_FIELDS,
         "workspace",
-        "scope_workspace",
     ]
-    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *UserScopedFilter.CLI_EXCLUDE_FIELDS,
-        "workspace_id",
-        "workspace",
-        "scope_workspace",
-    ]
-    CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
-        *UserScopedFilter.CUSTOM_SORTING_OPTIONS,
-        "workspace",
-    ]
-    scope_workspace: Optional[UUID] = Field(
-        default=None,
-        description="The workspace to scope this query to.",
-    )
-    workspace_id: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="UUID of the workspace that this entity belongs to.",
-        union_mode="left_to_right",
-    )
     workspace: Optional[Union[UUID, str]] = Field(
         default=None,
-        description="Name/ID of the workspace that this entity belongs to.",
+        description="Name/ID of the workspace which the search is scoped to. "
+        "This field must always be set and is always applied in addition to "
+        "the other filters, regardless of the value of the "
+        "logical_operator field.",
+        union_mode="left_to_right",
     )
-
-    def set_scope_workspace(self, workspace_id: UUID) -> None:
-        """Set the workspace to scope this response.
-
-        Args:
-            workspace_id: The workspace to scope this response to.
-        """
-        self.scope_workspace = workspace_id
-
-    def get_custom_filters(
-        self, table: Type["AnySchema"]
-    ) -> List["ColumnElement[bool]"]:
-        """Get custom filters.
-
-        Args:
-            table: The query table.
-
-        Returns:
-            A list of custom filters.
-        """
-        custom_filters = super().get_custom_filters(table)
-
-        from sqlmodel import and_
-
-        from zenml.zen_stores.schemas import WorkspaceSchema
-
-        if self.workspace:
-            workspace_filter = and_(
-                getattr(table, "workspace_id") == WorkspaceSchema.id,
-                self.generate_name_or_id_query_conditions(
-                    value=self.workspace,
-                    table=WorkspaceSchema,
-                ),
-            )
-            custom_filters.append(workspace_filter)
-
-        return custom_filters
 
     def apply_filter(
         self,
@@ -409,59 +377,35 @@ class WorkspaceScopedFilter(UserScopedFilter):
 
         Returns:
             The query with filter applied.
-        """
-        from sqlmodel import or_
 
+        Raises:
+            ValueError: If the workspace scope is missing from the filter.
+        """
         query = super().apply_filter(query=query, table=table)
 
-        if self.scope_workspace:
-            scope_filter = or_(
-                getattr(table, "workspace_id") == self.scope_workspace,
-                getattr(table, "workspace_id").is_(None),
+        # The workspace scope must always be set and must be a UUID. If the
+        # client sets this to a string, the server will try to resolve it to a
+        # workspace ID.
+        #
+        # If not set by the client, the server will fall back to using the
+        # user's default workspace or even the server's default workspace, if
+        # they are configured. If this also fails to yield a workspace, this
+        # method will raise a ValueError.
+        #
+        # See: SqlZenStore._set_filter_workspace_id
+
+        if not self.workspace:
+            raise ValueError("Workspace scope missing from the filter.")
+
+        if not isinstance(self.workspace, UUID):
+            raise ValueError(
+                f"Workspace scope must be a UUID, got {type(self.workspace)}."
             )
-            query = query.where(scope_filter)
+
+        scope_filter = getattr(table, "workspace_id") == self.workspace
+        query = query.where(scope_filter)
 
         return query
-
-    def apply_sorting(
-        self,
-        query: AnyQuery,
-        table: Type["AnySchema"],
-    ) -> AnyQuery:
-        """Apply sorting to the query.
-
-        Args:
-            query: The query to which to apply the sorting.
-            table: The query table.
-
-        Returns:
-            The query with sorting applied.
-        """
-        from sqlmodel import asc, desc
-
-        from zenml.enums import SorterOps
-        from zenml.zen_stores.schemas import WorkspaceSchema
-
-        sort_by, operand = self.sorting_params
-
-        if sort_by == "workspace":
-            column = WorkspaceSchema.name
-
-            query = query.join(
-                WorkspaceSchema,
-                getattr(table, "workspace_id") == WorkspaceSchema.id,
-            )
-
-            query = query.add_columns(WorkspaceSchema.name)
-
-            if operand == SorterOps.ASCENDING:
-                query = query.order_by(asc(column))
-            else:
-                query = query.order_by(desc(column))
-
-            return query
-
-        return super().apply_sorting(query=query, table=table)
 
 
 class TaggableFilter(BaseFilter):
@@ -470,15 +414,43 @@ class TaggableFilter(BaseFilter):
     tag: Optional[str] = Field(
         description="Tag to apply to the filter query.", default=None
     )
+    tags: Optional[List[str]] = Field(
+        description="Tags to apply to the filter query.", default=None
+    )
 
+    CLI_EXCLUDE_FIELDS = [
+        *BaseFilter.CLI_EXCLUDE_FIELDS,
+    ]
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *BaseFilter.FILTER_EXCLUDE_FIELDS,
         "tag",
+        "tags",
     ]
     CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
         *BaseFilter.CUSTOM_SORTING_OPTIONS,
         "tags",
     ]
+
+    @model_validator(mode="after")
+    def add_tag_to_tags(self) -> "TaggableFilter":
+        """Deprecated the tag attribute in favor of the tags attribute.
+
+        Returns:
+            self
+        """
+        if self.tag is not None:
+            logger.warning(
+                "The `tag` attribute is deprecated in favor of the `tags` attribute. "
+                "Please update your code to use the `tags` attribute instead."
+            )
+            if self.tags is not None:
+                self.tags.append(self.tag)
+            else:
+                self.tags = [self.tag]
+
+            self.tag = None
+
+        return self
 
     def apply_filter(
         self,
@@ -497,7 +469,8 @@ class TaggableFilter(BaseFilter):
         from zenml.zen_stores.schemas import TagResourceSchema, TagSchema
 
         query = super().apply_filter(query=query, table=table)
-        if self.tag:
+
+        if self.tags is not None:
             query = query.join(
                 TagResourceSchema,
                 TagResourceSchema.resource_id == getattr(table, "id"),
@@ -516,15 +489,25 @@ class TaggableFilter(BaseFilter):
         Returns:
             A list of custom filters.
         """
-        from zenml.zen_stores.schemas import TagSchema
-
         custom_filters = super().get_custom_filters(table)
-        if self.tag:
-            custom_filters.append(
-                self.generate_custom_query_conditions_for_column(
-                    value=self.tag, table=TagSchema, column="name"
+
+        if self.tags is not None:
+            from sqlmodel import exists, select
+
+            from zenml.zen_stores.schemas import TagResourceSchema, TagSchema
+
+            for tag in self.tags:
+                condition = self.generate_custom_query_conditions_for_column(
+                    value=tag, table=TagSchema, column="name"
                 )
-            )
+                exists_subquery = exists(
+                    select(TagResourceSchema)
+                    .join(TagSchema, TagSchema.id == TagResourceSchema.tag_id)  # type: ignore[arg-type]
+                    .where(
+                        TagResourceSchema.resource_id == table.id, condition
+                    )
+                )
+                custom_filters.append(exists_subquery)
 
         return custom_filters
 
