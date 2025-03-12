@@ -103,7 +103,7 @@ jobs:
             --output performance_report.md
 
           # Set output variables for use in later steps
-          if grep -q "::has_issues::true" performance_report.md; then
+          if grep -q "<!-- ::has_issues::true -->" performance_report.md; then
             echo "has_issues=true" >> "$GITHUB_OUTPUT"
           else
             echo "has_issues=false" >> "$GITHUB_OUTPUT"

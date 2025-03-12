@@ -498,6 +498,9 @@ def main():
 
     markdown += f"* Slow threshold: {slow_threshold} seconds\n"
 
+    # Add the has_issues marker for GitHub Actions to detect
+    markdown += f"\n<!-- ::has_issues::{str(has_issues).lower()} -->\n"
+
     # Write results to file
     with open(args.output, "w") as f:
         f.write(markdown)
