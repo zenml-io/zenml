@@ -9,12 +9,14 @@
 #   -n, --num-runs NUMBER   Number of runs to average (default: 5)
 #   -v, --verbose           Print detailed timing information
 #   -o, --output FILE       Output results to a JSON file (default: cli-profile-results.json)
+#   -t, --timeout SECONDS   Maximum execution time per command in seconds (default: 60)
 #   -h, --help              Show this help message
 #
 # Example:
 #   ./profile-cli.sh
 #   ./profile-cli.sh -n 10 -v
 #   ./profile-cli.sh -o my-results.json
+#   ./profile-cli.sh -t 30
 
 set -e
 
@@ -22,6 +24,7 @@ set -e
 NUM_RUNS=5
 VERBOSE=false
 OUTPUT_FILE="cli-profile-results.json"
+TIMEOUT_SECONDS=60
 
 # List of commands to profile
 # Developers can edit this list directly to add/remove commands
@@ -48,6 +51,10 @@ while [[ $# -gt 0 ]]; do
       OUTPUT_FILE="$2"
       shift 2
       ;;
+    -t|--timeout)
+      TIMEOUT_SECONDS="$2"
+      shift 2
+      ;;
     -h|--help)
       echo "Usage: ./profile-cli.sh [OPTIONS]"
       echo
@@ -55,12 +62,14 @@ while [[ $# -gt 0 ]]; do
       echo "  -n, --num-runs NUMBER   Number of runs to average (default: 5)"
       echo "  -v, --verbose           Print detailed timing information"
       echo "  -o, --output FILE       Output results to a JSON file (default: cli-profile-results.json)"
+      echo "  -t, --timeout SECONDS   Maximum execution time per command in seconds (default: 60)"
       echo "  -h, --help              Show this help message"
       echo
       echo "Example:"
       echo "  ./profile-cli.sh"
       echo "  ./profile-cli.sh -n 10 -v"
       echo "  ./profile-cli.sh -o my-results.json"
+      echo "  ./profile-cli.sh -t 30"
       exit 0
       ;;
     *)
@@ -83,6 +92,18 @@ if ! command -v python3 &> /dev/null; then
   exit 1
 fi
 
+# Check if timeout command is available
+TIMEOUT_CMD=""
+if command -v timeout &> /dev/null; then
+  TIMEOUT_CMD="timeout"
+elif command -v gtimeout &> /dev/null; then
+  # On macOS with coreutils installed
+  TIMEOUT_CMD="gtimeout"
+else
+  echo "Warning: Neither 'timeout' nor 'gtimeout' command found. Timeout functionality will be disabled."
+  echo "On macOS, install coreutils with: brew install coreutils"
+fi
+
 # Function to get high precision time in seconds
 get_time_ns() {
   # Use Python for cross-platform high precision timing
@@ -99,6 +120,7 @@ for cmd in "${COMMANDS[@]}"; do
   echo "  - $cmd"
 done
 echo "Number of runs per command: $NUM_RUNS"
+echo "Timeout per run: $TIMEOUT_SECONDS seconds"
 echo
 
 # Counter for JSON formatting
@@ -109,6 +131,7 @@ TOTAL_COMMANDS=${#COMMANDS[@]}
 COMMAND_NAMES=()
 AVG_TIMES=()
 STD_DEVS=()
+CMD_STATUS=()
 
 # Process each command
 for COMMAND in "${COMMANDS[@]}"; do
@@ -116,10 +139,56 @@ for COMMAND in "${COMMANDS[@]}"; do
   
   TOTAL_TIME="0.0"
   TIMES=()
+  COMMAND_FAILED=false
+  COMMAND_TIMEDOUT=false
+  ERROR_MESSAGE=""
 
   for i in $(seq 1 $NUM_RUNS); do
+    if [ "$COMMAND_FAILED" = true ] || [ "$COMMAND_TIMEDOUT" = true ]; then
+      # Skip remaining runs if command already failed or timed out
+      continue
+    fi
+
     START_TIME=$(get_time_ns)
-    eval $COMMAND > /dev/null
+    
+    # Execute command with timeout if available
+    if [ -n "$TIMEOUT_CMD" ]; then
+      # Use set +e to prevent script from exiting if the command times out or fails
+      set +e
+      $TIMEOUT_CMD $TIMEOUT_SECONDS bash -c "$COMMAND" > /dev/null 2>&1
+      EXIT_CODE=$?
+      # Restore error handling
+      set -e
+      
+      # Check for timeout (124 is the timeout command's exit code for timeout)
+      if [ $EXIT_CODE -eq 124 ]; then
+        COMMAND_TIMEDOUT=true
+        ERROR_MESSAGE="Command timed out after $TIMEOUT_SECONDS seconds on run $i"
+        echo "⏱️ $ERROR_MESSAGE"
+        break
+      elif [ $EXIT_CODE -ne 0 ]; then
+        COMMAND_FAILED=true
+        ERROR_MESSAGE="Command failed on run $i (exit code: $EXIT_CODE)"
+        echo "❌ $ERROR_MESSAGE"
+        break
+      fi
+    else
+      # No timeout command available, just run normally
+      # Use set +e to prevent script from exiting if the command fails
+      set +e
+      eval $COMMAND > /dev/null 2>&1
+      EXIT_CODE=$?
+      # Restore error handling
+      set -e
+      
+      if [ $EXIT_CODE -ne 0 ]; then
+        COMMAND_FAILED=true
+        ERROR_MESSAGE="Command failed on run $i (exit code: $EXIT_CODE)"
+        echo "❌ $ERROR_MESSAGE"
+        break
+      fi
+    fi
+    
     END_TIME=$(get_time_ns)
     
     # Ensure we maintain high precision
@@ -134,59 +203,102 @@ for COMMAND in "${COMMANDS[@]}"; do
     fi
   done
 
-  if [ "$VERBOSE" = false ]; then
+  if [ "$VERBOSE" = false ] && [ "$COMMAND_FAILED" = false ] && [ "$COMMAND_TIMEDOUT" = false ]; then
     echo
   fi
 
-  # Calculate average with higher precision
-  AVG_TIME=$(LC_NUMERIC=C printf "%.6f" $(echo "$TOTAL_TIME / $NUM_RUNS" | bc -l))
-
-  # Calculate standard deviation with higher precision
-  if [ $NUM_RUNS -gt 1 ]; then
-    SUM_SQUARED_DIFF="0.0"
-    for time in "${TIMES[@]}"; do
-      DIFF=$(LC_NUMERIC=C printf "%.6f" $(echo "$time - $AVG_TIME" | bc -l))
-      SQUARED_DIFF=$(LC_NUMERIC=C printf "%.6f" $(echo "$DIFF * $DIFF" | bc -l))
-      SUM_SQUARED_DIFF=$(LC_NUMERIC=C printf "%.6f" $(echo "$SUM_SQUARED_DIFF + $SQUARED_DIFF" | bc -l))
-    done
-    VARIANCE=$(LC_NUMERIC=C printf "%.6f" $(echo "$SUM_SQUARED_DIFF / ($NUM_RUNS - 1)" | bc -l))
-    STD_DEV=$(LC_NUMERIC=C printf "%.6f" $(echo "sqrt($VARIANCE)" | bc -l))
-  else
+  # Store command status
+  if [ "$COMMAND_TIMEDOUT" = true ]; then
+    CMD_STATUS+=("TIMEOUT")
+    AVG_TIME="0.000000"
     STD_DEV="0.000000"
+    
+    # Print timeout result
+    echo "-------------------------------------------"
+    echo "Command: $COMMAND"
+    echo "Status: TIMEOUT"
+    echo "Error: $ERROR_MESSAGE"
+    echo "-------------------------------------------"
+    echo
+    
+    # Write timeout to JSON file
+    echo "    {" >> "$OUTPUT_FILE"
+    echo "      \"command\": \"$COMMAND\"," >> "$OUTPUT_FILE"
+    echo "      \"status\": \"timeout\"," >> "$OUTPUT_FILE"
+    echo "      \"timeout\": $TIMEOUT_SECONDS," >> "$OUTPUT_FILE"
+    echo "      \"error\": \"$ERROR_MESSAGE\"" >> "$OUTPUT_FILE"
+  elif [ "$COMMAND_FAILED" = true ]; then
+    CMD_STATUS+=("FAILED")
+    AVG_TIME="0.000000"
+    STD_DEV="0.000000"
+    
+    # Print failure result
+    echo "-------------------------------------------"
+    echo "Command: $COMMAND"
+    echo "Status: FAILED"
+    echo "Error: $ERROR_MESSAGE"
+    echo "-------------------------------------------"
+    echo
+    
+    # Write failure to JSON file
+    echo "    {" >> "$OUTPUT_FILE"
+    echo "      \"command\": \"$COMMAND\"," >> "$OUTPUT_FILE"
+    echo "      \"status\": \"failed\"," >> "$OUTPUT_FILE"
+    echo "      \"error\": \"$ERROR_MESSAGE\"" >> "$OUTPUT_FILE"
+  else
+    CMD_STATUS+=("SUCCESS")
+    
+    # Calculate average with higher precision
+    AVG_TIME=$(LC_NUMERIC=C printf "%.6f" $(echo "$TOTAL_TIME / $NUM_RUNS" | bc -l))
+  
+    # Calculate standard deviation with higher precision
+    if [ $NUM_RUNS -gt 1 ]; then
+      SUM_SQUARED_DIFF="0.0"
+      for time in "${TIMES[@]}"; do
+        DIFF=$(LC_NUMERIC=C printf "%.6f" $(echo "$time - $AVG_TIME" | bc -l))
+        SQUARED_DIFF=$(LC_NUMERIC=C printf "%.6f" $(echo "$DIFF * $DIFF" | bc -l))
+        SUM_SQUARED_DIFF=$(LC_NUMERIC=C printf "%.6f" $(echo "$SUM_SQUARED_DIFF + $SQUARED_DIFF" | bc -l))
+      done
+      VARIANCE=$(LC_NUMERIC=C printf "%.6f" $(echo "$SUM_SQUARED_DIFF / ($NUM_RUNS - 1)" | bc -l))
+      STD_DEV=$(LC_NUMERIC=C printf "%.6f" $(echo "sqrt($VARIANCE)" | bc -l))
+    else
+      STD_DEV="0.000000"
+    fi
+    
+    # Print success result
+    echo "-------------------------------------------"
+    echo "Command: $COMMAND"
+    echo "Average time: $AVG_TIME seconds"
+    echo "Standard deviation: $STD_DEV seconds"
+    echo "Number of runs: $NUM_RUNS"
+    echo "-------------------------------------------"
+    echo
+    
+    # Write success to JSON file
+    echo "    {" >> "$OUTPUT_FILE"
+    echo "      \"command\": \"$COMMAND\"," >> "$OUTPUT_FILE"
+    echo "      \"status\": \"success\"," >> "$OUTPUT_FILE"
+    echo "      \"avg_time\": $AVG_TIME," >> "$OUTPUT_FILE"
+    echo "      \"std_dev\": $STD_DEV," >> "$OUTPUT_FILE"
+    echo "      \"num_runs\": $NUM_RUNS," >> "$OUTPUT_FILE"
+    echo "      \"runs\": [" >> "$OUTPUT_FILE"
+    
+    # Add individual run times
+    for j in "${!TIMES[@]}"; do
+      COMMA=""
+      if [ $j -lt $(( ${#TIMES[@]} - 1 )) ]; then
+        COMMA=","
+      fi
+      echo "        ${TIMES[$j]}$COMMA" >> "$OUTPUT_FILE"
+    done
+    
+    echo "      ]" >> "$OUTPUT_FILE"
   fi
   
   # Store results for table display
   COMMAND_NAMES+=("$COMMAND")
   AVG_TIMES+=("$AVG_TIME")
   STD_DEVS+=("$STD_DEV")
-
-  # Print individual result
-  echo "-------------------------------------------"
-  echo "Command: $COMMAND"
-  echo "Average time: $AVG_TIME seconds"
-  echo "Standard deviation: $STD_DEV seconds"
-  echo "Number of runs: $NUM_RUNS"
-  echo "-------------------------------------------"
-  echo
-
-  # Write to JSON file
-  echo "    {" >> "$OUTPUT_FILE"
-  echo "      \"command\": \"$COMMAND\"," >> "$OUTPUT_FILE"
-  echo "      \"avg_time\": $AVG_TIME," >> "$OUTPUT_FILE"
-  echo "      \"std_dev\": $STD_DEV," >> "$OUTPUT_FILE"
-  echo "      \"num_runs\": $NUM_RUNS," >> "$OUTPUT_FILE"
-  echo "      \"runs\": [" >> "$OUTPUT_FILE"
-  
-  # Add individual run times
-  for j in "${!TIMES[@]}"; do
-    COMMA=""
-    if [ $j -lt $(( ${#TIMES[@]} - 1 )) ]; then
-      COMMA=","
-    fi
-    echo "        ${TIMES[$j]}$COMMA" >> "$OUTPUT_FILE"
-  done
-  
-  echo "      ]" >> "$OUTPUT_FILE"
   
   # Add comma if not the last command
   COMMAND_COUNT=$((COMMAND_COUNT + 1))
@@ -201,7 +313,8 @@ done
 echo "  ]," >> "$OUTPUT_FILE"
 echo "  \"metadata\": {" >> "$OUTPUT_FILE"
 echo "    \"timestamp\": \"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\"," >> "$OUTPUT_FILE"
-echo "    \"environment\": \"$(uname -s) $(uname -r)\"" >> "$OUTPUT_FILE"
+echo "    \"environment\": \"$(uname -s) $(uname -r)\"," >> "$OUTPUT_FILE"
+echo "    \"timeout\": $TIMEOUT_SECONDS" >> "$OUTPUT_FILE"
 echo "  }" >> "$OUTPUT_FILE"
 echo "}" >> "$OUTPUT_FILE"
 
@@ -210,9 +323,15 @@ echo "Results saved to $OUTPUT_FILE"
 # Display results table
 echo
 echo "===================== SUMMARY ====================="
-echo "Command                  | Average Time (s) | Std Dev"
-echo "--------------------------|-----------------|--------"
+echo "Command                  | Status  | Average Time (s) | Std Dev"
+echo "--------------------------|---------|-----------------|--------"
 for i in "${!COMMAND_NAMES[@]}"; do
-  printf "%-25s | %15s | %7s\n" "${COMMAND_NAMES[$i]}" "${AVG_TIMES[$i]}" "${STD_DEVS[$i]}"
+  STATUS_MARKER="✅"
+  if [ "${CMD_STATUS[$i]}" = "FAILED" ]; then
+    STATUS_MARKER="❌"
+  elif [ "${CMD_STATUS[$i]}" = "TIMEOUT" ]; then
+    STATUS_MARKER="⏱️"
+  fi
+  printf "%-25s | %s %6s | %15s | %7s\n" "${COMMAND_NAMES[$i]}" "$STATUS_MARKER" "${CMD_STATUS[$i]}" "${AVG_TIMES[$i]}" "${STD_DEVS[$i]}"
 done
 echo "===================================================" 
