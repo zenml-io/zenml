@@ -31,12 +31,12 @@ from zenml.constants import SORT_BY_LATEST_VERSION_KEY, STR_FIELD_MAX_LENGTH
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
     TaggableFilter,
-    WorkspaceScopedFilter,
-    WorkspaceScopedRequest,
-    WorkspaceScopedResponse,
-    WorkspaceScopedResponseBody,
-    WorkspaceScopedResponseMetadata,
-    WorkspaceScopedResponseResources,
+    ProjectScopedFilter,
+    ProjectScopedRequest,
+    ProjectScopedResponse,
+    ProjectScopedResponseBody,
+    ProjectScopedResponseMetadata,
+    ProjectScopedResponseResources,
 )
 from zenml.models.v2.core.tag import TagResponse
 
@@ -51,7 +51,7 @@ AnyQuery = TypeVar("AnyQuery", bound=Any)
 # ------------------ Request Model ------------------
 
 
-class ArtifactRequest(WorkspaceScopedRequest):
+class ArtifactRequest(ProjectScopedRequest):
     """Artifact request model."""
 
     name: str = Field(
@@ -84,7 +84,7 @@ class ArtifactUpdate(BaseUpdate):
 # ------------------ Response Model ------------------
 
 
-class ArtifactResponseBody(WorkspaceScopedResponseBody):
+class ArtifactResponseBody(ProjectScopedResponseBody):
     """Response body for artifacts."""
 
     tags: List[TagResponse] = Field(
@@ -94,7 +94,7 @@ class ArtifactResponseBody(WorkspaceScopedResponseBody):
     latest_version_id: Optional[UUID] = None
 
 
-class ArtifactResponseMetadata(WorkspaceScopedResponseMetadata):
+class ArtifactResponseMetadata(ProjectScopedResponseMetadata):
     """Response metadata for artifacts."""
 
     has_custom_name: bool = Field(
@@ -103,12 +103,12 @@ class ArtifactResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
-class ArtifactResponseResources(WorkspaceScopedResponseResources):
+class ArtifactResponseResources(ProjectScopedResponseResources):
     """Class for all resource models associated with the Artifact Entity."""
 
 
 class ArtifactResponse(
-    WorkspaceScopedResponse[
+    ProjectScopedResponse[
         ArtifactResponseBody,
         ArtifactResponseMetadata,
         ArtifactResponseResources,
@@ -185,22 +185,22 @@ class ArtifactResponse(
 # ------------------ Filter Model ------------------
 
 
-class ArtifactFilter(WorkspaceScopedFilter, TaggableFilter):
+class ArtifactFilter(ProjectScopedFilter, TaggableFilter):
     """Model to enable advanced filtering of artifacts."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
+        *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
         *TaggableFilter.FILTER_EXCLUDE_FIELDS,
     ]
 
     CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
-        *WorkspaceScopedFilter.CUSTOM_SORTING_OPTIONS,
+        *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
         *TaggableFilter.CUSTOM_SORTING_OPTIONS,
         SORT_BY_LATEST_VERSION_KEY,
     ]
 
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
+        *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
         *TaggableFilter.CLI_EXCLUDE_FIELDS,
     ]
 

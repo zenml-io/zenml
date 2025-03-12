@@ -91,13 +91,13 @@ def create_pipeline(
         The created pipeline.
     """
     if workspace_name_or_id:
-        workspace = zen_store().get_workspace(workspace_name_or_id)
-        pipeline.workspace = workspace.id
+        workspace = zen_store().get_project(workspace_name_or_id)
+        pipeline.project = workspace.id
 
     # We limit pipeline namespaces, not pipeline versions
     skip_entitlements = (
         zen_store().count_pipelines(
-            PipelineFilter(name=pipeline.name, workspace=pipeline.workspace)
+            PipelineFilter(name=pipeline.name, project=pipeline.project)
         )
         > 0
     )
@@ -143,7 +143,7 @@ def list_pipelines(
         List of pipeline objects matching the filter criteria.
     """
     if workspace_name_or_id:
-        pipeline_filter_model.workspace = workspace_name_or_id
+        pipeline_filter_model.project = workspace_name_or_id
 
     return verify_permissions_and_list_entities(
         filter_model=pipeline_filter_model,
@@ -228,7 +228,7 @@ def delete_pipeline(
     should_decrement = (
         ResourceType.PIPELINE in server_config().reportable_resources
         and zen_store().count_pipelines(
-            PipelineFilter(name=pipeline.name, workspace=pipeline.workspace.id)
+            PipelineFilter(name=pipeline.name, project=pipeline.project.id)
         )
         == 0
     )

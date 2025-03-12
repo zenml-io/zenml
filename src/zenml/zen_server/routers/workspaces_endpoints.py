@@ -28,11 +28,11 @@ from zenml.models import (
     Page,
     PipelineFilter,
     PipelineRunFilter,
-    WorkspaceFilter,
-    WorkspaceRequest,
-    WorkspaceResponse,
-    WorkspaceStatistics,
-    WorkspaceUpdate,
+    ProjectFilter,
+    ProjectRequest,
+    ProjectResponse,
+    ProjectStatistics,
+    ProjectUpdate,
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
@@ -66,12 +66,12 @@ router = APIRouter(
 )
 @handle_exceptions
 def list_workspaces(
-    workspace_filter_model: WorkspaceFilter = Depends(
-        make_dependable(WorkspaceFilter)
+    workspace_filter_model: ProjectFilter = Depends(
+        make_dependable(ProjectFilter)
     ),
     hydrate: bool = False,
     _: AuthContext = Security(authorize),
-) -> Page[WorkspaceResponse]:
+) -> Page[ProjectResponse]:
     """Lists all workspaces in the organization.
 
     Args:
@@ -86,7 +86,7 @@ def list_workspaces(
     return verify_permissions_and_list_entities(
         filter_model=workspace_filter_model,
         resource_type=ResourceType.WORKSPACE,
-        list_method=zen_store().list_workspaces,
+        list_method=zen_store().list_projects,
         hydrate=hydrate,
     )
 
@@ -97,9 +97,9 @@ def list_workspaces(
 )
 @handle_exceptions
 def create_workspace(
-    workspace_request: WorkspaceRequest,
+    workspace_request: ProjectRequest,
     _: AuthContext = Security(authorize),
-) -> WorkspaceResponse:
+) -> ProjectResponse:
     """Creates a workspace based on the requestBody.
 
     # noqa: DAR401
@@ -112,7 +112,7 @@ def create_workspace(
     """
     return verify_permissions_and_create_entity(
         request_model=workspace_request,
-        create_method=zen_store().create_workspace,
+        create_method=zen_store().create_project,
     )
 
 
@@ -125,7 +125,7 @@ def get_workspace(
     workspace_name_or_id: Union[str, UUID],
     hydrate: bool = True,
     _: AuthContext = Security(authorize),
-) -> WorkspaceResponse:
+) -> ProjectResponse:
     """Get a workspace for given name.
 
     # noqa: DAR401
@@ -140,7 +140,7 @@ def get_workspace(
     """
     return verify_permissions_and_get_entity(
         id=workspace_name_or_id,
-        get_method=zen_store().get_workspace,
+        get_method=zen_store().get_project,
         hydrate=hydrate,
     )
 
@@ -152,9 +152,9 @@ def get_workspace(
 @handle_exceptions
 def update_workspace(
     workspace_name_or_id: UUID,
-    workspace_update: WorkspaceUpdate,
+    workspace_update: ProjectUpdate,
     _: AuthContext = Security(authorize),
-) -> WorkspaceResponse:
+) -> ProjectResponse:
     """Get a workspace for given name.
 
     # noqa: DAR401
@@ -169,8 +169,8 @@ def update_workspace(
     return verify_permissions_and_update_entity(
         id=workspace_name_or_id,
         update_model=workspace_update,
-        get_method=zen_store().get_workspace,
-        update_method=zen_store().update_workspace,
+        get_method=zen_store().get_project,
+        update_method=zen_store().update_project,
     )
 
 
@@ -190,8 +190,8 @@ def delete_workspace(
     """
     verify_permissions_and_delete_entity(
         id=workspace_name_or_id,
-        get_method=zen_store().get_workspace,
-        delete_method=zen_store().delete_workspace,
+        get_method=zen_store().get_project,
+        delete_method=zen_store().delete_project,
     )
 
 
@@ -203,7 +203,7 @@ def delete_workspace(
 def get_workspace_statistics(
     workspace_name_or_id: Union[str, UUID],
     auth_context: AuthContext = Security(authorize),
-) -> WorkspaceStatistics:
+) -> ProjectStatistics:
     """Gets statistics of a workspace.
 
     # noqa: DAR401
@@ -217,24 +217,24 @@ def get_workspace_statistics(
     """
     workspace = verify_permissions_and_get_entity(
         id=workspace_name_or_id,
-        get_method=zen_store().get_workspace,
+        get_method=zen_store().get_project,
     )
 
     user_id = auth_context.user.id
 
-    run_filter = PipelineRunFilter(workspace=workspace.id)
+    run_filter = PipelineRunFilter(project=workspace.id)
     run_filter.configure_rbac(
         authenticated_user_id=user_id,
         id=get_allowed_resource_ids(resource_type=ResourceType.PIPELINE_RUN),
     )
 
-    pipeline_filter = PipelineFilter(workspace=workspace.id)
+    pipeline_filter = PipelineFilter(project=workspace.id)
     pipeline_filter.configure_rbac(
         authenticated_user_id=user_id,
         id=get_allowed_resource_ids(resource_type=ResourceType.PIPELINE),
     )
 
-    return WorkspaceStatistics(
+    return ProjectStatistics(
         pipelines=zen_store().count_pipelines(filter_model=pipeline_filter),
         runs=zen_store().count_runs(filter_model=run_filter),
     )

@@ -29,12 +29,12 @@ from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import PluginSubType
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
-    WorkspaceScopedFilter,
-    WorkspaceScopedRequest,
-    WorkspaceScopedResponse,
-    WorkspaceScopedResponseBody,
-    WorkspaceScopedResponseMetadata,
-    WorkspaceScopedResponseResources,
+    ProjectScopedFilter,
+    ProjectScopedRequest,
+    ProjectScopedResponse,
+    ProjectScopedResponseBody,
+    ProjectScopedResponseMetadata,
+    ProjectScopedResponseResources,
 )
 from zenml.models.v2.core.user import UserResponse
 
@@ -47,7 +47,7 @@ if TYPE_CHECKING:
 # ------------------ Request Model ------------------
 
 
-class ActionRequest(WorkspaceScopedRequest):
+class ActionRequest(ProjectScopedRequest):
     """Model for creating a new action."""
 
     name: str = Field(
@@ -131,7 +131,7 @@ class ActionUpdate(BaseUpdate):
 # ------------------ Response Model ------------------
 
 
-class ActionResponseBody(WorkspaceScopedResponseBody):
+class ActionResponseBody(ProjectScopedResponseBody):
     """Response body for actions."""
 
     flavor: str = Field(
@@ -144,7 +144,7 @@ class ActionResponseBody(WorkspaceScopedResponseBody):
     )
 
 
-class ActionResponseMetadata(WorkspaceScopedResponseMetadata):
+class ActionResponseMetadata(ProjectScopedResponseMetadata):
     """Response metadata for actions."""
 
     description: str = Field(
@@ -161,7 +161,7 @@ class ActionResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
-class ActionResponseResources(WorkspaceScopedResponseResources):
+class ActionResponseResources(ProjectScopedResponseResources):
     """Class for all resource models associated with the action entity."""
 
     service_account: UserResponse = Field(
@@ -170,7 +170,7 @@ class ActionResponseResources(WorkspaceScopedResponseResources):
 
 
 class ActionResponse(
-    WorkspaceScopedResponse[
+    ProjectScopedResponse[
         ActionResponseBody, ActionResponseMetadata, ActionResponseResources
     ]
 ):
@@ -259,7 +259,7 @@ class ActionResponse(
 # ------------------ Filter Model ------------------
 
 
-class ActionFilter(WorkspaceScopedFilter):
+class ActionFilter(ProjectScopedFilter):
     """Model to enable advanced filtering of all actions."""
 
     name: Optional[str] = Field(

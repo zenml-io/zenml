@@ -65,7 +65,7 @@ from zenml.zen_stores.schemas.utils import (
     RunMetadataInterface,
     get_page_from_list,
 )
-from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
+from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import ServiceSchema, StepRunSchema
@@ -78,20 +78,20 @@ class ModelSchema(NamedSchema, table=True):
     __table_args__ = (
         UniqueConstraint(
             "name",
-            "workspace_id",
-            name="unique_model_name_in_workspace",
+            "project_id",
+            name="unique_model_name_in_project",
         ),
     )
 
-    workspace_id: UUID = build_foreign_key_field(
+    project_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target=WorkspaceSchema.__tablename__,
-        source_column="workspace_id",
+        target=ProjectSchema.__tablename__,
+        source_column="project_id",
         target_column="id",
         ondelete="CASCADE",
         nullable=False,
     )
-    workspace: "WorkspaceSchema" = Relationship(back_populates="models")
+    project: "ProjectSchema" = Relationship(back_populates="models")
 
     user_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -165,7 +165,7 @@ class ModelSchema(NamedSchema, table=True):
         """
         return cls(
             name=model_request.name,
-            workspace_id=model_request.workspace,
+            project_id=model_request.project,
             user_id=model_request.user,
             license=model_request.license,
             description=model_request.description,
@@ -206,7 +206,7 @@ class ModelSchema(NamedSchema, table=True):
         metadata = None
         if include_metadata:
             metadata = ModelResponseMetadata(
-                workspace=self.workspace.to_model(),
+                project=self.project.to_model(),
                 license=self.license,
                 description=self.description,
                 audience=self.audience,
@@ -285,15 +285,15 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
         ),
     )
 
-    workspace_id: UUID = build_foreign_key_field(
+    project_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target=WorkspaceSchema.__tablename__,
-        source_column="workspace_id",
+        target=ProjectSchema.__tablename__,
+        source_column="project_id",
         target_column="id",
         ondelete="CASCADE",
         nullable=False,
     )
-    workspace: "WorkspaceSchema" = Relationship(
+    project: "ProjectSchema" = Relationship(
         back_populates="model_versions"
     )
 
@@ -400,7 +400,7 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
 
         return cls(
             id=id_,
-            workspace_id=model_version_request.workspace,
+            project_id=model_version_request.project,
             user_id=model_version_request.user,
             model_id=model_version_request.model,
             name=model_version_request.name,
@@ -468,7 +468,7 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
         metadata = None
         if include_metadata:
             metadata = ModelVersionResponseMetadata(
-                workspace=self.workspace.to_model(),
+                project=self.project.to_model(),
                 description=self.description,
                 run_metadata=self.fetch_metadata(),
             )

@@ -108,8 +108,8 @@ def create_model_version(
         The created model version.
     """
     if workspace_name_or_id:
-        workspace = zen_store().get_workspace(workspace_name_or_id)
-        model_version.workspace = workspace.id
+        workspace = zen_store().get_project(workspace_name_or_id)
+        model_version.project = workspace.id
 
     if model_id:
         model_version.model = model_id
@@ -162,11 +162,11 @@ def list_model_versions(
     # A workspace scoped request must always be scoped to a specific
     # workspace. This is required for the RBAC check to work.
     set_filter_workspace_scope(model_version_filter_model)
-    assert isinstance(model_version_filter_model.workspace, UUID)
+    assert isinstance(model_version_filter_model.project, UUID)
 
     model = zen_store().get_model_by_name_or_id(
         model_version_filter_model.model,
-        workspace=model_version_filter_model.workspace,
+        workspace=model_version_filter_model.project,
     )
 
     # Check read permissions on the model

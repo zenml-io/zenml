@@ -44,7 +44,7 @@ def test_model_version_response_artifact_fetching(
             tags=[],
         ),
         metadata=ModelResponseMetadata(
-            workspace=sample_workspace_model,
+            project=sample_workspace_model,
         ),
     )
     mv = ModelVersionResponse(
@@ -57,7 +57,7 @@ def test_model_version_response_artifact_fetching(
             number=-1,
         ),
         metadata=ModelVersionResponseMetadata(
-            workspace=sample_workspace_model,
+            project=sample_workspace_model,
         ),
     )
 

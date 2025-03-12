@@ -51,7 +51,7 @@ from zenml.zen_stores.schemas.step_run_schemas import (
 )
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import RunMetadataInterface
-from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
+from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.artifact_visualization_schemas import (
@@ -71,8 +71,8 @@ class ArtifactSchema(NamedSchema, table=True):
     __table_args__ = (
         UniqueConstraint(
             "name",
-            "workspace_id",
-            name="unique_artifact_name_in_workspace",
+            "project_id",
+            name="unique_artifact_name_in_project",
         ),
     )
 
@@ -92,15 +92,15 @@ class ArtifactSchema(NamedSchema, table=True):
         ),
     )
 
-    workspace_id: UUID = build_foreign_key_field(
+    project_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target=WorkspaceSchema.__tablename__,
-        source_column="workspace_id",
+        target=ProjectSchema.__tablename__,
+        source_column="project_id",
         target_column="id",
         ondelete="CASCADE",
         nullable=False,
     )
-    workspace: "WorkspaceSchema" = Relationship()
+    project: "ProjectSchema" = Relationship()
 
     user_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -156,7 +156,7 @@ class ArtifactSchema(NamedSchema, table=True):
         return cls(
             name=artifact_request.name,
             has_custom_name=artifact_request.has_custom_name,
-            workspace_id=artifact_request.workspace,
+            project_id=artifact_request.project,
             user_id=artifact_request.user,
         )
 
@@ -198,7 +198,7 @@ class ArtifactSchema(NamedSchema, table=True):
         if include_metadata:
             metadata = ArtifactResponseMetadata(
                 has_custom_name=self.has_custom_name,
-                workspace=self.workspace.to_model(),
+                project=self.project.to_model(),
             )
 
         return ArtifactResponse(
@@ -281,10 +281,10 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    workspace_id: UUID = build_foreign_key_field(
+    project_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target=WorkspaceSchema.__tablename__,
-        source_column="workspace_id",
+        target=ProjectSchema.__tablename__,
+        source_column="project_id",
         target_column="id",
         ondelete="CASCADE",
         nullable=False,
@@ -295,7 +295,7 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
     user: Optional["UserSchema"] = Relationship(
         back_populates="artifact_versions"
     )
-    workspace: "WorkspaceSchema" = Relationship(
+    project: "ProjectSchema" = Relationship(
         back_populates="artifact_versions"
     )
     run_metadata: List["RunMetadataSchema"] = Relationship(
@@ -353,7 +353,7 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
             version=str(artifact_version_request.version),
             version_number=version_number,
             artifact_store_id=artifact_version_request.artifact_store_id,
-            workspace_id=artifact_version_request.workspace,
+            project_id=artifact_version_request.project,
             user_id=artifact_version_request.user,
             type=artifact_version_request.type.value,
             uri=artifact_version_request.uri,
@@ -429,7 +429,7 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
         metadata = None
         if include_metadata:
             metadata = ArtifactVersionResponseMetadata(
-                workspace=self.workspace.to_model(),
+                project=self.project.to_model(),
                 producer_step_run_id=producer_step_run_id,
                 visualizations=[v.to_model() for v in self.visualizations],
                 run_metadata=self.fetch_metadata(),

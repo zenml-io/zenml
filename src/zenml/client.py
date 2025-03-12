@@ -184,10 +184,10 @@ from zenml.models import (
     UserRequest,
     UserResponse,
     UserUpdate,
-    WorkspaceFilter,
-    WorkspaceRequest,
-    WorkspaceResponse,
-    WorkspaceUpdate,
+    ProjectFilter,
+    ProjectRequest,
+    ProjectResponse,
+    ProjectUpdate,
 )
 from zenml.models.v2.core.step_run import StepRunUpdate
 from zenml.services.service import ServiceConfig
@@ -214,13 +214,13 @@ F = TypeVar("F", bound=Callable[..., Any])
 class ClientConfiguration(FileSyncModel):
     """Pydantic object used for serializing client configuration options."""
 
-    _active_workspace: Optional["WorkspaceResponse"] = None
+    _active_workspace: Optional["ProjectResponse"] = None
     active_workspace_id: Optional[UUID] = None
     active_stack_id: Optional[UUID] = None
     _active_stack: Optional["StackResponse"] = None
 
     @property
-    def active_workspace(self) -> "WorkspaceResponse":
+    def active_workspace(self) -> "ProjectResponse":
         """Get the active workspace for the local client.
 
         Returns:
@@ -238,7 +238,7 @@ class ClientConfiguration(FileSyncModel):
                 "workspace."
             )
 
-    def set_active_workspace(self, workspace: "WorkspaceResponse") -> None:
+    def set_active_workspace(self, workspace: "ProjectResponse") -> None:
         """Set the workspace for the local client.
 
         Args:
@@ -346,7 +346,7 @@ class Client(metaclass=ClientMetaClass):
     """
 
     _active_user: Optional["UserResponse"] = None
-    _active_workspace: Optional["WorkspaceResponse"] = None
+    _active_workspace: Optional["ProjectResponse"] = None
     _active_stack: Optional["StackResponse"] = None
 
     def __init__(
@@ -680,7 +680,7 @@ class Client(metaclass=ClientMetaClass):
 
     def set_active_workspace(
         self, workspace_name_or_id: Union[str, UUID]
-    ) -> "WorkspaceResponse":
+    ) -> "ProjectResponse":
         """Set the workspace for the local client.
 
         Args:
@@ -689,8 +689,8 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The model of the active workspace.
         """
-        workspace = self.zen_store.get_workspace(
-            workspace_name_or_id=workspace_name_or_id
+        workspace = self.zen_store.get_project(
+            project_name_or_id=workspace_name_or_id
         )  # raises KeyError
         if self._config:
             self._config.set_active_workspace(workspace)
@@ -974,7 +974,7 @@ class Client(metaclass=ClientMetaClass):
         name: str,
         description: str,
         display_name: Optional[str] = None,
-    ) -> WorkspaceResponse:
+    ) -> ProjectResponse:
         """Create a new workspace.
 
         Args:
@@ -985,8 +985,8 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             The created workspace.
         """
-        return self.zen_store.create_workspace(
-            WorkspaceRequest(
+        return self.zen_store.create_project(
+            ProjectRequest(
                 name=name,
                 description=description,
                 display_name=display_name or "",
@@ -998,7 +998,7 @@ class Client(metaclass=ClientMetaClass):
         name_id_or_prefix: Optional[Union[UUID, str]],
         allow_name_prefix_match: bool = True,
         hydrate: bool = True,
-    ) -> WorkspaceResponse:
+    ) -> ProjectResponse:
         """Gets a workspace.
 
         Args:
@@ -1013,7 +1013,7 @@ class Client(metaclass=ClientMetaClass):
         if not name_id_or_prefix:
             return self.active_workspace
         return self._get_entity_by_id_or_name_or_prefix(
-            get_method=self.zen_store.get_workspace,
+            get_method=self.zen_store.get_project,
             list_method=self.list_workspaces,
             name_id_or_prefix=name_id_or_prefix,
             allow_name_prefix_match=allow_name_prefix_match,
@@ -1032,7 +1032,7 @@ class Client(metaclass=ClientMetaClass):
         name: Optional[str] = None,
         display_name: Optional[str] = None,
         hydrate: bool = False,
-    ) -> Page[WorkspaceResponse]:
+    ) -> Page[ProjectResponse]:
         """List all workspaces.
 
         Args:
@@ -1051,8 +1051,8 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             Page of workspaces
         """
-        return self.zen_store.list_workspaces(
-            WorkspaceFilter(
+        return self.zen_store.list_projects(
+            ProjectFilter(
                 sort_by=sort_by,
                 page=page,
                 size=size,
@@ -1072,7 +1072,7 @@ class Client(metaclass=ClientMetaClass):
         new_name: Optional[str] = None,
         new_display_name: Optional[str] = None,
         new_description: Optional[str] = None,
-    ) -> WorkspaceResponse:
+    ) -> ProjectResponse:
         """Update a workspace.
 
         Args:
@@ -1087,15 +1087,15 @@ class Client(metaclass=ClientMetaClass):
         workspace = self.get_workspace(
             name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
         )
-        workspace_update = WorkspaceUpdate(
+        workspace_update = ProjectUpdate(
             name=new_name or workspace.name,
             display_name=new_display_name or workspace.display_name,
         )
         if new_description:
             workspace_update.description = new_description
-        return self.zen_store.update_workspace(
-            workspace_id=workspace.id,
-            workspace_update=workspace_update,
+        return self.zen_store.update_project(
+            project_id=workspace.id,
+            project_update=workspace_update,
         )
 
     def delete_workspace(self, name_id_or_prefix: str) -> None:
@@ -1117,10 +1117,10 @@ class Client(metaclass=ClientMetaClass):
                 "it is currently active. Please set another workspace as "
                 "active first."
             )
-        self.zen_store.delete_workspace(workspace_name_or_id=workspace.id)
+        self.zen_store.delete_project(project_name_or_id=workspace.id)
 
     @property
-    def active_workspace(self) -> WorkspaceResponse:
+    def active_workspace(self) -> ProjectResponse:
         """Get the currently active workspace of the local client.
 
         If no active workspace is configured locally for the client, the
@@ -1643,7 +1643,7 @@ class Client(metaclass=ClientMetaClass):
             name=config.service_name,
             service_type=service_type,
             config=config.model_dump(),
-            workspace=self.active_workspace.id,
+            project=self.active_workspace.id,
             model_version_id=model_version_id,
         )
         # Register the service
@@ -1762,7 +1762,7 @@ class Client(metaclass=ClientMetaClass):
             updated=updated,
             type=type,
             flavor=flavor,
-            workspace=workspace or self.active_workspace.id,
+            project=workspace or self.active_workspace.id,
             user=user,
             running=running,
             name=service_name,
@@ -2402,7 +2402,7 @@ class Client(metaclass=ClientMetaClass):
             updated=updated,
             name=name,
             latest_run_status=latest_run_status,
-            workspace=workspace or self.active_workspace.id,
+            project=workspace or self.active_workspace.id,
             user=user,
             tag=tag,
             tags=tags,
@@ -2568,7 +2568,7 @@ class Client(metaclass=ClientMetaClass):
                 self.list_run_templates,
                 pipeline_id=pipeline.id,
                 stack_id=stack.id if stack else None,
-                workspace=workspace or pipeline.workspace.id,
+                workspace=workspace or pipeline.project.id,
             )
 
             for template in templates:
@@ -2729,7 +2729,7 @@ class Client(metaclass=ClientMetaClass):
             id=id,
             created=created,
             updated=updated,
-            workspace=workspace or self.active_workspace.id,
+            project=workspace or self.active_workspace.id,
             user=user,
             pipeline_id=pipeline_id,
             stack_id=stack_id,
@@ -2789,7 +2789,7 @@ class Client(metaclass=ClientMetaClass):
             flavor=flavor,
             plugin_type=PluginType.EVENT_SOURCE,
             plugin_subtype=event_source_subtype,
-            workspace=self.active_workspace.id,
+            project=self.active_workspace.id,
         )
 
         return self.zen_store.create_event_source(event_source=event_source)
@@ -2865,7 +2865,7 @@ class Client(metaclass=ClientMetaClass):
             size=size,
             sort_by=sort_by,
             logical_operator=logical_operator,
-            workspace=workspace or self.active_workspace.id,
+            project=workspace or self.active_workspace.id,
             user=user,
             name=name,
             flavor=flavor,
@@ -2997,7 +2997,7 @@ class Client(metaclass=ClientMetaClass):
             configuration=configuration,
             service_account_id=service_account_id,
             auth_window=auth_window,
-            workspace=self.active_workspace.id,
+            project=self.active_workspace.id,
         )
 
         return self.zen_store.create_action(action=action)
@@ -3074,7 +3074,7 @@ class Client(metaclass=ClientMetaClass):
             size=size,
             sort_by=sort_by,
             logical_operator=logical_operator,
-            workspace=workspace or self.active_workspace.id,
+            project=workspace or self.active_workspace.id,
             user=user,
             name=name,
             id=id,
@@ -3183,7 +3183,7 @@ class Client(metaclass=ClientMetaClass):
             event_source_id=event_source_id,
             event_filter=event_filter,
             action_id=action_id,
-            workspace=self.active_workspace.id,
+            project=self.active_workspace.id,
         )
 
         return self.zen_store.create_trigger(trigger=trigger)
@@ -3270,7 +3270,7 @@ class Client(metaclass=ClientMetaClass):
             size=size,
             sort_by=sort_by,
             logical_operator=logical_operator,
-            workspace=workspace or self.active_workspace.id,
+            project=workspace or self.active_workspace.id,
             user=user,
             name=name,
             event_source_id=event_source_id,
@@ -3476,7 +3476,7 @@ class Client(metaclass=ClientMetaClass):
             id=id,
             created=created,
             updated=updated,
-            workspace=workspace or self.active_workspace.id,
+            project=workspace or self.active_workspace.id,
             user=user,
             pipeline_id=pipeline_id,
             stack_id=stack_id,
@@ -3533,7 +3533,7 @@ class Client(metaclass=ClientMetaClass):
                 description=description,
                 source_deployment_id=deployment_id,
                 tags=tags,
-                workspace=self.active_workspace.id,
+                project=self.active_workspace.id,
             )
         )
 
@@ -3620,7 +3620,7 @@ class Client(metaclass=ClientMetaClass):
             id=id,
             name=name,
             tag=tag,
-            workspace=workspace,
+            project=workspace,
             pipeline_id=pipeline_id,
             build_id=build_id,
             stack_id=stack_id,
@@ -3795,7 +3795,7 @@ class Client(metaclass=ClientMetaClass):
             created=created,
             updated=updated,
             name=name,
-            workspace=workspace or self.active_workspace.id,
+            project=workspace or self.active_workspace.id,
             user=user,
             pipeline_id=pipeline_id,
             orchestrator_id=orchestrator_id,
@@ -3955,7 +3955,7 @@ class Client(metaclass=ClientMetaClass):
             created=created,
             updated=updated,
             name=name,
-            workspace=workspace or self.active_workspace.id,
+            project=workspace or self.active_workspace.id,
             pipeline_id=pipeline_id,
             pipeline_name=pipeline_name,
             schedule_id=schedule_id,
@@ -4098,7 +4098,7 @@ class Client(metaclass=ClientMetaClass):
             start_time=start_time,
             end_time=end_time,
             name=name,
-            workspace=workspace or self.active_workspace.id,
+            project=workspace or self.active_workspace.id,
             user=user,
             model_version_id=model_version_id,
             model=model,
@@ -4188,7 +4188,7 @@ class Client(metaclass=ClientMetaClass):
             tag=tag,
             tags=tags,
             user=user,
-            workspace=workspace or self.active_workspace.id,
+            project=workspace or self.active_workspace.id,
         )
         return self.zen_store.list_artifacts(
             artifact_filter_model,
@@ -4276,7 +4276,7 @@ class Client(metaclass=ClientMetaClass):
         workspace = workspace or self.active_workspace.id
 
         self.zen_store.prune_artifact_versions(
-            workspace_name_or_id=workspace, only_versions=only_versions
+            project_name_or_id=workspace, only_versions=only_versions
         )
         logger.info("All unused artifacts and artifact versions deleted.")
 
@@ -4421,7 +4421,7 @@ class Client(metaclass=ClientMetaClass):
             data_type=data_type,
             uri=uri,
             materializer=materializer,
-            workspace=workspace or self.active_workspace.id,
+            project=workspace or self.active_workspace.id,
             model_version_id=model_version_id,
             only_unused=only_unused,
             has_custom_name=has_custom_name,
@@ -4621,7 +4621,7 @@ class Client(metaclass=ClientMetaClass):
             types[key] = metadata_type
 
         run_metadata = RunMetadataRequest(
-            workspace=self.active_workspace.id,
+            project=self.active_workspace.id,
             resources=resources,
             stack_component_id=stack_component_id,
             publisher_step_id=publisher_step_id,
@@ -5116,7 +5116,7 @@ class Client(metaclass=ClientMetaClass):
         """
         self._validate_code_repository_config(source=source, config=config)
         repo_request = CodeRepositoryRequest(
-            workspace=self.active_workspace.id,
+            project=self.active_workspace.id,
             name=name,
             config=config,
             source=source,
@@ -5197,7 +5197,7 @@ class Client(metaclass=ClientMetaClass):
             created=created,
             updated=updated,
             name=name,
-            workspace=workspace or self.active_workspace.id,
+            project=workspace or self.active_workspace.id,
             user=user,
         )
         return self.zen_store.list_code_repositories(
@@ -6164,7 +6164,7 @@ class Client(metaclass=ClientMetaClass):
                 trade_offs=trade_offs,
                 ethics=ethics,
                 tags=tags,
-                workspace=self.active_workspace.id,
+                project=self.active_workspace.id,
                 save_models_to_registry=save_models_to_registry,
             )
         )
@@ -6327,7 +6327,7 @@ class Client(metaclass=ClientMetaClass):
             tag=tag,
             tags=tags,
             user=user,
-            workspace=workspace or self.active_workspace.id,
+            project=workspace or self.active_workspace.id,
         )
 
         return self.zen_store.list_models(
@@ -6366,7 +6366,7 @@ class Client(metaclass=ClientMetaClass):
             model_version=ModelVersionRequest(
                 name=name,
                 description=description,
-                workspace=workspace or self.active_workspace.id,
+                project=workspace or self.active_workspace.id,
                 model=model.id,
                 tags=tags,
             )
@@ -6445,7 +6445,7 @@ class Client(metaclass=ClientMetaClass):
                 model_version_filter_model=ModelVersionFilter(
                     model=model_name_or_id,
                     number=model_version_name_or_number_or_id,
-                    workspace=workspace or self.active_workspace.id,
+                    project=workspace or self.active_workspace.id,
                 ),
                 hydrate=hydrate,
             ).items
@@ -6455,7 +6455,7 @@ class Client(metaclass=ClientMetaClass):
                     model_version_filter_model=ModelVersionFilter(
                         model=model_name_or_id,
                         sort_by=f"{SorterOps.DESCENDING}:number",
-                        workspace=workspace or self.active_workspace.id,
+                        project=workspace or self.active_workspace.id,
                     ),
                     hydrate=hydrate,
                 ).items
@@ -6469,7 +6469,7 @@ class Client(metaclass=ClientMetaClass):
                     model_version_filter_model=ModelVersionFilter(
                         model=model_name_or_id,
                         stage=model_version_name_or_number_or_id,
-                        workspace=workspace or self.active_workspace.id,
+                        project=workspace or self.active_workspace.id,
                     ),
                     hydrate=hydrate,
                 ).items
@@ -6478,7 +6478,7 @@ class Client(metaclass=ClientMetaClass):
                     model_version_filter_model=ModelVersionFilter(
                         model=model_name_or_id,
                         name=model_version_name_or_number_or_id,
-                        workspace=workspace or self.active_workspace.id,
+                        project=workspace or self.active_workspace.id,
                     ),
                     hydrate=hydrate,
                 ).items
@@ -6566,7 +6566,7 @@ class Client(metaclass=ClientMetaClass):
             tags=tags,
             user=user,
             model=model_name_or_id,
-            workspace=workspace or self.active_workspace.id,
+            project=workspace or self.active_workspace.id,
         )
 
         return self.zen_store.list_model_versions(
@@ -6606,7 +6606,7 @@ class Client(metaclass=ClientMetaClass):
         if not is_valid_uuid(model_name_or_id):
             model = self.get_model(model_name_or_id, workspace=workspace)
             model_name_or_id = model.id
-            workspace = workspace or model.workspace.id
+            workspace = workspace or model.project.id
         if not is_valid_uuid(version_name_or_id):
             version_name_or_id = self.get_model_version(
                 model_name_or_id, version_name_or_id, workspace=workspace
@@ -6989,7 +6989,7 @@ class Client(metaclass=ClientMetaClass):
             size=size,
             user=user,
             logical_operator=logical_operator,
-            workspace=workspace or self.active_workspace.id,
+            project=workspace or self.active_workspace.id,
         )
         return self.zen_store.list_trigger_executions(
             trigger_execution_filter_model=filter_model, hydrate=hydrate

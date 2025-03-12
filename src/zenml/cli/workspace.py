@@ -27,7 +27,7 @@ from zenml.cli.utils import (
 from zenml.client import Client
 from zenml.console import console
 from zenml.enums import CliCategories
-from zenml.models import WorkspaceFilter
+from zenml.models import ProjectFilter
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
@@ -36,7 +36,7 @@ def workspace() -> None:
 
 
 @workspace.command("list")
-@list_options(WorkspaceFilter)
+@list_options(ProjectFilter)
 @click.pass_context
 def list_workspaces(ctx: click.Context, **kwargs: Any) -> None:
     """List all workspaces.

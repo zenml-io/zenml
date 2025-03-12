@@ -409,6 +409,7 @@ VERSION_1 = "/v1"
 VISUALIZE = "/visualize"
 WEBHOOKS = "/webhooks"
 WORKSPACES = "/workspaces"
+PROJECTS = "/projects"
 
 # model metadata yaml file name
 MODEL_METADATA_YAML_FILE_NAME = "model_metadata.yaml"

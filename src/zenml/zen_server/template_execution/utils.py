@@ -134,7 +134,7 @@ def run_template(
     ).access_token
 
     environment = {
-        ENV_ZENML_ACTIVE_WORKSPACE_ID: str(new_deployment.workspace.id),
+        ENV_ZENML_ACTIVE_WORKSPACE_ID: str(new_deployment.project.id),
         ENV_ZENML_ACTIVE_STACK_ID: str(stack.id),
         "ZENML_VERSION": zenml_version,
         "ZENML_STORE_URL": server_url,
@@ -407,7 +407,7 @@ def deployment_request_from_template(
     assert deployment.stack
     assert deployment.build
     deployment_request = PipelineDeploymentRequest(
-        workspace=deployment.workspace.id,
+        project=deployment.project.id,
         run_name_template=config.run_name
         or get_default_run_name(pipeline_name=pipeline_configuration.name),
         pipeline_configuration=pipeline_configuration,
@@ -463,7 +463,7 @@ def get_pipeline_run_analytics_metadata(
     }
 
     return {
-        "workspace_id": deployment.workspace.id,
+        "workspace_id": deployment.project.id,
         "store_type": "rest",  # This method is called from within a REST endpoint
         **stack_metadata,
         "total_steps": len(deployment.step_configurations),

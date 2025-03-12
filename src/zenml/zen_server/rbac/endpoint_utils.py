@@ -23,7 +23,7 @@ from zenml.models import (
     BaseUpdate,
     Page,
     UserScopedRequest,
-    WorkspaceScopedFilter,
+    ProjectScopedFilter,
 )
 from zenml.zen_server.auth import get_auth_context
 from zenml.zen_server.feature_gate.endpoint_utils import (
@@ -238,18 +238,18 @@ def verify_permissions_and_list_entities(
     assert auth_context
 
     workspace_id: Optional[UUID] = None
-    if isinstance(filter_model, WorkspaceScopedFilter):
+    if isinstance(filter_model, ProjectScopedFilter):
         # A workspace scoped filter must always be scoped to a specific
         # workspace. This is required for the RBAC check to work.
         set_filter_workspace_scope(filter_model)
-        if not filter_model.workspace or not isinstance(
-            filter_model.workspace, UUID
+        if not filter_model.project or not isinstance(
+            filter_model.project, UUID
         ):
             raise ValueError(
                 "Workspace scope must be a UUID, got "
-                f"{type(filter_model.workspace)}."
+                f"{type(filter_model.project)}."
             )
-        workspace_id = filter_model.workspace
+        workspace_id = filter_model.project
 
     allowed_ids = get_allowed_resource_ids(
         resource_type=resource_type, workspace_id=workspace_id

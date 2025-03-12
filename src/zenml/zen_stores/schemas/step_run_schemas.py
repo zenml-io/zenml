@@ -53,7 +53,7 @@ from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import RunMetadataInterface
-from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
+from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.artifact_schemas import ArtifactVersionSchema
@@ -126,10 +126,10 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    workspace_id: UUID = build_foreign_key_field(
+    project_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target=WorkspaceSchema.__tablename__,
-        source_column="workspace_id",
+        target=ProjectSchema.__tablename__,
+        source_column="project_id",
         target_column="id",
         ondelete="CASCADE",
         nullable=False,
@@ -144,7 +144,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
     )
 
     # Relationships
-    workspace: "WorkspaceSchema" = Relationship(back_populates="step_runs")
+    project: "ProjectSchema" = Relationship(back_populates="step_runs")
     user: Optional["UserSchema"] = Relationship(back_populates="step_runs")
     deployment: Optional["PipelineDeploymentSchema"] = Relationship(
         back_populates="step_runs"
@@ -200,7 +200,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         """
         return cls(
             name=request.name,
-            workspace_id=request.workspace,
+            project_id=request.project,
             user_id=request.user,
             start_time=request.start_time,
             end_time=request.end_time,
@@ -310,7 +310,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         metadata = None
         if include_metadata:
             metadata = StepRunResponseMetadata(
-                workspace=self.workspace.to_model(),
+                project=self.project.to_model(),
                 config=full_step_config.config,
                 spec=full_step_config.spec,
                 cache_key=self.cache_key,

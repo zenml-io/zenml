@@ -80,8 +80,8 @@ def create_code_repository(
         The created code repository.
     """
     if workspace_name_or_id:
-        workspace = zen_store().get_workspace(workspace_name_or_id)
-        code_repository.workspace = workspace.id
+        workspace = zen_store().get_project(workspace_name_or_id)
+        code_repository.project = workspace.id
 
     return verify_permissions_and_create_entity(
         request_model=code_repository,
@@ -123,7 +123,7 @@ def list_code_repositories(
         Page of code repository objects.
     """
     if workspace_name_or_id:
-        filter_model.workspace = workspace_name_or_id
+        filter_model.project = workspace_name_or_id
 
     return verify_permissions_and_list_entities(
         filter_model=filter_model,

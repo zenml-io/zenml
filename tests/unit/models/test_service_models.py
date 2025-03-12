@@ -77,7 +77,7 @@ def service_response(
         endpoint=endpoint,
         prediction_url=prediction_url,
         health_check_url=health_check_url,
-        workspace=sample_workspace_model,
+        project=sample_workspace_model,
     )
     return ServiceResponse(
         id=service_id,

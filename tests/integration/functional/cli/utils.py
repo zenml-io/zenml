@@ -23,7 +23,7 @@ from zenml.cli.utils import (
 from zenml.client import Client
 from zenml.models import (
     UserResponse,
-    WorkspaceResponse,
+    ProjectResponse,
 )
 from zenml.utils.string_utils import random_str
 
@@ -94,7 +94,7 @@ def sample_workspace_name() -> str:
     return f"cat_prj_{random_str(4)}"
 
 
-def create_sample_workspace() -> WorkspaceResponse:
+def create_sample_workspace() -> ProjectResponse:
     """Fixture to get a workspace."""
     return Client().create_workspace(
         name=sample_workspace_name(),

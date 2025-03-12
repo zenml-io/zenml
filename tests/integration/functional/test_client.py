@@ -444,7 +444,7 @@ def test_getting_a_pipeline(clean_client: "Client"):
         clean_client.get_pipeline(name_id_or_prefix="non_existent")
 
     request = PipelineRequest(
-        workspace=clean_client.active_workspace.id,
+        project=clean_client.active_workspace.id,
         name="pipeline",
     )
     response_1 = clean_client.zen_store.create_pipeline(request)
@@ -461,7 +461,7 @@ def test_listing_pipelines(clean_client):
     assert clean_client.list_pipelines().total == 0
 
     request = PipelineRequest(
-        workspace=clean_client.active_workspace.id,
+        project=clean_client.active_workspace.id,
         name="pipeline",
     )
     response_1 = clean_client.zen_store.create_pipeline(request)
@@ -655,7 +655,7 @@ def test_listing_builds(clean_client):
     assert len(builds) == 0
 
     request = PipelineBuildRequest(
-        workspace=clean_client.active_workspace.id,
+        project=clean_client.active_workspace.id,
         images={},
         is_local=False,
         contains_code=True,
@@ -677,7 +677,7 @@ def test_getting_builds(clean_client):
         clean_client.get_build(str(uuid4()))
 
     request = PipelineBuildRequest(
-        workspace=clean_client.active_workspace.id,
+        project=clean_client.active_workspace.id,
         images={},
         is_local=False,
         contains_code=True,
@@ -696,7 +696,7 @@ def test_deleting_builds(clean_client):
         clean_client.delete_build(str(uuid4()))
 
     request = PipelineBuildRequest(
-        workspace=clean_client.active_workspace.id,
+        project=clean_client.active_workspace.id,
         images={},
         is_local=False,
         contains_code=True,
@@ -721,7 +721,7 @@ def test_listing_deployments(clean_client):
     assert len(deployments) == 0
 
     request = PipelineDeploymentRequest(
-        workspace=clean_client.active_workspace.id,
+        project=clean_client.active_workspace.id,
         stack=clean_client.active_stack.id,
         run_name_template="",
         pipeline_configuration={"name": "pipeline_name"},
@@ -744,7 +744,7 @@ def test_getting_deployments(clean_client):
         clean_client.get_deployment(str(uuid4()))
 
     request = PipelineDeploymentRequest(
-        workspace=clean_client.active_workspace.id,
+        project=clean_client.active_workspace.id,
         stack=clean_client.active_stack.id,
         run_name_template="",
         pipeline_configuration={"name": "pipeline_name"},
@@ -765,7 +765,7 @@ def test_deleting_deployments(clean_client):
         clean_client.delete_deployment(str(uuid4()))
 
     request = PipelineDeploymentRequest(
-        workspace=clean_client.active_workspace.id,
+        project=clean_client.active_workspace.id,
         stack=clean_client.active_stack.id,
         run_name_template="",
         pipeline_configuration={"name": "pipeline_name"},

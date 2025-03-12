@@ -182,7 +182,7 @@ def _store_artifact_data_and_prepare_request(
         uri=materializer.uri,
         materializer=source_utils.resolve(materializer.__class__),
         data_type=source_utils.resolve(data_type),
-        workspace=Client().active_workspace.id,
+        project=Client().active_workspace.id,
         artifact_store_id=artifact_store.id,
         visualizations=visualizations,
         has_custom_name=has_custom_name,
@@ -349,7 +349,7 @@ def register_artifact(
         uri=folder_or_file_uri,
         materializer=source_utils.resolve(PreexistingDataMaterializer),
         data_type=source_utils.resolve(Path),
-        workspace=Client().active_workspace.id,
+        project=Client().active_workspace.id,
         artifact_store_id=artifact_store.id,
         has_custom_name=has_custom_name,
         metadata=validate_metadata(artifact_metadata)

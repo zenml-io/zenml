@@ -80,8 +80,8 @@ def create_service(
         The created service.
     """
     if workspace_name_or_id:
-        workspace = zen_store().get_workspace(workspace_name_or_id)
-        service.workspace = workspace.id
+        workspace = zen_store().get_project(workspace_name_or_id)
+        service.project = workspace.id
 
     return verify_permissions_and_create_entity(
         request_model=service,

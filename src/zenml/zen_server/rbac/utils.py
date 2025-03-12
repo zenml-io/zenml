@@ -34,8 +34,8 @@ from zenml.models import (
     Page,
     UserResponse,
     UserScopedResponse,
-    WorkspaceScopedRequest,
-    WorkspaceScopedResponse,
+    ProjectScopedRequest,
+    ProjectScopedResponse,
 )
 from zenml.zen_server.auth import get_auth_context
 from zenml.zen_server.rbac.models import Action, Resource, ResourceType
@@ -372,12 +372,12 @@ def get_resource_for_model(model: AnyModel) -> Optional[Resource]:
         return None
 
     workspace_id: Optional[UUID] = None
-    if isinstance(model, WorkspaceScopedResponse):
+    if isinstance(model, ProjectScopedResponse):
         # A workspace scoped response is always scoped to a specific workspace
-        workspace_id = model.workspace.id
-    elif isinstance(model, WorkspaceScopedRequest):
+        workspace_id = model.project.id
+    elif isinstance(model, ProjectScopedRequest):
         # A workspace scoped request is always scoped to a specific workspace
-        workspace_id = model.workspace
+        workspace_id = model.project
 
     resource_id: Optional[UUID] = None
     if isinstance(model, BaseIdentifiedResponse):
@@ -475,8 +475,8 @@ def get_resource_type_for_model(
         TriggerExecutionResponse,
         TriggerRequest,
         TriggerResponse,
-        WorkspaceRequest,
-        WorkspaceResponse,
+        ProjectRequest,
+        ProjectResponse,
     )
 
     mapping: Dict[
@@ -528,8 +528,8 @@ def get_resource_type_for_model(
         TriggerResponse: ResourceType.TRIGGER,
         TriggerExecutionRequest: ResourceType.TRIGGER_EXECUTION,
         TriggerExecutionResponse: ResourceType.TRIGGER_EXECUTION,
-        WorkspaceResponse: ResourceType.WORKSPACE,
-        WorkspaceRequest: ResourceType.WORKSPACE,
+        ProjectResponse: ResourceType.WORKSPACE,
+        ProjectRequest: ResourceType.WORKSPACE,
         # UserResponse: ResourceType.USER,
     }
 

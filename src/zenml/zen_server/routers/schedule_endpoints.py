@@ -76,8 +76,8 @@ def create_schedule(
         The created schedule.
     """
     if workspace_name_or_id:
-        workspace = zen_store().get_workspace(workspace_name_or_id)
-        schedule.workspace = workspace.id
+        workspace = zen_store().get_project(workspace_name_or_id)
+        schedule.project = workspace.id
 
     # NOTE: no RBAC is enforced currently for schedules, but we're
     # keeping the RBAC checks here for consistency
@@ -121,7 +121,7 @@ def list_schedules(
         List of schedule objects.
     """
     if workspace_name_or_id:
-        schedule_filter_model.workspace = workspace_name_or_id
+        schedule_filter_model.project = workspace_name_or_id
 
     return zen_store().list_schedules(
         schedule_filter_model=schedule_filter_model,

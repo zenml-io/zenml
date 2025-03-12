@@ -53,7 +53,7 @@ from zenml.models import (
     StackResponse,
     UserFilter,
     UserResponse,
-    WorkspaceResponse,
+    ProjectResponse,
 )
 from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.zen_stores.zen_store_interface import ZenStoreInterface
@@ -292,56 +292,56 @@ class BaseZenStore(
 
     def validate_active_config(
         self,
-        active_workspace_name_or_id: Optional[Union[str, UUID]] = None,
+        active_project_name_or_id: Optional[Union[str, UUID]] = None,
         active_stack_id: Optional[UUID] = None,
         config_name: str = "",
-    ) -> Tuple[Optional[WorkspaceResponse], StackResponse]:
+    ) -> Tuple[Optional[ProjectResponse], StackResponse]:
         """Validate the active configuration.
 
-        Call this method to validate the supplied active workspace and active
+        Call this method to validate the supplied active project and active
         stack values.
 
-        This method returns a valid workspace and stack values. If the
-        supplied workspace and stack are not set or are not valid (e.g. they
-        do not exist or are not accessible), the default workspace and default
+        This method returns a valid project and stack values. If the
+        supplied project and stack are not set or are not valid (e.g. they
+        do not exist or are not accessible), the default project and default
         stack will be returned in their stead.
 
         Args:
-            active_workspace_name_or_id: The name or ID of the active workspace.
+            active_project_name_or_id: The name or ID of the active project.
             active_stack_id: The ID of the active stack.
             config_name: The name of the configuration to validate (used in the
                 displayed logs/messages).
 
         Returns:
-            A tuple containing the active workspace and active stack.
+            A tuple containing the active project and active stack.
         """
-        active_workspace: Optional[WorkspaceResponse] = None
+        active_project: Optional[ProjectResponse] = None
 
-        if active_workspace_name_or_id:
+        if active_project_name_or_id:
             try:
-                active_workspace = self.get_workspace(
-                    active_workspace_name_or_id
+                active_project = self.get_project(
+                    active_project_name_or_id
                 )
             except (KeyError, IllegalOperationError):
-                active_workspace_name_or_id = None
+                active_project_name_or_id = None
                 logger.warning(
-                    f"The current {config_name} active workspace is no longer "
+                    f"The current {config_name} active project is no longer "
                     f"available."
                 )
 
-        if active_workspace is None:
+        if active_project is None:
             try:
-                active_workspace = self._get_default_workspace()
+                active_project = self._get_default_workspace()
             except (KeyError, IllegalOperationError):
                 logger.warning(
-                    "An active workspace is not set. Please set the active "
-                    "workspace by running `zenml workspace set "
-                    "<workspace-name>`."
+                    "An active project is not set. Please set the active "
+                    "project by running `zenml project set "
+                    "<project-name>`."
                 )
             else:
                 logger.info(
-                    f"Setting the {config_name} active workspace "
-                    f"to '{active_workspace.name}'."
+                    f"Setting the {config_name} active project "
+                    f"to '{active_project.name}'."
                 )
 
         active_stack: StackResponse
@@ -366,7 +366,7 @@ class BaseZenStore(
             )
             active_stack = self._get_default_stack()
 
-        return active_workspace, active_stack
+        return active_project, active_stack
 
     def get_store_info(self) -> ServerModel:
         """Get information about the store.
@@ -438,7 +438,7 @@ class BaseZenStore(
             ENV_ZENML_DEFAULT_WORKSPACE_NAME, DEFAULT_WORKSPACE_NAME
         )
 
-    def _get_default_workspace(self) -> WorkspaceResponse:
+    def _get_default_workspace(self) -> ProjectResponse:
         """Get the default workspace.
 
         Raises:
@@ -448,7 +448,7 @@ class BaseZenStore(
             The default workspace.
         """
         try:
-            return self.get_workspace(self._default_workspace_name)
+            return self.get_project(self._default_workspace_name)
         except KeyError:
             raise KeyError("Unable to find default workspace.")
 

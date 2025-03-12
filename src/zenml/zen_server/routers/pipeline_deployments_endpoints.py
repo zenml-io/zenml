@@ -80,8 +80,8 @@ def create_deployment(
         The created deployment.
     """
     if workspace_name_or_id:
-        workspace = zen_store().get_workspace(workspace_name_or_id)
-        deployment.workspace = workspace.id
+        workspace = zen_store().get_project(workspace_name_or_id)
+        deployment.project = workspace.id
 
     return verify_permissions_and_create_entity(
         request_model=deployment,
@@ -123,7 +123,7 @@ def list_deployments(
         List of deployment objects matching the filter criteria.
     """
     if workspace_name_or_id:
-        deployment_filter_model.workspace = workspace_name_or_id
+        deployment_filter_model.project = workspace_name_or_id
 
     return verify_permissions_and_list_entities(
         filter_model=deployment_filter_model,

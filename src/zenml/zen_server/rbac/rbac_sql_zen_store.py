@@ -65,7 +65,7 @@ class RBACSqlZenStore(SqlZenStore):
             verify_permission(
                 resource_type=ResourceType.MODEL,
                 action=Action.CREATE,
-                workspace_id=model_request.workspace,
+                workspace_id=model_request.project,
             )
             check_entitlement(resource_type=ResourceType.MODEL)
         except Exception as e:
@@ -80,7 +80,7 @@ class RBACSqlZenStore(SqlZenStore):
             try:
                 model_response = self.get_model_by_name_or_id(
                     model_name_or_id=model_request.name,
-                    workspace=model_request.workspace,
+                    workspace=model_request.project,
                 )
                 created = False
             except KeyError:
@@ -152,7 +152,7 @@ class RBACSqlZenStore(SqlZenStore):
             verify_permission(
                 resource_type=ResourceType.MODEL_VERSION,
                 action=Action.CREATE,
-                workspace_id=model_version_request.workspace,
+                workspace_id=model_version_request.project,
             )
         except Exception as e:
             allow_creation = False

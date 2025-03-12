@@ -78,8 +78,8 @@ def create_build(
         The created build.
     """
     if workspace_name_or_id:
-        workspace = zen_store().get_workspace(workspace_name_or_id)
-        build.workspace = workspace.id
+        workspace = zen_store().get_project(workspace_name_or_id)
+        build.project = workspace.id
 
     return verify_permissions_and_create_entity(
         request_model=build,
@@ -121,7 +121,7 @@ def list_builds(
         List of build objects matching the filter criteria.
     """
     if workspace_name_or_id:
-        build_filter_model.workspace = workspace_name_or_id
+        build_filter_model.project = workspace_name_or_id
 
     return verify_permissions_and_list_entities(
         filter_model=build_filter_model,

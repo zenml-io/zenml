@@ -99,8 +99,8 @@ def get_or_create_pipeline_run(
         or not.
     """
     if workspace_name_or_id:
-        workspace = zen_store().get_workspace(workspace_name_or_id)
-        pipeline_run.workspace = workspace.id
+        workspace = zen_store().get_project(workspace_name_or_id)
+        pipeline_run.project = workspace.id
 
     return verify_permissions_and_get_or_create_entity(
         request_model=pipeline_run,
@@ -141,7 +141,7 @@ def list_runs(
         The pipeline runs according to query filters.
     """
     if workspace_name_or_id:
-        runs_filter_model.workspace = workspace_name_or_id
+        runs_filter_model.project = workspace_name_or_id
 
     return verify_permissions_and_list_entities(
         filter_model=runs_filter_model,

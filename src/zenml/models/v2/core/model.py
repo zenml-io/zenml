@@ -26,12 +26,12 @@ from zenml.constants import (
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
     TaggableFilter,
-    WorkspaceScopedFilter,
-    WorkspaceScopedRequest,
-    WorkspaceScopedResponse,
-    WorkspaceScopedResponseBody,
-    WorkspaceScopedResponseMetadata,
-    WorkspaceScopedResponseResources,
+    ProjectScopedFilter,
+    ProjectScopedRequest,
+    ProjectScopedResponse,
+    ProjectScopedResponseBody,
+    ProjectScopedResponseMetadata,
+    ProjectScopedResponseResources,
 )
 from zenml.utils.pagination_utils import depaginate
 
@@ -47,7 +47,7 @@ AnyQuery = TypeVar("AnyQuery", bound=Any)
 # ------------------ Request Model ------------------
 
 
-class ModelRequest(WorkspaceScopedRequest):
+class ModelRequest(ProjectScopedRequest):
     """Request model for models."""
 
     name: str = Field(
@@ -121,7 +121,7 @@ class ModelUpdate(BaseUpdate):
 # ------------------ Response Model ------------------
 
 
-class ModelResponseBody(WorkspaceScopedResponseBody):
+class ModelResponseBody(ProjectScopedResponseBody):
     """Response body for models."""
 
     tags: List["TagResponse"] = Field(
@@ -131,7 +131,7 @@ class ModelResponseBody(WorkspaceScopedResponseBody):
     latest_version_id: Optional[UUID] = None
 
 
-class ModelResponseMetadata(WorkspaceScopedResponseMetadata):
+class ModelResponseMetadata(ProjectScopedResponseMetadata):
     """Response metadata for models."""
 
     license: Optional[str] = Field(
@@ -175,12 +175,12 @@ class ModelResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
-class ModelResponseResources(WorkspaceScopedResponseResources):
+class ModelResponseResources(ProjectScopedResponseResources):
     """Class for all resource models associated with the model entity."""
 
 
 class ModelResponse(
-    WorkspaceScopedResponse[
+    ProjectScopedResponse[
         ModelResponseBody, ModelResponseMetadata, ModelResponseResources
     ]
 ):
@@ -315,7 +315,7 @@ class ModelResponse(
         model_versions = depaginate(
             client.list_model_versions,
             model_name_or_id=self.id,
-            workspace=self.workspace.id,
+            workspace=self.project.id,
         )
         return [
             mv.to_model_class(suppress_class_validation_warnings=True)
@@ -326,8 +326,8 @@ class ModelResponse(
 # ------------------ Filter Model ------------------
 
 
-class ModelFilter(WorkspaceScopedFilter, TaggableFilter):
-    """Model to enable advanced filtering of all Workspaces."""
+class ModelFilter(ProjectScopedFilter, TaggableFilter):
+    """Model to enable advanced filtering of all models."""
 
     name: Optional[str] = Field(
         default=None,
@@ -335,16 +335,16 @@ class ModelFilter(WorkspaceScopedFilter, TaggableFilter):
     )
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
+        *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
         *TaggableFilter.FILTER_EXCLUDE_FIELDS,
     ]
     CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
-        *WorkspaceScopedFilter.CUSTOM_SORTING_OPTIONS,
+        *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
         *TaggableFilter.CUSTOM_SORTING_OPTIONS,
         SORT_BY_LATEST_VERSION_KEY,
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
+        *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
         *TaggableFilter.CLI_EXCLUDE_FIELDS,
     ]
 

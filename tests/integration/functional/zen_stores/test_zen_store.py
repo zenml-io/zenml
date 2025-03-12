@@ -119,8 +119,8 @@ from zenml.models import (
     UserRequest,
     UserResponse,
     UserUpdate,
-    WorkspaceFilter,
-    WorkspaceUpdate,
+    ProjectFilter,
+    ProjectUpdate,
 )
 from zenml.models.v2.core.artifact import ArtifactRequest
 from zenml.models.v2.core.component import ComponentRequest
@@ -352,7 +352,7 @@ def test_only_one_default_workspace_present():
     """Tests that one and only one default workspace is present."""
     client = Client()
     assert (
-        len(client.zen_store.list_workspaces(WorkspaceFilter(name="default")))
+        len(client.zen_store.list_projects(ProjectFilter(name="default")))
         == 1
     )
 
@@ -361,16 +361,16 @@ def test_updating_default_workspace_fails():
     """Tests updating the default workspace."""
     client = Client()
 
-    default_workspace = client.zen_store.get_workspace(DEFAULT_WORKSPACE_NAME)
+    default_workspace = client.zen_store.get_project(DEFAULT_WORKSPACE_NAME)
     assert default_workspace.name == DEFAULT_WORKSPACE_NAME
-    workspace_update = WorkspaceUpdate(
+    workspace_update = ProjectUpdate(
         name="aria_workspace",
         description="Aria has taken possession of this workspace.",
     )
     with pytest.raises(IllegalOperationError):
-        client.zen_store.update_workspace(
-            workspace_id=default_workspace.id,
-            workspace_update=workspace_update,
+        client.zen_store.update_project(
+            project_id=default_workspace.id,
+            project_update=workspace_update,
         )
 
 
@@ -378,7 +378,7 @@ def test_deleting_default_workspace_fails():
     """Tests deleting the default workspace."""
     client = Client()
     with pytest.raises(IllegalOperationError):
-        client.zen_store.delete_workspace(DEFAULT_NAME)
+        client.zen_store.delete_project(DEFAULT_NAME)
 
 
 #  .------.
@@ -2818,7 +2818,7 @@ def test_count_runs():
     if not isinstance(store, SqlZenStore):
         pytest.skip("Test only applies to SQL store")
     active_workspace = client.active_workspace
-    filter_model = PipelineRunFilter(workspace=active_workspace.id)
+    filter_model = PipelineRunFilter(project=active_workspace.id)
     num_runs = store.list_runs(filter_model).total
 
     # At baseline this should be the same
@@ -2828,7 +2828,7 @@ def test_count_runs():
         assert (
             store.count_runs(filter_model)
             == store.list_runs(
-                PipelineRunFilter(workspace=active_workspace.id)
+                PipelineRunFilter(project=active_workspace.id)
             ).total
         )
         assert store.count_runs(filter_model) == num_runs + 5
@@ -3088,7 +3088,7 @@ def test_artifact_create_fails_with_invalid_name(clean_client: "Client"):
         store.create_artifact(
             ArtifactRequest(
                 name="I will fail\n",
-                workspace=clean_client.active_workspace.id,
+                project=clean_client.active_workspace.id,
             ),
         )
 
@@ -3102,7 +3102,7 @@ def test_artifact_fetch_works_with_invalid_name(clean_client: "Client"):
     store = clean_client.zen_store
     ar = ArtifactRequest(
         name="I should fail\n But hacky `validate_name` protects me from it",
-        workspace=clean_client.active_workspace.id,
+        project=clean_client.active_workspace.id,
     )
     with patch(
         "zenml.zen_stores.sql_zen_store.validate_name", return_value=None
@@ -4168,7 +4168,7 @@ class TestModel:
             for name in ["great one", "yet another one"]:
                 mv = zs.create_model_version(
                     ModelVersionRequest(
-                        workspace=created_model.workspace.id,
+                        project=created_model.project.id,
                         model=created_model.id,
                         name=name,
                     )
@@ -4224,7 +4224,7 @@ class TestModel:
         with pytest.raises(ValueError):
             zs.create_model(
                 ModelRequest(
-                    workspace=c.active_workspace.id,
+                    project=c.active_workspace.id,
                     name="I will fail\n",
                 )
             )
@@ -4237,7 +4237,7 @@ class TestModelVersion:
             zs = Client().zen_store
             zs.create_model_version(
                 ModelVersionRequest(
-                    workspace=model.workspace.id,
+                    project=model.project.id,
                     model=model.id,
                     name="great one",
                 )
@@ -4250,7 +4250,7 @@ class TestModelVersion:
             with pytest.raises(ValueError):
                 zs.create_model_version(
                     ModelVersionRequest(
-                        workspace=model.workspace.id,
+                        project=model.project.id,
                         model=model.id,
                         name="I will fail\n",
                     )
@@ -4262,7 +4262,7 @@ class TestModelVersion:
             zs = Client().zen_store
             zs.create_model_version(
                 ModelVersionRequest(
-                    workspace=model.workspace.id,
+                    project=model.project.id,
                     model=model.id,
                     name="great one",
                 )
@@ -4270,7 +4270,7 @@ class TestModelVersion:
             with pytest.raises(EntityExistsError):
                 zs.create_model_version(
                     ModelVersionRequest(
-                        workspace=model.workspace.id,
+                        project=model.project.id,
                         model=model.id,
                         name="great one",
                     )
@@ -4283,7 +4283,7 @@ class TestModelVersion:
             with pytest.raises(KeyError):
                 zs.create_model_version(
                     ModelVersionRequest(
-                        workspace=model.workspace.id,
+                        project=model.project.id,
                         model=uuid4(),
                         name="great one",
                     )
@@ -4304,7 +4304,7 @@ class TestModelVersion:
             zs = Client().zen_store
             mv1 = zs.create_model_version(
                 ModelVersionRequest(
-                    workspace=model.workspace.id,
+                    project=model.project.id,
                     model=model.id,
                     name="great one",
                 )
@@ -4333,14 +4333,14 @@ class TestModelVersion:
             zs = Client().zen_store
             mv1 = zs.create_model_version(
                 ModelVersionRequest(
-                    workspace=model.workspace.id,
+                    project=model.project.id,
                     model=model.id,
                     name="great one",
                 )
             )
             mv2 = zs.create_model_version(
                 ModelVersionRequest(
-                    workspace=model.workspace.id,
+                    project=model.project.id,
                     model=model.id,
                     name="and yet another one",
                 )
@@ -4359,7 +4359,7 @@ class TestModelVersion:
         with ModelContext() as model:
             mv1 = clean_client.zen_store.create_model_version(
                 ModelVersionRequest(
-                    workspace=model.workspace.id,
+                    project=model.project.id,
                     model=model.id,
                     name="great one",
                     tags=["tag1", "tag2"],
@@ -4367,7 +4367,7 @@ class TestModelVersion:
             )
             mv2 = clean_client.zen_store.create_model_version(
                 ModelVersionRequest(
-                    workspace=model.workspace.id,
+                    project=model.project.id,
                     model=model.id,
                     name="and yet another one",
                     tags=["tag3", "tag2"],
@@ -4424,7 +4424,7 @@ class TestModelVersion:
             zs = Client().zen_store
             mv = zs.create_model_version(
                 ModelVersionRequest(
-                    workspace=model.workspace.id,
+                    project=model.project.id,
                     model=model.id,
                     name="great one",
                 )
@@ -4459,14 +4459,14 @@ class TestModelVersion:
             zs = Client().zen_store
             mv1 = zs.create_model_version(
                 ModelVersionRequest(
-                    workspace=model.workspace.id,
+                    project=model.project.id,
                     model=model.id,
                     name="great one",
                 )
             )
             mv2 = zs.create_model_version(
                 ModelVersionRequest(
-                    workspace=model.workspace.id,
+                    project=model.project.id,
                     model=model.id,
                     name="yet another one",
                 )
@@ -4499,7 +4499,7 @@ class TestModelVersion:
             zs = clean_client.zen_store
             mv1 = zs.create_model_version(
                 ModelVersionRequest(
-                    workspace=model.workspace.id,
+                    project=model.project.id,
                     model=model.id,
                     name="great one",
                     description="this is great",
@@ -4526,7 +4526,7 @@ class TestModelVersion:
             zs = Client().zen_store
             zs.create_model_version(
                 ModelVersionRequest(
-                    workspace=model.workspace.id,
+                    project=model.project.id,
                     model=model.id,
                     name="great one",
                 )
@@ -4547,7 +4547,7 @@ class TestModelVersion:
             zs = Client().zen_store
             zs.create_model_version(
                 ModelVersionRequest(
-                    workspace=model.workspace.id,
+                    project=model.project.id,
                     model=model.id,
                     name="great one",
                 )
@@ -4555,7 +4555,7 @@ class TestModelVersion:
             time.sleep(1)  # thanks to MySQL way of storing datetimes
             latest = zs.create_model_version(
                 ModelVersionRequest(
-                    workspace=model.workspace.id,
+                    project=model.project.id,
                     model=model.id,
                     name="yet another one",
                 )
@@ -4571,14 +4571,14 @@ class TestModelVersion:
             zs = Client().zen_store
             mv1 = zs.create_model_version(
                 ModelVersionRequest(
-                    workspace=model.workspace.id,
+                    project=model.project.id,
                     model=model.id,
                     name="great one",
                 )
             )
             mv2 = zs.create_model_version(
                 ModelVersionRequest(
-                    workspace=model.workspace.id,
+                    project=model.project.id,
                     model=model.id,
                     name="yet another one",
                 )
@@ -4630,7 +4630,7 @@ class TestModelVersion:
             zs = Client().zen_store
             mv1 = zs.create_model_version(
                 ModelVersionRequest(
-                    workspace=model.workspace.id,
+                    project=model.project.id,
                     model=model.id,
                 )
             )
@@ -4657,7 +4657,7 @@ class TestModelVersion:
             zs = Client().zen_store
             mv1 = zs.create_model_version(
                 ModelVersionRequest(
-                    workspace=model.workspace.id,
+                    project=model.project.id,
                     model=model.id,
                     name="great one",
                 )
@@ -4682,7 +4682,7 @@ class TestModelVersion:
             zs = Client().zen_store
             zs.create_model_version(
                 ModelVersionRequest(
-                    workspace=model.workspace.id,
+                    project=model.project.id,
                     model=model.id,
                     name="great one",
                 )
@@ -4690,7 +4690,7 @@ class TestModelVersion:
             time.sleep(1)  # thanks MySQL again!
             zs.create_model_version(
                 ModelVersionRequest(
-                    workspace=model.workspace.id,
+                    project=model.project.id,
                     model=model.id,
                     name="great second",
                 )
@@ -5396,13 +5396,13 @@ class TestRunMetadata:
                 ArtifactRequest(
                     name=sample_name("foo"),
                     has_custom_name=True,
-                    workspace=client.active_workspace.id,
+                    project=client.active_workspace.id,
                 )
             )
             resource = client.zen_store.create_artifact_version(
                 ArtifactVersionRequest(
                     artifact_id=artifact.id,
-                    workspace=client.active_workspace.id,
+                    project=client.active_workspace.id,
                     version="1",
                     type=ArtifactType.DATA,
                     uri=sample_name("foo"),
@@ -5428,7 +5428,7 @@ class TestRunMetadata:
             step_name = sample_name("foo")
             deployment = client.zen_store.create_deployment(
                 PipelineDeploymentRequest(
-                    workspace=client.active_workspace.id,
+                    project=client.active_workspace.id,
                     run_name_template=sample_name("foo"),
                     pipeline_configuration=PipelineConfiguration(
                         name=sample_name("foo")
@@ -5452,7 +5452,7 @@ class TestRunMetadata:
             )
             pr, _ = client.zen_store.get_or_create_run(
                 PipelineRunRequest(
-                    workspace=client.active_workspace.id,
+                    project=client.active_workspace.id,
                     id=uuid4(),
                     name=sample_name("foo"),
                     deployment=deployment.id,
@@ -5461,7 +5461,7 @@ class TestRunMetadata:
             )
             sr = client.zen_store.create_run_step(
                 StepRunRequest(
-                    workspace=client.active_workspace.id,
+                    project=client.active_workspace.id,
                     name=step_name,
                     status=ExecutionStatus.RUNNING,
                     pipeline_run_id=pr.id,
@@ -5477,14 +5477,14 @@ class TestRunMetadata:
             new_pipeline = client.zen_store.create_pipeline(
                 pipeline=PipelineRequest(
                     name="foo",
-                    workspace=client.active_workspace.id,
+                    project=client.active_workspace.id,
                 )
             )
             resource = client.zen_store.create_schedule(
                 ScheduleRequest(
                     name="foo",
                     cron_expression="*/5 * * * *",
-                    workspace=client.active_workspace.id,
+                    project=client.active_workspace.id,
                     orchestrator_id=client.active_stack.orchestrator.id,
                     active=False,
                     pipeline_id=new_pipeline.id,
@@ -5492,7 +5492,7 @@ class TestRunMetadata:
             )
             deployment = client.zen_store.create_deployment(
                 PipelineDeploymentRequest(
-                    workspace=client.active_workspace.id,
+                    project=client.active_workspace.id,
                     run_name_template=sample_name("foo"),
                     pipeline_configuration=PipelineConfiguration(
                         name=sample_name("foo")
@@ -5520,7 +5520,7 @@ class TestRunMetadata:
 
         client.zen_store.create_run_metadata(
             RunMetadataRequest(
-                workspace=client.active_workspace.id,
+                project=client.active_workspace.id,
                 resources=[RunMetadataResource(id=resource.id, type=type_)],
                 values={"foo": "bar"},
                 types={"foo": MetadataTypeEnum.STRING},

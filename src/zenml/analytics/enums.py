@@ -65,8 +65,8 @@ class AnalyticsEvent(str, Enum):
     # Examples
     RUN_ZENML_GO = "ZenML go"
 
-    # Workspaces
-    CREATED_WORKSPACE = "Workspace created"
+    # Projects
+    CREATED_PROJECT = "Project created"
 
     # Flavor
     CREATED_FLAVOR = "Flavor created"

@@ -84,11 +84,11 @@ def list_artifact_versions(
     # A workspace scoped request must always be scoped to a specific
     # workspace. This is required for the RBAC check to work.
     set_filter_workspace_scope(artifact_version_filter_model)
-    assert isinstance(artifact_version_filter_model.workspace, UUID)
+    assert isinstance(artifact_version_filter_model.project, UUID)
 
     allowed_artifact_ids = get_allowed_resource_ids(
         resource_type=ResourceType.ARTIFACT,
-        workspace_id=artifact_version_filter_model.workspace,
+        workspace_id=artifact_version_filter_model.project,
     )
     artifact_version_filter_model.configure_rbac(
         authenticated_user_id=auth_context.user.id,
@@ -239,7 +239,7 @@ def prune_artifact_versions(
             versions for.
         only_versions: Only delete artifact versions, keeping artifacts
     """
-    workspace_id = zen_store().get_workspace(workspace_name_or_id).id
+    workspace_id = zen_store().get_project(workspace_name_or_id).id
 
     verify_permissions_and_prune_entities(
         resource_type=ResourceType.ARTIFACT_VERSION,

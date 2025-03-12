@@ -90,8 +90,8 @@ def create_model(
         The created model.
     """
     if workspace_name_or_id:
-        workspace = zen_store().get_workspace(workspace_name_or_id)
-        model.workspace = workspace.id
+        workspace = zen_store().get_project(workspace_name_or_id)
+        model.project = workspace.id
 
     return verify_permissions_and_create_entity(
         request_model=model,

@@ -69,8 +69,8 @@ def create_run_metadata(
         RuntimeError: If the resource type is not supported.
     """
     if workspace_name_or_id:
-        workspace = zen_store().get_workspace(workspace_name_or_id)
-        run_metadata.workspace = workspace.id
+        workspace = zen_store().get_project(workspace_name_or_id)
+        run_metadata.project = workspace.id
 
     run_metadata.user = auth_context.user.id
 

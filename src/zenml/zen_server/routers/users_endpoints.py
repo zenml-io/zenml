@@ -38,7 +38,7 @@ from zenml.models import (
     UserRequest,
     UserResponse,
     UserUpdate,
-    WorkspaceScopedResponse,
+    ProjectScopedResponse,
 )
 from zenml.zen_server.auth import (
     AuthContext,
@@ -758,7 +758,7 @@ if server_config().rbac_enabled:
             )
 
         workspace_id = None
-        if isinstance(model, WorkspaceScopedResponse):
+        if isinstance(model, ProjectScopedResponse):
             workspace_id = model.workspace.id
 
         resource = Resource(
@@ -776,38 +776,3 @@ if server_config().rbac_enabled:
             resource=resource,
             actions=[Action(action) for action in actions],
         )
-
-
-@current_user_router.put(
-    "/default-workspace",
-    responses={
-        401: error_response,
-        404: error_response,
-        422: error_response,
-    },
-)
-@handle_exceptions
-def update_user_default_workspace(
-    workspace_name_or_id: Union[str, UUID],
-    auth_context: AuthContext = Security(authorize),
-) -> UserResponse:
-    """Updates the default workspace of the current user.
-
-    Args:
-        workspace_name_or_id: Name or ID of the workspace.
-        auth_context: Authentication context.
-
-    Returns:
-        The updated user.
-    """
-    workspace = verify_permissions_and_get_entity(
-        id=workspace_name_or_id,
-        get_method=zen_store().get_workspace,
-    )
-
-    user = zen_store().update_user(
-        user_id=auth_context.user.id,
-        user_update=UserUpdate(default_workspace_id=workspace.id),
-    )
-
-    return dehydrate_response_model(user)

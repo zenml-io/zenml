@@ -40,7 +40,7 @@ from zenml.models import (
     ServerStatistics,
     StackFilter,
     UserResponse,
-    WorkspaceFilter,
+    ProjectFilter,
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
@@ -267,7 +267,7 @@ def get_server_statistics(
         ),
     )
 
-    workspace_filter = WorkspaceFilter()
+    workspace_filter = ProjectFilter()
     workspace_filter.configure_rbac(
         authenticated_user_id=user_id,
         id=get_allowed_resource_ids(resource_type=ResourceType.WORKSPACE),
@@ -284,5 +284,5 @@ def get_server_statistics(
         components=zen_store().count_stack_components(
             filter_model=component_filter
         ),
-        workspaces=zen_store().count_workspaces(filter_model=workspace_filter),
+        projects=zen_store().count_projects(filter_model=workspace_filter),
     )

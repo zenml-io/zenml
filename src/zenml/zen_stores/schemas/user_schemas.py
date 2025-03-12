@@ -35,7 +35,7 @@ from zenml.models import (
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
-from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
+from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
@@ -84,14 +84,6 @@ class UserSchema(NamedSchema, table=True):
     external_user_id: Optional[UUID] = Field(nullable=True)
     is_admin: bool = Field(default=False)
     user_metadata: Optional[str] = Field(nullable=True)
-    default_workspace_id: Optional[UUID] = build_foreign_key_field(
-        source=__tablename__,
-        target=WorkspaceSchema.__tablename__,
-        source_column="default_workspace_id",
-        target_column="id",
-        ondelete="SET NULL",
-        nullable=True,
-    )
 
     stacks: List["StackSchema"] = Relationship(back_populates="user")
     components: List["StackComponentSchema"] = Relationship(
@@ -195,7 +187,6 @@ class UserSchema(NamedSchema, table=True):
             user_metadata=json.dumps(model.user_metadata)
             if model.user_metadata
             else None,
-            default_workspace_id=model.default_workspace_id,
         )
 
     @classmethod
@@ -310,7 +301,6 @@ class UserSchema(NamedSchema, table=True):
                 created=self.created,
                 updated=self.updated,
                 is_admin=self.is_admin,
-                default_workspace_id=self.default_workspace_id,
             ),
             metadata=metadata,
         )

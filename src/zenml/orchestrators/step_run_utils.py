@@ -75,7 +75,7 @@ class StepRunRequestFactory:
             pipeline_run_id=self.pipeline_run.id,
             status=ExecutionStatus.RUNNING,
             start_time=utc_now(),
-            workspace=Client().active_workspace.id,
+            project=Client().active_workspace.id,
         )
 
     def populate_request(self, request: StepRunRequest) -> None:

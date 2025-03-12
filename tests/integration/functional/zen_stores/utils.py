@@ -106,9 +106,9 @@ from zenml.models import (
     UserFilter,
     UserRequest,
     UserUpdate,
-    WorkspaceFilter,
-    WorkspaceRequest,
-    WorkspaceUpdate,
+    ProjectFilter,
+    ProjectRequest,
+    ProjectUpdate,
 )
 from zenml.pipelines import pipeline
 from zenml.service_connectors.service_connector import AuthenticationConfig
@@ -498,10 +498,10 @@ class WorkspaceContext:
 
     def __enter__(self):
         if self.create:
-            new_workspace = WorkspaceRequest(name=self.workspace_name)
-            self.workspace = self.store.create_workspace(new_workspace)
+            new_workspace = ProjectRequest(name=self.workspace_name)
+            self.workspace = self.store.create_project(new_workspace)
         else:
-            self.workspace = self.store.get_workspace(self.workspace_name)
+            self.workspace = self.store.get_project(self.workspace_name)
 
         if self.activate:
             self.original_workspace = self.client.active_workspace
@@ -513,7 +513,7 @@ class WorkspaceContext:
             self.client.set_active_workspace(self.original_workspace.id)
         if self.create:
             try:
-                self.store.delete_workspace(self.workspace.id)
+                self.store.delete_project(self.workspace.id)
             except KeyError:
                 pass
 
@@ -580,7 +580,7 @@ class CodeRepositoryContext:
                 "attribute": "StubCodeRepository",
                 "type": "user",
             },
-            workspace=self.workspace_id or self.client.active_workspace.id,
+            project=self.workspace_id or self.client.active_workspace.id,
         )
 
         self.repo = self.store.create_code_repository(request)
@@ -704,7 +704,7 @@ class ModelContext:
             except KeyError:
                 mv = client.zen_store.create_model_version(
                     ModelVersionRequest(
-                        workspace=ws.id,
+                        project=ws.id,
                         model=model.id,
                         name=self.model_version,
                     )
@@ -715,7 +715,7 @@ class ModelContext:
                 ArtifactRequest(
                     name=sample_name("sample_artifact"),
                     has_custom_name=True,
-                    workspace=ws.id,
+                    project=ws.id,
                 )
             )
             client.get_artifact(artifact.id)
@@ -728,7 +728,7 @@ class ModelContext:
                     materializer="module.class",
                     type=self.artifact_types[i],
                     uri="",
-                    workspace=ws.id,
+                    project=ws.id,
                     save_type=ArtifactSaveType.STEP_OUTPUT,
                 )
             )
@@ -736,7 +736,7 @@ class ModelContext:
         for _ in range(self.create_prs):
             deployment = client.zen_store.create_deployment(
                 PipelineDeploymentRequest(
-                    workspace=ws.id,
+                    project=ws.id,
                     stack=stack.id,
                     run_name_template="",
                     pipeline_configuration={"name": "pipeline_name"},
@@ -751,7 +751,7 @@ class ModelContext:
                         name=sample_name("sample_pipeline_run"),
                         status="running",
                         config=PipelineConfiguration(name="aria_pipeline"),
-                        workspace=ws.id,
+                        project=ws.id,
                         deployment=deployment.id,
                     )
                 )[0]
@@ -1051,9 +1051,9 @@ class CrudTestConfig:
 
 
 workspace_crud_test_config = CrudTestConfig(
-    create_model=WorkspaceRequest(name=sample_name("sample_workspace")),
-    update_model=WorkspaceUpdate(name=sample_name("updated_sample_workspace")),
-    filter_model=WorkspaceFilter,
+    create_model=ProjectRequest(name=sample_name("sample_workspace")),
+    update_model=ProjectUpdate(name=sample_name("updated_sample_workspace")),
+    filter_model=ProjectFilter,
     entity_name="workspace",
 )
 user_crud_test_config = CrudTestConfig(
@@ -1089,7 +1089,7 @@ component_crud_test_config = CrudTestConfig(
 pipeline_crud_test_config = CrudTestConfig(
     create_model=PipelineRequest(
         name=sample_name("sample_pipeline"),
-        workspace=uuid.uuid4(),
+        project=uuid.uuid4(),
         description="Pipeline description",
     ),
     update_model=PipelineUpdate(description="Updated pipeline description"),
@@ -1114,7 +1114,7 @@ pipeline_crud_test_config = CrudTestConfig(
 artifact_crud_test_config = CrudTestConfig(
     entity_name="artifact",
     create_model=ArtifactRequest(
-        workspace=uuid.uuid4(),
+        project=uuid.uuid4(),
         name=sample_name("sample_artifact"),
         has_custom_name=True,
     ),
@@ -1133,7 +1133,7 @@ artifact_version_crud_test_config = CrudTestConfig(
         materializer="module.class",
         type=ArtifactType.DATA,
         uri="",
-        workspace=uuid.uuid4(),
+        project=uuid.uuid4(),
         save_type=ArtifactSaveType.STEP_OUTPUT,
     ),
     filter_model=ArtifactVersionFilter,
@@ -1182,7 +1182,7 @@ remote_stack_crud_test_config = CrudTestConfig(
 )
 build_crud_test_config = CrudTestConfig(
     create_model=PipelineBuildRequest(
-        workspace=uuid.uuid4(),
+        project=uuid.uuid4(),
         images={},
         is_local=False,
         contains_code=True,
@@ -1193,7 +1193,7 @@ build_crud_test_config = CrudTestConfig(
 )
 deployment_crud_test_config = CrudTestConfig(
     create_model=PipelineDeploymentRequest(
-        workspace=uuid.uuid4(),
+        project=uuid.uuid4(),
         stack=uuid.uuid4(),
         run_name_template="template",
         pipeline_configuration={"name": "pipeline_name"},
@@ -1207,7 +1207,7 @@ deployment_crud_test_config = CrudTestConfig(
 )
 code_repository_crud_test_config = CrudTestConfig(
     create_model=CodeRepositoryRequest(
-        workspace=uuid.uuid4(),
+        project=uuid.uuid4(),
         name=sample_name("sample_code_repository"),
         config={},
         source={"module": "module", "type": "user"},
@@ -1248,7 +1248,7 @@ service_connector_crud_test_config = CrudTestConfig(
 )
 model_crud_test_config = CrudTestConfig(
     create_model=ModelRequest(
-        workspace=uuid.uuid4(),
+        project=uuid.uuid4(),
         name=sample_name("super_model"),
         license="who cares",
         description="cool stuff",
@@ -1269,7 +1269,7 @@ model_crud_test_config = CrudTestConfig(
 )
 remote_deployment_crud_test_config = CrudTestConfig(
     create_model=PipelineDeploymentRequest(
-        workspace=uuid.uuid4(),
+        project=uuid.uuid4(),
         stack=uuid.uuid4(),
         build=uuid.uuid4(),  # will be overridden in create()
         run_name_template="template",
@@ -1290,7 +1290,7 @@ run_template_test_config = CrudTestConfig(
         name=sample_name("run_template"),
         description="Test run template.",
         source_deployment_id=uuid.uuid4(),  # will be overridden in create()
-        workspace=uuid.uuid4(),
+        project=uuid.uuid4(),
     ),
     update_model=RunTemplateUpdate(name=sample_name("updated_run_template")),
     filter_model=RunTemplateFilter,
@@ -1306,7 +1306,7 @@ event_source_crud_test_config = CrudTestConfig(
         description="Best event source ever",
         flavor="github",  # TODO: Implementations can be parametrized later
         plugin_subtype=PluginSubType.WEBHOOK,
-        workspace=uuid.uuid4(),
+        project=uuid.uuid4(),
     ),
     update_model=EventSourceUpdate(
         name=sample_name("updated_sample_component")
@@ -1323,7 +1323,7 @@ action_crud_test_config = CrudTestConfig(
         configuration={"template_id": uuid.uuid4()},
         plugin_subtype=PluginSubType.PIPELINE_RUN,
         flavor="builtin",
-        workspace=uuid.uuid4(),
+        project=uuid.uuid4(),
     ),
     update_model=ActionUpdate(name=sample_name("updated_blupus_feeder")),
     filter_model=ActionFilter,
@@ -1341,7 +1341,7 @@ trigger_crud_test_config = CrudTestConfig(
         action_id=uuid.uuid4(),  # will be overridden in create()
         event_filter={},
         event_source_id=uuid.uuid4(),  # will be overridden in create()
-        workspace=uuid.uuid4(),
+        project=uuid.uuid4(),
     ),
     update_model=TriggerUpdate(name=sample_name("updated_sample_component")),
     filter_model=TriggerFilter,

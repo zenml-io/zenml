@@ -86,8 +86,8 @@ def create_run_template(
         The created run template.
     """
     if workspace_name_or_id:
-        workspace = zen_store().get_workspace(workspace_name_or_id)
-        run_template.workspace = workspace.id
+        workspace = zen_store().get_project(workspace_name_or_id)
+        run_template.project = workspace.id
 
     return verify_permissions_and_create_entity(
         request_model=run_template,
@@ -129,7 +129,7 @@ def list_run_templates(
         Page of run templates.
     """
     if workspace_name_or_id:
-        filter_model.workspace = workspace_name_or_id
+        filter_model.project = workspace_name_or_id
 
     return verify_permissions_and_list_entities(
         filter_model=filter_model,
@@ -253,18 +253,18 @@ if server_config().workload_manager_enabled:
                 hydrate=True,
             )
             analytics_handler.metadata = {
-                "workspace_id": template.workspace.id,
+                "workspace_id": template.project.id,
             }
 
             verify_permission(
                 resource_type=ResourceType.PIPELINE_DEPLOYMENT,
                 action=Action.CREATE,
-                workspace_id=template.workspace.id,
+                workspace_id=template.project.id,
             )
             verify_permission(
                 resource_type=ResourceType.PIPELINE_RUN,
                 action=Action.CREATE,
-                workspace_id=template.workspace.id,
+                workspace_id=template.project.id,
             )
 
             return run_template(

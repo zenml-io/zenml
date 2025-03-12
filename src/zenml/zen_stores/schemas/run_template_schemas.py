@@ -35,7 +35,7 @@ from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
-from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
+from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
@@ -52,8 +52,8 @@ class RunTemplateSchema(NamedSchema, table=True):
     __table_args__ = (
         UniqueConstraint(
             "name",
-            "workspace_id",
-            name="unique_template_name_in_workspace",
+            "project_id",
+            name="unique_template_name_in_project",
         ),
     )
 
@@ -74,10 +74,10 @@ class RunTemplateSchema(NamedSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    workspace_id: UUID = build_foreign_key_field(
+    project_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target=WorkspaceSchema.__tablename__,
-        source_column="workspace_id",
+        target=ProjectSchema.__tablename__,
+        source_column="project_id",
         target_column="id",
         ondelete="CASCADE",
         nullable=False,
@@ -94,7 +94,7 @@ class RunTemplateSchema(NamedSchema, table=True):
     user: Optional["UserSchema"] = Relationship(
         back_populates="run_templates",
     )
-    workspace: "WorkspaceSchema" = Relationship()
+    project: "ProjectSchema" = Relationship()
     source_deployment: Optional["PipelineDeploymentSchema"] = Relationship(
         sa_relationship_kwargs={
             "foreign_keys": "RunTemplateSchema.source_deployment_id",
@@ -163,7 +163,7 @@ class RunTemplateSchema(NamedSchema, table=True):
         """
         return cls(
             user_id=request.user,
-            workspace_id=request.workspace,
+            project_id=request.project,
             name=request.name,
             description=request.description,
             source_deployment_id=request.source_deployment_id,
@@ -250,7 +250,7 @@ class RunTemplateSchema(NamedSchema, table=True):
                     )
 
             metadata = RunTemplateResponseMetadata(
-                workspace=self.workspace.to_model(),
+                project=self.project.to_model(),
                 description=self.description,
                 pipeline_spec=pipeline_spec,
                 config_template=config_template,
