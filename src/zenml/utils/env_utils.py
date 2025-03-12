@@ -13,9 +13,10 @@
 #  permissions and limitations under the License.
 """Utility functions for handling environment variables."""
 
+import contextlib
 import os
 import re
-from typing import Any, Dict, List, Match, Optional, TypeVar, cast
+from typing import Any, Dict, Iterator, List, Match, Optional, TypeVar, cast
 
 from zenml.logger import get_logger
 from zenml.utils import string_utils
@@ -152,3 +153,36 @@ def substitute_env_variable_placeholders(
     return string_utils.substitute_string(
         value=value, substitution_func=_substitution_func
     )
+
+
+@contextlib.contextmanager
+def temporary_environment(environment: Dict[str, str]) -> Iterator[None]:
+    """Temporarily set environment variables.
+
+    Args:
+        environment: The environment variables to set.
+
+    Yields:
+        Nothing.
+    """
+    try:
+        previous_env = {}
+        for key, value in environment.items():
+            previous_env[key] = os.environ.get(key, None)
+            os.environ[key] = value
+        yield
+    finally:
+        for key, previous_value in previous_env.items():
+            updated_value = environment[key]
+            current_value = os.environ.get(key)
+
+            if current_value != updated_value:
+                # The environment variable got updated while this context
+                # manager was active -> We don't reset it back to the old
+                # value
+                continue
+            else:
+                if previous_value is None:
+                    os.environ.pop(key, None)
+                else:
+                    os.environ[key] = previous_value

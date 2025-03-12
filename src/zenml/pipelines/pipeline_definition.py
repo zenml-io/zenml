@@ -129,6 +129,8 @@ class Pipeline:
         enable_artifact_metadata: Optional[bool] = None,
         enable_artifact_visualization: Optional[bool] = None,
         enable_step_logs: Optional[bool] = None,
+        environment: Optional[Dict[str, Any]] = None,
+        secrets: Optional[List[str]] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         tags: Optional[List[str]] = None,
         extra: Optional[Dict[str, Any]] = None,
@@ -148,6 +150,10 @@ class Pipeline:
             enable_artifact_visualization: If artifact visualization should be
                 enabled for this pipeline.
             enable_step_logs: If step logs should be enabled for this pipeline.
+            environment: Environment variables to set when running this
+                pipeline.
+            secrets: Secrets to set as environment variables when running this
+                pipeline.
             settings: Settings for this pipeline.
             tags: Tags to apply to runs of this pipeline.
             extra: Extra configurations for this pipeline.
@@ -173,6 +179,8 @@ class Pipeline:
                 enable_artifact_metadata=enable_artifact_metadata,
                 enable_artifact_visualization=enable_artifact_visualization,
                 enable_step_logs=enable_step_logs,
+                environment=environment,
+                secrets=secrets,
                 settings=settings,
                 tags=tags,
                 extra=extra,
@@ -292,6 +300,8 @@ class Pipeline:
         enable_artifact_metadata: Optional[bool] = None,
         enable_artifact_visualization: Optional[bool] = None,
         enable_step_logs: Optional[bool] = None,
+        environment: Optional[Dict[str, Any]] = None,
+        secrets: Optional[List[str]] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         tags: Optional[List[str]] = None,
         extra: Optional[Dict[str, Any]] = None,
@@ -321,7 +331,11 @@ class Pipeline:
             enable_artifact_visualization: If artifact visualization should be
                 enabled for this pipeline.
             enable_step_logs: If step logs should be enabled for this pipeline.
-            settings: settings for this pipeline.
+            environment: Environment variables to set when running this
+                pipeline.
+            secrets: Secrets to set as environment variables when running this
+                pipeline.
+            settings: Settings for this pipeline.
             tags: Tags to apply to runs of this pipeline.
             extra: Extra configurations for this pipeline.
             on_failure: Callback function in event of failure of the step. Can
@@ -363,6 +377,8 @@ class Pipeline:
                 "enable_artifact_metadata": enable_artifact_metadata,
                 "enable_artifact_visualization": enable_artifact_visualization,
                 "enable_step_logs": enable_step_logs,
+                "environment": environment,
+                "secrets": secrets,
                 "settings": settings,
                 "tags": tags,
                 "extra": extra,
