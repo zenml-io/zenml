@@ -23,6 +23,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Sequence,
     Tuple,
     Type,
     TypeVar,
@@ -101,6 +102,7 @@ from zenml.constants import (
     STACK_DEPLOYMENT,
     STACKS,
     STEPS,
+    TAG_RESOURCES,
     TAGS,
     TRIGGER_EXECUTIONS,
     TRIGGERS,
@@ -243,6 +245,8 @@ from zenml.models import (
     StepRunUpdate,
     TagFilter,
     TagRequest,
+    TagResourceRequest,
+    TagResourceResponse,
     TagResponse,
     TagUpdate,
     TriggerExecutionFilter,
@@ -3969,6 +3973,67 @@ class RestZenStore(BaseZenStore):
             response_model=TagResponse,
         )
 
+    # ---------------------------- Tag Resource ----------------------------
+
+    def create_tag_resource(
+        self,
+        tag_resource: TagResourceRequest,
+    ) -> TagResourceResponse:
+        """Create a new tag resource.
+
+        Args:
+            tag_resource: The tag resource to be created.
+
+        Returns:
+            The newly created tag resource.
+        """
+        return self._create_resource(
+            resource=tag_resource,
+            response_model=TagResourceResponse,
+            route=TAG_RESOURCES,
+        )
+
+    def batch_create_tag_resource(
+        self, tag_resources: List[TagResourceRequest]
+    ) -> List[TagResourceResponse]:
+        """Create a batch of tag resource relationships.
+
+        Args:
+            tag_resources: The tag resource relationships to be created.
+
+        Returns:
+            The newly created tag resource relationships.
+        """
+        return self._batch_create_resources(
+            resources=tag_resources,
+            response_model=TagResourceResponse,
+            route=TAG_RESOURCES,
+        )
+
+    def delete_tag_resource(
+        self,
+        tag_resource: TagResourceRequest,
+    ) -> None:
+        """Delete a tag resource.
+
+        Args:
+            tag_resource: The tag resource relationship to delete.
+        """
+        self.delete(path=TAG_RESOURCES, body=tag_resource)
+
+    def batch_delete_tag_resource(
+        self, tag_resources: List[TagResourceRequest]
+    ) -> None:
+        """Delete a batch of tag resources.
+
+        Args:
+            tag_resources: The tag resource relationships to be deleted.
+        """
+        self._batch_delete_resources(
+            resources=tag_resources,
+            route=TAG_RESOURCES,
+        )
+
     # =======================
     # Internal helper methods
     # =======================
@@ -4417,6 +4482,7 @@ class RestZenStore(BaseZenStore):
     def delete(
         self,
         path: str,
+        body: Optional[BaseModel] = None,
         params: Optional[Dict[str, Any]] = None,
         timeout: Optional[int] = None,
         **kwargs: Any,
@@ -4425,6 +4491,7 @@ class RestZenStore(BaseZenStore):
 
         Args:
             path: The path to the endpoint.
+            body: The body to send.
             params: The query parameters to pass to the endpoint.
             timeout: The request timeout in seconds.
             kwargs: Additional keyword arguments to pass to the request.
@@ -4436,6 +4503,7 @@ class RestZenStore(BaseZenStore):
         return self._request(
             "DELETE",
             self.url + API + VERSION_1 + path,
+            json=body.model_dump(mode="json") if body else None,
             params=params,
             timeout=timeout,
             **kwargs,
@@ -4739,3 +4807,26 @@ class RestZenStore(BaseZenStore):
             params: Optional query parameters to pass to the endpoint.
         """
         self.delete(f"{route}/{str(resource_id)}", params=params)
+
+    def _batch_delete_resources(
+        self,
+        resources: Sequence[BaseModel],
+        route: str,
+        params: Optional[Dict[str, Any]] = None,
+    ) -> None:
+        """Delete a batch of resources.
+
+        Args:
+            resources: The resources to delete.
+            route: The resource REST route to use.
+            params: Optional query parameters to pass to the endpoint.
+        """
+        json_data = [
+            resource.model_dump(mode="json") for resource in resources
+        ]
+        self._request(
+            "DELETE",
+            self.url + API + VERSION_1 + route + BATCH,
+            json=json_data,
+            params=params,
+        )

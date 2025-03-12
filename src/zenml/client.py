@@ -59,6 +59,7 @@ from zenml.constants import (
 )
 from zenml.enums import (
     ArtifactType,
+    ColorVariants,
     LogicalOperators,
     ModelStages,
     OAuthDeviceStatus,
@@ -169,6 +170,8 @@ from zenml.models import (
     StepRunResponse,
     TagFilter,
     TagRequest,
+    TagResource,
+    TagResourceRequest,
     TagResponse,
     TagUpdate,
     TriggerExecutionFilter,
@@ -2347,6 +2350,7 @@ class Client(metaclass=ClientMetaClass):
         workspace: Optional[Union[str, UUID]] = None,
         user: Optional[Union[UUID, str]] = None,
         tag: Optional[str] = None,
+        tags: Optional[List[str]] = None,
         hydrate: bool = False,
     ) -> Page[PipelineResponse]:
         """List all pipelines.
@@ -2365,6 +2369,7 @@ class Client(metaclass=ClientMetaClass):
             workspace: The workspace name/ID to filter by.
             user: The name/ID of the user to filter by.
             tag: Tag to filter by.
+            tags: Tags to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -2384,6 +2389,7 @@ class Client(metaclass=ClientMetaClass):
             workspace=workspace or self.active_workspace.id,
             user=user,
             tag=tag,
+            tags=tags,
         )
         return self.zen_store.list_pipelines(
             pipeline_filter_model=pipeline_filter_model,
@@ -2864,7 +2870,7 @@ class Client(metaclass=ClientMetaClass):
         is_active: Optional[bool] = None,
         workspace: Optional[Union[str, UUID]] = None,
     ) -> EventSourceResponse:
-        """Updates a event_source.
+        """Updates an event_source.
 
         Args:
             name_id_or_prefix: The name, id or prefix of the event_source to update.
@@ -3865,10 +3871,10 @@ class Client(metaclass=ClientMetaClass):
         status: Optional[str] = None,
         start_time: Optional[Union[datetime, str]] = None,
         end_time: Optional[Union[datetime, str]] = None,
-        num_steps: Optional[Union[int, str]] = None,
         unlisted: Optional[bool] = None,
         templatable: Optional[bool] = None,
         tag: Optional[str] = None,
+        tags: Optional[List[str]] = None,
         user: Optional[Union[UUID, str]] = None,
         run_metadata: Optional[Dict[str, Any]] = None,
         pipeline: Optional[Union[UUID, str]] = None,
@@ -3904,10 +3910,10 @@ class Client(metaclass=ClientMetaClass):
             status: The status of the pipeline run
             start_time: The start_time for the pipeline run
             end_time: The end_time for the pipeline run
-            num_steps: The number of steps for the pipeline run
             unlisted: If the runs should be unlisted or not.
             templatable: If the runs should be templatable or not.
             tag: Tag to filter by.
+            tags: Tags to filter by.
             user: The name/ID of the user to filter by.
             run_metadata: The run_metadata of the run to filter by.
             pipeline: The name/ID of the pipeline to filter by.
@@ -3944,8 +3950,8 @@ class Client(metaclass=ClientMetaClass):
             status=status,
             start_time=start_time,
             end_time=end_time,
-            num_steps=num_steps,
             tag=tag,
+            tags=tags,
             unlisted=unlisted,
             user=user,
             run_metadata=run_metadata,
@@ -4126,6 +4132,7 @@ class Client(metaclass=ClientMetaClass):
         workspace: Optional[Union[str, UUID]] = None,
         hydrate: bool = False,
         tag: Optional[str] = None,
+        tags: Optional[List[str]] = None,
     ) -> Page[ArtifactResponse]:
         """Get a list of artifacts.
 
@@ -4144,6 +4151,7 @@ class Client(metaclass=ClientMetaClass):
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
             tag: Filter artifacts by tag.
+            tags: Tags to filter by.
 
         Returns:
             A list of artifacts.
@@ -4159,6 +4167,7 @@ class Client(metaclass=ClientMetaClass):
             name=name,
             has_custom_name=has_custom_name,
             tag=tag,
+            tags=tags,
             user=user,
             workspace=workspace or self.active_workspace.id,
         )
@@ -4335,6 +4344,7 @@ class Client(metaclass=ClientMetaClass):
         pipeline_run: Optional[Union[UUID, str]] = None,
         run_metadata: Optional[Dict[str, Any]] = None,
         tag: Optional[str] = None,
+        tags: Optional[List[str]] = None,
         hydrate: bool = False,
     ) -> Page[ArtifactVersionResponse]:
         """Get a list of artifact versions.
@@ -4362,6 +4372,7 @@ class Client(metaclass=ClientMetaClass):
                 any pipeline runs.
             has_custom_name: Filter artifacts with/without custom names.
             tag: A tag to filter by.
+            tags: Tags to filter by.
             user: Filter by user name or ID.
             model: Filter by model name or ID.
             pipeline_run: Filter by pipeline run name or ID.
@@ -4396,6 +4407,7 @@ class Client(metaclass=ClientMetaClass):
             only_unused=only_unused,
             has_custom_name=has_custom_name,
             tag=tag,
+            tags=tags,
             user=user,
             model=model,
             pipeline_run=pipeline_run,
@@ -6261,6 +6273,7 @@ class Client(metaclass=ClientMetaClass):
         workspace: Optional[Union[str, UUID]] = None,
         hydrate: bool = False,
         tag: Optional[str] = None,
+        tags: Optional[List[str]] = None,
     ) -> Page[ModelResponse]:
         """Get models by filter from Model Control Plane.
 
@@ -6278,6 +6291,7 @@ class Client(metaclass=ClientMetaClass):
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
             tag: The tag of the model to filter by.
+            tags: Tags to filter by.
 
         Returns:
             A page object with all models.
@@ -6292,6 +6306,7 @@ class Client(metaclass=ClientMetaClass):
             created=created,
             updated=updated,
             tag=tag,
+            tags=tags,
             user=user,
             workspace=workspace or self.active_workspace.id,
         )
@@ -6487,6 +6502,7 @@ class Client(metaclass=ClientMetaClass):
         user: Optional[Union[UUID, str]] = None,
         hydrate: bool = False,
         tag: Optional[str] = None,
+        tags: Optional[List[str]] = None,
         workspace: Optional[Union[str, UUID]] = None,
     ) -> Page[ModelVersionResponse]:
         """Get model versions by filter from Model Control Plane.
@@ -6509,6 +6525,7 @@ class Client(metaclass=ClientMetaClass):
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
             tag: The tag to filter by.
+            tags: Tags to filter by.
             workspace: The workspace name/ID to filter by.
 
         Returns:
@@ -6527,6 +6544,7 @@ class Client(metaclass=ClientMetaClass):
             stage=stage,
             run_metadata=run_metadata,
             tag=tag,
+            tags=tags,
             user=user,
             model=model_name_or_id,
             workspace=workspace or self.active_workspace.id,
@@ -7627,23 +7645,33 @@ class Client(metaclass=ClientMetaClass):
             api_key_name_or_id=api_key.id,
         )
 
-    #############################################
-    # Tags
-    #
-    # Note: tag<>resource are not exposed and
-    # can be accessed via relevant resources
-    #############################################
-
-    def create_tag(self, tag: TagRequest) -> TagResponse:
+    # ---------------------------------- Tags ----------------------------------
+    def create_tag(
+        self,
+        name: str,
+        exclusive: bool = False,
+        color: Optional[Union[str, ColorVariants]] = None,
+    ) -> TagResponse:
         """Creates a new tag.
 
         Args:
-            tag: the Tag to be created.
+            name: the name of the tag.
+            exclusive: the boolean to decide whether the tag is an exclusive tag.
+                An exclusive tag means that the tag can exist only for a single:
+                    - pipeline run within the scope of a pipeline
+                    - artifact version within the scope of an artifact
+                    - run template
+            color: the color of the tag
 
         Returns:
             The newly created tag.
         """
-        return self.zen_store.create_tag(tag=tag)
+        request_model = TagRequest(name=name, exclusive=exclusive)
+
+        if color is not None:
+            request_model.color = ColorVariants(color)
+
+        return self.zen_store.create_tag(tag=request_model)
 
     def delete_tag(
         self,
@@ -7661,20 +7689,42 @@ class Client(metaclass=ClientMetaClass):
     def update_tag(
         self,
         tag_name_or_id: Union[str, UUID],
-        tag_update_model: TagUpdate,
+        name: Optional[str] = None,
+        exclusive: Optional[bool] = None,
+        color: Optional[Union[str, ColorVariants]] = None,
     ) -> TagResponse:
         """Updates an existing tag.
 
         Args:
             tag_name_or_id: name or UUID of the tag to be updated.
-            tag_update_model: the tag to be updated.
+            name: the name of the tag.
+            exclusive: the boolean to decide whether the tag is an exclusive tag.
+                An exclusive tag means that the tag can exist only for a single:
+                    - pipeline run within the scope of a pipeline
+                    - artifact version within the scope of an artifact
+                    - run template
+            color: the color of the tag
 
         Returns:
             The updated tag.
         """
+        update_model = TagUpdate()
+
+        if name is not None:
+            update_model.name = name
+
+        if exclusive is not None:
+            update_model.exclusive = exclusive
+
+        if color is not None:
+            if isinstance(color, str):
+                update_model.color = ColorVariants(color)
+            else:
+                update_model.color = color
+
         return self.zen_store.update_tag(
             tag_name_or_id=tag_name_or_id,
-            tag_update_model=tag_update_model,
+            tag_update_model=update_model,
         )
 
     def get_tag(
@@ -7699,14 +7749,33 @@ class Client(metaclass=ClientMetaClass):
 
     def list_tags(
         self,
-        tag_filter_model: TagFilter,
+        sort_by: str = "created",
+        page: int = PAGINATION_STARTING_PAGE,
+        size: int = PAGE_SIZE_DEFAULT,
+        logical_operator: LogicalOperators = LogicalOperators.AND,
+        id: Optional[Union[UUID, str]] = None,
+        user: Optional[Union[UUID, str]] = None,
+        created: Optional[Union[datetime, str]] = None,
+        updated: Optional[Union[datetime, str]] = None,
+        name: Optional[str] = None,
+        color: Optional[Union[str, ColorVariants]] = None,
+        exclusive: Optional[bool] = None,
         hydrate: bool = False,
     ) -> Page[TagResponse]:
         """Get tags by filter.
 
         Args:
-            tag_filter_model: All filter parameters including pagination
-                params.
+            sort_by: The column to sort by.
+            page: The page of items.
+            size: The maximum size of all pages.
+            logical_operator: Which logical operator to use [and, or].
+            id: Use the id of stacks to filter by.
+            user: Use the user to filter by.
+            created: Use to filter by time of creation.
+            updated: Use the last updated date for filtering.
+            name: The name of the tag.
+            color: The color of the tag.
+            exclusive: Flag indicating whether the tag is exclusive.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -7714,5 +7783,72 @@ class Client(metaclass=ClientMetaClass):
             A page of all tags.
         """
         return self.zen_store.list_tags(
-            tag_filter_model=tag_filter_model, hydrate=hydrate
+            tag_filter_model=TagFilter(
+                sort_by=sort_by,
+                page=page,
+                size=size,
+                logical_operator=logical_operator,
+                id=id,
+                user=user,
+                created=created,
+                updated=updated,
+                name=name,
+                color=color,
+                exclusive=exclusive,
+            ),
+            hydrate=hydrate,
+        )
+
+    def attach_tag(
+        self,
+        tag_name_or_id: Union[str, UUID],
+        resources: List[TagResource],
+    ) -> None:
+        """Attach a tag to resources.
+
+        Args:
+            tag_name_or_id: name or id of the tag to be attached.
+            resources: the resources to attach the tag to.
+        """
+        if isinstance(tag_name_or_id, str):
+            try:
+                tag_model = self.create_tag(name=tag_name_or_id)
+            except EntityExistsError:
+                tag_model = self.get_tag(tag_name_or_id)
+        else:
+            tag_model = self.get_tag(tag_name_or_id)
+
+        self.zen_store.batch_create_tag_resource(
+            tag_resources=[
+                TagResourceRequest(
+                    tag_id=tag_model.id,
+                    resource_id=resource.id,
+                    resource_type=resource.type,
+                )
+                for resource in resources
+            ]
+        )
+
+    def detach_tag(
+        self,
+        tag_name_or_id: Union[str, UUID],
+        resources: List[TagResource],
+    ) -> None:
+        """Detach a tag from resources.
+
+        Args:
+            tag_name_or_id: name or id of the tag to be detached.
+            resources: the resources to detach the tag from.
+        """
+        tag_model = self.get_tag(tag_name_or_id)
+
+        self.zen_store.batch_delete_tag_resource(
+            tag_resources=[
+                TagResourceRequest(
+                    tag_id=tag_model.id,
+                    resource_id=resource.id,
+                    resource_type=resource.type,
+                )
+                for resource in resources
+            ]
         )

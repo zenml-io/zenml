@@ -22,6 +22,7 @@ import random
 import re
 import sys
 import time
+from collections import defaultdict
 from datetime import datetime
 from functools import lru_cache
 from pathlib import Path
@@ -299,7 +300,7 @@ from zenml.service_connectors.service_connector_registry import (
 )
 from zenml.stack.flavor_registry import FlavorRegistry
 from zenml.stack_deployments.utils import get_stack_deployment_class
-from zenml.utils import uuid_utils
+from zenml.utils import tag_utils, uuid_utils
 from zenml.utils.enum_utils import StrEnum
 from zenml.utils.networking_utils import (
     replace_localhost_with_internal_hostname,
@@ -386,7 +387,6 @@ AnyIdentifiedResponse = TypeVar(
 # warning
 SelectOfScalar.inherit_cache = True
 Select.inherit_cache = True
-
 
 logger = get_logger(__name__)
 
@@ -2578,16 +2578,17 @@ class SqlZenStore(BaseZenStore):
             # Create the artifact.
             artifact_schema = ArtifactSchema.from_request(artifact)
 
-            # Save tags of the artifact.
-            if artifact.tags:
-                self._attach_tags_to_resource(
-                    tag_names=artifact.tags,
-                    resource=artifact_schema,
-                    session=session,
-                )
-
             session.add(artifact_schema)
             session.commit()
+
+            # Save tags of the artifact.
+            self._attach_tags_to_resources(
+                tags=artifact.tags,
+                resources=artifact_schema,
+                session=session,
+            )
+            session.refresh(artifact_schema)
+
             return artifact_schema.to_model(
                 include_metadata=True, include_resources=True
             )
@@ -2668,24 +2669,23 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            # Handle tag updates.
-            if artifact_update.add_tags:
-                self._attach_tags_to_resource(
-                    tag_names=artifact_update.add_tags,
-                    resource=existing_artifact,
-                    session=session,
-                )
-            if artifact_update.remove_tags:
-                self._detach_tags_from_resource(
-                    tag_names=artifact_update.remove_tags,
-                    resource=existing_artifact,
-                    session=session,
-                )
-
             # Update the schema itself.
             existing_artifact.update(artifact_update=artifact_update)
             session.add(existing_artifact)
             session.commit()
+            session.refresh(existing_artifact)
+
+            # Handle tag updates.
+            self._attach_tags_to_resources(
+                tags=artifact_update.add_tags,
+                resources=existing_artifact,
+                session=session,
+            )
+            self._detach_tags_from_resources(
+                tags=artifact_update.remove_tags,
+                resources=existing_artifact,
+                session=session,
+            )
             session.refresh(existing_artifact)
             return existing_artifact.to_model(
                 include_metadata=True, include_resources=True
@@ -2918,12 +2918,11 @@ class SqlZenStore(BaseZenStore):
                     session.add(vis_schema)
 
             # Save tags of the artifact
-            if artifact_version.tags:
-                self._attach_tags_to_resource(
-                    tag_names=artifact_version.tags,
-                    resource=artifact_version_schema,
-                    session=session,
-                )
+            self._attach_tags_to_resources(
+                tags=artifact_version.tags,
+                resources=artifact_version_schema,
+                session=session,
+            )
 
             # Save metadata of the artifact
             if artifact_version.metadata:
@@ -3060,26 +3059,26 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            # Handle tag updates.
-            if artifact_version_update.add_tags:
-                self._attach_tags_to_resource(
-                    tag_names=artifact_version_update.add_tags,
-                    resource=existing_artifact_version,
-                    session=session,
-                )
-            if artifact_version_update.remove_tags:
-                self._detach_tags_from_resource(
-                    tag_names=artifact_version_update.remove_tags,
-                    resource=existing_artifact_version,
-                    session=session,
-                )
-
             # Update the schema itself.
             existing_artifact_version.update(
                 artifact_version_update=artifact_version_update
             )
             session.add(existing_artifact_version)
             session.commit()
+            session.refresh(existing_artifact_version)
+
+            # Handle tag updates.
+            self._attach_tags_to_resources(
+                tags=artifact_version_update.add_tags,
+                resources=existing_artifact_version,
+                session=session,
+            )
+            self._detach_tags_from_resources(
+                tags=artifact_version_update.remove_tags,
+                resources=existing_artifact_version,
+                session=session,
+            )
+
             session.refresh(existing_artifact_version)
             return existing_artifact_version.to_model(
                 include_metadata=True, include_resources=True
@@ -4189,13 +4188,6 @@ class SqlZenStore(BaseZenStore):
 
             new_pipeline = PipelineSchema.from_request(pipeline)
 
-            if pipeline.tags:
-                self._attach_tags_to_resource(
-                    tag_names=pipeline.tags,
-                    resource=new_pipeline,
-                    session=session,
-                )
-
             session.add(new_pipeline)
             try:
                 session.commit()
@@ -4208,6 +4200,14 @@ class SqlZenStore(BaseZenStore):
                     f"'{pipeline.workspace}': A pipeline with the name "
                     f"{pipeline.name} already exists."
                 )
+            session.refresh(new_pipeline)
+
+            self._attach_tags_to_resources(
+                tags=pipeline.tags,
+                resources=new_pipeline,
+                session=session,
+            )
+
             session.refresh(new_pipeline)
 
             return new_pipeline.to_model(
@@ -4303,24 +4303,21 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            if pipeline_update.add_tags:
-                self._attach_tags_to_resource(
-                    tag_names=pipeline_update.add_tags,
-                    resource=existing_pipeline,
-                    session=session,
-                )
-            pipeline_update.add_tags = None
-            if pipeline_update.remove_tags:
-                self._detach_tags_from_resource(
-                    tag_names=pipeline_update.remove_tags,
-                    resource=existing_pipeline,
-                    session=session,
-                )
-            pipeline_update.remove_tags = None
-
             existing_pipeline.update(pipeline_update)
             session.add(existing_pipeline)
             session.commit()
+            session.refresh(existing_pipeline)
+
+            self._attach_tags_to_resources(
+                tags=pipeline_update.add_tags,
+                resources=existing_pipeline,
+                session=session,
+            )
+            self._detach_tags_from_resources(
+                tags=pipeline_update.remove_tags,
+                resources=existing_pipeline,
+                session=session,
+            )
             session.refresh(existing_pipeline)
 
             return existing_pipeline.to_model(
@@ -4681,15 +4678,16 @@ class SqlZenStore(BaseZenStore):
 
             template_schema = RunTemplateSchema.from_request(request=template)
 
-            if template.tags:
-                self._attach_tags_to_resource(
-                    tag_names=template.tags,
-                    resource=template_schema,
-                    session=session,
-                )
-
             session.add(template_schema)
             session.commit()
+            session.refresh(template_schema)
+
+            self._attach_tags_to_resources(
+                tags=template.tags,
+                resources=template_schema,
+                session=session,
+            )
+
             session.refresh(template_schema)
 
             return template_schema.to_model(
@@ -4770,25 +4768,22 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            if template_update.add_tags:
-                self._attach_tags_to_resource(
-                    tag_names=template_update.add_tags,
-                    resource=template,
-                    session=session,
-                )
-            template_update.add_tags = None
-
-            if template_update.remove_tags:
-                self._detach_tags_from_resource(
-                    tag_names=template_update.remove_tags,
-                    resource=template,
-                    session=session,
-                )
-            template_update.remove_tags = None
-
             template.update(template_update)
             session.add(template)
             session.commit()
+            session.refresh(template)
+
+            self._attach_tags_to_resources(
+                tags=template_update.add_tags,
+                resources=template,
+                session=session,
+            )
+            self._detach_tags_from_resources(
+                tags=template_update.remove_tags,
+                resources=template,
+                session=session,
+            )
+
             session.refresh(template)
 
             return template.to_model(
@@ -5026,13 +5021,6 @@ class SqlZenStore(BaseZenStore):
 
         new_run = PipelineRunSchema.from_request(pipeline_run)
 
-        if pipeline_run.tags:
-            self._attach_tags_to_resource(
-                tag_names=pipeline_run.tags,
-                resource=new_run,
-                session=session,
-            )
-
         session.add(new_run)
         try:
             session.commit()
@@ -5068,6 +5056,14 @@ class SqlZenStore(BaseZenStore):
                 )
             )
             session.refresh(new_run)
+
+        self._attach_tags_to_resources(
+            tags=pipeline_run.tags,
+            resources=new_run,
+            session=session,
+        )
+
+        session.refresh(new_run)
 
         return new_run.to_model(include_metadata=True, include_resources=True)
 
@@ -5142,15 +5138,16 @@ class SqlZenStore(BaseZenStore):
             pre_replacement_hook()
         run_schema.update_placeholder(pipeline_run)
 
-        if pipeline_run.tags:
-            self._attach_tags_to_resource(
-                tag_names=pipeline_run.tags,
-                resource=run_schema,
-                session=session,
-            )
-
         session.add(run_schema)
         session.commit()
+
+        self._attach_tags_to_resources(
+            tags=pipeline_run.tags,
+            resources=run_schema,
+            session=session,
+        )
+
+        session.refresh(run_schema)
 
         return run_schema.to_model(
             include_metadata=True, include_resources=True
@@ -5348,25 +5345,21 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            if run_update.add_tags:
-                self._attach_tags_to_resource(
-                    tag_names=run_update.add_tags,
-                    resource=existing_run,
-                    session=session,
-                )
-            run_update.add_tags = None
-            if run_update.remove_tags:
-                self._detach_tags_from_resource(
-                    tag_names=run_update.remove_tags,
-                    resource=existing_run,
-                    session=session,
-                )
-            run_update.remove_tags = None
-
             existing_run.update(run_update=run_update)
             session.add(existing_run)
             session.commit()
+            session.refresh(existing_run)
 
+            self._attach_tags_to_resources(
+                tags=run_update.add_tags,
+                resources=existing_run,
+                session=session,
+            )
+            self._detach_tags_from_resources(
+                tags=run_update.remove_tags,
+                resources=existing_run,
+                session=session,
+            )
             session.refresh(existing_run)
             return existing_run.to_model(
                 include_metadata=True, include_resources=True
@@ -5754,9 +5747,9 @@ class SqlZenStore(BaseZenStore):
         """
         if self.backup_secrets_store:
             # We attempt either an update or a create operation depending on
-            # whether the secret values are already stored in the backup secrets
-            # store. This is to account for any inconsistencies in the backup
-            # secrets store without impairing the backup functionality.
+            # whether the secret values are already stored in the backup
+            # secrets store. This is to account for any inconsistencies in the
+            # backup secrets store without impairing the backup functionality.
             try:
                 self.backup_secrets_store.get_secret_values(
                     secret_id=secret_id,
@@ -9849,7 +9842,7 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             request_model: The request model to set the user ID on.
-            session: The DB session to use to use for queries.
+            session: The DB session to use for queries.
         """
         if not isinstance(request_model, UserScopedRequest):
             # If the request model is not a UserScopedRequest, we don't need to
@@ -9868,7 +9861,7 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             filter_model: The filter model to set the workspace ID on.
-            session: The DB session to use to use for queries.
+            session: The DB session to use for queries.
             workspace_name_or_id: The workspace to set the scope for. If not
                 provided, the workspace scope is determined from the request
                 workspace filter or the default workspace, in that order.
@@ -10105,12 +10098,6 @@ class SqlZenStore(BaseZenStore):
             model_schema = ModelSchema.from_request(model)
             session.add(model_schema)
 
-            if model.tags:
-                self._attach_tags_to_resource(
-                    tag_names=model.tags,
-                    resource=model_schema,
-                    session=session,
-                )
             try:
                 session.commit()
             except IntegrityError:
@@ -10121,6 +10108,14 @@ class SqlZenStore(BaseZenStore):
                     f"Unable to create model {model.name}: "
                     "A model with this name already exists."
                 )
+
+            self._attach_tags_to_resources(
+                tags=model.tags,
+                resources=model_schema,
+                session=session,
+            )
+
+            session.refresh(model_schema)
 
             return model_schema.to_model(
                 include_metadata=True, include_resources=True
@@ -10257,21 +10252,6 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
 
-            if model_update.add_tags:
-                self._attach_tags_to_resource(
-                    tag_names=model_update.add_tags,
-                    resource=existing_model,
-                    session=session,
-                )
-            model_update.add_tags = None
-            if model_update.remove_tags:
-                self._detach_tags_from_resource(
-                    tag_names=model_update.remove_tags,
-                    resource=existing_model,
-                    session=session,
-                )
-            model_update.remove_tags = None
-
             existing_model.update(model_update=model_update)
 
             session.add(existing_model)
@@ -10279,6 +10259,20 @@ class SqlZenStore(BaseZenStore):
 
             # Refresh the Model that was just created
             session.refresh(existing_model)
+
+            self._attach_tags_to_resources(
+                tags=model_update.add_tags,
+                resources=existing_model,
+                session=session,
+            )
+            self._detach_tags_from_resources(
+                tags=model_update.remove_tags,
+                resources=existing_model,
+                session=session,
+            )
+
+            session.refresh(existing_model)
+
             return existing_model.to_model(
                 include_metadata=True, include_resources=True
             )
@@ -10691,13 +10685,12 @@ class SqlZenStore(BaseZenStore):
                         time.sleep(sleep_duration)
 
             assert model_version_schema is not None
-            if model_version.tags:
-                self._attach_tags_to_resource(
-                    tag_names=model_version.tags,
-                    resource=model_version_schema,
-                    session=session,
-                )
-
+            self._attach_tags_to_resources(
+                tags=model_version.tags,
+                resources=model_version_schema,
+                session=session,
+            )
+            session.refresh(model_version_schema)
             return self.get_model_version(model_version_schema.id)
 
     @track_decorator(AnalyticsEvent.CREATED_MODEL_VERSION)
@@ -10889,19 +10882,6 @@ class SqlZenStore(BaseZenStore):
                             f"Model version {existing_model_version_in_target_stage.name} has been set to {ModelStages.ARCHIVED.value}."
                         )
 
-            if model_version_update_model.add_tags:
-                self._attach_tags_to_resource(
-                    tag_names=model_version_update_model.add_tags,
-                    resource=existing_model_version,
-                    session=session,
-                )
-            if model_version_update_model.remove_tags:
-                self._detach_tags_from_resource(
-                    tag_names=model_version_update_model.remove_tags,
-                    resource=existing_model_version,
-                    session=session,
-                )
-
             existing_model_version.update(
                 target_stage=stage,
                 target_name=model_version_update_model.name,
@@ -10911,6 +10891,17 @@ class SqlZenStore(BaseZenStore):
             session.commit()
             session.refresh(existing_model_version)
 
+            self._attach_tags_to_resources(
+                tags=model_version_update_model.add_tags,
+                resources=existing_model_version,
+                session=session,
+            )
+            self._detach_tags_from_resources(
+                tags=model_version_update_model.remove_tags,
+                resources=existing_model_version,
+                session=session,
+            )
+            session.refresh(existing_model_version)
             return existing_model_version.to_model(
                 include_metadata=True, include_resources=True
             )
@@ -11201,9 +11192,7 @@ class SqlZenStore(BaseZenStore):
             session.delete(model_version_pipeline_run_link)
             session.commit()
 
-    #################
-    # Tags
-    #################
+    # ---------------------------------- Tags ----------------------------------
 
     @staticmethod
     def _get_taggable_resource_type(
@@ -11221,10 +11210,10 @@ class SqlZenStore(BaseZenStore):
             ValueError: If the resource type is not taggable.
         """
         resource_types: Dict[Type[BaseSchema], TaggableResourceTypes] = {
-            ModelSchema: TaggableResourceTypes.MODEL,
-            ModelVersionSchema: TaggableResourceTypes.MODEL_VERSION,
             ArtifactSchema: TaggableResourceTypes.ARTIFACT,
             ArtifactVersionSchema: TaggableResourceTypes.ARTIFACT_VERSION,
+            ModelSchema: TaggableResourceTypes.MODEL,
+            ModelVersionSchema: TaggableResourceTypes.MODEL_VERSION,
             PipelineSchema: TaggableResourceTypes.PIPELINE,
             PipelineRunSchema: TaggableResourceTypes.PIPELINE_RUN,
             RunTemplateSchema: TaggableResourceTypes.RUN_TEMPLATE,
@@ -11235,6 +11224,42 @@ class SqlZenStore(BaseZenStore):
             )
 
         return resource_types[type(resource)]
+
+    @staticmethod
+    def _get_schema_from_resource_type(
+        resource_type: TaggableResourceTypes,
+    ) -> Any:
+        """Get the schema for a resource type.
+
+        Args:
+            resource_type: The type of the resource.
+
+        Returns:
+            The schema for the resource type.
+        """
+        from zenml.zen_stores.schemas import (
+            ArtifactSchema,
+            ArtifactVersionSchema,
+            ModelSchema,
+            ModelVersionSchema,
+            PipelineRunSchema,
+            PipelineSchema,
+            RunTemplateSchema,
+        )
+
+        resource_type_to_schema_mapping: Dict[
+            TaggableResourceTypes, Type[BaseSchema]
+        ] = {
+            TaggableResourceTypes.ARTIFACT: ArtifactSchema,
+            TaggableResourceTypes.ARTIFACT_VERSION: ArtifactVersionSchema,
+            TaggableResourceTypes.MODEL: ModelSchema,
+            TaggableResourceTypes.MODEL_VERSION: ModelVersionSchema,
+            TaggableResourceTypes.PIPELINE: PipelineSchema,
+            TaggableResourceTypes.PIPELINE_RUN: PipelineRunSchema,
+            TaggableResourceTypes.RUN_TEMPLATE: RunTemplateSchema,
+        }
+
+        return resource_type_to_schema_mapping[resource_type]
 
     def _get_tag_schema(
         self,
@@ -11259,73 +11284,126 @@ class SqlZenStore(BaseZenStore):
             session=session,
         )
 
-    def _attach_tags_to_resource(
-        self, tag_names: List[str], resource: BaseSchema, session: Session
-    ) -> None:
-        """Creates a tag<>resource link if not present.
-
-        Args:
-            tag_names: The list of names of the tags.
-            resource: The resource to attach the tags to.
-            session: The database session to use.
-        """
-        resource_type = self._get_taggable_resource_type(resource=resource)
-
-        for tag_name in tag_names:
-            try:
-                tag = self._get_tag_schema(
-                    tag_name_or_id=tag_name,
-                    session=session,
-                )
-            except KeyError:
-                tag = self._create_tag_schema(
-                    TagRequest(
-                        name=tag_name,
-                    ),
-                    session=session,
-                )
-            try:
-                self._create_tag_resource(
-                    TagResourceRequest(
-                        tag_id=tag.id,
-                        resource_id=resource.id,
-                        resource_type=resource_type,
-                    ),
-                    session=session,
-                )
-            except EntityExistsError:
-                pass
-
-    def _detach_tags_from_resource(
+    def _attach_tags_to_resources(
         self,
-        tag_names: List[str],
-        resource: BaseSchema,
+        tags: Optional[Sequence[Union[str, tag_utils.Tag]]],
+        resources: Union[BaseSchema, List[BaseSchema]],
         session: Session,
     ) -> None:
-        """Deletes tag<>resource link if present.
+        """Attaches multiple tags to multiple resources.
 
         Args:
-            tag_names: The list of names of the tags.
-            resource: The resource to detach the tags from.
+            tags: The list of tags to attach.
+            resources: The list of resources to attach the tags to.
+            session: The database session to use.
+
+        Raises:
+            ValueError: If a tag exists but doesn't match the same exclusive
+                setting.
+        """
+        if tags is None:
+            return
+
+        tag_schemas = []
+        for tag in tags:
+            try:
+                if isinstance(tag, tag_utils.Tag):
+                    tag_request = tag.to_request()
+                else:
+                    tag_request = TagRequest(name=tag)
+
+                tag_schemas.append(
+                    self._create_tag_schema(
+                        tag=tag_request,
+                        session=session,
+                    )
+                )
+            except EntityExistsError:
+                if isinstance(tag, tag_utils.Tag):
+                    tag_schema = self._get_tag_schema(tag.name, session)
+                    if (
+                        tag.exclusive is not None
+                        and tag.exclusive != tag_schema.exclusive
+                    ):
+                        raise ValueError(
+                            f"Tag `{tag_schema.name}` has been defined as a "
+                            f"{'exclusive' if tag_schema.exclusive else 'non-exclusive'} "
+                            "tag. Please update it before attaching it to resources."
+                        )
+                else:
+                    tag_schema = self._get_tag_schema(tag, session)
+
+                tag_schemas.append(tag_schema)
+
+        resources = (
+            [resources] if isinstance(resources, BaseSchema) else resources
+        )
+
+        tag_resources: List[
+            Tuple[TagSchema, TaggableResourceTypes, BaseSchema]
+        ] = []
+
+        for resource in resources:
+            resource_type = self._get_taggable_resource_type(resource=resource)
+            for tag_schema in tag_schemas:
+                tag_resources.append((tag_schema, resource_type, resource))
+
+        self._create_tag_resource_schemas(
+            tag_resources=tag_resources, session=session
+        )
+
+    def _detach_tags_from_resources(
+        self,
+        tags: Optional[Sequence[Union[str, UUID, tag_utils.Tag]]],
+        resources: Union[BaseSchema, List[BaseSchema]],
+        session: Session,
+    ) -> None:
+        """Detaches multiple tags from multiple resources.
+
+        Args:
+            tags: The list of tags to detach.
+            resources: The list of resources to detach the tags from.
             session: The database session to use.
         """
-        resource_type = self._get_taggable_resource_type(resource=resource)
+        if tags is None:
+            return
 
-        for tag_name in tag_names:
+        tag_schemas = []
+        for tag in tags:
             try:
-                tag = self._get_tag_schema(
-                    tag_name_or_id=tag_name,
-                    session=session,
-                )
+                if isinstance(tag, tag_utils.Tag):
+                    tag_schemas.append(self._get_tag_schema(tag.name, session))
+                else:
+                    tag_schemas.append(
+                        self._get_tag_schema(
+                            tag_name_or_id=tag, session=session
+                        )
+                    )
             except KeyError:
                 continue
 
-            self._delete_tag_resource(
-                tag_id=tag.id,
-                resource_id=resource.id,
-                resource_type=resource_type,
-                session=session,
-            )
+        resources = (
+            [resources] if isinstance(resources, BaseSchema) else resources
+        )
+
+        tag_resources = []
+
+        for tag_schema in tag_schemas:
+            for resource in resources:
+                resource_type = self._get_taggable_resource_type(
+                    resource=resource
+                )
+                tag_resources.append(
+                    TagResourceRequest(
+                        tag_id=tag_schema.id,
+                        resource_id=resource.id,
+                        resource_type=resource_type,
+                    )
+                )
+
+        self._delete_tag_resource_schemas(
+            tag_resources=tag_resources, session=session
+        )
 
     def _create_tag_schema(
         self, tag: TagRequest, session: Session
@@ -11338,19 +11416,24 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             The newly created tag schema.
+
+        Raises:
+            EntityExistsError: If a tag with the same name
+                already exists.
         """
         validate_name(tag)
         self._set_request_user_id(request_model=tag, session=session)
-        self._verify_name_uniqueness(
-            resource=tag,
-            schema=TagSchema,
-            session=session,
-        )
 
         tag_schema = TagSchema.from_request(tag)
         session.add(tag_schema)
 
-        session.commit()
+        try:
+            session.commit()
+        except IntegrityError:
+            session.rollback()
+            raise EntityExistsError(
+                f"Tag with name `{tag.name}` already exists."
+            )
         return tag_schema
 
     @track_decorator(AnalyticsEvent.CREATED_TAG)
@@ -11448,18 +11531,93 @@ class SqlZenStore(BaseZenStore):
 
         Returns:
             An updated tag.
+
+        Raises:
+            IllegalOperationError: If the tag can not be converted to an exclusive tag due
+                to it being associated to multiple entities.
         """
         with Session(self.engine) as session:
             tag = self._get_tag_schema(
                 tag_name_or_id=tag_name_or_id,
                 session=session,
             )
-
             self._verify_name_uniqueness(
                 resource=tag_update_model,
                 schema=tag,
                 session=session,
             )
+
+            if tag_update_model.exclusive is True:
+                error_messages = []
+                for resource_type, resource_id, scope_id in [
+                    (
+                        TaggableResourceTypes.PIPELINE_RUN,
+                        PipelineRunSchema.id,
+                        PipelineRunSchema.pipeline_id,
+                    ),
+                    (
+                        TaggableResourceTypes.ARTIFACT_VERSION,
+                        ArtifactVersionSchema.id,
+                        ArtifactVersionSchema.artifact_id,
+                    ),
+                    (
+                        TaggableResourceTypes.RUN_TEMPLATE,
+                        RunTemplateSchema.id,
+                        None,  # Special case - will be handled differently
+                    ),
+                ]:
+                    # Special handling for run templates as they don't have direct pipeline_id
+                    if resource_type == TaggableResourceTypes.RUN_TEMPLATE:
+                        query = (
+                            select(
+                                PipelineDeploymentSchema.pipeline_id,
+                                func.count().label("count"),
+                            )
+                            .select_from(RunTemplateSchema)
+                            .join(
+                                TagResourceSchema,
+                                and_(
+                                    TagResourceSchema.resource_id
+                                    == RunTemplateSchema.id,
+                                    TagResourceSchema.resource_type
+                                    == "run_template",
+                                ),
+                            )
+                            .join(
+                                PipelineDeploymentSchema,
+                                RunTemplateSchema.source_deployment_id  # type: ignore[arg-type]
+                                == PipelineDeploymentSchema.id,
+                            )
+                            .where(TagResourceSchema.tag_id == tag.id)
+                            .group_by(PipelineDeploymentSchema.pipeline_id)  # type: ignore[arg-type]
+                        )
+
+                        results = session.exec(query).all()
+                        conflicts = [k for k, v in results if v > 1]
+                        if conflicts:
+                            error_message = (
+                                f"The tag `{tag.name}` is associated with multiple entries of "
+                                f"`{resource_type.value}`s that share the same pipeline_id"
+                            )
+                            error_message += f": {conflicts}"
+                            error_messages.append(error_message)
+                    else:
+                        check, error = self._exclusive_check_for_existing_tags(
+                            tag=tag,
+                            session=session,
+                            resource_type=resource_type,
+                            resource_id_column=resource_id,
+                            scope_id_column=scope_id,
+                        )
+                        if check is False:
+                            error_messages.append(error)
+
+                if error_messages:
+                    raise IllegalOperationError(
+                        "\n".join(error_messages)
+                        + "\nYou can only convert a tag into an exclusive tag "
+                        "if the conflicts mentioned above are resolved."
+                    )
 
             tag.update(update=tag_update_model)
             session.add(tag)
@@ -11469,65 +11627,62 @@ class SqlZenStore(BaseZenStore):
             session.refresh(tag)
             return tag.to_model(include_metadata=True, include_resources=True)
 
-    ####################
-    # Tags <> resources
-    ####################
-
-    def _get_tag_model_schema(
-        self,
-        tag_id: UUID,
-        resource_id: UUID,
+    @staticmethod
+    def _exclusive_check_for_existing_tags(
+        tag: TagSchema,
+        session: Session,
         resource_type: TaggableResourceTypes,
+        resource_id_column: Any,
+        scope_id_column: Any,
+    ) -> Tuple[bool, str]:
+        query = (
+            select(scope_id_column, func.count().label("count"))
+            .join(
+                TagResourceSchema,
+                and_(
+                    TagResourceSchema.resource_id == resource_id_column,
+                    TagResourceSchema.resource_type == resource_type,
+                ),
+            )
+            .where(TagResourceSchema.tag_id == tag.id)
+            .group_by(scope_id_column)
+        )
+        results = session.exec(query).all()
+        conflicts = [k for k, v in results if v > 1]
+        if conflicts:
+            error_message = (
+                f"The tag `{tag.name}` is associated with multiple entries of "
+                f"`{resource_type.value}`s"
+            )
+
+            if resource_id_column != scope_id_column:
+                error_message += (
+                    f" that share the same `{scope_id_column.name}`s"
+                )
+            error_message += f": {conflicts}"
+            return False, error_message
+
+        return True, ""
+
+    def _get_tag_resource_schema(
+        self,
+        tag_resource: TagResourceRequest,
         session: Session,
     ) -> TagResourceSchema:
-        """Gets a tag model schema by tag and resource.
+        """Gets a tag model schema.
 
         Args:
-            tag_id: The ID of the tag to get.
-            resource_id: The ID of the resource to get.
-            resource_type: The type of the resource to get.
+            tag_resource: The tag resource to get.
             session: The database session to use.
 
         Returns:
             The tag resource schema.
 
         Raises:
-            KeyError: if entity not found.
+            KeyError: if a relationship between the tag and the resource does
+                not exist.
         """
         schema = session.exec(
-            select(TagResourceSchema).where(
-                TagResourceSchema.tag_id == tag_id,
-                TagResourceSchema.resource_id == resource_id,
-                TagResourceSchema.resource_type == resource_type.value,
-            )
-        ).first()
-        if schema is None:
-            raise KeyError(
-                f"Unable to get {TagResourceSchema.__tablename__} with IDs "
-                f"`tag_id`='{tag_id}' and `resource_id`='{resource_id}' and "
-                f"`resource_type`='{resource_type.value}': No "
-                f"{TagResourceSchema.__tablename__} with these IDs found."
-            )
-        return schema
-
-    def _create_tag_resource(
-        self, tag_resource: TagResourceRequest, session: Session
-    ) -> TagResourceResponse:
-        """Creates a new tag resource relationship.
-
-        Args:
-            tag_resource: the tag resource relationship to be created.
-            session: The database session to use.
-
-        Returns:
-            The newly created tag resource relationship.
-
-        Raises:
-            EntityExistsError: If a tag resource relationship with the given
-                configuration already exists.
-        """
-        self._set_request_user_id(request_model=tag_resource, session=session)
-        existing_tag_resource = session.exec(
             select(TagResourceSchema).where(
                 TagResourceSchema.tag_id == tag_resource.tag_id,
                 TagResourceSchema.resource_id == tag_resource.resource_id,
@@ -11535,53 +11690,314 @@ class SqlZenStore(BaseZenStore):
                 == tag_resource.resource_type.value,
             )
         ).first()
-        if existing_tag_resource is not None:
-            raise EntityExistsError(
-                f"Unable to create a tag "
-                f"{tag_resource.resource_type.name.lower()} "
-                f"relationship with IDs "
-                f"`{tag_resource.tag_id}`|`{tag_resource.resource_id}`. "
-                "This relationship already exists."
+        if schema is None:
+            raise KeyError(
+                f"Tag `{tag_resource.tag_id}` is not currently assigned to "
+                f"{tag_resource.resource_type.value} with ID "
+                f"`{tag_resource.resource_id}`."
             )
+        return schema
 
-        tag_resource_schema = TagResourceSchema.from_request(tag_resource)
-        session.add(tag_resource_schema)
-
-        session.commit()
-        return tag_resource_schema.to_model(
-            include_metadata=True, include_resources=True
-        )
-
-    def _delete_tag_resource(
+    def _create_tag_resource_schemas(
         self,
-        tag_id: UUID,
-        resource_id: UUID,
-        resource_type: TaggableResourceTypes,
+        tag_resources: List[
+            Tuple[TagSchema, TaggableResourceTypes, BaseSchema]
+        ],
         session: Session,
+    ) -> List[TagResourceSchema]:
+        """Creates a set of tag resource relationships.
+
+        Args:
+            tag_resources: the tag resource relationships to be created.
+            session: The database session to use.
+
+        Returns:
+            The newly created tag resource relationships.
+
+        Raises:
+            ValueError: If an exclusive tag is being attached to multiple resources
+                of the same type within the same scope.
+            EntityExistsError: If a tag resource already exists.
+        """
+        max_retries = 10
+
+        for _ in range(max_retries):
+            tag_resource_schemas = []
+            tag_resources_to_create: Set[
+                Tuple[UUID, UUID, TaggableResourceTypes]
+            ] = set()
+
+            for tag_schema, resource_type, resource in tag_resources:
+                if (
+                    tag_schema.id,
+                    resource.id,
+                    resource_type,
+                ) in tag_resources_to_create:
+                    continue
+                try:
+                    existing_schema = self._get_tag_resource_schema(
+                        tag_resource=TagResourceRequest(
+                            tag_id=tag_schema.id,
+                            resource_id=resource.id,
+                            resource_type=resource_type,
+                        ),
+                        session=session,
+                    )
+                except KeyError:
+                    pass
+                else:
+                    logger.debug(
+                        f"Tag `{tag_schema.name}` is already assigned to "
+                        f"{resource_type.value} with ID: `{resource.id}`."
+                    )
+                    tag_resource_schemas.append(existing_schema)
+                    continue
+
+                tag_resource_schema = TagResourceSchema.from_request(
+                    TagResourceRequest(
+                        tag_id=tag_schema.id,
+                        resource_id=resource.id,
+                        resource_type=resource_type,
+                    )
+                )
+                session.add(tag_resource_schema)
+                tag_resource_schemas.append(tag_resource_schema)
+
+                # If the tag is an exclusive tag, apply the check and attach/detach accordingly
+                if tag_schema.exclusive:
+                    scope_ids: Dict[
+                        TaggableResourceTypes, List[Union[UUID, int]]
+                    ] = defaultdict(list)
+                    detach_resources: List[TagResourceRequest] = []
+
+                    if isinstance(resource, PipelineRunSchema):
+                        if resource.pipeline_id:
+                            scope_ids[
+                                TaggableResourceTypes.PIPELINE_RUN
+                            ].append(resource.pipeline_id)
+
+                            other_runs_with_same_tag = self.list_runs(
+                                PipelineRunFilter(
+                                    id=f"notequals:{resource.id}",
+                                    pipeline_id=resource.pipeline_id,
+                                    tags=[tag_schema.name],
+                                )
+                            )
+                            if other_runs_with_same_tag.items:
+                                detach_resources.append(
+                                    TagResourceRequest(
+                                        tag_id=tag_schema.id,
+                                        resource_id=other_runs_with_same_tag.items[
+                                            0
+                                        ].id,
+                                        resource_type=TaggableResourceTypes.PIPELINE_RUN,
+                                    )
+                                )
+                    elif isinstance(resource, ArtifactVersionSchema):
+                        if resource.artifact_id:
+                            scope_ids[
+                                TaggableResourceTypes.ARTIFACT_VERSION
+                            ].append(resource.artifact_id)
+
+                            other_versions_with_same_tag = (
+                                self.list_artifact_versions(
+                                    ArtifactVersionFilter(
+                                        id=f"notequals:{resource.id}",
+                                        artifact_id=resource.artifact_id,
+                                        tags=[tag_schema.name],
+                                    )
+                                )
+                            )
+                            if other_versions_with_same_tag.items:
+                                detach_resources.append(
+                                    TagResourceRequest(
+                                        tag_id=tag_schema.id,
+                                        resource_id=other_versions_with_same_tag.items[
+                                            0
+                                        ].id,
+                                        resource_type=TaggableResourceTypes.ARTIFACT_VERSION,
+                                    )
+                                )
+                    elif isinstance(resource, RunTemplateSchema):
+                        scope_id = None
+                        if resource.source_deployment:
+                            if resource.source_deployment.pipeline_id:
+                                scope_id = (
+                                    resource.source_deployment.pipeline_id
+                                )
+                                scope_ids[
+                                    TaggableResourceTypes.RUN_TEMPLATE
+                                ].append(scope_id)
+
+                                older_templates = self.list_run_templates(
+                                    RunTemplateFilter(
+                                        id=f"notequals:{resource.id}",
+                                        pipeline_id=scope_id,
+                                        tags=[tag_schema.name],
+                                    )
+                                )
+                                if older_templates.items:
+                                    detach_resources.append(
+                                        TagResourceRequest(
+                                            tag_id=tag_schema.id,
+                                            resource_id=older_templates.items[
+                                                0
+                                            ].id,
+                                            resource_type=TaggableResourceTypes.RUN_TEMPLATE,
+                                        )
+                                    )
+                    else:
+                        logger.debug(
+                            "Exclusive tag functionality only works for "
+                            "templates, for pipeline runs (within the scope of "
+                            "pipelines) and for artifact versions (within the "
+                            "scope of artifacts)."
+                        )
+
+                    # Check for duplicate IDs in any of the scope_ids list
+                    for resource_type, id_list in scope_ids.items():
+                        if len(id_list) != len(set(id_list)):
+                            raise ValueError(
+                                f"You are trying to attach an exclusive tag to "
+                                f"multiple {resource_type.value}s within the "
+                                "same scope. This is not allowed."
+                            )
+
+                    if detach_resources:
+                        self._delete_tag_resource_schemas(
+                            tag_resources=detach_resources,
+                            session=session,
+                            # Don't commit the session here, because we want
+                            # to have one big mega-transaction.
+                            commit=False,
+                        )
+
+                tag_resources_to_create.add(
+                    (tag_schema.id, resource.id, resource_type)
+                )
+            try:
+                session.commit()
+            except IntegrityError:
+                session.rollback()
+                continue
+            else:
+                break
+        else:
+            raise EntityExistsError(
+                f"Failed to create tag resources after {max_retries} retries. "
+                "Some of the tag resources already exist. Please try again later."
+            )
+        return tag_resource_schemas
+
+    def create_tag_resource(
+        self, tag_resource: TagResourceRequest
+    ) -> TagResourceResponse:
+        """Creates a new tag resource relationship.
+
+        Args:
+            tag_resource: the tag resource relationship to be created.
+
+        Returns:
+            The newly created tag resource relationship.
+        """
+        return self.batch_create_tag_resource(tag_resources=[tag_resource])[0]
+
+    def batch_create_tag_resource(
+        self, tag_resources: List[TagResourceRequest]
+    ) -> List[TagResourceResponse]:
+        """Create a batch of tag resource relationships.
+
+        Args:
+            tag_resources: The tag resource relationships to be created.
+
+        Returns:
+            The newly created tag resource relationships.
+        """
+        with Session(self.engine) as session:
+            resources: List[
+                Tuple[TagSchema, TaggableResourceTypes, BaseSchema]
+            ] = []
+            for tag_resource in tag_resources:
+                resource_schema = self._get_schema_from_resource_type(
+                    tag_resource.resource_type
+                )
+                resource = self._get_schema_by_id(
+                    resource_id=tag_resource.resource_id,
+                    schema_class=resource_schema,
+                    session=session,
+                )
+                tag_schema = self._get_tag_schema(
+                    tag_name_or_id=tag_resource.tag_id,
+                    session=session,
+                )
+                resources.append(
+                    (
+                        tag_schema,
+                        tag_resource.resource_type,
+                        resource,
+                    )
+                )
+            return [
+                r.to_model()
+                for r in self._create_tag_resource_schemas(
+                    tag_resources=resources, session=session
+                )
+            ]
+
+    def _delete_tag_resource_schemas(
+        self,
+        tag_resources: List[TagResourceRequest],
+        session: Session,
+        commit: bool = True,
+    ) -> None:
+        """Deletes a set of tag resource relationships.
+
+        Args:
+            tag_resources: The set of tag resource relationships to delete.
+            session: The database session to use.
+            commit: Whether to commit the session after deleting the tag
+                resource relationships.
+        """
+        for tag_resource in tag_resources:
+            try:
+                tag_resource_schema = self._get_tag_resource_schema(
+                    tag_resource=tag_resource,
+                    session=session,
+                )
+            except KeyError:
+                logger.warning(
+                    f"Tag `{tag_resource.tag_id}` is not currently assigned to "
+                    f"{tag_resource.resource_type.value} with ID "
+                    f"`{tag_resource.resource_id}`."
+                )
+                continue
+            else:
+                session.delete(tag_resource_schema)
+
+        if commit:
+            session.commit()
+
+    def delete_tag_resource(
+        self,
+        tag_resource: TagResourceRequest,
     ) -> None:
         """Deletes a tag resource relationship.
 
         Args:
-            tag_id: The ID of the tag to delete.
-            resource_id: The ID of the resource to delete.
-            resource_type: The type of the resource to delete.
-            session: The database session to use.
-
-        Raises:
-            KeyError: specified ID not found.
+            tag_resource: The tag resource relationship to delete.
         """
-        tag_model = self._get_tag_model_schema(
-            tag_id=tag_id,
-            resource_id=resource_id,
-            resource_type=resource_type,
-            session=session,
-        )
-        if tag_model is None:
-            raise KeyError(
-                f"Unable to delete tag<>resource with IDs: "
-                f"`tag_id`='{tag_id}' and `resource_id`='{resource_id}' "
-                f"and `resource_type`='{resource_type.value}': No "
-                "tag<>resource with these IDs found."
+        self.batch_delete_tag_resource(tag_resources=[tag_resource])
+
+    def batch_delete_tag_resource(
+        self, tag_resources: List[TagResourceRequest]
+    ) -> None:
+        """Delete a batch of tag resource relationships.
+
+        Args:
+            tag_resources: The tag resource relationships to be deleted.
+        """
+        with Session(self.engine) as session:
+            self._delete_tag_resource_schemas(
+                tag_resources=tag_resources,
+                session=session,
             )
-        session.delete(tag_model)
-        session.commit()

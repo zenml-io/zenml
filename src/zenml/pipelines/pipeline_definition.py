@@ -93,6 +93,7 @@ from zenml.utils import (
     yaml_utils,
 )
 from zenml.utils.string_utils import format_name_template
+from zenml.utils.tag_utils import Tag
 
 if TYPE_CHECKING:
     from zenml.artifacts.external_artifact import ExternalArtifact
@@ -130,7 +131,7 @@ class Pipeline:
         enable_artifact_visualization: Optional[bool] = None,
         enable_step_logs: Optional[bool] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
-        tags: Optional[List[str]] = None,
+        tags: Optional[List[Union[str, "Tag"]]] = None,
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
@@ -293,7 +294,7 @@ class Pipeline:
         enable_artifact_visualization: Optional[bool] = None,
         enable_step_logs: Optional[bool] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
-        tags: Optional[List[str]] = None,
+        tags: Optional[List[Union[str, "Tag"]]] = None,
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,

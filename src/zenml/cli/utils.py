@@ -81,6 +81,7 @@ from zenml.stack.flavor import Flavor
 from zenml.stack.stack_component import StackComponentConfig
 from zenml.utils import secret_utils
 from zenml.utils.time_utils import expires_in
+from zenml.utils.typing_utils import get_origin, is_union
 
 if TYPE_CHECKING:
     from uuid import UUID
@@ -2385,6 +2386,23 @@ def create_data_type_help_text(
         return f"{field}"
 
 
+def _is_list_field(field_info: Any) -> bool:
+    """Check if a field is a list field.
+
+    Args:
+        field_info: The field info to check.
+
+    Returns:
+        True if the field is a list field, False otherwise.
+    """
+    field_type = field_info.annotation
+    origin = get_origin(field_type)
+    return origin is list or (
+        is_union(origin)
+        and any(get_origin(arg) is list for arg in field_type.__args__)
+    )
+
+
 def list_options(filter_model: Type[BaseFilter]) -> Callable[[F], F]:
     """Create a decorator to generate the correct list of filter parameters.
 
@@ -2413,6 +2431,7 @@ def list_options(filter_model: Type[BaseFilter]) -> Callable[[F], F]:
                         type=str,
                         default=v.default,
                         required=False,
+                        multiple=_is_list_field(v),
                         help=create_filter_help_text(filter_model, k),
                     )
                 )

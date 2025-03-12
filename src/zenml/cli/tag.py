@@ -26,8 +26,6 @@ from zenml.exceptions import EntityExistsError
 from zenml.logger import get_logger
 from zenml.models import (
     TagFilter,
-    TagRequest,
-    TagUpdate,
 )
 from zenml.utils.dict_utils import remove_none_values
 
@@ -47,7 +45,7 @@ def list_tags(**kwargs: Any) -> None:
     Args:
         **kwargs: Keyword arguments to filter models.
     """
-    tags = Client().list_tags(TagFilter(**kwargs))
+    tags = Client().list_tags(**kwargs)
 
     if not tags:
         cli_utils.declare("No tags found.")
@@ -82,11 +80,8 @@ def register_tag(name: str, color: Optional[ColorVariants]) -> None:
         color: The color variant for UI.
     """
     request_dict = remove_none_values(dict(name=name, color=color))
-    client = Client()
     try:
-        tag = client.create_tag(
-            TagRequest(workspace=client.active_workspace.id, **request_dict)
-        )
+        tag = Client().create_tag(**request_dict)
     except (EntityExistsError, ValueError) as e:
         cli_utils.error(str(e))
 
@@ -129,7 +124,7 @@ def update_tag(
 
     tag = Client().update_tag(
         tag_name_or_id=tag_name_or_id,
-        tag_update_model=TagUpdate(**update_dict),
+        **update_dict,
     )
 
     cli_utils.print_pydantic_models(
