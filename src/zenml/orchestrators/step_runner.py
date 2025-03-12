@@ -75,6 +75,14 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
+from uuid import UUID
+
+
+class CacheResult:
+    def __init__(self, step_run_id: Optional[UUID] = None) -> None:
+        self.step_run_id = step_run_id
+
+
 class StepRunner:
     """Class to run steps."""
 
@@ -224,6 +232,64 @@ class StepRunner:
                                 success_hook_source,
                                 step_exception=None,
                             )
+
+                        if isinstance(return_values, CacheResult):
+                            from zenml.orchestrators import cache_utils
+
+                            cache_key = step_run.cache_key
+
+                            cached_step_run = None
+
+                            if return_values.step_run_id:
+                                try:
+                                    candidate = Client().get_run_step(
+                                        return_values.step_run_id
+                                    )
+                                except KeyError:
+                                    raise StepInterfaceError(
+                                        "Unable to find cached candidate step"
+                                        f"`{return_values.step_run_id}`."
+                                    )
+                                if cache_utils.is_valid_cached_step_run(
+                                    candidate, cache_key
+                                ):
+                                    cached_step_run = candidate
+                                else:
+                                    raise StepInterfaceError(
+                                        "Invalid cache candidate "
+                                        f"`{return_values.step_run_id}` "
+                                        "specified. A valid cache candidate "
+                                        "must have the same cache key and has "
+                                        "been successfully executed."
+                                    )
+                            elif (
+                                cached_step_run
+                                := cache_utils.get_cached_step_run(
+                                    cache_key=cache_key
+                                )
+                            ):
+                                cached_step_run = cached_step_run
+                            else:
+                                raise StepInterfaceError(
+                                    "Unable to find cached step run for cache "
+                                    f"key `{cache_key}`."
+                                )
+
+                            # TODO: We need to be able to update this
+                            # request.original_step_run_id = cached_step_run.id
+
+                            output_artifact_ids = {
+                                output_name: [
+                                    artifact.id for artifact in artifacts
+                                ]
+                                for output_name, artifacts in cached_step_run.outputs.items()
+                            }
+
+                            publish_successful_step_run(
+                                step_run_id=step_run_info.step_run_id,
+                                output_artifact_ids=output_artifact_ids,
+                            )
+                            return
 
                         # Store and publish the output artifacts of the step function.
                         output_data = self._validate_outputs(
