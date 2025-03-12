@@ -49,6 +49,9 @@ from uuid import UUID
 from google.api_core import exceptions as google_exceptions
 from google.cloud import aiplatform
 from google.cloud.aiplatform_v1.types import PipelineState
+from google_cloud_pipeline_components.v1.custom_job.utils import (
+    create_custom_training_job_from_component,
+)
 from kfp import dsl
 from kfp.compiler import Compiler
 from kfp.dsl.base_component import BaseComponent
@@ -325,10 +328,6 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         Returns:
             The custom training job component.
         """
-        from google_cloud_pipeline_components.v1.custom_job.utils import (
-            create_custom_training_job_from_component,
-        )
-
         custom_job_parameters = (
             settings.custom_job_parameters or VertexCustomJobParameters()
         )
