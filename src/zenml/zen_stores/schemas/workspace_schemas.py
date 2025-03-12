@@ -59,6 +59,7 @@ class WorkspaceSchema(NamedSchema, table=True):
         ),
     )
 
+    display_name: str
     description: str
 
     pipelines: List["PipelineSchema"] = Relationship(
@@ -133,7 +134,11 @@ class WorkspaceSchema(NamedSchema, table=True):
         Returns:
             The created `WorkspaceSchema`.
         """
-        return cls(name=workspace.name, description=workspace.description)
+        return cls(
+            name=workspace.name,
+            description=workspace.description,
+            display_name=workspace.display_name,
+        )
 
     def update(self, workspace_update: WorkspaceUpdate) -> "WorkspaceSchema":
         """Update a `WorkspaceSchema` from a `WorkspaceUpdate`.
@@ -179,6 +184,7 @@ class WorkspaceSchema(NamedSchema, table=True):
             id=self.id,
             name=self.name,
             body=WorkspaceResponseBody(
+                display_name=self.display_name,
                 created=self.created,
                 updated=self.updated,
             ),

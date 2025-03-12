@@ -450,6 +450,7 @@ STACK_RECIPES_GITHUB_REPO = "https://github.com/zenml-io/mlops-stacks.git"
 
 # Parameters for internal ZenML Models
 TEXT_FIELD_MAX_LENGTH = 65535
+STR_ID_FIELD_MAX_LENGTH = 50
 STR_FIELD_MAX_LENGTH = 255
 MEDIUMTEXT_MAX_LENGTH = 2**24 - 1
 

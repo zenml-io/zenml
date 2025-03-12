@@ -970,19 +970,27 @@ class Client(metaclass=ClientMetaClass):
     # -------------------------------- Workspaces ------------------------------
 
     def create_workspace(
-        self, name: str, description: str
+        self,
+        name: str,
+        description: str,
+        display_name: Optional[str] = None,
     ) -> WorkspaceResponse:
         """Create a new workspace.
 
         Args:
             name: Name of the workspace.
             description: Description of the workspace.
+            display_name: Display name of the workspace.
 
         Returns:
             The created workspace.
         """
         return self.zen_store.create_workspace(
-            WorkspaceRequest(name=name, description=description)
+            WorkspaceRequest(
+                name=name,
+                description=description,
+                display_name=display_name or "",
+            )
         )
 
     def get_workspace(
@@ -1022,6 +1030,7 @@ class Client(metaclass=ClientMetaClass):
         created: Optional[Union[datetime, str]] = None,
         updated: Optional[Union[datetime, str]] = None,
         name: Optional[str] = None,
+        display_name: Optional[str] = None,
         hydrate: bool = False,
     ) -> Page[WorkspaceResponse]:
         """List all workspaces.
@@ -1035,6 +1044,7 @@ class Client(metaclass=ClientMetaClass):
             created: Use to filter by time of creation
             updated: Use the last updated date for filtering
             name: Use the workspace name for filtering
+            display_name: Use the workspace display name for filtering
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -1051,6 +1061,7 @@ class Client(metaclass=ClientMetaClass):
                 created=created,
                 updated=updated,
                 name=name,
+                display_name=display_name,
             ),
             hydrate=hydrate,
         )
@@ -1059,6 +1070,7 @@ class Client(metaclass=ClientMetaClass):
         self,
         name_id_or_prefix: Optional[Union[UUID, str]],
         new_name: Optional[str] = None,
+        new_display_name: Optional[str] = None,
         new_description: Optional[str] = None,
     ) -> WorkspaceResponse:
         """Update a workspace.
@@ -1066,6 +1078,7 @@ class Client(metaclass=ClientMetaClass):
         Args:
             name_id_or_prefix: Name, ID or prefix of the workspace to update.
             new_name: New name of the workspace.
+            new_display_name: New display name of the workspace.
             new_description: New description of the workspace.
 
         Returns:
@@ -1074,7 +1087,10 @@ class Client(metaclass=ClientMetaClass):
         workspace = self.get_workspace(
             name_id_or_prefix=name_id_or_prefix, allow_name_prefix_match=False
         )
-        workspace_update = WorkspaceUpdate(name=new_name or workspace.name)
+        workspace_update = WorkspaceUpdate(
+            name=new_name or workspace.name,
+            display_name=new_display_name or workspace.display_name,
+        )
         if new_description:
             workspace_update.description = new_description
         return self.zen_store.update_workspace(

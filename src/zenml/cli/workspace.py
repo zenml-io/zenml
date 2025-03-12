@@ -68,21 +68,35 @@ def list_workspaces(ctx: click.Context, **kwargs: Any) -> None:
     help="Immediately set this workspace as active.",
     type=click.BOOL,
 )
+@click.option(
+    "--display-name",
+    "display_name",
+    type=str,
+    required=False,
+    help="The display name of the workspace.",
+)
 @click.argument("workspace_name", type=str, required=True)
 def register_workspace(
-    workspace_name: str, set_workspace: bool = False
+    workspace_name: str,
+    set_workspace: bool = False,
+    display_name: Optional[str] = None,
 ) -> None:
     """Register a new workspace.
 
     Args:
         workspace_name: The name of the workspace to register.
         set_workspace: Whether to set the workspace as active.
+        display_name: The display name of the workspace.
     """
     check_zenml_pro_workspace_availability()
     client = Client()
     with console.status("Creating workspace...\n"):
         try:
-            client.create_workspace(workspace_name, description="")
+            client.create_workspace(
+                workspace_name,
+                description="",
+                display_name=display_name,
+            )
             cli_utils.declare("Workspace created successfully.")
         except Exception as e:
             cli_utils.error(str(e))
