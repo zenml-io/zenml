@@ -252,12 +252,14 @@ def main():
 
     # Check slow commands on current branch
     if current_slow:
+        # We don't set has_issues=True here anymore, so that slow commands don't fail the workflow
+        
         markdown += f"### ⚠️ Slow Commands on Current Branch ({args.current_branch})\n\n"
         for cmd in current_slow:
             avg_time = current_results[cmd].get("avg_time", 0)
             markdown += f"- `{cmd}`: {avg_time:.3f}s (exceeds {slow_threshold}s threshold)\n"
         markdown += "\n"
-
+        
         # Check for new slow commands on current branch
         new_slow = [
             cmd
@@ -405,7 +407,7 @@ def main():
             ):  # Current is slower by at least threshold
                 status = "❌ Degraded"
                 degraded_commands += 1
-                has_issues = True
+                has_issues = True  # Keep this line to fail for degraded performance
                 all_improved = False
             else:
                 status = "✓ No significant change"
