@@ -18,6 +18,7 @@ import json
 from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
+from sqlalchemy import UniqueConstraint
 from sqlmodel import Relationship
 
 from zenml.enums import StackComponentType
@@ -37,7 +38,6 @@ from zenml.zen_stores.schemas.service_connector_schemas import (
 )
 from zenml.zen_stores.schemas.stack_schemas import StackCompositionSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
-from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.flavor_schemas import FlavorSchema
@@ -51,21 +51,18 @@ class StackComponentSchema(NamedSchema, table=True):
     """SQL Model for stack components."""
 
     __tablename__ = "stack_component"
+    __table_args__ = (
+        UniqueConstraint(
+            "name",
+            "type",
+            name="unique_component_name_and_type",
+        ),
+    )
 
     type: str
     flavor: str
     configuration: bytes
     labels: Optional[bytes]
-
-    workspace_id: UUID = build_foreign_key_field(
-        source=__tablename__,
-        target=WorkspaceSchema.__tablename__,
-        source_column="workspace_id",
-        target_column="id",
-        ondelete="CASCADE",
-        nullable=False,
-    )
-    workspace: "WorkspaceSchema" = Relationship(back_populates="components")
 
     user_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -132,7 +129,6 @@ class StackComponentSchema(NamedSchema, table=True):
         """
         return cls(
             name=request.name,
-            workspace_id=request.workspace,
             user_id=request.user,
             type=request.type,
             flavor=request.flavor,
@@ -158,7 +154,7 @@ class StackComponentSchema(NamedSchema, table=True):
             The updated `StackComponentSchema`.
         """
         for field, value in component_update.model_dump(
-            exclude_unset=True, exclude={"workspace", "user", "connector"}
+            exclude_unset=True, exclude={"user", "connector"}
         ).items():
             if field == "configuration":
                 self.configuration = base64.b64encode(
@@ -209,7 +205,6 @@ class StackComponentSchema(NamedSchema, table=True):
         metadata = None
         if include_metadata:
             metadata = ComponentResponseMetadata(
-                workspace=self.workspace.to_model(),
                 configuration=json.loads(
                     base64.b64decode(self.configuration).decode()
                 ),

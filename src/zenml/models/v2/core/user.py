@@ -36,7 +36,7 @@ from zenml.models.v2.base.base import (
     BaseRequest,
     BaseResponseMetadata,
     BaseResponseResources,
-    BaseZenModel,
+    BaseUpdate,
 )
 from zenml.models.v2.base.filter import AnyQuery, BaseFilter
 
@@ -80,6 +80,10 @@ class UserBase(BaseModel):
     user_metadata: Optional[Dict[str, Any]] = Field(
         default=None,
         title="The metadata associated with the user.",
+    )
+    default_workspace_id: Optional[UUID] = Field(
+        default=None,
+        title="The default workspace ID for the user.",
     )
 
     @classmethod
@@ -176,7 +180,7 @@ class UserRequest(UserBase, BaseRequest):
 # ------------------ Update Model ------------------
 
 
-class UserUpdate(UserBase, BaseZenModel):
+class UserUpdate(UserBase, BaseUpdate):
     """Update model for users."""
 
     name: Optional[str] = Field(
@@ -278,6 +282,10 @@ class UserResponseBody(BaseDatedResponseBody):
     )
     is_admin: bool = Field(
         title="Whether the account is an administrator.",
+    )
+    default_workspace_id: Optional[UUID] = Field(
+        default=None,
+        title="The default workspace ID for the user.",
     )
 
 
@@ -394,6 +402,15 @@ class UserResponse(
             Whether the user is an admin.
         """
         return self.get_body().is_admin
+
+    @property
+    def default_workspace_id(self) -> Optional[UUID]:
+        """The `default_workspace_id` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().default_workspace_id
 
     @property
     def email(self) -> Optional[str]:

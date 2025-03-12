@@ -132,6 +132,8 @@ from zenml.models import (
     StepRunUpdate,
     TagFilter,
     TagRequest,
+    TagResourceRequest,
+    TagResourceResponse,
     TagResponse,
     TagUpdate,
     TriggerExecutionFilter,
@@ -744,11 +746,14 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def prune_artifact_versions(
         self,
+        workspace_name_or_id: Union[str, UUID],
         only_versions: bool = True,
     ) -> None:
         """Prunes unused artifact versions and their artifacts.
 
         Args:
+            workspace_name_or_id: The workspace name or ID to prune artifact
+                versions for.
             only_versions: Only delete artifact versions, keeping artifacts
         """
 
@@ -889,7 +894,7 @@ class ZenStoreInterface(ABC):
             The created stack component.
 
         Raises:
-            StackComponentExistsError: If a stack component with the same name
+            EntityExistsError: If a stack component with the same name
                 and type is already owned by this user in this workspace.
         """
 
@@ -1531,30 +1536,30 @@ class ZenStoreInterface(ABC):
     # -------------------- Pipeline runs --------------------
 
     @abstractmethod
-    def create_run(
+    def get_or_create_run(
         self, pipeline_run: PipelineRunRequest
-    ) -> PipelineRunResponse:
-        """Creates a pipeline run.
+    ) -> Tuple[PipelineRunResponse, bool]:
+        """Gets or creates a pipeline run.
+
+        If a run with the same ID or name already exists, it is returned.
+        Otherwise, a new run is created.
 
         Args:
-            pipeline_run: The pipeline run to create.
+            pipeline_run: The pipeline run to get or create.
 
         Returns:
-            The created pipeline run.
-
-        Raises:
-            EntityExistsError: If an identical pipeline run already exists.
-            KeyError: If the pipeline does not exist.
+            The pipeline run, and a boolean indicating whether the run was
+            created or not.
         """
 
     @abstractmethod
     def get_run(
-        self, run_name_or_id: Union[str, UUID], hydrate: bool = True
+        self, run_id: UUID, hydrate: bool = True
     ) -> PipelineRunResponse:
         """Gets a pipeline run.
 
         Args:
-            run_name_or_id: The name or ID of the pipeline run to get.
+            run_id: The ID of the pipeline run to get.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -1609,23 +1614,6 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: if the pipeline run doesn't exist.
-        """
-
-    @abstractmethod
-    def get_or_create_run(
-        self, pipeline_run: PipelineRunRequest
-    ) -> Tuple[PipelineRunResponse, bool]:
-        """Gets or creates a pipeline run.
-
-        If a run with the same ID or name already exists, it is returned.
-        Otherwise, a new run is created.
-
-        Args:
-            pipeline_run: The pipeline run to get or create.
-
-        Returns:
-            The pipeline run, and a boolean indicating whether the run was
-            created or not.
         """
 
     # -------------------- Run metadata --------------------
@@ -2147,18 +2135,13 @@ class ZenStoreInterface(ABC):
     @abstractmethod
     def list_service_connector_resources(
         self,
-        workspace_name_or_id: Union[str, UUID],
-        connector_type: Optional[str] = None,
-        resource_type: Optional[str] = None,
-        resource_id: Optional[str] = None,
+        filter_model: ServiceConnectorFilter,
     ) -> List[ServiceConnectorResourcesModel]:
         """List resources that can be accessed by service connectors.
 
         Args:
-            workspace_name_or_id: The name or ID of the workspace to scope to.
-            connector_type: The type of service connector to scope to.
-            resource_type: The type of resource to scope to.
-            resource_id: The ID of the resource to scope to.
+            filter_model: The filter model to use when fetching service
+                connectors.
 
         Returns:
             The matching list of resources that available service
@@ -2213,11 +2196,8 @@ class ZenStoreInterface(ABC):
             The created stack.
 
         Raises:
-            EntityExistsError: If a service connector with the same name
-                already exists.
-            StackComponentExistsError: If a stack component with the same name
-                already exists.
-            StackExistsError: If a stack with the same name already exists.
+            EntityExistsError: If a stack, stack component or service connector
+                with the same name already exists.
         """
 
     @abstractmethod
@@ -2499,7 +2479,7 @@ class ZenStoreInterface(ABC):
         trigger_execution_id: UUID,
         hydrate: bool = True,
     ) -> TriggerExecutionResponse:
-        """Get an trigger execution by ID.
+        """Get a trigger execution by ID.
 
         Args:
             trigger_execution_id: The ID of the trigger execution to get.
@@ -2725,14 +2705,14 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def delete_model(self, model_name_or_id: Union[str, UUID]) -> None:
+    def delete_model(self, model_id: UUID) -> None:
         """Deletes a model.
 
         Args:
-            model_name_or_id: name or id of the model to be deleted.
+            model_id: id of the model to be deleted.
 
         Raises:
-            KeyError: specified ID or name not found.
+            KeyError: model with specified ID not found.
         """
 
     @abstractmethod
@@ -2752,13 +2732,11 @@ class ZenStoreInterface(ABC):
         """
 
     @abstractmethod
-    def get_model(
-        self, model_name_or_id: Union[str, UUID], hydrate: bool = True
-    ) -> ModelResponse:
+    def get_model(self, model_id: UUID, hydrate: bool = True) -> ModelResponse:
         """Get an existing model.
 
         Args:
-            model_name_or_id: name or id of the model to be retrieved.
+            model_id: id of the model to be retrieved.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -2766,7 +2744,7 @@ class ZenStoreInterface(ABC):
             The model of interest.
 
         Raises:
-            KeyError: specified ID or name not found.
+            KeyError: model with specified ID not found.
         """
 
     @abstractmethod
@@ -2845,14 +2823,11 @@ class ZenStoreInterface(ABC):
     def list_model_versions(
         self,
         model_version_filter_model: ModelVersionFilter,
-        model_name_or_id: Optional[Union[str, UUID]] = None,
         hydrate: bool = False,
     ) -> Page[ModelVersionResponse]:
         """Get all model versions by filter.
 
         Args:
-            model_name_or_id: name or id of the model containing the model
-                versions.
             model_version_filter_model: All filter parameters including
                 pagination params.
             hydrate: Flag deciding whether to hydrate the output model(s)
@@ -3005,9 +2980,7 @@ class ZenStoreInterface(ABC):
             KeyError: specified ID not found.
         """
 
-    #################
-    # Tags
-    #################
+    # -------------------- Tags --------------------
 
     @abstractmethod
     def create_tag(self, tag: TagRequest) -> TagResponse:
@@ -3039,7 +3012,9 @@ class ZenStoreInterface(ABC):
 
     @abstractmethod
     def get_tag(
-        self, tag_name_or_id: Union[str, UUID], hydrate: bool = True
+        self,
+        tag_name_or_id: Union[str, UUID],
+        hydrate: bool = True,
     ) -> TagResponse:
         """Get an existing tag.
 
@@ -3089,4 +3064,53 @@ class ZenStoreInterface(ABC):
 
         Raises:
             KeyError: If the tag is not found
+        """
+
+    # -------------------- Tag Resources --------------------
+
+    @abstractmethod
+    def create_tag_resource(
+        self, tag_resource: TagResourceRequest
+    ) -> TagResourceResponse:
+        """Create a new tag resource relationship.
+
+        Args:
+            tag_resource: The tag resource relationship to be created.
+
+        Returns:
+            The newly created tag resource relationship.
+        """
+
+    @abstractmethod
+    def batch_create_tag_resource(
+        self, tag_resources: List[TagResourceRequest]
+    ) -> List[TagResourceResponse]:
+        """Create a new tag resource relationship.
+
+        Args:
+            tag_resources: The tag resource relationships to be created.
+
+        Returns:
+            The newly created tag resource relationships.
+        """
+
+    @abstractmethod
+    def delete_tag_resource(
+        self,
+        tag_resource: TagResourceRequest,
+    ) -> None:
+        """Delete a tag resource relationship.
+
+        Args:
+            tag_resource: The tag resource relationship to delete.
+        """
+
+    @abstractmethod
+    def batch_delete_tag_resource(
+        self, tag_resources: List[TagResourceRequest]
+    ) -> None:
+        """Delete a batch of tag resource relationships.
+
+        Args:
+            tag_resources: The tag resource relationships to be deleted.
         """

@@ -503,7 +503,6 @@ def register_stack(
         try:
             created_stack = client.zen_store.create_stack(
                 stack=StackRequest(
-                    user=client.active_user.id,
                     workspace=client.active_workspace.id,
                     name=stack_name,
                     components=components,

@@ -97,7 +97,7 @@ class APIKeyRequest(BaseRequest):
     )
 
 
-class APIKeyRotateRequest(BaseModel):
+class APIKeyRotateRequest(BaseRequest):
     """Request model for API key rotation."""
 
     retain_period_minutes: int = Field(

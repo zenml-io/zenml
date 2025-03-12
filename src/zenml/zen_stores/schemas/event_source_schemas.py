@@ -18,7 +18,7 @@ import json
 from typing import TYPE_CHECKING, Any, List, Optional, cast
 from uuid import UUID
 
-from sqlalchemy import TEXT, Column
+from sqlalchemy import TEXT, Column, UniqueConstraint
 from sqlmodel import Field, Relationship
 
 from zenml import EventSourceResponseMetadata
@@ -46,6 +46,13 @@ class EventSourceSchema(NamedSchema, table=True):
     """SQL Model for tag."""
 
     __tablename__ = "event_source"
+    __table_args__ = (
+        UniqueConstraint(
+            "name",
+            "workspace_id",
+            name="unique_event_source_name_in_workspace",
+        ),
+    )
 
     workspace_id: UUID = build_foreign_key_field(
         source=__tablename__,

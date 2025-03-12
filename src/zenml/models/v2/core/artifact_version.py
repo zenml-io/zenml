@@ -27,7 +27,6 @@ from typing import (
 from uuid import UUID
 
 from pydantic import (
-    BaseModel,
     ConfigDict,
     Field,
     field_validator,
@@ -36,10 +35,11 @@ from pydantic import (
 
 from zenml.config.source import Source, SourceWithValidator
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
-from zenml.enums import ArtifactSaveType, ArtifactType, GenericFilterOps
+from zenml.enums import ArtifactSaveType, ArtifactType
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
-from zenml.models.v2.base.filter import FilterGenerator, StrFilter
+from zenml.models.v2.base.base import BaseUpdate
+from zenml.models.v2.base.filter import FilterGenerator
 from zenml.models.v2.base.scoped import (
     TaggableFilter,
     WorkspaceScopedFilter,
@@ -165,7 +165,7 @@ class ArtifactVersionRequest(WorkspaceScopedRequest):
 # ------------------ Update Model ------------------
 
 
-class ArtifactVersionUpdate(BaseModel):
+class ArtifactVersionUpdate(BaseUpdate):
     """Artifact version update model."""
 
     name: Optional[str] = None
@@ -476,7 +476,8 @@ class ArtifactVersionFilter(WorkspaceScopedFilter, TaggableFilter):
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
         *TaggableFilter.FILTER_EXCLUDE_FIELDS,
-        "name",
+        "artifact_id",
+        "artifact",
         "only_unused",
         "has_custom_name",
         "model",
@@ -484,23 +485,28 @@ class ArtifactVersionFilter(WorkspaceScopedFilter, TaggableFilter):
         "model_version_id",
         "run_metadata",
     ]
-    CUSTOM_SORTING_OPTIONS = [
+    CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
         *WorkspaceScopedFilter.CUSTOM_SORTING_OPTIONS,
         *TaggableFilter.CUSTOM_SORTING_OPTIONS,
     ]
-    CLI_EXCLUDE_FIELDS = [
+    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
         *TaggableFilter.CLI_EXCLUDE_FIELDS,
+        "artifact_id",
     ]
 
-    artifact_id: Optional[Union[UUID, str]] = Field(
+    artifact: Optional[Union[UUID, str]] = Field(
         default=None,
-        description="ID of the artifact to which this version belongs.",
+        description="The name or ID of the artifact which the search is scoped "
+        "to. This field must always be set and is always applied in addition "
+        "to the other filters, regardless of the value of the "
+        "logical_operator field.",
         union_mode="left_to_right",
     )
-    name: Optional[str] = Field(
+    artifact_id: Optional[Union[UUID, str]] = Field(
         default=None,
-        description="Name of the artifact to which this version belongs.",
+        description="[Deprecated] Use 'artifact' instead. ID of the artifact to which this version belongs.",
+        union_mode="left_to_right",
     )
     version: Optional[str] = Field(
         default=None,
@@ -544,10 +550,6 @@ class ArtifactVersionFilter(WorkspaceScopedFilter, TaggableFilter):
     has_custom_name: Optional[bool] = Field(
         default=None,
         description="Filter only artifacts with/without custom names.",
-    )
-    user: Optional[Union[UUID, str]] = Field(
-        default=None,
-        description="Name/ID of the user that created the artifact version.",
     )
     model: Optional[Union[UUID, str]] = Field(
         default=None,
@@ -595,18 +597,15 @@ class ArtifactVersionFilter(WorkspaceScopedFilter, TaggableFilter):
             StepRunSchema,
         )
 
-        if self.name:
-            value, filter_operator = self._resolve_operator(self.name)
-            filter_ = StrFilter(
-                operation=GenericFilterOps(filter_operator),
-                column="name",
-                value=value,
-            )
-            artifact_name_filter = and_(
+        if self.artifact:
+            value, operator = self._resolve_operator(self.artifact)
+            artifact_filter = and_(
                 ArtifactVersionSchema.artifact_id == ArtifactSchema.id,
-                filter_.generate_query_conditions(ArtifactSchema),
+                self.generate_name_or_id_query_conditions(
+                    value=self.artifact, table=ArtifactSchema
+                ),
             )
-            custom_filters.append(artifact_name_filter)
+            custom_filters.append(artifact_filter)
 
         if self.only_unused:
             unused_filter = and_(
@@ -701,6 +700,24 @@ class ArtifactVersionFilter(WorkspaceScopedFilter, TaggableFilter):
                 custom_filters.append(additional_filter)
 
         return custom_filters
+
+    @model_validator(mode="after")
+    def _migrate_artifact_id(self) -> "ArtifactVersionFilter":
+        """Migrate value from the deprecated artifact_id attribute.
+
+        Returns:
+            The filter with migrated value.
+        """
+        # Handle deprecated artifact_id field
+        if self.artifact_id is not None:
+            logger.warning(
+                "The 'ArtifactVersionFilter.artifact_id' field is deprecated "
+                "and will be removed in a future version. Please use "
+                "'ArtifactVersionFilter.artifact' instead."
+            )
+            self.artifact = self.artifact or self.artifact_id
+
+        return self
 
 
 # -------------------- Lazy Loader --------------------

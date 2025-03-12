@@ -215,7 +215,6 @@ def reuse_or_create_pipeline_build(
         build_model = Client().zen_store.get_build(build_id=build)
     else:
         build_request = PipelineBuildRequest(
-            user=Client().active_user.id,
             workspace=Client().active_workspace.id,
             stack=Client().active_stack_model.id,
             pipeline=pipeline_id,
@@ -419,7 +418,6 @@ def create_pipeline_build(
     )
     stack_checksum = compute_stack_checksum(stack=stack_model)
     build_request = PipelineBuildRequest(
-        user=client.active_user.id,
         workspace=client.active_workspace.id,
         stack=stack_model.id,
         pipeline=pipeline_id,

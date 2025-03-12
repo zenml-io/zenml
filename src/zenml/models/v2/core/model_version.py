@@ -25,11 +25,12 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, field_validator
+from pydantic import ConfigDict, Field, field_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ArtifactType, ModelStages
 from zenml.metadata.metadata_types import MetadataType
+from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.filter import AnyQuery
 from zenml.models.v2.base.page import Page
 from zenml.models.v2.base.scoped import (
@@ -90,12 +91,9 @@ class ModelVersionRequest(WorkspaceScopedRequest):
 # ------------------ Update Model ------------------
 
 
-class ModelVersionUpdate(BaseModel):
+class ModelVersionUpdate(BaseUpdate):
     """Update model for model versions."""
 
-    model: UUID = Field(
-        description="The ID of the model containing version",
-    )
     stage: Optional[Union[str, ModelStages]] = Field(
         description="Target model version stage to be set",
         default=None,
@@ -446,7 +444,7 @@ class ModelVersionResponse(
         artifact_versions = Client().list_artifact_versions(
             sort_by="desc:created",
             size=1,
-            name=name,
+            artifact=name,
             version=version,
             model_version_id=self.id,
             type=type,
@@ -574,15 +572,17 @@ class ModelVersionFilter(WorkspaceScopedFilter, TaggableFilter):
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
         *TaggableFilter.FILTER_EXCLUDE_FIELDS,
+        "model",
         "run_metadata",
     ]
-    CUSTOM_SORTING_OPTIONS = [
+    CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
         *WorkspaceScopedFilter.CUSTOM_SORTING_OPTIONS,
         *TaggableFilter.CUSTOM_SORTING_OPTIONS,
     ]
-    CLI_EXCLUDE_FIELDS = [
+    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
         *TaggableFilter.CLI_EXCLUDE_FIELDS,
+        "model",
     ]
 
     name: Optional[str] = Field(
@@ -602,23 +602,14 @@ class ModelVersionFilter(WorkspaceScopedFilter, TaggableFilter):
         default=None,
         description="The run_metadata to filter the model versions by.",
     )
-
-    _model_id: UUID = PrivateAttr(None)
-
-    def set_scope_model(self, model_name_or_id: Union[str, UUID]) -> None:
-        """Set the model to scope this response.
-
-        Args:
-            model_name_or_id: The model to scope this response to.
-        """
-        try:
-            model_id = UUID(str(model_name_or_id))
-        except ValueError:
-            from zenml.client import Client
-
-            model_id = Client().get_model(model_name_or_id).id
-
-        self._model_id = model_id
+    model: Optional[Union[str, UUID]] = Field(
+        default=None,
+        description="The name or ID of the model which the search is scoped "
+        "to. This field must always be set and is always applied in addition "
+        "to the other filters, regardless of the value of the "
+        "logical_operator field.",
+        union_mode="left_to_right",
+    )
 
     def get_custom_filters(
         self, table: Type["AnySchema"]
@@ -675,10 +666,28 @@ class ModelVersionFilter(WorkspaceScopedFilter, TaggableFilter):
 
         Returns:
             The query with filter applied.
+
+        Raises:
+            ValueError: if the filter is not scoped to a model.
         """
         query = super().apply_filter(query=query, table=table)
 
-        if self._model_id:
-            query = query.where(getattr(table, "model_id") == self._model_id)
+        # The model scope must always be set and must be a UUID. If the
+        # client sets this to a string, the server will try to resolve it to a
+        # model ID.
+        #
+        # If not set by the client, the server will raise a ValueError.
+        #
+        # See: SqlZenStore._set_filter_model_id
+
+        if not self.model:
+            raise ValueError("Model scope missing from the filter.")
+
+        if not isinstance(self.model, UUID):
+            raise ValueError(
+                f"Model scope must be a UUID, got {type(self.model)}."
+            )
+
+        query = query.where(getattr(table, "model_id") == self.model)
 
         return query
