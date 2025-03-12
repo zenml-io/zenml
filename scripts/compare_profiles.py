@@ -1,3 +1,17 @@
+#  Copyright (c) ZenML GmbH 2025. All Rights Reserved.
+#
+#  Licensed under the Apache License, Version 2.0 (the "License");
+#  you may not use this file except in compliance with the License.
+#  You may obtain a copy of the License at:
+#
+#       https://www.apache.org/licenses/LICENSE-2.0
+#
+#  Unless required by applicable law or agreed to in writing, software
+#  distributed under the License is distributed on an "AS IS" BASIS,
+#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+#  or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
+
 #!/usr/bin/env python3
 """Compare ZenML CLI performance profiles and generate a report.
 
@@ -13,13 +27,24 @@ import sys
 
 
 def load_json(filename):
-    """Load JSON data from a file."""
+    """Load JSON data from a file.
+
+    Args:
+        filename (str): The path to the JSON file to load.
+
+    Returns:
+        dict: The parsed JSON data.
+    """
     with open(filename, "r") as f:
         return json.load(f)
 
 
 def get_motivational_message():
-    """Return a random motivational message for performance improvements."""
+    """Return a random motivational message for performance improvements.
+
+    Returns:
+        str: A random motivational message.
+    """
     messages = [
         "🚀 Great job! Your changes have improved ZenML's performance!",
         "⚡ Amazing work on the performance improvements!",
@@ -36,7 +61,15 @@ def get_motivational_message():
 
 
 def format_time_diff(target_time, current_time):
-    """Format the time difference with appropriate signage and units."""
+    """Format the time difference with appropriate signage and units.
+
+    Args:
+        target_time (float): The average time of the target branch.
+        current_time (float): The average time of the current branch.
+
+    Returns:
+        str: The formatted time difference.
+    """
     diff = target_time - current_time
     if abs(diff) < 0.001:
         return "±0.000s"
@@ -46,6 +79,11 @@ def format_time_diff(target_time, current_time):
 
 
 def main():
+    """Compare ZenML CLI performance profiles and generate a report.
+
+    This function parses command-line arguments, loads profiling results,
+    and generates a markdown report comparing the performance of two branches.
+    """
     parser = argparse.ArgumentParser(
         description="Compare ZenML CLI performance profiles"
     )
@@ -66,7 +104,10 @@ def main():
         help="Time threshold in seconds for flagging degradation",
     )
     parser.add_argument(
-        "--timeout", type=int, default=60, help="Command timeout in seconds"
+        "--timeout",
+        type=int,
+        default=60,
+        help="Command timeout in seconds (fallback if not in metadata)",
     )
     parser.add_argument(
         "--target-branch", required=True, help="Name of the target branch"
@@ -94,11 +135,24 @@ def main():
         item["command"]: item for item in current_data["profiling_results"]
     }
 
+    # Extract metadata
+    slow_threshold = target_data["metadata"].get("slow_threshold", 5)
+
+    # Get timeout values from metadata, with fallback to command-line argument
+    target_timeout = target_data["metadata"].get("timeout", args.timeout)
+    current_timeout = current_data["metadata"].get("timeout", args.timeout)
+
     # Start markdown report
     markdown = "<!-- PERFORMANCE_REPORT -->\n"
-    markdown += f"## ZenML CLI Performance Comparison (Threshold: {args.threshold}s, Timeout: {args.timeout}s)\n\n"
 
-    # Check for command failures and timeouts
+    # If timeout values are different between branches, indicate this in the title
+    if target_timeout == current_timeout:
+        markdown += f"## ZenML CLI Performance Comparison (Threshold: {args.threshold}s, Timeout: {target_timeout}s, Slow: {slow_threshold}s)\n\n"
+    else:
+        markdown += f"## ZenML CLI Performance Comparison (Threshold: {args.threshold}s, Timeouts: {target_timeout}s/{current_timeout}s, Slow: {slow_threshold}s)\n\n"
+        markdown += f"⚠️ **Note:** Different timeout values were used: {target_timeout}s for {args.target_branch} and {current_timeout}s for {args.current_branch}\n\n"
+
+    # Check for command failures, timeouts, and slow commands
     target_failures = [
         cmd
         for cmd, data in target_results.items()
@@ -119,6 +173,16 @@ def main():
         for cmd, data in current_results.items()
         if data.get("status") == "timeout"
     ]
+    target_slow = [
+        cmd
+        for cmd, data in target_results.items()
+        if data.get("status") == "slow"
+    ]
+    current_slow = [
+        cmd
+        for cmd, data in current_results.items()
+        if data.get("status") == "slow"
+    ]
 
     has_issues = False
 
@@ -133,7 +197,17 @@ def main():
     if target_timeouts:
         markdown += f"### ⏱️ Timed Out Commands on Target Branch ({args.target_branch})\n\n"
         for cmd in target_timeouts:
-            markdown += f"- `{cmd}`: {target_results[cmd].get('error', f'Exceeded {args.timeout}s timeout')}\n"
+            markdown += f"- `{cmd}`: {target_results[cmd].get('error', f'Exceeded {target_timeout}s timeout')}\n"
+        markdown += "\n"
+
+    # Check slow commands on target branch
+    if target_slow:
+        markdown += (
+            f"### ⚠️ Slow Commands on Target Branch ({args.target_branch})\n\n"
+        )
+        for cmd in target_slow:
+            avg_time = target_results[cmd].get("avg_time", 0)
+            markdown += f"- `{cmd}`: {avg_time:.3f}s (exceeds {slow_threshold}s threshold)\n"
         markdown += "\n"
 
     # Check failures on current branch
@@ -160,7 +234,7 @@ def main():
         has_issues = True
         markdown += f"### ⏱️ Timed Out Commands on Current Branch ({args.current_branch})\n\n"
         for cmd in current_timeouts:
-            markdown += f"- `{cmd}`: {current_results[cmd].get('error', f'Exceeded {args.timeout}s timeout')}\n"
+            markdown += f"- `{cmd}`: {current_results[cmd].get('error', f'Exceeded {current_timeout}s timeout')}\n"
         markdown += "\n"
 
         # Check for new timeouts on current branch
@@ -174,6 +248,29 @@ def main():
             markdown += "The following commands time out on your branch but completed on the target branch:\n\n"
             for cmd in new_timeouts:
                 markdown += f"- `{cmd}`\n"
+            markdown += "\n"
+
+    # Check slow commands on current branch
+    if current_slow:
+        markdown += f"### ⚠️ Slow Commands on Current Branch ({args.current_branch})\n\n"
+        for cmd in current_slow:
+            avg_time = current_results[cmd].get("avg_time", 0)
+            markdown += f"- `{cmd}`: {avg_time:.3f}s (exceeds {slow_threshold}s threshold)\n"
+        markdown += "\n"
+
+        # Check for new slow commands on current branch
+        new_slow = [
+            cmd
+            for cmd in current_slow
+            if cmd not in target_slow
+            and cmd not in target_failures
+            and cmd not in target_timeouts
+        ]
+        if new_slow:
+            markdown += "### ⚠️ New Slow Commands Introduced\n\n"
+            markdown += f"The following commands now take more than {slow_threshold}s but were faster on the target branch:\n\n"
+            for cmd in new_slow:
+                markdown += f"- `{cmd}`: {current_results[cmd].get('avg_time', 0):.3f}s\n"
             markdown += "\n"
 
     # Generate comparison table
@@ -213,16 +310,26 @@ def main():
                     status_str = "⏱️ Timed out on both branches"
                 elif target_status == "failed" and current_status == "success":
                     status_str = "✅ Fixed in current branch"
+                elif target_status == "failed" and current_status == "slow":
+                    status_str = "✅ Fixed but slow in current branch"
                 elif (
                     target_status == "timeout" and current_status == "success"
                 ):
                     status_str = "⏱️ → ✅ No longer times out"
+                elif target_status == "timeout" and current_status == "slow":
+                    status_str = "⏱️ → ⚠️ No longer times out but still slow"
                 elif target_status == "success" and current_status == "failed":
                     status_str = "❌ Broken in current branch"
+                    all_improved = False
+                elif target_status == "slow" and current_status == "failed":
+                    status_str = "❌ Now broken in current branch"
                     all_improved = False
                 elif (
                     target_status == "success" and current_status == "timeout"
                 ):
+                    status_str = "⏱️ Now times out"
+                    all_improved = False
+                elif target_status == "slow" and current_status == "timeout":
                     status_str = "⏱️ Now times out"
                     all_improved = False
 
@@ -230,18 +337,50 @@ def main():
                 "Failed"
                 if target_status == "failed"
                 else (
-                    "Timeout" if target_status == "timeout" else "Not tested"
+                    "Timeout"
+                    if target_status == "timeout"
+                    else ("Slow" if target_status == "slow" else "Not tested")
                 )
             )
             current_time_str = (
                 "Failed"
                 if current_status == "failed"
                 else (
-                    "Timeout" if current_status == "timeout" else "Not tested"
+                    "Timeout"
+                    if current_status == "timeout"
+                    else ("Slow" if current_status == "slow" else "Not tested")
                 )
             )
 
             markdown += f"| `{cmd}` | {target_time_str} | {current_time_str} | N/A | {status_str} |\n"
+            continue
+
+        # Handle case where one command is slow but not failed/timeout
+        if target_status == "slow" or current_status == "slow":
+            if cmd in target_results and cmd in current_results:
+                target_time = target_results[cmd]["avg_time"]
+                current_time = current_results[cmd]["avg_time"]
+                formatted_diff = format_time_diff(target_time, current_time)
+
+                if target_status == "slow" and current_status == "success":
+                    status_str = "✅ No longer slow"
+                elif target_status == "success" and current_status == "slow":
+                    status_str = "⚠️ Now slow"
+                    all_improved = False
+                elif target_status == "slow" and current_status == "slow":
+                    if current_time < target_time:
+                        status_str = "⚠️ Improved but still slow"
+                    else:
+                        status_str = "⚠️ Still slow and worse"
+                        all_improved = False
+
+                markdown += f"| `{cmd}` | {target_time:.6f} ± {target_results[cmd]['std_dev']:.6f} | {current_time:.6f} ± {current_results[cmd]['std_dev']:.6f} | {formatted_diff} | {status_str} |\n"
+            elif cmd in target_results:
+                target_time = target_results[cmd]["avg_time"]
+                markdown += f"| `{cmd}` | {target_time:.6f} | Not tested | N/A | ❓ Missing |\n"
+            elif cmd in current_results:
+                current_time = current_results[cmd]["avg_time"]
+                markdown += f"| `{cmd}` | Not tested | {current_time:.6f} | N/A | ❓ New |\n"
             continue
 
         if cmd in target_results and cmd in current_results:
@@ -285,6 +424,7 @@ def main():
         markdown += f"* Commands improved: {improved_commands} ({improved_commands / total_commands * 100:.1f}%)\n"
         markdown += f"* Commands degraded: {degraded_commands} ({degraded_commands / total_commands * 100:.1f}%)\n"
         markdown += f"* Commands unchanged: {unchanged_commands} ({unchanged_commands / total_commands * 100:.1f}%)\n"
+        markdown += f"* Slow commands: {len(current_slow)}\n"
 
         # Add motivational message if all commands improved or stayed the same
         if all_improved and total_commands > 0 and improved_commands > 0:
@@ -297,7 +437,15 @@ def main():
         f"* Current branch: {current_data['metadata']['environment']}\n"
     )
     markdown += f"* Test timestamp: {target_data['metadata']['timestamp']}\n"
-    markdown += f"* Timeout: {target_data['metadata'].get('timeout', args.timeout)} seconds\n"
+
+    # Show both timeout values if they differ
+    if target_timeout == current_timeout:
+        markdown += f"* Timeout: {target_timeout} seconds\n"
+    else:
+        markdown += f"* Target branch timeout: {target_timeout} seconds\n"
+        markdown += f"* Current branch timeout: {current_timeout} seconds\n"
+
+    markdown += f"* Slow threshold: {slow_threshold} seconds\n"
 
     # Write results to file
     with open(args.output, "w") as f:

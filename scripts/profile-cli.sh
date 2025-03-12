@@ -10,13 +10,14 @@
 #   -v, --verbose           Print detailed timing information
 #   -o, --output FILE       Output results to a JSON file (default: cli-profile-results.json)
 #   -t, --timeout SECONDS   Maximum execution time per command in seconds (default: 60)
+#   -s, --slow-threshold    Threshold in seconds to mark command as slow (default: 5)
 #   -h, --help              Show this help message
 #
 # Example:
 #   ./profile-cli.sh
 #   ./profile-cli.sh -n 10 -v
 #   ./profile-cli.sh -o my-results.json
-#   ./profile-cli.sh -t 30
+#   ./profile-cli.sh -t 30 -s 5
 
 set -e
 
@@ -25,6 +26,7 @@ NUM_RUNS=5
 VERBOSE=false
 OUTPUT_FILE="cli-profile-results.json"
 TIMEOUT_SECONDS=60
+SLOW_THRESHOLD=5  # Default threshold for slow commands in seconds
 
 # List of commands to profile
 # Developers can edit this list directly to add/remove commands
@@ -55,6 +57,10 @@ while [[ $# -gt 0 ]]; do
       TIMEOUT_SECONDS="$2"
       shift 2
       ;;
+    -s|--slow-threshold)
+      SLOW_THRESHOLD="$2"
+      shift 2
+      ;;
     -h|--help)
       echo "Usage: ./profile-cli.sh [OPTIONS]"
       echo
@@ -63,13 +69,14 @@ while [[ $# -gt 0 ]]; do
       echo "  -v, --verbose           Print detailed timing information"
       echo "  -o, --output FILE       Output results to a JSON file (default: cli-profile-results.json)"
       echo "  -t, --timeout SECONDS   Maximum execution time per command in seconds (default: 60)"
+      echo "  -s, --slow-threshold    Threshold in seconds to mark command as slow (default: 5)"
       echo "  -h, --help              Show this help message"
       echo
       echo "Example:"
       echo "  ./profile-cli.sh"
       echo "  ./profile-cli.sh -n 10 -v"
       echo "  ./profile-cli.sh -o my-results.json"
-      echo "  ./profile-cli.sh -t 30"
+      echo "  ./profile-cli.sh -t 30 -s 5"
       exit 0
       ;;
     *)
@@ -121,6 +128,7 @@ for cmd in "${COMMANDS[@]}"; do
 done
 echo "Number of runs per command: $NUM_RUNS"
 echo "Timeout per run: $TIMEOUT_SECONDS seconds"
+echo "Slow threshold: $SLOW_THRESHOLD seconds"
 echo
 
 # Counter for JSON formatting
@@ -141,6 +149,7 @@ for COMMAND in "${COMMANDS[@]}"; do
   TIMES=()
   COMMAND_FAILED=false
   COMMAND_TIMEDOUT=false
+  COMMAND_SLOW=false
   ERROR_MESSAGE=""
 
   for i in $(seq 1 $NUM_RUNS); do
@@ -246,10 +255,16 @@ for COMMAND in "${COMMANDS[@]}"; do
     echo "      \"status\": \"failed\"," >> "$OUTPUT_FILE"
     echo "      \"error\": \"$ERROR_MESSAGE\"" >> "$OUTPUT_FILE"
   else
-    CMD_STATUS+=("SUCCESS")
-    
     # Calculate average with higher precision
     AVG_TIME=$(LC_NUMERIC=C printf "%.6f" $(echo "$TOTAL_TIME / $NUM_RUNS" | bc -l))
+    
+    # Check if command is slow (average time exceeds the threshold)
+    if (( $(echo "$AVG_TIME > $SLOW_THRESHOLD" | bc -l) )); then
+      COMMAND_SLOW=true
+      CMD_STATUS+=("SLOW")
+    else
+      CMD_STATUS+=("SUCCESS")
+    fi
   
     # Calculate standard deviation with higher precision
     if [ $NUM_RUNS -gt 1 ]; then
@@ -268,16 +283,26 @@ for COMMAND in "${COMMANDS[@]}"; do
     # Print success result
     echo "-------------------------------------------"
     echo "Command: $COMMAND"
+    if [ "$COMMAND_SLOW" = true ]; then
+      echo "Status: SLOW (exceeds $SLOW_THRESHOLD seconds threshold)"
+    else
+      echo "Status: SUCCESS"
+    fi
     echo "Average time: $AVG_TIME seconds"
     echo "Standard deviation: $STD_DEV seconds"
     echo "Number of runs: $NUM_RUNS"
     echo "-------------------------------------------"
     echo
     
-    # Write success to JSON file
+    # Write results to JSON file
     echo "    {" >> "$OUTPUT_FILE"
     echo "      \"command\": \"$COMMAND\"," >> "$OUTPUT_FILE"
-    echo "      \"status\": \"success\"," >> "$OUTPUT_FILE"
+    if [ "$COMMAND_SLOW" = true ]; then
+      echo "      \"status\": \"slow\"," >> "$OUTPUT_FILE"
+      echo "      \"slow_threshold\": $SLOW_THRESHOLD," >> "$OUTPUT_FILE"
+    else
+      echo "      \"status\": \"success\"," >> "$OUTPUT_FILE"
+    fi
     echo "      \"avg_time\": $AVG_TIME," >> "$OUTPUT_FILE"
     echo "      \"std_dev\": $STD_DEV," >> "$OUTPUT_FILE"
     echo "      \"num_runs\": $NUM_RUNS," >> "$OUTPUT_FILE"
@@ -314,7 +339,8 @@ echo "  ]," >> "$OUTPUT_FILE"
 echo "  \"metadata\": {" >> "$OUTPUT_FILE"
 echo "    \"timestamp\": \"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\"," >> "$OUTPUT_FILE"
 echo "    \"environment\": \"$(uname -s) $(uname -r)\"," >> "$OUTPUT_FILE"
-echo "    \"timeout\": $TIMEOUT_SECONDS" >> "$OUTPUT_FILE"
+echo "    \"timeout\": $TIMEOUT_SECONDS," >> "$OUTPUT_FILE"
+echo "    \"slow_threshold\": $SLOW_THRESHOLD" >> "$OUTPUT_FILE"
 echo "  }" >> "$OUTPUT_FILE"
 echo "}" >> "$OUTPUT_FILE"
 
@@ -331,6 +357,8 @@ for i in "${!COMMAND_NAMES[@]}"; do
     STATUS_MARKER="❌"
   elif [ "${CMD_STATUS[$i]}" = "TIMEOUT" ]; then
     STATUS_MARKER="⏱️"
+  elif [ "${CMD_STATUS[$i]}" = "SLOW" ]; then
+    STATUS_MARKER="⚠️"
   fi
   printf "%-25s | %s %6s | %15s | %7s\n" "${COMMAND_NAMES[$i]}" "$STATUS_MARKER" "${CMD_STATUS[$i]}" "${AVG_TIMES[$i]}" "${STD_DEVS[$i]}"
 done

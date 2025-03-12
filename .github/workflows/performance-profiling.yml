@@ -18,6 +18,7 @@ jobs:
       CURRENT_RESULTS_FILE: current_profile_results.json
       PERFORMANCE_THRESHOLD_SECONDS: 0.5  # Absolute time threshold in seconds
       COMMAND_TIMEOUT: 60  # Timeout in seconds for each command run
+      SLOW_THRESHOLD: 5  # Threshold in seconds to mark command as slow
       TARGET_VENV: .venv-target
       CURRENT_VENV: .venv-current
     steps:
@@ -61,7 +62,7 @@ jobs:
           echo "Running profiling for target branch (${{ github.base_ref }})"
           source ${{ env.TARGET_VENV }}/bin/activate
           chmod +x scripts/profile-cli.sh
-          ./scripts/profile-cli.sh -o $TARGET_RESULTS_FILE -v -t $COMMAND_TIMEOUT
+          ./scripts/profile-cli.sh -o $TARGET_RESULTS_FILE -v -t $COMMAND_TIMEOUT -s $SLOW_THRESHOLD
 
       # Profile current branch with isolated environment
       - name: Checkout current branch
@@ -85,7 +86,7 @@ jobs:
           echo "Running profiling for current branch (${{ github.head_ref }})"
           source ${{ env.CURRENT_VENV }}/bin/activate
           chmod +x scripts/profile-cli.sh
-          ./scripts/profile-cli.sh -o $CURRENT_RESULTS_FILE -v -t $COMMAND_TIMEOUT
+          ./scripts/profile-cli.sh -o $CURRENT_RESULTS_FILE -v -t $COMMAND_TIMEOUT -s $SLOW_THRESHOLD
       - name: Compare results and create report
         id: create-report
         run: |
@@ -128,7 +129,7 @@ jobs:
 
       # Upload results as artifacts
       - name: Upload profiling results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: profiling-results
           path: |
