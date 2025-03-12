@@ -1,7 +1,7 @@
 """remove workspace from globals [3b1776345020].
 
 Revision ID: 3b1776345020
-Revises: 0.75.0
+Revises: 0392807467dc
 Create Date: 2025-02-13 15:57:38.255825
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "3b1776345020"
-down_revision = "0.75.0"
+down_revision = "0392807467dc"
 branch_labels = None
 depends_on = None
 
