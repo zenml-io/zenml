@@ -459,9 +459,6 @@ def main():
     # Print report to stdout
     print(markdown)
 
-    # Exit with appropriate code
-    sys.exit(1 if has_issues else 0)
-
 
 if __name__ == "__main__":
     main()

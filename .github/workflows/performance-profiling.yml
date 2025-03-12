@@ -102,7 +102,7 @@ jobs:
             --current-branch "${{ github.head_ref }}" \
             --output performance_report.md
 
-          # Set output variables for use in later steps - fixed for current GitHub Actions format
+          # Set output variables for use in later steps
           if grep -q "::has_issues::true" performance_report.md; then
             echo "has_issues=true" >> "$GITHUB_OUTPUT"
           else
