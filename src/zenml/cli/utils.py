@@ -1420,7 +1420,7 @@ def describe_pydantic_object(schema_json: Dict[str, Any]) -> None:
                     prop_type = prop_schema["type"]
                 elif "anyOf" in prop_schema.keys():
                     prop_type = ", ".join(
-                        [p["type"] for p in prop_schema["anyOf"]]
+                        [p.get("type", "object") for p in prop_schema["anyOf"]]
                     )
                     prop_type = f"one of: {prop_type}"
                 else:

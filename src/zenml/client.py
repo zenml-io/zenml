@@ -2673,6 +2673,7 @@ class Client(metaclass=ClientMetaClass):
         python_version: Optional[str] = None,
         checksum: Optional[str] = None,
         stack_checksum: Optional[str] = None,
+        duration: Optional[Union[int, str]] = None,
         hydrate: bool = False,
     ) -> Page[PipelineBuildResponse]:
         """List all builds.
@@ -2697,6 +2698,7 @@ class Client(metaclass=ClientMetaClass):
             python_version: The Python version to filter by.
             checksum: The build checksum to filter by.
             stack_checksum: The stack checksum to filter by.
+            duration: The duration of the build in seconds to filter by.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -2722,6 +2724,7 @@ class Client(metaclass=ClientMetaClass):
             python_version=python_version,
             checksum=checksum,
             stack_checksum=stack_checksum,
+            duration=duration,
         )
         return self.zen_store.list_builds(
             build_filter_model=build_filter_model,
