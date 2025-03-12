@@ -947,7 +947,7 @@ def list_stacks(ctx: click.Context, **kwargs: Any) -> None:
     """
     import time
 
-    time.sleep(10)
+    time.sleep(5)
     client = Client()
     with console.status("Listing stacks...\n"):
         stacks = client.list_stacks(**kwargs)

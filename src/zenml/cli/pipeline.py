@@ -376,6 +376,7 @@ def list_pipelines(**kwargs: Any) -> None:
     Args:
         **kwargs: Keyword arguments to filter pipelines.
     """
+    return
     client = Client()
     with console.status("Listing pipelines...\n"):
         pipelines = client.list_pipelines(**kwargs)
