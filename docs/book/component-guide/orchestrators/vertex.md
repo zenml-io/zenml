@@ -312,4 +312,72 @@ For more information and a full list of configurable attributes of the Vertex or
 
 Note that if you wish to use this orchestrator to run steps on a GPU, you will need to follow [the instructions on this page](../../how-to/pipeline-development/training-with-gpus/README.md) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
 
+### Using Persistent Resources for Faster Development
+
+When developing ML pipelines that use Vertex AI, the startup time for each step can be significant since Vertex needs to provision new compute resources for each run. To speed up development iterations, you can use Vertex AI's [Persistent Resources](https://cloud.google.com/vertex-ai/docs/training/persistent-resource-overview) feature, which keeps compute resources warm between runs. 
+
+To use persistent resources with the Vertex orchestrator, you first need to create a persistent resource using the GCP Cloud UI, or by [following instructions in the GCP docs](https://cloud.google.com/vertex-ai/docs/training/persistent-resource-create).
+Next, you'll need to configure your orchestrator to run on the persistent resource. This can be done either through the dashboard or CLI in which case it applies to all pipelines that will be
+run using this orchestrator, or dynamically in code for a specific pipeline or even just single steps.
+
+
+{% hint style="warning" %}
+Note that a service account with permissions to access the persistent resource is mandatory, so make sure to always include it in the configuration:
+{% endhint %}
+
+#### Configure the orchestrator using the CLI
+
+```bash
+# You can also use `zenml orchestrator update`
+zenml orchestrator register <NAME> -f vertex --custom_job_parameters='{"persistent_resource_id": <PERSISTENT_RESOURCE_ID>, "service_account": <SERVICE_ACCOUNT_NAME>, "machine_type": "n1-standard-4", "boot_disk_type": "pd-standard"}'
+```
+
+#### Configure the orchestrator using the dashboard
+
+Navigate to the `Stacks` section in your ZenML dashboard and either create a new Vertex orchestrator or update an existing one.
+During the creation/update, set the persistent resource ID and other values in the `custom_job_parameters` attribute.
+
+#### Configure the orchestrator dynamically in code
+
+```python
+from zenml.integrations.gcp.flavors.vertex_orchestrator_flavor import VertexOrchestratorSettings
+
+# Configure for the pipeline which applies to all steps
+@pipeline(
+    settings={
+        "orchestrator": VertexOrchestratorSettings(
+            persistent_resource_id=<PERSISTENT_RESOURCE_ID>,
+            service_account=<SERVICE_ACCOUNT_NAME>,
+            machine_type="n1-standard-4",
+            boot_disk_type="pd-standard"
+        )
+    }
+)
+def my_pipeline():
+    ...
+
+
+# Configure for a single step
+@step(
+    settings={
+        "orchestrator": VertexOrchestratorSettings(
+            persistent_resource_id=<PERSISTENT_RESOURCE_ID>,
+            service_account=<SERVICE_ACCOUNT_NAME>,
+            machine_type="n1-standard-4",
+            boot_disk_type="pd-standard"
+        )
+    }
+)
+def my_step():
+    ...
+
+```
+
+Using a persistent resource is particularly useful when you're developing locally and want to iterate quickly on steps that need cloud resources. The startup time of the job can be extremely quick.
+
+{% hint style="warning" %}
+Remember that persistent resources continue to incur costs as long as they're running, even when idle. Make sure to monitor your usage and configure appropriate idle timeout periods.
+{% endhint %}
+
+
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

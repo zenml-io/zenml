@@ -15,7 +15,7 @@
 
 from typing import Optional
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, model_validator
 
 
 class VertexCustomJobParameters(BaseModel):
@@ -50,11 +50,11 @@ class VertexCustomJobParameters(BaseModel):
     persistent_resource_id: Optional[str] = None
     service_account: Optional[str] = None
 
-    @field_validator("service_account", mode="after")
-    def validate_service_account(self, value: Optional[str]) -> Optional[str]:
-        if self.persistent_resource_id and value is None:
+    @model_validator(mode="after")
+    def _validate_service_account(self) -> "VertexCustomJobParameters":
+        if self.persistent_resource_id and self.service_account is None:
             raise ValueError(
                 "Service account is required when configuring a persistent "
                 "resource."
             )
-        return value
+        return self
