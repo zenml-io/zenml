@@ -503,6 +503,22 @@ def test_upstream_step_computation():
     }
 
 
+def test_upstream_step_computation_from_step_artifact():
+    """Tests that step upstream works with step artifacts."""
+
+    @pipeline
+    def p():
+        a = upstream_test_step_1()
+        upstream_test_step_2(after=a)
+
+    p.prepare()
+
+    assert not p._invocations["upstream_test_step_1"].upstream_steps
+    assert p._invocations["upstream_test_step_2"].upstream_steps == {
+        "upstream_test_step_1",
+    }
+
+
 @step
 def step_with_two_letter_string_output() -> Tuple[
     Annotated[str, "a"], Annotated[str, "b"]
