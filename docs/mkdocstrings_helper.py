@@ -64,6 +64,34 @@ def generate_title(s: str) -> str:
     return s
 
 
+def _has_meaningful_content(directory: Path) -> bool:
+    """Check if a directory has any files that aren't typically gitignored.
+    
+    Args:
+        directory: The directory to check
+        
+    Returns:
+        bool: True if the directory has meaningful content, False otherwise
+    """
+    if not directory.is_dir():
+        return False
+        
+    for item in directory.iterdir():
+        # Skip __pycache__ directories
+        if item.name == "__pycache__" or item.name.startswith("."):
+            continue
+            
+        # If it's a file and doesn't end with .pyc, it's meaningful
+        if item.is_file() and not item.name.endswith((".pyc", ".pyo", ".pyd")):
+            return True
+            
+        # If it's a directory with meaningful content, the parent has meaningful content
+        if item.is_dir() and _has_meaningful_content(item):
+            return True
+            
+    return False
+
+
 def create_entity_docs(
     api_doc_file_dir: Path,
     ignored_modules: List[str],
@@ -85,7 +113,8 @@ def create_entity_docs(
     for item in sources_path.iterdir():
         if item.name not in ignored_modules:
             is_python_file = item.is_file() and item.name.endswith(".py")
-            is_non_empty_dir = item.is_dir() and any(item.iterdir())
+            # Replace the simple check with a more thorough one
+            is_non_empty_dir = item.is_dir() and _has_meaningful_content(item)
 
             if is_python_file or is_non_empty_dir:
                 item_name = generate_title(item.stem)

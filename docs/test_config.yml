@@ -1,0 +1,19 @@
+
+loaders:
+  - type: python
+    search_path: ["../src"]
+    modules:
+      - "zenml.cli"
+
+processors:
+  - type: filter
+    skip_empty_modules: true
+  - type: google
+
+renderer:
+  type: markdown
+  descriptive_class_title: true
+  descriptive_module_title: true
+
+output:
+  directory: "./test-docs"

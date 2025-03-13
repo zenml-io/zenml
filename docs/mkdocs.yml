@@ -24,7 +24,7 @@ plugins:
           rendering:
             show_source: true
       watch:
-        - ../src/zenml
+        - src/zenml
 
 copyright: >
   Copyright &copy; 2022 ZenML GmbH –

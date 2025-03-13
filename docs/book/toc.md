@@ -336,3 +336,11 @@
 * [How do I...?](reference/how-do-i.md)
 * [Community & content](reference/community-and-content.md)
 * [FAQ](reference/faq.md)
+
+## API Reference
+
+* [Complete Output](./reference/api/complete_output.md)
+
+### Module Zenml
+
+* [Client](./reference/api/Module zenml/client.md)

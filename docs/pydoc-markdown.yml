@@ -1,0 +1,41 @@
+loaders:
+  - type: python
+    search_path: ["../src"]
+    modules:
+      - "zenml"
+      - "zenml.cli"
+      - "zenml.client"
+      - "zenml.pipelines"
+    # Add more modules as needed
+
+processors:
+  - type: filter
+    skip_empty_modules: true
+  - type: google
+    # Process Google-style docstrings
+  - type: crossref
+    # Process cross-references
+
+renderer:
+  type: markdown
+  descriptive_class_title: true
+  descriptive_module_title: true
+  add_method_class_prefix: true
+  add_member_class_prefix: true
+  filename_formatter: "{path}/{name}.md"
+  render_module_header: true
+  classdef_code_block: true
+  signature_with_vertical_bar: true  # Cleaner signatures
+  use_fixed_header_levels: true
+  header_level_by_type:
+    Module: 1
+    Class: 2
+    Method: 3
+    Function: 3
+    Property: 3
+    Data: 3
+  # Special settings for GitBook compatibility
+  insert_header_anchors: true
+  
+# Output directory for the generated Markdown files
+directory: "./gitbook-api-docs" 
