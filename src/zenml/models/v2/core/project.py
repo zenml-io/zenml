@@ -76,10 +76,10 @@ class ProjectRequest(BaseRequest):
         if not name:
             assert display_name
 
-            tenant_name = display_name.lower().replace(" ", "-")
-            tenant_name = re.sub(r"[^a-z0-9_-]", "", tenant_name)
+            project_name = display_name.lower().replace(" ", "-")
+            project_name = re.sub(r"[^a-z0-9_-]", "", project_name)
 
-            data["name"] = tenant_name
+            data["name"] = project_name
 
         if not display_name:
             # We just use the name as the display name
