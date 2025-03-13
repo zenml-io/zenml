@@ -31,6 +31,18 @@ def example_pipeline():
 ```
 
 This pipeline is similar to the one explained above, but this time ZenML will make sure to only start `step_1` after `step_2` has finished.
+
+For convenience you can also pass the output artifacts of a step so you don't have to manually write the step names:
+```python
+from zenml import pipeline
+
+@pipeline
+def example_pipeline():
+    step_2_output = step_2()
+    step_1_output = step_1(after=step_2_output)
+    step_3(step_1_output, step_2_output)
+```
+
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
 
