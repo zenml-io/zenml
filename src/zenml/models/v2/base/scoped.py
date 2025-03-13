@@ -388,7 +388,7 @@ class ProjectScopedFilter(UserScopedFilter):
         # they are configured. If this also fails to yield a project, this
         # method will raise a ValueError.
         #
-        # See: SqlZenStore._set_filter_workspace_id
+        # See: SqlZenStore._set_filter_project_id
 
         if not self.project:
             raise ValueError("Project scope missing from the filter.")

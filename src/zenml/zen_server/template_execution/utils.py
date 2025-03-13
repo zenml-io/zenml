@@ -463,7 +463,7 @@ def get_pipeline_run_analytics_metadata(
     }
 
     return {
-        "workspace_id": deployment.project.id,
+        "project_id": deployment.project.id,
         "store_type": "rest",  # This method is called from within a REST endpoint
         **stack_metadata,
         "total_steps": len(deployment.step_configurations),

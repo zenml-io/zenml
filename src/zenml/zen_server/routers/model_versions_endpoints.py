@@ -62,7 +62,7 @@ from zenml.zen_server.routers.workspaces_endpoints import (
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
-    set_filter_workspace_scope,
+    set_filter_project_scope,
     zen_store,
 )
 
@@ -161,7 +161,7 @@ def list_model_versions(
 
     # A workspace scoped request must always be scoped to a specific
     # workspace. This is required for the RBAC check to work.
-    set_filter_workspace_scope(model_version_filter_model)
+    set_filter_project_scope(model_version_filter_model)
     assert isinstance(model_version_filter_model.project, UUID)
 
     model = zen_store().get_model_by_name_or_id(

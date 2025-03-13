@@ -46,7 +46,7 @@ from zenml.zen_server.rbac.utils import (
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
-    set_filter_workspace_scope,
+    set_filter_project_scope,
     zen_store,
 )
 
@@ -83,12 +83,12 @@ def list_artifact_versions(
     """
     # A workspace scoped request must always be scoped to a specific
     # workspace. This is required for the RBAC check to work.
-    set_filter_workspace_scope(artifact_version_filter_model)
+    set_filter_project_scope(artifact_version_filter_model)
     assert isinstance(artifact_version_filter_model.project, UUID)
 
     allowed_artifact_ids = get_allowed_resource_ids(
         resource_type=ResourceType.ARTIFACT,
-        workspace_id=artifact_version_filter_model.project,
+        project_id=artifact_version_filter_model.project,
     )
     artifact_version_filter_model.configure_rbac(
         authenticated_user_id=auth_context.user.id,
@@ -245,7 +245,7 @@ def prune_artifact_versions(
         resource_type=ResourceType.ARTIFACT_VERSION,
         prune_method=zen_store().prune_artifact_versions,
         only_versions=only_versions,
-        workspace_id=workspace_id,
+        project_id=workspace_id,
     )
 
 

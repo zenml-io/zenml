@@ -759,7 +759,7 @@ if server_config().rbac_enabled:
             workspace_id = model.workspace.id
 
         resource = Resource(
-            type=resource_type, id=resource_id, workspace_id=workspace_id
+            type=resource_type, id=resource_id, project_id=workspace_id
         )
 
         verify_permission_for_model(model=model, action=Action.SHARE)

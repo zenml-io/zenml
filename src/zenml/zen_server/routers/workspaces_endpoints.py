@@ -85,7 +85,7 @@ def list_workspaces(
     """
     return verify_permissions_and_list_entities(
         filter_model=workspace_filter_model,
-        resource_type=ResourceType.WORKSPACE,
+        resource_type=ResourceType.PROJECT,
         list_method=zen_store().list_projects,
         hydrate=hydrate,
     )

@@ -278,7 +278,7 @@ class PipelineBuildResponse(
                 exclude={
                     "pipeline",
                     "stack",
-                    "workspace",
+                    "project",
                 }
             )
         )

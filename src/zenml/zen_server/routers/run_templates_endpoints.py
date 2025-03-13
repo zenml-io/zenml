@@ -259,12 +259,12 @@ if server_config().workload_manager_enabled:
             verify_permission(
                 resource_type=ResourceType.PIPELINE_DEPLOYMENT,
                 action=Action.CREATE,
-                workspace_id=template.project.id,
+                project_id=template.project.id,
             )
             verify_permission(
                 resource_type=ResourceType.PIPELINE_RUN,
                 action=Action.CREATE,
-                workspace_id=template.project.id,
+                project_id=template.project.id,
             )
 
             return run_template(

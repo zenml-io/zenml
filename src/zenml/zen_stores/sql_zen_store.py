@@ -2388,7 +2388,7 @@ class SqlZenStore(BaseZenStore):
             EntityExistsError: If a service with the given name and
                 type already exists.
         """
-        # Check if service with the same domain key (name, config, workspace)
+        # Check if service with the same domain key (name, config, project)
         # already exists
         existing_domain_service = session.exec(
             select(ServiceSchema).where(
@@ -2711,7 +2711,7 @@ class SqlZenStore(BaseZenStore):
     def _get_or_create_artifact_for_name(
         self,
         name: str,
-        workspace_id: UUID,
+        project_id: UUID,
         has_custom_name: bool,
         session: Session,
     ) -> ArtifactSchema:
@@ -2719,7 +2719,7 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             name: The artifact name.
-            workspace_id: The workspace ID.
+            project_id: The project ID.
             has_custom_name: Whether the artifact has a custom name.
             session: DB session.
 
@@ -2729,7 +2729,7 @@ class SqlZenStore(BaseZenStore):
         artifact_query = (
             select(ArtifactSchema)
             .where(ArtifactSchema.name == name)
-            .where(ArtifactSchema.project_id == workspace_id)
+            .where(ArtifactSchema.project_id == project_id)
         )
         artifact = session.exec(artifact_query).first()
 
@@ -2738,7 +2738,7 @@ class SqlZenStore(BaseZenStore):
                 with session.begin_nested():
                     artifact_request = ArtifactRequest(
                         name=name,
-                        project=workspace_id,
+                        project=project_id,
                         has_custom_name=has_custom_name,
                     )
                     self._set_request_user_id(
@@ -2822,7 +2822,7 @@ class SqlZenStore(BaseZenStore):
             if artifact_name := artifact_version.artifact_name:
                 artifact_schema = self._get_or_create_artifact_for_name(
                     name=artifact_name,
-                    workspace_id=artifact_version.project,
+                    project_id=artifact_version.project,
                     has_custom_name=artifact_version.has_custom_name,
                     session=session,
                 )
@@ -3101,19 +3101,19 @@ class SqlZenStore(BaseZenStore):
 
     def prune_artifact_versions(
         self,
-        workspace_name_or_id: Union[str, UUID],
+        project_name_or_id: Union[str, UUID],
         only_versions: bool = True,
     ) -> None:
         """Prunes unused artifact versions and their artifacts.
 
         Args:
-            workspace_name_or_id: The workspace name or ID to prune artifact
+            project_name_or_id: The project name or ID to prune artifact
                 versions for.
             only_versions: Only delete artifact versions, keeping artifacts
         """
         with Session(self.engine) as session:
-            workspace_id = self._get_schema_by_name_or_id(
-                object_name_or_id=workspace_name_or_id,
+            project_id = self._get_schema_by_name_or_id(
+                object_name_or_id=project_name_or_id,
                 schema_class=ProjectSchema,
                 session=session,
             ).id
@@ -3130,7 +3130,7 @@ class SqlZenStore(BaseZenStore):
                                 select(StepRunInputArtifactSchema.artifact_id)
                             ),
                             col(ArtifactVersionSchema.project_id)
-                            == workspace_id,
+                            == project_id,
                         )
                     )
                 ).fetchall()
@@ -5544,7 +5544,7 @@ class SqlZenStore(BaseZenStore):
         schedule_filter_model: ScheduleFilter,
         hydrate: bool = False,
     ) -> Page[ScheduleResponse]:
-        """List all schedules in the workspace.
+        """List all schedules.
 
         Args:
             schedule_filter_model: All filter parameters including pagination
@@ -9801,7 +9801,7 @@ class SqlZenStore(BaseZenStore):
         reference_is_project_scoped = hasattr(reference_schema, "project_id")
 
         # There's one particular case that should never happen: if a global
-        # resource (e.g. a stack) references a workspace-scoped resource
+        # resource (e.g. a stack) references a project-scoped resource
         # (e.g. a pipeline), this is a design error.
         if resource_project_id is None and reference_is_project_scoped:
             raise RuntimeError(

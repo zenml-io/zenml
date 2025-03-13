@@ -646,7 +646,7 @@ def api_token(
     verify_permission(
         resource_type=ResourceType.PIPELINE_RUN,
         action=Action.CREATE,
-        workspace_id=workspace_id,
+        project_id=workspace_id,
     )
 
     return generate_access_token(

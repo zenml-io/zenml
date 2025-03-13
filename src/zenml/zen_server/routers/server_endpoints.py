@@ -270,7 +270,7 @@ def get_server_statistics(
     workspace_filter = ProjectFilter()
     workspace_filter.configure_rbac(
         authenticated_user_id=user_id,
-        id=get_allowed_resource_ids(resource_type=ResourceType.WORKSPACE),
+        id=get_allowed_resource_ids(resource_type=ResourceType.PROJECT),
     )
 
     stack_filter = StackFilter()

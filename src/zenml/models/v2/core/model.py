@@ -315,7 +315,7 @@ class ModelResponse(
         model_versions = depaginate(
             client.list_model_versions,
             model_name_or_id=self.id,
-            workspace=self.project.id,
+            project=self.project.id,
         )
         return [
             mv.to_model_class(suppress_class_validation_warnings=True)

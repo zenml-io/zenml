@@ -65,7 +65,7 @@ class RBACSqlZenStore(SqlZenStore):
             verify_permission(
                 resource_type=ResourceType.MODEL,
                 action=Action.CREATE,
-                workspace_id=model_request.project,
+                project_id=model_request.project,
             )
             check_entitlement(resource_type=ResourceType.MODEL)
         except Exception as e:
@@ -152,7 +152,7 @@ class RBACSqlZenStore(SqlZenStore):
             verify_permission(
                 resource_type=ResourceType.MODEL_VERSION,
                 action=Action.CREATE,
-                workspace_id=model_version_request.project,
+                project_id=model_version_request.project,
             )
         except Exception as e:
             allow_creation = False

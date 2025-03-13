@@ -102,7 +102,7 @@ class StepRunRequestFactory:
             step=step,
             input_artifact_ids=input_artifact_ids,
             artifact_store=self.stack.artifact_store,
-            workspace_id=Client().active_project.id,
+            project_id=Client().active_project.id,
         )
         request.cache_key = cache_key
 

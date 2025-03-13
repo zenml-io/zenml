@@ -211,7 +211,7 @@ def get_config_environment_vars(
     # in the pipeline run environment
     environment_vars[ENV_ZENML_DISABLE_CREDENTIALS_DISK_CACHING] = "true"
 
-    # Make sure to use the correct active stack/workspace which might come
+    # Make sure to use the correct active stack/project which might come
     # from a .zen repository and not the global config
     environment_vars[ENV_ZENML_ACTIVE_STACK_ID] = str(
         Client().active_stack_model.id

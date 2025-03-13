@@ -640,19 +640,19 @@ def get_zenml_headers() -> Dict[str, str]:
     return headers
 
 
-def set_filter_workspace_scope(
+def set_filter_project_scope(
     filter_model: ProjectScopedFilter,
-    workspace_name_or_id: Optional[Union[UUID, str]] = None,
+    project_name_or_id: Optional[Union[UUID, str]] = None,
 ) -> None:
-    """Set the workspace scope of the filter model.
+    """Set the project scope of the filter model.
 
     Args:
         filter_model: The filter model to set the scope for.
-        workspace_name_or_id: The workspace to set the scope for. If not
-            provided, the workspace scope is determined from the request
-            workspace filter or the default workspace, in that order.
+        project_name_or_id: The project to set the scope for. If not
+            provided, the project scope is determined from the request
+            project filter or the default project, in that order.
     """
     zen_store().set_filter_project_id(
         filter_model=filter_model,
-        project_name_or_id=workspace_name_or_id,
+        project_name_or_id=project_name_or_id,
     )
