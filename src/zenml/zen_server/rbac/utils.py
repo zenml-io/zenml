@@ -32,10 +32,10 @@ from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     BaseIdentifiedResponse,
     Page,
+    ProjectScopedRequest,
+    ProjectScopedResponse,
     UserResponse,
     UserScopedResponse,
-    WorkspaceScopedRequest,
-    WorkspaceScopedResponse,
 )
 from zenml.zen_server.auth import get_auth_context
 from zenml.zen_server.rbac.models import Action, Resource, ResourceType
@@ -300,7 +300,7 @@ def verify_permission(
     resource_type: str,
     action: Action,
     resource_id: Optional[UUID] = None,
-    workspace_id: Optional[UUID] = None,
+    project_id: Optional[UUID] = None,
 ) -> None:
     """Verifies if a user has permission to perform an action on a resource.
 
@@ -309,11 +309,11 @@ def verify_permission(
             action on.
         action: The action the user wants to perform.
         resource_id: ID of the resource the user wants to perform the action on.
-        workspace_id: ID of the workspace the user wants to perform the action
-            on. Only used for workspace scoped resources.
+        project_id: ID of the project the user wants to perform the action
+            on. Only used for project scoped resources.
     """
     resource = Resource(
-        type=resource_type, id=resource_id, workspace_id=workspace_id
+        type=resource_type, id=resource_id, project_id=project_id
     )
     batch_verify_permissions(resources={resource}, action=action)
 
@@ -321,15 +321,15 @@ def verify_permission(
 def get_allowed_resource_ids(
     resource_type: str,
     action: Action = Action.READ,
-    workspace_id: Optional[UUID] = None,
+    project_id: Optional[UUID] = None,
 ) -> Optional[Set[UUID]]:
     """Get all resource IDs of a resource type that a user can access.
 
     Args:
         resource_type: The resource type.
         action: The action the user wants to perform on the resource.
-        workspace_id: Optional workspace ID to filter the resources by.
-            Required for workspace scoped resources.
+        project_id: Optional project ID to filter the resources by.
+            Required for project scoped resources.
 
     Returns:
         A list of resource IDs or `None` if the user has full access to the
@@ -346,7 +346,7 @@ def get_allowed_resource_ids(
         allowed_ids,
     ) = rbac().list_allowed_resource_ids(
         user=auth_context.user,
-        resource=Resource(type=resource_type, workspace_id=workspace_id),
+        resource=Resource(type=resource_type, project_id=project_id),
         action=action,
     )
 
@@ -371,21 +371,19 @@ def get_resource_for_model(model: AnyModel) -> Optional[Resource]:
         # This model is not tied to any RBAC resource type
         return None
 
-    workspace_id: Optional[UUID] = None
-    if isinstance(model, WorkspaceScopedResponse):
-        # A workspace scoped response is always scoped to a specific workspace
-        workspace_id = model.workspace.id
-    elif isinstance(model, WorkspaceScopedRequest):
-        # A workspace scoped request is always scoped to a specific workspace
-        workspace_id = model.workspace
+    project_id: Optional[UUID] = None
+    if isinstance(model, ProjectScopedResponse):
+        # A project scoped response is always scoped to a specific project
+        project_id = model.project.id
+    elif isinstance(model, ProjectScopedRequest):
+        # A project scoped request is always scoped to a specific project
+        project_id = model.project
 
     resource_id: Optional[UUID] = None
     if isinstance(model, BaseIdentifiedResponse):
         resource_id = model.id
 
-    return Resource(
-        type=resource_type, id=resource_id, workspace_id=workspace_id
-    )
+    return Resource(type=resource_type, id=resource_id, project_id=project_id)
 
 
 def get_surrogate_permission_model_for_model(
@@ -456,6 +454,8 @@ def get_resource_type_for_model(
         PipelineResponse,
         PipelineRunRequest,
         PipelineRunResponse,
+        ProjectRequest,
+        ProjectResponse,
         RunMetadataRequest,
         RunTemplateRequest,
         RunTemplateResponse,
@@ -475,8 +475,6 @@ def get_resource_type_for_model(
         TriggerExecutionResponse,
         TriggerRequest,
         TriggerResponse,
-        WorkspaceRequest,
-        WorkspaceResponse,
     )
 
     mapping: Dict[
@@ -528,8 +526,8 @@ def get_resource_type_for_model(
         TriggerResponse: ResourceType.TRIGGER,
         TriggerExecutionRequest: ResourceType.TRIGGER_EXECUTION,
         TriggerExecutionResponse: ResourceType.TRIGGER_EXECUTION,
-        WorkspaceResponse: ResourceType.WORKSPACE,
-        WorkspaceRequest: ResourceType.WORKSPACE,
+        ProjectResponse: ResourceType.PROJECT,
+        ProjectRequest: ResourceType.PROJECT,
         # UserResponse: ResourceType.USER,
     }
 
@@ -673,7 +671,7 @@ def get_schema_for_resource_type(
         ResourceType.SERVICE: ServiceSchema,
         ResourceType.TAG: TagSchema,
         ResourceType.SERVICE_ACCOUNT: UserSchema,
-        # ResourceType.WORKSPACE: WorkspaceSchema,
+        # ResourceType.PROJECT: ProjectSchema,
         ResourceType.PIPELINE_RUN: PipelineRunSchema,
         ResourceType.PIPELINE_DEPLOYMENT: PipelineDeploymentSchema,
         ResourceType.PIPELINE_BUILD: PipelineBuildSchema,

@@ -548,7 +548,7 @@ class Model(BaseModel):
                     limitations=self.limitations,
                     trade_offs=self.trade_offs,
                     ethics=self.ethics,
-                    workspace=zenml_client.active_workspace.id,
+                    project=zenml_client.active_project.id,
                     save_models_to_registry=self.save_models_to_registry,
                 )
                 model_request = ModelRequest.model_validate(model_request)
@@ -702,7 +702,7 @@ class Model(BaseModel):
 
             client = Client()
             model_version_request = ModelVersionRequest(
-                workspace=client.active_workspace.id,
+                project=client.active_project.id,
                 name=str(self.version) if self.version else None,
                 description=self.description,
                 model=model.id,

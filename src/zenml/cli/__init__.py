@@ -106,7 +106,7 @@ zenml go
 Cleaning up
 -----------
 
-If you wish to delete all data relating to your workspace from the
+If you wish to delete all data relating to your project from the
 directory, use the ``zenml clean`` command. This will:
 
 -  delete all pipelines, pipeline runs and associated metadata
@@ -367,8 +367,7 @@ information regarding a specific flavor, you can utilize the command:
 zenml orchestrator flavor describe FLAVOR_NAME
 ```
 
-If you wish to list the orchestrators that have already been registered
-within your ZenML workspace / repository, type:
+If you wish to list the orchestrators that have already been registered, type:
 
 ```bash
 zenml orchestrator list
@@ -1446,8 +1445,7 @@ simply pass along the `--set` flag.
 zenml stack register STACK_NAME ... --set
 ```
 
-To list the stacks that you have registered within your current ZenML
-workspace, type:
+To list the stacks that you have registered, type:
 
 ```bash
 zenml stack list
@@ -2070,9 +2068,10 @@ Finally, to delete a secret, use the `delete` command:
 zenml secret delete SECRET_NAME
 ```
 
-Secrets can be scoped to a workspace or a user. By default, secrets
-are scoped to the current workspace. To scope a secret to a user, use the
-`--scope user` argument in the `register` command.
+Secrets can be either private or public. Private secrets are only accessible
+to the current user. Public secrets are accessible to all other users. By
+default, secrets are public. To make a secret private, use the `--private` flag
+in the `create` or `update` commands.
 
 Auth management
 ---------------
@@ -2525,5 +2524,5 @@ from zenml.cli.service_connectors import *  # noqa
 from zenml.cli.stack import *  # noqa
 from zenml.cli.stack_components import *  # noqa
 from zenml.cli.user_management import *  # noqa
-from zenml.cli.workspace import *  # noqa
+from zenml.cli.project import *  # noqa
 from zenml.cli.tag import *  # noqa

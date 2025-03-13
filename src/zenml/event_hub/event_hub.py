@@ -126,7 +126,7 @@ class InternalEventHub(BaseEventHub):
         triggers: List[TriggerResponse] = depaginate(
             self.zen_store.list_triggers,
             trigger_filter_model=TriggerFilter(
-                workspace=event_source.workspace.id,
+                project=event_source.project.id,
                 event_source_id=event_source.id,
                 is_active=True,
             ),
