@@ -652,39 +652,6 @@ class RunMetadataFilter(BaseFilter):
                     )
         return self
 
-    def apply_filter(
-        self,
-        query: AnyQuery,
-        table: Type["AnySchema"],
-    ) -> AnyQuery:
-        """Applies the filter to a query.
-
-        Args:
-            query: The query to which to apply the filter.
-            table: The query table.
-
-        Returns:
-            The query with filter applied.
-        """
-        from zenml.zen_stores.schemas import (
-            RunMetadataResourceSchema,
-            RunMetadataSchema,
-        )
-
-        query = super().apply_filter(query=query, table=table)
-
-        if self.run_metadata:
-            query = query.join(
-                RunMetadataResourceSchema,
-                RunMetadataResourceSchema.resource_id == getattr(table, "id"),
-            ).join(
-                RunMetadataSchema,
-                RunMetadataSchema.id
-                == RunMetadataResourceSchema.run_metadata_id,
-            )
-
-        return query
-
     def get_custom_filters(
         self, table: Type["AnySchema"]
     ) -> List["ColumnElement[bool]"]:
@@ -699,7 +666,7 @@ class RunMetadataFilter(BaseFilter):
         custom_filters = super().get_custom_filters(table)
 
         if self.run_metadata is not None:
-            from sqlmodel import and_
+            from sqlmodel import exists, select
 
             from zenml.enums import MetadataResourceTypes
             from zenml.zen_stores.schemas import (
@@ -720,26 +687,34 @@ class RunMetadataFilter(BaseFilter):
                 ScheduleSchema: MetadataResourceTypes.SCHEDULE,
             }
 
+            # Create an EXISTS subquery for each run_metadata filter
             for entry in self.run_metadata:
+                # Split at the first colon to get the key
                 key, value = entry.split(":", 1)
-                additional_filter = and_(
-                    RunMetadataResourceSchema.resource_id == table.id,
-                    RunMetadataResourceSchema.resource_type
-                    == resource_type_mapping[table].value,
-                    RunMetadataResourceSchema.run_metadata_id
-                    == RunMetadataSchema.id,
-                    self.generate_custom_query_conditions_for_column(
-                        value=key,
-                        table=RunMetadataSchema,
-                        column="key",
-                    ),
-                    self.generate_custom_query_conditions_for_column(
-                        value=value,
-                        table=RunMetadataSchema,
-                        column="value",
-                        json_encode_value=True,
-                    ),
+
+                # Create an exists subquery
+                exists_subquery = exists(
+                    select(RunMetadataResourceSchema.id)
+                    .join(
+                        RunMetadataSchema,
+                        RunMetadataSchema.id == RunMetadataResourceSchema.run_metadata_id,
+                    )
+                    .where(
+                        RunMetadataResourceSchema.resource_id == table.id,
+                        RunMetadataResourceSchema.resource_type == resource_type_mapping[table].value,
+                        self.generate_custom_query_conditions_for_column(
+                            value=key,
+                            table=RunMetadataSchema,
+                            column="key",
+                        ),
+                        self.generate_custom_query_conditions_for_column(
+                            value=value,
+                            table=RunMetadataSchema,
+                            column="value",
+                            json_encode_value=True,
+                        ),
+                    )
                 )
-                custom_filters.append(additional_filter)
+                custom_filters.append(exists_subquery)
 
         return custom_filters

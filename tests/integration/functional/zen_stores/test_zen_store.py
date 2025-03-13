@@ -2875,16 +2875,23 @@ def test_deleting_run_deletes_steps():
 
 @step
 def step_to_log_metadata(metadata: Union[str, int, bool]) -> int:
-    log_metadata(metadata={"blupus": metadata})
+    log_metadata(
+        metadata={"blupus": metadata, "luna": "nova"}, infer_artifact=True
+    )
     return 42
 
 
-@pipeline(name="aria", model=Model(name="axl"), tags=["cats", "squirrels"])
+@pipeline(
+    name="aria",
+    model=Model(name="axl"),
+    tags=["cats", "squirrels"],
+    enable_cache=False,
+)
 def pipeline_to_log_metadata(metadata):
     step_to_log_metadata(metadata)
 
 
-def test_pipeline_run_filters_with_oneof(clean_client):
+def test_filters_with_oneof_tags_and_run_metadata(clean_client):
     store = clean_client.zen_store
 
     metadata_values = [3, 25, 100, "random_string", True]
@@ -2915,6 +2922,23 @@ def test_pipeline_run_filters_with_oneof(clean_client):
     runs_filter = PipelineRunFilter(tag='oneof:["dogs"]')
     runs = store.list_runs(runs_filter_model=runs_filter)
     assert len(runs) == 0  # No runs
+
+    # Test oneof: run_metadata filtering
+    artifact_version_filter = ArtifactVersionFilter(
+        run_metadata=["blupus:startswith:r"]
+    )
+    artifact_versions = store.list_artifact_versions(
+        artifact_version_filter_model=artifact_version_filter
+    )
+    assert len(artifact_versions) == 1  # The run with "random_string"
+
+    artifact_version_filter = ArtifactVersionFilter(
+        run_metadata=["blupus:random_string", "luna:nova"]
+    )
+    artifact_versions = store.list_artifact_versions(
+        artifact_version_filter_model=artifact_version_filter
+    )
+    assert len(artifact_versions) == 1  # The run with "random_string"
 
     # Test oneof: formatting
     with pytest.raises(ValidationError):
