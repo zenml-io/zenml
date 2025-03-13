@@ -49,8 +49,8 @@ from zenml.zen_server.rbac.utils import (
     is_owned_by_authenticated_user,
     verify_permission,
 )
-from zenml.zen_server.routers.workspaces_endpoints import (
-    router as workspace_router,
+from zenml.zen_server.routers.projects_endpoints import (
+    workspace_router as workspace_router,
 )
 from zenml.zen_server.utils import (
     handle_exceptions,

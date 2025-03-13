@@ -582,7 +582,7 @@ def api_token(
             f"step run {token.step_run_id}."
         )
 
-    workspace_id: Optional[UUID] = None
+    project_id: Optional[UUID] = None
 
     if schedule_id:
         # The schedule must exist
@@ -593,7 +593,7 @@ def api_token(
                 f"Schedule {schedule_id} does not exist and API tokens cannot "
                 "be generated for non-existent schedules for security reasons."
             )
-        workspace_id = schedule.project.id
+        project_id = schedule.project.id
 
         if not schedule.active:
             raise ValueError(
@@ -614,7 +614,7 @@ def api_token(
 
         verify_permission_for_model(model=pipeline_run, action=Action.READ)
 
-        workspace_id = pipeline_run.project.id
+        project_id = pipeline_run.project.id
 
         if pipeline_run.status.is_finished:
             raise ValueError(
@@ -633,7 +633,7 @@ def api_token(
                 "be generated for non-existent step runs for security reasons."
             )
 
-        workspace_id = step_run.project.id
+        project_id = step_run.project.id
 
         if step_run.status.is_finished:
             raise ValueError(
@@ -642,11 +642,11 @@ def api_token(
                 "for security reasons."
             )
 
-    assert workspace_id is not None
+    assert project_id is not None
     verify_permission(
         resource_type=ResourceType.PIPELINE_RUN,
         action=Action.CREATE,
-        project_id=workspace_id,
+        project_id=project_id,
     )
 
     return generate_access_token(

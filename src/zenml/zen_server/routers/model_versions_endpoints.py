@@ -56,8 +56,8 @@ from zenml.zen_server.rbac.utils import (
 from zenml.zen_server.routers.models_endpoints import (
     router as model_router,
 )
-from zenml.zen_server.routers.workspaces_endpoints import (
-    router as workspace_router,
+from zenml.zen_server.routers.projects_endpoints import (
+    workspace_router as workspace_router,
 )
 from zenml.zen_server.utils import (
     handle_exceptions,
@@ -159,8 +159,8 @@ def list_model_versions(
     if not model_version_filter_model.model:
         raise ValueError("Model missing from the filter")
 
-    # A workspace scoped request must always be scoped to a specific
-    # workspace. This is required for the RBAC check to work.
+    # A project scoped request must always be scoped to a specific
+    # project. This is required for the RBAC check to work.
     set_filter_project_scope(model_version_filter_model)
     assert isinstance(model_version_filter_model.project, UUID)
 

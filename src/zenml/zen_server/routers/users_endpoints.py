@@ -754,12 +754,12 @@ if server_config().rbac_enabled:
                 "not exist."
             )
 
-        workspace_id = None
+        project_id = None
         if isinstance(model, ProjectScopedResponse):
-            workspace_id = model.workspace.id
+            project_id = model.project.id
 
         resource = Resource(
-            type=resource_type, id=resource_id, project_id=workspace_id
+            type=resource_type, id=resource_id, project_id=project_id
         )
 
         verify_permission_for_model(model=model, action=Action.SHARE)

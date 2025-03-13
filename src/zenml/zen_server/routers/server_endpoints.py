@@ -267,8 +267,8 @@ def get_server_statistics(
         ),
     )
 
-    workspace_filter = ProjectFilter()
-    workspace_filter.configure_rbac(
+    project_filter = ProjectFilter()
+    project_filter.configure_rbac(
         authenticated_user_id=user_id,
         id=get_allowed_resource_ids(resource_type=ResourceType.PROJECT),
     )
@@ -284,5 +284,5 @@ def get_server_statistics(
         components=zen_store().count_stack_components(
             filter_model=component_filter
         ),
-        projects=zen_store().count_projects(filter_model=workspace_filter),
+        projects=zen_store().count_projects(filter_model=project_filter),
     )

@@ -85,8 +85,8 @@ def list_run_steps(
     Returns:
         The run steps according to query filters.
     """
-    # A workspace scoped request must always be scoped to a specific
-    # workspace. This is required for the RBAC check to work.
+    # A project scoped request must always be scoped to a specific
+    # project. This is required for the RBAC check to work.
     set_filter_project_scope(step_run_filter_model)
     assert isinstance(step_run_filter_model.project, UUID)
 

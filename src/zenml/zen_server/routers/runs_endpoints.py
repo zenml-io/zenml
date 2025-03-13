@@ -51,8 +51,8 @@ from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import (
     verify_permission_for_model,
 )
-from zenml.zen_server.routers.workspaces_endpoints import (
-    router as workspace_router,
+from zenml.zen_server.routers.projects_endpoints import (
+    workspace_router as workspace_router,
 )
 from zenml.zen_server.utils import (
     handle_exceptions,

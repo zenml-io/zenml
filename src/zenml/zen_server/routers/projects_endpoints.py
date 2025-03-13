@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Endpoint definitions for workspaces."""
+"""Endpoint definitions for projects."""
 
 from typing import Union
 from uuid import UUID
@@ -20,6 +20,7 @@ from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import (
     API,
+    PROJECTS,
     STATISTICS,
     VERSION_1,
     WORKSPACES,
@@ -53,13 +54,25 @@ from zenml.zen_server.utils import (
     zen_store,
 )
 
-router = APIRouter(
+workspace_router = APIRouter(
     prefix=API + VERSION_1 + WORKSPACES,
     tags=["workspaces"],
     responses={401: error_response},
 )
 
+router = APIRouter(
+    prefix=API + VERSION_1 + PROJECTS,
+    tags=["projects"],
+    responses={401: error_response},
+)
 
+
+# TODO: kept for backwards compatibility only; to be removed after the migration
+@workspace_router.get(
+    "",
+    responses={401: error_response, 404: error_response, 422: error_response},
+    deprecated=True,
+)
 @router.get(
     "",
     responses={401: error_response, 404: error_response, 422: error_response},
@@ -91,6 +104,12 @@ def list_workspaces(
     )
 
 
+# TODO: kept for backwards compatibility only; to be removed after the migration
+@workspace_router.post(
+    "",
+    responses={401: error_response, 409: error_response, 422: error_response},
+    deprecated=True,
+)
 @router.post(
     "",
     responses={401: error_response, 409: error_response, 422: error_response},
@@ -116,6 +135,12 @@ def create_workspace(
     )
 
 
+# TODO: kept for backwards compatibility only; to be removed after the migration
+@workspace_router.get(
+    "/{workspace_name_or_id}",
+    responses={401: error_response, 404: error_response, 422: error_response},
+    deprecated=True,
+)
 @router.get(
     "/{workspace_name_or_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
@@ -145,6 +170,12 @@ def get_workspace(
     )
 
 
+# TODO: kept for backwards compatibility only; to be removed after the migration
+@workspace_router.put(
+    "/{workspace_name_or_id}",
+    responses={401: error_response, 404: error_response, 422: error_response},
+    deprecated=True,
+)
 @router.put(
     "/{workspace_name_or_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
@@ -174,6 +205,12 @@ def update_workspace(
     )
 
 
+# TODO: kept for backwards compatibility only; to be removed after the migration
+@workspace_router.delete(
+    "/{workspace_name_or_id}",
+    responses={401: error_response, 404: error_response, 422: error_response},
+    deprecated=True,
+)
 @router.delete(
     "/{workspace_name_or_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
@@ -195,6 +232,12 @@ def delete_workspace(
     )
 
 
+# TODO: kept for backwards compatibility only; to be removed after the migration
+@workspace_router.get(
+    "/{workspace_name_or_id}" + STATISTICS,
+    responses={401: error_response, 404: error_response, 422: error_response},
+    deprecated=True,
+)
 @router.get(
     "/{workspace_name_or_id}" + STATISTICS,
     responses={401: error_response, 404: error_response, 422: error_response},
