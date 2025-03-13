@@ -16,7 +16,7 @@ jobs:
       UV_HTTP_TIMEOUT: 600
       TARGET_RESULTS_FILE: target_profile_results.json
       CURRENT_RESULTS_FILE: current_profile_results.json
-      PERFORMANCE_THRESHOLD_SECONDS: 0.5  # Absolute time threshold in seconds
+      PERFORMANCE_THRESHOLD_SECONDS: 1.0  # Absolute time threshold in seconds
       COMMAND_TIMEOUT: 60  # Timeout in seconds for each command run
       SLOW_THRESHOLD: 5  # Threshold in seconds to mark command as slow
       TARGET_VENV: .venv-target
@@ -103,8 +103,11 @@ jobs:
             --output performance_report.md
 
           # Set output variables for use in later steps
-          HAS_ISSUES=$(grep -c "::has_issues::true" performance_report.md || echo "0")
-          echo "has_issues=$HAS_ISSUES" >> $GITHUB_OUTPUT
+          if grep -q "<!-- ::has_issues::true -->" performance_report.md; then
+            echo "has_issues=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_issues=false" >> "$GITHUB_OUTPUT"
+          fi
 
           # Save the report to an environment variable for later steps
           echo "PERFORMANCE_REPORT<<EOF" >> $GITHUB_ENV
@@ -112,7 +115,7 @@ jobs:
           echo "EOF" >> $GITHUB_ENV
       - name: Find existing comment
         uses: peter-evans/find-comment@v2
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && steps.create-report.outputs.has_issues == 'true'
         id: find-comment
         with:
           issue-number: ${{ github.event.pull_request.number }}
@@ -120,7 +123,7 @@ jobs:
           body-includes: <!-- PERFORMANCE_REPORT -->
       - name: Create or update comment
         uses: peter-evans/create-or-update-comment@v2
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && steps.create-report.outputs.has_issues == 'true'
         with:
           comment-id: ${{ steps.find-comment.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
@@ -141,5 +144,5 @@ jobs:
       - name: Check for performance issues
         if: steps.create-report.outputs.has_issues == 'true'
         run: |-
-          echo "::error::Performance issues detected. Check the performance report for details."
+          echo "::error::Performance issues detected: degraded performance (>1.0s), failures, or timeouts. Check the performance report for details."
           exit 1

@@ -945,6 +945,9 @@ def list_stacks(ctx: click.Context, **kwargs: Any) -> None:
         ctx: the Click context
         kwargs: Keyword arguments to filter the stacks.
     """
+    import time
+
+    time.sleep(5)
     client = Client()
     with console.status("Listing stacks...\n"):
         stacks = client.list_stacks(**kwargs)

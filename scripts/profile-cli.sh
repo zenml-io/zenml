@@ -8,7 +8,7 @@
 # Options:
 #   -n, --num-runs NUMBER   Number of runs to average (default: 5)
 #   -v, --verbose           Print detailed timing information
-#   -o, --output FILE       Output results to a JSON file (default: cli-profile-results.json)
+#   -o, --output FILE       Output results to a JSON file (no output file by default)
 #   -t, --timeout SECONDS   Maximum execution time per command in seconds (default: 60)
 #   -s, --slow-threshold    Threshold in seconds to mark command as slow (default: 5)
 #   -h, --help              Show this help message
@@ -24,7 +24,7 @@ set -e
 # Default values
 NUM_RUNS=5
 VERBOSE=false
-OUTPUT_FILE="cli-profile-results.json"
+OUTPUT_FILE=""  # No output file by default
 TIMEOUT_SECONDS=60
 SLOW_THRESHOLD=5  # Default threshold for slow commands in seconds
 
@@ -67,7 +67,7 @@ while [[ $# -gt 0 ]]; do
       echo "Options:"
       echo "  -n, --num-runs NUMBER   Number of runs to average (default: 5)"
       echo "  -v, --verbose           Print detailed timing information"
-      echo "  -o, --output FILE       Output results to a JSON file (default: cli-profile-results.json)"
+      echo "  -o, --output FILE       Output results to a JSON file (no output file by default)"
       echo "  -t, --timeout SECONDS   Maximum execution time per command in seconds (default: 60)"
       echo "  -s, --slow-threshold    Threshold in seconds to mark command as slow (default: 5)"
       echo "  -h, --help              Show this help message"
@@ -117,9 +117,11 @@ get_time_ns() {
   python3 -c 'import time; print(time.time())'
 }
 
-# Initialize JSON output
-echo "{" > "$OUTPUT_FILE"
-echo "  \"profiling_results\": [" >> "$OUTPUT_FILE"
+# Initialize JSON output if an output file was specified
+if [ -n "$OUTPUT_FILE" ]; then
+  echo "{" > "$OUTPUT_FILE"
+  echo "  \"profiling_results\": [" >> "$OUTPUT_FILE"
+fi
 
 # Display test information
 echo "Profiling ${#COMMANDS[@]} commands:"
@@ -129,6 +131,11 @@ done
 echo "Number of runs per command: $NUM_RUNS"
 echo "Timeout per run: $TIMEOUT_SECONDS seconds"
 echo "Slow threshold: $SLOW_THRESHOLD seconds"
+if [ -n "$OUTPUT_FILE" ]; then
+  echo "Results will be saved to: $OUTPUT_FILE"
+else
+  echo "No output file specified. Results will only be displayed on screen."
+fi
 echo
 
 # Counter for JSON formatting
@@ -230,12 +237,14 @@ for COMMAND in "${COMMANDS[@]}"; do
     echo "-------------------------------------------"
     echo
     
-    # Write timeout to JSON file
-    echo "    {" >> "$OUTPUT_FILE"
-    echo "      \"command\": \"$COMMAND\"," >> "$OUTPUT_FILE"
-    echo "      \"status\": \"timeout\"," >> "$OUTPUT_FILE"
-    echo "      \"timeout\": $TIMEOUT_SECONDS," >> "$OUTPUT_FILE"
-    echo "      \"error\": \"$ERROR_MESSAGE\"" >> "$OUTPUT_FILE"
+    # Write timeout to JSON file if output file was specified
+    if [ -n "$OUTPUT_FILE" ]; then
+      echo "    {" >> "$OUTPUT_FILE"
+      echo "      \"command\": \"$COMMAND\"," >> "$OUTPUT_FILE"
+      echo "      \"status\": \"timeout\"," >> "$OUTPUT_FILE"
+      echo "      \"timeout\": $TIMEOUT_SECONDS," >> "$OUTPUT_FILE"
+      echo "      \"error\": \"$ERROR_MESSAGE\"" >> "$OUTPUT_FILE"
+    fi
   elif [ "$COMMAND_FAILED" = true ]; then
     CMD_STATUS+=("FAILED")
     AVG_TIME="0.000000"
@@ -249,11 +258,13 @@ for COMMAND in "${COMMANDS[@]}"; do
     echo "-------------------------------------------"
     echo
     
-    # Write failure to JSON file
-    echo "    {" >> "$OUTPUT_FILE"
-    echo "      \"command\": \"$COMMAND\"," >> "$OUTPUT_FILE"
-    echo "      \"status\": \"failed\"," >> "$OUTPUT_FILE"
-    echo "      \"error\": \"$ERROR_MESSAGE\"" >> "$OUTPUT_FILE"
+    # Write failure to JSON file if output file was specified
+    if [ -n "$OUTPUT_FILE" ]; then
+      echo "    {" >> "$OUTPUT_FILE"
+      echo "      \"command\": \"$COMMAND\"," >> "$OUTPUT_FILE"
+      echo "      \"status\": \"failed\"," >> "$OUTPUT_FILE"
+      echo "      \"error\": \"$ERROR_MESSAGE\"" >> "$OUTPUT_FILE"
+    fi
   else
     # Calculate average with higher precision
     AVG_TIME=$(LC_NUMERIC=C printf "%.6f" $(echo "$TOTAL_TIME / $NUM_RUNS" | bc -l))
@@ -294,30 +305,32 @@ for COMMAND in "${COMMANDS[@]}"; do
     echo "-------------------------------------------"
     echo
     
-    # Write results to JSON file
-    echo "    {" >> "$OUTPUT_FILE"
-    echo "      \"command\": \"$COMMAND\"," >> "$OUTPUT_FILE"
-    if [ "$COMMAND_SLOW" = true ]; then
-      echo "      \"status\": \"slow\"," >> "$OUTPUT_FILE"
-      echo "      \"slow_threshold\": $SLOW_THRESHOLD," >> "$OUTPUT_FILE"
-    else
-      echo "      \"status\": \"success\"," >> "$OUTPUT_FILE"
-    fi
-    echo "      \"avg_time\": $AVG_TIME," >> "$OUTPUT_FILE"
-    echo "      \"std_dev\": $STD_DEV," >> "$OUTPUT_FILE"
-    echo "      \"num_runs\": $NUM_RUNS," >> "$OUTPUT_FILE"
-    echo "      \"runs\": [" >> "$OUTPUT_FILE"
-    
-    # Add individual run times
-    for j in "${!TIMES[@]}"; do
-      COMMA=""
-      if [ $j -lt $(( ${#TIMES[@]} - 1 )) ]; then
-        COMMA=","
+    # Write results to JSON file if output file was specified
+    if [ -n "$OUTPUT_FILE" ]; then
+      echo "    {" >> "$OUTPUT_FILE"
+      echo "      \"command\": \"$COMMAND\"," >> "$OUTPUT_FILE"
+      if [ "$COMMAND_SLOW" = true ]; then
+        echo "      \"status\": \"slow\"," >> "$OUTPUT_FILE"
+        echo "      \"slow_threshold\": $SLOW_THRESHOLD," >> "$OUTPUT_FILE"
+      else
+        echo "      \"status\": \"success\"," >> "$OUTPUT_FILE"
       fi
-      echo "        ${TIMES[$j]}$COMMA" >> "$OUTPUT_FILE"
-    done
-    
-    echo "      ]" >> "$OUTPUT_FILE"
+      echo "      \"avg_time\": $AVG_TIME," >> "$OUTPUT_FILE"
+      echo "      \"std_dev\": $STD_DEV," >> "$OUTPUT_FILE"
+      echo "      \"num_runs\": $NUM_RUNS," >> "$OUTPUT_FILE"
+      echo "      \"runs\": [" >> "$OUTPUT_FILE"
+      
+      # Add individual run times
+      for j in "${!TIMES[@]}"; do
+        COMMA=""
+        if [ $j -lt $(( ${#TIMES[@]} - 1 )) ]; then
+          COMMA=","
+        fi
+        echo "        ${TIMES[$j]}$COMMA" >> "$OUTPUT_FILE"
+      done
+      
+      echo "      ]" >> "$OUTPUT_FILE"
+    fi
   fi
   
   # Store results for table display
@@ -325,26 +338,30 @@ for COMMAND in "${COMMANDS[@]}"; do
   AVG_TIMES+=("$AVG_TIME")
   STD_DEVS+=("$STD_DEV")
   
-  # Add comma if not the last command
-  COMMAND_COUNT=$((COMMAND_COUNT + 1))
-  if [ $COMMAND_COUNT -lt $TOTAL_COMMANDS ]; then
-    echo "    }," >> "$OUTPUT_FILE"
-  else
-    echo "    }" >> "$OUTPUT_FILE"
+  # Add comma if not the last command and output file was specified
+  if [ -n "$OUTPUT_FILE" ]; then
+    COMMAND_COUNT=$((COMMAND_COUNT + 1))
+    if [ $COMMAND_COUNT -lt $TOTAL_COMMANDS ]; then
+      echo "    }," >> "$OUTPUT_FILE"
+    else
+      echo "    }" >> "$OUTPUT_FILE"
+    fi
   fi
 done
 
-# Close JSON file
-echo "  ]," >> "$OUTPUT_FILE"
-echo "  \"metadata\": {" >> "$OUTPUT_FILE"
-echo "    \"timestamp\": \"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\"," >> "$OUTPUT_FILE"
-echo "    \"environment\": \"$(uname -s) $(uname -r)\"," >> "$OUTPUT_FILE"
-echo "    \"timeout\": $TIMEOUT_SECONDS," >> "$OUTPUT_FILE"
-echo "    \"slow_threshold\": $SLOW_THRESHOLD" >> "$OUTPUT_FILE"
-echo "  }" >> "$OUTPUT_FILE"
-echo "}" >> "$OUTPUT_FILE"
+# Close JSON file if output file was specified
+if [ -n "$OUTPUT_FILE" ]; then
+  echo "  ]," >> "$OUTPUT_FILE"
+  echo "  \"metadata\": {" >> "$OUTPUT_FILE"
+  echo "    \"timestamp\": \"$(date -u +"%Y-%m-%dT%H:%M:%SZ")\"," >> "$OUTPUT_FILE"
+  echo "    \"environment\": \"$(uname -s) $(uname -r)\"," >> "$OUTPUT_FILE"
+  echo "    \"timeout\": $TIMEOUT_SECONDS," >> "$OUTPUT_FILE"
+  echo "    \"slow_threshold\": $SLOW_THRESHOLD" >> "$OUTPUT_FILE"
+  echo "  }" >> "$OUTPUT_FILE"
+  echo "}" >> "$OUTPUT_FILE"
 
-echo "Results saved to $OUTPUT_FILE"
+  echo "Results saved to $OUTPUT_FILE"
+fi
 
 # Display results table
 echo
