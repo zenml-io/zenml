@@ -11549,6 +11549,41 @@ class SqlZenStore(BaseZenStore):
 
             if tag_update_model.exclusive is True:
                 error_messages = []
+
+                # Define allowed resource types for exclusive tags
+                allowed_resource_types = [
+                    TaggableResourceTypes.PIPELINE_RUN.value,
+                    TaggableResourceTypes.ARTIFACT_VERSION.value,
+                    TaggableResourceTypes.RUN_TEMPLATE.value,
+                ]
+
+                # Check if tag is associated with any non-allowed resource types
+                non_allowed_resources_query = (
+                    select(TagResourceSchema.resource_type)
+                    .where(
+                        TagResourceSchema.tag_id == tag.id,
+                        TagResourceSchema.resource_type.not_in(  # type: ignore[attr-defined]
+                            allowed_resource_types
+                        ),
+                    )
+                    .distinct()
+                )
+
+                non_allowed_resources = session.exec(
+                    non_allowed_resources_query
+                ).all()
+                if non_allowed_resources:
+                    error_message = (
+                        f"The tag `{tag.name}` cannot be made "
+                        "exclusive because it is associated with "
+                        "non-allowed resource types: "
+                        f"{', '.join(non_allowed_resources)}. "
+                        "Exclusive tags can only be applied "
+                        "to pipeline runs, artifact versions, "
+                        "and run templates."
+                    )
+                    error_messages.append(error_message)
+
                 for resource_type, resource_id, scope_id in [
                     (
                         TaggableResourceTypes.PIPELINE_RUN,
@@ -11715,8 +11750,8 @@ class SqlZenStore(BaseZenStore):
             The newly created tag resource relationships.
 
         Raises:
-            ValueError: If an exclusive tag is being attached to multiple resources
-                of the same type within the same scope.
+            IllegalOperationError: If an exclusive tag is being attached 
+                to multiple resources of the same type within the same scope.
             EntityExistsError: If a tag resource already exists.
         """
         max_retries = 10
@@ -11847,7 +11882,9 @@ class SqlZenStore(BaseZenStore):
                                         )
                                     )
                     else:
-                        logger.debug(
+                        raise IllegalOperationError(
+                            "Can not attach exclusive tag to resource of type "
+                            f"{resource_type.value} with ID: `{resource.id}`. "
                             "Exclusive tag functionality only works for "
                             "templates, for pipeline runs (within the scope of "
                             "pipelines) and for artifact versions (within the "
@@ -11857,7 +11894,7 @@ class SqlZenStore(BaseZenStore):
                     # Check for duplicate IDs in any of the scope_ids list
                     for resource_type, id_list in scope_ids.items():
                         if len(id_list) != len(set(id_list)):
-                            raise ValueError(
+                            raise IllegalOperationError(
                                 f"You are trying to attach an exclusive tag to "
                                 f"multiple {resource_type.value}s within the "
                                 "same scope. This is not allowed."

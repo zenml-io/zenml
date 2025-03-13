@@ -379,18 +379,6 @@ def add_tags(
             else:
                 tag_model = client.create_tag(name=tag)
 
-        if tag_model.exclusive and resource_type not in [
-            TaggableResourceTypes.PIPELINE_RUN,
-            TaggableResourceTypes.ARTIFACT_VERSION,
-            TaggableResourceTypes.RUN_TEMPLATE,
-        ]:
-            logger.warning(
-                "The tag will be added, however, please keep in mind that "
-                "the functionality of having exclusive tags is only "
-                "applicable for pipeline runs, artifact versions and run "
-                f"templates, not {resource_type.value}s."
-            )
-
         if resource_id:
             client.attach_tag(
                 tag_name_or_id=tag_model.name,

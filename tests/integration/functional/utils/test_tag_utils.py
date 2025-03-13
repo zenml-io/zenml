@@ -15,7 +15,10 @@
 
 from typing import Annotated, Tuple
 
+import pytest
+
 from zenml import ArtifactConfig, Tag, add_tags, pipeline, remove_tags, step
+from zenml.exceptions import IllegalOperationError
 
 
 @step
@@ -122,3 +125,18 @@ def test_tag_utils(clean_client):
     second_run_tags = [t.name for t in run.tags]
     assert "cascade_tag" not in second_run_tags
     assert "exclusive_tag" not in second_run_tags
+
+    pipeline = clean_client.get_pipeline(first_run.pipeline.id)
+    with pytest.raises(IllegalOperationError):
+        add_tags(
+            tags=[Tag(name="new_exclusive_tag", exclusive=True)],
+            pipeline=pipeline.id,
+        )
+
+    add_tags(tags=["regular_tag_for_pipeline"], pipeline=pipeline.id)
+
+    non_exclusive_tag = clean_client.get_tag("regular_tag_for_pipeline")
+    with pytest.raises(IllegalOperationError):
+        clean_client.update_tag(
+            tag_name_or_id=non_exclusive_tag.id, exclusive=True
+        )
