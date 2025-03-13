@@ -470,7 +470,7 @@ class TaggableFilter(BaseFilter):
 
         query = super().apply_filter(query=query, table=table)
 
-        if self.tags is not None:
+        if self.tags:
             query = query.join(
                 TagResourceSchema,
                 TagResourceSchema.resource_id == getattr(table, "id"),
@@ -491,7 +491,7 @@ class TaggableFilter(BaseFilter):
         """
         custom_filters = super().get_custom_filters(table)
 
-        if self.tags is not None:
+        if self.tags:
             from sqlmodel import exists, select
 
             from zenml.zen_stores.schemas import TagResourceSchema, TagSchema
