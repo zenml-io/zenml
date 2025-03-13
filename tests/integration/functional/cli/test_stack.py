@@ -38,7 +38,8 @@ NOT_STACKS = ["abc_def", "my_other_cat_is_called_blupus", "stack123"]
 
 
 def _create_local_orchestrator(
-    repo: Client, user: Optional[UUID] = None,
+    repo: Client,
+    user: Optional[UUID] = None,
 ):
     """Returns a local orchestrator."""
     return LocalOrchestrator(
@@ -54,7 +55,8 @@ def _create_local_orchestrator(
 
 
 def _create_local_artifact_store(
-    repo: Client, user: Optional[UUID] = None,
+    repo: Client,
+    user: Optional[UUID] = None,
 ):
     """Fixture that creates a local artifact store for testing."""
     return LocalArtifactStore(

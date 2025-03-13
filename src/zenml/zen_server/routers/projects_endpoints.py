@@ -78,26 +78,26 @@ router = APIRouter(
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def list_workspaces(
-    workspace_filter_model: ProjectFilter = Depends(
+def list_projects(
+    project_filter_model: ProjectFilter = Depends(
         make_dependable(ProjectFilter)
     ),
     hydrate: bool = False,
     _: AuthContext = Security(authorize),
 ) -> Page[ProjectResponse]:
-    """Lists all workspaces in the organization.
+    """Lists all projects in the organization.
 
     Args:
-        workspace_filter_model: Filter model used for pagination, sorting,
+        project_filter_model: Filter model used for pagination, sorting,
             filtering,
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
 
     Returns:
-        A list of workspaces.
+        A list of projects.
     """
     return verify_permissions_and_list_entities(
-        filter_model=workspace_filter_model,
+        filter_model=project_filter_model,
         resource_type=ResourceType.PROJECT,
         list_method=zen_store().list_projects,
         hydrate=hydrate,
@@ -115,56 +115,56 @@ def list_workspaces(
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
-def create_workspace(
-    workspace_request: ProjectRequest,
+def create_project(
+    project_request: ProjectRequest,
     _: AuthContext = Security(authorize),
 ) -> ProjectResponse:
-    """Creates a workspace based on the requestBody.
+    """Creates a project based on the requestBody.
 
     # noqa: DAR401
 
     Args:
-        workspace_request: Workspace to create.
+        project_request: Project to create.
 
     Returns:
-        The created workspace.
+        The created project.
     """
     return verify_permissions_and_create_entity(
-        request_model=workspace_request,
+        request_model=project_request,
         create_method=zen_store().create_project,
     )
 
 
 # TODO: kept for backwards compatibility only; to be removed after the migration
 @workspace_router.get(
-    "/{workspace_name_or_id}",
+    "/{project_name_or_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
     deprecated=True,
 )
 @router.get(
-    "/{workspace_name_or_id}",
+    "/{project_name_or_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def get_workspace(
-    workspace_name_or_id: Union[str, UUID],
+def get_project(
+    project_name_or_id: Union[str, UUID],
     hydrate: bool = True,
     _: AuthContext = Security(authorize),
 ) -> ProjectResponse:
-    """Get a workspace for given name.
+    """Get a project for given name.
 
     # noqa: DAR401
 
     Args:
-        workspace_name_or_id: Name or ID of the workspace.
+        project_name_or_id: Name or ID of the project.
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
 
     Returns:
-        The requested workspace.
+        The requested project.
     """
     return verify_permissions_and_get_entity(
-        id=workspace_name_or_id,
+        id=project_name_or_id,
         get_method=zen_store().get_project,
         hydrate=hydrate,
     )
@@ -172,34 +172,34 @@ def get_workspace(
 
 # TODO: kept for backwards compatibility only; to be removed after the migration
 @workspace_router.put(
-    "/{workspace_name_or_id}",
+    "/{project_name_or_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
     deprecated=True,
 )
 @router.put(
-    "/{workspace_name_or_id}",
+    "/{project_name_or_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def update_workspace(
-    workspace_name_or_id: UUID,
-    workspace_update: ProjectUpdate,
+def update_project(
+    project_name_or_id: UUID,
+    project_update: ProjectUpdate,
     _: AuthContext = Security(authorize),
 ) -> ProjectResponse:
-    """Get a workspace for given name.
+    """Get a project for given name.
 
     # noqa: DAR401
 
     Args:
-        workspace_name_or_id: Name or ID of the workspace to update.
-        workspace_update: the workspace to use to update
+        project_name_or_id: Name or ID of the project to update.
+        project_update: the project to use to update
 
     Returns:
-        The updated workspace.
+        The updated project.
     """
     return verify_permissions_and_update_entity(
-        id=workspace_name_or_id,
-        update_model=workspace_update,
+        id=project_name_or_id,
+        update_model=project_update,
         get_method=zen_store().get_project,
         update_method=zen_store().update_project,
     )
@@ -207,26 +207,26 @@ def update_workspace(
 
 # TODO: kept for backwards compatibility only; to be removed after the migration
 @workspace_router.delete(
-    "/{workspace_name_or_id}",
+    "/{project_name_or_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
     deprecated=True,
 )
 @router.delete(
-    "/{workspace_name_or_id}",
+    "/{project_name_or_id}",
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def delete_workspace(
-    workspace_name_or_id: Union[str, UUID],
+def delete_project(
+    project_name_or_id: Union[str, UUID],
     _: AuthContext = Security(authorize),
 ) -> None:
-    """Deletes a workspace.
+    """Deletes a project.
 
     Args:
-        workspace_name_or_id: Name or ID of the workspace.
+        project_name_or_id: Name or ID of the project.
     """
     verify_permissions_and_delete_entity(
-        id=workspace_name_or_id,
+        id=project_name_or_id,
         get_method=zen_store().get_project,
         delete_method=zen_store().delete_project,
     )
@@ -234,44 +234,44 @@ def delete_workspace(
 
 # TODO: kept for backwards compatibility only; to be removed after the migration
 @workspace_router.get(
-    "/{workspace_name_or_id}" + STATISTICS,
+    "/{project_name_or_id}" + STATISTICS,
     responses={401: error_response, 404: error_response, 422: error_response},
     deprecated=True,
 )
 @router.get(
-    "/{workspace_name_or_id}" + STATISTICS,
+    "/{project_name_or_id}" + STATISTICS,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def get_workspace_statistics(
-    workspace_name_or_id: Union[str, UUID],
+def get_project_statistics(
+    project_name_or_id: Union[str, UUID],
     auth_context: AuthContext = Security(authorize),
 ) -> ProjectStatistics:
-    """Gets statistics of a workspace.
+    """Gets statistics of a project.
 
     # noqa: DAR401
 
     Args:
-        workspace_name_or_id: Name or ID of the workspace to get statistics for.
+        project_name_or_id: Name or ID of the project to get statistics for.
         auth_context: Authentication context.
 
     Returns:
-        All pipelines within the workspace.
+        Project statistics.
     """
-    workspace = verify_permissions_and_get_entity(
-        id=workspace_name_or_id,
+    project = verify_permissions_and_get_entity(
+        id=project_name_or_id,
         get_method=zen_store().get_project,
     )
 
     user_id = auth_context.user.id
 
-    run_filter = PipelineRunFilter(project=workspace.id)
+    run_filter = PipelineRunFilter(project=project.id)
     run_filter.configure_rbac(
         authenticated_user_id=user_id,
         id=get_allowed_resource_ids(resource_type=ResourceType.PIPELINE_RUN),
     )
 
-    pipeline_filter = PipelineFilter(project=workspace.id)
+    pipeline_filter = PipelineFilter(project=project.id)
     pipeline_filter.configure_rbac(
         authenticated_user_id=user_id,
         id=get_allowed_resource_ids(resource_type=ResourceType.PIPELINE),

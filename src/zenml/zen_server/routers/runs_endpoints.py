@@ -51,9 +51,7 @@ from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import (
     verify_permission_for_model,
 )
-from zenml.zen_server.routers.projects_endpoints import (
-    workspace_router as workspace_router,
-)
+from zenml.zen_server.routers.projects_endpoints import workspace_router
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -77,7 +75,7 @@ logger = get_logger(__name__)
 # TODO: the workspace scoped endpoint is only kept for dashboard compatibility
 # and can be removed after the migration
 @workspace_router.post(
-    "/{workspace_name_or_id}" + RUNS,
+    "/{project_name_or_id}" + RUNS,
     responses={401: error_response, 409: error_response, 422: error_response},
     deprecated=True,
     tags=["runs"],
@@ -85,22 +83,22 @@ logger = get_logger(__name__)
 @handle_exceptions
 def get_or_create_pipeline_run(
     pipeline_run: PipelineRunRequest,
-    workspace_name_or_id: Optional[Union[str, UUID]] = None,
+    project_name_or_id: Optional[Union[str, UUID]] = None,
     _: AuthContext = Security(authorize),
 ) -> Tuple[PipelineRunResponse, bool]:
     """Get or create a pipeline run.
 
     Args:
         pipeline_run: Pipeline run to create.
-        workspace_name_or_id: Optional name or ID of the workspace.
+        project_name_or_id: Optional name or ID of the project.
 
     Returns:
         The pipeline run and a boolean indicating whether the run was created
         or not.
     """
-    if workspace_name_or_id:
-        workspace = zen_store().get_project(workspace_name_or_id)
-        pipeline_run.project = workspace.id
+    if project_name_or_id:
+        project = zen_store().get_project(project_name_or_id)
+        pipeline_run.project = project.id
 
     return verify_permissions_and_get_or_create_entity(
         request_model=pipeline_run,
@@ -115,7 +113,7 @@ def get_or_create_pipeline_run(
 # TODO: the workspace scoped endpoint is only kept for dashboard compatibility
 # and can be removed after the migration
 @workspace_router.get(
-    "/{workspace_name_or_id}" + RUNS,
+    "/{project_name_or_id}" + RUNS,
     responses={401: error_response, 404: error_response, 422: error_response},
     deprecated=True,
     tags=["runs"],
@@ -125,7 +123,7 @@ def list_runs(
     runs_filter_model: PipelineRunFilter = Depends(
         make_dependable(PipelineRunFilter)
     ),
-    workspace_name_or_id: Optional[Union[str, UUID]] = None,
+    project_name_or_id: Optional[Union[str, UUID]] = None,
     hydrate: bool = False,
     _: AuthContext = Security(authorize),
 ) -> Page[PipelineRunResponse]:
@@ -133,15 +131,15 @@ def list_runs(
 
     Args:
         runs_filter_model: Filter model used for pagination, sorting, filtering.
-        workspace_name_or_id: Optional name or ID of the workspace.
+        project_name_or_id: Optional name or ID of the project.
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
 
     Returns:
         The pipeline runs according to query filters.
     """
-    if workspace_name_or_id:
-        runs_filter_model.project = workspace_name_or_id
+    if project_name_or_id:
+        runs_filter_model.project = project_name_or_id
 
     return verify_permissions_and_list_entities(
         filter_model=runs_filter_model,

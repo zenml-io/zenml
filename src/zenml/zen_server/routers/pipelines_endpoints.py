@@ -46,9 +46,7 @@ from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_update_entity,
 )
 from zenml.zen_server.rbac.models import ResourceType
-from zenml.zen_server.routers.projects_endpoints import (
-    workspace_router as workspace_router,
-)
+from zenml.zen_server.routers.projects_endpoints import workspace_router
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -70,7 +68,7 @@ router = APIRouter(
 # TODO: the workspace scoped endpoint is only kept for dashboard compatibility
 # and can be removed after the migration
 @workspace_router.post(
-    "/{workspace_name_or_id}" + PIPELINES,
+    "/{project_name_or_id}" + PIPELINES,
     responses={401: error_response, 409: error_response, 422: error_response},
     deprecated=True,
     tags=["pipelines"],
@@ -78,21 +76,21 @@ router = APIRouter(
 @handle_exceptions
 def create_pipeline(
     pipeline: PipelineRequest,
-    workspace_name_or_id: Optional[Union[str, UUID]] = None,
+    project_name_or_id: Optional[Union[str, UUID]] = None,
     _: AuthContext = Security(authorize),
 ) -> PipelineResponse:
-    """Creates a pipeline, optionally in a specific workspace.
+    """Creates a pipeline.
 
     Args:
         pipeline: Pipeline to create.
-        workspace_name_or_id: Optional name or ID of the workspace.
+        project_name_or_id: Optional name or ID of the project.
 
     Returns:
         The created pipeline.
     """
-    if workspace_name_or_id:
-        workspace = zen_store().get_project(workspace_name_or_id)
-        pipeline.project = workspace.id
+    if project_name_or_id:
+        project = zen_store().get_project(project_name_or_id)
+        pipeline.project = project.id
 
     # We limit pipeline namespaces, not pipeline versions
     skip_entitlements = (
@@ -116,7 +114,7 @@ def create_pipeline(
 # TODO: the workspace scoped endpoint is only kept for dashboard compatibility
 # and can be removed after the migration
 @workspace_router.get(
-    "/{workspace_name_or_id}" + PIPELINES,
+    "/{project_name_or_id}" + PIPELINES,
     responses={401: error_response, 404: error_response, 422: error_response},
     deprecated=True,
     tags=["pipelines"],
@@ -126,24 +124,24 @@ def list_pipelines(
     pipeline_filter_model: PipelineFilter = Depends(
         make_dependable(PipelineFilter)
     ),
-    workspace_name_or_id: Optional[Union[str, UUID]] = None,
+    project_name_or_id: Optional[Union[str, UUID]] = None,
     hydrate: bool = False,
     _: AuthContext = Security(authorize),
 ) -> Page[PipelineResponse]:
-    """Gets a list of pipelines, optionally filtered by workspace.
+    """Gets a list of pipelines.
 
     Args:
         pipeline_filter_model: Filter model used for pagination, sorting,
             filtering.
-        workspace_name_or_id: Optional name or ID of the workspace to filter by.
+        project_name_or_id: Optional name or ID of the project to filter by.
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
 
     Returns:
         List of pipeline objects matching the filter criteria.
     """
-    if workspace_name_or_id:
-        pipeline_filter_model.project = workspace_name_or_id
+    if project_name_or_id:
+        pipeline_filter_model.project = project_name_or_id
 
     return verify_permissions_and_list_entities(
         filter_model=pipeline_filter_model,

@@ -64,9 +64,6 @@ class ProjectRequest(BaseRequest):
         Args:
             data: The values to validate.
 
-        Raises:
-            ValueError: If the project name is invalid.
-
         Returns:
             The validated values.
         """

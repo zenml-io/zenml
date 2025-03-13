@@ -197,9 +197,7 @@ def clean_project_session(
     original_project = client.active_project.id
 
     project_name = f"pytest_{random_str(8)}"
-    client.create_project(
-        name=project_name, description="pytest test project"
-    )
+    client.create_project(name=project_name, description="pytest test project")
 
     if clean_repo:
         with clean_repo_session(tmp_path_factory) as repo_client:

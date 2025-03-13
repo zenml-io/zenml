@@ -56,9 +56,7 @@ from zenml.zen_server.rbac.utils import (
 from zenml.zen_server.routers.models_endpoints import (
     router as model_router,
 )
-from zenml.zen_server.routers.projects_endpoints import (
-    workspace_router as workspace_router,
-)
+from zenml.zen_server.routers.projects_endpoints import workspace_router
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -85,7 +83,7 @@ router = APIRouter(
 # TODO: the workspace scoped endpoint is only kept for dashboard compatibility
 # and can be removed after the migration
 @workspace_router.post(
-    "/{workspace_name_or_id}" + MODELS + "/{model_id}" + MODEL_VERSIONS,
+    "/{project_name_or_id}" + MODELS + "/{model_id}" + MODEL_VERSIONS,
     responses={401: error_response, 409: error_response, 422: error_response},
     deprecated=True,
     tags=["model_versions"],
@@ -94,7 +92,7 @@ router = APIRouter(
 def create_model_version(
     model_version: ModelVersionRequest,
     model_id: Optional[UUID] = None,
-    workspace_name_or_id: Optional[Union[str, UUID]] = None,
+    project_name_or_id: Optional[Union[str, UUID]] = None,
     _: AuthContext = Security(authorize),
 ) -> ModelVersionResponse:
     """Creates a model version.
@@ -102,14 +100,14 @@ def create_model_version(
     Args:
         model_version: Model version to create.
         model_id: Optional ID of the model.
-        workspace_name_or_id: Optional name or ID of the workspace.
+        project_name_or_id: Optional name or ID of the project.
 
     Returns:
         The created model version.
     """
-    if workspace_name_or_id:
-        workspace = zen_store().get_project(workspace_name_or_id)
-        model_version.project = workspace.id
+    if project_name_or_id:
+        project = zen_store().get_project(project_name_or_id)
+        model_version.project = project.id
 
     if model_id:
         model_version.model = model_id

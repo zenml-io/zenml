@@ -34,9 +34,7 @@ from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_list_entities,
 )
 from zenml.zen_server.rbac.models import ResourceType
-from zenml.zen_server.routers.projects_endpoints import (
-    workspace_router as workspace_router,
-)
+from zenml.zen_server.routers.projects_endpoints import workspace_router
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -57,7 +55,7 @@ router = APIRouter(
 # TODO: the workspace scoped endpoint is only kept for dashboard compatibility
 # and can be removed after the migration
 @workspace_router.post(
-    "/{workspace_name_or_id}" + PIPELINE_BUILDS,
+    "/{project_name_or_id}" + PIPELINE_BUILDS,
     responses={401: error_response, 409: error_response, 422: error_response},
     deprecated=True,
     tags=["builds"],
@@ -65,21 +63,21 @@ router = APIRouter(
 @handle_exceptions
 def create_build(
     build: PipelineBuildRequest,
-    workspace_name_or_id: Optional[Union[str, UUID]] = None,
+    project_name_or_id: Optional[Union[str, UUID]] = None,
     _: AuthContext = Security(authorize),
 ) -> PipelineBuildResponse:
-    """Creates a build, optionally in a specific workspace.
+    """Creates a build, optionally in a specific project.
 
     Args:
         build: Build to create.
-        workspace_name_or_id: Optional name or ID of the workspace.
+        project_name_or_id: Optional name or ID of the project.
 
     Returns:
         The created build.
     """
-    if workspace_name_or_id:
-        workspace = zen_store().get_project(workspace_name_or_id)
-        build.project = workspace.id
+    if project_name_or_id:
+        project = zen_store().get_project(project_name_or_id)
+        build.project = project.id
 
     return verify_permissions_and_create_entity(
         request_model=build,
@@ -94,7 +92,7 @@ def create_build(
 # TODO: the workspace scoped endpoint is only kept for dashboard compatibility
 # and can be removed after the migration
 @workspace_router.get(
-    "/{workspace_name_or_id}" + PIPELINE_BUILDS,
+    "/{project_name_or_id}" + PIPELINE_BUILDS,
     responses={401: error_response, 404: error_response, 422: error_response},
     deprecated=True,
     tags=["builds"],
@@ -104,24 +102,24 @@ def list_builds(
     build_filter_model: PipelineBuildFilter = Depends(
         make_dependable(PipelineBuildFilter)
     ),
-    workspace_name_or_id: Optional[Union[str, UUID]] = None,
+    project_name_or_id: Optional[Union[str, UUID]] = None,
     hydrate: bool = False,
     _: AuthContext = Security(authorize),
 ) -> Page[PipelineBuildResponse]:
-    """Gets a list of builds, optionally filtered by workspace.
+    """Gets a list of builds.
 
     Args:
         build_filter_model: Filter model used for pagination, sorting,
             filtering.
-        workspace_name_or_id: Optional name or ID of the workspace to filter by.
+        project_name_or_id: Optional name or ID of the project to filter by.
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
 
     Returns:
         List of build objects matching the filter criteria.
     """
-    if workspace_name_or_id:
-        build_filter_model.project = workspace_name_or_id
+    if project_name_or_id:
+        build_filter_model.project = project_name_or_id
 
     return verify_permissions_and_list_entities(
         filter_model=build_filter_model,

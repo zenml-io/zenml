@@ -230,9 +230,7 @@ def test_fetching_cached_step_run_uses_latest_candidate(
     sample_pipeline_deployment_request_model.project = (
         clean_client.active_project.id
     )
-    sample_pipeline_run_request_model.project = (
-        clean_client.active_project.id
-    )
+    sample_pipeline_run_request_model.project = clean_client.active_project.id
 
     sample_step = Step.model_validate(
         {

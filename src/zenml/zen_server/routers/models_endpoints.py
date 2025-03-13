@@ -41,9 +41,7 @@ from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_update_entity,
 )
 from zenml.zen_server.rbac.models import ResourceType
-from zenml.zen_server.routers.projects_endpoints import (
-    workspace_router as workspace_router,
-)
+from zenml.zen_server.routers.projects_endpoints import workspace_router
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -69,7 +67,7 @@ router = APIRouter(
 # TODO: the workspace scoped endpoint is only kept for dashboard compatibility
 # and can be removed after the migration
 @workspace_router.post(
-    "/{workspace_name_or_id}" + MODELS,
+    "/{project_name_or_id}" + MODELS,
     responses={401: error_response, 409: error_response, 422: error_response},
     deprecated=True,
     tags=["models"],
@@ -77,21 +75,21 @@ router = APIRouter(
 @handle_exceptions
 def create_model(
     model: ModelRequest,
-    workspace_name_or_id: Optional[Union[str, UUID]] = None,
+    project_name_or_id: Optional[Union[str, UUID]] = None,
     _: AuthContext = Security(authorize),
 ) -> ModelResponse:
     """Creates a model.
 
     Args:
         model: Model to create.
-        workspace_name_or_id: Optional name or ID of the workspace.
+        project_name_or_id: Optional name or ID of the project.
 
     Returns:
         The created model.
     """
-    if workspace_name_or_id:
-        workspace = zen_store().get_project(workspace_name_or_id)
-        model.project = workspace.id
+    if project_name_or_id:
+        project = zen_store().get_project(project_name_or_id)
+        model.project = project.id
 
     return verify_permissions_and_create_entity(
         request_model=model,

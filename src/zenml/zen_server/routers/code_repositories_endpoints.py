@@ -36,9 +36,7 @@ from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_update_entity,
 )
 from zenml.zen_server.rbac.models import ResourceType
-from zenml.zen_server.routers.projects_endpoints import (
-    workspace_router as workspace_router,
-)
+from zenml.zen_server.routers.projects_endpoints import workspace_router
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -59,7 +57,7 @@ router = APIRouter(
 # TODO: the workspace scoped endpoint is only kept for dashboard compatibility
 # and can be removed after the migration
 @workspace_router.post(
-    "/{workspace_name_or_id}" + CODE_REPOSITORIES,
+    "/{project_name_or_id}" + CODE_REPOSITORIES,
     responses={401: error_response, 409: error_response, 422: error_response},
     deprecated=True,
     tags=["code_repositories"],
@@ -67,21 +65,21 @@ router = APIRouter(
 @handle_exceptions
 def create_code_repository(
     code_repository: CodeRepositoryRequest,
-    workspace_name_or_id: Optional[Union[str, UUID]] = None,
+    project_name_or_id: Optional[Union[str, UUID]] = None,
     _: AuthContext = Security(authorize),
 ) -> CodeRepositoryResponse:
     """Creates a code repository.
 
     Args:
         code_repository: Code repository to create.
-        workspace_name_or_id: Optional name or ID of the workspace.
+        project_name_or_id: Optional name or ID of the project.
 
     Returns:
         The created code repository.
     """
-    if workspace_name_or_id:
-        workspace = zen_store().get_project(workspace_name_or_id)
-        code_repository.project = workspace.id
+    if project_name_or_id:
+        project = zen_store().get_project(project_name_or_id)
+        code_repository.project = project.id
 
     return verify_permissions_and_create_entity(
         request_model=code_repository,
@@ -96,7 +94,7 @@ def create_code_repository(
 # TODO: the workspace scoped endpoint is only kept for dashboard compatibility
 # and can be removed after the migration
 @workspace_router.get(
-    "/{workspace_name_or_id}" + CODE_REPOSITORIES,
+    "/{project_name_or_id}" + CODE_REPOSITORIES,
     responses={401: error_response, 404: error_response, 422: error_response},
     deprecated=True,
     tags=["code_repositories"],
@@ -106,7 +104,7 @@ def list_code_repositories(
     filter_model: CodeRepositoryFilter = Depends(
         make_dependable(CodeRepositoryFilter)
     ),
-    workspace_name_or_id: Optional[Union[str, UUID]] = None,
+    project_name_or_id: Optional[Union[str, UUID]] = None,
     hydrate: bool = False,
     _: AuthContext = Security(authorize),
 ) -> Page[CodeRepositoryResponse]:
@@ -115,15 +113,15 @@ def list_code_repositories(
     Args:
         filter_model: Filter model used for pagination, sorting,
             filtering.
-        workspace_name_or_id: Optional name or ID of the workspace.
+        project_name_or_id: Optional name or ID of the project.
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
 
     Returns:
         Page of code repository objects.
     """
-    if workspace_name_or_id:
-        filter_model.project = workspace_name_or_id
+    if project_name_or_id:
+        filter_model.project = project_name_or_id
 
     return verify_permissions_and_list_entities(
         filter_model=filter_model,
