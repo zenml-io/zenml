@@ -11369,7 +11369,7 @@ class SqlZenStore(BaseZenStore):
 
     def _detach_tags_from_resources(
         self,
-        tags: Optional[Sequence[Union[str, tag_utils.Tag]]],
+        tags: Optional[Sequence[Union[str, UUID, tag_utils.Tag]]],
         resources: Union[BaseSchema, List[BaseSchema]],
         session: Session,
     ) -> None:

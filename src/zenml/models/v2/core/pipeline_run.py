@@ -138,12 +138,10 @@ class PipelineRunUpdate(BaseUpdate):
     # TODO: we should maybe have a different update model here, the upper
     #  three attributes should only be for internal use
     add_tags: Optional[List[str]] = Field(
-        default=None,
-        title="New tags to add to the pipeline run.",
+        default=None, title="New tags to add to the pipeline run."
     )
     remove_tags: Optional[List[str]] = Field(
-        default=None,
-        title="Tags to remove from the pipeline run.",
+        default=None, title="Tags to remove from the pipeline run."
     )
 
     model_config = ConfigDict(protected_namespaces=())

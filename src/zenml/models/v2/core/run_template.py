@@ -102,12 +102,10 @@ class RunTemplateUpdate(BaseUpdate):
         max_length=TEXT_FIELD_MAX_LENGTH,
     )
     add_tags: Optional[List[str]] = Field(
-        default=None,
-        title="New tags to add to the run template.",
+        default=None, title="New tags to add to the run template."
     )
     remove_tags: Optional[List[str]] = Field(
-        default=None,
-        title="Tags to remove from the run template.",
+        default=None, title="Tags to remove from the run template."
     )
 
 

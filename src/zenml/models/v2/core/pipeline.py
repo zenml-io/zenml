@@ -85,12 +85,10 @@ class PipelineUpdate(BaseUpdate):
         max_length=TEXT_FIELD_MAX_LENGTH,
     )
     add_tags: Optional[List[str]] = Field(
-        default=None,
-        title="New tags to add to the pipeline.",
+        default=None, title="New tags to add to the pipeline."
     )
     remove_tags: Optional[List[str]] = Field(
-        default=None,
-        title="Tags to remove from the pipeline.",
+        default=None, title="Tags to remove from the pipeline."
     )
 
 
