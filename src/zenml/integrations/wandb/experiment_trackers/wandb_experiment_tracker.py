@@ -153,12 +153,11 @@ class WandbExperimentTracker(BaseExperimentTracker):
             settings=settings.settings,
         )
 
-        if settings and settings.enable_weave:
+        if settings.enable_weave:
             import weave
 
-            logger.info("Initializing weave")
-
             if self.config.project_name:
+                logger.info("Initializing weave")
                 weave.init(project_name=self.config.project_name)
             else:
                 logger.info(
@@ -168,8 +167,8 @@ class WandbExperimentTracker(BaseExperimentTracker):
         elif settings and not settings.enable_weave:
             import weave
 
-            logger.info("Disabling weave")
             if self.config.project_name:
+                logger.info("Disabling weave")
                 weave.init(
                     project_name=self.config.project_name,
                     settings={"disabled": True},

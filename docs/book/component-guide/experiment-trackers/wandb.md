@@ -287,7 +287,8 @@ When using Weave with ZenML, there are a few important behaviors to understand:
 
 1. If `enable_weave=True` and a `project_name` is specified in your W&B experiment tracker, Weave will be initialized with that project name.
 2. If `enable_weave=True` but no `project_name` is specified, Weave initialization will be skipped.
-3. If `enable_weave=False` (explicit disabling), Weave will be disabled with `settings={"disabled": True}`.
+3. If `enable_weave=False` and a `project_name` is specified (explicit disabling), Weave will be disabled with `settings={"disabled": True}`.
+4. If `enable_weave=False` and no `project_name` is specified, Weave disabling will be skipped.
 
 {% hint style="info" %}
 For more information about Weights & Biases Weave and its capabilities, visit the [Weave documentation](https://docs.wandb.ai/guides/weave).
