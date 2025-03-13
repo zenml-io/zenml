@@ -15,7 +15,7 @@
 
 from typing import Optional
 
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel
 
 
 class VertexCustomJobParameters(BaseModel):
@@ -38,8 +38,7 @@ class VertexCustomJobParameters(BaseModel):
             https://cloud.google.com/vertex-ai/docs/training/configure-compute#boot_disk_options
         persistent_resource_id: The ID of the persistent resource to use for the job.
             https://cloud.google.com/vertex-ai/docs/training/persistent-resource-overview
-        service_account: Specifies the service account to be used. This is
-            mandatory if `persistent_resource_id` is set.
+        service_account: Specifies the service account to be used.
     """
 
     accelerator_type: Optional[str] = None
@@ -49,12 +48,3 @@ class VertexCustomJobParameters(BaseModel):
     boot_disk_type: str = "pd-ssd"
     persistent_resource_id: Optional[str] = None
     service_account: Optional[str] = None
-
-    @model_validator(mode="after")
-    def _validate_service_account(self) -> "VertexCustomJobParameters":
-        if self.persistent_resource_id and self.service_account is None:
-            raise ValueError(
-                "Service account is required when configuring a persistent "
-                "resource."
-            )
-        return self

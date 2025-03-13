@@ -68,15 +68,15 @@ from zenml.integrations.gcp import GCP_ARTIFACT_STORE_FLAVOR
 from zenml.integrations.gcp.constants import (
     GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL,
 )
-from zenml.integrations.gcp.custom_job_parameters import (
-    VertexCustomJobParameters,
-)
 from zenml.integrations.gcp.flavors.vertex_orchestrator_flavor import (
     VertexOrchestratorConfig,
     VertexOrchestratorSettings,
 )
 from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsMixin,
+)
+from zenml.integrations.gcp.vertex_custom_job_parameters import (
+    VertexCustomJobParameters,
 )
 from zenml.io import fileio
 from zenml.logger import get_logger
@@ -330,6 +330,17 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         custom_job_parameters = (
             settings.custom_job_parameters or VertexCustomJobParameters()
         )
+        if (
+            custom_job_parameters.persistent_resource_id
+            and not custom_job_parameters.service_account
+        ):
+            # Persistent resources require an explicit service account, but
+            # none was provided in the custom job parameters. We try to fall
+            # back to the workload service account.
+            custom_job_parameters.service_account = (
+                self.config.workload_service_account
+            )
+
         custom_job_component = create_custom_training_job_from_component(
             component_spec=component,
             env=[

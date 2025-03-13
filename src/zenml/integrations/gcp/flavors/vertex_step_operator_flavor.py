@@ -20,11 +20,11 @@ from zenml.integrations.gcp import (
     GCP_RESOURCE_TYPE,
     GCP_VERTEX_STEP_OPERATOR_FLAVOR,
 )
-from zenml.integrations.gcp.custom_job_parameters import (
-    VertexCustomJobParameters,
-)
 from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsConfigMixin,
+)
+from zenml.integrations.gcp.vertex_custom_job_parameters import (
+    VertexCustomJobParameters,
 )
 from zenml.models import ServiceConnectorRequirements
 from zenml.step_operators.base_step_operator import (
