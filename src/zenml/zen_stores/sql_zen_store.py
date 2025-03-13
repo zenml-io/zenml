@@ -11533,7 +11533,7 @@ class SqlZenStore(BaseZenStore):
             An updated tag.
 
         Raises:
-            IllegalOperationError: If the tag can not be converted to an exclusive tag due
+            ValueError: If the tag can not be converted to an exclusive tag due
                 to it being associated to multiple entities.
         """
         with Session(self.engine) as session:
@@ -11648,7 +11648,7 @@ class SqlZenStore(BaseZenStore):
                             error_messages.append(error)
 
                 if error_messages:
-                    raise IllegalOperationError(
+                    raise ValueError(
                         "\n".join(error_messages)
                         + "\nYou can only convert a tag into an exclusive tag "
                         "if the conflicts mentioned above are resolved."
@@ -11750,7 +11750,7 @@ class SqlZenStore(BaseZenStore):
             The newly created tag resource relationships.
 
         Raises:
-            IllegalOperationError: If an exclusive tag is being attached 
+            ValueError: If an exclusive tag is being attached
                 to multiple resources of the same type within the same scope.
             EntityExistsError: If a tag resource already exists.
         """
@@ -11882,7 +11882,7 @@ class SqlZenStore(BaseZenStore):
                                         )
                                     )
                     else:
-                        raise IllegalOperationError(
+                        raise ValueError(
                             "Can not attach exclusive tag to resource of type "
                             f"{resource_type.value} with ID: `{resource.id}`. "
                             "Exclusive tag functionality only works for "
@@ -11894,7 +11894,7 @@ class SqlZenStore(BaseZenStore):
                     # Check for duplicate IDs in any of the scope_ids list
                     for resource_type, id_list in scope_ids.items():
                         if len(id_list) != len(set(id_list)):
-                            raise IllegalOperationError(
+                            raise ValueError(
                                 f"You are trying to attach an exclusive tag to "
                                 f"multiple {resource_type.value}s within the "
                                 "same scope. This is not allowed."
