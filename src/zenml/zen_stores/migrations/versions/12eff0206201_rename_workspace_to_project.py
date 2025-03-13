@@ -39,9 +39,9 @@ def upgrade() -> None:
     # Copy data from workspace to project
     op.execute(
         """
-        INSERT INTO project (id, created, updated, name, display_name, description)
+        INSERT INTO `project` (id, created, updated, name, display_name, description)
         SELECT id, created, updated, name, display_name, description
-        FROM workspace
+        FROM `workspace`
         """
     )
 
@@ -62,14 +62,18 @@ def upgrade() -> None:
     # Phase 2: Copy data
     op.execute(
         """
-        UPDATE action 
+        UPDATE `action` 
         SET project_id = workspace_id
         """
     )
 
     # Phase 3: Add constraints and drop old column
     with op.batch_alter_table("action", schema=None) as batch_op:
-        batch_op.alter_column("project_id", nullable=False)
+        batch_op.alter_column(
+            "project_id",
+            existing_type=sqlmodel.sql.sqltypes.GUID(),
+            nullable=False,
+        )
         batch_op.drop_constraint(
             "unique_action_name_in_workspace", type_="unique"
         )
@@ -99,14 +103,18 @@ def upgrade() -> None:
     # Phase 2: Copy data
     op.execute(
         """
-        UPDATE artifact 
+        UPDATE `artifact` 
         SET project_id = workspace_id
         """
     )
 
     # Phase 3: Add constraints and drop old column
     with op.batch_alter_table("artifact", schema=None) as batch_op:
-        batch_op.alter_column("project_id", nullable=False)
+        batch_op.alter_column(
+            "project_id",
+            existing_type=sqlmodel.sql.sqltypes.GUID(),
+            nullable=False,
+        )
         batch_op.drop_constraint(
             "unique_artifact_name_in_workspace", type_="unique"
         )
@@ -136,14 +144,18 @@ def upgrade() -> None:
     # Phase 2: Copy data
     op.execute(
         """
-        UPDATE artifact_version 
+        UPDATE `artifact_version` 
         SET project_id = workspace_id
         """
     )
 
     # Phase 3: Add constraints and drop old column
     with op.batch_alter_table("artifact_version", schema=None) as batch_op:
-        batch_op.alter_column("project_id", nullable=False)
+        batch_op.alter_column(
+            "project_id",
+            existing_type=sqlmodel.sql.sqltypes.GUID(),
+            nullable=False,
+        )
         batch_op.drop_constraint(
             "fk_artifact_version_workspace_id_workspace", type_="foreignkey"
         )
@@ -167,14 +179,18 @@ def upgrade() -> None:
     # Phase 2: Copy data
     op.execute(
         """
-        UPDATE code_reference 
+        UPDATE `code_reference` 
         SET project_id = workspace_id
         """
     )
 
     # Phase 3: Add constraints and drop old column
     with op.batch_alter_table("code_reference", schema=None) as batch_op:
-        batch_op.alter_column("project_id", nullable=False)
+        batch_op.alter_column(
+            "project_id",
+            existing_type=sqlmodel.sql.sqltypes.GUID(),
+            nullable=False,
+        )
         batch_op.drop_constraint(
             "fk_code_reference_workspace_id_workspace", type_="foreignkey"
         )
@@ -198,14 +214,18 @@ def upgrade() -> None:
     # Phase 2: Copy data
     op.execute(
         """
-        UPDATE code_repository 
+        UPDATE `code_repository` 
         SET project_id = workspace_id
         """
     )
 
     # Phase 3: Add constraints and drop old column
     with op.batch_alter_table("code_repository", schema=None) as batch_op:
-        batch_op.alter_column("project_id", nullable=False)
+        batch_op.alter_column(
+            "project_id",
+            existing_type=sqlmodel.sql.sqltypes.GUID(),
+            nullable=False,
+        )
         batch_op.drop_constraint(
             "unique_code_repository_name_in_workspace", type_="unique"
         )
@@ -235,14 +255,18 @@ def upgrade() -> None:
     # Phase 2: Copy data
     op.execute(
         """
-        UPDATE event_source 
+        UPDATE `event_source` 
         SET project_id = workspace_id
         """
     )
 
     # Phase 3: Add constraints and drop old column
     with op.batch_alter_table("event_source", schema=None) as batch_op:
-        batch_op.alter_column("project_id", nullable=False)
+        batch_op.alter_column(
+            "project_id",
+            existing_type=sqlmodel.sql.sqltypes.GUID(),
+            nullable=False,
+        )
         batch_op.drop_constraint(
             "unique_event_source_name_in_workspace", type_="unique"
         )
@@ -272,14 +296,18 @@ def upgrade() -> None:
     # Phase 2: Copy data
     op.execute(
         """
-        UPDATE model 
+        UPDATE `model` 
         SET project_id = workspace_id
         """
     )
 
     # Phase 3: Add constraints and drop old column
     with op.batch_alter_table("model", schema=None) as batch_op:
-        batch_op.alter_column("project_id", nullable=False)
+        batch_op.alter_column(
+            "project_id",
+            existing_type=sqlmodel.sql.sqltypes.GUID(),
+            nullable=False,
+        )
         batch_op.drop_constraint(
             "unique_model_name_in_workspace", type_="unique"
         )
@@ -309,14 +337,18 @@ def upgrade() -> None:
     # Phase 2: Copy data
     op.execute(
         """
-        UPDATE model_version 
+        UPDATE `model_version` 
         SET project_id = workspace_id
         """
     )
 
     # Phase 3: Add constraints and drop old column
     with op.batch_alter_table("model_version", schema=None) as batch_op:
-        batch_op.alter_column("project_id", nullable=False)
+        batch_op.alter_column(
+            "project_id",
+            existing_type=sqlmodel.sql.sqltypes.GUID(),
+            nullable=False,
+        )
         batch_op.drop_constraint(
             "fk_model_version_workspace_id_workspace", type_="foreignkey"
         )
@@ -340,14 +372,18 @@ def upgrade() -> None:
     # Phase 2: Copy data
     op.execute(
         """
-        UPDATE pipeline 
+        UPDATE `pipeline` 
         SET project_id = workspace_id
         """
     )
 
     # Phase 3: Add constraints and drop old column
     with op.batch_alter_table("pipeline", schema=None) as batch_op:
-        batch_op.alter_column("project_id", nullable=False)
+        batch_op.alter_column(
+            "project_id",
+            existing_type=sqlmodel.sql.sqltypes.GUID(),
+            nullable=False,
+        )
         batch_op.drop_constraint(
             "unique_pipeline_name_in_workspace", type_="unique"
         )
@@ -378,14 +414,18 @@ def upgrade() -> None:
     # Phase 2: Copy data
     op.execute(
         """
-        UPDATE pipeline_build 
+        UPDATE `pipeline_build` 
         SET project_id = workspace_id
         """
     )
 
     # Phase 3: Add constraints and drop old column
     with op.batch_alter_table("pipeline_build", schema=None) as batch_op:
-        batch_op.alter_column("project_id", nullable=False)
+        batch_op.alter_column(
+            "project_id",
+            existing_type=sqlmodel.sql.sqltypes.GUID(),
+            nullable=False,
+        )
         batch_op.drop_constraint(
             "fk_pipeline_build_workspace_id_workspace", type_="foreignkey"
         )
@@ -410,14 +450,18 @@ def upgrade() -> None:
     # Phase 2: Copy data
     op.execute(
         """
-        UPDATE pipeline_deployment 
+        UPDATE `pipeline_deployment` 
         SET project_id = workspace_id
         """
     )
 
     # Phase 3: Add constraints and drop old column
     with op.batch_alter_table("pipeline_deployment", schema=None) as batch_op:
-        batch_op.alter_column("project_id", nullable=False)
+        batch_op.alter_column(
+            "project_id",
+            existing_type=sqlmodel.sql.sqltypes.GUID(),
+            nullable=False,
+        )
         batch_op.drop_constraint(
             "fk_pipeline_deployment_workspace_id_workspace", type_="foreignkey"
         )
@@ -442,14 +486,18 @@ def upgrade() -> None:
     # Phase 2: Copy data
     op.execute(
         """
-        UPDATE pipeline_run 
+        UPDATE `pipeline_run` 
         SET project_id = workspace_id
         """
     )
 
     # Phase 3: Add constraints and drop old column
     with op.batch_alter_table("pipeline_run", schema=None) as batch_op:
-        batch_op.alter_column("project_id", nullable=False)
+        batch_op.alter_column(
+            "project_id",
+            existing_type=sqlmodel.sql.sqltypes.GUID(),
+            nullable=False,
+        )
         batch_op.drop_constraint(
             "unique_run_name_in_workspace", type_="unique"
         )
@@ -480,14 +528,18 @@ def upgrade() -> None:
     # Phase 2: Copy data
     op.execute(
         """
-        UPDATE run_metadata 
+        UPDATE `run_metadata` 
         SET project_id = workspace_id
         """
     )
 
     # Phase 3: Add constraints and drop old column
     with op.batch_alter_table("run_metadata", schema=None) as batch_op:
-        batch_op.alter_column("project_id", nullable=False)
+        batch_op.alter_column(
+            "project_id",
+            existing_type=sqlmodel.sql.sqltypes.GUID(),
+            nullable=False,
+        )
         batch_op.drop_constraint(
             "fk_run_metadata_workspace_id_workspace", type_="foreignkey"
         )
@@ -512,14 +564,18 @@ def upgrade() -> None:
     # Phase 2: Copy data
     op.execute(
         """
-        UPDATE run_template 
+        UPDATE `run_template` 
         SET project_id = workspace_id
         """
     )
 
     # Phase 3: Add constraints and drop old column
     with op.batch_alter_table("run_template", schema=None) as batch_op:
-        batch_op.alter_column("project_id", nullable=False)
+        batch_op.alter_column(
+            "project_id",
+            existing_type=sqlmodel.sql.sqltypes.GUID(),
+            nullable=False,
+        )
         batch_op.drop_constraint(
             "unique_template_name_in_workspace", type_="unique"
         )
@@ -550,14 +606,18 @@ def upgrade() -> None:
     # Phase 2: Copy data
     op.execute(
         """
-        UPDATE schedule 
+        UPDATE `schedule` 
         SET project_id = workspace_id
         """
     )
 
     # Phase 3: Add constraints and drop old column
     with op.batch_alter_table("schedule", schema=None) as batch_op:
-        batch_op.alter_column("project_id", nullable=False)
+        batch_op.alter_column(
+            "project_id",
+            existing_type=sqlmodel.sql.sqltypes.GUID(),
+            nullable=False,
+        )
         batch_op.drop_constraint(
             "unique_schedule_name_in_workspace", type_="unique"
         )
@@ -588,14 +648,18 @@ def upgrade() -> None:
     # Phase 2: Copy data
     op.execute(
         """
-        UPDATE service 
+        UPDATE `service` 
         SET project_id = workspace_id
         """
     )
 
     # Phase 3: Add constraints and drop old column
     with op.batch_alter_table("service", schema=None) as batch_op:
-        batch_op.alter_column("project_id", nullable=False)
+        batch_op.alter_column(
+            "project_id",
+            existing_type=sqlmodel.sql.sqltypes.GUID(),
+            nullable=False,
+        )
         batch_op.drop_constraint(
             "fk_service_workspace_id_workspace", type_="foreignkey"
         )
@@ -620,14 +684,18 @@ def upgrade() -> None:
     # Phase 2: Copy data
     op.execute(
         """
-        UPDATE step_run 
+        UPDATE `step_run` 
         SET project_id = workspace_id
         """
     )
 
     # Phase 3: Add constraints and drop old column
     with op.batch_alter_table("step_run", schema=None) as batch_op:
-        batch_op.alter_column("project_id", nullable=False)
+        batch_op.alter_column(
+            "project_id",
+            existing_type=sqlmodel.sql.sqltypes.GUID(),
+            nullable=False,
+        )
         batch_op.drop_constraint(
             "fk_step_run_workspace_id_workspace", type_="foreignkey"
         )
@@ -652,14 +720,18 @@ def upgrade() -> None:
     # Phase 2: Copy data
     op.execute(
         """
-        UPDATE trigger 
+        UPDATE `trigger` 
         SET project_id = workspace_id
         """
     )
 
     # Phase 3: Add constraints and drop old column
     with op.batch_alter_table("trigger", schema=None) as batch_op:
-        batch_op.alter_column("project_id", nullable=False)
+        batch_op.alter_column(
+            "project_id",
+            existing_type=sqlmodel.sql.sqltypes.GUID(),
+            nullable=False,
+        )
         batch_op.drop_constraint(
             "unique_trigger_name_in_workspace", type_="unique"
         )
