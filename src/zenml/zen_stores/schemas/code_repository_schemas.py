@@ -33,9 +33,9 @@ from zenml.models import (
 )
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
+from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
-from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 
 
 class CodeRepositorySchema(NamedSchema, table=True):
@@ -58,9 +58,7 @@ class CodeRepositorySchema(NamedSchema, table=True):
         ondelete="CASCADE",
         nullable=False,
     )
-    project: "ProjectSchema" = Relationship(
-        back_populates="code_repositories"
-    )
+    project: "ProjectSchema" = Relationship(back_populates="code_repositories")
 
     user_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,

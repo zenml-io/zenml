@@ -75,7 +75,7 @@ class StepRunRequestFactory:
             pipeline_run_id=self.pipeline_run.id,
             status=ExecutionStatus.RUNNING,
             start_time=utc_now(),
-            project=Client().active_workspace.id,
+            project=Client().active_project.id,
         )
 
     def populate_request(self, request: StepRunRequest) -> None:
@@ -102,7 +102,7 @@ class StepRunRequestFactory:
             step=step,
             input_artifact_ids=input_artifact_ids,
             artifact_store=self.stack.artifact_store,
-            workspace_id=Client().active_workspace.id,
+            workspace_id=Client().active_project.id,
         )
         request.cache_key = cache_key
 

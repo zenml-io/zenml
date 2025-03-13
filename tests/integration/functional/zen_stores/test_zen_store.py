@@ -59,9 +59,9 @@ from zenml.config.step_configurations import Step, StepConfiguration, StepSpec
 from zenml.constants import (
     ACTIVATE,
     DEACTIVATE,
+    DEFAULT_PROJECT_NAME,
     DEFAULT_STACK_AND_COMPONENT_NAME,
     DEFAULT_USERNAME,
-    DEFAULT_WORKSPACE_NAME,
     USERS,
 )
 from zenml.enums import (
@@ -103,6 +103,8 @@ from zenml.models import (
     PipelineRequest,
     PipelineRunFilter,
     PipelineRunResponse,
+    ProjectFilter,
+    ProjectUpdate,
     RunMetadataResource,
     ScheduleRequest,
     ServiceAccountFilter,
@@ -119,8 +121,6 @@ from zenml.models import (
     UserRequest,
     UserResponse,
     UserUpdate,
-    ProjectFilter,
-    ProjectUpdate,
 )
 from zenml.models.v2.core.artifact import ArtifactRequest
 from zenml.models.v2.core.component import ComponentRequest
@@ -352,8 +352,7 @@ def test_only_one_default_workspace_present():
     """Tests that one and only one default workspace is present."""
     client = Client()
     assert (
-        len(client.zen_store.list_projects(ProjectFilter(name="default")))
-        == 1
+        len(client.zen_store.list_projects(ProjectFilter(name="default"))) == 1
     )
 
 
@@ -361,8 +360,8 @@ def test_updating_default_workspace_fails():
     """Tests updating the default workspace."""
     client = Client()
 
-    default_workspace = client.zen_store.get_project(DEFAULT_WORKSPACE_NAME)
-    assert default_workspace.name == DEFAULT_WORKSPACE_NAME
+    default_workspace = client.zen_store.get_project(DEFAULT_PROJECT_NAME)
+    assert default_workspace.name == DEFAULT_PROJECT_NAME
     workspace_update = ProjectUpdate(
         name="aria_workspace",
         description="Aria has taken possession of this workspace.",
@@ -2817,7 +2816,7 @@ def test_count_runs():
     store = client.zen_store
     if not isinstance(store, SqlZenStore):
         pytest.skip("Test only applies to SQL store")
-    active_workspace = client.active_workspace
+    active_workspace = client.active_project
     filter_model = PipelineRunFilter(project=active_workspace.id)
     num_runs = store.list_runs(filter_model).total
 
@@ -3088,7 +3087,7 @@ def test_artifact_create_fails_with_invalid_name(clean_client: "Client"):
         store.create_artifact(
             ArtifactRequest(
                 name="I will fail\n",
-                project=clean_client.active_workspace.id,
+                project=clean_client.active_project.id,
             ),
         )
 
@@ -3102,7 +3101,7 @@ def test_artifact_fetch_works_with_invalid_name(clean_client: "Client"):
     store = clean_client.zen_store
     ar = ArtifactRequest(
         name="I should fail\n But hacky `validate_name` protects me from it",
-        project=clean_client.active_workspace.id,
+        project=clean_client.active_project.id,
     )
     with patch(
         "zenml.zen_stores.sql_zen_store.validate_name", return_value=None
@@ -4224,7 +4223,7 @@ class TestModel:
         with pytest.raises(ValueError):
             zs.create_model(
                 ModelRequest(
-                    project=c.active_workspace.id,
+                    project=c.active_project.id,
                     name="I will fail\n",
                 )
             )
@@ -5396,13 +5395,13 @@ class TestRunMetadata:
                 ArtifactRequest(
                     name=sample_name("foo"),
                     has_custom_name=True,
-                    project=client.active_workspace.id,
+                    project=client.active_project.id,
                 )
             )
             resource = client.zen_store.create_artifact_version(
                 ArtifactVersionRequest(
                     artifact_id=artifact.id,
-                    project=client.active_workspace.id,
+                    project=client.active_project.id,
                     version="1",
                     type=ArtifactType.DATA,
                     uri=sample_name("foo"),
@@ -5428,7 +5427,7 @@ class TestRunMetadata:
             step_name = sample_name("foo")
             deployment = client.zen_store.create_deployment(
                 PipelineDeploymentRequest(
-                    project=client.active_workspace.id,
+                    project=client.active_project.id,
                     run_name_template=sample_name("foo"),
                     pipeline_configuration=PipelineConfiguration(
                         name=sample_name("foo")
@@ -5452,7 +5451,7 @@ class TestRunMetadata:
             )
             pr, _ = client.zen_store.get_or_create_run(
                 PipelineRunRequest(
-                    project=client.active_workspace.id,
+                    project=client.active_project.id,
                     id=uuid4(),
                     name=sample_name("foo"),
                     deployment=deployment.id,
@@ -5461,7 +5460,7 @@ class TestRunMetadata:
             )
             sr = client.zen_store.create_run_step(
                 StepRunRequest(
-                    project=client.active_workspace.id,
+                    project=client.active_project.id,
                     name=step_name,
                     status=ExecutionStatus.RUNNING,
                     pipeline_run_id=pr.id,
@@ -5477,14 +5476,14 @@ class TestRunMetadata:
             new_pipeline = client.zen_store.create_pipeline(
                 pipeline=PipelineRequest(
                     name="foo",
-                    project=client.active_workspace.id,
+                    project=client.active_project.id,
                 )
             )
             resource = client.zen_store.create_schedule(
                 ScheduleRequest(
                     name="foo",
                     cron_expression="*/5 * * * *",
-                    project=client.active_workspace.id,
+                    project=client.active_project.id,
                     orchestrator_id=client.active_stack.orchestrator.id,
                     active=False,
                     pipeline_id=new_pipeline.id,
@@ -5492,7 +5491,7 @@ class TestRunMetadata:
             )
             deployment = client.zen_store.create_deployment(
                 PipelineDeploymentRequest(
-                    project=client.active_workspace.id,
+                    project=client.active_project.id,
                     run_name_template=sample_name("foo"),
                     pipeline_configuration=PipelineConfiguration(
                         name=sample_name("foo")
@@ -5520,7 +5519,7 @@ class TestRunMetadata:
 
         client.zen_store.create_run_metadata(
             RunMetadataRequest(
-                project=client.active_workspace.id,
+                project=client.active_project.id,
                 resources=[RunMetadataResource(id=resource.id, type=type_)],
                 values={"foo": "bar"},
                 types={"foo": MetadataTypeEnum.STRING},

@@ -33,12 +33,12 @@ from zenml.exceptions import AuthorizationException, IllegalOperationError
 from zenml.logger import get_logger
 from zenml.models import (
     Page,
+    ProjectScopedResponse,
     UserAuthModel,
     UserFilter,
     UserRequest,
     UserResponse,
     UserUpdate,
-    ProjectScopedResponse,
 )
 from zenml.zen_server.auth import (
     AuthContext,
@@ -47,9 +47,6 @@ from zenml.zen_server.auth import (
 )
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rate_limit import RequestLimiter
-from zenml.zen_server.rbac.endpoint_utils import (
-    verify_permissions_and_get_entity,
-)
 from zenml.zen_server.rbac.models import Action, Resource, ResourceType
 from zenml.zen_server.rbac.utils import (
     dehydrate_page,

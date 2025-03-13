@@ -32,6 +32,7 @@ from zenml.enums import AuthScheme
 from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     ComponentFilter,
+    ProjectFilter,
     ServerActivationRequest,
     ServerLoadInfo,
     ServerModel,
@@ -40,7 +41,6 @@ from zenml.models import (
     ServerStatistics,
     StackFilter,
     UserResponse,
-    ProjectFilter,
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response

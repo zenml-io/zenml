@@ -166,7 +166,7 @@ def list_model_versions(
 
     model = zen_store().get_model_by_name_or_id(
         model_version_filter_model.model,
-        workspace=model_version_filter_model.project,
+        project=model_version_filter_model.project,
     )
 
     # Check read permissions on the model

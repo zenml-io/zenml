@@ -33,13 +33,13 @@ from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
-    TaggableFilter,
     ProjectScopedFilter,
     ProjectScopedRequest,
     ProjectScopedResponse,
     ProjectScopedResponseBody,
     ProjectScopedResponseMetadata,
     ProjectScopedResponseResources,
+    TaggableFilter,
 )
 from zenml.models.v2.core.code_reference import (
     CodeReferenceResponse,

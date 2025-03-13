@@ -18,8 +18,8 @@ from zenml.config.pipeline_run_configuration import (
 )
 from zenml.config.step_configurations import Step, StepConfiguration
 from zenml.constants import (
+    ENV_ZENML_ACTIVE_PROJECT_ID,
     ENV_ZENML_ACTIVE_STACK_ID,
-    ENV_ZENML_ACTIVE_WORKSPACE_ID,
 )
 from zenml.enums import ExecutionStatus, StackComponentType, StoreType
 from zenml.logger import get_logger
@@ -134,7 +134,7 @@ def run_template(
     ).access_token
 
     environment = {
-        ENV_ZENML_ACTIVE_WORKSPACE_ID: str(new_deployment.project.id),
+        ENV_ZENML_ACTIVE_PROJECT_ID: str(new_deployment.project.id),
         ENV_ZENML_ACTIVE_STACK_ID: str(stack.id),
         "ZENML_VERSION": zenml_version,
         "ZENML_STORE_URL": server_url,

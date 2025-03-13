@@ -48,7 +48,7 @@ def _create_local_orchestrator(
         flavor="local",
         type=StackComponentType.ORCHESTRATOR,
         user=user or repo.active_user.id,
-        workspace=workspace or repo.active_workspace.id,
+        workspace=workspace or repo.active_project.id,
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -65,7 +65,7 @@ def _create_local_artifact_store(
         flavor="local",
         type=StackComponentType.ARTIFACT_STORE,
         user=user or repo.active_user.id,
-        workspace=workspace or repo.active_workspace.id,
+        workspace=workspace or repo.active_project.id,
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -79,7 +79,7 @@ def _create_local_image_builder(client: Client):
         flavor="local",
         type=StackComponentType.IMAGE_BUILDER,
         user=client.active_user.id,
-        workspace=client.active_workspace.id,
+        workspace=client.active_project.id,
         created=datetime.now(),
         updated=datetime.now(),
     )

@@ -32,10 +32,10 @@ from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     BaseIdentifiedResponse,
     Page,
-    UserResponse,
-    UserScopedResponse,
     ProjectScopedRequest,
     ProjectScopedResponse,
+    UserResponse,
+    UserScopedResponse,
 )
 from zenml.zen_server.auth import get_auth_context
 from zenml.zen_server.rbac.models import Action, Resource, ResourceType
@@ -456,6 +456,8 @@ def get_resource_type_for_model(
         PipelineResponse,
         PipelineRunRequest,
         PipelineRunResponse,
+        ProjectRequest,
+        ProjectResponse,
         RunMetadataRequest,
         RunTemplateRequest,
         RunTemplateResponse,
@@ -475,8 +477,6 @@ def get_resource_type_for_model(
         TriggerExecutionResponse,
         TriggerRequest,
         TriggerResponse,
-        ProjectRequest,
-        ProjectResponse,
     )
 
     mapping: Dict[

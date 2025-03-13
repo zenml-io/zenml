@@ -34,13 +34,13 @@ from zenml.constants import (
 from zenml.enums import ExecutionStatus
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
-    TaggableFilter,
     ProjectScopedFilter,
     ProjectScopedRequest,
     ProjectScopedResponse,
     ProjectScopedResponseBody,
     ProjectScopedResponseMetadata,
     ProjectScopedResponseResources,
+    TaggableFilter,
 )
 from zenml.models.v2.core.tag import TagResponse
 

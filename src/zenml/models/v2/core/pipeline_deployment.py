@@ -93,9 +93,7 @@ class PipelineDeploymentBase(BaseZenModel):
         )
 
 
-class PipelineDeploymentRequest(
-    PipelineDeploymentBase, ProjectScopedRequest
-):
+class PipelineDeploymentRequest(PipelineDeploymentBase, ProjectScopedRequest):
     """Request model for pipeline deployments."""
 
     stack: UUID = Field(title="The stack associated with the deployment.")

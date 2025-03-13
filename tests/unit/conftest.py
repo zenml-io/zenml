@@ -56,6 +56,9 @@ from zenml.models import (
     PipelineRunResponseBody,
     PipelineRunResponseMetadata,
     PipelineRunResponseResources,
+    ProjectResponse,
+    ProjectResponseBody,
+    ProjectResponseMetadata,
     StepRunRequest,
     StepRunResponse,
     StepRunResponseBody,
@@ -64,9 +67,6 @@ from zenml.models import (
     UserResponse,
     UserResponseBody,
     UserResponseMetadata,
-    ProjectResponse,
-    ProjectResponseBody,
-    ProjectResponseMetadata,
 )
 from zenml.models.v2.core.service import (
     ServiceResponse,

@@ -444,7 +444,7 @@ def test_getting_a_pipeline(clean_client: "Client"):
         clean_client.get_pipeline(name_id_or_prefix="non_existent")
 
     request = PipelineRequest(
-        project=clean_client.active_workspace.id,
+        project=clean_client.active_project.id,
         name="pipeline",
     )
     response_1 = clean_client.zen_store.create_pipeline(request)

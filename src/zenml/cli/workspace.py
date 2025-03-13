@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Functionality to administer workspaces of the ZenML CLI and server."""
+"""Functionality to administer projects of the ZenML CLI and server."""
 
 from typing import Any, Optional
 
@@ -20,7 +20,7 @@ import click
 from zenml.cli import utils as cli_utils
 from zenml.cli.cli import TagGroup, cli
 from zenml.cli.utils import (
-    check_zenml_pro_workspace_availability,
+    check_zenml_pro_project_availability,
     is_sorted_or_filtered,
     list_options,
 )
@@ -31,41 +31,41 @@ from zenml.models import ProjectFilter
 
 
 @cli.group(cls=TagGroup, tag=CliCategories.MANAGEMENT_TOOLS)
-def workspace() -> None:
-    """Commands for workspace management."""
+def project() -> None:
+    """Commands for project management."""
 
 
-@workspace.command("list")
+@project.command("list")
 @list_options(ProjectFilter)
 @click.pass_context
-def list_workspaces(ctx: click.Context, **kwargs: Any) -> None:
-    """List all workspaces.
+def list_projects(ctx: click.Context, **kwargs: Any) -> None:
+    """List all projects.
 
     Args:
         ctx: The click context object
-        **kwargs: Keyword arguments to filter the list of workspaces.
+        **kwargs: Keyword arguments to filter the list of projects.
     """
-    check_zenml_pro_workspace_availability()
+    check_zenml_pro_project_availability()
     client = Client()
-    with console.status("Listing workspaces...\n"):
-        workspaces = client.list_workspaces(**kwargs)
-        if workspaces:
+    with console.status("Listing projects...\n"):
+        projects = client.list_projects(**kwargs)
+        if projects:
             cli_utils.print_pydantic_models(
-                workspaces,
+                projects,
                 exclude_columns=["id", "created", "updated"],
-                active_models=[Client().active_workspace],
+                active_models=[Client().active_project],
                 show_active=not is_sorted_or_filtered(ctx),
             )
         else:
-            cli_utils.declare("No workspaces found for the given filter.")
+            cli_utils.declare("No projects found for the given filter.")
 
 
-@workspace.command("register")
+@project.command("register")
 @click.option(
     "--set",
-    "set_workspace",
+    "set_project",
     is_flag=True,
-    help="Immediately set this workspace as active.",
+    help="Immediately set this project as active.",
     type=click.BOOL,
 )
 @click.option(
@@ -73,102 +73,100 @@ def list_workspaces(ctx: click.Context, **kwargs: Any) -> None:
     "display_name",
     type=str,
     required=False,
-    help="The display name of the workspace.",
+    help="The display name of the project.",
 )
-@click.argument("workspace_name", type=str, required=True)
-def register_workspace(
-    workspace_name: str,
-    set_workspace: bool = False,
+@click.argument("project_name", type=str, required=True)
+def register_project(
+    project_name: str,
+    set_project: bool = False,
     display_name: Optional[str] = None,
 ) -> None:
-    """Register a new workspace.
+    """Register a new project.
 
     Args:
-        workspace_name: The name of the workspace to register.
-        set_workspace: Whether to set the workspace as active.
-        display_name: The display name of the workspace.
+        project_name: The name of the project to register.
+        set_project: Whether to set the project as active.
+        display_name: The display name of the project.
     """
-    check_zenml_pro_workspace_availability()
+    check_zenml_pro_project_availability()
     client = Client()
-    with console.status("Creating workspace...\n"):
+    with console.status("Creating project...\n"):
         try:
-            client.create_workspace(
-                workspace_name,
+            client.create_project(
+                project_name,
                 description="",
                 display_name=display_name,
             )
-            cli_utils.declare("Workspace created successfully.")
+            cli_utils.declare("Project created successfully.")
         except Exception as e:
             cli_utils.error(str(e))
 
-    if set_workspace:
-        client.set_active_workspace(workspace_name)
-        cli_utils.declare(
-            f"The active workspace has been set to {workspace_name}"
-        )
+    if set_project:
+        client.set_active_project(project_name)
+        cli_utils.declare(f"The active project has been set to {project_name}")
 
 
-@workspace.command("set")
-@click.argument("workspace_name_or_id", type=str, required=True)
-def set_workspace(workspace_name_or_id: str) -> None:
-    """Set the active workspace.
+@project.command("set")
+@click.argument("project_name_or_id", type=str, required=True)
+def set_project(project_name_or_id: str) -> None:
+    """Set the active project.
 
     Args:
-        workspace_name_or_id: The name or ID of the workspace to set as active.
+        project_name_or_id: The name or ID of the project to set as active.
     """
-    check_zenml_pro_workspace_availability()
+    check_zenml_pro_project_availability()
     client = Client()
-    with console.status("Setting workspace...\n"):
+    with console.status("Setting project...\n"):
         try:
-            client.set_active_workspace(workspace_name_or_id)
+            client.set_active_project(project_name_or_id)
             cli_utils.declare(
-                f"The active workspace has been set to {workspace_name_or_id}"
+                f"The active project has been set to {project_name_or_id}"
             )
         except Exception as e:
             cli_utils.error(str(e))
 
 
-@workspace.command("describe")
-@click.argument("workspace_name_or_id", type=str, required=False)
-def describe_workspace(workspace_name_or_id: Optional[str] = None) -> None:
-    """Get the workspace.
+@project.command("describe")
+@click.argument("project_name_or_id", type=str, required=False)
+def describe_project(project_name_or_id: Optional[str] = None) -> None:
+    """Get the project.
 
     Args:
-        workspace_name_or_id: The name or ID of the workspace to set as active.
+        project_name_or_id: The name or ID of the project to set as active.
     """
-    check_zenml_pro_workspace_availability()
+    check_zenml_pro_project_availability()
     client = Client()
-    if not workspace_name_or_id:
-        active_workspace = client.active_workspace
+    if not project_name_or_id:
+        active_project = client.active_project
         cli_utils.print_pydantic_models(
-            [active_workspace], exclude_columns=["created", "updated"]
+            [active_project], exclude_columns=["created", "updated"]
         )
     else:
         try:
-            workspace_ = client.get_workspace(workspace_name_or_id)
+            project_ = client.get_project(project_name_or_id)
         except KeyError as err:
             cli_utils.error(str(err))
         else:
             cli_utils.print_pydantic_models(
-                [workspace_], exclude_columns=["created", "updated"]
+                [project_], exclude_columns=["created", "updated"]
             )
 
 
-@workspace.command("delete")
-@click.argument("workspace_name_or_id", type=str, required=True)
-def delete_workspace(workspace_name_or_id: str) -> None:
-    """Delete a workspace.
+@project.command("delete")
+@click.argument("project_name_or_id", type=str, required=True)
+def delete_project(project_name_or_id: str) -> None:
+    """Delete a project.
 
     Args:
-        workspace_name_or_id: The name or ID of the workspace to delete.
+        project_name_or_id: The name or ID of the project to delete.
     """
-    check_zenml_pro_workspace_availability()
+    check_zenml_pro_project_availability()
     client = Client()
-    with console.status("Deleting workspace...\n"):
+    with console.status("Deleting project...\n"):
         try:
-            client.delete_workspace(workspace_name_or_id)
+            client.delete_project(project_name_or_id)
             cli_utils.declare(
-                f"Workspace '{workspace_name_or_id}' deleted successfully."
+                f"Project '{project_name_or_id}' deleted successfully."
             )
         except Exception as e:
             cli_utils.error(str(e))

@@ -90,6 +90,10 @@ from zenml.models import (
     PipelineRunResponse,
     PipelineRunUpdate,
     PipelineUpdate,
+    ProjectFilter,
+    ProjectRequest,
+    ProjectResponse,
+    ProjectUpdate,
     RunMetadataRequest,
     RunTemplateFilter,
     RunTemplateRequest,
@@ -146,10 +150,6 @@ from zenml.models import (
     UserRequest,
     UserResponse,
     UserUpdate,
-    ProjectFilter,
-    ProjectRequest,
-    ProjectResponse,
-    ProjectUpdate,
 )
 
 

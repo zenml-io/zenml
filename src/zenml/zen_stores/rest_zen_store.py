@@ -203,6 +203,10 @@ from zenml.models import (
     PipelineRunResponse,
     PipelineRunUpdate,
     PipelineUpdate,
+    ProjectFilter,
+    ProjectRequest,
+    ProjectResponse,
+    ProjectUpdate,
     RunMetadataRequest,
     RunTemplateFilter,
     RunTemplateRequest,
@@ -259,10 +263,6 @@ from zenml.models import (
     UserRequest,
     UserResponse,
     UserUpdate,
-    ProjectFilter,
-    ProjectRequest,
-    ProjectResponse,
-    ProjectUpdate,
 )
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
@@ -3337,9 +3337,7 @@ class RestZenStore(BaseZenStore):
 
     # ----------------------------- Projects -----------------------------
 
-    def create_project(
-        self, project: ProjectRequest
-    ) -> ProjectResponse:
+    def create_project(self, project: ProjectRequest) -> ProjectResponse:
         """Creates a new project.
 
         Args:

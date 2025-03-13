@@ -22,8 +22,8 @@ from zenml.cli.utils import (
 )
 from zenml.client import Client
 from zenml.models import (
-    UserResponse,
     ProjectResponse,
+    UserResponse,
 )
 from zenml.utils.string_utils import random_str
 
@@ -96,7 +96,7 @@ def sample_workspace_name() -> str:
 
 def create_sample_workspace() -> ProjectResponse:
     """Fixture to get a workspace."""
-    return Client().create_workspace(
+    return Client().create_project(
         name=sample_workspace_name(),
         description="This workspace aims to ensure world domination for all "
         "cat-kind.",

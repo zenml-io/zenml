@@ -44,6 +44,7 @@ from zenml.models.v2.core.artifact import ArtifactRequest
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
+from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.step_run_schemas import (
     StepRunInputArtifactSchema,
@@ -51,7 +52,6 @@ from zenml.zen_stores.schemas.step_run_schemas import (
 )
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import RunMetadataInterface
-from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.artifact_visualization_schemas import (
@@ -295,9 +295,7 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
     user: Optional["UserSchema"] = Relationship(
         back_populates="artifact_versions"
     )
-    project: "ProjectSchema" = Relationship(
-        back_populates="artifact_versions"
-    )
+    project: "ProjectSchema" = Relationship(back_populates="artifact_versions")
     run_metadata: List["RunMetadataSchema"] = Relationship(
         sa_relationship_kwargs=dict(
             secondary="run_metadata_resource",

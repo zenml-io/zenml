@@ -42,8 +42,8 @@ from zenml.models.v2.base.filter import AnyQuery, BaseFilter
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
 
-    from zenml.models.v2.core.user import UserResponse
     from zenml.models.v2.core.project import ProjectResponse
+    from zenml.models.v2.core.user import UserResponse
     from zenml.zen_stores.schemas import BaseSchema
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
@@ -86,9 +86,7 @@ class ProjectScopedRequest(UserScopedRequest):
     Used as a base class for all domain models that are project-scoped.
     """
 
-    project: UUID = Field(
-        title="The project to which this resource belongs."
-    )
+    project: UUID = Field(title="The project to which this resource belongs.")
 
     def get_analytics_metadata(self) -> Dict[str, Any]:
         """Fetches the analytics metadata for project scoped models.
@@ -295,9 +293,7 @@ class ProjectScopedResponseBody(UserScopedResponseBody):
 class ProjectScopedResponseMetadata(UserScopedResponseMetadata):
     """Base project-scoped metadata."""
 
-    project: "ProjectResponse" = Field(
-        title="The project of this resource."
-    )
+    project: "ProjectResponse" = Field(title="The project of this resource.")
 
 
 class ProjectScopedResponseResources(UserScopedResponseResources):

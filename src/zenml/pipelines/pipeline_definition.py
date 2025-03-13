@@ -684,7 +684,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             components = Client().active_stack_model.components
             orchestrator = components[StackComponentType.ORCHESTRATOR][0]
             schedule_model = ScheduleRequest(
-                project=Client().active_workspace.id,
+                project=Client().active_project.id,
                 pipeline_id=pipeline_id,
                 orchestrator_id=orchestrator.id,
                 name=schedule_name,
@@ -770,7 +770,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             code_path = code_utils.upload_code_if_necessary(code_archive)
 
         request = PipelineDeploymentRequest(
-            project=Client().active_workspace.id,
+            project=Client().active_project.id,
             stack=stack.id,
             pipeline=pipeline_id,
             build=build_id,
@@ -1094,7 +1094,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             return _get()
         except RuntimeError:
             request = PipelineRequest(
-                project=client.active_workspace.id,
+                project=client.active_project.id,
                 name=self.name,
             )
 

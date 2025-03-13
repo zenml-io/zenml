@@ -25,13 +25,13 @@ from zenml.constants import (
 )
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
-    TaggableFilter,
     ProjectScopedFilter,
     ProjectScopedRequest,
     ProjectScopedResponse,
     ProjectScopedResponseBody,
     ProjectScopedResponseMetadata,
     ProjectScopedResponseResources,
+    TaggableFilter,
 )
 from zenml.utils.pagination_utils import depaginate
 

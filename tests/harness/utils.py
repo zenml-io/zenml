@@ -194,28 +194,28 @@ def clean_workspace_session(
     from zenml.utils.string_utils import random_str
 
     client = Client()
-    original_workspace = client.active_workspace.id
+    original_workspace = client.active_project.id
 
     workspace_name = f"pytest_{random_str(8)}"
-    client.create_workspace(
+    client.create_project(
         name=workspace_name, description="pytest test workspace"
     )
 
     if clean_repo:
         with clean_repo_session(tmp_path_factory) as repo_client:
-            repo_client.set_active_workspace(workspace_name)
+            repo_client.set_active_project(workspace_name)
 
             logging.info(f"Tests are running in workspace: '{workspace_name}'")
             yield repo_client
     else:
-        client.set_active_workspace(workspace_name)
+        client.set_active_project(workspace_name)
 
         logging.info(f"Tests are running in workspace: '{workspace_name}'")
         yield client
 
     # change the active workspace back to what it was
-    client.set_active_workspace(original_workspace)
-    client.delete_workspace(workspace_name)
+    client.set_active_project(original_workspace)
+    client.delete_project(workspace_name)
 
 
 @contextmanager

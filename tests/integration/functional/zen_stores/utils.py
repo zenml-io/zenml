@@ -83,6 +83,9 @@ from zenml.models import (
     PipelineRunFilter,
     PipelineRunRequest,
     PipelineUpdate,
+    ProjectFilter,
+    ProjectRequest,
+    ProjectUpdate,
     ResourceTypeModel,
     RunTemplateFilter,
     RunTemplateRequest,
@@ -106,9 +109,6 @@ from zenml.models import (
     UserFilter,
     UserRequest,
     UserUpdate,
-    ProjectFilter,
-    ProjectRequest,
-    ProjectUpdate,
 )
 from zenml.pipelines import pipeline
 from zenml.service_connectors.service_connector import AuthenticationConfig
@@ -504,13 +504,13 @@ class WorkspaceContext:
             self.workspace = self.store.get_project(self.workspace_name)
 
         if self.activate:
-            self.original_workspace = self.client.active_workspace
-            self.client.set_active_workspace(self.workspace.id)
+            self.original_workspace = self.client.active_project
+            self.client.set_active_project(self.workspace.id)
         return self.workspace
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
         if self.activate:
-            self.client.set_active_workspace(self.original_workspace.id)
+            self.client.set_active_project(self.original_workspace.id)
         if self.create:
             try:
                 self.store.delete_project(self.workspace.id)
@@ -580,7 +580,7 @@ class CodeRepositoryContext:
                 "attribute": "StubCodeRepository",
                 "type": "user",
             },
-            project=self.workspace_id or self.client.active_workspace.id,
+            project=self.workspace_id or self.client.active_project.id,
         )
 
         self.repo = self.store.create_code_repository(request)
@@ -670,7 +670,7 @@ class ModelContext:
         delete: bool = True,
     ):
         client = Client()
-        self.workspace = client.active_workspace.id
+        self.workspace = client.active_project.id
         self.model = sample_name("su_model")
         self.model_version = "2.0.0"
 
@@ -692,7 +692,7 @@ class ModelContext:
 
     def __enter__(self):
         client = Client()
-        ws = client.get_workspace(self.workspace)
+        ws = client.get_project(self.workspace)
         stack = client.active_stack
         try:
             model = client.get_model(self.model)
@@ -976,7 +976,7 @@ class CrudTestConfig:
         if hasattr(create_model, "user"):
             create_model.user = client.active_user.id
         if hasattr(create_model, "workspace"):
-            create_model.workspace = client.active_workspace.id
+            create_model.workspace = client.active_project.id
         if hasattr(create_model, "stack"):
             create_model.stack = client.active_stack_model.id
 

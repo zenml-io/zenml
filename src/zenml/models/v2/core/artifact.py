@@ -30,13 +30,13 @@ from pydantic import Field
 from zenml.constants import SORT_BY_LATEST_VERSION_KEY, STR_FIELD_MAX_LENGTH
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
-    TaggableFilter,
     ProjectScopedFilter,
     ProjectScopedRequest,
     ProjectScopedResponse,
     ProjectScopedResponseBody,
     ProjectScopedResponseMetadata,
     ProjectScopedResponseResources,
+    TaggableFilter,
 )
 from zenml.models.v2.core.tag import TagResponse
 

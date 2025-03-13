@@ -33,9 +33,9 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.config.server_config import ServerConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
+    DEFAULT_PROJECT_NAME,
     DEFAULT_STACK_AND_COMPONENT_NAME,
-    DEFAULT_WORKSPACE_NAME,
-    ENV_ZENML_DEFAULT_WORKSPACE_NAME,
+    ENV_ZENML_DEFAULT_PROJECT_NAME,
     ENV_ZENML_SERVER,
     IS_DEBUG_ENV,
 )
@@ -46,6 +46,7 @@ from zenml.enums import (
 from zenml.exceptions import IllegalOperationError
 from zenml.logger import get_logger
 from zenml.models import (
+    ProjectResponse,
     ServerDatabaseType,
     ServerDeploymentType,
     ServerModel,
@@ -53,7 +54,6 @@ from zenml.models import (
     StackResponse,
     UserFilter,
     UserResponse,
-    ProjectResponse,
 )
 from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.zen_stores.zen_store_interface import ZenStoreInterface
@@ -319,9 +319,7 @@ class BaseZenStore(
 
         if active_project_name_or_id:
             try:
-                active_project = self.get_project(
-                    active_project_name_or_id
-                )
+                active_project = self.get_project(active_project_name_or_id)
             except (KeyError, IllegalOperationError):
                 active_project_name_or_id = None
                 logger.warning(
@@ -331,7 +329,7 @@ class BaseZenStore(
 
         if active_project is None:
             try:
-                active_project = self._get_default_workspace()
+                active_project = self._get_default_project()
             except (KeyError, IllegalOperationError):
                 logger.warning(
                     "An active project is not set. Please set the active "
@@ -424,33 +422,31 @@ class BaseZenStore(
         return self.get_store_info().is_local()
 
     # -----------------------------
-    # Default workspaces and stacks
+    # Default projects and stacks
     # -----------------------------
 
     @property
-    def _default_workspace_name(self) -> str:
-        """Get the default workspace name.
+    def _default_project_name(self) -> str:
+        """Get the default project name.
 
         Returns:
-            The default workspace name.
+            The default project name.
         """
-        return os.getenv(
-            ENV_ZENML_DEFAULT_WORKSPACE_NAME, DEFAULT_WORKSPACE_NAME
-        )
+        return os.getenv(ENV_ZENML_DEFAULT_PROJECT_NAME, DEFAULT_PROJECT_NAME)
 
-    def _get_default_workspace(self) -> ProjectResponse:
-        """Get the default workspace.
+    def _get_default_project(self) -> ProjectResponse:
+        """Get the default project.
 
         Raises:
-            KeyError: If the default workspace doesn't exist.
+            KeyError: If the default project doesn't exist.
 
         Returns:
-            The default workspace.
+            The default project.
         """
         try:
-            return self.get_project(self._default_workspace_name)
+            return self.get_project(self._default_project_name)
         except KeyError:
-            raise KeyError("Unable to find default workspace.")
+            raise KeyError("Unable to find default project.")
 
     def _get_default_stack(
         self,

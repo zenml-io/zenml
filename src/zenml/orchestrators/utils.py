@@ -23,8 +23,8 @@ from zenml.config.global_config import (
     GlobalConfiguration,
 )
 from zenml.constants import (
+    ENV_ZENML_ACTIVE_PROJECT_ID,
     ENV_ZENML_ACTIVE_STACK_ID,
-    ENV_ZENML_ACTIVE_WORKSPACE_ID,
     ENV_ZENML_DISABLE_CREDENTIALS_DISK_CACHING,
     ENV_ZENML_PIPELINE_RUN_API_TOKEN_EXPIRATION,
     ENV_ZENML_SERVER,
@@ -216,8 +216,8 @@ def get_config_environment_vars(
     environment_vars[ENV_ZENML_ACTIVE_STACK_ID] = str(
         Client().active_stack_model.id
     )
-    environment_vars[ENV_ZENML_ACTIVE_WORKSPACE_ID] = str(
-        Client().active_workspace.id
+    environment_vars[ENV_ZENML_ACTIVE_PROJECT_ID] = str(
+        Client().active_project.id
     )
 
     return environment_vars

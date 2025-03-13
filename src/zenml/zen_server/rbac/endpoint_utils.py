@@ -22,8 +22,8 @@ from zenml.models import (
     BaseRequest,
     BaseUpdate,
     Page,
-    UserScopedRequest,
     ProjectScopedFilter,
+    UserScopedRequest,
 )
 from zenml.zen_server.auth import get_auth_context
 from zenml.zen_server.feature_gate.endpoint_utils import (

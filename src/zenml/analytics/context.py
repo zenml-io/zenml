@@ -129,7 +129,7 @@ class AnalyticsContext:
                     active_user.is_service_account
                 )
                 self.external_user_id = active_user.external_user_id
-                self.workspace_id = Client().active_workspace.id
+                self.workspace_id = Client().active_project.id
 
             # Fetch the `client_id`
             if self.in_server:

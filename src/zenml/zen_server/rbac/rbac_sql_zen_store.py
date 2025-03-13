@@ -80,7 +80,7 @@ class RBACSqlZenStore(SqlZenStore):
             try:
                 model_response = self.get_model_by_name_or_id(
                     model_name_or_id=model_request.name,
-                    workspace=model_request.project,
+                    project=model_request.project,
                 )
                 created = False
             except KeyError:
