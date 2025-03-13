@@ -36,6 +36,7 @@ from zenml.enums import ExecutionStatus
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
+    RunMetadataFilter,
     TaggableFilter,
     WorkspaceScopedFilter,
     WorkspaceScopedRequest,
@@ -582,12 +583,15 @@ class PipelineRunResponse(
 # ------------------ Filter Model ------------------
 
 
-class PipelineRunFilter(WorkspaceScopedFilter, TaggableFilter):
+class PipelineRunFilter(
+    WorkspaceScopedFilter, TaggableFilter, RunMetadataFilter
+):
     """Model to enable advanced filtering of all Workspaces."""
 
     CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
         *WorkspaceScopedFilter.CUSTOM_SORTING_OPTIONS,
         *TaggableFilter.CUSTOM_SORTING_OPTIONS,
+        *RunMetadataFilter.CUSTOM_SORTING_OPTIONS,
         "tag",
         "stack",
         "pipeline",
@@ -597,6 +601,7 @@ class PipelineRunFilter(WorkspaceScopedFilter, TaggableFilter):
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
         *TaggableFilter.FILTER_EXCLUDE_FIELDS,
+        *RunMetadataFilter.FILTER_EXCLUDE_FIELDS,
         "unlisted",
         "code_repository_id",
         "build_id",
@@ -610,11 +615,16 @@ class PipelineRunFilter(WorkspaceScopedFilter, TaggableFilter):
         "stack_component",
         "pipeline_name",
         "templatable",
-        "run_metadata",
     ]
     CLI_EXCLUDE_FIELDS = [
         *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
         *TaggableFilter.CLI_EXCLUDE_FIELDS,
+        *RunMetadataFilter.CLI_EXCLUDE_FIELDS,
+    ]
+    API_MULTI_INPUT_PARAMS: ClassVar[List[str]] = [
+        *WorkspaceScopedFilter.API_MULTI_INPUT_PARAMS,
+        *TaggableFilter.API_MULTI_INPUT_PARAMS,
+        *RunMetadataFilter.API_MULTI_INPUT_PARAMS,
     ]
 
     name: Optional[str] = Field(
@@ -680,10 +690,6 @@ class PipelineRunFilter(WorkspaceScopedFilter, TaggableFilter):
         union_mode="left_to_right",
     )
     unlisted: Optional[bool] = None
-    run_metadata: Optional[Dict[str, Any]] = Field(
-        default=None,
-        description="The run_metadata to filter the pipeline runs by.",
-    )
     # TODO: Remove once frontend is ready for it. This is replaced by the more
     #   generic `pipeline` filter below.
     pipeline_name: Optional[str] = Field(
@@ -740,8 +746,6 @@ class PipelineRunFilter(WorkspaceScopedFilter, TaggableFilter):
             PipelineDeploymentSchema,
             PipelineRunSchema,
             PipelineSchema,
-            RunMetadataResourceSchema,
-            RunMetadataSchema,
             ScheduleSchema,
             StackComponentSchema,
             StackCompositionSchema,
@@ -899,30 +903,6 @@ class PipelineRunFilter(WorkspaceScopedFilter, TaggableFilter):
                 )
 
             custom_filters.append(templatable_filter)
-        if self.run_metadata is not None:
-            from zenml.enums import MetadataResourceTypes
-
-            for key, value in self.run_metadata.items():
-                additional_filter = and_(
-                    RunMetadataResourceSchema.resource_id
-                    == PipelineRunSchema.id,
-                    RunMetadataResourceSchema.resource_type
-                    == MetadataResourceTypes.PIPELINE_RUN.value,
-                    RunMetadataResourceSchema.run_metadata_id
-                    == RunMetadataSchema.id,
-                    self.generate_custom_query_conditions_for_column(
-                        value=key,
-                        table=RunMetadataSchema,
-                        column="key",
-                    ),
-                    self.generate_custom_query_conditions_for_column(
-                        value=value,
-                        table=RunMetadataSchema,
-                        column="value",
-                        json_encode_value=True,
-                    ),
-                )
-                custom_filters.append(additional_filter)
 
         return custom_filters
 

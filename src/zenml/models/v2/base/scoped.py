@@ -430,6 +430,10 @@ class TaggableFilter(BaseFilter):
         *BaseFilter.CUSTOM_SORTING_OPTIONS,
         "tags",
     ]
+    API_MULTI_INPUT_PARAMS: ClassVar[List[str]] = [
+        *BaseFilter.API_MULTI_INPUT_PARAMS,
+        "tags",
+    ]
 
     @model_validator(mode="after")
     def add_tag_to_tags(self) -> "TaggableFilter":
@@ -587,3 +591,155 @@ class TaggableFilter(BaseFilter):
             return query
 
         return super().apply_sorting(query=query, table=table)
+
+
+class RunMetadataFilter(BaseFilter):
+    """Model to enable filtering and sorting by run metadata."""
+
+    run_metadata: Optional[List[str]] = Field(
+        default=None,
+        description="The run_metadata to filter the pipeline runs by.",
+    )
+    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *BaseFilter.FILTER_EXCLUDE_FIELDS,
+        "run_metadata",
+    ]
+    API_MULTI_INPUT_PARAMS: ClassVar[List[str]] = [
+        *BaseFilter.API_MULTI_INPUT_PARAMS,
+        "run_metadata",
+    ]
+
+    @model_validator(mode="after")
+    def validate_run_metadata_format(self) -> "RunMetadataFilter":
+        """Validates that run_metadata entries are in the correct format.
+
+        Each run_metadata entry must be in one of the following formats:
+        1. "key:value" - Direct equality comparison (key equals value)
+        2. "key:filterop:value" - Where filterop is one of the GenericFilterOps:
+           - equals: Exact match
+           - notequals: Not equal to
+           - contains: String contains value
+           - startswith: String starts with value
+           - endswith: String ends with value
+           - oneof: Value is one of the specified options
+           - gte: Greater than or equal to
+           - gt: Greater than
+           - lte: Less than or equal to
+           - lt: Less than
+           - in: Value is in a list
+
+        Examples:
+        - "status:completed" - Find entries where status equals "completed"
+        - "name:contains:test" - Find entries where name contains "test"
+        - "duration:gt:10" - Find entries where duration is greater than 10
+
+        Returns:
+            self
+
+        Raises:
+            ValueError: If any entry in run_metadata does not contain a colon.
+        """
+        if self.run_metadata:
+            for entry in self.run_metadata:
+                if ":" not in entry:
+                    raise ValueError(
+                        f"Invalid run_metadata entry format: '{entry}'. "
+                        "Entry must be in format 'key:value' for direct "
+                        "equality comparison or 'key:filterop:value' where "
+                        "filterop is one of: equals, notequals, "
+                        f"contains, startswith, endswith, oneof, gte, gt, "
+                        f"lte, lt, in."
+                    )
+        return self
+
+    def apply_filter(
+        self,
+        query: AnyQuery,
+        table: Type["AnySchema"],
+    ) -> AnyQuery:
+        """Applies the filter to a query.
+
+        Args:
+            query: The query to which to apply the filter.
+            table: The query table.
+
+        Returns:
+            The query with filter applied.
+        """
+        from zenml.zen_stores.schemas import (
+            RunMetadataResourceSchema,
+            RunMetadataSchema,
+        )
+
+        query = super().apply_filter(query=query, table=table)
+
+        if self.run_metadata:
+            query = query.join(
+                RunMetadataResourceSchema,
+                RunMetadataResourceSchema.resource_id == getattr(table, "id"),
+            ).join(
+                RunMetadataSchema,
+                RunMetadataSchema.id
+                == RunMetadataResourceSchema.run_metadata_id,
+            )
+
+        return query
+
+    def get_custom_filters(
+        self, table: Type["AnySchema"]
+    ) -> List["ColumnElement[bool]"]:
+        """Get custom run metadata filters.
+
+        Args:
+            table: The query table.
+
+        Returns:
+            A list of custom filters.
+        """
+        custom_filters = super().get_custom_filters(table)
+
+        if self.run_metadata is not None:
+            from sqlmodel import and_
+
+            from zenml.enums import MetadataResourceTypes
+            from zenml.zen_stores.schemas import (
+                ArtifactVersionSchema,
+                ModelVersionSchema,
+                PipelineRunSchema,
+                RunMetadataResourceSchema,
+                RunMetadataSchema,
+                ScheduleSchema,
+                StepRunSchema,
+            )
+
+            resource_type_mapping = {
+                ArtifactVersionSchema: MetadataResourceTypes.ARTIFACT_VERSION,
+                ModelVersionSchema: MetadataResourceTypes.MODEL_VERSION,
+                PipelineRunSchema: MetadataResourceTypes.PIPELINE_RUN,
+                StepRunSchema: MetadataResourceTypes.STEP_RUN,
+                ScheduleSchema: MetadataResourceTypes.SCHEDULE,
+            }
+
+            for entry in self.run_metadata:
+                key, value = entry.split(":", 1)
+                additional_filter = and_(
+                    RunMetadataResourceSchema.resource_id == table.id,
+                    RunMetadataResourceSchema.resource_type
+                    == resource_type_mapping[table].value,
+                    RunMetadataResourceSchema.run_metadata_id
+                    == RunMetadataSchema.id,
+                    self.generate_custom_query_conditions_for_column(
+                        value=key,
+                        table=RunMetadataSchema,
+                        column="key",
+                    ),
+                    self.generate_custom_query_conditions_for_column(
+                        value=value,
+                        table=RunMetadataSchema,
+                        column="value",
+                        json_encode_value=True,
+                    ),
+                )
+                custom_filters.append(additional_filter)
+
+        return custom_filters
