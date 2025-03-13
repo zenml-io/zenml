@@ -37,7 +37,7 @@ from zenml.logger import get_logger
 from zenml.login.credentials import ServerType
 from zenml.login.pro.constants import ZENML_PRO_API_URL
 from zenml.login.web_login import web_login
-from zenml.utils.dashboard_utils import show_dashboard_url
+from zenml.utils.dashboard_utils import show_dashboard
 from zenml.utils.server_utils import (
     connected_to_local_server,
     get_local_server,
@@ -135,7 +135,7 @@ def start_local_server(
                 f"The local ZenML dashboard is available at "
                 f"'{server.status.url}'."
             )
-            show_dashboard_url(
+            show_dashboard(
                 local=True,
                 ngrok_token=ngrok_token,
             )

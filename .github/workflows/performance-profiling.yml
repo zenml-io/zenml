@@ -115,7 +115,8 @@ jobs:
           echo "EOF" >> $GITHUB_ENV
       - name: Find existing comment
         uses: peter-evans/find-comment@v2
-        if: github.event_name == 'pull_request' && steps.create-report.outputs.has_issues == 'true'
+        if: github.event_name == 'pull_request' && steps.create-report.outputs.has_issues
+          == 'true'
         id: find-comment
         with:
           issue-number: ${{ github.event.pull_request.number }}
@@ -123,7 +124,8 @@ jobs:
           body-includes: <!-- PERFORMANCE_REPORT -->
       - name: Create or update comment
         uses: peter-evans/create-or-update-comment@v2
-        if: github.event_name == 'pull_request' && steps.create-report.outputs.has_issues == 'true'
+        if: github.event_name == 'pull_request' && steps.create-report.outputs.has_issues
+          == 'true'
         with:
           comment-id: ${{ steps.find-comment.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}

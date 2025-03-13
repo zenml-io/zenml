@@ -143,7 +143,7 @@ def get_model_version_url(model_version_id: UUID) -> Optional[str]:
     return None
 
 
-def show_dashboard(url: str) -> None:
+def show_dashboard_with_url(url: str) -> None:
     """Show the ZenML dashboard at the given URL.
 
     In native environments, the dashboard is opened in the default browser.
@@ -207,7 +207,7 @@ def show_dashboard(url: str) -> None:
         logger.info(f"The ZenML dashboard is available at {url}.")
 
 
-def show_dashboard_url(
+def show_dashboard(
     local: bool = False,
     ngrok_token: Optional[str] = None,
 ) -> None:
@@ -253,4 +253,4 @@ def show_dashboard_url(
         logger.debug(f"Tunneling dashboard from {url} to {ngrok_url}.")
         url = ngrok_url
 
-    show_dashboard(url)
+    show_dashboard_with_url(url)

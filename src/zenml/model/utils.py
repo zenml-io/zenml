@@ -153,6 +153,8 @@ def link_service_to_model(
         RuntimeError: If no model is provided and the model context cannot be
             identified.
     """
+    from zenml import get_step_context
+
     client = Client()
 
     # If no model is provided, try to get it from the context

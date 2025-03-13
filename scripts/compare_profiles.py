@@ -23,7 +23,6 @@ performance differences, failures, and timeouts.
 import argparse
 import json
 import random
-import sys
 
 
 def load_json(filename):
@@ -253,13 +252,13 @@ def main():
     # Check slow commands on current branch
     if current_slow:
         # We don't set has_issues=True here anymore, so that slow commands don't fail the workflow
-        
+
         markdown += f"### ⚠️ Slow Commands on Current Branch ({args.current_branch})\n\n"
         for cmd in current_slow:
             avg_time = current_results[cmd].get("avg_time", 0)
             markdown += f"- `{cmd}`: {avg_time:.3f}s (exceeds {slow_threshold}s threshold)\n"
         markdown += "\n"
-        
+
         # Check for new slow commands on current branch
         new_slow = [
             cmd
@@ -308,7 +307,7 @@ def main():
             failed_commands += 1
             if target_status != "failed" and target_status != "timeout":
                 new_failures.append(cmd)
-        
+
         if current_status == "timeout":
             timeout_commands += 1
             if target_status != "timeout" and target_status != "failed":
@@ -317,7 +316,11 @@ def main():
         # Count slow commands
         if current_status == "slow":
             slow_commands += 1
-            if target_status != "slow" and target_status != "failed" and target_status != "timeout":
+            if (
+                target_status != "slow"
+                and target_status != "failed"
+                and target_status != "timeout"
+            ):
                 new_slow.append(cmd)
 
         # Skip commands that failed or timed out on either branch for timing comparison
@@ -390,7 +393,7 @@ def main():
 
                 # Count this command in our timing comparison stats
                 total_commands += 1
-                
+
                 if target_status == "slow" and current_status == "success":
                     status_str = "✅ No longer slow"
                     improved_commands += 1
@@ -435,7 +438,6 @@ def main():
 
             # Calculate absolute difference in seconds
             time_diff = target_time - current_time
-            abs_diff = abs(time_diff)
 
             # Format time difference for display
             formatted_diff = format_time_diff(target_time, current_time)
@@ -450,7 +452,9 @@ def main():
             ):  # Current is slower by at least threshold
                 status = "❌ Degraded"
                 degraded_commands += 1
-                has_issues = True  # Keep this line to fail for degraded performance
+                has_issues = (
+                    True  # Keep this line to fail for degraded performance
+                )
                 all_improved = False
             else:
                 status = "✓ No significant change"
@@ -471,7 +475,7 @@ def main():
             markdown += f"* Commands improved: {improved_commands} ({improved_commands / total_commands * 100:.1f}% of compared)\n"
             markdown += f"* Commands degraded: {degraded_commands} ({degraded_commands / total_commands * 100:.1f}% of compared)\n"
             markdown += f"* Commands unchanged: {unchanged_commands} ({unchanged_commands / total_commands * 100:.1f}% of compared)\n"
-        
+
         # Add counts for problematic commands
         markdown += f"* Failed commands: {failed_commands}{' (NEW FAILURES INTRODUCED)' if new_failures else ''}\n"
         markdown += f"* Timed out commands: {timeout_commands}{' (NEW TIMEOUTS INTRODUCED)' if new_timeouts else ''}\n"
