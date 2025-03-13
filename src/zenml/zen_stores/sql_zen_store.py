@@ -11286,7 +11286,7 @@ class SqlZenStore(BaseZenStore):
 
     def _attach_tags_to_resources(
         self,
-        tags: Optional[Sequence[Union[str, tag_utils.Tag]]],
+        tags: Optional[Sequence[Union[UUID, str, tag_utils.Tag]]],
         resources: Union[BaseSchema, List[BaseSchema]],
         session: Session,
     ) -> None:
@@ -11306,6 +11306,20 @@ class SqlZenStore(BaseZenStore):
 
         tag_schemas = []
         for tag in tags:
+            # If tag is a UUID, fetch it directly instead of trying to create it
+            if isinstance(tag, UUID):
+                try:
+                    tag_schema = self._get_schema_by_id(
+                        resource_id=tag,
+                        schema_class=TagSchema,
+                        session=session,
+                    )
+                    tag_schemas.append(tag_schema)
+                    continue
+                except KeyError:
+                    # If tag ID doesn't exist, skip this tag
+                    continue
+
             try:
                 if isinstance(tag, tag_utils.Tag):
                     tag_request = tag.to_request()

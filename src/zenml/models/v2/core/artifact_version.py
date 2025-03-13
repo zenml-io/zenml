@@ -169,8 +169,12 @@ class ArtifactVersionUpdate(BaseUpdate):
     """Artifact version update model."""
 
     name: Optional[str] = None
-    add_tags: Optional[List[str]] = None
-    remove_tags: Optional[List[str]] = None
+    add_tags: Optional[List[Union[UUID, str]]] = Field(
+        default=None, union_mode="left_to_right"
+    )
+    remove_tags: Optional[List[Union[UUID, str]]] = Field(
+        default=None, union_mode="left_to_right"
+    )
 
 
 # ------------------ Response Model ------------------

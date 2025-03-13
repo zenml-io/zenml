@@ -13,7 +13,16 @@
 #  permissions and limitations under the License.
 """Models representing models."""
 
-from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Type, TypeVar
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    List,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+)
 from uuid import UUID
 
 from pydantic import Field
@@ -113,8 +122,12 @@ class ModelUpdate(BaseUpdate):
     limitations: Optional[str] = None
     trade_offs: Optional[str] = None
     ethics: Optional[str] = None
-    add_tags: Optional[List[str]] = None
-    remove_tags: Optional[List[str]] = None
+    add_tags: Optional[List[Union[UUID, str]]] = Field(
+        default=None, union_mode="left_to_right"
+    )
+    remove_tags: Optional[List[Union[UUID, str]]] = Field(
+        default=None, union_mode="left_to_right"
+    )
     save_models_to_registry: Optional[bool] = None
 
 

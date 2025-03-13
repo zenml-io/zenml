@@ -112,13 +112,15 @@ class ModelVersionUpdate(BaseUpdate):
         description="Target model version description to be set",
         default=None,
     )
-    add_tags: Optional[List[str]] = Field(
+    add_tags: Optional[List[Union[UUID, str]]] = Field(
         description="Tags to be added to the model version",
         default=None,
+        union_mode="left_to_right",
     )
-    remove_tags: Optional[List[str]] = Field(
+    remove_tags: Optional[List[Union[UUID, str]]] = Field(
         description="Tags to be removed from the model version",
         default=None,
+        union_mode="left_to_right",
     )
 
     @field_validator("stage")
