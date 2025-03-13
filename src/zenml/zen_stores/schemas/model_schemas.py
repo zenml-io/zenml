@@ -554,7 +554,7 @@ class ModelVersionArtifactSchema(BaseSchema, table=True):
     )
     artifact_version_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target=ArtifactVersionSchema.__tablename__,  # type: ignore[has-type]
+        target=ArtifactVersionSchema.__tablename__,
         source_column="artifact_version_id",
         target_column="id",
         ondelete="CASCADE",

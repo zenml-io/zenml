@@ -88,7 +88,7 @@ class ServiceSchema(NamedSchema, table=True):
     )
     model_version_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
-        target=ModelVersionSchema.__tablename__,  # type: ignore[has-type]
+        target=ModelVersionSchema.__tablename__,
         source_column="model_version_id",
         target_column="id",
         ondelete="SET NULL",
