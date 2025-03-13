@@ -11316,6 +11316,7 @@ class SqlZenStore(BaseZenStore):
                         session=session,
                     )
                     tag_schemas.append(tag_schema)
+                    continue
                 except ValueError:
                     # Not a valid UUID string, proceed normally
                     pass
