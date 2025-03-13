@@ -11,7 +11,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""ZenML Pro tenant models."""
+"""ZenML Pro workspace models."""
 
 from typing import Optional
 from uuid import UUID
@@ -24,32 +24,32 @@ from zenml.login.pro.organization.models import OrganizationRead
 from zenml.utils.enum_utils import StrEnum
 
 
-class TenantStatus(StrEnum):
-    """Enum that represents the desired state or status of a tenant.
+class WorkspaceStatus(StrEnum):
+    """Enum that represents the desired state or status of a workspace.
 
     These values can be used in two places:
 
-    * in the `desired_state` field of a tenant object, to indicate the desired
-    state of the tenant (with the exception of `PENDING` and `FAILED` which
+    * in the `desired_state` field of a workspace object, to indicate the desired
+    state of the workspace (with the exception of `PENDING` and `FAILED` which
     are not valid values for `desired_state`)
-    * in the `status` field of a tenant object, to indicate the current state
-    of the tenant
+    * in the `status` field of a workspace object, to indicate the current state
+    of the workspace
     """
 
-    # Tenant hasn't been deployed yet (i.e. newly created) or has been fully
+    # Workspace hasn't been deployed yet (i.e. newly created) or has been fully
     # deleted by the infrastructure provider
     NOT_INITIALIZED = "not_initialized"
-    # Tenant is being processed by the infrastructure provider (is being
+    # Workspace is being processed by the infrastructure provider (is being
     # deployed, updated, deactivated, re-activated or deleted/cleaned up).
     PENDING = "pending"
-    # Tenant is up and running
+    # Workspace is up and running
     AVAILABLE = "available"
-    # Tenant is in a failure state (i.e. deployment, update or deletion failed)
+    # Workspace is in a failure state (i.e. deployment, update or deletion failed)
     FAILED = "failed"
-    # Tenant is deactivated
+    # Workspace is deactivated
     DEACTIVATED = "deactivated"
-    # Tenant resources have been deleted by the infrastructure provider but
-    # the tenant object still exists in the database
+    # Workspace resources have been deleted by the infrastructure provider but
+    # the workspace object still exists in the database
     DELETED = "deleted"
 
 
@@ -87,24 +87,26 @@ class ZenMLServiceRead(BaseRestAPIModel):
     )
 
 
-class TenantRead(BaseRestAPIModel):
-    """Pydantic Model for viewing a Tenant."""
+class WorkspaceRead(BaseRestAPIModel):
+    """Pydantic Model for viewing a Workspace."""
 
     id: UUID
 
     name: str
     description: Optional[str] = Field(
-        default=None, description="The description of the tenant."
+        default=None, description="The description of the workspace."
     )
 
     organization: OrganizationRead
 
-    desired_state: str = Field(description="The desired state of the tenant.")
+    desired_state: str = Field(
+        description="The desired state of the workspace."
+    )
     state_reason: str = Field(
-        description="The reason for the current tenant state.",
+        description="The reason for the current workspace state.",
     )
     status: str = Field(
-        description="The current operational state of the tenant."
+        description="The current operational state of the workspace."
     )
     zenml_service: ZenMLServiceRead = Field(description="The ZenML service.")
 
@@ -156,21 +158,18 @@ class TenantRead(BaseRestAPIModel):
 
     @property
     def dashboard_url(self) -> str:
-        """Get the URL to the ZenML Pro dashboard for this tenant.
+        """Get the URL to the ZenML Pro dashboard for this workspace.
 
         Returns:
-            The URL to the ZenML Pro dashboard for this tenant.
+            The URL to the ZenML Pro dashboard for this workspace.
         """
-        return (
-            ZENML_PRO_URL
-            + f"/organizations/{str(self.organization_id)}/tenants/{str(self.id)}"
-        )
+        return ZENML_PRO_URL + f"/workspaces/{str(self.name)}"
 
     @property
     def dashboard_organization_url(self) -> str:
-        """Get the URL to the ZenML Pro dashboard for this tenant's organization.
+        """Get the URL to the ZenML Pro dashboard for this workspace's organization.
 
         Returns:
-            The URL to the ZenML Pro dashboard for this tenant's organization.
+            The URL to the ZenML Pro dashboard for this workspace's organization.
         """
         return ZENML_PRO_URL + f"/organizations/{str(self.organization_id)}"

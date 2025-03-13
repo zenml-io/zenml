@@ -11,7 +11,7 @@ API tokens provide a way to authenticate with the ZenML server for temporary aut
 
 To generate a new API token:
 
-1. Navigate to the server's Settings page in your ZenML dashboard (or the tenant's Settings page in your ZenML Pro dashboard)
+1. Navigate to the server's Settings page in your ZenML dashboard (or the workspace's Settings page in your ZenML Pro dashboard)
 2. Select "API Tokens" from the left sidebar
 
     ![API Tokens](../../../.gitbook/assets/zenml-oss-api-token-01.png)

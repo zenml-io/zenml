@@ -267,6 +267,6 @@ def cloud_connection() -> ZenMLCloudConnection:
     return _cloud_connection
 
 
-def send_pro_tenant_status_update() -> None:
-    """Send a tenant status update to the Cloud API."""
-    cloud_connection().patch("/tenant_status")
+def send_pro_workspace_status_update() -> None:
+    """Send a workspace status update to the Cloud API."""
+    cloud_connection().patch("/workspace_status")

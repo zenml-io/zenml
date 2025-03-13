@@ -899,8 +899,8 @@ class SqlZenStore(BaseZenStore):
         server_config = ServerConfiguration.get_server_config()
 
         if server_config.deployment_type == ServerDeploymentType.CLOUD:
-            # Do not send events for cloud tenants where the event comes from
-            # the cloud API
+            # Do not send events for Pro workspaces where the event comes from
+            # the Pro API
             return
 
         query = select(UserSchema).where(
