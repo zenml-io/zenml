@@ -21,7 +21,6 @@ from typing import (
     Optional,
     Type,
     TypeVar,
-    Union,
 )
 from uuid import UUID
 
@@ -122,12 +121,8 @@ class ModelUpdate(BaseUpdate):
     limitations: Optional[str] = None
     trade_offs: Optional[str] = None
     ethics: Optional[str] = None
-    add_tags: Optional[List[Union[UUID, str]]] = Field(
-        default=None, union_mode="left_to_right"
-    )
-    remove_tags: Optional[List[Union[UUID, str]]] = Field(
-        default=None, union_mode="left_to_right"
-    )
+    add_tags: Optional[List[str]] = None
+    remove_tags: Optional[List[str]] = None
     save_models_to_registry: Optional[bool] = None
 
 

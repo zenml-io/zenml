@@ -101,15 +101,13 @@ class RunTemplateUpdate(BaseUpdate):
         title="The description of the run template.",
         max_length=TEXT_FIELD_MAX_LENGTH,
     )
-    add_tags: Optional[List[Union[UUID, str]]] = Field(
+    add_tags: Optional[List[str]] = Field(
         default=None,
         title="New tags to add to the run template.",
-        union_mode="left_to_right",
     )
-    remove_tags: Optional[List[Union[UUID, str]]] = Field(
+    remove_tags: Optional[List[str]] = Field(
         default=None,
         title="Tags to remove from the run template.",
-        union_mode="left_to_right",
     )
 
 

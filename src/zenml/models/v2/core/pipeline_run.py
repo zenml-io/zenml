@@ -137,15 +137,13 @@ class PipelineRunUpdate(BaseUpdate):
     end_time: Optional[datetime] = None
     # TODO: we should maybe have a different update model here, the upper
     #  three attributes should only be for internal use
-    add_tags: Optional[List[Union[UUID, str]]] = Field(
+    add_tags: Optional[List[str]] = Field(
         default=None,
         title="New tags to add to the pipeline run.",
-        union_mode="left_to_right",
     )
-    remove_tags: Optional[List[Union[UUID, str]]] = Field(
+    remove_tags: Optional[List[str]] = Field(
         default=None,
         title="Tags to remove from the pipeline run.",
-        union_mode="left_to_right",
     )
 
     model_config = ConfigDict(protected_namespaces=())
