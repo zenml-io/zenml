@@ -86,7 +86,7 @@ class VertexOrchestratorConfig(
             then a subdirectory of the artifact store will be used.
         encryption_spec_key_name: The Cloud KMS resource identifier of the
             customer managed encryption key used to protect the job. Has the form:
-            `projects/<PRJCT>/locations/<REGION>/keyRings/<KR>/cryptoKeys/<KEY>`
+            `projects/<PROJECT>/locations/<REGION>/keyRings/<KR>/cryptoKeys/<KEY>`
             . The key needs to be in the same region as where the compute
             resource is created.
         workload_service_account: the service account for workload run-as
@@ -124,13 +124,14 @@ class VertexOrchestratorConfig(
     pipeline_root: Optional[str] = None
     encryption_spec_key_name: Optional[str] = None
     workload_service_account: Optional[str] = None
-    function_service_account: Optional[str] = None
-    scheduler_service_account: Optional[str] = None
     network: Optional[str] = None
 
+    # Deprecated
     cpu_limit: Optional[str] = None
     memory_limit: Optional[str] = None
     gpu_limit: Optional[int] = None
+    function_service_account: Optional[str] = None
+    scheduler_service_account: Optional[str] = None
 
     _resource_deprecation = deprecation_utils.deprecate_pydantic_attributes(
         "cpu_limit",

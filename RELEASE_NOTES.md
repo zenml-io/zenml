@@ -1,5 +1,72 @@
 <!-- markdown-link-check-disable -->
 
+# 0.75.0
+
+The `0.75.0` release introduces dashboard enhancements for stack component
+management along with improvements to documentation and service connector 
+capabilities. Users can now create and update stack components directly 
+from the dashboard.
+
+## Features
+
+- Create and update stack components directly from the dashboard
+- Custom authentication method support during auto-configuration of service connectors
+- Enhanced model artifact retrieval by creation date instead of version name
+- Additional SageMaker environment settings
+
+## Improvements
+
+- Expanded fastapi dependency range for better compatibility
+- Improved pipeline source root documentation and logging
+- Better sorting functionality when using custom fetching
+
+## Fixes
+
+- Fixed registration of components with custom flavors
+- Fixed sorting logic when using custom fetching criteria
+- Prevented inner fsspec logs from being flushed to the artifact store
+
+## Documentation
+
+- Added LLM messaging and video resources to documentation
+- Improved formatting for model deployers documentation
+- Fixed GCP service connector docs
+- Added SDK documentation links
+- Enhanced README with LLM messaging
+
+## What's Changed
+
+* Adding `0.74.0` to the migration tests by @bcdurak in https://github.com/zenml-io/zenml/pull/3351
+* Fixing the release preparation workflow by @bcdurak in https://github.com/zenml-io/zenml/pull/3348
+* Expand `fastapi` dependency range by @strickvl in https://github.com/zenml-io/zenml/pull/3340
+* Document the programmatic API access options by @stefannica in https://github.com/zenml-io/zenml/pull/3352
+* Fix some docs links by @schustmi in https://github.com/zenml-io/zenml/pull/3353
+* [docs] Rename llms.txt file, add header and docs by @wjayesh in https://github.com/zenml-io/zenml/pull/3346
+* Add `llms.txt` YouTube video to docs by @strickvl in https://github.com/zenml-io/zenml/pull/3354
+* Fix model deployers docs formatting by @strickvl in https://github.com/zenml-io/zenml/pull/3356
+* Get the latest artifact of a model by creation date instead of version name by @pierre-godard in https://github.com/zenml-io/zenml/pull/3343
+* Improve source root docs/logs when running a pipeline by @schustmi in https://github.com/zenml-io/zenml/pull/3357
+* Fix registration of components with custom flavors by @schustmi in https://github.com/zenml-io/zenml/pull/3363
+* Fix GCP service connector docs by @stefannica in https://github.com/zenml-io/zenml/pull/3365
+* Allow auth method to be customized during auto-configuration of service connectors by @stefannica in https://github.com/zenml-io/zenml/pull/3367
+* Add some sdkdocs links by @htahir1 in https://github.com/zenml-io/zenml/pull/3358
+* doc: fix link by @tanguyantoine in https://github.com/zenml-io/zenml/pull/3369
+* Fix sorting when using custom fetching by @schustmi in https://github.com/zenml-io/zenml/pull/3366
+* Add sagemaker env settings by @stefannica in https://github.com/zenml-io/zenml/pull/3368
+* Update README with LLM messaging and llms.txt by @wjayesh in https://github.com/zenml-io/zenml/pull/3362
+* CI Linting fix by @bcdurak in https://github.com/zenml-io/zenml/pull/3377
+* Don't flush inner fsspec logs to the artifact store by @stefannica in https://github.com/zenml-io/zenml/pull/3373
+* Bugfix for Sagemaker env variables by @bcdurak in https://github.com/zenml-io/zenml/pull/3380
+* Correct isintance check for sagemaker env variables by @bcdurak in https://github.com/zenml-io/zenml/pull/3382
+
+## New Contributors
+
+* @pierre-godard made their first contribution in https://github.com/zenml-io/zenml/pull/3343
+* @tanguyantoine made their first contribution in https://github.com/zenml-io/zenml/pull/3369
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.74.0...0.75.0
+
+
 # 0.74.0
 
 The `0.74.0` release introduces several major features including [SageMaker 

@@ -215,7 +215,7 @@ class StackComponentConfig(BaseModel, ABC):
 
         # Try to resolve the secret using the secret store
         try:
-            secret = Client().get_secret_by_name_and_scope(
+            secret = Client().get_secret_by_name_and_private_status(
                 name=secret_ref.name,
             )
         except (KeyError, NotImplementedError):
@@ -333,7 +333,6 @@ class StackComponent:
         flavor: str,
         type: StackComponentType,
         user: Optional[UUID],
-        workspace: UUID,
         created: datetime,
         updated: datetime,
         labels: Optional[Dict[str, Any]] = None,
@@ -352,7 +351,6 @@ class StackComponent:
             flavor: The flavor of the component.
             type: The type of the component.
             user: The ID of the user who created the component.
-            workspace: The ID of the workspace the component belongs to.
             created: The creation time of the component.
             updated: The last update time of the component.
             labels: The labels of the component.
@@ -378,7 +376,6 @@ class StackComponent:
         self.flavor = flavor
         self.type = type
         self.user = user
-        self.workspace = workspace
         self.created = created
         self.updated = updated
         self.labels = labels
@@ -417,7 +414,6 @@ class StackComponent:
         try:
             return flavor.implementation_class(
                 user=user_id,
-                workspace=component_model.workspace.id,
                 name=component_model.name,
                 id=component_model.id,
                 config=configuration,

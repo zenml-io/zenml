@@ -73,6 +73,7 @@ from zenml.zen_server.routers import (
     pipeline_deployments_endpoints,
     pipelines_endpoints,
     plugin_endpoints,
+    run_metadata_endpoints,
     run_templates_endpoints,
     runs_endpoints,
     schedule_endpoints,
@@ -85,6 +86,7 @@ from zenml.zen_server.routers import (
     stack_deployment_endpoints,
     stacks_endpoints,
     steps_endpoints,
+    tag_resource_endpoints,
     tags_endpoints,
     triggers_endpoints,
     users_endpoints,
@@ -472,6 +474,7 @@ app.include_router(pipelines_endpoints.router)
 app.include_router(pipeline_builds_endpoints.router)
 app.include_router(pipeline_deployments_endpoints.router)
 app.include_router(runs_endpoints.router)
+app.include_router(run_metadata_endpoints.router)
 app.include_router(run_templates_endpoints.router)
 app.include_router(schedule_endpoints.router)
 app.include_router(secrets_endpoints.router)
@@ -487,6 +490,7 @@ app.include_router(stack_components_endpoints.router)
 app.include_router(stack_components_endpoints.types_router)
 app.include_router(steps_endpoints.router)
 app.include_router(tags_endpoints.router)
+app.include_router(tag_resource_endpoints.router)
 app.include_router(triggers_endpoints.router)
 app.include_router(users_endpoints.router)
 app.include_router(users_endpoints.current_user_router)

@@ -285,6 +285,28 @@ class StepLogsStorage:
         Args:
             force: whether to force a save even if the write conditions not met.
         """
+        import asyncio
+        import threading
+
+        # Most artifact stores are based on fsspec, which converts between
+        # sync and async operations by using a separate AIO thread.
+        # It may happen that the fsspec call itself will log something,
+        # which will trigger this method, which may then use fsspec again,
+        # causing a "Calling sync() from within a running loop" error, because
+        # the fsspec library does not expect sync calls being made as a result
+        # of a logging call made by itself.
+        # To avoid this, we simply check if we're running in the fsspec AIO
+        # thread and skip the save if that's the case.
+        try:
+            if (
+                asyncio.events.get_running_loop() is not None
+                and threading.current_thread().name == "fsspecIO"
+            ):
+                return
+        except RuntimeError:
+            # No running loop
+            pass
+
         if not self.disabled and (self._is_write_needed or force):
             # IMPORTANT: keep this as the first code line in this method! The
             # code that follows might still emit logging messages, which will

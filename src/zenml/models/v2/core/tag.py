@@ -16,28 +16,33 @@
 import random
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import ColorVariants
-from zenml.models.v2.base.base import (
-    BaseDatedResponseBody,
-    BaseIdentifiedResponse,
-    BaseRequest,
-    BaseResponseMetadata,
-    BaseResponseResources,
+from zenml.models.v2.base.base import BaseUpdate
+from zenml.models.v2.base.scoped import (
+    UserScopedFilter,
+    UserScopedRequest,
+    UserScopedResponse,
+    UserScopedResponseBody,
+    UserScopedResponseMetadata,
+    UserScopedResponseResources,
 )
-from zenml.models.v2.base.filter import BaseFilter
 
 # ------------------ Request Model ------------------
 
 
-class TagRequest(BaseRequest):
+class TagRequest(UserScopedRequest):
     """Request model for tags."""
 
     name: str = Field(
         description="The unique title of the tag.",
         max_length=STR_FIELD_MAX_LENGTH,
+    )
+    exclusive: bool = Field(
+        description="The flag signifying whether the tag is an exclusive tag.",
+        default=False,
     )
     color: ColorVariants = Field(
         description="The color variant assigned to the tag.",
@@ -48,35 +53,43 @@ class TagRequest(BaseRequest):
 # ------------------ Update Model ------------------
 
 
-class TagUpdate(BaseModel):
+class TagUpdate(BaseUpdate):
     """Update model for tags."""
 
     name: Optional[str] = None
+    exclusive: Optional[bool] = None
     color: Optional[ColorVariants] = None
 
 
 # ------------------ Response Model ------------------
 
 
-class TagResponseBody(BaseDatedResponseBody):
+class TagResponseBody(UserScopedResponseBody):
     """Response body for tags."""
 
     color: ColorVariants = Field(
         description="The color variant assigned to the tag.",
         default_factory=lambda: random.choice(list(ColorVariants)),
     )
+    exclusive: bool = Field(
+        description="The flag signifying whether the tag is an exclusive tag."
+    )
     tagged_count: int = Field(
         description="The count of resources tagged with this tag."
     )
 
 
-class TagResponseResources(BaseResponseResources):
+class TagResponseMetadata(UserScopedResponseMetadata):
+    """Response metadata for tags."""
+
+
+class TagResponseResources(UserScopedResponseResources):
     """Class for all resource models associated with the tag entity."""
 
 
 class TagResponse(
-    BaseIdentifiedResponse[
-        TagResponseBody, BaseResponseMetadata, TagResponseResources
+    UserScopedResponse[
+        TagResponseBody, TagResponseMetadata, TagResponseResources
     ]
 ):
     """Response model for tags."""
@@ -106,6 +119,15 @@ class TagResponse(
         return self.get_body().color
 
     @property
+    def exclusive(self) -> bool:
+        """The `exclusive` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().exclusive
+
+    @property
     def tagged_count(self) -> int:
         """The `tagged_count` property.
 
@@ -118,7 +140,7 @@ class TagResponse(
 # ------------------ Filter Model ------------------
 
 
-class TagFilter(BaseFilter):
+class TagFilter(UserScopedFilter):
     """Model to enable advanced filtering of all tags."""
 
     name: Optional[str] = Field(
@@ -126,4 +148,8 @@ class TagFilter(BaseFilter):
     )
     color: Optional[ColorVariants] = Field(
         description="The color variant assigned to the tag.", default=None
+    )
+    exclusive: Optional[bool] = Field(
+        description="The flag signifying whether the tag is an exclusive tag.",
+        default=None,
     )

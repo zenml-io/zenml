@@ -30,7 +30,7 @@ Usually, ZenML [stores step logs in the artifact store](../how-to/control-loggin
 If you want to configure whether logged output from steps is stored or not, set the `ZENML_DISABLE_STEP_LOGS_STORAGE` environment variable to `true`. Note that this will mean that logs from your steps will no longer be stored and thus won't be visible on the dashboard anymore.
 
 ```bash
-export ZENML_DISABLE_STEP_LOGS_STORAGE=false
+export ZENML_DISABLE_STEP_LOGS_STORAGE=true
 ```
 
 ## ZenML repository path

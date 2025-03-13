@@ -221,4 +221,8 @@ To run a pipeline using the new stack:
 
 Keep this code handy as we'll be using it in the next chapters!
 
+{% hint style="info" %}
+If you ever want to learn more about individual ZenML functions or classes, check out the [SDK Docs](https://sdkdocs.zenml.io/)
+{% endhint %}
+
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

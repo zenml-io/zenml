@@ -94,6 +94,7 @@ from zenml.utils import (
 )
 from zenml.utils.stack_utils import temporary_active_stack
 from zenml.utils.string_utils import format_name_template
+from zenml.utils.tag_utils import Tag
 
 if TYPE_CHECKING:
     from zenml.artifacts.external_artifact import ExternalArtifact
@@ -131,7 +132,7 @@ class Pipeline:
         enable_artifact_visualization: Optional[bool] = None,
         enable_step_logs: Optional[bool] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
-        tags: Optional[List[str]] = None,
+        tags: Optional[List[Union[str, "Tag"]]] = None,
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
@@ -294,7 +295,7 @@ class Pipeline:
         enable_artifact_visualization: Optional[bool] = None,
         enable_step_logs: Optional[bool] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
-        tags: Optional[List[str]] = None,
+        tags: Optional[List[Union[str, "Tag"]]] = None,
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
@@ -694,7 +695,6 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             orchestrator = components[StackComponentType.ORCHESTRATOR][0]
             schedule_model = ScheduleRequest(
                 workspace=Client().active_workspace.id,
-                user=Client().active_user.id,
                 pipeline_id=pipeline_id,
                 orchestrator_id=orchestrator.id,
                 name=schedule_name,
@@ -767,14 +767,19 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             build=build_model,
             can_download_from_code_repository=can_download_from_code_repository,
         ):
-            code_archive = code_utils.CodeArchive(
-                root=source_utils.get_source_root()
+            source_root = source_utils.get_source_root()
+            code_archive = code_utils.CodeArchive(root=source_root)
+            logger.info(
+                "Archiving pipeline code directory: `%s`. If this is taking "
+                "longer than you expected, make sure your source root "
+                "is set correctly by running `zenml init`, and that it "
+                "does not contain unnecessarily huge files.",
+                source_root,
             )
-            logger.info("Archiving pipeline code...")
+
             code_path = code_utils.upload_code_if_necessary(code_archive)
 
         request = PipelineDeploymentRequest(
-            user=Client().active_user.id,
             workspace=Client().active_workspace.id,
             stack=stack.id,
             pipeline=pipeline_id,
@@ -1029,6 +1034,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             for component_type, component in stack.components.items()
         }
         return {
+            "workspace_id": deployment.workspace.id,
             "store_type": Client().zen_store.type.value,
             **stack_metadata,
             "total_steps": len(self.invocations),
@@ -1110,7 +1116,6 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         except RuntimeError:
             request = PipelineRequest(
                 workspace=client.active_workspace.id,
-                user=client.active_user.id,
                 name=self.name,
             )
 

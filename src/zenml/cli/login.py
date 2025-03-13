@@ -291,6 +291,11 @@ def connect_to_pro_server(
             login = True
 
     if login or refresh:
+        # If we reached this point, then we need to start a new login flow.
+        # We also need to remove all existing API tokens associated with the
+        # target ZenML Pro API, otherwise they will continue to be used after
+        # the re-login flow.
+        credentials_store.clear_all_pro_tokens(pro_api_url)
         try:
             token = web_login(
                 pro_api_url=pro_api_url,
@@ -976,6 +981,7 @@ def logout(
             )
 
         pro_api_url = pro_api_url or ZENML_PRO_API_URL
+        pro_api_url = pro_api_url.rstrip("/")
         if credentials_store.has_valid_pro_authentication(pro_api_url):
             credentials_store.clear_pro_credentials(pro_api_url)
             cli_utils.declare("Logged out from ZenML Pro.")
@@ -1042,7 +1048,7 @@ def logout(
                 credentials_store.clear_credentials(server_url=server)
             cli_utils.declare(
                 "Logged out from ZenML Pro.\n"
-                f"Hint: You can run 'zenml login {credentials.server_name}' to "
+                f"Hint: You can run `zenml login '{credentials.server_name}'` to "
                 "login again to the same ZenML Pro server or 'zenml server "
                 "list' to view other available servers that you can connect to "
                 "with 'zenml login <server-id-name-or-url>'."
@@ -1053,7 +1059,7 @@ def logout(
                 credentials_store.clear_credentials(server_url=server)
             cli_utils.declare(
                 f"Logged out from {server}."
-                f"Hint: You can run 'zenml login {server}' to log in again "
+                f"Hint: You can run `zenml login '{server}'` to log in again "
                 "to the same server or 'zenml server list' to view other available "
                 "servers that you can connect to with 'zenml login <server-url>'."
             )

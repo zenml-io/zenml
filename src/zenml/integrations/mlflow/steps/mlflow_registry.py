@@ -92,7 +92,7 @@ def mlflow_register_model_step(
     pipeline_name = step_context.pipeline.name
     current_run_name = step_context.pipeline_run.name
     pipeline_run_uuid = str(step_context.pipeline_run.id)
-    zenml_workspace = str(model_registry.workspace)
+    zenml_workspace = str(step_context.pipeline.workspace.name)
 
     # Get MLflow run ID either from params or from experiment tracker using
     # pipeline name and run name

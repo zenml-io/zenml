@@ -18,7 +18,7 @@ import json
 from typing import Any, List, Optional, cast
 from uuid import UUID
 
-from sqlalchemy import TEXT, Column
+from sqlalchemy import TEXT, Column, UniqueConstraint
 from sqlmodel import Field, Relationship
 
 from zenml.config.schedule import Schedule
@@ -51,6 +51,13 @@ class TriggerSchema(NamedSchema, table=True):
     """SQL Model for triggers."""
 
     __tablename__ = "trigger"
+    __table_args__ = (
+        UniqueConstraint(
+            "name",
+            "workspace_id",
+            name="unique_trigger_name_in_workspace",
+        ),
+    )
 
     workspace_id: UUID = build_foreign_key_field(
         source=__tablename__,

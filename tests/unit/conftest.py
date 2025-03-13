@@ -99,7 +99,6 @@ def local_stack():
         flavor="default",
         type=StackComponentType.ORCHESTRATOR,
         user=uuid4(),
-        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -110,7 +109,6 @@ def local_stack():
         flavor="default",
         type=StackComponentType.ARTIFACT_STORE,
         user=uuid4(),
-        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -132,7 +130,6 @@ def local_orchestrator():
         flavor="local",
         type=StackComponentType.ORCHESTRATOR,
         user=uuid4(),
-        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -148,7 +145,6 @@ def local_artifact_store():
         flavor="local",
         type=StackComponentType.ARTIFACT_STORE,
         user=uuid4(),
-        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -164,7 +160,6 @@ def local_container_registry():
         flavor="default",
         type=StackComponentType.CONTAINER_REGISTRY,
         user=uuid4(),
-        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -180,7 +175,6 @@ def remote_container_registry():
         flavor="gcp",
         type=StackComponentType.CONTAINER_REGISTRY,
         user=uuid4(),
-        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -201,7 +195,6 @@ def sample_step_operator() -> BaseStepOperator:
         flavor="stub",
         type=StackComponentType.STEP_OPERATOR,
         user=uuid4(),
-        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -473,7 +466,7 @@ def sample_pipeline_run_request_model() -> PipelineRunRequest:
 
 
 @pytest.fixture
-def sample_artifact_model() -> ArtifactResponse:
+def sample_artifact_model(sample_workspace_model) -> ArtifactResponse:
     """Return a sample artifact model for testing purposes."""
     return ArtifactResponse(
         id=uuid4(),
@@ -484,6 +477,7 @@ def sample_artifact_model() -> ArtifactResponse:
             tags=[],
         ),
         metadata=ArtifactResponseMetadata(
+            workspace=sample_workspace_model,
             has_custom_name=True,
         ),
     )

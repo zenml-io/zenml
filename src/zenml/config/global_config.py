@@ -397,8 +397,13 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             self.active_stack_id,
             config_name="global",
         )
-        self.active_workspace_name = active_workspace.name
-        self._active_workspace = active_workspace
+        if active_workspace:
+            self.active_workspace_name = active_workspace.name
+            self._active_workspace = active_workspace
+        else:
+            self.active_workspace_name = None
+            self._active_workspace = None
+
         self.set_active_stack(active_stack)
 
     @property
@@ -763,10 +768,18 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
 
         Returns:
             The name of the active workspace.
+
+        Raises:
+            RuntimeError: If the active workspace is not set.
         """
         if self.active_workspace_name is None:
             _ = self.zen_store
-            assert self.active_workspace_name is not None
+            if self.active_workspace_name is None:
+                raise RuntimeError(
+                    "No workspace is currently set as active. Please set the "
+                    "active workspace using the `zenml workspace set` CLI "
+                    "command."
+                )
 
         return self.active_workspace_name
 

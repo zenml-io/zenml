@@ -438,7 +438,7 @@ class GCPUserAccountConfig(GCPBaseProjectIDConfig, GCPUserAccountCredentials):
 class GCPServiceAccountConfig(GCPBaseConfig, GCPServiceAccountCredentials):
     """GCP service account configuration."""
 
-    _project_id: Optional[str] = None
+    project_id: Optional[str] = None
 
     @property
     def gcp_project_id(self) -> str:
@@ -450,14 +450,14 @@ class GCPServiceAccountConfig(GCPBaseConfig, GCPServiceAccountCredentials):
         Returns:
             The GCP project ID.
         """
-        if self._project_id is None:
-            self._project_id = json.loads(
+        if self.project_id is None:
+            self.project_id = json.loads(
                 self.service_account_json.get_secret_value()
             )["project_id"]
             # Guaranteed by the field validator
-            assert self._project_id is not None
+            assert self.project_id is not None
 
-        return self._project_id
+        return self.project_id
 
 
 class GCPExternalAccountConfig(
@@ -798,7 +798,8 @@ connector will distribute the service account credentials JSON to clients
 instead (not recommended).
 
 A GCP project is required and the connector may only be used to access GCP
-resources in the specified project.
+resources in the specified project. If the `project_id` is not provided, the
+connector will use the one extracted from the service account key JSON.
 
 If you already have the GOOGLE_APPLICATION_CREDENTIALS environment variable
 configured to point to a service account key JSON file, it will be automatically

@@ -55,6 +55,7 @@ class SagemakerStepOperatorSettings(BaseSettings):
             For estimator_args.instance_type, check
             https://docs.aws.amazon.com/sagemaker/latest/dg/notebooks-available-instance-types.html
             for a list of available instance types.
+        environment: Environment variables to pass to the container.
 
     """
 
@@ -64,6 +65,7 @@ class SagemakerStepOperatorSettings(BaseSettings):
         default=None, union_mode="left_to_right"
     )
     estimator_args: Dict[str, Any] = {}
+    environment: Dict[str, str] = {}
 
     _deprecation_validator = deprecation_utils.deprecate_pydantic_attributes(
         "instance_type"

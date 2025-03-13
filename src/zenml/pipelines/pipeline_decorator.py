@@ -32,6 +32,7 @@ if TYPE_CHECKING:
     from zenml.model.model import Model
     from zenml.pipelines.pipeline_definition import Pipeline
     from zenml.types import HookSpecification
+    from zenml.utils.tag_utils import Tag
 
     F = TypeVar("F", bound=Callable[..., None])
 
@@ -50,7 +51,7 @@ def pipeline(
     enable_artifact_metadata: Optional[bool] = None,
     enable_step_logs: Optional[bool] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
-    tags: Optional[List[str]] = None,
+    tags: Optional[List[Union[str, "Tag"]]] = None,
     extra: Optional[Dict[str, Any]] = None,
     on_failure: Optional["HookSpecification"] = None,
     on_success: Optional["HookSpecification"] = None,
@@ -67,7 +68,7 @@ def pipeline(
     enable_artifact_metadata: Optional[bool] = None,
     enable_step_logs: Optional[bool] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
-    tags: Optional[List[str]] = None,
+    tags: Optional[List[Union[str, "Tag"]]] = None,
     extra: Optional[Dict[str, Any]] = None,
     on_failure: Optional["HookSpecification"] = None,
     on_success: Optional["HookSpecification"] = None,

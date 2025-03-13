@@ -142,7 +142,7 @@ When you push to a branch now, that is within a Pull Request, this action will r
 ### (Optional) Comment Metrics onto the PR
 
 Finally you can configure your github action workflow to leave a report based on the pipeline that was run. 
-Check out the template for this [here](https://github.com/zenml-io/zenml-gitflow/blob/main/.github/workflows/pipeline_run.yaml#L87-L99.
+Check out the template for this [here](https://github.com/zenml-io/zenml-gitflow/blob/main/.github/workflows/pipeline_run.yaml#L87-L99).
 
 ![Comment left on Pull Request](../../.gitbook/assets/github-action-pr-comment.png)
 

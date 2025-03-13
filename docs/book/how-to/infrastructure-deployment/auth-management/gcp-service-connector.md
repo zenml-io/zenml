@@ -375,7 +375,7 @@ This method requires [a GCP service account](https://cloud.google.com/iam/docs/s
 
 By default, the GCP connector [generates temporary OAuth 2.0 tokens](best-security-practices.md#generating-temporary-and-down-scoped-credentials) from the service account credentials and distributes them to clients. The tokens have a limited lifetime of 1 hour. This behavior can be disabled by setting the `generate_temporary_tokens` configuration option to `False`, in which case, the connector will distribute the service account credentials JSON to clients instead (not recommended).
 
-A GCP project is required and the connector may only be used to access GCP resources in the specified project.
+A GCP project is required and the connector may only be used to access GCP resources in the specified project. If the `project_id` is not provided, the connector will use the one extracted from the service account key JSON.
 
 If you already have the `GOOGLE_APPLICATION_CREDENTIALS` environment variable configured to point to a service account key JSON file, it will be automatically picked up when auto-configuration is used.
 
