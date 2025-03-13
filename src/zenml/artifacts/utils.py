@@ -31,6 +31,7 @@ from typing import (
 )
 from uuid import UUID, uuid4
 
+from zenml.client import Client
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
 from zenml.enums import (
     ArtifactSaveType,
@@ -65,6 +66,7 @@ if TYPE_CHECKING:
     MaterializerClassOrSource = Union[str, Source, Type[BaseMaterializer]]
 
 logger = get_logger(__name__)
+
 
 # ----------
 # Public API
@@ -136,8 +138,6 @@ def _store_artifact_data_and_prepare_request(
     Returns:
         Artifact version request for the artifact data that was stored.
     """
-    from zenml.client import Client
-
     artifact_store = Client().active_stack.artifact_store
     artifact_store.makedirs(uri)
 
@@ -226,7 +226,6 @@ def save_artifact(
     Returns:
         The saved artifact response.
     """
-    from zenml.client import Client
     from zenml.materializers.materializer_registry import (
         materializer_registry,
     )
@@ -315,7 +314,6 @@ def register_artifact(
         FileNotFoundError: If the folder URI is outside the artifact store
             bounds.
     """
-    from zenml.client import Client
     from zenml.materializers.preexisting_data_materializer import (
         PreexistingDataMaterializer,
     )
@@ -378,8 +376,6 @@ def load_artifact(
     Returns:
         The loaded artifact.
     """
-    from zenml.client import Client
-
     artifact = Client().get_artifact_version(name_or_id, version)
     return load_artifact_from_response(artifact)
 
@@ -447,8 +443,6 @@ def log_artifact_metadata(
             infer_artifact=True,
         )
     elif artifact_name:
-        from zenml.client import Client
-
         client = Client()
         logger.warning(
             "Deprecation warning! Currently, you are calling "
@@ -630,8 +624,6 @@ def get_producer_step_of_artifact(
     Raises:
         RuntimeError: If the run that created the artifact no longer exists.
     """
-    from zenml.client import Client
-
     if not artifact.producer_step_run_id:
         raise RuntimeError(
             f"The run that produced the artifact with id '{artifact.id}' no "
@@ -682,8 +674,6 @@ def _check_if_artifact_with_given_uri_already_registered(
         RuntimeError: If the artifact store already contains an artifact with
             the given URI.
     """
-    from zenml.client import Client
-
     if artifact_store.exists(uri):
         # This check is only necessary for manual saves as we already check
         # it when creating the directory for step output artifacts
@@ -708,7 +698,6 @@ def _link_artifact_version_to_the_step_and_model(
     Args:
         artifact_version: The artifact version to link.
     """
-    from zenml.client import Client
     from zenml.steps.step_context import get_step_context
 
     client = Client()
@@ -761,7 +750,6 @@ def _load_artifact_from_uri(
     Raises:
         ModuleNotFoundError: If the materializer or data type cannot be found.
     """
-    from zenml.client import Client
     from zenml.materializers.base_materializer import BaseMaterializer
 
     if not artifact_store:
@@ -828,7 +816,6 @@ def _load_artifact_store(
             an artifact store.
         NotImplementedError: If the artifact store could not be loaded.
     """
-    from zenml.client import Client
     from zenml.stack import StackComponent
 
     if isinstance(artifact_store_id, str):
@@ -868,7 +855,6 @@ def _load_artifact_store(
 def _get_artifact_store_from_response_or_from_active_stack(
     artifact: ArtifactVersionResponse,
 ) -> "BaseArtifactStore":
-    from zenml.client import Client
     from zenml.stack import StackComponent
 
     if artifact.artifact_store_id:
@@ -1001,8 +987,6 @@ def load_model_from_metadata(model_uri: str) -> Any:
     Returns:
         The ML model object loaded into memory.
     """
-    from zenml.client import Client
-
     # Load the model from its metadata
     artifact_versions_by_uri = Client().list_artifact_versions(uri=model_uri)
     if artifact_versions_by_uri.total == 1:
