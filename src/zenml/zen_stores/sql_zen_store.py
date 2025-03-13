@@ -11310,6 +11310,10 @@ class SqlZenStore(BaseZenStore):
             if isinstance(tag, str):
                 try:
                     tag_uuid = UUID(tag)
+                except ValueError:
+                    # Not a valid UUID string, proceed normally
+                    pass
+                else:
                     tag_schema = self._get_schema_by_id(
                         resource_id=tag_uuid,
                         schema_class=TagSchema,
@@ -11317,9 +11321,6 @@ class SqlZenStore(BaseZenStore):
                     )
                     tag_schemas.append(tag_schema)
                     continue
-                except ValueError:
-                    # Not a valid UUID string, proceed normally
-                    pass
 
             try:
                 if isinstance(tag, tag_utils.Tag):
