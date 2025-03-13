@@ -251,7 +251,7 @@ if server_config().workload_manager_enabled:
                 hydrate=True,
             )
             analytics_handler.metadata = {
-                "workspace_id": template.project.id,
+                "project_id": template.project.id,
             }
 
             verify_permission(

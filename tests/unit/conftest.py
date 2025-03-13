@@ -367,6 +367,7 @@ def sample_project_model() -> ProjectResponse:
         body=ProjectResponseBody(
             created=datetime.now(),
             updated=datetime.now(),
+            display_name="Axl's Project",
         ),
         metadata=ProjectResponseMetadata(),
     )

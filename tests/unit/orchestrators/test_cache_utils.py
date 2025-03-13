@@ -75,7 +75,7 @@ def generate_cache_key_kwargs(local_artifact_store):
         "step": _compile_step(_cache_test_step),
         "input_artifact_ids": {"input_1": uuid4()},
         "artifact_store": local_artifact_store,
-        "workspace_id": uuid4(),
+        "project_id": uuid4(),
     }
 
 
@@ -86,7 +86,7 @@ def test_generate_cache_key_is_deterministic(generate_cache_key_kwargs):
     assert key_1 == key_2
 
 
-def test_generate_cache_key_considers_workspace_id(generate_cache_key_kwargs):
+def test_generate_cache_key_considers_project_id(generate_cache_key_kwargs):
     """Check that the cache key changes if the project ID changes."""
     key_1 = cache_utils.generate_cache_key(**generate_cache_key_kwargs)
     generate_cache_key_kwargs["project_id"] = uuid4()

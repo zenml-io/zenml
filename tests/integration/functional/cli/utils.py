@@ -91,7 +91,7 @@ def test_parse_name_and_extra_arguments_returns_a_dict_of_known_options() -> (
 
 def sample_project_name() -> str:
     """Function to get random project name."""
-    return f"cat_prj_{random_str(4)}"
+    return f"cat_prj_{random_str(4).lower()}"
 
 
 def create_sample_project() -> ProjectResponse:
