@@ -326,7 +326,7 @@ def test_custom_build_verification(
             user=sample_deployment_response_model.user,
         ),
         metadata=PipelineBuildResponseMetadata(
-            project=sample_deployment_response_model.workspace,
+            project=sample_deployment_response_model.project,
             images={"wrong_key": {"image": "docker_image_name"}},
             is_local=False,
             contains_code=True,

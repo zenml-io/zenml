@@ -330,7 +330,7 @@ def test_updating_nonexisting_entity_raises_error(
 def test_deleting_nonexistent_entity_raises_error(
     crud_test_config: CrudTestConfig,
 ):
-    """Tests deleting a nonexistent workspace raises an error."""
+    """Tests deleting a nonexistent resource raises an error."""
     zs = Client().zen_store
 
     if not isinstance(zs, tuple(crud_test_config.supported_zen_stores)):
@@ -344,37 +344,37 @@ def test_deleting_nonexistent_entity_raises_error(
 
 
 # .----------.
-# | WORKSPACES |
+# | PROJECTS |
 # '----------'
 
 
-def test_only_one_default_workspace_present():
-    """Tests that one and only one default workspace is present."""
+def test_only_one_default_project_present():
+    """Tests that one and only one default project is present."""
     client = Client()
     assert (
         len(client.zen_store.list_projects(ProjectFilter(name="default"))) == 1
     )
 
 
-def test_updating_default_workspace_fails():
-    """Tests updating the default workspace."""
+def test_updating_default_project_fails():
+    """Tests updating the default project."""
     client = Client()
 
-    default_workspace = client.zen_store.get_project(DEFAULT_PROJECT_NAME)
-    assert default_workspace.name == DEFAULT_PROJECT_NAME
-    workspace_update = ProjectUpdate(
-        name="aria_workspace",
-        description="Aria has taken possession of this workspace.",
+    default_project = client.zen_store.get_project(DEFAULT_PROJECT_NAME)
+    assert default_project.name == DEFAULT_PROJECT_NAME
+    project_update = ProjectUpdate(
+        name="aria_project",
+        description="Aria has taken possession of this project.",
     )
     with pytest.raises(IllegalOperationError):
         client.zen_store.update_project(
-            project_id=default_workspace.id,
-            project_update=workspace_update,
+            project_id=default_project.id,
+            project_update=project_update,
         )
 
 
-def test_deleting_default_workspace_fails():
-    """Tests deleting the default workspace."""
+def test_deleting_default_project_fails():
+    """Tests deleting the default project."""
     client = Client()
     with pytest.raises(IllegalOperationError):
         client.zen_store.delete_project(DEFAULT_NAME)
@@ -2617,7 +2617,6 @@ def test_register_stack_fails_when_stack_exists():
                     components=components,
                 )
                 with pytest.raises(EntityExistsError):
-                    # TODO: [server] inject user and workspace into stack as well
                     store.create_stack(
                         stack=new_stack,
                     )
@@ -2816,8 +2815,8 @@ def test_count_runs():
     store = client.zen_store
     if not isinstance(store, SqlZenStore):
         pytest.skip("Test only applies to SQL store")
-    active_workspace = client.active_project
-    filter_model = PipelineRunFilter(project=active_workspace.id)
+    active_project = client.active_project
+    filter_model = PipelineRunFilter(project=active_project.id)
     num_runs = store.list_runs(filter_model).total
 
     # At baseline this should be the same
@@ -2827,7 +2826,7 @@ def test_count_runs():
         assert (
             store.count_runs(filter_model)
             == store.list_runs(
-                PipelineRunFilter(project=active_workspace.id)
+                PipelineRunFilter(project=active_project.id)
             ).total
         )
         assert store.count_runs(filter_model) == num_runs + 5

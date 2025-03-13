@@ -481,15 +481,15 @@ class ComponentContext:
             self.cleanup()
 
 
-class WorkspaceContext:
+class ProjectContext:
     def __init__(
         self,
-        workspace_name: str = "super_axl",
+        project_name: str = "super_axl",
         create: bool = True,
         activate: bool = False,
     ):
-        self.workspace_name = (
-            sample_name(workspace_name) if create else workspace_name
+        self.project_name = (
+            sample_name(project_name) if create else project_name
         )
         self.client = Client()
         self.store = self.client.zen_store
@@ -498,22 +498,22 @@ class WorkspaceContext:
 
     def __enter__(self):
         if self.create:
-            new_workspace = ProjectRequest(name=self.workspace_name)
-            self.workspace = self.store.create_project(new_workspace)
+            new_project = ProjectRequest(name=self.project_name)
+            self.project = self.store.create_project(new_project)
         else:
-            self.workspace = self.store.get_project(self.workspace_name)
+            self.project = self.store.get_project(self.project_name)
 
         if self.activate:
-            self.original_workspace = self.client.active_project
-            self.client.set_active_project(self.workspace.id)
-        return self.workspace
+            self.original_project = self.client.active_project
+            self.client.set_active_project(self.project.id)
+        return self.project
 
     def __exit__(self, exc_type, exc_value, exc_traceback):
         if self.activate:
-            self.client.set_active_project(self.original_workspace.id)
+            self.client.set_active_project(self.original_project.id)
         if self.create:
             try:
-                self.store.delete_project(self.workspace.id)
+                self.store.delete_project(self.project.id)
             except KeyError:
                 pass
 
@@ -562,11 +562,11 @@ class SecretContext:
 class CodeRepositoryContext:
     def __init__(
         self,
-        workspace_id: Optional[uuid.UUID] = None,
+        project_id: Optional[uuid.UUID] = None,
         delete: bool = True,
     ):
         self.code_repo_name = sample_name("code_repo")
-        self.workspace_id = workspace_id
+        self.project_id = project_id
         self.client = Client()
         self.store = self.client.zen_store
         self.delete = delete
@@ -580,7 +580,7 @@ class CodeRepositoryContext:
                 "attribute": "StubCodeRepository",
                 "type": "user",
             },
-            project=self.workspace_id or self.client.active_project.id,
+            project=self.project_id or self.client.active_project.id,
         )
 
         self.repo = self.store.create_code_repository(request)
@@ -610,7 +610,6 @@ class ServiceConnectorContext:
         expires_at: Optional[datetime] = None,
         expires_skew_tolerance: Optional[int] = None,
         expiration_seconds: Optional[int] = None,
-        workspace_id: Optional[uuid.UUID] = None,
         labels: Optional[Dict[str, str]] = None,
         client: Optional[Client] = None,
         delete: bool = True,
@@ -625,7 +624,6 @@ class ServiceConnectorContext:
         self.expires_at = expires_at
         self.expires_skew_tolerance = expires_skew_tolerance
         self.expiration_seconds = expiration_seconds
-        self.workspace_id = workspace_id
         self.labels = labels
         self.client = client or Client()
         self.store = self.client.zen_store
@@ -670,7 +668,7 @@ class ModelContext:
         delete: bool = True,
     ):
         client = Client()
-        self.workspace = client.active_project.id
+        self.project = client.active_project.id
         self.model = sample_name("su_model")
         self.model_version = "2.0.0"
 
@@ -692,7 +690,7 @@ class ModelContext:
 
     def __enter__(self):
         client = Client()
-        ws = client.get_project(self.workspace)
+        ws = client.get_project(self.project)
         stack = client.active_stack
         try:
             model = client.get_model(self.model)
@@ -971,12 +969,12 @@ class CrudTestConfig:
         """Creates the entity."""
         create_model = self.create_model
 
-        # Set active user, workspace, and stack if applicable
+        # Set active user, project, and stack if applicable
         client = Client()
         if hasattr(create_model, "user"):
             create_model.user = client.active_user.id
-        if hasattr(create_model, "workspace"):
-            create_model.workspace = client.active_project.id
+        if hasattr(create_model, "project"):
+            create_model.project = client.active_project.id
         if hasattr(create_model, "stack"):
             create_model.stack = client.active_stack_model.id
 
@@ -1050,11 +1048,11 @@ class CrudTestConfig:
                     c.cleanup()
 
 
-workspace_crud_test_config = CrudTestConfig(
-    create_model=ProjectRequest(name=sample_name("sample_workspace")),
-    update_model=ProjectUpdate(name=sample_name("updated_sample_workspace")),
+project_crud_test_config = CrudTestConfig(
+    create_model=ProjectRequest(name=sample_name("sample_project")),
+    update_model=ProjectUpdate(name=sample_name("updated_sample_project")),
     filter_model=ProjectFilter,
-    entity_name="workspace",
+    entity_name="project",
 )
 user_crud_test_config = CrudTestConfig(
     create_model=UserRequest(name=sample_name("sample_user"), is_admin=True),
@@ -1069,7 +1067,6 @@ flavor_crud_test_config = CrudTestConfig(
         integration="",
         source="",
         config_schema={},
-        workspace=uuid.uuid4(),
     ),
     filter_model=FlavorFilter,
     entity_name="flavor",
@@ -1080,7 +1077,6 @@ component_crud_test_config = CrudTestConfig(
         type=StackComponentType.ORCHESTRATOR,
         flavor="local",
         configuration={},
-        workspace=uuid.uuid4(),
     ),
     update_model=ComponentUpdate(name=sample_name("updated_sample_component")),
     filter_model=ComponentFilter,
@@ -1105,7 +1101,7 @@ pipeline_crud_test_config = CrudTestConfig(
 #         status=ExecutionStatus.RUNNING,
 #         config=PipelineConfiguration(name="aria_pipeline"),
 #
-#         workspace=uuid.uuid4(),
+#         project=uuid.uuid4(),
 #     ),
 #     update_model=PipelineRunUpdateModel(status=ExecutionStatus.COMPLETED),
 #     filter_model=PipelineRunFilterModel,
@@ -1362,7 +1358,7 @@ trigger_crud_test_config = CrudTestConfig(
 #         ),
 #         status=ExecutionStatus.RUNNING,
 #
-#         workspace=uuid.uuid4(),
+#         project=uuid.uuid4(),
 #         pipeline_run_id=uuid.uuid4()   # Pipeline run with id needs to exist
 #     ),
 #     update_model=StepRunUpdateModel(status=ExecutionStatus.COMPLETED),
@@ -1372,7 +1368,7 @@ trigger_crud_test_config = CrudTestConfig(
 
 
 list_of_entities = [
-    workspace_crud_test_config,
+    project_crud_test_config,
     user_crud_test_config,
     flavor_crud_test_config,
     component_crud_test_config,

@@ -55,7 +55,6 @@ def test_mlflow_experiment_tracker_attributes() -> None:
         flavor="mlflow",
         type=StackComponentType.EXPERIMENT_TRACKER,
         user=uuid4(),
-        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -75,7 +74,6 @@ def test_mlflow_experiment_tracker_stack_validation(
         flavor="mlflow",
         type=StackComponentType.EXPERIMENT_TRACKER,
         user=uuid4(),
-        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -112,7 +110,6 @@ def test_mlflow_experiment_tracker_authentication() -> None:
             flavor="mlflow",
             type=StackComponentType.EXPERIMENT_TRACKER,
             user=uuid4(),
-            workspace=uuid4(),
             created=datetime.now(),
             updated=datetime.now(),
         )
@@ -128,7 +125,6 @@ def test_mlflow_experiment_tracker_authentication() -> None:
             flavor="mlflow",
             type=StackComponentType.EXPERIMENT_TRACKER,
             user=uuid4(),
-            workspace=uuid4(),
             created=datetime.now(),
             updated=datetime.now(),
         )
@@ -146,7 +142,6 @@ def test_mlflow_experiment_tracker_authentication() -> None:
             flavor="mlflow",
             type=StackComponentType.EXPERIMENT_TRACKER,
             user=uuid4(),
-            workspace=uuid4(),
             created=datetime.now(),
             updated=datetime.now(),
         )
@@ -164,7 +159,6 @@ def test_mlflow_experiment_tracker_authentication() -> None:
             flavor="mlflow",
             type=StackComponentType.EXPERIMENT_TRACKER,
             user=uuid4(),
-            workspace=uuid4(),
             created=datetime.now(),
             updated=datetime.now(),
         )
@@ -181,7 +175,6 @@ def test_mlflow_experiment_tracker_authentication() -> None:
             flavor="mlflow",
             type=StackComponentType.EXPERIMENT_TRACKER,
             user=uuid4(),
-            workspace=uuid4(),
             created=datetime.now(),
             updated=datetime.now(),
         )
@@ -198,7 +191,6 @@ def test_mlflow_experiment_tracker_authentication() -> None:
             flavor="mlflow",
             type=StackComponentType.EXPERIMENT_TRACKER,
             user=uuid4(),
-            workspace=uuid4(),
             created=datetime.now(),
             updated=datetime.now(),
         )
@@ -219,7 +211,6 @@ def test_mlflow_experiment_tracker_set_config(local_stack: Stack) -> None:
         flavor="mlflow",
         type=StackComponentType.EXPERIMENT_TRACKER,
         user=uuid4(),
-        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -244,7 +235,6 @@ def test_mlflow_experiment_tracker_set_config(local_stack: Stack) -> None:
         flavor="mlflow",
         type=StackComponentType.EXPERIMENT_TRACKER,
         user=uuid4(),
-        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )

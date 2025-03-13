@@ -42,7 +42,6 @@ def _get_orchestrator() -> StubContainerizedOrchestrator:
         flavor="stub",
         type=StackComponentType.ORCHESTRATOR,
         user=uuid4(),
-        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
