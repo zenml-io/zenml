@@ -45,8 +45,8 @@ def fan_out_fan_in_pipeline(parallel_count: int) -> None:
     # Fan out: Process data in parallel branches
     after = []
     for i in range(parallel_count):
-        _ = process_step(input_data, id=f"process_{i}")
-        after.append(f"process_{i}")
+        artifact = process_step(input_data, id=f"process_{i}")
+        after.append(artifact)
 
     # Fan in: Combine results from all parallel branches
     combine_step(step_prefix="process_", output_name="output", after=after)
