@@ -46,11 +46,13 @@ class WandbExperimentTrackerSettings(BaseSettings):
         run_name: The Wandb run name.
         tags: Tags for the Wandb run.
         settings: Settings for the Wandb run.
+        enable_weave: Whether to enable Weave integration.
     """
 
     run_name: Optional[str] = None
     tags: List[str] = []
     settings: Dict[str, Any] = {}
+    enable_weave: bool = False
 
     @field_validator("settings", mode="before")
     @classmethod
