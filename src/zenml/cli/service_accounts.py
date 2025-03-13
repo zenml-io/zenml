@@ -410,7 +410,6 @@ def list_api_keys(service_account_name_or_id: str, **kwargs: Any) -> None:
             exclude_columns=[
                 "created",
                 "updated",
-                "workspace",
                 "key",
                 "retain_period_minutes",
             ],
