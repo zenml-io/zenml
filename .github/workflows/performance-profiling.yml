@@ -53,7 +53,7 @@ jobs:
       - name: Install ZenML in target environment
         run: |
           source ${{ env.TARGET_VENV }}/bin/activate
-          uv pip install -e ".[server,templates]"
+          ./scripts/install-zenml-dev.sh --system
           # Verify installation
           zenml --version
       - name: Profile target branch
@@ -77,7 +77,7 @@ jobs:
       - name: Install ZenML in current environment
         run: |
           source ${{ env.CURRENT_VENV }}/bin/activate
-          uv pip install -e ".[server,templates]"
+          ./scripts/install-zenml-dev.sh --system
           # Verify installation
           zenml --version
       - name: Profile current branch

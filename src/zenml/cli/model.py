@@ -91,7 +91,6 @@ def list_models(**kwargs: Any) -> None:
     Args:
         **kwargs: Keyword arguments to filter models.
     """
-    raise Exception("Not implemented")
     models = Client().list_models(**kwargs)
 
     if not models:
