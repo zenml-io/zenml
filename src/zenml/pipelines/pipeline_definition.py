@@ -1233,7 +1233,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             return id_
 
         if not allow_suffix:
-            raise RuntimeError("Duplicate step ID")
+            raise RuntimeError(f"Duplicate step ID `{id_}`")
 
         for index in range(2, 10000):
             id_ = f"{base_id}_{index}"
