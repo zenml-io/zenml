@@ -756,7 +756,6 @@ class Stack:
                 type=flavor.type,
                 config=LocalImageBuilderConfig(),
                 user=Client().active_user.id,
-                workspace=Client().active_workspace.id,
                 created=now,
                 updated=now,
             )

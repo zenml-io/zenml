@@ -178,7 +178,7 @@ def concrete_model_registry():
         config={},
         type=StackComponentType.MODEL_REGISTRY,
         user=uuid4(),
-        workspace=uuid4(),
+        project=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )

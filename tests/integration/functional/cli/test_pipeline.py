@@ -400,7 +400,7 @@ def test_pipeline_run_with_custom_build_id(clean_client: "Client"):
 
     request = PipelineBuildRequest(
         user=Client().active_user.id,
-        workspace=Client().active_workspace.id,
+        project=Client().active_project.id,
         is_local=True,
         contains_code=True,
         images={},
@@ -451,7 +451,7 @@ def test_pipeline_build_list(clean_client: "Client"):
 
     request = PipelineBuildRequest(
         user=clean_client.active_user.id,
-        workspace=clean_client.active_workspace.id,
+        project=clean_client.active_project.id,
         images={},
         is_local=False,
         contains_code=True,
@@ -465,7 +465,7 @@ def test_pipeline_build_delete(clean_client: "Client"):
     """Test that `zenml pipeline builds delete` works as expected."""
     request = PipelineBuildRequest(
         user=clean_client.active_user.id,
-        workspace=clean_client.active_workspace.id,
+        project=clean_client.active_project.id,
         images={},
         is_local=False,
         contains_code=True,

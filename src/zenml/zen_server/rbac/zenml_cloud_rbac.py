@@ -58,22 +58,20 @@ def _convert_from_cloud_resource(cloud_resource: str) -> Resource:
     Returns:
         The converted resource.
     """
-    scope, workspace_resource_type_and_id = cloud_resource.split(
-        ":", maxsplit=1
-    )
+    scope, project_resource_type_and_id = cloud_resource.split(":", maxsplit=1)
 
     if scope != f"{SERVER_ID}@{SERVER_SCOPE_IDENTIFIER}":
         raise ValueError("Invalid scope for server resource.")
 
-    workspace_id: Optional[str] = None
-    if ":" in workspace_resource_type_and_id:
+    project_id: Optional[str] = None
+    if ":" in project_resource_type_and_id:
         (
-            workspace_id,
+            project_id,
             resource_type_and_id,
-        ) = workspace_resource_type_and_id.split(":", maxsplit=1)
+        ) = project_resource_type_and_id.split(":", maxsplit=1)
     else:
-        workspace_id = None
-        resource_type_and_id = workspace_resource_type_and_id
+        project_id = None
+        resource_type_and_id = project_resource_type_and_id
 
     resource_id: Optional[str] = None
     if "/" in resource_type_and_id:
@@ -81,15 +79,13 @@ def _convert_from_cloud_resource(cloud_resource: str) -> Resource:
     else:
         resource_type = resource_type_and_id
 
-    if resource_type == ResourceType.WORKSPACE and workspace_id is not None:
-        # TODO: For now, we duplicate the workspace ID in the string
-        # representation when describing a workspace instance, because
+    if resource_type == ResourceType.PROJECT and project_id is not None:
+        # TODO: For now, we duplicate the project ID in the string
+        # representation when describing a project instance, because
         # this is what is expected by the RBAC implementation.
-        workspace_id = None
+        project_id = None
 
-    return Resource(
-        type=resource_type, id=resource_id, workspace_id=workspace_id
-    )
+    return Resource(type=resource_type, id=resource_id, project_id=project_id)
 
 
 class ZenMLCloudRBAC(RBACInterface):

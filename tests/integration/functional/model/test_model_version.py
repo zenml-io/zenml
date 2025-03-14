@@ -35,7 +35,7 @@ class ModelContext:
         stage: str = None,
     ):
         client = Client()
-        self.workspace = client.active_workspace.id
+        self.project = client.active_project.id
         self.user = client.active_user.id
         self.create_model = create_model
         self.version = version
