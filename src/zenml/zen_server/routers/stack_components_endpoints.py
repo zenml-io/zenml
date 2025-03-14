@@ -38,9 +38,7 @@ from zenml.zen_server.rbac.endpoint_utils import (
 )
 from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import verify_permission_for_model
-from zenml.zen_server.routers.workspaces_endpoints import (
-    router as workspace_router,
-)
+from zenml.zen_server.routers.projects_endpoints import workspace_router
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -67,7 +65,7 @@ types_router = APIRouter(
 # TODO: the workspace scoped endpoint is only kept for dashboard compatibility
 # and can be removed after the migration
 @workspace_router.post(
-    "/{workspace_name_or_id}" + STACK_COMPONENTS,
+    "/{project_name_or_id}" + STACK_COMPONENTS,
     responses={401: error_response, 409: error_response, 422: error_response},
     deprecated=True,
     tags=["stack_components"],
@@ -75,14 +73,14 @@ types_router = APIRouter(
 @handle_exceptions
 def create_stack_component(
     component: ComponentRequest,
-    workspace_name_or_id: Optional[Union[str, UUID]] = None,
+    project_name_or_id: Optional[Union[str, UUID]] = None,
     _: AuthContext = Security(authorize),
 ) -> ComponentResponse:
-    """Creates a stack component, optionally in a specific workspace.
+    """Creates a stack component.
 
     Args:
         component: Stack component to register.
-        workspace_name_or_id: Optional name or ID of the workspace.
+        project_name_or_id: Optional name or ID of the project.
 
     Returns:
         The created stack component.
@@ -117,7 +115,7 @@ def create_stack_component(
 # TODO: the workspace scoped endpoint is only kept for dashboard compatibility
 # and can be removed after the migration
 @workspace_router.get(
-    "/{workspace_name_or_id}" + STACK_COMPONENTS,
+    "/{project_name_or_id}" + STACK_COMPONENTS,
     responses={401: error_response, 404: error_response, 422: error_response},
     deprecated=True,
     tags=["stack_components"],
@@ -127,16 +125,16 @@ def list_stack_components(
     component_filter_model: ComponentFilter = Depends(
         make_dependable(ComponentFilter)
     ),
-    workspace_name_or_id: Optional[Union[str, UUID]] = None,
+    project_name_or_id: Optional[Union[str, UUID]] = None,
     hydrate: bool = False,
     _: AuthContext = Security(authorize),
 ) -> Page[ComponentResponse]:
-    """Get a list of all stack components, optionally filtered by workspace.
+    """Get a list of all stack components.
 
     Args:
         component_filter_model: Filter model used for pagination, sorting,
             filtering.
-        workspace_name_or_id: Optional name or ID of the workspace to filter by.
+        project_name_or_id: Optional name or ID of the project to filter by.
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
 

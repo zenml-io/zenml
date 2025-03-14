@@ -1424,8 +1424,8 @@ def connect_stack_component_with_service_connector(
 
             cli_utils.error(
                 f"No compatible valid resources were found for the "
-                f"'{component_model.name}' {display_name} in your "
-                f"workspace. {additional_info}You can create a new "
+                f"'{component_model.name}' {display_name}. "
+                f"{additional_info}You can create a new "
                 "connector using the 'zenml service-connector register' "
                 "command or list the compatible resources using the "
                 f"'zenml service-connector list-resources{command_args}' "

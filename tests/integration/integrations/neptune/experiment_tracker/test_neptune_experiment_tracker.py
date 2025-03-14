@@ -41,7 +41,6 @@ def neptune_experiment_tracker() -> NeptuneExperimentTracker:
         flavor="neptune",
         type=StackComponentType.EXPERIMENT_TRACKER,
         user=uuid4(),
-        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -56,7 +55,6 @@ def local_orchestrator() -> LocalOrchestrator:
         flavor="local",
         type=StackComponentType.ORCHESTRATOR,
         user=uuid4(),
-        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -71,7 +69,6 @@ def local_artifact_store() -> LocalArtifactStore:
         flavor="local",
         type=StackComponentType.ARTIFACT_STORE,
         user=uuid4(),
-        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -118,7 +115,6 @@ def test_neptune_experiment_tracker_does_not_need_explicit_api_token_or_project(
             flavor="neptune",
             type=StackComponentType.EXPERIMENT_TRACKER,
             user=uuid4(),
-            workspace=uuid4(),
             created=datetime.now(),
             updated=datetime.now(),
         )

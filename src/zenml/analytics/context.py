@@ -118,7 +118,7 @@ class AnalyticsContext:
                     self.external_user_id = auth_context.user.external_user_id
 
                 self.external_server_id = server_config().external_server_id
-                self.workspace_id = None
+                self.project_id = None
             else:
                 from zenml.client import Client
 
@@ -129,7 +129,7 @@ class AnalyticsContext:
                     active_user.is_service_account
                 )
                 self.external_user_id = active_user.external_user_id
-                self.workspace_id = Client().active_workspace.id
+                self.project_id = Client().active_project.id
 
             # Fetch the `client_id`
             if self.in_server:
@@ -308,8 +308,8 @@ class AnalyticsContext:
         if self.server_metadata:
             properties.update(self.server_metadata)
 
-        if self.workspace_id:
-            properties.setdefault("workspace_id", str(self.workspace_id))
+        if self.project_id:
+            properties.setdefault("project_id", str(self.project_id))
 
         for k, v in properties.items():
             if isinstance(v, UUID):

@@ -24,12 +24,12 @@ from zenml.config.step_configurations import Step
 from zenml.models.v2.base.base import BaseZenModel
 from zenml.models.v2.base.page import Page
 from zenml.models.v2.base.scoped import (
-    WorkspaceScopedFilter,
-    WorkspaceScopedRequest,
-    WorkspaceScopedResponse,
-    WorkspaceScopedResponseBody,
-    WorkspaceScopedResponseMetadata,
-    WorkspaceScopedResponseResources,
+    ProjectScopedFilter,
+    ProjectScopedRequest,
+    ProjectScopedResponse,
+    ProjectScopedResponseBody,
+    ProjectScopedResponseMetadata,
+    ProjectScopedResponseResources,
 )
 from zenml.models.v2.core.code_reference import (
     CodeReferenceRequest,
@@ -93,9 +93,7 @@ class PipelineDeploymentBase(BaseZenModel):
         )
 
 
-class PipelineDeploymentRequest(
-    PipelineDeploymentBase, WorkspaceScopedRequest
-):
+class PipelineDeploymentRequest(PipelineDeploymentBase, ProjectScopedRequest):
     """Request model for pipeline deployments."""
 
     stack: UUID = Field(title="The stack associated with the deployment.")
@@ -129,11 +127,11 @@ class PipelineDeploymentRequest(
 # ------------------ Response Model ------------------
 
 
-class PipelineDeploymentResponseBody(WorkspaceScopedResponseBody):
+class PipelineDeploymentResponseBody(ProjectScopedResponseBody):
     """Response body for pipeline deployments."""
 
 
-class PipelineDeploymentResponseMetadata(WorkspaceScopedResponseMetadata):
+class PipelineDeploymentResponseMetadata(ProjectScopedResponseMetadata):
     """Response metadata for pipeline deployments."""
 
     run_name_template: str = Field(
@@ -188,7 +186,7 @@ class PipelineDeploymentResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
-class PipelineDeploymentResponseResources(WorkspaceScopedResponseResources):
+class PipelineDeploymentResponseResources(ProjectScopedResponseResources):
     """Class for all resource models associated with the pipeline deployment entity."""
 
     triggers: TriggerPage = Field(  # type: ignore[valid-type]
@@ -197,7 +195,7 @@ class PipelineDeploymentResponseResources(WorkspaceScopedResponseResources):
 
 
 class PipelineDeploymentResponse(
-    WorkspaceScopedResponse[
+    ProjectScopedResponse[
         PipelineDeploymentResponseBody,
         PipelineDeploymentResponseMetadata,
         PipelineDeploymentResponseResources,
@@ -355,7 +353,7 @@ class PipelineDeploymentResponse(
 # ------------------ Filter Model ------------------
 
 
-class PipelineDeploymentFilter(WorkspaceScopedFilter):
+class PipelineDeploymentFilter(ProjectScopedFilter):
     """Model to enable advanced filtering of all pipeline deployments."""
 
     pipeline_id: Optional[Union[UUID, str]] = Field(

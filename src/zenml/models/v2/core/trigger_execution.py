@@ -27,7 +27,7 @@ from zenml.models.v2.base.base import (
     BaseDatedResponseBody,
     BaseResponseResources,
 )
-from zenml.models.v2.base.scoped import WorkspaceScopedFilter
+from zenml.models.v2.base.scoped import ProjectScopedFilter
 
 if TYPE_CHECKING:
     from zenml.models.v2.core.trigger import TriggerResponse
@@ -109,7 +109,7 @@ class TriggerExecutionResponse(
 # ------------------ Filter Model ------------------
 
 
-class TriggerExecutionFilter(WorkspaceScopedFilter):
+class TriggerExecutionFilter(ProjectScopedFilter):
     """Model to enable advanced filtering of all trigger executions."""
 
     trigger_id: Optional[Union[UUID, str]] = Field(
