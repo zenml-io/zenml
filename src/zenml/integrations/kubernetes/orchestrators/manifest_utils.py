@@ -222,6 +222,18 @@ def add_pod_settings(
             else:
                 container.volume_mounts = settings.volume_mounts
 
+        if settings.env:
+            if container.env:
+                container.env.extend(settings.env)
+            else:
+                container.env = settings.env
+
+        if settings.env_from:
+            if container.env_from:
+                container.env_from.extend(settings.env_from)
+            else:
+                container.env_from = settings.env_from
+
     if settings.volumes:
         if pod_spec.volumes:
             pod_spec.volumes.extend(settings.volumes)
