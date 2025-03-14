@@ -126,17 +126,17 @@ def test_tag_utils(clean_client):
     assert "cascade_tag" not in second_run_tags
     assert "exclusive_tag" not in second_run_tags
 
-    pipeline = clean_client.get_pipeline(first_run.pipeline.id)
-    with pytest.raises(IllegalOperationError):
+    pipeline_model = clean_client.get_pipeline(first_run.pipeline.id)
+    with pytest.raises(ValueError):
         add_tags(
             tags=[Tag(name="new_exclusive_tag", exclusive=True)],
-            pipeline=pipeline.id,
+            pipeline=pipeline_model.id,
         )
 
-    add_tags(tags=["regular_tag_for_pipeline"], pipeline=pipeline.id)
+    add_tags(tags=["regular_tag_for_pipeline"], pipeline=pipeline_model.id)
 
     non_exclusive_tag = clean_client.get_tag("regular_tag_for_pipeline")
-    with pytest.raises(IllegalOperationError):
+    with pytest.raises(ValueError):
         clean_client.update_tag(
             tag_name_or_id=non_exclusive_tag.id, exclusive=True
         )
