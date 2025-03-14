@@ -5595,40 +5595,40 @@ def tag_filter_test_pipeline():
     _ = produce_artifact()
 
 
-def test_tag_filter_with_resource_type():
+def test_tag_filter_with_resource_type(clean_client: "Client"):
     """Tests that tags can be filtered by resource type."""
-    client = Client()
-
     # Create some tags to use
-    _ = client.create_tag(name="tag1", color="red")
+    _ = clean_client.create_tag(name="tag1", color="red")
 
     # Run the pipeline
     tag_filter_test_pipeline()
 
     # Test filtering tags by pipeline run resource type
-    tags = client.list_tags(resource_type=TaggableResourceTypes.PIPELINE_RUN)
+    tags = clean_client.list_tags(
+        resource_type=TaggableResourceTypes.PIPELINE_RUN
+    )
     assert len(tags) == 2
     assert {t.name for t in tags} == {"tag3", "tag4"}
 
     # Test filtering tags by artifact version resource type
-    tags = client.list_tags(
+    tags = clean_client.list_tags(
         resource_type=TaggableResourceTypes.ARTIFACT_VERSION
     )
     assert len(tags) == 2
     assert {t.name for t in tags} == {"tag2", "tag4"}
 
     # Test default behavior (no resource type filter)
-    tags = client.list_tags()
+    tags = clean_client.list_tags()
     assert len(tags) == 4
     assert {t.name for t in tags} == {"tag1", "tag2", "tag3", "tag4"}
 
     # Test combining resource type filter with name filter
-    tags = client.list_tags(
+    tags = clean_client.list_tags(
         resource_type=TaggableResourceTypes.ARTIFACT_VERSION, name="tag2"
     )
     assert len(tags) == 1
     assert tags[0].name == "tag2"
 
     # Test filtering for a resource type that doesn't have tags
-    tags = client.list_tags(resource_type=TaggableResourceTypes.MODEL)
+    tags = clean_client.list_tags(resource_type=TaggableResourceTypes.MODEL)
     assert len(tags) == 0
