@@ -314,7 +314,7 @@ def register_artifact(
         FileNotFoundError: If the folder URI is outside the artifact store
             bounds.
     """
-    from zenml.materializers.preexisting_data_materializer import (
+    from zenml.artifacts.preexisting_data_materializer import (
         PreexistingDataMaterializer,
     )
 
