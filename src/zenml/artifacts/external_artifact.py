@@ -14,7 +14,7 @@
 """External artifact definition."""
 
 import os
-from typing import TYPE_CHECKING, Any, Optional, Type, Union
+from typing import Any, Optional, Type, Union
 from uuid import UUID, uuid4
 
 from pydantic import Field, model_validator
@@ -25,11 +25,9 @@ from zenml.artifacts.external_artifact_config import (
 from zenml.config.source import Source
 from zenml.enums import ArtifactSaveType
 from zenml.logger import get_logger
+from zenml.materializers.base_materializer import BaseMaterializer
 
-if TYPE_CHECKING:
-    from zenml.materializers.base_materializer import BaseMaterializer
-
-    MaterializerClassOrSource = Union[str, Source, Type[BaseMaterializer]]
+MaterializerClassOrSource = Union[str, Source, Type[BaseMaterializer]]
 
 
 logger = get_logger(__name__)
