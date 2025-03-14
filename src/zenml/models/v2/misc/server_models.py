@@ -131,16 +131,16 @@ class ServerModel(BaseModel):
         "connected. Only set if the server is a ZenML Pro server.",
     )
 
-    pro_tenant_id: Optional[UUID] = Field(
+    pro_workspace_id: Optional[UUID] = Field(
         None,
-        title="The ID of the ZenML Pro tenant to which the server is connected. "
-        "Only set if the server is a ZenML Pro server.",
+        title="The ID of the ZenML Pro workspace to which the server is "
+        "connected. Only set if the server is a ZenML Pro server.",
     )
 
-    pro_tenant_name: Optional[str] = Field(
+    pro_workspace_name: Optional[str] = Field(
         None,
-        title="The name of the ZenML Pro tenant to which the server is connected. "
-        "Only set if the server is a ZenML Pro server.",
+        title="The name of the ZenML Pro workspace to which the server is "
+        "connected. Only set if the server is a ZenML Pro server.",
     )
 
     def is_local(self) -> bool:

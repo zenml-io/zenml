@@ -405,9 +405,9 @@ class BaseZenStore(
             store_info.pro_api_url = pro_config.api_url
             store_info.pro_dashboard_url = pro_config.dashboard_url
             store_info.pro_organization_id = pro_config.organization_id
-            store_info.pro_tenant_id = pro_config.tenant_id
-            if pro_config.tenant_name:
-                store_info.pro_tenant_name = pro_config.tenant_name
+            store_info.pro_workspace_id = pro_config.workspace_id
+            if pro_config.workspace_name:
+                store_info.pro_workspace_name = pro_config.workspace_name
             if pro_config.organization_name:
                 store_info.pro_organization_name = pro_config.organization_name
 

@@ -20,7 +20,7 @@ from zenml.zen_server.utils import feature_gate, server_config
 
 
 def check_entitlement(resource_type: ResourceType) -> None:
-    """Queries the feature gate to see if the operation falls within the tenants entitlements.
+    """Queries the feature gate to see if the operation falls within the Pro workspaces entitlements.
 
     Raises an exception if the user is not entitled to create an instance of the
     resource. Otherwise, simply returns.
