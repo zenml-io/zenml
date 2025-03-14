@@ -114,7 +114,7 @@ kubectl delete pod -n zenml -l pipeline=kubernetes_example_pipeline
 
 For additional configuration of the Kubernetes step operator, you can pass `KubernetesStepOperatorSettings` which allows you to configure (among others) the following attributes:
 
-* `pod_settings`: Node selectors, labels, affinity, and tolerations, and image pull secrets to apply to the Kubernetes Pods. These can be either specified using the Kubernetes model objects or as dictionaries.
+* `pod_settings`: Node selectors, labels, affinity, tolerations, secrets, environment variables and image pull secrets to apply to the Kubernetes Pods. These can be either specified using the Kubernetes model objects or as dictionaries.
 * `service_account_name`: The name of the service account to use for the Kubernetes Pods.
 
 ```python
@@ -196,6 +196,19 @@ kubernetes_settings = KubernetesStepOperatorSettings(
                 "name": "config-volume",
                 "mountPath": "/etc/ml-config",
                 "readOnly": True
+            }
+        ],
+        "env": [
+            {
+                "name": "MY_ENVIRONMENT_VARIABLE",
+                "value": "1",
+            }
+        ],
+        "env_from": [
+            {
+                "secretRef": {
+                    "name": "secret-name",
+                }
             }
         ],
         "host_ipc": True,

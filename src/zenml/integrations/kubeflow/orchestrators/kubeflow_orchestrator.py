@@ -578,6 +578,12 @@ class KubeflowOrchestrator(ContainerizedOrchestrator):
                             "Volume mounts are set but not supported in "
                             "Kubeflow with Kubeflow Pipelines 2.x. Ignoring..."
                         )
+                    if pod_settings.env or pod_settings.env_from:
+                        logger.warning(
+                            "Environment variables are set but not supported "
+                            "in Kubeflow with Kubeflow Pipelines 2.x. "
+                            "Ignoring..."
+                        )
 
                     # apply pod settings
                     if (
