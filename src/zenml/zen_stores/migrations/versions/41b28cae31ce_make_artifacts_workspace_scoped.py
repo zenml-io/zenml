@@ -15,8 +15,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy.sql import column, table
 
 from zenml.constants import (
-    DEFAULT_WORKSPACE_NAME,
-    ENV_ZENML_DEFAULT_WORKSPACE_NAME,
+    DEFAULT_PROJECT_NAME,
+    ENV_ZENML_DEFAULT_PROJECT_NAME,
 )
 
 # revision identifiers, used by Alembic.
@@ -52,7 +52,7 @@ def upgrade() -> None:
     )
 
     default_workspace_name = os.getenv(
-        ENV_ZENML_DEFAULT_WORKSPACE_NAME, DEFAULT_WORKSPACE_NAME
+        ENV_ZENML_DEFAULT_PROJECT_NAME, DEFAULT_PROJECT_NAME
     )
 
     default_workspace_query = sa.text(

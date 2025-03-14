@@ -20,8 +20,8 @@ from zenml.models.v2.base.base import (
 )
 
 
-class WorkspaceStatistics(BaseZenModel):
-    """Workspace statistics."""
+class ProjectStatistics(BaseZenModel):
+    """Project statistics."""
 
     pipelines: int = Field(
         title="The number of pipelines.",
@@ -40,6 +40,6 @@ class ServerStatistics(BaseZenModel):
     components: int = Field(
         title="The number of components.",
     )
-    workspaces: int = Field(
-        title="The number of workspaces.",
+    projects: int = Field(
+        title="The number of projects.",
     )

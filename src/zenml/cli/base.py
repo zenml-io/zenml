@@ -622,7 +622,7 @@ def info(
         "python_version": environment.python_version(),
         "environment": get_environment(),
         "system_info": environment.get_system_info(),
-        "active_workspace": client.active_workspace.name,
+        "active_project": client.active_project.name,
         "active_stack": client.active_stack_model.name,
         "active_user": client.active_user.name,
         "telemetry_status": "enabled" if gc.analytics_opt_in else "disabled",
@@ -674,7 +674,7 @@ def info(
     "--skip_default_registrations",
     is_flag=True,
     default=False,
-    help="Skip registering default workspace, user and stack.",
+    help="Skip registering default project, user and stack.",
     type=bool,
 )
 def migrate_database(skip_default_registrations: bool = False) -> None:

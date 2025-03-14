@@ -81,7 +81,7 @@ def create_placeholder_run(
         # running.
         start_time=start_time,
         orchestrator_run_id=None,
-        workspace=deployment.workspace.id,
+        project=deployment.project.id,
         deployment=deployment.id,
         pipeline=deployment.pipeline.id if deployment.pipeline else None,
         status=ExecutionStatus.INITIALIZING,

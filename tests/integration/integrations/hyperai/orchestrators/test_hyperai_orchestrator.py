@@ -32,7 +32,6 @@ def test_hyperai_orchestrator_attributes():
         flavor="hyperai",
         type=StackComponentType.ORCHESTRATOR,
         user=uuid4(),
-        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -54,7 +53,6 @@ def test_validate_mount_path():
         flavor="hyperai",
         type=StackComponentType.ORCHESTRATOR,
         user=uuid4(),
-        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )

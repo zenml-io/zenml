@@ -46,7 +46,7 @@ from zenml.constants import (
 from zenml.enums import StoreType
 from zenml.exceptions import IllegalOperationError, OAuthError
 from zenml.logger import get_logger
-from zenml.models.v2.base.scoped import WorkspaceScopedFilter
+from zenml.models.v2.base.scoped import ProjectScopedFilter
 from zenml.plugins.plugin_flavor_registry import PluginFlavorRegistry
 from zenml.zen_server.cache import MemoryCache
 from zenml.zen_server.deploy.deployment import (
@@ -640,19 +640,19 @@ def get_zenml_headers() -> Dict[str, str]:
     return headers
 
 
-def set_filter_workspace_scope(
-    filter_model: WorkspaceScopedFilter,
-    workspace_name_or_id: Optional[Union[UUID, str]] = None,
+def set_filter_project_scope(
+    filter_model: ProjectScopedFilter,
+    project_name_or_id: Optional[Union[UUID, str]] = None,
 ) -> None:
-    """Set the workspace scope of the filter model.
+    """Set the project scope of the filter model.
 
     Args:
         filter_model: The filter model to set the scope for.
-        workspace_name_or_id: The workspace to set the scope for. If not
-            provided, the workspace scope is determined from the request
-            workspace filter or the default workspace, in that order.
+        project_name_or_id: The project to set the scope for. If not
+            provided, the project scope is determined from the request
+            project filter or the default project, in that order.
     """
-    zen_store().set_filter_workspace_id(
+    zen_store().set_filter_project_id(
         filter_model=filter_model,
-        workspace_name_or_id=workspace_name_or_id,
+        project_name_or_id=project_name_or_id,
     )

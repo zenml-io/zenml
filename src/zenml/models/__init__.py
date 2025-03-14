@@ -34,13 +34,13 @@ from zenml.models.v2.base.scoped import (
     UserScopedResponse,
     UserScopedResponseBody,
     UserScopedResponseMetadata,
-    WorkspaceScopedRequest,
-    WorkspaceScopedFilter,
-    WorkspaceScopedResponse,
-    WorkspaceScopedResponseBody,
-    WorkspaceScopedResponseMetadata,
-    WorkspaceScopedResponseResources,
-    WorkspaceScopedFilter,
+    ProjectScopedRequest,
+    ProjectScopedFilter,
+    ProjectScopedResponse,
+    ProjectScopedResponseBody,
+    ProjectScopedResponseMetadata,
+    ProjectScopedResponseResources,
+    ProjectScopedFilter,
 )
 from zenml.models.v2.base.filter import (
     BaseFilter,
@@ -285,7 +285,7 @@ from zenml.models.v2.core.stack import (
     StackResponseMetadata,
 )
 from zenml.models.v2.misc.statistics import (
-    WorkspaceStatistics,
+    ProjectStatistics,
     ServerStatistics,
 )
 from zenml.models.v2.core.step_run import (
@@ -318,13 +318,13 @@ from zenml.models.v2.core.user import (
     UserResponseBody,
     UserResponseMetadata,
 )
-from zenml.models.v2.core.workspace import (
-    WorkspaceRequest,
-    WorkspaceUpdate,
-    WorkspaceFilter,
-    WorkspaceResponse,
-    WorkspaceResponseBody,
-    WorkspaceResponseMetadata,
+from zenml.models.v2.core.project import (
+    ProjectRequest,
+    ProjectUpdate,
+    ProjectFilter,
+    ProjectResponse,
+    ProjectResponseBody,
+    ProjectResponseMetadata,
 )
 
 # V2 Misc
@@ -503,13 +503,13 @@ __all__ = [
     "UserScopedResponse",
     "UserScopedResponseBody",
     "UserScopedResponseMetadata",
-    "WorkspaceScopedRequest",
-    "WorkspaceScopedFilter",
-    "WorkspaceScopedResponse",
-    "WorkspaceScopedResponseBody",
-    "WorkspaceScopedResponseMetadata",
-    "WorkspaceScopedResponseResources",
-    "WorkspaceScopedFilter",
+    "ProjectScopedRequest",
+    "ProjectScopedFilter",
+    "ProjectScopedResponse",
+    "ProjectScopedResponseBody",
+    "ProjectScopedResponseMetadata",
+    "ProjectScopedResponseResources",
+    "ProjectScopedFilter",
     "BaseFilter",
     "StrFilter",
     "BoolFilter",
@@ -737,12 +737,12 @@ __all__ = [
     "UserResponse",
     "UserResponseBody",
     "UserResponseMetadata",
-    "WorkspaceRequest",
-    "WorkspaceUpdate",
-    "WorkspaceFilter",
-    "WorkspaceResponse",
-    "WorkspaceResponseBody",
-    "WorkspaceResponseMetadata",
+    "ProjectRequest",
+    "ProjectUpdate",
+    "ProjectFilter",
+    "ProjectResponse",
+    "ProjectResponseBody",
+    "ProjectResponseMetadata",
     # V2 Misc
     "AuthenticationMethodModel",
     "DeployedStack",
@@ -776,5 +776,5 @@ __all__ = [
     "ResourcesInfo",
     "RunMetadataEntry",
     "RunMetadataResource",
-    "WorkspaceStatistics",
+    "ProjectStatistics",
 ]

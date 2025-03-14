@@ -21,13 +21,13 @@ from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
+from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import (
     build_foreign_key_field,
     build_index,
 )
 from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
-from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 
 class RunMetadataSchema(BaseSchema, table=True):
@@ -57,15 +57,15 @@ class RunMetadataSchema(BaseSchema, table=True):
     )
     user: Optional["UserSchema"] = Relationship(back_populates="run_metadata")
 
-    workspace_id: UUID = build_foreign_key_field(
+    project_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target=WorkspaceSchema.__tablename__,
-        source_column="workspace_id",
+        target=ProjectSchema.__tablename__,
+        source_column="project_id",
         target_column="id",
         ondelete="CASCADE",
         nullable=False,
     )
-    workspace: "WorkspaceSchema" = Relationship(back_populates="run_metadata")
+    project: "ProjectSchema" = Relationship(back_populates="run_metadata")
 
     key: str
     value: str = Field(sa_column=Column(TEXT, nullable=False))

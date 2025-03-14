@@ -41,7 +41,7 @@ def test_artifact_request_model_works_with_long_materializer():
         ArtifactVersionRequest(
             artifact_id=uuid.uuid4(),
             user=uuid.uuid4(),
-            workspace=uuid.uuid4(),
+            project=uuid.uuid4(),
             version=1,
             type=ArtifactType.DATA,
             uri="abc",
@@ -58,7 +58,7 @@ def test_artifact_version_request_model_works_with_long_data_type():
         ArtifactVersionRequest(
             artifact_id=uuid.uuid4(),
             user=uuid.uuid4(),
-            workspace=uuid.uuid4(),
+            project=uuid.uuid4(),
             version=1,
             type=ArtifactType.DATA,
             uri="abc",

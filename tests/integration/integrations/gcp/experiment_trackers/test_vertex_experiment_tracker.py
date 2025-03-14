@@ -40,7 +40,6 @@ def vertex_experiment_tracker() -> VertexExperimentTracker:
         flavor="vertex",
         type=StackComponentType.EXPERIMENT_TRACKER,
         user=uuid4(),
-        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )

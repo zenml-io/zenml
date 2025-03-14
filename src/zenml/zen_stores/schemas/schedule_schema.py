@@ -32,10 +32,10 @@ from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
+from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import RunMetadataInterface
-from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
@@ -53,20 +53,20 @@ class ScheduleSchema(NamedSchema, RunMetadataInterface, table=True):
     __table_args__ = (
         UniqueConstraint(
             "name",
-            "workspace_id",
-            name="unique_schedule_name_in_workspace",
+            "project_id",
+            name="unique_schedule_name_in_project",
         ),
     )
 
-    workspace_id: UUID = build_foreign_key_field(
+    project_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target=WorkspaceSchema.__tablename__,
-        source_column="workspace_id",
+        target=ProjectSchema.__tablename__,
+        source_column="project_id",
         target_column="id",
         ondelete="CASCADE",
         nullable=False,
     )
-    workspace: "WorkspaceSchema" = Relationship(back_populates="schedules")
+    project: "ProjectSchema" = Relationship(back_populates="schedules")
 
     user_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -138,7 +138,7 @@ class ScheduleSchema(NamedSchema, RunMetadataInterface, table=True):
             interval_second = None
         return cls(
             name=schedule_request.name,
-            workspace_id=schedule_request.workspace,
+            project_id=schedule_request.project,
             user_id=schedule_request.user,
             pipeline_id=schedule_request.pipeline_id,
             orchestrator_id=schedule_request.orchestrator_id,
@@ -203,7 +203,7 @@ class ScheduleSchema(NamedSchema, RunMetadataInterface, table=True):
         metadata = None
         if include_metadata:
             metadata = ScheduleResponseMetadata(
-                workspace=self.workspace.to_model(),
+                project=self.project.to_model(),
                 pipeline_id=self.pipeline_id,
                 orchestrator_id=self.orchestrator_id,
                 run_metadata=self.fetch_metadata(),
