@@ -341,7 +341,7 @@ class CredentialsStore(metaclass=SingletonMetaClass):
         self.clear_token(pro_api_url)
 
     def clear_all_pro_tokens(
-        self, pro_api_url: str
+        self, pro_api_url: Optional[str] = None
     ) -> List[ServerCredentials]:
         """Delete all tokens from the store for ZenML Pro servers connected to a given API server.
 
@@ -356,7 +356,7 @@ class CredentialsStore(metaclass=SingletonMetaClass):
             if (
                 server.type == ServerType.PRO
                 and server.pro_api_url
-                and server.pro_api_url == pro_api_url
+                and (pro_api_url is None or server.pro_api_url == pro_api_url)
             ):
                 if server.api_key:
                     continue

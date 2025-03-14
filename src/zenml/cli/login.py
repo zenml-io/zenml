@@ -295,7 +295,7 @@ def connect_to_pro_server(
         # We also need to remove all existing API tokens associated with the
         # target ZenML Pro API, otherwise they will continue to be used after
         # the re-login flow.
-        credentials_store.clear_all_pro_tokens(pro_api_url)
+        credentials_store.clear_all_pro_tokens()
         try:
             token = web_login(
                 pro_api_url=pro_api_url,
@@ -839,7 +839,7 @@ def login(
                 pro_api_url=pro_api_url,
             )
 
-    elif current_non_local_server:
+    elif current_non_local_server and not refresh:
         # The server argument is not provided, so we default to
         # re-authenticating to the current non-local server that the client is
         # connected to.

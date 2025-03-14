@@ -91,6 +91,7 @@ class ResourceType(StrEnum):
             self.STACK_COMPONENT,
             self.TAG,
             self.SERVICE_ACCOUNT,
+            self.PROJECT,
             # Deactivated for now
             # self.USER,
         ]
