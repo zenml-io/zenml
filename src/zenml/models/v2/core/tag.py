@@ -16,7 +16,7 @@
 import random
 from typing import TYPE_CHECKING, ClassVar, List, Optional, Type, TypeVar
 
-from pydantic import Field
+from pydantic import Field, field_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import ColorVariants, TaggableResourceTypes
@@ -29,6 +29,7 @@ from zenml.models.v2.base.scoped import (
     UserScopedResponseMetadata,
     UserScopedResponseResources,
 )
+from zenml.utils.uuid_utils import is_valid_uuid
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
@@ -56,6 +57,28 @@ class TagRequest(UserScopedRequest):
         default_factory=lambda: random.choice(list(ColorVariants)),
     )
 
+    @field_validator("name")
+    @classmethod
+    def validate_name_not_uuid(cls, value: str) -> str:
+        """Validates that the tag name is not a UUID.
+
+        Args:
+            value: The tag name to validate.
+
+        Returns:
+            The validated tag name.
+
+        Raises:
+            ValueError: If the tag name can be converted
+                to a UUID.
+        """
+        if is_valid_uuid(value):
+            raise ValueError(
+                "Tag names cannot be UUIDs or strings that "
+                "can be converted to UUIDs."
+            )
+        return value
+
 
 # ------------------ Update Model ------------------
 
@@ -66,6 +89,27 @@ class TagUpdate(BaseUpdate):
     name: Optional[str] = None
     exclusive: Optional[bool] = None
     color: Optional[ColorVariants] = None
+
+    @field_validator("name")
+    @classmethod
+    def validate_name_not_uuid(cls, value: Optional[str]) -> Optional[str]:
+        """Validates that the tag name is not a UUID.
+
+        Args:
+            value: The tag name to validate.
+
+        Returns:
+            The validated tag name.
+
+        Raises:
+            ValueError: If the tag name can be converted to a UUID.
+        """
+        if value is not None and is_valid_uuid(value):
+            raise ValueError(
+                "Tag names cannot be UUIDs or strings that "
+                "can be converted to UUIDs."
+            )
+        return value
 
 
 # ------------------ Response Model ------------------

@@ -11296,6 +11296,22 @@ class SqlZenStore(BaseZenStore):
 
         tag_schemas = []
         for tag in tags:
+            # Check if the tag is a string that can be converted to a UUID
+            if isinstance(tag, str):
+                try:
+                    tag_uuid = UUID(tag)
+                except ValueError:
+                    # Not a valid UUID string, proceed normally
+                    pass
+                else:
+                    tag_schema = self._get_schema_by_id(
+                        resource_id=tag_uuid,
+                        schema_class=TagSchema,
+                        session=session,
+                    )
+                    tag_schemas.append(tag_schema)
+                    continue
+
             try:
                 if isinstance(tag, tag_utils.Tag):
                     tag_request = tag.to_request()
