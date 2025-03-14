@@ -1,4 +1,4 @@
-site_name: ZenML API Reference
+site_name: ZenML SDK Docs
 site_url: https://sdkdocs.zenml.io/
 
 docs_dir: mkdocs
