@@ -34,13 +34,13 @@ from zenml.models.v2.base.scoped import (
     UserScopedResponse,
     UserScopedResponseBody,
     UserScopedResponseMetadata,
-    WorkspaceScopedRequest,
-    WorkspaceScopedFilter,
-    WorkspaceScopedResponse,
-    WorkspaceScopedResponseBody,
-    WorkspaceScopedResponseMetadata,
-    WorkspaceScopedResponseResources,
-    WorkspaceScopedFilter,
+    ProjectScopedRequest,
+    ProjectScopedFilter,
+    ProjectScopedResponse,
+    ProjectScopedResponseBody,
+    ProjectScopedResponseMetadata,
+    ProjectScopedResponseResources,
+    ProjectScopedFilter,
 )
 from zenml.models.v2.base.filter import (
     BaseFilter,
@@ -133,7 +133,8 @@ from zenml.models.v2.core.component import (
     ComponentResponse,
     ComponentResponseBody,
     ComponentResponseMetadata,
-    ComponentResponseResources
+    ComponentResponseResources,
+    DefaultComponentRequest,
 )
 from zenml.models.v2.core.event_source_flavor import (
     EventSourceFlavorResponse,
@@ -275,12 +276,17 @@ from zenml.models.v2.core.service_connector import (
     ServiceConnectorResponseMetadata,
 )
 from zenml.models.v2.core.stack import (
+    DefaultStackRequest,
     StackRequest,
     StackUpdate,
     StackFilter,
     StackResponse,
     StackResponseBody,
     StackResponseMetadata,
+)
+from zenml.models.v2.misc.statistics import (
+    ProjectStatistics,
+    ServerStatistics,
 )
 from zenml.models.v2.core.step_run import (
     StepRunRequest,
@@ -295,6 +301,7 @@ from zenml.models.v2.core.tag import (
     TagFilter,
     TagResponse,
     TagResponseBody,
+    TagResponseMetadata,
     TagRequest,
     TagUpdate,
 )
@@ -311,13 +318,13 @@ from zenml.models.v2.core.user import (
     UserResponseBody,
     UserResponseMetadata,
 )
-from zenml.models.v2.core.workspace import (
-    WorkspaceRequest,
-    WorkspaceUpdate,
-    WorkspaceFilter,
-    WorkspaceResponse,
-    WorkspaceResponseBody,
-    WorkspaceResponseMetadata,
+from zenml.models.v2.core.project import (
+    ProjectRequest,
+    ProjectUpdate,
+    ProjectFilter,
+    ProjectResponse,
+    ProjectResponseBody,
+    ProjectResponseMetadata,
 )
 
 # V2 Misc
@@ -395,6 +402,9 @@ from zenml.models.v2.misc.stack_deployment import (
     StackDeploymentConfig,
     StackDeploymentInfo,
 )
+from zenml.models.v2.misc.tag import (
+    TagResource,
+)
 from zenml.models.v2.misc.info_models import (
     ComponentInfo,
     ServiceConnectorInfo,
@@ -440,6 +450,7 @@ PipelineDeploymentRequest.model_rebuild()
 PipelineDeploymentResponseBody.model_rebuild()
 PipelineDeploymentResponseMetadata.model_rebuild()
 PipelineDeploymentResponseResources.model_rebuild()
+PipelineRunRequest.model_rebuild()
 PipelineRunResponseBody.model_rebuild()
 PipelineRunResponseMetadata.model_rebuild()
 PipelineRunResponseResources.model_rebuild()
@@ -492,13 +503,13 @@ __all__ = [
     "UserScopedResponse",
     "UserScopedResponseBody",
     "UserScopedResponseMetadata",
-    "WorkspaceScopedRequest",
-    "WorkspaceScopedFilter",
-    "WorkspaceScopedResponse",
-    "WorkspaceScopedResponseBody",
-    "WorkspaceScopedResponseMetadata",
-    "WorkspaceScopedResponseResources",
-    "WorkspaceScopedFilter",
+    "ProjectScopedRequest",
+    "ProjectScopedFilter",
+    "ProjectScopedResponse",
+    "ProjectScopedResponseBody",
+    "ProjectScopedResponseMetadata",
+    "ProjectScopedResponseResources",
+    "ProjectScopedFilter",
     "BaseFilter",
     "StrFilter",
     "BoolFilter",
@@ -562,6 +573,8 @@ __all__ = [
     "ComponentResponseBody",
     "ComponentResponseMetadata",
     "ComponentResponseResources",
+    "DefaultComponentRequest",
+    "DefaultStackRequest",
     "EventSourceFlavorResponse",
     "EventSourceFlavorResponseBody",
     "EventSourceFlavorResponseMetadata",
@@ -695,6 +708,7 @@ __all__ = [
     "TagResourceRequest",
     "TagResponse",
     "TagResponseBody",
+    "TagResponseMetadata",
     "TagRequest",
     "TagUpdate",
     "TriggerResponse",
@@ -723,12 +737,12 @@ __all__ = [
     "UserResponse",
     "UserResponseBody",
     "UserResponseMetadata",
-    "WorkspaceRequest",
-    "WorkspaceUpdate",
-    "WorkspaceFilter",
-    "WorkspaceResponse",
-    "WorkspaceResponseBody",
-    "WorkspaceResponseMetadata",
+    "ProjectRequest",
+    "ProjectUpdate",
+    "ProjectFilter",
+    "ProjectResponse",
+    "ProjectResponseBody",
+    "ProjectResponseMetadata",
     # V2 Misc
     "AuthenticationMethodModel",
     "DeployedStack",
@@ -745,6 +759,7 @@ __all__ = [
     "ServerModel",
     "ServerDatabaseType",
     "ServerDeploymentType",
+    "ServerStatistics",
     "StackDeploymentConfig",
     "StackDeploymentInfo",
     "OAuthDeviceAuthorizationRequest",
@@ -757,7 +772,9 @@ __all__ = [
     "ComponentInfo",
     "ServiceConnectorInfo",
     "ServiceConnectorResourcesInfo",
+    "TagResource",
     "ResourcesInfo",
     "RunMetadataEntry",
     "RunMetadataResource",
+    "ProjectStatistics",
 ]

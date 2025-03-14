@@ -44,6 +44,7 @@ from zenml.models.v2.core.artifact import ArtifactRequest
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.component_schemas import StackComponentSchema
+from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.step_run_schemas import (
     StepRunInputArtifactSchema,
@@ -51,7 +52,6 @@ from zenml.zen_stores.schemas.step_run_schemas import (
 )
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import RunMetadataInterface
-from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.artifact_visualization_schemas import (
@@ -71,7 +71,8 @@ class ArtifactSchema(NamedSchema, table=True):
     __table_args__ = (
         UniqueConstraint(
             "name",
-            name="unique_artifact_name",
+            "project_id",
+            name="unique_artifact_name_in_project",
         ),
     )
 
@@ -89,6 +90,28 @@ class ArtifactSchema(NamedSchema, table=True):
             order_by="TagSchema.name",
             overlaps="tags",
         ),
+    )
+
+    project_id: UUID = build_foreign_key_field(
+        source=__tablename__,
+        target=ProjectSchema.__tablename__,
+        source_column="project_id",
+        target_column="id",
+        ondelete="CASCADE",
+        nullable=False,
+    )
+    project: "ProjectSchema" = Relationship()
+
+    user_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target=UserSchema.__tablename__,
+        source_column="user_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
+    user: Optional["UserSchema"] = Relationship(
+        back_populates="artifacts",
     )
 
     @property
@@ -133,6 +156,8 @@ class ArtifactSchema(NamedSchema, table=True):
         return cls(
             name=artifact_request.name,
             has_custom_name=artifact_request.has_custom_name,
+            project_id=artifact_request.project,
+            user_id=artifact_request.user,
         )
 
     def to_model(
@@ -165,6 +190,7 @@ class ArtifactSchema(NamedSchema, table=True):
             tags=[tag.to_model() for tag in self.tags],
             latest_version_name=latest_name,
             latest_version_id=latest_id,
+            user=self.user.to_model() if self.user else None,
         )
 
         # Create the metadata of the model
@@ -172,6 +198,7 @@ class ArtifactSchema(NamedSchema, table=True):
         if include_metadata:
             metadata = ArtifactResponseMetadata(
                 has_custom_name=self.has_custom_name,
+                project=self.project.to_model(),
             )
 
         return ArtifactResponse(
@@ -254,10 +281,10 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    workspace_id: UUID = build_foreign_key_field(
+    project_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target=WorkspaceSchema.__tablename__,
-        source_column="workspace_id",
+        target=ProjectSchema.__tablename__,
+        source_column="project_id",
         target_column="id",
         ondelete="CASCADE",
         nullable=False,
@@ -268,9 +295,7 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
     user: Optional["UserSchema"] = Relationship(
         back_populates="artifact_versions"
     )
-    workspace: "WorkspaceSchema" = Relationship(
-        back_populates="artifact_versions"
-    )
+    project: "ProjectSchema" = Relationship(back_populates="artifact_versions")
     run_metadata: List["RunMetadataSchema"] = Relationship(
         sa_relationship_kwargs=dict(
             secondary="run_metadata_resource",
@@ -326,7 +351,7 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
             version=str(artifact_version_request.version),
             version_number=version_number,
             artifact_store_id=artifact_version_request.artifact_store_id,
-            workspace_id=artifact_version_request.workspace,
+            project_id=artifact_version_request.project,
             user_id=artifact_version_request.user,
             type=artifact_version_request.type.value,
             uri=artifact_version_request.uri,
@@ -402,7 +427,7 @@ class ArtifactVersionSchema(BaseSchema, RunMetadataInterface, table=True):
         metadata = None
         if include_metadata:
             metadata = ArtifactVersionResponseMetadata(
-                workspace=self.workspace.to_model(),
+                project=self.project.to_model(),
                 producer_step_run_id=producer_step_run_id,
                 visualizations=[v.to_model() for v in self.visualizations],
                 run_metadata=self.fetch_metadata(),

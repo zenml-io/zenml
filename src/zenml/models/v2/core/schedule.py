@@ -24,12 +24,12 @@ from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
-    WorkspaceScopedFilter,
-    WorkspaceScopedRequest,
-    WorkspaceScopedResponse,
-    WorkspaceScopedResponseBody,
-    WorkspaceScopedResponseMetadata,
-    WorkspaceScopedResponseResources,
+    ProjectScopedFilter,
+    ProjectScopedRequest,
+    ProjectScopedResponse,
+    ProjectScopedResponseBody,
+    ProjectScopedResponseMetadata,
+    ProjectScopedResponseResources,
 )
 from zenml.utils.time_utils import to_utc_timezone
 
@@ -39,7 +39,7 @@ logger = get_logger(__name__)
 # ------------------ Request Model ------------------
 
 
-class ScheduleRequest(WorkspaceScopedRequest):
+class ScheduleRequest(ProjectScopedRequest):
     """Request model for schedules."""
 
     name: str
@@ -127,21 +127,12 @@ class ScheduleUpdate(BaseUpdate):
     """Update model for schedules."""
 
     name: Optional[str] = None
-    active: Optional[bool] = None
-    cron_expression: Optional[str] = None
-    start_time: Optional[datetime] = None
-    end_time: Optional[datetime] = None
-    interval_second: Optional[timedelta] = None
-    catchup: Optional[bool] = None
-    run_once_start_time: Optional[datetime] = None
-    orchestrator_id: Optional[UUID] = None
-    pipeline_id: Optional[UUID] = None
 
 
 # ------------------ Response Model ------------------
 
 
-class ScheduleResponseBody(WorkspaceScopedResponseBody):
+class ScheduleResponseBody(ProjectScopedResponseBody):
     """Response body for schedules."""
 
     active: bool
@@ -153,7 +144,7 @@ class ScheduleResponseBody(WorkspaceScopedResponseBody):
     run_once_start_time: Optional[datetime] = None
 
 
-class ScheduleResponseMetadata(WorkspaceScopedResponseMetadata):
+class ScheduleResponseMetadata(ProjectScopedResponseMetadata):
     """Response metadata for schedules."""
 
     orchestrator_id: Optional[UUID]
@@ -165,12 +156,12 @@ class ScheduleResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
-class ScheduleResponseResources(WorkspaceScopedResponseResources):
+class ScheduleResponseResources(ProjectScopedResponseResources):
     """Class for all resource models associated with the schedule entity."""
 
 
 class ScheduleResponse(
-    WorkspaceScopedResponse[
+    ProjectScopedResponse[
         ScheduleResponseBody,
         ScheduleResponseMetadata,
         ScheduleResponseResources,
@@ -313,7 +304,7 @@ class ScheduleResponse(
 # ------------------ Filter Model ------------------
 
 
-class ScheduleFilter(WorkspaceScopedFilter):
+class ScheduleFilter(ProjectScopedFilter):
     """Model to enable advanced filtering of all Users."""
 
     pipeline_id: Optional[Union[UUID, str]] = Field(

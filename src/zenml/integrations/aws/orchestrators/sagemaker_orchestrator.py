@@ -32,7 +32,10 @@ import sagemaker
 from botocore.exceptions import WaiterError
 from sagemaker.network import NetworkConfig
 from sagemaker.processing import ProcessingInput, ProcessingOutput
-from sagemaker.workflow.execution_variables import ExecutionVariables
+from sagemaker.workflow.execution_variables import (
+    ExecutionVariable,
+    ExecutionVariables,
+)
 from sagemaker.workflow.pipeline import Pipeline
 from sagemaker.workflow.steps import ProcessingStep, TrainingStep
 from sagemaker.workflow.triggers import PipelineSchedule
@@ -472,7 +475,10 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
 
             # Convert environment to a dict of strings
             environment = {
-                key: str(value) for key, value in environment.items()
+                key: str(value)
+                if not isinstance(value, ExecutionVariable)
+                else value
+                for key, value in environment.items()
             }
 
             if use_training_step:
@@ -864,9 +870,11 @@ class SagemakerOrchestrator(ContainerizedOrchestrator):
              the URL to the dashboard view in SageMaker.
         """
         try:
-            region_name, pipeline_name, execution_id = (
-                dissect_pipeline_execution_arn(execution_arn)
-            )
+            (
+                region_name,
+                pipeline_name,
+                execution_id,
+            ) = dissect_pipeline_execution_arn(execution_arn)
 
             # Get the Sagemaker session
             session = self._get_sagemaker_session()

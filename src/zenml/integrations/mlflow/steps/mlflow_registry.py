@@ -92,7 +92,7 @@ def mlflow_register_model_step(
     pipeline_name = step_context.pipeline.name
     current_run_name = step_context.pipeline_run.name
     pipeline_run_uuid = str(step_context.pipeline_run.id)
-    zenml_workspace = str(model_registry.workspace)
+    zenml_project = str(step_context.pipeline.project.name)
 
     # Get MLflow run ID either from params or from experiment tracker using
     # pipeline name and run name
@@ -144,8 +144,8 @@ def mlflow_register_model_step(
         metadata.zenml_run_name = run_name
     if metadata.zenml_pipeline_run_uuid is None:
         metadata.zenml_pipeline_run_uuid = pipeline_run_uuid
-    if metadata.zenml_workspace is None:
-        metadata.zenml_workspace = zenml_workspace
+    if metadata.zenml_project is None:
+        metadata.zenml_project = zenml_project
     if getattr(metadata, "mlflow_run_id", None) is None:
         setattr(metadata, "mlflow_run_id", mlflow_run_id)
 

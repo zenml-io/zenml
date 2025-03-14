@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for service connectors."""
 
-from typing import List, Optional
+from typing import List, Optional, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -22,6 +22,7 @@ from zenml.constants import (
     API,
     SERVICE_CONNECTOR_CLIENT,
     SERVICE_CONNECTOR_FULL_STACK,
+    SERVICE_CONNECTOR_RESOURCES,
     SERVICE_CONNECTOR_TYPES,
     SERVICE_CONNECTOR_VERIFY,
     SERVICE_CONNECTORS,
@@ -44,6 +45,7 @@ from zenml.service_connectors.service_connector_utils import (
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
+    verify_permissions_and_create_entity,
     verify_permissions_and_delete_entity,
     verify_permissions_and_list_entities,
     verify_permissions_and_update_entity,
@@ -57,6 +59,7 @@ from zenml.zen_server.rbac.utils import (
     verify_permission,
     verify_permission_for_model,
 )
+from zenml.zen_server.routers.projects_endpoints import workspace_router
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -76,31 +79,73 @@ types_router = APIRouter(
 )
 
 
+@router.post(
+    "",
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+# TODO: the workspace scoped endpoint is only kept for dashboard compatibility
+# and can be removed after the migration
+@workspace_router.post(
+    "/{project_name_or_id}" + SERVICE_CONNECTORS,
+    responses={401: error_response, 409: error_response, 422: error_response},
+    deprecated=True,
+    tags=["service_connectors"],
+)
+@handle_exceptions
+def create_service_connector(
+    connector: ServiceConnectorRequest,
+    project_name_or_id: Optional[Union[str, UUID]] = None,
+    _: AuthContext = Security(authorize),
+) -> ServiceConnectorResponse:
+    """Creates a service connector.
+
+    Args:
+        connector: Service connector to register.
+        project_name_or_id: Optional name or ID of the project.
+
+    Returns:
+        The created service connector.
+    """
+    return verify_permissions_and_create_entity(
+        request_model=connector,
+        create_method=zen_store().create_service_connector,
+    )
+
+
 @router.get(
     "",
-    response_model=Page[ServiceConnectorResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
+)
+# TODO: the workspace scoped endpoint is only kept for dashboard compatibility
+# and can be removed after the migration
+@workspace_router.get(
+    "/{project_name_or_id}" + SERVICE_CONNECTORS,
+    responses={401: error_response, 404: error_response, 422: error_response},
+    deprecated=True,
+    tags=["service_connectors"],
 )
 @handle_exceptions
 def list_service_connectors(
     connector_filter_model: ServiceConnectorFilter = Depends(
         make_dependable(ServiceConnectorFilter)
     ),
+    project_name_or_id: Optional[Union[str, UUID]] = None,
     expand_secrets: bool = True,
     hydrate: bool = False,
     _: AuthContext = Security(authorize),
 ) -> Page[ServiceConnectorResponse]:
-    """Get a list of all service connectors for a specific type.
+    """Get a list of all service connectors.
 
     Args:
         connector_filter_model: Filter model used for pagination, sorting,
             filtering
+        project_name_or_id: Optional name or ID of the project to filter by.
         expand_secrets: Whether to expand secrets or not.
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
 
     Returns:
-        Page with list of service connectors for a specific type.
+        Page with list of service connectors matching the filter criteria.
     """
     connectors = verify_permissions_and_list_entities(
         filter_model=connector_filter_model,
@@ -143,7 +188,6 @@ def list_service_connectors(
 
 @router.get(
     "/{connector_id}",
-    response_model=ServiceConnectorResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -186,7 +230,6 @@ def get_service_connector(
 
 @router.put(
     "/{connector_id}",
-    response_model=ServiceConnectorResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -235,7 +278,6 @@ def delete_service_connector(
 
 @router.post(
     SERVICE_CONNECTOR_VERIFY,
-    response_model=ServiceConnectorResourcesModel,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -259,9 +301,7 @@ def validate_and_verify_service_connector_config(
         The list of resources that the service connector configuration has
         access to.
     """
-    verify_permission(
-        resource_type=ResourceType.SERVICE_CONNECTOR, action=Action.CREATE
-    )
+    verify_permission_for_model(model=connector, action=Action.CREATE)
 
     return zen_store().verify_service_connector_config(
         service_connector=connector,
@@ -269,9 +309,52 @@ def validate_and_verify_service_connector_config(
     )
 
 
+@router.get(
+    SERVICE_CONNECTOR_RESOURCES,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+# TODO: the workspace scoped endpoint is only kept for dashboard compatibility
+# and can be removed after the migration
+@workspace_router.get(
+    "/{project_name_or_id}" + SERVICE_CONNECTOR_RESOURCES,
+    responses={401: error_response, 404: error_response, 422: error_response},
+    deprecated=True,
+    tags=["service_connectors"],
+)
+@handle_exceptions
+def list_service_connector_resources(
+    filter_model: ServiceConnectorFilter = Depends(
+        make_dependable(ServiceConnectorFilter)
+    ),
+    project_name_or_id: Optional[Union[str, UUID]] = None,
+    auth_context: AuthContext = Security(authorize),
+) -> List[ServiceConnectorResourcesModel]:
+    """List resources that can be accessed by service connectors.
+
+    Args:
+        filter_model: The filter model to use when fetching service
+            connectors.
+        project_name_or_id: Optional name or ID of the project.
+        auth_context: Authentication context.
+
+    Returns:
+        The matching list of resources that available service
+        connectors have access to.
+    """
+    allowed_ids = get_allowed_resource_ids(
+        resource_type=ResourceType.SERVICE_CONNECTOR
+    )
+    filter_model.configure_rbac(
+        authenticated_user_id=auth_context.user.id, id=allowed_ids
+    )
+
+    return zen_store().list_service_connector_resources(
+        filter_model=filter_model,
+    )
+
+
 @router.put(
     "/{connector_id}" + SERVICE_CONNECTOR_VERIFY,
-    response_model=ServiceConnectorResourcesModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -313,7 +396,6 @@ def validate_and_verify_service_connector(
 
 @router.get(
     "/{connector_id}" + SERVICE_CONNECTOR_CLIENT,
-    response_model=ServiceConnectorResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -351,7 +433,6 @@ def get_service_connector_client(
 
 @types_router.get(
     "",
-    response_model=List[ServiceConnectorTypeModel],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -382,7 +463,6 @@ def list_service_connector_types(
 
 @types_router.get(
     "/{connector_type}",
-    response_model=ServiceConnectorTypeModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions

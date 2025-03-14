@@ -159,9 +159,9 @@ pro_api_url: "{{ .ZenML.pro.apiURL }}"
 pro_dashboard_url: "{{ .ZenML.pro.dashboardURL }}"
 pro_oauth2_audience: "{{ .ZenML.pro.apiURL }}"
 pro_organization_id: "{{ .ZenML.pro.organizationID }}"
-pro_tenant_id: "{{ .ZenML.pro.tenantID }}"
-{{- if .ZenML.pro.tenantName }}
-pro_tenant_name: "{{ .ZenML.pro.tenantName }}"
+pro_workspace_id: "{{ .ZenML.pro.workspaceID }}"
+{{- if .ZenML.pro.workspaceName }}
+pro_workspace_name: "{{ .ZenML.pro.workspaceName }}"
 {{- end }}
 {{- if .ZenML.pro.organizationName }}
 pro_organization_name: "{{ .ZenML.pro.organizationName }}"

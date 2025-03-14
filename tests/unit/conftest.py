@@ -56,6 +56,9 @@ from zenml.models import (
     PipelineRunResponseBody,
     PipelineRunResponseMetadata,
     PipelineRunResponseResources,
+    ProjectResponse,
+    ProjectResponseBody,
+    ProjectResponseMetadata,
     StepRunRequest,
     StepRunResponse,
     StepRunResponseBody,
@@ -64,9 +67,6 @@ from zenml.models import (
     UserResponse,
     UserResponseBody,
     UserResponseMetadata,
-    WorkspaceResponse,
-    WorkspaceResponseBody,
-    WorkspaceResponseMetadata,
 )
 from zenml.models.v2.core.service import (
     ServiceResponse,
@@ -99,7 +99,6 @@ def local_stack():
         flavor="default",
         type=StackComponentType.ORCHESTRATOR,
         user=uuid4(),
-        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -110,7 +109,6 @@ def local_stack():
         flavor="default",
         type=StackComponentType.ARTIFACT_STORE,
         user=uuid4(),
-        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -132,7 +130,6 @@ def local_orchestrator():
         flavor="local",
         type=StackComponentType.ORCHESTRATOR,
         user=uuid4(),
-        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -148,7 +145,6 @@ def local_artifact_store():
         flavor="local",
         type=StackComponentType.ARTIFACT_STORE,
         user=uuid4(),
-        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -164,7 +160,6 @@ def local_container_registry():
         flavor="default",
         type=StackComponentType.CONTAINER_REGISTRY,
         user=uuid4(),
-        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -180,7 +175,6 @@ def remote_container_registry():
         flavor="gcp",
         type=StackComponentType.CONTAINER_REGISTRY,
         user=uuid4(),
-        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -201,7 +195,6 @@ def sample_step_operator() -> BaseStepOperator:
         flavor="stub",
         type=StackComponentType.STEP_OPERATOR,
         user=uuid4(),
-        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -366,16 +359,17 @@ def sample_user_model() -> UserResponse:
 
 
 @pytest.fixture
-def sample_workspace_model() -> WorkspaceResponse:
-    """Return a sample workspace model for testing purposes."""
-    return WorkspaceResponse(
+def sample_project_model() -> ProjectResponse:
+    """Return a sample project model for testing purposes."""
+    return ProjectResponse(
         id=uuid4(),
         name="axl",
-        body=WorkspaceResponseBody(
+        body=ProjectResponseBody(
             created=datetime.now(),
             updated=datetime.now(),
+            display_name="Axl's Project",
         ),
-        metadata=WorkspaceResponseMetadata(),
+        metadata=ProjectResponseMetadata(),
     )
 
 
@@ -399,7 +393,7 @@ def sample_step_request_model() -> StepRunRequest:
         status=ExecutionStatus.COMPLETED,
         spec=spec,
         config=config,
-        workspace=uuid4(),
+        project=uuid4(),
         user=uuid4(),
         deployment=uuid4(),
     )
@@ -414,7 +408,7 @@ def sample_step_run(create_step_run) -> StepRunResponse:
 @pytest.fixture
 def sample_pipeline_run(
     sample_user_model: UserResponse,
-    sample_workspace_model: WorkspaceResponse,
+    sample_project_model: ProjectResponse,
 ) -> PipelineRunResponse:
     """Return sample pipeline run view for testing purposes."""
     now = datetime.utcnow()
@@ -434,7 +428,7 @@ def sample_pipeline_run(
             tags=[],
         ),
         metadata=PipelineRunResponseMetadata(
-            workspace=sample_workspace_model,
+            project=sample_project_model,
             config=PipelineConfiguration(name="aria_pipeline"),
             is_templatable=False,
             steps_substitutions=defaultdict(lambda: substitutions.copy()),
@@ -448,7 +442,7 @@ def sample_pipeline_deployment_request_model() -> PipelineDeploymentRequest:
     """Return sample pipeline deployment request for testing purposes."""
     return PipelineDeploymentRequest(
         user=uuid4(),
-        workspace=uuid4(),
+        project=uuid4(),
         run_name_template="aria-blupus",
         pipeline_configuration=PipelineConfiguration(name="axls-pipeline"),
         client_version="0.12.3",
@@ -466,14 +460,14 @@ def sample_pipeline_run_request_model() -> PipelineRunRequest:
         num_steps=1,
         status=ExecutionStatus.COMPLETED,
         user=uuid4(),
-        workspace=uuid4(),
+        project=uuid4(),
         deployment=uuid4(),
         pipeline=uuid4(),
     )
 
 
 @pytest.fixture
-def sample_artifact_model() -> ArtifactResponse:
+def sample_artifact_model(sample_project_model) -> ArtifactResponse:
     """Return a sample artifact model for testing purposes."""
     return ArtifactResponse(
         id=uuid4(),
@@ -484,6 +478,7 @@ def sample_artifact_model() -> ArtifactResponse:
             tags=[],
         ),
         metadata=ArtifactResponseMetadata(
+            project=sample_project_model,
             has_custom_name=True,
         ),
     )
@@ -491,7 +486,7 @@ def sample_artifact_model() -> ArtifactResponse:
 
 @pytest.fixture
 def sample_artifact_version_model(
-    sample_workspace_model, sample_user_model, sample_artifact_model
+    sample_project_model, sample_user_model, sample_artifact_model
 ) -> ArtifactVersionResponse:
     """Return a sample artifact version model for testing purposes."""
     return ArtifactVersionResponse(
@@ -510,7 +505,7 @@ def sample_artifact_version_model(
             save_type=ArtifactSaveType.STEP_OUTPUT,
         ),
         metadata=ArtifactVersionResponseMetadata(
-            workspace=sample_workspace_model,
+            project=sample_project_model,
         ),
     )
 
@@ -525,7 +520,7 @@ def sample_artifact_request_model() -> ArtifactVersionRequest:
         type=ArtifactType.DATA,
         materializer="sample_materializer",
         data_type="sample_data_type",
-        workspace=uuid4(),
+        project=uuid4(),
         user=uuid4(),
         save_type=ArtifactSaveType.STEP_OUTPUT,
     )
@@ -534,7 +529,7 @@ def sample_artifact_request_model() -> ArtifactVersionRequest:
 @pytest.fixture
 def create_step_run(
     sample_user_model: UserResponse,
-    sample_workspace_model: WorkspaceResponse,
+    sample_project_model: ProjectResponse,
 ) -> Callable[..., StepRunResponse]:
     """Fixture that returns a function which can be used to create a
     customizable StepRunResponseModel."""
@@ -577,7 +572,7 @@ def create_step_run(
                 deployment_id=uuid4(),
                 spec=spec,
                 config=config,
-                workspace=sample_workspace_model,
+                project=sample_project_model,
                 **kwargs,
             ),
             resources=StepRunResponseResources(),
@@ -589,7 +584,7 @@ def create_step_run(
 @pytest.fixture
 def create_pipeline_model(
     sample_user_model: UserResponse,
-    sample_workspace_model: WorkspaceResponse,
+    sample_project_model: ProjectResponse,
 ) -> Callable[..., PipelineResponse]:
     """Fixture that returns a function which can be used to create a
     customizable PipelineResponseModel."""
@@ -598,7 +593,7 @@ def create_pipeline_model(
         **kwargs: Any,
     ) -> PipelineResponse:
         metadata_kwargs = dict(
-            workspace=sample_workspace_model,
+            project=sample_project_model,
         )
         metadata_kwargs.update(kwargs)
         return PipelineResponse(
@@ -621,7 +616,7 @@ def create_pipeline_model(
 @pytest.fixture
 def sample_deployment_response_model(
     sample_user_model: UserResponse,
-    sample_workspace_model: WorkspaceResponse,
+    sample_project_model: ProjectResponse,
 ) -> PipelineDeploymentResponse:
     return PipelineDeploymentResponse(
         id=uuid4(),
@@ -631,7 +626,7 @@ def sample_deployment_response_model(
             user=sample_user_model,
         ),
         metadata=PipelineDeploymentResponseMetadata(
-            workspace=sample_workspace_model,
+            project=sample_project_model,
             run_name_template="",
             pipeline_configuration={"name": ""},
             client_version="0.12.3",
@@ -643,7 +638,7 @@ def sample_deployment_response_model(
 @pytest.fixture
 def sample_build_response_model(
     sample_user_model: UserResponse,
-    sample_workspace_model: WorkspaceResponse,
+    sample_project_model: ProjectResponse,
 ) -> PipelineBuildResponse:
     return PipelineBuildResponse(
         id=uuid4(),
@@ -653,7 +648,7 @@ def sample_build_response_model(
             user=sample_user_model,
         ),
         metadata=PipelineBuildResponseMetadata(
-            workspace=sample_workspace_model,
+            project=sample_project_model,
             images={},
             is_local=False,
             contains_code=True,
@@ -664,7 +659,7 @@ def sample_build_response_model(
 @pytest.fixture
 def sample_code_repo_response_model(
     sample_user_model: UserResponse,
-    sample_workspace_model: WorkspaceResponse,
+    sample_project_model: ProjectResponse,
 ) -> CodeRepositoryResponse:
     return CodeRepositoryResponse(
         id=uuid4(),
@@ -676,7 +671,7 @@ def sample_code_repo_response_model(
             source={"module": "zenml", "type": "internal"},
         ),
         metadata=CodeRepositoryResponseMetadata(
-            workspace=sample_workspace_model,
+            project=sample_project_model,
             config={},
         ),
     )
@@ -717,7 +712,7 @@ updated_time = datetime(2024, 3, 14, 11, 45)
 @pytest.fixture
 def service_response(
     sample_user_model: UserResponse,
-    sample_workspace_model,
+    sample_project_model,
 ):
     body = ServiceResponseBody(
         service_type=service_type,
@@ -735,7 +730,7 @@ def service_response(
         endpoint=endpoint,
         prediction_url=prediction_url,
         health_check_url=health_check_url,
-        workspace=sample_workspace_model,
+        project=sample_project_model,
     )
     return ServiceResponse(
         id=service_id,

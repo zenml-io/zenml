@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for models."""
 
-from typing import Union
+from typing import Optional, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -24,6 +24,7 @@ from zenml.constants import (
     MODEL_VERSION_ARTIFACTS,
     MODEL_VERSION_PIPELINE_RUNS,
     MODEL_VERSIONS,
+    MODELS,
     RUNS,
     VERSION_1,
 )
@@ -35,22 +36,31 @@ from zenml.models import (
     ModelVersionPipelineRunFilter,
     ModelVersionPipelineRunRequest,
     ModelVersionPipelineRunResponse,
+    ModelVersionRequest,
     ModelVersionResponse,
     ModelVersionUpdate,
 )
 from zenml.models.v2.base.page import Page
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
-from zenml.zen_server.rbac.models import Action, ResourceType
+from zenml.zen_server.rbac.endpoint_utils import (
+    verify_permissions_and_create_entity,
+    verify_permissions_and_delete_entity,
+)
+from zenml.zen_server.rbac.models import Action
 from zenml.zen_server.rbac.utils import (
     dehydrate_page,
     dehydrate_response_model,
-    get_allowed_resource_ids,
     verify_permission_for_model,
 )
+from zenml.zen_server.routers.models_endpoints import (
+    router as model_router,
+)
+from zenml.zen_server.routers.projects_endpoints import workspace_router
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
+    set_filter_project_scope,
     zen_store,
 )
 
@@ -66,9 +76,54 @@ router = APIRouter(
 )
 
 
+@router.post(
+    "",
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+# TODO: the workspace scoped endpoint is only kept for dashboard compatibility
+# and can be removed after the migration
+@workspace_router.post(
+    "/{project_name_or_id}" + MODELS + "/{model_id}" + MODEL_VERSIONS,
+    responses={401: error_response, 409: error_response, 422: error_response},
+    deprecated=True,
+    tags=["model_versions"],
+)
+@handle_exceptions
+def create_model_version(
+    model_version: ModelVersionRequest,
+    model_id: Optional[UUID] = None,
+    project_name_or_id: Optional[Union[str, UUID]] = None,
+    _: AuthContext = Security(authorize),
+) -> ModelVersionResponse:
+    """Creates a model version.
+
+    Args:
+        model_version: Model version to create.
+        model_id: Optional ID of the model.
+        project_name_or_id: Optional name or ID of the project.
+
+    Returns:
+        The created model version.
+    """
+    if project_name_or_id:
+        project = zen_store().get_project(project_name_or_id)
+        model_version.project = project.id
+
+    if model_id:
+        model_version.model = model_id
+
+    return verify_permissions_and_create_entity(
+        request_model=model_version,
+        create_method=zen_store().create_model_version,
+    )
+
+
+@model_router.get(
+    "/{model_name_or_id}" + MODEL_VERSIONS,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
 @router.get(
     "",
-    response_model=Page[ModelVersionResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -76,6 +131,7 @@ def list_model_versions(
     model_version_filter_model: ModelVersionFilter = Depends(
         make_dependable(ModelVersionFilter)
     ),
+    model_name_or_id: Optional[Union[str, UUID]] = None,
     hydrate: bool = False,
     auth_context: AuthContext = Security(authorize),
 ) -> Page[ModelVersionResponse]:
@@ -84,19 +140,38 @@ def list_model_versions(
     Args:
         model_version_filter_model: Filter model used for pagination, sorting,
             filtering.
+        model_name_or_id: Optional name or ID of the model.
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
         auth_context: The authentication context.
 
     Returns:
         The model versions according to query filters.
+
+    Raises:
+        ValueError: If the model is missing from the filter.
     """
-    allowed_model_ids = get_allowed_resource_ids(
-        resource_type=ResourceType.MODEL
+    if model_name_or_id:
+        model_version_filter_model.model = model_name_or_id
+
+    if not model_version_filter_model.model:
+        raise ValueError("Model missing from the filter")
+
+    # A project scoped request must always be scoped to a specific
+    # project. This is required for the RBAC check to work.
+    set_filter_project_scope(model_version_filter_model)
+    assert isinstance(model_version_filter_model.project, UUID)
+
+    model = zen_store().get_model_by_name_or_id(
+        model_version_filter_model.model,
+        project=model_version_filter_model.project,
     )
+
+    # Check read permissions on the model
+    verify_permission_for_model(model, action=Action.READ)
+
     model_version_filter_model.configure_rbac(
-        authenticated_user_id=auth_context.user.id,
-        model_id=allowed_model_ids,
+        authenticated_user_id=auth_context.user.id
     )
 
     model_versions = zen_store().list_model_versions(
@@ -108,7 +183,6 @@ def list_model_versions(
 
 @router.get(
     "/{model_version_id}",
-    response_model=ModelVersionResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -137,7 +211,6 @@ def get_model_version(
 
 @router.put(
     "/{model_version_id}",
-    response_model=ModelVersionResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -184,9 +257,11 @@ def delete_model_version(
     Args:
         model_version_id: The name or ID of the model version to delete.
     """
-    model_version = zen_store().get_model_version(model_version_id)
-    verify_permission_for_model(model_version, action=Action.DELETE)
-    zen_store().delete_model_version(model_version_id)
+    verify_permissions_and_delete_entity(
+        id=model_version_id,
+        get_method=zen_store().get_model_version,
+        delete_method=zen_store().delete_model_version,
+    )
 
 
 ##########################
@@ -220,17 +295,18 @@ def create_model_version_artifact_link(
     model_version = zen_store().get_model_version(
         model_version_artifact_link.model_version
     )
-    verify_permission_for_model(model_version, action=Action.UPDATE)
 
-    mv = zen_store().create_model_version_artifact_link(
-        model_version_artifact_link
+    return verify_permissions_and_create_entity(
+        request_model=model_version_artifact_link,
+        create_method=zen_store().create_model_version_artifact_link,
+        # Check for UPDATE permissions on the model version instead of the
+        # model version artifact link
+        surrogate_models=[model_version],
     )
-    return mv
 
 
 @model_version_artifacts_router.get(
     "",
-    response_model=Page[ModelVersionArtifactResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -342,17 +418,18 @@ def create_model_version_pipeline_run_link(
     model_version = zen_store().get_model_version(
         model_version_pipeline_run_link.model_version, hydrate=False
     )
-    verify_permission_for_model(model_version, action=Action.UPDATE)
 
-    mv = zen_store().create_model_version_pipeline_run_link(
-        model_version_pipeline_run_link
+    return verify_permissions_and_create_entity(
+        request_model=model_version_pipeline_run_link,
+        create_method=zen_store().create_model_version_pipeline_run_link,
+        # Check for UPDATE permissions on the model version instead of the
+        # model version pipeline run link
+        surrogate_models=[model_version],
     )
-    return mv
 
 
 @model_version_pipeline_runs_router.get(
     "",
-    response_model=Page[ModelVersionPipelineRunResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions

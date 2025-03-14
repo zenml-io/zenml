@@ -9,7 +9,9 @@ PYDOCSTYLE_CMD = (
     "D103,D104,D105,D107,D202"
 )
 
-API_DOCS_TITLE = "# Welcome to the ZenML API Docs\n"
+
+API_DOCS_TITLE = "# Welcome to the ZenML SDK Docs\n"
+
 INTEGRATION_DOCS_TITLE = "# Welcome to the ZenML Integration Docs\n"
 
 API_DOCS = "core_code_docs"
@@ -21,7 +23,7 @@ def to_md_file(
     filename: str,
     out_path: Path = Path("."),
 ) -> None:
-    """Creates an API docs file from a provided text.
+    """Creates an SDK docs file from a provided text.
 
     Args:
         markdown_str (str): Markdown string with line breaks to write to file.
@@ -251,7 +253,7 @@ if __name__ == "__main__":
         type=List[str],
         default=["VERSION", "README.md", "__init__.py", "__pycache__"],
         help="Top level entities that should not end up in "
-        "the api docs (e.g. README.md, __init__",
+        "the sdk docs (e.g. README.md, __init__",
     )
 
     # Switch

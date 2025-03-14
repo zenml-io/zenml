@@ -23,6 +23,9 @@ from zenml.integrations.gcp import (
 from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsConfigMixin,
 )
+from zenml.integrations.gcp.vertex_custom_job_parameters import (
+    VertexCustomJobParameters,
+)
 from zenml.models import ServiceConnectorRequirements
 from zenml.step_operators.base_step_operator import (
     BaseStepOperatorConfig,
@@ -33,34 +36,8 @@ if TYPE_CHECKING:
     from zenml.integrations.gcp.step_operators import VertexStepOperator
 
 
-class VertexStepOperatorSettings(BaseSettings):
-    """Settings for the Vertex step operator.
-
-    Attributes:
-        accelerator_type: Defines which accelerator (GPU, TPU) is used for the
-            job. Check out out this table to see which accelerator
-            type and count are compatible with your chosen machine type:
-            https://cloud.google.com/vertex-ai/docs/training/configure-compute#gpu-compatibility-table.
-        accelerator_count: Defines number of accelerators to be used for the
-            job. Check out out this table to see which accelerator
-            type and count are compatible with your chosen machine type:
-            https://cloud.google.com/vertex-ai/docs/training/configure-compute#gpu-compatibility-table.
-        machine_type: Machine type specified here
-            https://cloud.google.com/vertex-ai/docs/training/configure-compute#machine-types.
-        boot_disk_size_gb: Size of the boot disk in GB. (Default: 100)
-            https://cloud.google.com/vertex-ai/docs/training/configure-compute#boot_disk_options
-        boot_disk_type: Type of the boot disk. (Default: pd-ssd)
-            https://cloud.google.com/vertex-ai/docs/training/configure-compute#boot_disk_options
-        persistent_resource_id: The ID of the persistent resource to use for the job.
-            https://cloud.google.com/vertex-ai/docs/training/persistent-resource-overview
-    """
-
-    accelerator_type: Optional[str] = None
-    accelerator_count: int = 0
-    machine_type: str = "n1-standard-4"
-    boot_disk_size_gb: int = 100
-    boot_disk_type: str = "pd-ssd"
-    persistent_resource_id: Optional[str] = None
+class VertexStepOperatorSettings(VertexCustomJobParameters, BaseSettings):
+    """Settings for the Vertex step operator."""
 
 
 class VertexStepOperatorConfig(

@@ -33,7 +33,7 @@ logger = get_logger(__name__)
 
 
 def get_cloud_dashboard_url() -> Optional[str]:
-    """Get the base url of the cloud dashboard if the server is a cloud tenant.
+    """Get the base url of the cloud dashboard if the server is a ZenML Pro workspace.
 
     Returns:
         The base url of the cloud dashboard.
@@ -151,7 +151,7 @@ def show_dashboard(url: str) -> None:
     """
     environment = get_environment()
     if environment in (EnvironmentType.NOTEBOOK, EnvironmentType.COLAB):
-        from IPython.core.display import display
+        from IPython.core.display_functions import display
         from IPython.display import IFrame
 
         display(IFrame(src=url, width="100%", height=720))

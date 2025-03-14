@@ -368,7 +368,7 @@ def test_parallel_artifact_creation(clean_client: Client):
     )
 
     avs = clean_client.list_artifact_versions(
-        name="meaning_of_life", size=min(1000, process_count * 10)
+        artifact="meaning_of_life", size=min(1000, process_count * 10)
     )
     assert len(avs) == process_count
     assert {av.version for av in avs} == {

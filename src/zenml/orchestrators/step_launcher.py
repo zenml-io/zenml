@@ -319,8 +319,7 @@ class StepLauncher:
         pipeline_run = PipelineRunRequest(
             name=run_name,
             orchestrator_run_id=self._orchestrator_run_id,
-            user=client.active_user.id,
-            workspace=client.active_workspace.id,
+            project=client.active_project.id,
             deployment=self._deployment.id,
             pipeline=(
                 self._deployment.pipeline.id

@@ -118,7 +118,10 @@ class AnalyticsContext:
                     self.external_user_id = auth_context.user.external_user_id
 
                 self.external_server_id = server_config().external_server_id
+                self.project_id = None
             else:
+                from zenml.client import Client
+
                 # If the code is running on the client, use the default user.
                 active_user = gc.zen_store.get_user()
                 self.user_id = active_user.id
@@ -126,6 +129,7 @@ class AnalyticsContext:
                     active_user.is_service_account
                 )
                 self.external_user_id = active_user.external_user_id
+                self.project_id = Client().active_project.id
 
             # Fetch the `client_id`
             if self.in_server:
@@ -303,6 +307,9 @@ class AnalyticsContext:
 
         if self.server_metadata:
             properties.update(self.server_metadata)
+
+        if self.project_id:
+            properties.setdefault("project_id", str(self.project_id))
 
         for k, v in properties.items():
             if isinstance(v, UUID):

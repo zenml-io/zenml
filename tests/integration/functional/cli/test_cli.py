@@ -66,7 +66,7 @@ def test_cli_sets_custom_source_root_if_outside_of_repository(
 
 
 def test_cli_does_not_set_custom_source_root_if_inside_repository(
-    clean_workspace, mocker
+    clean_project, mocker
 ):
     """Tests that the CLI root group does **NOT** set a custom source root if
     inside of a ZenML repository."""

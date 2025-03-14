@@ -16,7 +16,7 @@
 * [ZenML Pro](getting-started/zenml-pro/README.md)
   * [Core Concepts](getting-started/zenml-pro/core-concepts.md)
     * [Organizations](getting-started/zenml-pro/organization.md)
-    * [Tenants](getting-started/zenml-pro/tenants.md)
+    * [Workspaces](getting-started/zenml-pro/workspaces.md)
     * [Teams](getting-started/zenml-pro/teams.md)
     * [Roles & Permissions](getting-started/zenml-pro/roles.md)
   * [Self-hosted deployment](getting-started/zenml-pro/self-hosted.md)

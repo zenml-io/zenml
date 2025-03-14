@@ -32,10 +32,10 @@ from zenml.models import (
     RunTemplateUpdate,
 )
 from zenml.utils.time_utils import utc_now
-from zenml.zen_stores.schemas.base_schemas import BaseSchema
+from zenml.zen_stores.schemas.base_schemas import NamedSchema
+from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
-from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
@@ -45,19 +45,18 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas.tag_schemas import TagSchema
 
 
-class RunTemplateSchema(BaseSchema, table=True):
+class RunTemplateSchema(NamedSchema, table=True):
     """SQL Model for run templates."""
 
     __tablename__ = "run_template"
     __table_args__ = (
         UniqueConstraint(
             "name",
-            "workspace_id",
-            name="unique_template_name_in_workspace",
+            "project_id",
+            name="unique_template_name_in_project",
         ),
     )
 
-    name: str = Field(nullable=False)
     description: Optional[str] = Field(
         sa_column=Column(
             String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
@@ -75,10 +74,10 @@ class RunTemplateSchema(BaseSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    workspace_id: UUID = build_foreign_key_field(
+    project_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target=WorkspaceSchema.__tablename__,
-        source_column="workspace_id",
+        target=ProjectSchema.__tablename__,
+        source_column="project_id",
         target_column="id",
         ondelete="CASCADE",
         nullable=False,
@@ -92,8 +91,10 @@ class RunTemplateSchema(BaseSchema, table=True):
         nullable=True,
     )
 
-    user: Optional["UserSchema"] = Relationship()
-    workspace: "WorkspaceSchema" = Relationship()
+    user: Optional["UserSchema"] = Relationship(
+        back_populates="run_templates",
+    )
+    project: "ProjectSchema" = Relationship()
     source_deployment: Optional["PipelineDeploymentSchema"] = Relationship(
         sa_relationship_kwargs={
             "foreign_keys": "RunTemplateSchema.source_deployment_id",
@@ -162,7 +163,7 @@ class RunTemplateSchema(BaseSchema, table=True):
         """
         return cls(
             user_id=request.user,
-            workspace_id=request.workspace,
+            project_id=request.project,
             name=request.name,
             description=request.description,
             source_deployment_id=request.source_deployment_id,
@@ -180,6 +181,9 @@ class RunTemplateSchema(BaseSchema, table=True):
         for field, value in update.model_dump(
             exclude_unset=True, exclude_none=True
         ).items():
+            if field in ["add_tags", "remove_tags"]:
+                # Tags are handled separately
+                continue
             setattr(self, field, value)
 
         self.updated = utc_now()
@@ -246,7 +250,7 @@ class RunTemplateSchema(BaseSchema, table=True):
                     )
 
             metadata = RunTemplateResponseMetadata(
-                workspace=self.workspace.to_model(),
+                project=self.project.to_model(),
                 description=self.description,
                 pipeline_spec=pipeline_spec,
                 config_template=config_template,

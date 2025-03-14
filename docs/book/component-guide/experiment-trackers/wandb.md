@@ -177,7 +177,8 @@ from zenml.integrations.wandb.flavors.wandb_experiment_tracker_flavor import Wan
 
 wandb_settings = WandbExperimentTrackerSettings(
     settings=wandb.Settings(...),
-    tags=["some_tag"]
+    tags=["some_tag"],
+    enable_weave=True, # Enable Weave integration
 )
 
 
@@ -196,13 +197,110 @@ def my_step(
     ...
 ```
 
+### Using Weights & Biases Weave
+
+[Weights & Biases Weave](https://weave-docs.wandb.ai/) is a customizable dashboard interface that allows you to visualize and interact with your machine learning models, data, and results. ZenML provides built-in support for Weave through the `WandbExperimentTrackerSettings`.
+
+#### Enabling and Disabling Weave
+
+You can enable or disable Weave for specific steps in your pipeline by configuring the `enable_weave` parameter in the `WandbExperimentTrackerSettings` (or setting it when registering the experiment tracker component):
+
+```python
+import weave
+from openai import OpenAI
+
+from zenml import pipeline, step
+from zenml.integrations.wandb.flavors.wandb_experiment_tracker_flavor import (
+    WandbExperimentTrackerSettings,
+)
+
+# Settings to enable Weave
+wandb_with_weave_settings = WandbExperimentTrackerSettings(
+    tags=["weave_enabled"],
+    enable_weave=True,  # Enable Weave integration
+)
+
+# Settings to disable Weave
+wandb_without_weave_settings = WandbExperimentTrackerSettings(
+    tags=["weave_disabled"],
+    enable_weave=False,  # Explicitly disable Weave integration
+)
+```
+
+#### Using Weave with ZenML Steps
+
+To use Weave with your ZenML steps, you need to:
+
+1. Configure your `WandbExperimentTrackerSettings` with `enable_weave=True`
+2. Apply the `@weave.op()` decorator to your step function
+3. Configure your step to use the Weights & Biases experiment tracker with your Weave settings
+
+Here's an example:
+
+```python
+@step(
+    experiment_tracker="wandb_weave",  # Your W&B experiment tracker component name
+    settings={"experiment_tracker": wandb_with_weave_settings},
+)
+@weave.op()  # The Weave decorator
+def my_step_with_weave() -> str:
+    """This step will use Weave for enhanced visualization"""
+    # Your step implementation
+    return "Step with Weave enabled"
+```
+
+{% hint style="warning" %}
+**Important**: The decorator order is critical. The `@weave.op()` decorator must be applied AFTER the `@step` decorator (i.e., closer to the function definition). If you reverse the order, your step won't work correctly.
+
+```python
+# CORRECT ORDER
+@step(experiment_tracker="wandb_weave")
+@weave.op()
+def correct_order_step():
+    ...
+
+# INCORRECT ORDER - will cause issues
+@weave.op()
+@step(experiment_tracker="wandb_weave")
+def incorrect_order_step():
+    ...
+```
+{% endhint %}
+
+To explicitly disable Weave for specific steps, while keeping the ability to use the `@weave.op()` decorator:
+
+```python
+@step(
+    experiment_tracker="wandb_weave",
+    settings={"experiment_tracker": wandb_without_weave_settings},
+)
+@weave.op()
+def my_step_without_weave() -> str:
+    """This step will not use Weave even with the @weave.op() decorator"""
+    # Your step implementation
+    return "Step with Weave disabled"
+```
+
+#### Weave Initialization Behavior
+
+When using Weave with ZenML, there are a few important behaviors to understand:
+
+1. If `enable_weave=True` and a `project_name` is specified in your W&B experiment tracker, Weave will be initialized with that project name.
+2. If `enable_weave=True` but no `project_name` is specified, Weave initialization will be skipped.
+3. If `enable_weave=False` and a `project_name` is specified (explicit disabling), Weave will be disabled with `settings={"disabled": True}`.
+4. If `enable_weave=False` and no `project_name` is specified, Weave disabling will be skipped.
+
+{% hint style="info" %}
+For more information about Weights & Biases Weave and its capabilities, visit the [Weave documentation](https://docs.wandb.ai/guides/weave).
+{% endhint %}
+
 ## Full Code Example
 
 This section shows an end to end run with the ZenML W&B integration.
 
 <details>
 
-<summary>Code Example of this Section</summary>
+<summary>Example without Weave</summary>
 
 ```python
 from typing import Tuple
@@ -308,6 +406,115 @@ if __name__ == "__main__":
 
 </details>
 
-Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-wandb/#zenml.integrations.wandb.flavors.wandb\_experiment\_tracker\_flavor.WandbExperimentTrackerSettings) for a full list of available attributes and [this docs page](../../how-to/pipeline-development/use-configuration-files/runtime-configuration.md) for more information on how to specify settings.
+<details>
 
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
+<summary>Example with Weave for LLM Tracing</summary>
+
+```python
+import weave
+from openai import OpenAI
+import numpy as np
+from sklearn.metrics import accuracy_score
+import pandas as pd
+
+from zenml import pipeline, step
+from zenml.client import Client
+from zenml.integrations.wandb.flavors.wandb_experiment_tracker_flavor import (
+    WandbExperimentTrackerSettings,
+)
+
+# Get the experiment tracker from the active stack
+experiment_tracker = Client().active_stack.experiment_tracker
+
+# Create settings for Weave-enabled tracking
+weave_settings = WandbExperimentTrackerSettings(
+    tags=["weave_example", "llm_pipeline"],
+    enable_weave=True,
+)
+
+# OpenAI client for LLM calls
+openai_client = OpenAI()
+
+@step
+def prepare_data() -> pd.DataFrame:
+    """Prepare sample data for LLM processing"""
+    data = {
+        "id": range(10),
+        "text": [
+            "I love this product, it's amazing!",
+            "This was a waste of money, terrible.",
+            "Pretty good, but could be improved.",
+            "Not worth the price, disappointed.",
+            "Absolutely fantastic experience!",
+            "It's okay, nothing special though.",
+            "Would definitely recommend to others.",
+            "Had some issues, but support was helpful.",
+            "Don't buy this, it doesn't work properly.",
+            "Perfect for my needs, very satisfied."
+        ]
+    }
+    return pd.DataFrame(data)
+
+@step(
+    experiment_tracker=experiment_tracker.name,
+    settings={"experiment_tracker": weave_settings},
+)
+@weave.op()  # Weave decorator AFTER the step decorator
+def classify_sentiment(data: pd.DataFrame) -> pd.DataFrame:
+    """Classify the sentiment of each text using an LLM"""
+    results = []
+    
+    for _, row in data.iterrows():
+        prompt = f"Classify the sentiment of this text as POSITIVE, NEGATIVE, or NEUTRAL: '{row['text']}'"
+        
+        response = openai_client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.3,
+        )
+        
+        sentiment = response.choices[0].message.content.strip()
+        results.append({
+            "id": row["id"],
+            "text": row["text"],
+            "sentiment": sentiment,
+        })
+    
+    # Create a DataFrame with results
+    result_df = pd.DataFrame(results)
+    
+    # Log some metrics to Wandb
+    sentiments = result_df["sentiment"].value_counts()
+    import wandb
+    wandb.log({
+        "positive_count": sentiments.get("POSITIVE", 0),
+        "negative_count": sentiments.get("NEGATIVE", 0),
+        "neutral_count": sentiments.get("NEUTRAL", 0),
+        "sample_data": wandb.Table(dataframe=result_df),
+    })
+    
+    return result_df
+
+
+@pipeline(enable_cache=False)
+def sentiment_analysis_pipeline():
+    """Pipeline for sentiment analysis with Weave tracking"""
+    data = prepare_data()
+    results = classify_sentiment(data)
+
+if __name__ == "__main__":
+    # Set pipeline-level settings
+    pipeline_settings = {
+        "experiment_tracker": WandbExperimentTrackerSettings(
+            tags=["sentiment_analysis_pipeline"],
+            enable_weave=True,
+        )
+    }
+    
+    # Run the pipeline with the settings
+    sentiment_analysis_pipeline.with_options(settings=pipeline_settings)()
+```
+
+</details>
+
+Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-wandb/#zenml.integrations.wandb.flavors.wandb\_experiment\_tracker\_flavor.WandbExperimentTrackerSettings) for a full list of available attributes and [this docs page](../../how-to/pipeline-development/use-configuration-files/runtime-configuration.md) for more information on how to specify settings.

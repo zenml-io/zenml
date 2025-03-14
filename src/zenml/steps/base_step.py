@@ -432,7 +432,9 @@ class BaseStep:
         self,
         *args: Any,
         id: Optional[str] = None,
-        after: Union[str, Sequence[str], None] = None,
+        after: Union[
+            str, StepArtifact, Sequence[Union[str, StepArtifact]], None
+        ] = None,
         **kwargs: Any,
     ) -> Any:
         """Handle a call of the step.
@@ -497,8 +499,14 @@ class BaseStep:
         }
         if isinstance(after, str):
             upstream_steps.add(after)
+        elif isinstance(after, StepArtifact):
+            upstream_steps.add(after.invocation_id)
         elif isinstance(after, Sequence):
-            upstream_steps = upstream_steps.union(after)
+            for item in after:
+                if isinstance(item, str):
+                    upstream_steps.add(item)
+                elif isinstance(item, StepArtifact):
+                    upstream_steps.add(item.invocation_id)
 
         invocation_id = Pipeline.ACTIVE_PIPELINE.add_step_invocation(
             step=self,

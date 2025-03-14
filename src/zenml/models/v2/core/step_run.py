@@ -27,19 +27,20 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import ConfigDict, Field
 
 from zenml.config.step_configurations import StepConfiguration, StepSpec
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus, StepRunInputArtifactType
 from zenml.metadata.metadata_types import MetadataType
+from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
-    WorkspaceScopedFilter,
-    WorkspaceScopedRequest,
-    WorkspaceScopedResponse,
-    WorkspaceScopedResponseBody,
-    WorkspaceScopedResponseMetadata,
-    WorkspaceScopedResponseResources,
+    ProjectScopedFilter,
+    ProjectScopedRequest,
+    ProjectScopedResponse,
+    ProjectScopedResponseBody,
+    ProjectScopedResponseMetadata,
+    ProjectScopedResponseResources,
 )
 from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
 from zenml.models.v2.core.model_version import ModelVersionResponse
@@ -78,7 +79,7 @@ class StepRunInputResponse(ArtifactVersionResponse):
 # ------------------ Request Model ------------------
 
 
-class StepRunRequest(WorkspaceScopedRequest):
+class StepRunRequest(ProjectScopedRequest):
     """Request model for step runs."""
 
     name: str = Field(
@@ -137,14 +138,6 @@ class StepRunRequest(WorkspaceScopedRequest):
         title="Logs associated with this step run.",
         default=None,
     )
-    deployment: UUID = Field(
-        title="The deployment associated with the step run."
-    )
-    model_version_id: Optional[UUID] = Field(
-        title="The ID of the model version that was "
-        "configured by this step run explicitly.",
-        default=None,
-    )
 
     model_config = ConfigDict(protected_namespaces=())
 
@@ -152,7 +145,7 @@ class StepRunRequest(WorkspaceScopedRequest):
 # ------------------ Update Model ------------------
 
 
-class StepRunUpdate(BaseModel):
+class StepRunUpdate(BaseUpdate):
     """Update model for step runs."""
 
     outputs: Dict[str, List[UUID]] = Field(
@@ -171,16 +164,11 @@ class StepRunUpdate(BaseModel):
         title="The end time of the step run.",
         default=None,
     )
-    model_version_id: Optional[UUID] = Field(
-        title="The ID of the model version that was "
-        "configured by this step run explicitly.",
-        default=None,
-    )
     model_config = ConfigDict(protected_namespaces=())
 
 
 # ------------------ Response Model ------------------
-class StepRunResponseBody(WorkspaceScopedResponseBody):
+class StepRunResponseBody(ProjectScopedResponseBody):
     """Response body for step runs."""
 
     status: ExecutionStatus = Field(title="The status of the step.")
@@ -208,7 +196,7 @@ class StepRunResponseBody(WorkspaceScopedResponseBody):
     model_config = ConfigDict(protected_namespaces=())
 
 
-class StepRunResponseMetadata(WorkspaceScopedResponseMetadata):
+class StepRunResponseMetadata(ProjectScopedResponseMetadata):
     """Response metadata for step runs."""
 
     # Configuration
@@ -262,7 +250,7 @@ class StepRunResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
-class StepRunResponseResources(WorkspaceScopedResponseResources):
+class StepRunResponseResources(ProjectScopedResponseResources):
     """Class for all resource models associated with the step run entity."""
 
     model_version: Optional[ModelVersionResponse] = None
@@ -277,7 +265,7 @@ class StepRunResponseResources(WorkspaceScopedResponseResources):
 
 
 class StepRunResponse(
-    WorkspaceScopedResponse[
+    ProjectScopedResponse[
         StepRunResponseBody, StepRunResponseMetadata, StepRunResponseResources
     ]
 ):
@@ -516,11 +504,11 @@ class StepRunResponse(
 # ------------------ Filter Model ------------------
 
 
-class StepRunFilter(WorkspaceScopedFilter):
+class StepRunFilter(ProjectScopedFilter):
     """Model to enable advanced filtering of step runs."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
+        *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
         "model",
         "run_metadata",
     ]

@@ -25,7 +25,6 @@ from zenml.client import Client
 from zenml.enums import ArtifactType, ModelStages
 from zenml.model.model import Model
 from zenml.model.utils import link_artifact_to_model
-from zenml.models import TagRequest
 
 
 class ModelContext:
@@ -36,7 +35,7 @@ class ModelContext:
         stage: str = None,
     ):
         client = Client()
-        self.workspace = client.active_workspace.id
+        self.project = client.active_project.id
         self.user = client.active_user.id
         self.create_model = create_model
         self.version = version
@@ -87,11 +86,9 @@ class TagContext:
             client = Client()
             try:
                 if self.color is not None:
-                    client.create_tag(
-                        TagRequest(name=self.name, color=self.color)
-                    )
+                    client.create_tag(name=self.name, color=self.color)
                 else:
-                    client.create_tag(TagRequest(name=self.name))
+                    client.create_tag(name=self.name)
             except KeyError:
                 pass
         return self.name

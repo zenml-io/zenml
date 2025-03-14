@@ -59,7 +59,7 @@ def test_creating_deployment_request_from_template(
             user=deployment.user,
             runnable=True,
         ),
-        metadata=RunTemplateResponseMetadata(workspace=deployment.workspace),
+        metadata=RunTemplateResponseMetadata(project=deployment.project),
         resources=RunTemplateResponseResources(
             source_deployment=deployment, tags=[]
         ),

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "zenml"
-version = "0.74.0"
+version = "0.75.0"
 packages = [{ include = "zenml", from = "src" }]
 description = "ZenML: Write production-ready ML code."
 authors = ["ZenML GmbH <info@zenml.io>"]
@@ -448,6 +448,7 @@ module = [
     "sagemaker.*",
     "azureml.*",
     "google.*",
+    "google_cloud_pipeline_components.*",
     "neuralprophet.*",
     "lightgbm.*",
     "scipy.*",

@@ -421,7 +421,7 @@ class BaseFilter(BaseModel):
     ```
     ResourceListModel(
         name="contains:default",
-        workspace="default"
+        project="default"
         count_steps="gte:5"
         sort_by="created",
         page=2,
@@ -716,7 +716,7 @@ class BaseFilter(BaseModel):
             value: The filter value.
             table: The table to filter.
             additional_columns: Additional table columns that should also
-                filtered for the given value as part of the or condition.
+                filter for the given value as part of the or condition.
 
         Returns:
             The query conditions.

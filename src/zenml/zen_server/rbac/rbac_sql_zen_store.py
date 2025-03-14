@@ -63,7 +63,9 @@ class RBACSqlZenStore(SqlZenStore):
 
         try:
             verify_permission(
-                resource_type=ResourceType.MODEL, action=Action.CREATE
+                resource_type=ResourceType.MODEL,
+                action=Action.CREATE,
+                project_id=model_request.project,
             )
             check_entitlement(resource_type=ResourceType.MODEL)
         except Exception as e:
@@ -76,7 +78,10 @@ class RBACSqlZenStore(SqlZenStore):
             )
         else:
             try:
-                model_response = self.get_model(model_request.name)
+                model_response = self.get_model_by_name_or_id(
+                    model_name_or_id=model_request.name,
+                    project=model_request.project,
+                )
                 created = False
             except KeyError:
                 # The model does not exist. We now raise the error that
@@ -145,17 +150,20 @@ class RBACSqlZenStore(SqlZenStore):
 
         try:
             verify_permission(
-                resource_type=ResourceType.MODEL_VERSION, action=Action.CREATE
+                resource_type=ResourceType.MODEL_VERSION,
+                action=Action.CREATE,
+                project_id=model_version_request.project,
             )
         except Exception as e:
             allow_creation = False
             error = e
 
         if allow_creation:
-            created, model_version_response = (
-                super()._get_or_create_model_version(
-                    model_version_request, producer_run_id=producer_run_id
-                )
+            (
+                created,
+                model_version_response,
+            ) = super()._get_or_create_model_version(
+                model_version_request, producer_run_id=producer_run_id
             )
         else:
             try:
