@@ -18,7 +18,6 @@ from typing import Annotated, Tuple
 import pytest
 
 from zenml import ArtifactConfig, Tag, add_tags, pipeline, remove_tags, step
-from zenml.exceptions import IllegalOperationError
 
 
 @step
