@@ -1294,14 +1294,14 @@ def test_delete_user_with_secrets():
         all_secrets = store.list_secrets(SecretFilter(name=secret.name)).items
         assert len(all_secrets) == 1
         assert secret.id == all_secrets[0].id
-        workspace_secrets = store.list_secrets(
+        public_secrets = store.list_secrets(
             SecretFilter(
                 name=secret.name,
                 private=False,
             )
         ).items
-        assert len(workspace_secrets) == 1
-        assert secret.id == workspace_secrets[0].id
+        assert len(public_secrets) == 1
+        assert secret.id == public_secrets[0].id
         private_secrets = store.list_secrets(
             SecretFilter(
                 name=secret.name,

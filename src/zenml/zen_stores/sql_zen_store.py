@@ -225,6 +225,12 @@ from zenml.models import (
     PipelineRunResponse,
     PipelineRunUpdate,
     PipelineUpdate,
+    ProjectFilter,
+    ProjectRequest,
+    ProjectResponse,
+    ProjectScopedFilter,
+    ProjectScopedRequest,
+    ProjectUpdate,
     RunMetadataRequest,
     RunMetadataResource,
     RunTemplateFilter,
@@ -288,12 +294,6 @@ from zenml.models import (
     UserResponse,
     UserScopedRequest,
     UserUpdate,
-    WorkspaceFilter,
-    WorkspaceRequest,
-    WorkspaceResponse,
-    WorkspaceScopedFilter,
-    WorkspaceScopedRequest,
-    WorkspaceUpdate,
 )
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
@@ -339,6 +339,7 @@ from zenml.zen_stores.schemas import (
     PipelineDeploymentSchema,
     PipelineRunSchema,
     PipelineSchema,
+    ProjectSchema,
     RunMetadataResourceSchema,
     RunMetadataSchema,
     RunTemplateSchema,
@@ -356,7 +357,6 @@ from zenml.zen_stores.schemas import (
     TagSchema,
     TriggerExecutionSchema,
     UserSchema,
-    WorkspaceSchema,
 )
 from zenml.zen_stores.schemas.artifact_visualization_schemas import (
     ArtifactVisualizationSchema,
@@ -1154,9 +1154,9 @@ class SqlZenStore(BaseZenStore):
 
     def _initialize_database(self) -> None:
         """Initialize the database if not already initialized."""
-        # When running in a Pro ZenML server, the default workspace is not
+        # When running in a Pro ZenML server, the default project is not
         # created on database initialization but on server onboarding.
-        create_default_workspace = True
+        create_default_project = True
         if ENV_ZENML_SERVER in os.environ:
             from zenml.config.server_config import ServerConfiguration
 
@@ -1164,11 +1164,11 @@ class SqlZenStore(BaseZenStore):
                 ServerConfiguration.get_server_config().deployment_type
                 == ServerDeploymentType.CLOUD
             ):
-                create_default_workspace = False
+                create_default_project = False
 
-        if create_default_workspace:
-            # Make sure the default workspace exists
-            self._get_or_create_default_workspace()
+        if create_default_project:
+            # Make sure the default project exists
+            self._get_or_create_default_project()
         # Make sure the default stack exists
         self._get_or_create_default_stack()
         # Make sure the server is activated and the default user exists, if
@@ -1945,7 +1945,7 @@ class SqlZenStore(BaseZenStore):
             A page of actions matching the filter criteria.
         """
         with Session(self.engine) as session:
-            self._set_filter_workspace_id(
+            self._set_filter_project_id(
                 filter_model=action_filter_model,
                 session=session,
             )
@@ -2389,7 +2389,7 @@ class SqlZenStore(BaseZenStore):
             EntityExistsError: If a service with the given name and
                 type already exists.
         """
-        # Check if service with the same domain key (name, config, workspace)
+        # Check if service with the same domain key (name, config, project)
         # already exists
         existing_domain_service = session.exec(
             select(ServiceSchema).where(
@@ -2488,7 +2488,7 @@ class SqlZenStore(BaseZenStore):
             A list of all services matching the filter criteria.
         """
         with Session(self.engine) as session:
-            self._set_filter_workspace_id(
+            self._set_filter_project_id(
                 filter_model=filter_model,
                 session=session,
             )
@@ -2632,7 +2632,7 @@ class SqlZenStore(BaseZenStore):
             A list of all artifacts matching the filter criteria.
         """
         with Session(self.engine) as session:
-            self._set_filter_workspace_id(
+            self._set_filter_project_id(
                 filter_model=filter_model,
                 session=session,
             )
@@ -2712,7 +2712,7 @@ class SqlZenStore(BaseZenStore):
     def _get_or_create_artifact_for_name(
         self,
         name: str,
-        workspace_id: UUID,
+        project_id: UUID,
         has_custom_name: bool,
         session: Session,
     ) -> ArtifactSchema:
@@ -2720,7 +2720,7 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             name: The artifact name.
-            workspace_id: The workspace ID.
+            project_id: The project ID.
             has_custom_name: Whether the artifact has a custom name.
             session: DB session.
 
@@ -2730,7 +2730,7 @@ class SqlZenStore(BaseZenStore):
         artifact_query = (
             select(ArtifactSchema)
             .where(ArtifactSchema.name == name)
-            .where(ArtifactSchema.workspace_id == workspace_id)
+            .where(ArtifactSchema.project_id == project_id)
         )
         artifact = session.exec(artifact_query).first()
 
@@ -2739,7 +2739,7 @@ class SqlZenStore(BaseZenStore):
                 with session.begin_nested():
                     artifact_request = ArtifactRequest(
                         name=name,
-                        workspace=workspace_id,
+                        project=project_id,
                         has_custom_name=has_custom_name,
                     )
                     self._set_request_user_id(
@@ -2823,7 +2823,7 @@ class SqlZenStore(BaseZenStore):
             if artifact_name := artifact_version.artifact_name:
                 artifact_schema = self._get_or_create_artifact_for_name(
                     name=artifact_name,
-                    workspace_id=artifact_version.workspace,
+                    project_id=artifact_version.project,
                     has_custom_name=artifact_version.has_custom_name,
                     session=session,
                 )
@@ -2950,7 +2950,7 @@ class SqlZenStore(BaseZenStore):
                     types[key] = metadata_type
                 self.create_run_metadata(
                     RunMetadataRequest(
-                        workspace=artifact_version.workspace,
+                        project=artifact_version.project,
                         resources=[
                             RunMetadataResource(
                                 id=artifact_version_schema.id,
@@ -3025,7 +3025,7 @@ class SqlZenStore(BaseZenStore):
             A list of all artifact versions matching the filter criteria.
         """
         with Session(self.engine) as session:
-            self._set_filter_workspace_id(
+            self._set_filter_project_id(
                 filter_model=artifact_version_filter_model,
                 session=session,
             )
@@ -3102,20 +3102,20 @@ class SqlZenStore(BaseZenStore):
 
     def prune_artifact_versions(
         self,
-        workspace_name_or_id: Union[str, UUID],
+        project_name_or_id: Union[str, UUID],
         only_versions: bool = True,
     ) -> None:
         """Prunes unused artifact versions and their artifacts.
 
         Args:
-            workspace_name_or_id: The workspace name or ID to prune artifact
+            project_name_or_id: The project name or ID to prune artifact
                 versions for.
             only_versions: Only delete artifact versions, keeping artifacts
         """
         with Session(self.engine) as session:
-            workspace_id = self._get_schema_by_name_or_id(
-                object_name_or_id=workspace_name_or_id,
-                schema_class=WorkspaceSchema,
+            project_id = self._get_schema_by_name_or_id(
+                object_name_or_id=project_name_or_id,
+                schema_class=ProjectSchema,
                 session=session,
             ).id
 
@@ -3130,8 +3130,8 @@ class SqlZenStore(BaseZenStore):
                             col(ArtifactVersionSchema.id).notin_(
                                 select(StepRunInputArtifactSchema.artifact_id)
                             ),
-                            col(ArtifactVersionSchema.workspace_id)
-                            == workspace_id,
+                            col(ArtifactVersionSchema.project_id)
+                            == project_id,
                         )
                     )
                 ).fetchall()
@@ -3287,7 +3287,7 @@ class SqlZenStore(BaseZenStore):
             A page of all code repositories.
         """
         with Session(self.engine) as session:
-            self._set_filter_workspace_id(
+            self._set_filter_project_id(
                 filter_model=filter_model,
                 session=session,
             )
@@ -4173,7 +4173,7 @@ class SqlZenStore(BaseZenStore):
         self,
         pipeline: PipelineRequest,
     ) -> PipelineResponse:
-        """Creates a new pipeline in a workspace.
+        """Creates a new pipeline.
 
         Args:
             pipeline: The pipeline to create.
@@ -4197,8 +4197,8 @@ class SqlZenStore(BaseZenStore):
                 # to continue using it
                 session.rollback()
                 raise EntityExistsError(
-                    f"Unable to create pipeline in workspace "
-                    f"'{pipeline.workspace}': A pipeline with the name "
+                    f"Unable to create pipeline in project "
+                    f"'{pipeline.project}': A pipeline with the name "
                     f"{pipeline.name} already exists."
                 )
             session.refresh(new_pipeline)
@@ -4256,7 +4256,7 @@ class SqlZenStore(BaseZenStore):
             A list of all pipelines matching the filter criteria.
         """
         with Session(self.engine) as session:
-            self._set_filter_workspace_id(
+            self._set_filter_project_id(
                 filter_model=pipeline_filter_model,
                 session=session,
             )
@@ -4348,7 +4348,7 @@ class SqlZenStore(BaseZenStore):
         self,
         build: PipelineBuildRequest,
     ) -> PipelineBuildResponse:
-        """Creates a new build in a workspace.
+        """Creates a new build.
 
         Args:
             build: The build to create.
@@ -4422,7 +4422,7 @@ class SqlZenStore(BaseZenStore):
             A page of all builds matching the filter criteria.
         """
         with Session(self.engine) as session:
-            self._set_filter_workspace_id(
+            self._set_filter_project_id(
                 filter_model=build_filter_model,
                 session=session,
             )
@@ -4457,14 +4457,14 @@ class SqlZenStore(BaseZenStore):
     @staticmethod
     def _create_or_reuse_code_reference(
         session: Session,
-        workspace_id: UUID,
+        project_id: UUID,
         code_reference: Optional["CodeReferenceRequest"],
     ) -> Optional[UUID]:
         """Creates or reuses a code reference.
 
         Args:
             session: The database session to use.
-            workspace_id: ID of the workspace in which the code reference
+            project_id: ID of the project in which the code reference
                 should be.
             code_reference: Request of the reference to create.
 
@@ -4476,7 +4476,7 @@ class SqlZenStore(BaseZenStore):
 
         existing_reference = session.exec(
             select(CodeReferenceSchema)
-            .where(CodeReferenceSchema.workspace_id == workspace_id)
+            .where(CodeReferenceSchema.project_id == project_id)
             .where(
                 CodeReferenceSchema.code_repository_id
                 == code_reference.code_repository
@@ -4490,7 +4490,7 @@ class SqlZenStore(BaseZenStore):
             return existing_reference.id
 
         new_reference = CodeReferenceSchema.from_request(
-            code_reference, workspace_id=workspace_id
+            code_reference, project_id=project_id
         )
 
         session.add(new_reference)
@@ -4500,7 +4500,7 @@ class SqlZenStore(BaseZenStore):
         self,
         deployment: PipelineDeploymentRequest,
     ) -> PipelineDeploymentResponse:
-        """Creates a new deployment in a workspace.
+        """Creates a new deployment.
 
         Args:
             deployment: The deployment to create.
@@ -4557,7 +4557,7 @@ class SqlZenStore(BaseZenStore):
 
             code_reference_id = self._create_or_reuse_code_reference(
                 session=session,
-                workspace_id=deployment.workspace,
+                project_id=deployment.project,
                 code_reference=deployment.code_reference,
             )
 
@@ -4614,7 +4614,7 @@ class SqlZenStore(BaseZenStore):
             A page of all deployments matching the filter criteria.
         """
         with Session(self.engine) as session:
-            self._set_filter_workspace_id(
+            self._set_filter_project_id(
                 filter_model=deployment_filter_model,
                 session=session,
             )
@@ -4735,7 +4735,7 @@ class SqlZenStore(BaseZenStore):
             A list of all templates matching the filter criteria.
         """
         with Session(self.engine) as session:
-            self._set_filter_workspace_id(
+            self._set_filter_project_id(
                 filter_model=template_filter_model,
                 session=session,
             )
@@ -4911,7 +4911,7 @@ class SqlZenStore(BaseZenStore):
             A list of all event_sources matching the filter criteria.
         """
         with Session(self.engine) as session:
-            self._set_filter_workspace_id(
+            self._set_filter_project_id(
                 filter_model=event_source_filter_model,
                 session=session,
             )
@@ -5129,7 +5129,7 @@ class SqlZenStore(BaseZenStore):
             .where(
                 PipelineRunSchema.orchestrator_run_id.is_(None)  # type: ignore[union-attr]
             )
-            .where(PipelineRunSchema.workspace_id == pipeline_run.workspace)
+            .where(PipelineRunSchema.project_id == pipeline_run.project)
         ).first()
 
         if not run_schema:
@@ -5313,7 +5313,7 @@ class SqlZenStore(BaseZenStore):
             A list of all pipeline runs matching the filter criteria.
         """
         with Session(self.engine) as session:
-            self._set_filter_workspace_id(
+            self._set_filter_project_id(
                 filter_model=runs_filter_model,
                 session=session,
             )
@@ -5452,7 +5452,7 @@ class SqlZenStore(BaseZenStore):
                     type_ = run_metadata.types[key]
 
                     run_metadata_schema = RunMetadataSchema(
-                        workspace_id=run_metadata.workspace,
+                        project_id=run_metadata.project,
                         user_id=run_metadata.user,
                         stack_component_id=run_metadata.stack_component_id,
                         key=key,
@@ -5545,7 +5545,7 @@ class SqlZenStore(BaseZenStore):
         schedule_filter_model: ScheduleFilter,
         hydrate: bool = False,
     ) -> Page[ScheduleResponse]:
-        """List all schedules in the workspace.
+        """List all schedules.
 
         Args:
             schedule_filter_model: All filter parameters including pagination
@@ -5557,7 +5557,7 @@ class SqlZenStore(BaseZenStore):
             A list of schedules.
         """
         with Session(self.engine) as session:
-            self._set_filter_workspace_id(
+            self._set_filter_project_id(
                 filter_model=schedule_filter_model,
                 session=session,
             )
@@ -8141,7 +8141,7 @@ class SqlZenStore(BaseZenStore):
             A list of all step runs matching the filter criteria.
         """
         with Session(self.engine) as session:
-            self._set_filter_workspace_id(
+            self._set_filter_project_id(
                 filter_model=step_run_filter_model,
                 session=session,
             )
@@ -8443,7 +8443,7 @@ class SqlZenStore(BaseZenStore):
                     AnalyticsEvent.RUN_PIPELINE_ENDED
                 ) as analytics_handler:
                     analytics_handler.metadata = {
-                        "workspace_id": pipeline_run.workspace_id,
+                        "project_id": pipeline_run.project_id,
                         "pipeline_run_id": pipeline_run_id,
                         "template_id": pipeline_run.deployment.template_id,
                         "status": new_status,
@@ -8563,7 +8563,7 @@ class SqlZenStore(BaseZenStore):
             A list of all triggers matching the filter criteria.
         """
         with Session(self.engine) as session:
-            self._set_filter_workspace_id(
+            self._set_filter_project_id(
                 filter_model=trigger_filter_model,
                 session=session,
             )
@@ -8593,7 +8593,7 @@ class SqlZenStore(BaseZenStore):
             ValueError: If both a schedule and an event source are provided.
         """
         with Session(self.engine) as session:
-            # Check if trigger with the domain key (name, workspace, owner)
+            # Check if trigger with the domain key (name, project, owner)
             # already exists
             existing_trigger = self._get_schema_by_id(
                 resource_id=trigger_id,
@@ -8720,7 +8720,7 @@ class SqlZenStore(BaseZenStore):
             A list of all trigger executions matching the filter criteria.
         """
         with Session(self.engine) as session:
-            self._set_filter_workspace_id(
+            self._set_filter_project_id(
                 filter_model=trigger_execution_filter_model,
                 session=session,
             )
@@ -9299,214 +9299,212 @@ class SqlZenStore(BaseZenStore):
 
         return False
 
-    # ----------------------------- Workspaces -----------------------------
+    # ----------------------------- Projects -----------------------------
 
-    @track_decorator(AnalyticsEvent.CREATED_WORKSPACE)
-    def create_workspace(
-        self, workspace: WorkspaceRequest
-    ) -> WorkspaceResponse:
-        """Creates a new workspace.
+    @track_decorator(AnalyticsEvent.CREATED_PROJECT)
+    def create_project(self, project: ProjectRequest) -> ProjectResponse:
+        """Creates a new project.
 
         Args:
-            workspace: The workspace to create.
+            project: The project to create.
 
         Returns:
-            The newly created workspace.
+            The newly created project.
         """
         with Session(self.engine) as session:
-            # Check if workspace with the given name already exists
+            # Check if project with the given name already exists
             self._verify_name_uniqueness(
-                resource=workspace,
-                schema=WorkspaceSchema,
+                resource=project,
+                schema=ProjectSchema,
                 session=session,
             )
 
-            # Create the workspace
-            new_workspace = WorkspaceSchema.from_request(workspace)
-            session.add(new_workspace)
+            # Create the project
+            new_project = ProjectSchema.from_request(project)
+            session.add(new_project)
             session.commit()
 
-            # Explicitly refresh the new_workspace schema
-            session.refresh(new_workspace)
+            # Explicitly refresh the new_project schema
+            session.refresh(new_project)
 
-            workspace_model = new_workspace.to_model(
+            project_model = new_project.to_model(
                 include_metadata=True, include_resources=True
             )
 
-        return workspace_model
+        return project_model
 
-    def get_workspace(
-        self, workspace_name_or_id: Union[str, UUID], hydrate: bool = True
-    ) -> WorkspaceResponse:
-        """Get an existing workspace by name or ID.
+    def get_project(
+        self, project_name_or_id: Union[str, UUID], hydrate: bool = True
+    ) -> ProjectResponse:
+        """Get an existing project by name or ID.
 
         Args:
-            workspace_name_or_id: Name or ID of the workspace to get.
+            project_name_or_id: Name or ID of the project to get.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
         Returns:
-            The requested workspace if one was found.
+            The requested project if one was found.
         """
         with Session(self.engine) as session:
-            workspace = self._get_schema_by_name_or_id(
-                object_name_or_id=workspace_name_or_id,
-                schema_class=WorkspaceSchema,
+            project = self._get_schema_by_name_or_id(
+                object_name_or_id=project_name_or_id,
+                schema_class=ProjectSchema,
                 session=session,
             )
-        return workspace.to_model(
+        return project.to_model(
             include_metadata=hydrate, include_resources=True
         )
 
-    def list_workspaces(
+    def list_projects(
         self,
-        workspace_filter_model: WorkspaceFilter,
+        project_filter_model: ProjectFilter,
         hydrate: bool = False,
-    ) -> Page[WorkspaceResponse]:
-        """List all workspace matching the given filter criteria.
+    ) -> Page[ProjectResponse]:
+        """List all projects matching the given filter criteria.
 
         Args:
-            workspace_filter_model: All filter parameters including pagination
+            project_filter_model: All filter parameters including pagination
                 params.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
         Returns:
-            A list of all workspace matching the filter criteria.
+            A list of all projects matching the filter criteria.
         """
         with Session(self.engine) as session:
-            query = select(WorkspaceSchema)
+            query = select(ProjectSchema)
             return self.filter_and_paginate(
                 session=session,
                 query=query,
-                table=WorkspaceSchema,
-                filter_model=workspace_filter_model,
+                table=ProjectSchema,
+                filter_model=project_filter_model,
                 hydrate=hydrate,
             )
 
-    def update_workspace(
-        self, workspace_id: UUID, workspace_update: WorkspaceUpdate
-    ) -> WorkspaceResponse:
-        """Update an existing workspace.
+    def update_project(
+        self, project_id: UUID, project_update: ProjectUpdate
+    ) -> ProjectResponse:
+        """Update an existing project.
 
         Args:
-            workspace_id: The ID of the workspace to be updated.
-            workspace_update: The update to be applied to the workspace.
+            project_id: The ID of the project to be updated.
+            project_update: The update to be applied to the project.
 
         Returns:
-            The updated workspace.
+            The updated project.
 
         Raises:
             IllegalOperationError: If the request tries to update the name of
-                the default workspace.
+                the default project.
         """
         with Session(self.engine) as session:
-            existing_workspace = self._get_schema_by_id(
-                resource_id=workspace_id,
-                schema_class=WorkspaceSchema,
+            existing_project = self._get_schema_by_id(
+                resource_id=project_id,
+                schema_class=ProjectSchema,
                 session=session,
             )
             if (
-                existing_workspace.name == self._default_workspace_name
-                and "name" in workspace_update.model_fields_set
-                and workspace_update.name != existing_workspace.name
+                existing_project.name == self._default_project_name
+                and "name" in project_update.model_fields_set
+                and project_update.name != existing_project.name
             ):
                 raise IllegalOperationError(
-                    "The name of the default workspace cannot be changed."
+                    "The name of the default project cannot be changed."
                 )
 
             self._verify_name_uniqueness(
-                resource=workspace_update,
-                schema=existing_workspace,
+                resource=project_update,
+                schema=existing_project,
                 session=session,
             )
 
-            # Update the workspace
-            existing_workspace.update(workspace_update=workspace_update)
-            session.add(existing_workspace)
+            # Update the project
+            existing_project.update(project_update=project_update)
+            session.add(existing_project)
             session.commit()
 
             # Refresh the Model that was just created
-            session.refresh(existing_workspace)
-            return existing_workspace.to_model(
+            session.refresh(existing_project)
+            return existing_project.to_model(
                 include_metadata=True, include_resources=True
             )
 
-    def delete_workspace(self, workspace_name_or_id: Union[str, UUID]) -> None:
-        """Deletes a workspace.
+    def delete_project(self, project_name_or_id: Union[str, UUID]) -> None:
+        """Deletes a project.
 
         Args:
-            workspace_name_or_id: Name or ID of the workspace to delete.
+            project_name_or_id: Name or ID of the project to delete.
 
         Raises:
-            IllegalOperationError: If the workspace is the default workspace.
+            IllegalOperationError: If the project is the default project.
         """
         with Session(self.engine) as session:
-            # Check if workspace with the given name exists
-            workspace = self._get_schema_by_name_or_id(
-                object_name_or_id=workspace_name_or_id,
-                schema_class=WorkspaceSchema,
+            # Check if project with the given name exists
+            project = self._get_schema_by_name_or_id(
+                object_name_or_id=project_name_or_id,
+                schema_class=ProjectSchema,
                 session=session,
             )
-            if workspace.name == self._default_workspace_name:
+            if project.name == self._default_project_name:
                 raise IllegalOperationError(
-                    "The default workspace cannot be deleted."
+                    "The default project cannot be deleted."
                 )
 
-            session.delete(workspace)
+            session.delete(project)
             session.commit()
 
-    def count_workspaces(
-        self, filter_model: Optional[WorkspaceFilter] = None
+    def count_projects(
+        self, filter_model: Optional[ProjectFilter] = None
     ) -> int:
-        """Count all workspaces.
+        """Count all projects.
 
         Args:
-            filter_model: The filter model to use for counting workspaces.
+            filter_model: The filter model to use for counting projects.
 
         Returns:
-            The number of workspaces.
+            The number of projects.
         """
         return self._count_entity(
-            schema=WorkspaceSchema, filter_model=filter_model
+            schema=ProjectSchema, filter_model=filter_model
         )
 
-    def set_filter_workspace_id(
+    def set_filter_project_id(
         self,
-        filter_model: WorkspaceScopedFilter,
-        workspace_name_or_id: Optional[Union[UUID, str]] = None,
+        filter_model: ProjectScopedFilter,
+        project_name_or_id: Optional[Union[UUID, str]] = None,
     ) -> None:
-        """Set the workspace ID on a filter model.
+        """Set the project ID on a filter model.
 
         Args:
-            filter_model: The filter model to set the workspace ID on.
-            workspace_name_or_id: The workspace to set the scope for. If not
-                provided, the workspace scope is determined from the request
-                workspace filter or the default workspace, in that order.
+            filter_model: The filter model to set the project ID on.
+            project_name_or_id: The project to set the scope for. If not
+                provided, the project scope is determined from the request
+                project filter or the default project, in that order.
         """
         with Session(self.engine) as session:
-            self._set_filter_workspace_id(
+            self._set_filter_project_id(
                 filter_model=filter_model,
                 session=session,
-                workspace_name_or_id=workspace_name_or_id,
+                project_name_or_id=project_name_or_id,
             )
 
-    def _get_or_create_default_workspace(self) -> WorkspaceResponse:
-        """Get or create the default workspace if it doesn't exist.
+    def _get_or_create_default_project(self) -> ProjectResponse:
+        """Get or create the default project if it doesn't exist.
 
         Returns:
-            The default workspace.
+            The default project.
         """
-        default_workspace_name = self._default_workspace_name
+        default_project_name = self._default_project_name
 
         try:
-            return self.get_workspace(default_workspace_name)
+            return self.get_project(default_project_name)
         except KeyError:
             logger.info(
-                f"Creating default workspace '{default_workspace_name}' ..."
+                f"Creating default project '{default_project_name}' ..."
             )
-            return self.create_workspace(
-                WorkspaceRequest(name=default_workspace_name)
+            return self.create_project(
+                ProjectRequest(name=default_project_name)
             )
 
     # =======================
@@ -9531,11 +9529,11 @@ class SqlZenStore(BaseZenStore):
             query = select(func.count(schema.id))  # type: ignore[arg-type]
 
             if filter_model:
-                if isinstance(filter_model, WorkspaceScopedFilter):
-                    self._set_filter_workspace_id(
+                if isinstance(filter_model, ProjectScopedFilter):
+                    self._set_filter_project_id(
                         filter_model=filter_model,
                         session=session,
-                        workspace_name_or_id=filter_model.workspace,
+                        project_name_or_id=filter_model.project,
                     )
                 query = filter_model.apply_filter(query=query, table=schema)
 
@@ -9600,26 +9598,26 @@ class SqlZenStore(BaseZenStore):
         schema_class: Type[AnySchema],
         session: Session,
         resource_type: Optional[str] = None,
-        workspace_id: Optional[UUID] = None,
+        project_id: Optional[UUID] = None,
     ) -> AnySchema:
         """Query a schema by its 'id' field.
 
         Args:
             resource_id: The ID of the resource to query.
-            schema_class: The schema class to query. E.g., `WorkspaceSchema`.
+            schema_class: The schema class to query. E.g., `StackSchema`.
             session: The database session to use.
             resource_type: Optional name of the resource type to use in error
                 messages. If not provided, the type name will be inferred
                 from the schema class.
-            workspace_id: Optional ID of a workspace to filter by.
+            project_id: Optional ID of a project to filter by.
 
         Returns:
             The schema object.
 
         Raises:
             KeyError: if the object couldn't be found.
-            RuntimeError: if the schema is not workspace-scoped but the
-                workspace ID is provided.
+            RuntimeError: if the schema is not project-scoped but the
+                project ID is provided.
         """
         resource_type = resource_type or get_resource_type_name(schema_class)
         error_msg = (
@@ -9627,14 +9625,14 @@ class SqlZenStore(BaseZenStore):
             f"'{resource_id}': No {resource_type} with this ID found"
         )
         query = select(schema_class).where(schema_class.id == resource_id)
-        if workspace_id:
-            error_msg += f" in workspace `{str(workspace_id)}`"
-            if not hasattr(schema_class, "workspace_id"):
+        if project_id:
+            error_msg += f" in project `{str(project_id)}`"
+            if not hasattr(schema_class, "project_id"):
                 raise RuntimeError(
-                    f"Schema {schema_class.__name__} is not workspace-scoped."
+                    f"Schema {schema_class.__name__} is not project-scoped."
                 )
 
-            query = query.where(schema_class.workspace_id == workspace_id)  # type: ignore[attr-defined]
+            query = query.where(schema_class.project_id == project_id)  # type: ignore[attr-defined]
 
         schema = session.exec(query).first()
 
@@ -9647,16 +9645,16 @@ class SqlZenStore(BaseZenStore):
         object_name_or_id: Union[str, UUID],
         schema_class: Type[AnyNamedSchema],
         session: Session,
-        workspace_name_or_id: Optional[Union[UUID, str]] = None,
+        project_name_or_id: Optional[Union[UUID, str]] = None,
     ) -> AnyNamedSchema:
         """Query a schema by its 'name' or 'id' field.
 
         Args:
             object_name_or_id: The name or ID of the object to query.
-            schema_class: The schema class to query. E.g., `WorkspaceSchema`.
+            schema_class: The schema class to query. E.g., `ProjectSchema`.
             session: The database session to use.
-            workspace_name_or_id: The name or ID of the workspace to filter by.
-                Required if the resource is workspace-scoped and the
+            project_name_or_id: The name or ID of the project to filter by.
+                Required if the resource is project-scoped and the
                 object_name_or_id is not a UUID.
 
         Returns:
@@ -9681,17 +9679,17 @@ class SqlZenStore(BaseZenStore):
             )
 
         query = select(schema_class).where(filter_params)
-        if workspace_name_or_id and hasattr(schema_class, "workspace_id"):
-            if uuid_utils.is_valid_uuid(workspace_name_or_id):
+        if project_name_or_id and hasattr(schema_class, "project_id"):
+            if uuid_utils.is_valid_uuid(project_name_or_id):
                 query = query.where(
-                    schema_class.workspace_id == workspace_name_or_id  # type: ignore[attr-defined]
+                    schema_class.project_id == project_name_or_id  # type: ignore[attr-defined]
                 )
             else:
-                # Join the workspace table to get the workspace name
-                query = query.join(WorkspaceSchema).where(
-                    WorkspaceSchema.name == workspace_name_or_id
+                # Join the project table to get the project name
+                query = query.join(ProjectSchema).where(
+                    ProjectSchema.name == project_name_or_id
                 )
-            error_msg += f" in workspace `{workspace_name_or_id}`."
+            error_msg += f" in project `{project_name_or_id}`."
         else:
             error_msg += "."
 
@@ -9735,13 +9733,13 @@ class SqlZenStore(BaseZenStore):
         1. Fetch a referenced resource from the database.
         2. Enforce the scope relationship rules established between any main
         resource and its references:
-            a) a workspace-scoped resource (e.g. pipeline run) may reference
-            another workspace-scoped resource (e.g. pipeline) if it is within
-            the same workspace.
-            b) a workspace-scoped resource (e.g. pipeline run) may reference a
+            a) a project-scoped resource (e.g. pipeline run) may reference
+            another project-scoped resource (e.g. pipeline) if it is within
+            the same project.
+            b) a project-scoped resource (e.g. pipeline run) may reference a
             global-scoped resource (e.g. stack).
             c) a global-scoped resource (e.g. stack) may never reference a
-            workspace-scoped resource (e.g. pipeline).
+            project-scoped resource (e.g. pipeline).
             d) a global-scoped resource (e.g. stack) may reference another
             global-scoped resource (e.g. component).
 
@@ -9761,7 +9759,7 @@ class SqlZenStore(BaseZenStore):
             The referenced resource.
 
         Raises:
-            RuntimeError: If the schema has no workspace_id attribute.
+            RuntimeError: If the schema has no project_id attribute.
             KeyError: If the referenced resource is not found.
         """
         if reference_id is None:
@@ -9784,53 +9782,51 @@ class SqlZenStore(BaseZenStore):
         if isinstance(resource, BaseSchema):
             operation = "updated"
 
-        resource_workspace_id: Optional[UUID] = None
-        resource_workspace_name: Optional[str] = None
-        if isinstance(resource, WorkspaceScopedRequest):
-            resource_workspace_id = resource.workspace
-            resource_workspace_name = str(resource.workspace)
+        resource_project_id: Optional[UUID] = None
+        resource_project_name: Optional[str] = None
+        if isinstance(resource, ProjectScopedRequest):
+            resource_project_id = resource.project
+            resource_project_name = str(resource.project)
         elif isinstance(resource, BaseSchema):
-            resource_workspace_id = getattr(resource, "workspace_id", None)
-            resource_workspace = getattr(resource, "workspace", None)
-            if resource_workspace:
-                assert isinstance(resource_workspace, WorkspaceSchema)
-                resource_workspace_name = resource_workspace.name
+            resource_project_id = getattr(resource, "project_id", None)
+            resource_project = getattr(resource, "project", None)
+            if resource_project:
+                assert isinstance(resource_project, ProjectSchema)
+                resource_project_name = resource_project.name
 
         error_msg = (
             f"The {reference_type} with ID {str(reference_id)} referenced by "
             f"the {resource_type} being {operation} was not found"
         )
 
-        reference_is_workspace_scoped = hasattr(
-            reference_schema, "workspace_id"
-        )
+        reference_is_project_scoped = hasattr(reference_schema, "project_id")
 
         # There's one particular case that should never happen: if a global
-        # resource (e.g. a stack) references a workspace-scoped resource
+        # resource (e.g. a stack) references a project-scoped resource
         # (e.g. a pipeline), this is a design error.
-        if resource_workspace_id is None and reference_is_workspace_scoped:
+        if resource_project_id is None and reference_is_project_scoped:
             raise RuntimeError(
                 f"A global resource {resource_type} cannot reference a "
-                f"workspace-scoped resource {reference_type}. This is a "
+                f"project-scoped resource {reference_type}. This is a "
                 "design error."
             )
 
-        # Filter the reference by workspace if the resource itself is
-        # workspace-scoped and the reference is workspace-scoped.
-        reference_workspace_filter = (
-            resource_workspace_id if reference_is_workspace_scoped else None
+        # Filter the reference by project if the resource itself is
+        # project-scoped and the reference is project-scoped.
+        reference_project_filter = (
+            resource_project_id if reference_is_project_scoped else None
         )
         try:
             return self._get_schema_by_id(
                 resource_id=reference_id,
                 schema_class=reference_schema,
                 session=session,
-                workspace_id=reference_workspace_filter,
+                project_id=reference_project_filter,
                 resource_type=reference_type,
             )
         except KeyError:
-            if reference_workspace_filter:
-                error_msg += f" in the '{resource_workspace_name}' workspace"
+            if reference_project_filter:
+                error_msg += f" in the '{resource_project_name}' project"
 
             raise KeyError(error_msg)
 
@@ -9852,57 +9848,51 @@ class SqlZenStore(BaseZenStore):
 
         request_model.user = self._get_active_user(session).id
 
-    def _set_filter_workspace_id(
+    def _set_filter_project_id(
         self,
-        filter_model: WorkspaceScopedFilter,
+        filter_model: ProjectScopedFilter,
         session: Session,
-        workspace_name_or_id: Optional[Union[UUID, str]] = None,
+        project_name_or_id: Optional[Union[UUID, str]] = None,
     ) -> None:
-        """Set the workspace ID on a filter model.
+        """Set the project ID on a filter model.
 
         Args:
-            filter_model: The filter model to set the workspace ID on.
+            filter_model: The filter model to set the project ID on.
             session: The DB session to use for queries.
-            workspace_name_or_id: The workspace to set the scope for. If not
-                provided, the workspace scope is determined from the request
-                workspace filter or the default workspace, in that order.
+            project_name_or_id: The project to set the scope for. If not
+                provided, the project scope is determined from the request
+                project filter or the default project, in that order.
 
         Raises:
-            ValueError: If the workspace scope is missing from the filter.
+            ValueError: If the project scope is missing from the filter.
         """
-        if workspace_name_or_id:
-            workspace = self._get_schema_by_name_or_id(
-                object_name_or_id=workspace_name_or_id,
-                schema_class=WorkspaceSchema,
+        if project_name_or_id:
+            project = self._get_schema_by_name_or_id(
+                object_name_or_id=project_name_or_id,
+                schema_class=ProjectSchema,
                 session=session,
             )
-            workspace_id = workspace.id
-        elif filter_model.workspace:
-            workspace = self._get_schema_by_name_or_id(
-                object_name_or_id=filter_model.workspace,
-                schema_class=WorkspaceSchema,
+            project_id = project.id
+        elif filter_model.project:
+            project = self._get_schema_by_name_or_id(
+                object_name_or_id=filter_model.project,
+                schema_class=ProjectSchema,
                 session=session,
             )
-            workspace_id = workspace.id
+            project_id = project.id
         else:
-            # Use the default workspace configured for the active user, if set
-            user = self._get_active_user(session)
-            if user.default_workspace_id:
-                workspace_id = user.default_workspace_id
-            else:
-                # Finally, if the user has no default workspace, use the
-                # default workspace as a last resort.
-                try:
-                    workspace = self._get_schema_by_name_or_id(
-                        object_name_or_id=self._default_workspace_name,
-                        schema_class=WorkspaceSchema,
-                        session=session,
-                    )
-                    workspace_id = workspace.id
-                except KeyError:
-                    raise ValueError("Workspace scope missing from the filter")
+            # Use the default project as a last resort.
+            try:
+                project = self._get_schema_by_name_or_id(
+                    object_name_or_id=self._default_project_name,
+                    schema_class=ProjectSchema,
+                    session=session,
+                )
+                project_id = project.id
+            except KeyError:
+                raise ValueError("Project scope missing from the filter")
 
-        filter_model.workspace = workspace_id
+        filter_model.project = project_id
 
     def _verify_name_uniqueness(
         self,
@@ -9921,9 +9911,9 @@ class SqlZenStore(BaseZenStore):
 
         The scope in which the name uniqueness is verified depends on the
         entity type: for global resources (e.g. stack, service-connector), the
-        name must be globally unique, while for workspace-scoped resources (e.g.
+        name must be globally unique, while for project-scoped resources (e.g.
         pipeline, artifact, etc.), the name must be unique within the
-        workspace.
+        project.
 
         Args:
             resource: The resource to verify the name uniqueness for. This can
@@ -9955,13 +9945,13 @@ class SqlZenStore(BaseZenStore):
             raise RuntimeError(f"Schema {schema_class.__name__} has no name.")
 
         operation: Literal["create", "update"] = "create"
-        workspace_id: Optional[UUID] = None
+        project_id: Optional[UUID] = None
         if isinstance(resource, BaseRequest):
             # Create operation
-            if isinstance(resource, WorkspaceScopedRequest):
-                workspace_id = resource.workspace
+            if isinstance(resource, ProjectScopedRequest):
+                project_id = resource.project
             else:
-                workspace_id = None
+                project_id = None
         else:
             # Update operation
             if name is None:
@@ -9979,29 +9969,29 @@ class SqlZenStore(BaseZenStore):
                 # If the name is not being changed during an update, we don't
                 # need to verify the name uniqueness.
                 return
-            workspace_id = getattr(schema, "workspace_id", None)
+            project_id = getattr(schema, "project_id", None)
             operation = "update"
 
         query = select(schema_class).where(schema_class.name == name)
 
-        # We "detect" if the entity is workspace-scoped by looking at the
-        # workspace_id attribute.
-        if workspace_id:
-            if not hasattr(schema_class, "workspace_id") or not hasattr(
-                schema_class, "workspace"
+        # We "detect" if the entity is project-scoped by looking at the
+        # project_id attribute.
+        if project_id:
+            if not hasattr(schema_class, "project_id") or not hasattr(
+                schema_class, "project"
             ):
                 raise RuntimeError(
-                    f"Model {type(resource)} is workspace-scoped, but "
+                    f"Model {type(resource)} is project-scoped, but "
                     f"schema {schema_class.__name__} has no "
-                    "workspace_id and workspace attributes."
+                    "project_id and project attributes."
                 )
-            query = query.where(schema_class.workspace_id == workspace_id)  # type: ignore[attr-defined]
+            query = query.where(schema_class.project_id == project_id)  # type: ignore[attr-defined]
 
         existing_entry = session.exec(query).first()
         if existing_entry is not None:
             resource_name = get_resource_type_name(schema_class)
-            if workspace_id:
-                scope = f" in the '{existing_entry.workspace.name}' workspace"  # type: ignore[attr-defined]
+            if project_id:
+                scope = f" in the '{existing_entry.project.name}' project"  # type: ignore[attr-defined]
             else:
                 scope = ""
             raise EntityExistsError(
@@ -10150,14 +10140,14 @@ class SqlZenStore(BaseZenStore):
     def get_model_by_name_or_id(
         self,
         model_name_or_id: Union[str, UUID],
-        workspace: UUID,
+        project: UUID,
         hydrate: bool = True,
     ) -> ModelResponse:
         """Get a model by name or ID.
 
         Args:
             model_name_or_id: The name or ID of the model to get.
-            workspace: The workspace ID of the model to get.
+            project: The project ID of the model to get.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -10169,7 +10159,7 @@ class SqlZenStore(BaseZenStore):
                 object_name_or_id=model_name_or_id,
                 schema_class=ModelSchema,
                 session=session,
-                workspace_name_or_id=workspace,
+                project_name_or_id=project,
             )
 
             return model.to_model(
@@ -10193,7 +10183,7 @@ class SqlZenStore(BaseZenStore):
             A page of all models.
         """
         with Session(self.engine) as session:
-            self._set_filter_workspace_id(
+            self._set_filter_project_id(
                 filter_model=model_filter_model,
                 session=session,
             )
@@ -10296,7 +10286,7 @@ class SqlZenStore(BaseZenStore):
         except EntityExistsError:
             return False, self.get_model_by_name_or_id(
                 model_name_or_id=model_request.name,
-                workspace=model_request.workspace,
+                project=model_request.project,
             )
 
     def _get_next_numeric_version_for_model(
@@ -10461,7 +10451,7 @@ class SqlZenStore(BaseZenStore):
             )
             track(
                 event=AnalyticsEvent.CREATED_MODEL_VERSION,
-                metadata={"workspace_id": model_version.workspace.id},
+                metadata={"project_id": model_version.project.id},
             )
             return True, model_version
         except EntityCreationError:
@@ -10518,7 +10508,7 @@ class SqlZenStore(BaseZenStore):
             ethics=configured_model.ethics,
             save_models_to_registry=configured_model.save_models_to_registry,
             user=pipeline_or_step_run.user_id,
-            workspace=pipeline_or_step_run.workspace_id,
+            project=pipeline_or_step_run.project_id,
         )
 
         _, model_response = self._get_or_create_model(
@@ -10548,7 +10538,7 @@ class SqlZenStore(BaseZenStore):
             description=configured_model.description,
             tags=configured_model.tags,
             user=pipeline_or_step_run.user_id,
-            workspace=pipeline_or_step_run.workspace_id,
+            project=pipeline_or_step_run.project_id,
         )
 
         _, model_version_response = self._get_or_create_model_version(
@@ -10751,7 +10741,7 @@ class SqlZenStore(BaseZenStore):
             model = self._get_schema_by_name_or_id(
                 object_name_or_id=filter_model.model,
                 schema_class=ModelSchema,
-                workspace_name_or_id=filter_model.workspace,
+                project_name_or_id=filter_model.project,
                 session=session,
             )
         else:
@@ -10776,7 +10766,7 @@ class SqlZenStore(BaseZenStore):
             A page of all model versions.
         """
         with Session(self.engine) as session:
-            self._set_filter_workspace_id(
+            self._set_filter_project_id(
                 filter_model=model_version_filter_model,
                 session=session,
             )
@@ -11270,7 +11260,7 @@ class SqlZenStore(BaseZenStore):
         """Gets a tag schema by name or ID.
 
         This is a helper method that is used in various places to find a tag
-        by its name and workspace or ID.
+        by its name or ID.
 
         Args:
             tag_name_or_id: The name or ID of the tag to get.

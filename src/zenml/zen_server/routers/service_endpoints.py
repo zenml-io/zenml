@@ -36,9 +36,7 @@ from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_update_entity,
 )
 from zenml.zen_server.rbac.models import ResourceType
-from zenml.zen_server.routers.workspaces_endpoints import (
-    router as workspace_router,
-)
+from zenml.zen_server.routers.projects_endpoints import workspace_router
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -59,7 +57,7 @@ router = APIRouter(
 # TODO: the workspace scoped endpoint is only kept for dashboard compatibility
 # and can be removed after the migration
 @workspace_router.post(
-    "/{workspace_name_or_id}" + SERVICES,
+    "/{project_name_or_id}" + SERVICES,
     responses={401: error_response, 409: error_response, 422: error_response},
     deprecated=True,
     tags=["services"],
@@ -67,21 +65,21 @@ router = APIRouter(
 @handle_exceptions
 def create_service(
     service: ServiceRequest,
-    workspace_name_or_id: Optional[Union[str, UUID]] = None,
+    project_name_or_id: Optional[Union[str, UUID]] = None,
     _: AuthContext = Security(authorize),
 ) -> ServiceResponse:
     """Creates a new service.
 
     Args:
         service: The service to create.
-        workspace_name_or_id: Optional name or ID of the workspace.
+        project_name_or_id: Optional name or ID of the project.
 
     Returns:
         The created service.
     """
-    if workspace_name_or_id:
-        workspace = zen_store().get_workspace(workspace_name_or_id)
-        service.workspace = workspace.id
+    if project_name_or_id:
+        project = zen_store().get_project(project_name_or_id)
+        service.project = project.id
 
     return verify_permissions_and_create_entity(
         request_model=service,

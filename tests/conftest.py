@@ -28,7 +28,7 @@ from tests.harness.environment import TestEnvironment
 from tests.harness.utils import (
     check_test_requirements,
     clean_default_client_session,
-    clean_workspace_session,
+    clean_project_session,
     environment_session,
 )
 from tests.venv_clone_utils import clone_virtualenv
@@ -90,7 +90,7 @@ def pytest_addoption(parser):
         "--no-cleanup",
         action="store_true",
         default=False,
-        help="Do not cleanup the temporary resources (e.g. stacks, workspaces) "
+        help="Do not cleanup the temporary resources (e.g. stacks, projects) "
         "set up for tests after tests have run.",
     )
     parser.addoption(
@@ -168,16 +168,16 @@ def check_module_requirements(
 
 
 @pytest.fixture
-def clean_workspace(
+def clean_project(
     tmp_path_factory: pytest.TempPathFactory,
 ) -> Generator[Client, None, None]:
     """Fixture to create, activate and use a separate ZenML repository and
-    workspace for an individual test.
+    project for an individual test.
 
     Yields:
-        A ZenML client configured to use the workspace.
+        A ZenML client configured to use the project.
     """
-    with clean_workspace_session(
+    with clean_project_session(
         tmp_path_factory=tmp_path_factory,
         clean_repo=True,
     ) as client:
@@ -185,16 +185,16 @@ def clean_workspace(
 
 
 @pytest.fixture(scope="module")
-def module_clean_workspace(
+def module_clean_project(
     tmp_path_factory: pytest.TempPathFactory,
 ) -> Generator[Client, None, None]:
     """Fixture to create, activate and use a separate ZenML repository and
-    workspace for an entire test module.
+    project for an entire test module.
 
     Yields:
-        A ZenML client configured to use the workspace.
+        A ZenML client configured to use the project.
     """
-    with clean_workspace_session(
+    with clean_project_session(
         tmp_path_factory=tmp_path_factory,
         clean_repo=True,
     ) as client:
@@ -361,7 +361,6 @@ def local_stack():
         flavor="default",
         type=StackComponentType.ORCHESTRATOR,
         user=uuid4(),
-        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -372,7 +371,6 @@ def local_stack():
         flavor="default",
         type=StackComponentType.ARTIFACT_STORE,
         user=uuid4(),
-        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -394,7 +392,6 @@ def local_orchestrator():
         flavor="local",
         type=StackComponentType.ORCHESTRATOR,
         user=uuid4(),
-        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -410,7 +407,6 @@ def local_artifact_store():
         flavor="local",
         type=StackComponentType.ARTIFACT_STORE,
         user=uuid4(),
-        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -433,7 +429,6 @@ def gcp_artifact_store():
         flavor="gcp",
         type=StackComponentType.ARTIFACT_STORE,
         user=uuid4(),
-        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -457,7 +452,6 @@ def s3_artifact_store():
             flavor="s3",
             type=StackComponentType.ARTIFACT_STORE,
             user=uuid4(),
-            workspace=uuid4(),
             created=datetime.now(),
             updated=datetime.now(),
         )
@@ -473,7 +467,6 @@ def local_container_registry():
         flavor="default",
         type=StackComponentType.CONTAINER_REGISTRY,
         user=uuid4(),
-        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -489,7 +482,6 @@ def remote_container_registry():
         flavor="gcp",
         type=StackComponentType.CONTAINER_REGISTRY,
         user=uuid4(),
-        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )

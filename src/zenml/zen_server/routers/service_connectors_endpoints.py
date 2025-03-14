@@ -59,9 +59,7 @@ from zenml.zen_server.rbac.utils import (
     verify_permission,
     verify_permission_for_model,
 )
-from zenml.zen_server.routers.workspaces_endpoints import (
-    router as workspace_router,
-)
+from zenml.zen_server.routers.projects_endpoints import workspace_router
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -88,7 +86,7 @@ types_router = APIRouter(
 # TODO: the workspace scoped endpoint is only kept for dashboard compatibility
 # and can be removed after the migration
 @workspace_router.post(
-    "/{workspace_name_or_id}" + SERVICE_CONNECTORS,
+    "/{project_name_or_id}" + SERVICE_CONNECTORS,
     responses={401: error_response, 409: error_response, 422: error_response},
     deprecated=True,
     tags=["service_connectors"],
@@ -96,14 +94,14 @@ types_router = APIRouter(
 @handle_exceptions
 def create_service_connector(
     connector: ServiceConnectorRequest,
-    workspace_name_or_id: Optional[Union[str, UUID]] = None,
+    project_name_or_id: Optional[Union[str, UUID]] = None,
     _: AuthContext = Security(authorize),
 ) -> ServiceConnectorResponse:
     """Creates a service connector.
 
     Args:
         connector: Service connector to register.
-        workspace_name_or_id: Optional name or ID of the workspace.
+        project_name_or_id: Optional name or ID of the project.
 
     Returns:
         The created service connector.
@@ -121,7 +119,7 @@ def create_service_connector(
 # TODO: the workspace scoped endpoint is only kept for dashboard compatibility
 # and can be removed after the migration
 @workspace_router.get(
-    "/{workspace_name_or_id}" + SERVICE_CONNECTORS,
+    "/{project_name_or_id}" + SERVICE_CONNECTORS,
     responses={401: error_response, 404: error_response, 422: error_response},
     deprecated=True,
     tags=["service_connectors"],
@@ -131,17 +129,17 @@ def list_service_connectors(
     connector_filter_model: ServiceConnectorFilter = Depends(
         make_dependable(ServiceConnectorFilter)
     ),
-    workspace_name_or_id: Optional[Union[str, UUID]] = None,
+    project_name_or_id: Optional[Union[str, UUID]] = None,
     expand_secrets: bool = True,
     hydrate: bool = False,
     _: AuthContext = Security(authorize),
 ) -> Page[ServiceConnectorResponse]:
-    """Get a list of all service connectors, optionally filtered by workspace.
+    """Get a list of all service connectors.
 
     Args:
         connector_filter_model: Filter model used for pagination, sorting,
             filtering
-        workspace_name_or_id: Optional name or ID of the workspace to filter by.
+        project_name_or_id: Optional name or ID of the project to filter by.
         expand_secrets: Whether to expand secrets or not.
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
@@ -318,7 +316,7 @@ def validate_and_verify_service_connector_config(
 # TODO: the workspace scoped endpoint is only kept for dashboard compatibility
 # and can be removed after the migration
 @workspace_router.get(
-    "/{workspace_name_or_id}" + SERVICE_CONNECTOR_RESOURCES,
+    "/{project_name_or_id}" + SERVICE_CONNECTOR_RESOURCES,
     responses={401: error_response, 404: error_response, 422: error_response},
     deprecated=True,
     tags=["service_connectors"],
@@ -328,7 +326,7 @@ def list_service_connector_resources(
     filter_model: ServiceConnectorFilter = Depends(
         make_dependable(ServiceConnectorFilter)
     ),
-    workspace_name_or_id: Optional[Union[str, UUID]] = None,
+    project_name_or_id: Optional[Union[str, UUID]] = None,
     auth_context: AuthContext = Security(authorize),
 ) -> List[ServiceConnectorResourcesModel]:
     """List resources that can be accessed by service connectors.
@@ -336,7 +334,7 @@ def list_service_connector_resources(
     Args:
         filter_model: The filter model to use when fetching service
             connectors.
-        workspace_name_or_id: Optional name or ID of the workspace.
+        project_name_or_id: Optional name or ID of the project.
         auth_context: Authentication context.
 
     Returns:

@@ -60,7 +60,7 @@ updated_time = datetime(2023, 3, 14, 11, 45)
 
 @pytest.fixture
 def service_response(
-    sample_workspace_model,
+    sample_project_model,
 ):
     body = ServiceResponseBody(
         service_type=service_type,
@@ -77,7 +77,7 @@ def service_response(
         endpoint=endpoint,
         prediction_url=prediction_url,
         health_check_url=health_check_url,
-        workspace=sample_workspace_model,
+        project=sample_project_model,
     )
     return ServiceResponse(
         id=service_id,

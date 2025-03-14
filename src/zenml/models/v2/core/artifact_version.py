@@ -41,13 +41,13 @@ from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.filter import FilterGenerator
 from zenml.models.v2.base.scoped import (
+    ProjectScopedFilter,
+    ProjectScopedRequest,
+    ProjectScopedResponse,
+    ProjectScopedResponseBody,
+    ProjectScopedResponseMetadata,
+    ProjectScopedResponseResources,
     TaggableFilter,
-    WorkspaceScopedFilter,
-    WorkspaceScopedRequest,
-    WorkspaceScopedResponse,
-    WorkspaceScopedResponseBody,
-    WorkspaceScopedResponseMetadata,
-    WorkspaceScopedResponseResources,
 )
 from zenml.models.v2.core.artifact import ArtifactResponse
 from zenml.models.v2.core.tag import TagResponse
@@ -71,7 +71,7 @@ logger = get_logger(__name__)
 # ------------------ Request Model ------------------
 
 
-class ArtifactVersionRequest(WorkspaceScopedRequest):
+class ArtifactVersionRequest(ProjectScopedRequest):
     """Request model for artifact versions."""
 
     artifact_id: Optional[UUID] = Field(
@@ -176,7 +176,7 @@ class ArtifactVersionUpdate(BaseUpdate):
 # ------------------ Response Model ------------------
 
 
-class ArtifactVersionResponseBody(WorkspaceScopedResponseBody):
+class ArtifactVersionResponseBody(ProjectScopedResponseBody):
     """Response body for artifact versions."""
 
     artifact: ArtifactResponse = Field(
@@ -230,7 +230,7 @@ class ArtifactVersionResponseBody(WorkspaceScopedResponseBody):
         return value
 
 
-class ArtifactVersionResponseMetadata(WorkspaceScopedResponseMetadata):
+class ArtifactVersionResponseMetadata(ProjectScopedResponseMetadata):
     """Response metadata for artifact versions."""
 
     producer_step_run_id: Optional[UUID] = Field(
@@ -245,12 +245,12 @@ class ArtifactVersionResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
-class ArtifactVersionResponseResources(WorkspaceScopedResponseResources):
+class ArtifactVersionResponseResources(ProjectScopedResponseResources):
     """Class for all resource models associated with the artifact version entity."""
 
 
 class ArtifactVersionResponse(
-    WorkspaceScopedResponse[
+    ProjectScopedResponse[
         ArtifactVersionResponseBody,
         ArtifactVersionResponseMetadata,
         ArtifactVersionResponseResources,
@@ -470,11 +470,11 @@ class ArtifactVersionResponse(
 # ------------------ Filter Model ------------------
 
 
-class ArtifactVersionFilter(WorkspaceScopedFilter, TaggableFilter):
+class ArtifactVersionFilter(ProjectScopedFilter, TaggableFilter):
     """Model to enable advanced filtering of artifact versions."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
+        *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
         *TaggableFilter.FILTER_EXCLUDE_FIELDS,
         "artifact_id",
         "artifact",
@@ -486,11 +486,11 @@ class ArtifactVersionFilter(WorkspaceScopedFilter, TaggableFilter):
         "run_metadata",
     ]
     CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
-        *WorkspaceScopedFilter.CUSTOM_SORTING_OPTIONS,
+        *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
         *TaggableFilter.CUSTOM_SORTING_OPTIONS,
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
+        *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
         *TaggableFilter.CLI_EXCLUDE_FIELDS,
         "artifact_id",
     ]

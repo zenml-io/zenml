@@ -31,9 +31,7 @@ from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_create_entity,
 )
-from zenml.zen_server.routers.workspaces_endpoints import (
-    router as workspace_router,
-)
+from zenml.zen_server.routers.projects_endpoints import workspace_router
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -54,7 +52,7 @@ router = APIRouter(
 # TODO: the workspace scoped endpoint is only kept for dashboard compatibility
 # and can be removed after the migration
 @workspace_router.post(
-    "/{workspace_name_or_id}" + SCHEDULES,
+    "/{project_name_or_id}" + SCHEDULES,
     responses={401: error_response, 409: error_response, 422: error_response},
     deprecated=True,
     tags=["schedules"],
@@ -62,22 +60,22 @@ router = APIRouter(
 @handle_exceptions
 def create_schedule(
     schedule: ScheduleRequest,
-    workspace_name_or_id: Optional[Union[str, UUID]] = None,
+    project_name_or_id: Optional[Union[str, UUID]] = None,
     auth_context: AuthContext = Security(authorize),
 ) -> ScheduleResponse:
     """Creates a schedule.
 
     Args:
         schedule: Schedule to create.
-        workspace_name_or_id: Optional name or ID of the workspace.
+        project_name_or_id: Optional name or ID of the project.
         auth_context: Authentication context.
 
     Returns:
         The created schedule.
     """
-    if workspace_name_or_id:
-        workspace = zen_store().get_workspace(workspace_name_or_id)
-        schedule.workspace = workspace.id
+    if project_name_or_id:
+        project = zen_store().get_project(project_name_or_id)
+        schedule.project = project.id
 
     # NOTE: no RBAC is enforced currently for schedules, but we're
     # keeping the RBAC checks here for consistency
@@ -94,7 +92,7 @@ def create_schedule(
 # TODO: the workspace scoped endpoint is only kept for dashboard compatibility
 # and can be removed after the migration
 @workspace_router.get(
-    "/{workspace_name_or_id}" + SCHEDULES,
+    "/{project_name_or_id}" + SCHEDULES,
     responses={401: error_response, 404: error_response, 422: error_response},
     deprecated=True,
     tags=["schedules"],
@@ -104,7 +102,7 @@ def list_schedules(
     schedule_filter_model: ScheduleFilter = Depends(
         make_dependable(ScheduleFilter)
     ),
-    workspace_name_or_id: Optional[Union[str, UUID]] = None,
+    project_name_or_id: Optional[Union[str, UUID]] = None,
     hydrate: bool = False,
     _: AuthContext = Security(authorize),
 ) -> Page[ScheduleResponse]:
@@ -113,15 +111,15 @@ def list_schedules(
     Args:
         schedule_filter_model: Filter model used for pagination, sorting,
             filtering
-        workspace_name_or_id: Optional name or ID of the workspace.
+        project_name_or_id: Optional name or ID of the project.
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
 
     Returns:
         List of schedule objects.
     """
-    if workspace_name_or_id:
-        schedule_filter_model.workspace = workspace_name_or_id
+    if project_name_or_id:
+        schedule_filter_model.project = project_name_or_id
 
     return zen_store().list_schedules(
         schedule_filter_model=schedule_filter_model,

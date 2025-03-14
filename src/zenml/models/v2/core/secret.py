@@ -162,7 +162,7 @@ class SecretResponse(
     )
 
     def get_hydrated_version(self) -> "SecretResponse":
-        """Get the hydrated version of this workspace.
+        """Get the hydrated version of this secret.
 
         Returns:
             an instance of the same entity with the metadata field attached.

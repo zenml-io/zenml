@@ -21,18 +21,18 @@ from zenml.config.source import Source, SourceWithValidator
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
-    WorkspaceScopedFilter,
-    WorkspaceScopedRequest,
-    WorkspaceScopedResponse,
-    WorkspaceScopedResponseBody,
-    WorkspaceScopedResponseMetadata,
-    WorkspaceScopedResponseResources,
+    ProjectScopedFilter,
+    ProjectScopedRequest,
+    ProjectScopedResponse,
+    ProjectScopedResponseBody,
+    ProjectScopedResponseMetadata,
+    ProjectScopedResponseResources,
 )
 
 # ------------------ Request Model ------------------
 
 
-class CodeRepositoryRequest(WorkspaceScopedRequest):
+class CodeRepositoryRequest(ProjectScopedRequest):
     """Request model for code repositories."""
 
     name: str = Field(
@@ -88,7 +88,7 @@ class CodeRepositoryUpdate(BaseUpdate):
 # ------------------ Response Model ------------------
 
 
-class CodeRepositoryResponseBody(WorkspaceScopedResponseBody):
+class CodeRepositoryResponseBody(ProjectScopedResponseBody):
     """Response body for code repositories."""
 
     source: Source = Field(description="The code repository source.")
@@ -99,7 +99,7 @@ class CodeRepositoryResponseBody(WorkspaceScopedResponseBody):
     )
 
 
-class CodeRepositoryResponseMetadata(WorkspaceScopedResponseMetadata):
+class CodeRepositoryResponseMetadata(ProjectScopedResponseMetadata):
     """Response metadata for code repositories."""
 
     config: Dict[str, Any] = Field(
@@ -112,12 +112,12 @@ class CodeRepositoryResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
-class CodeRepositoryResponseResources(WorkspaceScopedResponseResources):
+class CodeRepositoryResponseResources(ProjectScopedResponseResources):
     """Class for all resource models associated with the code repository entity."""
 
 
 class CodeRepositoryResponse(
-    WorkspaceScopedResponse[
+    ProjectScopedResponse[
         CodeRepositoryResponseBody,
         CodeRepositoryResponseMetadata,
         CodeRepositoryResponseResources,
@@ -181,7 +181,7 @@ class CodeRepositoryResponse(
 # ------------------ Filter Model ------------------
 
 
-class CodeRepositoryFilter(WorkspaceScopedFilter):
+class CodeRepositoryFilter(ProjectScopedFilter):
     """Model to enable advanced filtering of all code repositories."""
 
     name: Optional[str] = Field(

@@ -40,9 +40,7 @@ from zenml.zen_server.rbac.utils import (
     verify_permission,
     verify_permission_for_model,
 )
-from zenml.zen_server.routers.workspaces_endpoints import (
-    router as workspace_router,
-)
+from zenml.zen_server.routers.projects_endpoints import workspace_router
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -63,7 +61,7 @@ router = APIRouter(
 # TODO: the workspace scoped endpoint is only kept for dashboard compatibility
 # and can be removed after the migration
 @workspace_router.post(
-    "/{workspace_name_or_id}" + STACKS,
+    "/{project_name_or_id}" + STACKS,
     responses={401: error_response, 409: error_response, 422: error_response},
     deprecated=True,
     tags=["stacks"],
@@ -71,14 +69,14 @@ router = APIRouter(
 @handle_exceptions
 def create_stack(
     stack: StackRequest,
-    workspace_name_or_id: Optional[Union[str, UUID]] = None,
+    project_name_or_id: Optional[Union[str, UUID]] = None,
     auth_context: AuthContext = Security(authorize),
 ) -> StackResponse:
-    """Creates a stack, optionally in a specific workspace.
+    """Creates a stack.
 
     Args:
         stack: Stack to register.
-        workspace_name_or_id: Optional name or ID of the workspace.
+        project_name_or_id: Optional name or ID of the project.
         auth_context: Authentication context.
 
     Returns:
@@ -133,22 +131,22 @@ def create_stack(
 # TODO: the workspace scoped endpoint is only kept for dashboard compatibility
 # and can be removed after the migration
 @workspace_router.get(
-    "/{workspace_name_or_id}" + STACKS,
+    "/{project_name_or_id}" + STACKS,
     responses={401: error_response, 404: error_response, 422: error_response},
     deprecated=True,
     tags=["stacks"],
 )
 @handle_exceptions
 def list_stacks(
-    workspace_name_or_id: Optional[Union[str, UUID]] = None,
+    project_name_or_id: Optional[Union[str, UUID]] = None,
     stack_filter_model: StackFilter = Depends(make_dependable(StackFilter)),
     hydrate: bool = False,
     _: AuthContext = Security(authorize),
 ) -> Page[StackResponse]:
-    """Returns all stacks, optionally filtered by workspace.
+    """Returns all stacks.
 
     Args:
-        workspace_name_or_id: Optional name or ID of the workspace to filter by.
+        project_name_or_id: Optional name or ID of the project to filter by.
         stack_filter_model: Filter model used for pagination, sorting,
             filtering.
         hydrate: Flag deciding whether to hydrate the output model(s)

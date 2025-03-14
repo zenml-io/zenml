@@ -2268,12 +2268,12 @@ def print_pipeline_runs_table(
     print_table(runs_dicts)
 
 
-def check_zenml_pro_workspace_availability() -> None:
-    """Check if the ZenML Pro workspace feature is available."""
+def check_zenml_pro_project_availability() -> None:
+    """Check if the ZenML Pro project feature is available."""
     client = Client()
     if not client.zen_store.get_store_info().is_pro_server():
         warning(
-            "The ZenML workspace feature is available only on ZenML Pro. "
+            "The ZenML projects feature is available only on ZenML Pro. "
             "Please visit https://zenml.io/pro to learn more."
         )
 

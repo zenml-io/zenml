@@ -22,8 +22,8 @@ from zenml.models import (
     BaseRequest,
     BaseUpdate,
     Page,
+    ProjectScopedFilter,
     UserScopedRequest,
-    WorkspaceScopedFilter,
 )
 from zenml.zen_server.auth import get_auth_context
 from zenml.zen_server.feature_gate.endpoint_utils import (
@@ -42,7 +42,7 @@ from zenml.zen_server.rbac.utils import (
     verify_permission,
     verify_permission_for_model,
 )
-from zenml.zen_server.utils import server_config, set_filter_workspace_scope
+from zenml.zen_server.utils import server_config, set_filter_project_scope
 
 AnyRequest = TypeVar("AnyRequest", bound=BaseRequest)
 AnyResponse = TypeVar("AnyResponse", bound=BaseIdentifiedResponse)  # type: ignore[type-arg]
@@ -232,27 +232,27 @@ def verify_permissions_and_list_entities(
         A page of entity models.
 
     Raises:
-        ValueError: If the filter's workspace scope is not set or is not a UUID.
+        ValueError: If the filter's project scope is not set or is not a UUID.
     """
     auth_context = get_auth_context()
     assert auth_context
 
-    workspace_id: Optional[UUID] = None
-    if isinstance(filter_model, WorkspaceScopedFilter):
-        # A workspace scoped filter must always be scoped to a specific
-        # workspace. This is required for the RBAC check to work.
-        set_filter_workspace_scope(filter_model)
-        if not filter_model.workspace or not isinstance(
-            filter_model.workspace, UUID
+    project_id: Optional[UUID] = None
+    if isinstance(filter_model, ProjectScopedFilter):
+        # A project scoped filter must always be scoped to a specific
+        # project. This is required for the RBAC check to work.
+        set_filter_project_scope(filter_model)
+        if not filter_model.project or not isinstance(
+            filter_model.project, UUID
         ):
             raise ValueError(
-                "Workspace scope must be a UUID, got "
-                f"{type(filter_model.workspace)}."
+                "Project scope must be a UUID, got "
+                f"{type(filter_model.project)}."
             )
-        workspace_id = filter_model.workspace
+        project_id = filter_model.project
 
     allowed_ids = get_allowed_resource_ids(
-        resource_type=resource_type, workspace_id=workspace_id
+        resource_type=resource_type, project_id=project_id
     )
     filter_model.configure_rbac(
         authenticated_user_id=auth_context.user.id, id=allowed_ids
@@ -318,7 +318,7 @@ def verify_permissions_and_delete_entity(
 def verify_permissions_and_prune_entities(
     resource_type: ResourceType,
     prune_method: Callable[..., None],
-    workspace_id: Optional[UUID] = None,
+    project_id: Optional[UUID] = None,
     **kwargs: Any,
 ) -> None:
     """Verify permissions and prune entities of certain type.
@@ -326,12 +326,12 @@ def verify_permissions_and_prune_entities(
     Args:
         resource_type: The resource type of the entities to prune.
         prune_method: The method to prune the entities.
-        workspace_id: The workspace ID to prune the entities for.
+        project_id: The project ID to prune the entities for.
         kwargs: Keyword arguments to pass to the prune method.
     """
     verify_permission(
         resource_type=resource_type,
         action=Action.PRUNE,
-        workspace_id=workspace_id,
+        project_id=project_id,
     )
     prune_method(**kwargs)
