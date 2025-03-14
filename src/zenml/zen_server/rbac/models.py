@@ -73,15 +73,15 @@ class ResourceType(StrEnum):
     TAG = "tag"
     TRIGGER = "trigger"
     TRIGGER_EXECUTION = "trigger_execution"
-    WORKSPACE = "workspace"
+    PROJECT = "project"
     # Deactivated for now
     # USER = "user"
 
-    def is_workspace_scoped(self) -> bool:
-        """Check if a resource type is workspace scoped.
+    def is_project_scoped(self) -> bool:
+        """Check if a resource type is project scoped.
 
         Returns:
-            Whether the resource type is workspace scoped.
+            Whether the resource type is project scoped.
         """
         return self not in [
             self.FLAVOR,
@@ -91,7 +91,7 @@ class ResourceType(StrEnum):
             self.STACK_COMPONENT,
             self.TAG,
             self.SERVICE_ACCOUNT,
-            self.WORKSPACE,
+            self.PROJECT,
             # Deactivated for now
             # self.USER,
         ]
@@ -102,7 +102,7 @@ class Resource(BaseModel):
 
     type: str
     id: Optional[UUID] = None
-    workspace_id: Optional[UUID] = None
+    project_id: Optional[UUID] = None
 
     def __str__(self) -> str:
         """Convert to a string.
@@ -110,15 +110,15 @@ class Resource(BaseModel):
         Returns:
             Resource string representation.
         """
-        workspace_id = self.workspace_id
-        if self.type == ResourceType.WORKSPACE and self.id:
-            # TODO: For now, we duplicate the workspace ID in the string
-            # representation when describing a workspace instance, because
+        project_id = self.project_id
+        if self.type == ResourceType.PROJECT and self.id:
+            # TODO: For now, we duplicate the project ID in the string
+            # representation when describing a project instance, because
             # this is what is expected by the RBAC implementation.
-            workspace_id = self.id
+            project_id = self.id
 
-        if workspace_id:
-            representation = f"{workspace_id}:"
+        if project_id:
+            representation = f"{project_id}:"
         else:
             representation = ""
         representation += self.type
@@ -128,11 +128,11 @@ class Resource(BaseModel):
         return representation
 
     @model_validator(mode="after")
-    def validate_workspace_id(self) -> "Resource":
-        """Validate that workspace_id is set in combination with workspace-scoped resource types.
+    def validate_project_id(self) -> "Resource":
+        """Validate that project_id is set in combination with project-scoped resource types.
 
         Raises:
-            ValueError: If workspace_id is not set for a workspace-scoped
+            ValueError: If project_id is not set for a project-scoped
                 resource or set for an unscoped resource.
 
         Returns:
@@ -140,15 +140,15 @@ class Resource(BaseModel):
         """
         resource_type = ResourceType(self.type)
 
-        if resource_type.is_workspace_scoped() and not self.workspace_id:
+        if resource_type.is_project_scoped() and not self.project_id:
             raise ValueError(
-                "workspace_id must be set for workspace-scoped resource type "
+                "project_id must be set for project-scoped resource type "
                 f"'{self.type}'"
             )
 
-        if not resource_type.is_workspace_scoped() and self.workspace_id:
+        if not resource_type.is_project_scoped() and self.project_id:
             raise ValueError(
-                "workspace_id must not be set for global resource type "
+                "project_id must not be set for global resource type "
                 f"'{self.type}'"
             )
 

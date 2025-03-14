@@ -14,7 +14,7 @@
 """Implementation for the wandb experiment tracker."""
 
 import os
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type, Union, cast
+from typing import TYPE_CHECKING, Dict, List, Optional, Type, cast
 
 import wandb
 
@@ -30,8 +30,6 @@ from zenml.logger import get_logger
 from zenml.metadata.metadata_types import Uri
 
 if TYPE_CHECKING:
-    from wandb import Settings
-
     from zenml.config.step_run_info import StepRunInfo
     from zenml.metadata.metadata_types import MetadataType
 
@@ -76,9 +74,7 @@ class WandbExperimentTracker(BaseExperimentTracker):
         wandb_run_name = (
             settings.run_name or f"{info.run_name}_{info.pipeline_step_name}"
         )
-        self._initialize_wandb(
-            run_name=wandb_run_name, tags=tags, settings=settings.settings
-        )
+        self._initialize_wandb(run_name=wandb_run_name, tags=tags, info=info)
 
     def get_step_run_metadata(
         self, info: "StepRunInfo"
@@ -131,25 +127,49 @@ class WandbExperimentTracker(BaseExperimentTracker):
 
     def _initialize_wandb(
         self,
+        info: "StepRunInfo",
         run_name: str,
         tags: List[str],
-        settings: Union["Settings", Dict[str, Any], None] = None,
     ) -> None:
         """Initializes a wandb run.
 
         Args:
+            info: Step run information.
             run_name: Name of the wandb run to create.
             tags: Tags to attach to the wandb run.
-            settings: Additional settings for the wandb run.
         """
         logger.info(
             f"Initializing wandb with entity {self.config.entity}, project "
             f"name: {self.config.project_name}, run_name: {run_name}."
+        )
+        settings = cast(
+            WandbExperimentTrackerSettings, self.get_settings(info)
         )
         wandb.init(
             entity=self.config.entity,
             project=self.config.project_name,
             name=run_name,
             tags=tags,
-            settings=settings,
+            settings=settings.settings,
         )
+
+        if settings.enable_weave:
+            import weave
+
+            if self.config.project_name:
+                logger.info("Initializing weave")
+                weave.init(project_name=self.config.project_name)
+            else:
+                logger.info(
+                    "Weave enabled but no project_name specified. "
+                    "Skipping weave initialization."
+                )
+        else:
+            import weave
+
+            if self.config.project_name:
+                logger.info("Disabling weave")
+                weave.init(
+                    project_name=self.config.project_name,
+                    settings={"disabled": True},
+                )

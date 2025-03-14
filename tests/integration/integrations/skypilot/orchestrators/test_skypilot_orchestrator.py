@@ -76,7 +76,6 @@ def _get_skypilot_orchestrator(
         flavor=selected_flavor,
         type=StackComponentType.ORCHESTRATOR,
         user=uuid4(),
-        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )

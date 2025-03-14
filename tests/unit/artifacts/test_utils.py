@@ -37,7 +37,7 @@ def model_artifact(mocker, clean_client: "Client"):
         id="123",
         created="2023-01-01T00:00:00Z",
         updated="2023-01-01T00:00:00Z",
-        workspace="workspace-name",
+        project="project-name",
         name="model-name",
         type="type",
         uri="gs://my-bucket/model.joblib",

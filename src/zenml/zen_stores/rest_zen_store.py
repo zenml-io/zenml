@@ -80,6 +80,7 @@ from zenml.constants import (
     PIPELINE_BUILDS,
     PIPELINE_DEPLOYMENTS,
     PIPELINES,
+    PROJECTS,
     RUN_METADATA,
     RUN_TEMPLATES,
     RUNS,
@@ -108,7 +109,6 @@ from zenml.constants import (
     TRIGGERS,
     USERS,
     VERSION_1,
-    WORKSPACES,
 )
 from zenml.enums import (
     APITokenType,
@@ -203,6 +203,10 @@ from zenml.models import (
     PipelineRunResponse,
     PipelineRunUpdate,
     PipelineUpdate,
+    ProjectFilter,
+    ProjectRequest,
+    ProjectResponse,
+    ProjectUpdate,
     RunMetadataRequest,
     RunTemplateFilter,
     RunTemplateRequest,
@@ -259,10 +263,6 @@ from zenml.models import (
     UserRequest,
     UserResponse,
     UserUpdate,
-    WorkspaceFilter,
-    WorkspaceRequest,
-    WorkspaceResponse,
-    WorkspaceUpdate,
 )
 from zenml.service_connectors.service_connector_registry import (
     service_connector_registry,
@@ -1086,13 +1086,13 @@ class RestZenStore(BaseZenStore):
 
     def prune_artifact_versions(
         self,
-        workspace_name_or_id: Union[str, UUID],
+        project_name_or_id: Union[str, UUID],
         only_versions: bool = True,
     ) -> None:
         """Prunes unused artifact versions and their artifacts.
 
         Args:
-            workspace_name_or_id: The workspace name or ID to prune artifact
+            project_name_or_id: The project name or ID to prune artifact
                 versions for.
             only_versions: Only delete artifact versions, keeping artifacts
         """
@@ -1100,7 +1100,7 @@ class RestZenStore(BaseZenStore):
             path=ARTIFACT_VERSIONS,
             params={
                 "only_versions": only_versions,
-                "workspace_name_or_id": workspace_name_or_id,
+                "project_name_or_id": project_name_or_id,
             },
         )
 
@@ -2112,10 +2112,8 @@ class RestZenStore(BaseZenStore):
         The new secret is also validated against the scoping rules enforced in
         the secrets store:
 
-          - only one workspace-scoped secret with the given name can exist
-            in the target workspace.
-          - only one user-scoped secret with the given name can exist in the
-            target workspace for the target user.
+          - only one private secret with the given name can exist.
+          - only one public secret with the given name can exist.
 
         Args:
             secret: The secret to create.
@@ -2190,10 +2188,8 @@ class RestZenStore(BaseZenStore):
         If the update includes a change of name or scope, the scoping rules
         enforced in the secrets store are used to validate the update:
 
-          - only one workspace-scoped secret with the given name can exist
-            in the target workspace.
-          - only one user-scoped secret with the given name can exist in the
-            target workspace for the target user.
+          - only one private secret with the given name can exist.
+          - only one public secret with the given name can exist.
 
         Args:
             secret_id: The ID of the secret to be updated.
@@ -3339,96 +3335,94 @@ class RestZenStore(BaseZenStore):
             route=USERS,
         )
 
-    # ----------------------------- Workspaces -----------------------------
+    # ----------------------------- Projects -----------------------------
 
-    def create_workspace(
-        self, workspace: WorkspaceRequest
-    ) -> WorkspaceResponse:
-        """Creates a new workspace.
+    def create_project(self, project: ProjectRequest) -> ProjectResponse:
+        """Creates a new project.
 
         Args:
-            workspace: The workspace to create.
+            project: The project to create.
 
         Returns:
-            The newly created workspace.
+            The newly created project.
         """
         return self._create_resource(
-            resource=workspace,
-            route=WORKSPACES,
-            response_model=WorkspaceResponse,
+            resource=project,
+            route=PROJECTS,
+            response_model=ProjectResponse,
         )
 
-    def get_workspace(
-        self, workspace_name_or_id: Union[UUID, str], hydrate: bool = True
-    ) -> WorkspaceResponse:
-        """Get an existing workspace by name or ID.
+    def get_project(
+        self, project_name_or_id: Union[UUID, str], hydrate: bool = True
+    ) -> ProjectResponse:
+        """Get an existing project by name or ID.
 
         Args:
-            workspace_name_or_id: Name or ID of the workspace to get.
+            project_name_or_id: Name or ID of the project to get.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
         Returns:
-            The requested workspace.
+            The requested project.
         """
         return self._get_resource(
-            resource_id=workspace_name_or_id,
-            route=WORKSPACES,
-            response_model=WorkspaceResponse,
+            resource_id=project_name_or_id,
+            route=PROJECTS,
+            response_model=ProjectResponse,
             params={"hydrate": hydrate},
         )
 
-    def list_workspaces(
+    def list_projects(
         self,
-        workspace_filter_model: WorkspaceFilter,
+        project_filter_model: ProjectFilter,
         hydrate: bool = False,
-    ) -> Page[WorkspaceResponse]:
-        """List all workspace matching the given filter criteria.
+    ) -> Page[ProjectResponse]:
+        """List all projects matching the given filter criteria.
 
         Args:
-            workspace_filter_model: All filter parameters including pagination
+            project_filter_model: All filter parameters including pagination
                 params.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
         Returns:
-            A list of all workspace matching the filter criteria.
+            A list of all projects matching the filter criteria.
         """
         return self._list_paginated_resources(
-            route=WORKSPACES,
-            response_model=WorkspaceResponse,
-            filter_model=workspace_filter_model,
+            route=PROJECTS,
+            response_model=ProjectResponse,
+            filter_model=project_filter_model,
             params={"hydrate": hydrate},
         )
 
-    def update_workspace(
-        self, workspace_id: UUID, workspace_update: WorkspaceUpdate
-    ) -> WorkspaceResponse:
-        """Update an existing workspace.
+    def update_project(
+        self, project_id: UUID, project_update: ProjectUpdate
+    ) -> ProjectResponse:
+        """Update an existing project.
 
         Args:
-            workspace_id: The ID of the workspace to be updated.
-            workspace_update: The update to be applied to the workspace.
+            project_id: The ID of the project to be updated.
+            project_update: The update to be applied to the project.
 
         Returns:
-            The updated workspace.
+            The updated project.
         """
         return self._update_resource(
-            resource_id=workspace_id,
-            resource_update=workspace_update,
-            route=WORKSPACES,
-            response_model=WorkspaceResponse,
+            resource_id=project_id,
+            resource_update=project_update,
+            route=PROJECTS,
+            response_model=ProjectResponse,
         )
 
-    def delete_workspace(self, workspace_name_or_id: Union[str, UUID]) -> None:
-        """Deletes a workspace.
+    def delete_project(self, project_name_or_id: Union[str, UUID]) -> None:
+        """Deletes a project.
 
         Args:
-            workspace_name_or_id: Name or ID of the workspace to delete.
+            project_name_or_id: Name or ID of the project to delete.
         """
         self._delete_resource(
-            resource_id=workspace_name_or_id,
-            route=WORKSPACES,
+            resource_id=project_name_or_id,
+            route=PROJECTS,
         )
 
     # --------------------------- Model ---------------------------
@@ -4209,7 +4203,6 @@ class RestZenStore(BaseZenStore):
             # Retries are triggered for idempotent HTTP methods (GET, HEAD, PUT,
             # OPTIONS and DELETE) on specific HTTP status codes:
             #
-            #     500: Internal Server Error.
             #     502: Bad Gateway.
             #     503: Service Unavailable.
             #     504: Gateway Timeout.
@@ -4236,7 +4229,6 @@ class RestZenStore(BaseZenStore):
                 status_forcelist=[
                     408,  # Request Timeout
                     429,  # Too Many Requests
-                    500,  # Internal Server Error
                     502,  # Bad Gateway
                     503,  # Service Unavailable
                     504,  # Gateway Timeout

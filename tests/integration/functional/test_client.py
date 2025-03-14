@@ -444,7 +444,7 @@ def test_getting_a_pipeline(clean_client: "Client"):
         clean_client.get_pipeline(name_id_or_prefix="non_existent")
 
     request = PipelineRequest(
-        workspace=clean_client.active_workspace.id,
+        project=clean_client.active_project.id,
         name="pipeline",
     )
     response_1 = clean_client.zen_store.create_pipeline(request)
@@ -461,7 +461,7 @@ def test_listing_pipelines(clean_client):
     assert clean_client.list_pipelines().total == 0
 
     request = PipelineRequest(
-        workspace=clean_client.active_workspace.id,
+        project=clean_client.active_project.id,
         name="pipeline",
     )
     response_1 = clean_client.zen_store.create_pipeline(request)
@@ -564,7 +564,7 @@ def random_secret_context() -> Generator[str, None, None]:
 
 
 def test_create_secret_default_scope():
-    """Test that secrets are created in the workspace scope by default."""
+    """Test that secrets are created as public by default."""
     client = Client()
     with random_secret_context() as name:
         s = client.create_secret(
@@ -655,7 +655,7 @@ def test_listing_builds(clean_client):
     assert len(builds) == 0
 
     request = PipelineBuildRequest(
-        workspace=clean_client.active_workspace.id,
+        project=clean_client.active_project.id,
         images={},
         is_local=False,
         contains_code=True,
@@ -677,7 +677,7 @@ def test_getting_builds(clean_client):
         clean_client.get_build(str(uuid4()))
 
     request = PipelineBuildRequest(
-        workspace=clean_client.active_workspace.id,
+        project=clean_client.active_project.id,
         images={},
         is_local=False,
         contains_code=True,
@@ -696,7 +696,7 @@ def test_deleting_builds(clean_client):
         clean_client.delete_build(str(uuid4()))
 
     request = PipelineBuildRequest(
-        workspace=clean_client.active_workspace.id,
+        project=clean_client.active_project.id,
         images={},
         is_local=False,
         contains_code=True,
@@ -721,7 +721,7 @@ def test_listing_deployments(clean_client):
     assert len(deployments) == 0
 
     request = PipelineDeploymentRequest(
-        workspace=clean_client.active_workspace.id,
+        project=clean_client.active_project.id,
         stack=clean_client.active_stack.id,
         run_name_template="",
         pipeline_configuration={"name": "pipeline_name"},
@@ -744,7 +744,7 @@ def test_getting_deployments(clean_client):
         clean_client.get_deployment(str(uuid4()))
 
     request = PipelineDeploymentRequest(
-        workspace=clean_client.active_workspace.id,
+        project=clean_client.active_project.id,
         stack=clean_client.active_stack.id,
         run_name_template="",
         pipeline_configuration={"name": "pipeline_name"},
@@ -765,7 +765,7 @@ def test_deleting_deployments(clean_client):
         clean_client.delete_deployment(str(uuid4()))
 
     request = PipelineDeploymentRequest(
-        workspace=clean_client.active_workspace.id,
+        project=clean_client.active_project.id,
         stack=clean_client.active_stack.id,
         run_name_template="",
         pipeline_configuration={"name": "pipeline_name"},
@@ -826,9 +826,9 @@ crud_test_configs = [
         update_args={"updated_name": sample_name("updated_user_name")},
     ),
     ClientCrudTestConfig(
-        entity_name="workspace",
-        create_args={"name": sample_name("workspace_name"), "description": ""},
-        update_args={"new_name": sample_name("updated_workspace_name")},
+        entity_name="project",
+        create_args={"name": sample_name("project_name"), "description": ""},
+        update_args={"new_name": sample_name("updated_project_name")},
     ),
     ClientCrudTestConfig(
         entity_name="stack",
@@ -954,8 +954,7 @@ def test_basic_crud_for_entity(
             name_id_or_prefix=id_prefix, **crud_test_config.delete_args
         )
     finally:
-        # Make sure to delete the created entity to not leave anything in the
-        # workspace.
+        # Make sure to delete the created entity to not leave anything behind.
         try:
             delete_method(entity.id, **crud_test_config.delete_args)
         except KeyError:

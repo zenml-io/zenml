@@ -68,7 +68,7 @@ class ModelRegistryModelMetadata(BaseModel):
     zenml_pipeline_uuid: Optional[str] = None
     zenml_pipeline_run_uuid: Optional[str] = None
     zenml_step_name: Optional[str] = None
-    zenml_workspace: Optional[str] = None
+    zenml_project: Optional[str] = None
 
     @property
     def custom_attributes(self) -> Dict[str, str]:

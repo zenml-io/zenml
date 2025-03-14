@@ -29,7 +29,6 @@ def test_evidently_data_validator_attributes():
         flavor="evidently",
         type=StackComponentType.DATA_VALIDATOR,
         user=uuid4(),
-        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )

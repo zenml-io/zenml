@@ -42,8 +42,8 @@ from zenml.models.v2.base.filter import AnyQuery, BaseFilter
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
 
+    from zenml.models.v2.core.project import ProjectResponse
     from zenml.models.v2.core.user import UserResponse
-    from zenml.models.v2.core.workspace import WorkspaceResponse
     from zenml.zen_stores.schemas import BaseSchema
 
     AnySchema = TypeVar("AnySchema", bound=BaseSchema)
@@ -80,24 +80,22 @@ class UserScopedRequest(BaseRequest):
         return metadata
 
 
-class WorkspaceScopedRequest(UserScopedRequest):
-    """Base workspace-scoped request domain model.
+class ProjectScopedRequest(UserScopedRequest):
+    """Base project-scoped request domain model.
 
-    Used as a base class for all domain models that are workspace-scoped.
+    Used as a base class for all domain models that are project-scoped.
     """
 
-    workspace: UUID = Field(
-        title="The workspace to which this resource belongs."
-    )
+    project: UUID = Field(title="The project to which this resource belongs.")
 
     def get_analytics_metadata(self) -> Dict[str, Any]:
-        """Fetches the analytics metadata for workspace scoped models.
+        """Fetches the analytics metadata for project scoped models.
 
         Returns:
             The analytics metadata.
         """
         metadata = super().get_analytics_metadata()
-        metadata["workspace_id"] = self.workspace
+        metadata["project_id"] = self.project
         return metadata
 
 
@@ -285,79 +283,77 @@ class UserScopedFilter(BaseFilter):
         return query
 
 
-# Workspace-scoped models
+# Project-scoped models
 
 
-class WorkspaceScopedResponseBody(UserScopedResponseBody):
-    """Base workspace-scoped body."""
+class ProjectScopedResponseBody(UserScopedResponseBody):
+    """Base project-scoped body."""
 
 
-class WorkspaceScopedResponseMetadata(UserScopedResponseMetadata):
-    """Base workspace-scoped metadata."""
+class ProjectScopedResponseMetadata(UserScopedResponseMetadata):
+    """Base project-scoped metadata."""
 
-    workspace: "WorkspaceResponse" = Field(
-        title="The workspace of this resource."
-    )
+    project: "ProjectResponse" = Field(title="The project of this resource.")
 
 
-class WorkspaceScopedResponseResources(UserScopedResponseResources):
-    """Base workspace-scoped resources."""
+class ProjectScopedResponseResources(UserScopedResponseResources):
+    """Base project-scoped resources."""
 
 
-WorkspaceBody = TypeVar("WorkspaceBody", bound=WorkspaceScopedResponseBody)
-WorkspaceMetadata = TypeVar(
-    "WorkspaceMetadata", bound=WorkspaceScopedResponseMetadata
+ProjectBody = TypeVar("ProjectBody", bound=ProjectScopedResponseBody)
+ProjectMetadata = TypeVar(
+    "ProjectMetadata", bound=ProjectScopedResponseMetadata
 )
-WorkspaceResources = TypeVar(
-    "WorkspaceResources", bound=WorkspaceScopedResponseResources
+ProjectResources = TypeVar(
+    "ProjectResources", bound=ProjectScopedResponseResources
 )
 
 
-class WorkspaceScopedResponse(
-    UserScopedResponse[WorkspaceBody, WorkspaceMetadata, WorkspaceResources],
-    Generic[WorkspaceBody, WorkspaceMetadata, WorkspaceResources],
+class ProjectScopedResponse(
+    UserScopedResponse[ProjectBody, ProjectMetadata, ProjectResources],
+    Generic[ProjectBody, ProjectMetadata, ProjectResources],
 ):
-    """Base workspace-scoped domain model.
+    """Base project-scoped domain model.
 
-    Used as a base class for all domain models that are workspace-scoped.
+    Used as a base class for all domain models that are project-scoped.
     """
 
     # Analytics
     def get_analytics_metadata(self) -> Dict[str, Any]:
-        """Fetches the analytics metadata for workspace scoped models.
+        """Fetches the analytics metadata for project scoped models.
 
         Returns:
             The analytics metadata.
         """
         metadata = super().get_analytics_metadata()
-        if self.workspace is not None:
-            metadata["workspace_id"] = self.workspace.id
+        if self.project is not None:
+            metadata["project_id"] = self.project.id
         return metadata
 
     # Body and metadata properties
     @property
-    def workspace(self) -> "WorkspaceResponse":
-        """The workspace property.
+    def project(self) -> "ProjectResponse":
+        """The project property.
 
         Returns:
             the value of the property.
         """
-        return self.get_metadata().workspace
+        return self.get_metadata().project
 
 
 # ---------------------- Filter Models ----------------------
 
 
-class WorkspaceScopedFilter(UserScopedFilter):
-    """Model to enable advanced scoping with workspace."""
+class ProjectScopedFilter(UserScopedFilter):
+    """Model to enable advanced scoping with project."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *UserScopedFilter.FILTER_EXCLUDE_FIELDS,
-        "workspace",
+        "project",
     ]
-    workspace: Optional[Union[UUID, str]] = Field(
+    project: Optional[Union[UUID, str]] = Field(
         default=None,
-        description="Name/ID of the workspace which the search is scoped to. "
+        description="Name/ID of the project which the search is scoped to. "
         "This field must always be set and is always applied in addition to "
         "the other filters, regardless of the value of the "
         "logical_operator field.",
@@ -379,30 +375,30 @@ class WorkspaceScopedFilter(UserScopedFilter):
             The query with filter applied.
 
         Raises:
-            ValueError: If the workspace scope is missing from the filter.
+            ValueError: If the project scope is missing from the filter.
         """
         query = super().apply_filter(query=query, table=table)
 
-        # The workspace scope must always be set and must be a UUID. If the
+        # The project scope must always be set and must be a UUID. If the
         # client sets this to a string, the server will try to resolve it to a
-        # workspace ID.
+        # project ID.
         #
         # If not set by the client, the server will fall back to using the
-        # user's default workspace or even the server's default workspace, if
-        # they are configured. If this also fails to yield a workspace, this
+        # user's default project or even the server's default project, if
+        # they are configured. If this also fails to yield a project, this
         # method will raise a ValueError.
         #
-        # See: SqlZenStore._set_filter_workspace_id
+        # See: SqlZenStore._set_filter_project_id
 
-        if not self.workspace:
-            raise ValueError("Workspace scope missing from the filter.")
+        if not self.project:
+            raise ValueError("Project scope missing from the filter.")
 
-        if not isinstance(self.workspace, UUID):
+        if not isinstance(self.project, UUID):
             raise ValueError(
-                f"Workspace scope must be a UUID, got {type(self.workspace)}."
+                f"Project scope must be a UUID, got {type(self.project)}."
             )
 
-        scope_filter = getattr(table, "workspace_id") == self.workspace
+        scope_filter = getattr(table, "project_id") == self.project
         query = query.where(scope_filter)
 
         return query
@@ -470,7 +466,7 @@ class TaggableFilter(BaseFilter):
 
         query = super().apply_filter(query=query, table=table)
 
-        if self.tags is not None:
+        if self.tags:
             query = query.join(
                 TagResourceSchema,
                 TagResourceSchema.resource_id == getattr(table, "id"),
@@ -491,7 +487,7 @@ class TaggableFilter(BaseFilter):
         """
         custom_filters = super().get_custom_filters(table)
 
-        if self.tags is not None:
+        if self.tags:
             from sqlmodel import exists, select
 
             from zenml.zen_stores.schemas import TagResourceSchema, TagSchema
