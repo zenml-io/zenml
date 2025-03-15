@@ -15,22 +15,11 @@
 
 from typing import Optional
 
+from zenml.enums import ServiceState
 from zenml.logger import get_logger
-from zenml.utils.enum_utils import StrEnum
 from zenml.utils.typed_model import BaseTypedModel
 
 logger = get_logger(__name__)
-
-
-class ServiceState(StrEnum):
-    """Possible states for the service and service endpoint."""
-
-    INACTIVE = "inactive"
-    ACTIVE = "active"
-    PENDING_STARTUP = "pending_startup"
-    PENDING_SHUTDOWN = "pending_shutdown"
-    ERROR = "error"
-    SCALED_TO_ZERO = "scaled_to_zero"
 
 
 class ServiceStatus(BaseTypedModel):

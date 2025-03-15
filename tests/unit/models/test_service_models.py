@@ -17,14 +17,14 @@ from datetime import datetime
 import pytest
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
+from zenml.enums import ServiceState
 from zenml.models import (
     ServiceRequest,
     ServiceResponse,
     ServiceResponseBody,
     ServiceResponseMetadata,
 )
-from zenml.services.service_status import ServiceState
-from zenml.services.service_type import ServiceType
+from zenml.models.v2.misc.service import ServiceType
 
 # Test data
 service_id = "12345678-1234-5678-1234-567812345678"

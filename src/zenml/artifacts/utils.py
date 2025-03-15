@@ -31,13 +31,8 @@ from typing import (
 )
 from uuid import UUID, uuid4
 
-from zenml.artifacts.preexisting_data_materializer import (
-    PreexistingDataMaterializer,
-)
 from zenml.client import Client
-from zenml.constants import (
-    MODEL_METADATA_YAML_FILE_NAME,
-)
+from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
 from zenml.enums import (
     ArtifactSaveType,
     ArtifactType,
@@ -45,10 +40,7 @@ from zenml.enums import (
     StackComponentType,
     VisualizationType,
 )
-from zenml.exceptions import (
-    DoesNotExistException,
-    StepContextError,
-)
+from zenml.exceptions import DoesNotExistException, StepContextError
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import validate_metadata
@@ -61,8 +53,6 @@ from zenml.models import (
     StepRunResponse,
     StepRunUpdate,
 )
-from zenml.stack import StackComponent
-from zenml.steps.step_context import get_step_context
 from zenml.utils import source_utils
 from zenml.utils.yaml_utils import read_yaml, write_yaml
 
@@ -76,6 +66,7 @@ if TYPE_CHECKING:
     MaterializerClassOrSource = Union[str, Source, Type[BaseMaterializer]]
 
 logger = get_logger(__name__)
+
 
 # ----------
 # Public API
@@ -320,9 +311,13 @@ def register_artifact(
         The saved artifact response.
 
     Raises:
-        FileNotFoundError: If the folder URI is outside of the artifact store
+        FileNotFoundError: If the folder URI is outside the artifact store
             bounds.
     """
+    from zenml.artifacts.preexisting_data_materializer import (
+        PreexistingDataMaterializer,
+    )
+
     client = Client()
 
     # Get the current artifact store
@@ -418,6 +413,7 @@ def log_artifact_metadata(
     )
 
     from zenml import log_metadata
+    from zenml.steps.step_context import get_step_context
 
     if artifact_name and artifact_version:
         assert artifact_name is not None
@@ -702,6 +698,8 @@ def _link_artifact_version_to_the_step_and_model(
     Args:
         artifact_version: The artifact version to link.
     """
+    from zenml.steps.step_context import get_step_context
+
     client = Client()
     try:
         error_message = "step run"
@@ -818,6 +816,8 @@ def _load_artifact_store(
             an artifact store.
         NotImplementedError: If the artifact store could not be loaded.
     """
+    from zenml.stack import StackComponent
+
     if isinstance(artifact_store_id, str):
         artifact_store_id = UUID(artifact_store_id)
 
@@ -855,6 +855,8 @@ def _load_artifact_store(
 def _get_artifact_store_from_response_or_from_active_stack(
     artifact: ArtifactVersionResponse,
 ) -> "BaseArtifactStore":
+    from zenml.stack import StackComponent
+
     if artifact.artifact_store_id:
         try:
             artifact_store_model = Client().get_stack_component(

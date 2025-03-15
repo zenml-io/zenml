@@ -31,7 +31,7 @@ init_logging()
 from zenml.models import *  # noqa: F401
 
 # Define public Python API
-from zenml.zen_server.utils import show_dashboard as show
+from zenml.utils.dashboard_utils import show_dashboard as show
 from zenml.artifacts.utils import (
     log_artifact_metadata,
     save_artifact,

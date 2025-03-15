@@ -45,12 +45,11 @@ from zenml.constants import (
 from zenml.enums import AnalyticsEventSource, DatabaseBackupStrategy, StoreType
 from zenml.environment import Environment, get_environment
 from zenml.exceptions import GitNotFoundError, InitializationException
-from zenml.integrations.registry import integration_registry
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils.io_utils import copy_dir, get_global_config_directory
+from zenml.utils.server_utils import get_local_server
 from zenml.utils.yaml_utils import write_yaml
-from zenml.zen_server.utils import get_local_server
 
 logger = get_logger(__name__)
 # WT_SESSION is a Windows Terminal specific environment variable. If it
@@ -603,6 +602,8 @@ def info(
         file: Flag to output to a file.
         stack: Flag to output information about active stack and components
     """
+    from zenml.integrations.registry import integration_registry
+
     gc = GlobalConfiguration()
     environment = Environment()
     client = Client()

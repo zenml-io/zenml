@@ -1,0 +1,150 @@
+---
+name: ZenML CLI Performance Profiling
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review]
+  workflow_dispatch:
+jobs:
+  profile-cli-performance:
+    name: Profile ZenML CLI Performance
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    env:
+      ZENML_DEBUG: 1
+      ZENML_ANALYTICS_OPT_IN: false
+      PYTHONIOENCODING: utf-8
+      UV_HTTP_TIMEOUT: 600
+      TARGET_RESULTS_FILE: target_profile_results.json
+      CURRENT_RESULTS_FILE: current_profile_results.json
+      PERFORMANCE_THRESHOLD_SECONDS: 1.0  # Absolute time threshold in seconds
+      COMMAND_TIMEOUT: 60  # Timeout in seconds for each command run
+      SLOW_THRESHOLD: 5  # Threshold in seconds to mark command as slow
+      TARGET_VENV: .venv-target
+      CURRENT_VENV: .venv-current
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.2.2
+        with:
+          fetch-depth: 0  # Fetch all history for all branches and tags
+      - name: Set up Python
+        uses: actions/setup-python@v5.3.0
+        with:
+          python-version: '3.11'
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bc
+          python -m pip install --upgrade setuptools wheel pip uv
+      - name: Get target branch name
+        id: get-target-branch
+        run: |
+          echo "TARGET_BRANCH=${{ github.base_ref }}" >> $GITHUB_ENV
+
+      # Profile target branch with isolated environment
+      - name: Checkout target branch
+        run: |
+          git checkout ${{ github.base_ref }}
+      - name: Setup target virtual environment
+        run: |
+          python -m venv ${{ env.TARGET_VENV }}
+          source ${{ env.TARGET_VENV }}/bin/activate
+          pip install --upgrade pip uv
+          echo "Target branch virtual environment created at ${{ env.TARGET_VENV }}"
+      - name: Install ZenML in target environment
+        run: |
+          source ${{ env.TARGET_VENV }}/bin/activate
+          ./scripts/install-zenml-dev.sh --system
+          # Verify installation
+          zenml --version
+      - name: Profile target branch
+        id: profile-target
+        run: |
+          echo "Running profiling for target branch (${{ github.base_ref }})"
+          source ${{ env.TARGET_VENV }}/bin/activate
+          chmod +x scripts/profile-cli.sh
+          ./scripts/profile-cli.sh -o $TARGET_RESULTS_FILE -v -t $COMMAND_TIMEOUT -s $SLOW_THRESHOLD
+
+      # Profile current branch with isolated environment
+      - name: Checkout current branch
+        run: |
+          git checkout ${{ github.head_ref }}
+      - name: Setup current virtual environment
+        run: |
+          python -m venv ${{ env.CURRENT_VENV }}
+          source ${{ env.CURRENT_VENV }}/bin/activate
+          pip install --upgrade pip uv
+          echo "Current branch virtual environment created at ${{ env.CURRENT_VENV }}"
+      - name: Install ZenML in current environment
+        run: |
+          source ${{ env.CURRENT_VENV }}/bin/activate
+          ./scripts/install-zenml-dev.sh --system
+          # Verify installation
+          zenml --version
+      - name: Profile current branch
+        id: profile-current
+        run: |
+          echo "Running profiling for current branch (${{ github.head_ref }})"
+          source ${{ env.CURRENT_VENV }}/bin/activate
+          chmod +x scripts/profile-cli.sh
+          ./scripts/profile-cli.sh -o $CURRENT_RESULTS_FILE -v -t $COMMAND_TIMEOUT -s $SLOW_THRESHOLD
+      - name: Compare results and create report
+        id: create-report
+        run: |
+          echo "Creating performance comparison report"
+          # Use comparison script instead of inline Python
+          source ${{ env.CURRENT_VENV }}/bin/activate
+          python scripts/compare_profiles.py \
+            --target-file ${{ env.TARGET_RESULTS_FILE }} \
+            --current-file ${{ env.CURRENT_RESULTS_FILE }} \
+            --threshold ${{ env.PERFORMANCE_THRESHOLD_SECONDS }} \
+            --timeout ${{ env.COMMAND_TIMEOUT }} \
+            --target-branch "${{ github.base_ref }}" \
+            --current-branch "${{ github.head_ref }}" \
+            --output performance_report.md
+
+          # Set output variables for use in later steps
+          if grep -q "<!-- ::has_issues::true -->" performance_report.md; then
+            echo "has_issues=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_issues=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          # Save the report to an environment variable for later steps
+          echo "PERFORMANCE_REPORT<<EOF" >> $GITHUB_ENV
+          cat performance_report.md >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+      - name: Find existing comment
+        uses: peter-evans/find-comment@v2
+        if: github.event_name == 'pull_request' && steps.create-report.outputs.has_issues
+          == 'true'
+        id: find-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: github-actions[bot]
+          body-includes: <!-- PERFORMANCE_REPORT -->
+      - name: Create or update comment
+        uses: peter-evans/create-or-update-comment@v2
+        if: github.event_name == 'pull_request' && steps.create-report.outputs.has_issues
+          == 'true'
+        with:
+          comment-id: ${{ steps.find-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: ${{ env.PERFORMANCE_REPORT }}
+          edit-mode: replace
+
+      # Upload results as artifacts
+      - name: Upload profiling results
+        uses: actions/upload-artifact@v4
+        with:
+          name: profiling-results
+          path: |
+            ${{ env.TARGET_RESULTS_FILE }}
+            ${{ env.CURRENT_RESULTS_FILE }}
+            performance_report.md
+
+      # Fail the workflow if issues were detected
+      - name: Check for performance issues
+        if: steps.create-report.outputs.has_issues == 'true'
+        run: |-
+          echo "::error::Performance issues detected: degraded performance (>1.0s), failures, or timeouts. Check the performance report for details."
+          exit 1

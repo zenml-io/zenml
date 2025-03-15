@@ -35,8 +35,8 @@ from zenml.integrations.bentoml.services.deployment_type import (
     BentoMLDeploymentType,
 )
 from zenml.logger import get_logger
+from zenml.models.v2.misc.service import ServiceType
 from zenml.services.service import BaseService, ServiceConfig
-from zenml.services.service_type import ServiceType
 from zenml.utils import source_utils
 
 logger = get_logger(__name__)

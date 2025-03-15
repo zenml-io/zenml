@@ -37,10 +37,10 @@ from zenml.logger import get_logger
 from zenml.login.credentials import ServerType
 from zenml.login.pro.constants import ZENML_PRO_API_URL
 from zenml.login.web_login import web_login
-from zenml.zen_server.utils import (
+from zenml.utils.dashboard_utils import show_dashboard
+from zenml.utils.server_utils import (
     connected_to_local_server,
     get_local_server,
-    show_dashboard,
 )
 
 logger = get_logger(__name__)

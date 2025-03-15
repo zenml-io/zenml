@@ -38,11 +38,11 @@ from zenml.constants import (
 from zenml.enums import AuthScheme, StoreType
 from zenml.logger import get_logger
 from zenml.models import ServerDeploymentType
+from zenml.models.v2.misc.service import ServiceType
 from zenml.services import (
     ContainerService,
     ContainerServiceConfig,
     ContainerServiceEndpoint,
-    ServiceType,
 )
 from zenml.services.container.container_service import (
     SERVICE_CONTAINER_GLOBAL_CONFIG_DIR,

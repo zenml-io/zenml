@@ -19,8 +19,8 @@ from typing import TYPE_CHECKING, Optional, Tuple
 import requests
 from pydantic import Field
 
+from zenml.enums import ServiceState
 from zenml.logger import get_logger
-from zenml.services.service_status import ServiceState
 from zenml.utils.networking_utils import port_is_open
 from zenml.utils.typed_model import BaseTypedModel
 

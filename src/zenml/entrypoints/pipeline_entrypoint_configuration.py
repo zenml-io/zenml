@@ -17,7 +17,6 @@ from zenml.client import Client
 from zenml.entrypoints.base_entrypoint_configuration import (
     BaseEntrypointConfiguration,
 )
-from zenml.integrations.registry import integration_registry
 
 
 class PipelineEntrypointConfiguration(BaseEntrypointConfiguration):
@@ -29,6 +28,8 @@ class PipelineEntrypointConfiguration(BaseEntrypointConfiguration):
 
         # Activate all the integrations. This makes sure that all materializers
         # and stack component flavors are registered.
+        from zenml.integrations.registry import integration_registry
+
         integration_registry.activate_integrations()
 
         self.download_code_if_necessary(deployment=deployment)

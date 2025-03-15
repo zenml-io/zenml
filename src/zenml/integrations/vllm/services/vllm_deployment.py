@@ -19,6 +19,7 @@ from typing import Any, List, Optional, Union
 
 from zenml.constants import DEFAULT_LOCAL_SERVICE_IP_ADDRESS
 from zenml.logger import get_logger
+from zenml.models.v2.misc.service import ServiceType
 from zenml.services import (
     HTTPEndpointHealthMonitor,
     HTTPEndpointHealthMonitorConfig,
@@ -27,7 +28,6 @@ from zenml.services import (
     LocalDaemonServiceEndpoint,
     LocalDaemonServiceEndpointConfig,
     ServiceEndpointProtocol,
-    ServiceType,
 )
 from zenml.services.service import BaseDeploymentService
 

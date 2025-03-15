@@ -16,10 +16,10 @@ from uuid import UUID
 
 import pytest
 
+from zenml.enums import ServiceState
 from zenml.services import (
     BaseService,
     ServiceConfig,
-    ServiceState,
     ServiceStatus,
 )
 from zenml.services.service import ZENM_ENDPOINT_PREFIX
