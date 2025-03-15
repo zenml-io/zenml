@@ -72,14 +72,6 @@ jobs:
           repository: ${{ github.repository }}
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0  # Fetch all history for all branches and tags
-      - name: Get changed files
-        id: changed-files
-        uses: tj-actions/changed-files@v42
-        with:
-          files: |
-            src/**
-            tests/**
-            examples/**
       - name: Restore uv cache
         uses: actions/cache@v4
         with:
