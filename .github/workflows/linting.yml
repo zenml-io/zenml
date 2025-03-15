@@ -104,7 +104,6 @@ jobs:
       - name: Lint check
         env:
           OS: ${{ inputs.os }}
-          CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
         run: |
           bash scripts/lint.sh
       - name: Setup tmate session after tests
