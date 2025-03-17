@@ -40,7 +40,7 @@ from zenml.utils.yaml_utils import write_yaml
 logger = get_logger(__name__)
 
 
-def _import_pipeline(source: str) -> "Pipeline":
+def _import_pipeline(source: str) -> Pipeline:
     """Import a pipeline.
 
     Args:

@@ -151,7 +151,6 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
 
         # Activate all the integrations. This makes sure that all materializers
         # and stack component flavors are registered.
-
         integration_registry.activate_integrations()
 
         step_name = self.entrypoint_args[STEP_NAME_OPTION]

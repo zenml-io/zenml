@@ -29,7 +29,6 @@ class PipelineEntrypointConfiguration(BaseEntrypointConfiguration):
 
         # Activate all the integrations. This makes sure that all materializers
         # and stack component flavors are registered.
-
         integration_registry.activate_integrations()
 
         self.download_code_if_necessary(deployment=deployment)
