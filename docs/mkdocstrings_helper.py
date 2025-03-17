@@ -9,7 +9,9 @@ PYDOCSTYLE_CMD = (
     "D103,D104,D105,D107,D202"
 )
 
+
 API_DOCS_TITLE = "# Welcome to the ZenML SDK Docs\n"
+
 INTEGRATION_DOCS_TITLE = "# Welcome to the ZenML Integration Docs\n"
 
 API_DOCS = "core_code_docs"
@@ -104,9 +106,12 @@ def create_entity_docs(
                 )
 
                 if md_prefix:
-                    file_name = md_prefix + "-" + item.stem
+                    file_name = f"{md_prefix}-{item.stem}.md"
+                    index_link = f"{API_DOCS}/{md_prefix}-{item.stem}.md"
                 else:
-                    file_name = item.stem
+                    file_name = f"{item.stem}.md"
+                    index_link = f"{API_DOCS}/{item.stem}.md"
+
                 to_md_file(
                     module_md,
                     file_name,
@@ -116,13 +121,12 @@ def create_entity_docs(
                 if index_file_contents:
                     index_entry = (
                         f"# [{item_name}]"
-                        f"({API_DOCS}/{md_prefix}-{item.stem})\n\n"
+                        f"({index_link})\n\n"
                         f"::: {zenml_import_path}.{item.stem}\n"
                         f"    handler: python\n"
                         f"    selection:\n"
                         f"        members: false\n"
                     )
-
                     index_file_contents.append(index_entry)
 
     return index_file_contents
@@ -196,7 +200,12 @@ def generate_docs(
         md_prefix="core",
     )
 
-    index_file_str = "\n".join(sorted(index_file_contents))
+    # Fix links in index file to point to index.md instead of just the directory
+    fixed_index_contents = []
+    for line in index_file_contents:
+        fixed_index_contents.append(line)
+
+    index_file_str = "\n".join(sorted(fixed_index_contents))
     to_md_file(
         index_file_str,
         "index.md",

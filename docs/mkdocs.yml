@@ -20,11 +20,12 @@ plugins:
       handlers:
         python:
           setup_commands:
-            - import docs.sys_modules_mock           
+            - import docs.sys_modules_mock
           rendering:
             show_source: true
-      watch:
-        - ../src/zenml
+
+# This setting ensures links don't use directory URLs
+use_directory_urls: false
 
 copyright: >
   Copyright &copy; 2022 ZenML GmbH –
