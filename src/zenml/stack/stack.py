@@ -95,6 +95,7 @@ class Stack:
         name: str,
         *,
         environment: Dict[str, str],
+        secrets: List[UUID],
         orchestrator: "BaseOrchestrator",
         artifact_store: "BaseArtifactStore",
         container_registry: Optional["BaseContainerRegistry"] = None,
@@ -115,6 +116,8 @@ class Stack:
             name: Name of the stack.
             environment: Environment variables to set when running on this
                 stack.
+            secrets: Secrets to set as environment variables when running on
+                this stack.
             orchestrator: Orchestrator component of the stack.
             artifact_store: Artifact store component of the stack.
             container_registry: Container registry component of the stack.
@@ -131,6 +134,7 @@ class Stack:
         self._id = id
         self._name = name
         self._environment = environment
+        self._secrets = secrets
         self._orchestrator = orchestrator
         self._artifact_store = artifact_store
         self._container_registry = container_registry
@@ -196,6 +200,7 @@ class Stack:
         id: UUID,
         name: str,
         environment: Dict[str, str],
+        secrets: List[UUID],
         components: Dict[StackComponentType, "StackComponent"],
     ) -> "Stack":
         """Creates a stack instance from a dict of stack components.
@@ -207,6 +212,8 @@ class Stack:
             name: The name of the stack.
             environment: Environment variables to set when running on this
                 stack.
+            secrets: Secrets to set as environment variables when running on
+                this stack.
             components: The components of the stack.
 
         Returns:
@@ -319,6 +326,7 @@ class Stack:
             id=id,
             name=name,
             environment=environment,
+            secrets=secrets,
             orchestrator=orchestrator,
             artifact_store=artifact_store,
             container_registry=container_registry,
@@ -545,13 +553,16 @@ class Stack:
         Returns:
             Environment variables to set when running on this stack.
         """
-        environment = {}
+        return self._environment
 
-        for component in self.components.values():
-            environment.update(component.environment)
+    @property
+    def secrets(self) -> List[UUID]:
+        """Secrets to set as environment variables when running on this stack.
 
-        environment.update(self._environment)
-        return environment
+        Returns:
+            Secrets to set as environment variables when running on this stack.
+        """
+        return self._secrets
 
     def check_local_paths(self) -> bool:
         """Checks if the stack has local paths.

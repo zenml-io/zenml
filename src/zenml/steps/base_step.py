@@ -706,6 +706,8 @@ class BaseStep:
         if merge and secrets and self._configuration.secrets:
             secrets = self._configuration.secrets + secrets
 
+        # TODO: we should probably convert to secret IDs here?
+
         values = dict_utils.remove_none_values(
             {
                 "enable_cache": enable_cache,

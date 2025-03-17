@@ -186,3 +186,55 @@ def temporary_environment(environment: Dict[str, str]) -> Iterator[None]:
                     os.environ.pop(key, None)
                 else:
                     os.environ[key] = previous_value
+
+
+from zenml.client import Client
+from zenml.config.step_configurations import StepConfiguration
+from zenml.stack import Stack
+
+
+def gather_step_environment(
+    step_config: "StepConfiguration", stack: Stack
+) -> Dict[str, str]:
+    environment = {}
+    secrets = []
+    for component in stack.components.values():
+        environment.update(component.environment)
+        secrets.extend(component.secrets)
+
+    environment.update(stack.environment)
+    secrets.extend(stack.secrets)
+
+    environment.update(step_config.environment)
+    secrets.extend(step_config.secrets)
+
+    # Remove duplicates while preserving order, only the last occurrence of
+    # each secret will be used to handle overrides
+    secrets = list(reversed(dict.fromkeys(reversed(secrets))))
+
+    for secret_name_or_id in secrets:
+        try:
+            secret = Client().get_secret(secret_name_or_id)
+        except Exception as e:
+            logger.warning(
+                "Failed to get secret `%s` with error: %s. Skipping setting "
+                "environment variable for this secret.",
+                secret_name_or_id,
+                e,
+            )
+            continue
+
+        if not secret.secret_values:
+            logger.warning(
+                "Did not find any secret values for secret `%s`. This might be "
+                "because you do not have permissions to read the secret "
+                "values. Skipping setting environment variable for this "
+                "secret.",
+                secret_name_or_id,
+            )
+            continue
+
+        for key, value in secret.secret_values.items():
+            environment[key.upper()] = str(value)
+
+    return environment
