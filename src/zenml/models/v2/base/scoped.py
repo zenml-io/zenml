@@ -589,7 +589,7 @@ class TaggableFilter(BaseFilter):
         return super().apply_sorting(query=query, table=table)
 
 
-class RunMetadataFilter(BaseFilter):
+class RunMetadataAttachedFilter(BaseFilter):
     """Model to enable filtering and sorting by run metadata."""
 
     run_metadata: Optional[List[str]] = Field(
@@ -606,7 +606,7 @@ class RunMetadataFilter(BaseFilter):
     ]
 
     @model_validator(mode="after")
-    def validate_run_metadata_format(self) -> "RunMetadataFilter":
+    def validate_run_metadata_format(self) -> "RunMetadataAttachedFilter":
         """Validates that run_metadata entries are in the correct format.
 
         Each run_metadata entry must be in one of the following formats:

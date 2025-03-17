@@ -40,7 +40,7 @@ from zenml.models.v2.base.scoped import (
     ProjectScopedResponseBody,
     ProjectScopedResponseMetadata,
     ProjectScopedResponseResources,
-    RunMetadataFilter,
+    RunMetadataAttachedFilter,
 )
 from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
 from zenml.models.v2.core.model_version import ModelVersionResponse
@@ -504,25 +504,25 @@ class StepRunResponse(
 # ------------------ Filter Model ------------------
 
 
-class StepRunFilter(ProjectScopedFilter, RunMetadataFilter):
+class StepRunFilter(ProjectScopedFilter, RunMetadataAttachedFilter):
     """Model to enable advanced filtering of step runs."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
-        *RunMetadataFilter.FILTER_EXCLUDE_FIELDS,
+        *RunMetadataAttachedFilter.FILTER_EXCLUDE_FIELDS,
         "model",
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
-        *RunMetadataFilter.CLI_EXCLUDE_FIELDS,
+        *RunMetadataAttachedFilter.CLI_EXCLUDE_FIELDS,
     ]
     CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
         *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
-        *RunMetadataFilter.CUSTOM_SORTING_OPTIONS,
+        *RunMetadataAttachedFilter.CUSTOM_SORTING_OPTIONS,
     ]
     API_MULTI_INPUT_PARAMS: ClassVar[List[str]] = [
         *ProjectScopedFilter.API_MULTI_INPUT_PARAMS,
-        *RunMetadataFilter.API_MULTI_INPUT_PARAMS,
+        *RunMetadataAttachedFilter.API_MULTI_INPUT_PARAMS,
     ]
 
     name: Optional[str] = Field(
