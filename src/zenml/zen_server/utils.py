@@ -45,6 +45,7 @@ from zenml.constants import (
 from zenml.exceptions import IllegalOperationError, OAuthError
 from zenml.logger import get_logger
 from zenml.models.v2.base.scoped import ProjectScopedFilter
+from zenml.plugins.plugin_flavor_registry import PluginFlavorRegistry
 from zenml.zen_server.cache import MemoryCache
 from zenml.zen_server.exceptions import http_exception_from_error
 from zenml.zen_server.feature_gate.feature_gate_interface import (
@@ -59,7 +60,6 @@ from zenml.zen_stores.sql_zen_store import SqlZenStore
 if TYPE_CHECKING:
     from fastapi import Request
 
-    from zenml.plugins.plugin_flavor_registry import PluginFlavorRegistry
 
 logger = get_logger(__name__)
 
@@ -67,7 +67,7 @@ _zen_store: Optional["SqlZenStore"] = None
 _rbac: Optional[RBACInterface] = None
 _feature_gate: Optional[FeatureGateInterface] = None
 _workload_manager: Optional[WorkloadManagerInterface] = None
-_plugin_flavor_registry: Optional["PluginFlavorRegistry"] = None
+_plugin_flavor_registry: Optional[PluginFlavorRegistry] = None
 _memcache: Optional[MemoryCache] = None
 
 
@@ -86,15 +86,13 @@ def zen_store() -> "SqlZenStore":
     return _zen_store
 
 
-def plugin_flavor_registry() -> "PluginFlavorRegistry":
+def plugin_flavor_registry() -> PluginFlavorRegistry:
     """Get the plugin flavor registry.
 
     Returns:
         The plugin flavor registry.
     """
     global _plugin_flavor_registry
-
-    from zenml.plugins.plugin_flavor_registry import PluginFlavorRegistry
 
     if _plugin_flavor_registry is None:
         _plugin_flavor_registry = PluginFlavorRegistry()
