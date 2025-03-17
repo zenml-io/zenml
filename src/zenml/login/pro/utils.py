@@ -35,6 +35,7 @@ def get_troubleshooting_instructions(url: str) -> str:
     credentials_store = get_credentials_store()
 
     credentials = credentials_store.get_credentials(url)
+    pro_api_url = None
     if credentials and credentials.type == ServerType.PRO:
         pro_api_url = credentials.pro_api_url or ZENML_PRO_API_URL
 
