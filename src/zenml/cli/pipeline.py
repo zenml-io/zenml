@@ -354,13 +354,11 @@ def create_run_template(
             "init` at your source code root."
         )
 
-    with temporary_active_stack(stack_name_or_id=stack_name_or_id):
-        pipeline_instance = _import_pipeline(source=source)
-
-        pipeline_instance = pipeline_instance.with_options(
-            config_path=config_path
-        )
-        template = pipeline_instance.create_run_template(name=name)
+    pipeline_instance = _import_pipeline(source=source)
+    pipeline_instance = pipeline_instance.with_options(
+        config_path=config_path, stack=stack_name_or_id
+    )
+    template = pipeline_instance.create_run_template(name=name)
 
     cli_utils.declare(f"Created run template `{template.id}`.")
 
