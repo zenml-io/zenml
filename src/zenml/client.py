@@ -3878,7 +3878,7 @@ class Client(metaclass=ClientMetaClass):
         templatable: Optional[bool] = None,
         tag: Optional[str] = None,
         tags: Optional[List[str]] = None,
-        user: Optional[Union[UUID, str]] = None,
+        user: Optional[List[str]] = None,
         run_metadata: Optional[Dict[str, Any]] = None,
         pipeline: Optional[Union[UUID, str]] = None,
         code_repository: Optional[Union[UUID, str]] = None,
@@ -4032,7 +4032,7 @@ class Client(metaclass=ClientMetaClass):
         user: Optional[Union[UUID, str]] = None,
         model_version_id: Optional[Union[str, UUID]] = None,
         model: Optional[Union[UUID, str]] = None,
-        run_metadata: Optional[Dict[str, Any]] = None,
+        run_metadata: Optional[List[str]] = None,
         hydrate: bool = False,
     ) -> Page[StepRunResponse]:
         """List all pipelines.
@@ -4345,7 +4345,7 @@ class Client(metaclass=ClientMetaClass):
         user: Optional[Union[UUID, str]] = None,
         model: Optional[Union[UUID, str]] = None,
         pipeline_run: Optional[Union[UUID, str]] = None,
-        run_metadata: Optional[Dict[str, Any]] = None,
+        run_metadata: Optional[List[str]] = None,
         tag: Optional[str] = None,
         tags: Optional[List[str]] = None,
         hydrate: bool = False,
