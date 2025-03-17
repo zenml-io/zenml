@@ -693,7 +693,7 @@ class RunMetadataFilter(BaseFilter):
                     select(RunMetadataResourceSchema.id)
                     .join(
                         RunMetadataSchema,
-                        RunMetadataSchema.id
+                        RunMetadataSchema.id  # type: ignore[arg-type]
                         == RunMetadataResourceSchema.run_metadata_id,
                     )
                     .where(
