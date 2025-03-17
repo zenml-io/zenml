@@ -37,7 +37,7 @@ from pydantic import (
     field_validator,
     model_validator,
 )
-from sqlalchemy import Float, and_, asc, cast, desc
+from sqlalchemy import Float, and_, asc, cast, desc, or_
 from sqlmodel import SQLModel
 
 from zenml.constants import (
@@ -171,8 +171,6 @@ class BoolFilter(Filter):
 class StrFilter(Filter):
     """Filter for all string fields."""
 
-    json_encode_value: bool = False
-
     ALLOWED_OPS: ClassVar[List[str]] = [
         GenericFilterOps.EQUALS,
         GenericFilterOps.NOT_EQUALS,
@@ -248,31 +246,23 @@ class StrFilter(Filter):
 
         if self.operation == GenericFilterOps.ONEOF:
             assert isinstance(self.value, list)
-            # Convert the list of values to a list of json strings
-            json_list = (
-                [json.dumps(v) for v in self.value]
-                if self.json_encode_value
-                else self.value
-            )
-            return column.in_(json_list)
+            return column.in_(self.value)
 
-        # Don't convert the value to a json string if the operation is contains
-        # because the quotes around strings will mess with the comparison
         if self.operation == GenericFilterOps.CONTAINS:
-            return column.like(f"%{self.value}%")
-
-        json_value = (
-            json.dumps(self.value) if self.json_encode_value else self.value
-        )
-
+            return column.like(self.value)
         if self.operation == GenericFilterOps.STARTSWITH:
-            return column.startswith(f"{json_value}")
+            return or_(
+                column.startswith(self.value),
+                column.startswith(f'"{self.value}'),
+            )
         if self.operation == GenericFilterOps.ENDSWITH:
-            return column.endswith(f"{json_value}")
+            return or_(
+                column.endswith(self.value), column.endswith(f'{self.value}"')
+            )
         if self.operation == GenericFilterOps.NOT_EQUALS:
-            return column != json_value
+            return and_(column != self.value, column != f'"{self.value}"')
 
-        return column == json_value
+        return or_(column == self.value, column == f'"{self.value}"')
 
 
 class UUIDFilter(StrFilter):
@@ -768,9 +758,6 @@ class BaseFilter(BaseModel):
         filter_ = FilterGenerator(table).define_filter(
             column=column, value=value, operator=operator
         )
-        if isinstance(filter_, StrFilter):
-            filter_.json_encode_value = json_encode_value
-
         return filter_.generate_query_conditions(table=table)
 
     @property

@@ -697,11 +697,13 @@ class RunMetadataFilter(BaseFilter):
                     select(RunMetadataResourceSchema.id)
                     .join(
                         RunMetadataSchema,
-                        RunMetadataSchema.id == RunMetadataResourceSchema.run_metadata_id,
+                        RunMetadataSchema.id
+                        == RunMetadataResourceSchema.run_metadata_id,
                     )
                     .where(
                         RunMetadataResourceSchema.resource_id == table.id,
-                        RunMetadataResourceSchema.resource_type == resource_type_mapping[table].value,
+                        RunMetadataResourceSchema.resource_type
+                        == resource_type_mapping[table].value,
                         self.generate_custom_query_conditions_for_column(
                             value=key,
                             table=RunMetadataSchema,
@@ -711,7 +713,6 @@ class RunMetadataFilter(BaseFilter):
                             value=value,
                             table=RunMetadataSchema,
                             column="value",
-                            json_encode_value=True,
                         ),
                     )
                 )
