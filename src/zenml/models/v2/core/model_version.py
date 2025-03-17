@@ -34,14 +34,14 @@ from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.filter import AnyQuery
 from zenml.models.v2.base.page import Page
 from zenml.models.v2.base.scoped import (
+    ProjectScopedFilter,
+    ProjectScopedRequest,
+    ProjectScopedResponse,
+    ProjectScopedResponseBody,
+    ProjectScopedResponseMetadata,
+    ProjectScopedResponseResources,
     RunMetadataFilter,
     TaggableFilter,
-    WorkspaceScopedFilter,
-    WorkspaceScopedRequest,
-    WorkspaceScopedResponse,
-    WorkspaceScopedResponseBody,
-    WorkspaceScopedResponseMetadata,
-    WorkspaceScopedResponseResources,
 )
 from zenml.models.v2.core.service import ServiceResponse
 from zenml.models.v2.core.tag import TagResponse
@@ -59,7 +59,7 @@ if TYPE_CHECKING:
 # ------------------ Request Model ------------------
 
 
-class ModelVersionRequest(WorkspaceScopedRequest):
+class ModelVersionRequest(ProjectScopedRequest):
     """Request model for model versions."""
 
     name: Optional[str] = Field(
@@ -134,7 +134,7 @@ class ModelVersionUpdate(BaseUpdate):
 # ------------------ Response Model ------------------
 
 
-class ModelVersionResponseBody(WorkspaceScopedResponseBody):
+class ModelVersionResponseBody(ProjectScopedResponseBody):
     """Response body for model versions."""
 
     stage: Optional[str] = Field(
@@ -177,7 +177,7 @@ class ModelVersionResponseBody(WorkspaceScopedResponseBody):
     model_config = ConfigDict(protected_namespaces=())
 
 
-class ModelVersionResponseMetadata(WorkspaceScopedResponseMetadata):
+class ModelVersionResponseMetadata(ProjectScopedResponseMetadata):
     """Response metadata for model versions."""
 
     description: Optional[str] = Field(
@@ -191,7 +191,7 @@ class ModelVersionResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
-class ModelVersionResponseResources(WorkspaceScopedResponseResources):
+class ModelVersionResponseResources(ProjectScopedResponseResources):
     """Class for all resource models associated with the model version entity."""
 
     services: Page[ServiceResponse] = Field(
@@ -200,7 +200,7 @@ class ModelVersionResponseResources(WorkspaceScopedResponseResources):
 
 
 class ModelVersionResponse(
-    WorkspaceScopedResponse[
+    ProjectScopedResponse[
         ModelVersionResponseBody,
         ModelVersionResponseMetadata,
         ModelVersionResponseResources,
@@ -566,29 +566,29 @@ class ModelVersionResponse(
 
 
 class ModelVersionFilter(
-    WorkspaceScopedFilter, TaggableFilter, RunMetadataFilter
+    ProjectScopedFilter, TaggableFilter, RunMetadataFilter
 ):
     """Filter model for model versions."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
+        *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
         *TaggableFilter.FILTER_EXCLUDE_FIELDS,
         *RunMetadataFilter.FILTER_EXCLUDE_FIELDS,
         "model",
     ]
     CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
-        *WorkspaceScopedFilter.CUSTOM_SORTING_OPTIONS,
+        *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
         *TaggableFilter.CUSTOM_SORTING_OPTIONS,
         *RunMetadataFilter.CUSTOM_SORTING_OPTIONS,
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
+        *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
         *TaggableFilter.CLI_EXCLUDE_FIELDS,
         *RunMetadataFilter.CLI_EXCLUDE_FIELDS,
         "model",
     ]
     API_MULTI_INPUT_PARAMS: ClassVar[List[str]] = [
-        *WorkspaceScopedFilter.API_MULTI_INPUT_PARAMS,
+        *ProjectScopedFilter.API_MULTI_INPUT_PARAMS,
         *TaggableFilter.API_MULTI_INPUT_PARAMS,
         *RunMetadataFilter.API_MULTI_INPUT_PARAMS,
     ]

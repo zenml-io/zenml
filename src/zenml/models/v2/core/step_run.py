@@ -34,13 +34,13 @@ from zenml.enums import ExecutionStatus, StepRunInputArtifactType
 from zenml.metadata.metadata_types import MetadataType
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
+    ProjectScopedFilter,
+    ProjectScopedRequest,
+    ProjectScopedResponse,
+    ProjectScopedResponseBody,
+    ProjectScopedResponseMetadata,
+    ProjectScopedResponseResources,
     RunMetadataFilter,
-    WorkspaceScopedFilter,
-    WorkspaceScopedRequest,
-    WorkspaceScopedResponse,
-    WorkspaceScopedResponseBody,
-    WorkspaceScopedResponseMetadata,
-    WorkspaceScopedResponseResources,
 )
 from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
 from zenml.models.v2.core.model_version import ModelVersionResponse
@@ -79,7 +79,7 @@ class StepRunInputResponse(ArtifactVersionResponse):
 # ------------------ Request Model ------------------
 
 
-class StepRunRequest(WorkspaceScopedRequest):
+class StepRunRequest(ProjectScopedRequest):
     """Request model for step runs."""
 
     name: str = Field(
@@ -168,7 +168,7 @@ class StepRunUpdate(BaseUpdate):
 
 
 # ------------------ Response Model ------------------
-class StepRunResponseBody(WorkspaceScopedResponseBody):
+class StepRunResponseBody(ProjectScopedResponseBody):
     """Response body for step runs."""
 
     status: ExecutionStatus = Field(title="The status of the step.")
@@ -196,7 +196,7 @@ class StepRunResponseBody(WorkspaceScopedResponseBody):
     model_config = ConfigDict(protected_namespaces=())
 
 
-class StepRunResponseMetadata(WorkspaceScopedResponseMetadata):
+class StepRunResponseMetadata(ProjectScopedResponseMetadata):
     """Response metadata for step runs."""
 
     # Configuration
@@ -250,7 +250,7 @@ class StepRunResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
-class StepRunResponseResources(WorkspaceScopedResponseResources):
+class StepRunResponseResources(ProjectScopedResponseResources):
     """Class for all resource models associated with the step run entity."""
 
     model_version: Optional[ModelVersionResponse] = None
@@ -265,7 +265,7 @@ class StepRunResponseResources(WorkspaceScopedResponseResources):
 
 
 class StepRunResponse(
-    WorkspaceScopedResponse[
+    ProjectScopedResponse[
         StepRunResponseBody, StepRunResponseMetadata, StepRunResponseResources
     ]
 ):
@@ -504,24 +504,24 @@ class StepRunResponse(
 # ------------------ Filter Model ------------------
 
 
-class StepRunFilter(WorkspaceScopedFilter, RunMetadataFilter):
+class StepRunFilter(ProjectScopedFilter, RunMetadataFilter):
     """Model to enable advanced filtering of step runs."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
+        *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
         *RunMetadataFilter.FILTER_EXCLUDE_FIELDS,
         "model",
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
+        *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
         *RunMetadataFilter.CLI_EXCLUDE_FIELDS,
     ]
     CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
-        *WorkspaceScopedFilter.CUSTOM_SORTING_OPTIONS,
+        *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
         *RunMetadataFilter.CUSTOM_SORTING_OPTIONS,
     ]
     API_MULTI_INPUT_PARAMS: ClassVar[List[str]] = [
-        *WorkspaceScopedFilter.API_MULTI_INPUT_PARAMS,
+        *ProjectScopedFilter.API_MULTI_INPUT_PARAMS,
         *RunMetadataFilter.API_MULTI_INPUT_PARAMS,
     ]
 

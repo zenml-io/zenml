@@ -205,7 +205,7 @@ def list_code_repositories(**kwargs: Any) -> None:
 
         cli_utils.print_pydantic_models(
             repos,
-            exclude_columns=["created", "updated", "user", "workspace"],
+            exclude_columns=["created", "updated", "user", "project"],
         )
 
 

@@ -411,7 +411,7 @@ class BaseFilter(BaseModel):
     ```
     ResourceListModel(
         name="contains:default",
-        workspace="default"
+        project="default"
         count_steps="gte:5"
         sort_by="created",
         page=2,

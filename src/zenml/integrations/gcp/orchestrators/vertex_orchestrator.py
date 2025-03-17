@@ -49,8 +49,12 @@ from uuid import UUID
 from google.api_core import exceptions as google_exceptions
 from google.cloud import aiplatform
 from google.cloud.aiplatform_v1.types import PipelineState
+from google_cloud_pipeline_components.v1.custom_job.utils import (
+    create_custom_training_job_from_component,
+)
 from kfp import dsl
 from kfp.compiler import Compiler
+from kfp.dsl.base_component import BaseComponent
 
 from zenml.config.resource_settings import ResourceSettings
 from zenml.constants import (
@@ -71,13 +75,15 @@ from zenml.integrations.gcp.flavors.vertex_orchestrator_flavor import (
 from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsMixin,
 )
+from zenml.integrations.gcp.vertex_custom_job_parameters import (
+    VertexCustomJobParameters,
+)
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import MetadataType, Uri
 from zenml.orchestrators import ContainerizedOrchestrator
 from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack.stack_validator import StackValidator
-from zenml.utils import yaml_utils
 from zenml.utils.io_utils import get_global_config_directory
 
 if TYPE_CHECKING:
@@ -263,14 +269,14 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                     "schedule to a Vertex orchestrator."
                 )
 
-    def _create_dynamic_component(
+    def _create_container_component(
         self,
         image: str,
         command: List[str],
         arguments: List[str],
         component_name: str,
-    ) -> dsl.PipelineTask:
-        """Creates a dynamic container component for a Vertex pipeline.
+    ) -> BaseComponent:
+        """Creates a container component for a Vertex pipeline.
 
         Args:
             image: The image to use for the component.
@@ -279,7 +285,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             component_name: The name of the component.
 
         Returns:
-            The dynamic container component.
+            The container component.
         """
 
         def dynamic_container_component() -> dsl.ContainerSpec:
@@ -294,7 +300,6 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                 args=arguments,
             )
 
-        # Change the name of the function
         new_container_spec_func = types.FunctionType(
             dynamic_container_component.__code__,
             dynamic_container_component.__globals__,
@@ -303,8 +308,49 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             closure=dynamic_container_component.__closure__,
         )
         pipeline_task = dsl.container_component(new_container_spec_func)
-
         return pipeline_task
+
+    def _convert_to_custom_training_job(
+        self,
+        component: BaseComponent,
+        settings: VertexOrchestratorSettings,
+        environment: Dict[str, str],
+    ) -> BaseComponent:
+        """Convert a component to a custom training job component.
+
+        Args:
+            component: The component to convert.
+            settings: The settings for the custom training job.
+            environment: The environment variables to set in the custom
+                training job.
+
+        Returns:
+            The custom training job component.
+        """
+        custom_job_parameters = (
+            settings.custom_job_parameters or VertexCustomJobParameters()
+        )
+        if (
+            custom_job_parameters.persistent_resource_id
+            and not custom_job_parameters.service_account
+        ):
+            # Persistent resources require an explicit service account, but
+            # none was provided in the custom job parameters. We try to fall
+            # back to the workload service account.
+            custom_job_parameters.service_account = (
+                self.config.workload_service_account
+            )
+
+        custom_job_component = create_custom_training_job_from_component(
+            component_spec=component,
+            env=[
+                {"name": key, "value": value}
+                for key, value in environment.items()
+            ],
+            **custom_job_parameters.model_dump(),
+        )
+
+        return custom_job_component
 
     def prepare_or_run_pipeline(
         self,
@@ -383,7 +429,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             Returns:
                 pipeline_func
             """
-            step_name_to_dynamic_component: Dict[str, Any] = {}
+            step_name_to_dynamic_component: Dict[str, BaseComponent] = {}
 
             for step_name, step in deployment.step_configurations.items():
                 image = self.get_image(
@@ -397,7 +443,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                         deployment_id=deployment.id,
                     )
                 )
-                dynamic_component = self._create_dynamic_component(
+                component = self._create_container_component(
                     image, command, arguments, step_name
                 )
                 step_settings = cast(
@@ -430,6 +476,11 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                             "Volume mounts are set but not supported in "
                             "Vertex with Kubeflow Pipelines 2.x. Ignoring..."
                         )
+                    if pod_settings.env or pod_settings.env_from:
+                        logger.warning(
+                            "Environment variables are set but not supported "
+                            "in Vertex with Vertex Pipelines 2.x. Ignoring..."
+                        )
                     for key in pod_settings.node_selectors:
                         if (
                             key
@@ -442,7 +493,11 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                                 key,
                             )
 
-                step_name_to_dynamic_component[step_name] = dynamic_component
+                step_name_to_dynamic_component[step_name] = component
+
+            environment[ENV_ZENML_VERTEX_RUN_ID] = (
+                dsl.PIPELINE_JOB_NAME_PLACEHOLDER
+            )
 
             @dsl.pipeline(  # type: ignore[misc]
                 display_name=orchestrator_run_name,
@@ -462,81 +517,81 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                         step_name_to_dynamic_component[upstream_step_name]
                         for upstream_step_name in step.spec.upstream_steps
                     ]
-                    task = (
-                        component()
-                        .set_display_name(
-                            name=component_name,
-                        )
-                        .set_caching_options(enable_caching=False)
-                        .set_env_variable(
-                            name=ENV_ZENML_VERTEX_RUN_ID,
-                            value=dsl.PIPELINE_JOB_NAME_PLACEHOLDER,
-                        )
-                        .after(*upstream_step_components)
-                    )
 
                     step_settings = cast(
                         VertexOrchestratorSettings, self.get_settings(step)
                     )
-                    pod_settings = step_settings.pod_settings
 
-                    node_selector_constraint: Optional[Tuple[str, str]] = None
-                    if pod_settings and (
-                        GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL
-                        in pod_settings.node_selectors.keys()
-                    ):
-                        node_selector_constraint = (
-                            GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL,
-                            pod_settings.node_selectors[
-                                GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL
-                            ],
-                        )
-                    elif step_settings.node_selector_constraint:
-                        node_selector_constraint = (
-                            GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL,
-                            step_settings.node_selector_constraint[1],
-                        )
-
-                    self._configure_container_resources(
-                        dynamic_component=task,
-                        resource_settings=step.config.resource_settings,
-                        node_selector_constraint=node_selector_constraint,
+                    use_custom_training_job = (
+                        step_settings.custom_job_parameters is not None
                     )
 
+                    if use_custom_training_job:
+                        if not step.config.resource_settings.empty:
+                            logger.warning(
+                                "Ignoring resource settings because "
+                                "the step is running as a custom training job. "
+                                "Use `custom_job_parameters.machine_type` "
+                                "to configure the machine type instead."
+                            )
+                        if step_settings.node_selector_constraint:
+                            logger.warning(
+                                "Ignoring node selector constraint because "
+                                "the step is running as a custom training job. "
+                                "Use `custom_job_parameters.accelerator_type` "
+                                "to configure the accelerator type instead."
+                            )
+                        component = self._convert_to_custom_training_job(
+                            component,
+                            settings=step_settings,
+                            environment=environment,
+                        )
+                        task = (
+                            component()
+                            .set_display_name(name=component_name)
+                            .set_caching_options(enable_caching=False)
+                            .after(*upstream_step_components)
+                        )
+                    else:
+                        task = (
+                            component()
+                            .set_display_name(
+                                name=component_name,
+                            )
+                            .set_caching_options(enable_caching=False)
+                            .after(*upstream_step_components)
+                        )
+                        for key, value in environment.items():
+                            task = task.set_env_variable(name=key, value=value)
+
+                        pod_settings = step_settings.pod_settings
+
+                        node_selector_constraint: Optional[Tuple[str, str]] = (
+                            None
+                        )
+                        if pod_settings and (
+                            GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL
+                            in pod_settings.node_selectors.keys()
+                        ):
+                            node_selector_constraint = (
+                                GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL,
+                                pod_settings.node_selectors[
+                                    GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL
+                                ],
+                            )
+                        elif step_settings.node_selector_constraint:
+                            node_selector_constraint = (
+                                GKE_ACCELERATOR_NODE_SELECTOR_CONSTRAINT_LABEL,
+                                step_settings.node_selector_constraint[1],
+                            )
+
+                        self._configure_container_resources(
+                            dynamic_component=task,
+                            resource_settings=step.config.resource_settings,
+                            node_selector_constraint=node_selector_constraint,
+                        )
+
             return dynamic_pipeline
-
-        def _update_json_with_environment(
-            yaml_file_path: str, environment: Dict[str, str]
-        ) -> None:
-            """Updates the env section of the steps in the YAML file with the given environment variables.
-
-            Args:
-                yaml_file_path: The path to the YAML file to update.
-                environment: A dictionary of environment variables to add.
-            """
-            pipeline_definition = yaml_utils.read_json(pipeline_file_path)
-
-            # Iterate through each component and add the environment variables
-            for executor in pipeline_definition["deploymentSpec"]["executors"]:
-                if (
-                    "container"
-                    in pipeline_definition["deploymentSpec"]["executors"][
-                        executor
-                    ]
-                ):
-                    container = pipeline_definition["deploymentSpec"][
-                        "executors"
-                    ][executor]["container"]
-                    if "env" not in container:
-                        container["env"] = []
-                    for key, value in environment.items():
-                        container["env"].append({"name": key, "value": value})
-
-            yaml_utils.write_json(pipeline_file_path, pipeline_definition)
-
-            print(
-                f"Updated YAML file with environment variables at {yaml_file_path}"
-            )
 
         # Save the generated pipeline to a file.
         fileio.makedirs(self.pipeline_directory)
@@ -555,9 +610,6 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                 deployment.pipeline_configuration.name
             ),
         )
-
-        # Let's update the YAML file with the environment variables
-        _update_json_with_environment(pipeline_file_path, environment)
 
         logger.info(
             "Writing Vertex workflow definition to `%s`.", pipeline_file_path

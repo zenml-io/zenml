@@ -33,12 +33,12 @@ from zenml.exceptions import AuthorizationException, IllegalOperationError
 from zenml.logger import get_logger
 from zenml.models import (
     Page,
+    ProjectScopedResponse,
     UserAuthModel,
     UserFilter,
     UserRequest,
     UserResponse,
     UserUpdate,
-    WorkspaceScopedResponse,
 )
 from zenml.zen_server.auth import (
     AuthContext,
@@ -47,9 +47,6 @@ from zenml.zen_server.auth import (
 )
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rate_limit import RequestLimiter
-from zenml.zen_server.rbac.endpoint_utils import (
-    verify_permissions_and_get_entity,
-)
 from zenml.zen_server.rbac.models import Action, Resource, ResourceType
 from zenml.zen_server.rbac.utils import (
     dehydrate_page,
@@ -757,12 +754,12 @@ if server_config().rbac_enabled:
                 "not exist."
             )
 
-        workspace_id = None
-        if isinstance(model, WorkspaceScopedResponse):
-            workspace_id = model.workspace.id
+        project_id = None
+        if isinstance(model, ProjectScopedResponse):
+            project_id = model.project.id
 
         resource = Resource(
-            type=resource_type, id=resource_id, workspace_id=workspace_id
+            type=resource_type, id=resource_id, project_id=project_id
         )
 
         verify_permission_for_model(model=model, action=Action.SHARE)
@@ -776,38 +773,3 @@ if server_config().rbac_enabled:
             resource=resource,
             actions=[Action(action) for action in actions],
         )
-
-
-@current_user_router.put(
-    "/default-workspace",
-    responses={
-        401: error_response,
-        404: error_response,
-        422: error_response,
-    },
-)
-@handle_exceptions
-def update_user_default_workspace(
-    workspace_name_or_id: Union[str, UUID],
-    auth_context: AuthContext = Security(authorize),
-) -> UserResponse:
-    """Updates the default workspace of the current user.
-
-    Args:
-        workspace_name_or_id: Name or ID of the workspace.
-        auth_context: Authentication context.
-
-    Returns:
-        The updated user.
-    """
-    workspace = verify_permissions_and_get_entity(
-        id=workspace_name_or_id,
-        get_method=zen_store().get_workspace,
-    )
-
-    user = zen_store().update_user(
-        user_id=auth_context.user.id,
-        user_update=UserUpdate(default_workspace_id=workspace.id),
-    )
-
-    return dehydrate_response_model(user)

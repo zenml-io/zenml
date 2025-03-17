@@ -326,7 +326,7 @@ def test_custom_build_verification(
             user=sample_deployment_response_model.user,
         ),
         metadata=PipelineBuildResponseMetadata(
-            workspace=sample_deployment_response_model.workspace,
+            project=sample_deployment_response_model.project,
             images={"wrong_key": {"image": "docker_image_name"}},
             is_local=False,
             contains_code=True,
@@ -503,7 +503,7 @@ def test_local_repo_verification(
             ),
         ),
         metadata=CodeRepositoryResponseMetadata(
-            workspace=sample_deployment_response_model.workspace,
+            project=sample_deployment_response_model.project,
             config={"key": "value"},
         ),
     )

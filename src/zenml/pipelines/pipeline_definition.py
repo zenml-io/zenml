@@ -684,7 +684,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             components = Client().active_stack_model.components
             orchestrator = components[StackComponentType.ORCHESTRATOR][0]
             schedule_model = ScheduleRequest(
-                workspace=Client().active_workspace.id,
+                project=Client().active_project.id,
                 pipeline_id=pipeline_id,
                 orchestrator_id=orchestrator.id,
                 name=schedule_name,
@@ -770,7 +770,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             code_path = code_utils.upload_code_if_necessary(code_archive)
 
         request = PipelineDeploymentRequest(
-            workspace=Client().active_workspace.id,
+            project=Client().active_project.id,
             stack=stack.id,
             pipeline=pipeline_id,
             build=build_id,
@@ -1013,7 +1013,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             for component_type, component in stack.components.items()
         }
         return {
-            "workspace_id": deployment.workspace.id,
+            "project_id": deployment.project.id,
             "store_type": Client().zen_store.type.value,
             **stack_metadata,
             "total_steps": len(self.invocations),
@@ -1094,7 +1094,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             return _get()
         except RuntimeError:
             request = PipelineRequest(
-                workspace=client.active_workspace.id,
+                project=client.active_project.id,
                 name=self.name,
             )
 
@@ -1233,7 +1233,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             return id_
 
         if not allow_suffix:
-            raise RuntimeError("Duplicate step ID")
+            raise RuntimeError(f"Duplicate step ID `{id_}`")
 
         for index in range(2, 10000):
             id_ = f"{base_id}_{index}"

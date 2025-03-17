@@ -503,7 +503,6 @@ def register_stack(
         try:
             created_stack = client.zen_store.create_stack(
                 stack=StackRequest(
-                    workspace=client.active_workspace.id,
                     name=stack_name,
                     components=components,
                     service_connectors=[service_connector]
@@ -1913,7 +1912,6 @@ def _get_stack_component_info(
                 "Enter the subscription ID:"
             )
             config["resource_group"] = Prompt.ask("Enter the resource group:")
-            config["workspace"] = Prompt.ask("Enter the workspace name:")
         elif flavor == "vertex":
             config["location"] = query_region(
                 StackDeploymentProvider.GCP, "Vertex AI job"

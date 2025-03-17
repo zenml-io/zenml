@@ -13,12 +13,11 @@
 #  permissions and limitations under the License.
 """Cloud RBAC implementation."""
 
-from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
+from typing import TYPE_CHECKING, Dict, List, Set, Tuple
 
 from zenml.zen_server.cloud_utils import cloud_connection
-from zenml.zen_server.rbac.models import Action, Resource, ResourceType
+from zenml.zen_server.rbac.models import Action, Resource
 from zenml.zen_server.rbac.rbac_interface import RBACInterface
-from zenml.zen_server.utils import server_config
 
 if TYPE_CHECKING:
     from zenml.models import UserResponse
@@ -28,68 +27,6 @@ PERMISSIONS_ENDPOINT = "/rbac/check_permissions"
 ALLOWED_RESOURCE_IDS_ENDPOINT = "/rbac/allowed_resource_ids"
 RESOURCE_MEMBERSHIP_ENDPOINT = "/rbac/resource_members"
 RESOURCES_ENDPOINT = "/rbac/resources"
-
-SERVER_SCOPE_IDENTIFIER = "server"
-
-SERVER_ID = server_config().external_server_id
-
-
-def _convert_to_cloud_resource(resource: Resource) -> str:
-    """Convert a resource to a ZenML Pro Management Plane resource.
-
-    Args:
-        resource: The resource to convert.
-
-    Returns:
-        The converted resource.
-    """
-    return f"{SERVER_ID}@{SERVER_SCOPE_IDENTIFIER}:{resource}"
-
-
-def _convert_from_cloud_resource(cloud_resource: str) -> Resource:
-    """Convert a cloud resource to a ZenML server resource.
-
-    Args:
-        cloud_resource: The cloud resource to convert.
-
-    Raises:
-        ValueError: If the cloud resource is invalid for this server.
-
-    Returns:
-        The converted resource.
-    """
-    scope, workspace_resource_type_and_id = cloud_resource.split(
-        ":", maxsplit=1
-    )
-
-    if scope != f"{SERVER_ID}@{SERVER_SCOPE_IDENTIFIER}":
-        raise ValueError("Invalid scope for server resource.")
-
-    workspace_id: Optional[str] = None
-    if ":" in workspace_resource_type_and_id:
-        (
-            workspace_id,
-            resource_type_and_id,
-        ) = workspace_resource_type_and_id.split(":", maxsplit=1)
-    else:
-        workspace_id = None
-        resource_type_and_id = workspace_resource_type_and_id
-
-    resource_id: Optional[str] = None
-    if "/" in resource_type_and_id:
-        resource_type, resource_id = resource_type_and_id.split("/")
-    else:
-        resource_type = resource_type_and_id
-
-    if resource_type == ResourceType.WORKSPACE and workspace_id is not None:
-        # TODO: For now, we duplicate the workspace ID in the string
-        # representation when describing a workspace instance, because
-        # this is what is expected by the RBAC implementation.
-        workspace_id = None
-
-    return Resource(
-        type=resource_type, id=resource_id, workspace_id=workspace_id
-    )
 
 
 class ZenMLCloudRBAC(RBACInterface):
@@ -127,9 +64,7 @@ class ZenMLCloudRBAC(RBACInterface):
 
         params = {
             "user_id": str(user.external_user_id),
-            "resources": [
-                _convert_to_cloud_resource(resource) for resource in resources
-            ],
+            "resources": resources,
             "action": str(action),
         }
         response = self._connection.get(
@@ -138,7 +73,7 @@ class ZenMLCloudRBAC(RBACInterface):
         value = response.json()
 
         assert isinstance(value, dict)
-        return {_convert_from_cloud_resource(k): v for k, v in value.items()}
+        return {Resource.parse(k): v for k, v in value.items()}
 
     def list_allowed_resource_ids(
         self, user: "UserResponse", resource: Resource, action: Action
@@ -168,7 +103,7 @@ class ZenMLCloudRBAC(RBACInterface):
         assert user.external_user_id
         params = {
             "user_id": str(user.external_user_id),
-            "resource": _convert_to_cloud_resource(resource),
+            "resource": str(resource),
             "action": str(action),
         }
         response = self._connection.get(
@@ -198,7 +133,7 @@ class ZenMLCloudRBAC(RBACInterface):
 
         data = {
             "user_id": str(user.external_user_id),
-            "resource": _convert_to_cloud_resource(resource),
+            "resource": str(resource),
             "actions": [str(action) for action in actions],
         }
         self._connection.post(endpoint=RESOURCE_MEMBERSHIP_ENDPOINT, data=data)
@@ -211,8 +146,6 @@ class ZenMLCloudRBAC(RBACInterface):
                 information.
         """
         params = {
-            "resources": [
-                _convert_to_cloud_resource(resource) for resource in resources
-            ],
+            "resources": [str(resource) for resource in resources],
         }
         self._connection.delete(endpoint=RESOURCES_ENDPOINT, params=params)

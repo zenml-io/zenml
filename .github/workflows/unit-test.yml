@@ -72,14 +72,6 @@ jobs:
           repository: ${{ github.repository }}
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0  # Fetch all history for all branches and tags
-      - name: Get changed files
-        id: changed-files
-        uses: tj-actions/changed-files@v42
-        with:
-          files: |
-            src/**
-            tests/**
-            examples/**
       - name: Restore uv cache
         uses: actions/cache@v4
         with:
@@ -98,9 +90,6 @@ jobs:
           python-version: ${{ inputs.python-version }}
           os: ${{ inputs.os }}
           install_integrations: ${{ inputs.install_integrations }}
-          runners_cache_access_key_id: ${{ secrets.RUNNERS_CACHE_ACCESS_KEY_ID }}
-          runners_cache_secret_access_key: ${{ secrets.RUNNERS_CACHE_SECRET_ACCESS_KEY }}
-          discord_webhook: ${{ secrets.DISCORD_WEBHOOK }}
       - name: Setup tmate session before tests
         if: ${{ inputs.enable_tmate == 'before-tests' }}
         uses: mxschmitt/action-tmate@v3.17

@@ -75,7 +75,7 @@ class StepRunRequestFactory:
             pipeline_run_id=self.pipeline_run.id,
             status=ExecutionStatus.RUNNING,
             start_time=utc_now(),
-            workspace=Client().active_workspace.id,
+            project=Client().active_project.id,
         )
 
     def populate_request(self, request: StepRunRequest) -> None:
@@ -102,7 +102,7 @@ class StepRunRequestFactory:
             step=step,
             input_artifact_ids=input_artifact_ids,
             artifact_store=self.stack.artifact_store,
-            workspace_id=Client().active_workspace.id,
+            project_id=Client().active_project.id,
         )
         request.cache_key = cache_key
 
@@ -344,7 +344,7 @@ def log_model_version_dashboard_url(
 ) -> None:
     """Log the dashboard URL for a model version.
 
-    If the current server is not a ZenML Pro tenant, a fallback message is
+    If the current server is not a ZenML Pro workspace, a fallback message is
     logged instead.
 
     Args:
