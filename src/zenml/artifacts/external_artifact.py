@@ -72,7 +72,7 @@ class ExternalArtifact(ExternalArtifactConfiguration):
     """
 
     value: Optional[Any] = None
-    materializer: Optional["MaterializerClassOrSource"] = Field(
+    materializer: Optional[MaterializerClassOrSource] = Field(
         default=None, union_mode="left_to_right"
     )
     store_artifact_metadata: bool = True

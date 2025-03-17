@@ -31,6 +31,9 @@ from typing import (
 )
 from uuid import UUID, uuid4
 
+from zenml.artifacts.preexisting_data_materializer import (
+    PreexistingDataMaterializer,
+)
 from zenml.client import Client
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
 from zenml.enums import (
@@ -314,9 +317,6 @@ def register_artifact(
         FileNotFoundError: If the folder URI is outside the artifact store
             bounds.
     """
-    from zenml.artifacts.preexisting_data_materializer import (
-        PreexistingDataMaterializer,
-    )
 
     client = Client()
 
