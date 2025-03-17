@@ -15,7 +15,7 @@
 
 import json
 import os
-from typing import TYPE_CHECKING, Any, Dict, Optional, Union
+from typing import Any, Dict, Optional, Union
 
 import click
 
@@ -33,11 +33,9 @@ from zenml.models import (
     PipelineRunFilter,
     ScheduleFilter,
 )
+from zenml.pipelines.pipeline_definition import Pipeline
 from zenml.utils import source_utils, uuid_utils
 from zenml.utils.yaml_utils import write_yaml
-
-if TYPE_CHECKING:
-    from zenml.pipelines.pipeline_definition import Pipeline
 
 logger = get_logger(__name__)
 
@@ -51,8 +49,6 @@ def _import_pipeline(source: str) -> "Pipeline":
     Returns:
         The pipeline.
     """
-    from zenml.pipelines.pipeline_definition import Pipeline
-
     try:
         pipeline_instance = source_utils.load(source)
     except ModuleNotFoundError as e:

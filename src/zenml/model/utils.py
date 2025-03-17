@@ -113,7 +113,6 @@ def link_artifact_to_model(
     Raises:
         RuntimeError: If called outside a step.
     """
-
     if not model:
         is_issue = False
         try:
@@ -153,7 +152,6 @@ def link_service_to_model(
         RuntimeError: If no model is provided and the model context cannot be
             identified.
     """
-
     client = Client()
 
     # If no model is provided, try to get it from the context

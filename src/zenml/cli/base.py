@@ -45,6 +45,7 @@ from zenml.constants import (
 from zenml.enums import AnalyticsEventSource, DatabaseBackupStrategy, StoreType
 from zenml.environment import Environment, get_environment
 from zenml.exceptions import GitNotFoundError, InitializationException
+from zenml.integrations.registry import integration_registry
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils.io_utils import copy_dir, get_global_config_directory
@@ -602,8 +603,6 @@ def info(
         file: Flag to output to a file.
         stack: Flag to output information about active stack and components
     """
-    from zenml.integrations.registry import integration_registry
-
     gc = GlobalConfiguration()
     environment = Environment()
     client = Client()
