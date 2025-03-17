@@ -28,5 +28,3 @@ class PandasIntegration(Integration):
         """Activates the integration."""
         from zenml.integrations.pandas import materializers  # noqa
 
-
-PandasIntegration.check_installation()

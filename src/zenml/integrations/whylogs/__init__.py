@@ -65,4 +65,3 @@ class WhylogsIntegration(Integration):
             PandasIntegration.get_requirements(target_os=target_os)
 
 
-WhylogsIntegration.check_installation()

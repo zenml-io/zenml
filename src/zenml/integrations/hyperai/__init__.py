@@ -49,5 +49,3 @@ class HyperAIIntegration(Integration):
 
         return [HyperAIOrchestratorFlavor]
 
-
-HyperAIIntegration.check_installation()

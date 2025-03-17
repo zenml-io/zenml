@@ -42,5 +42,3 @@ class TensorBoardIntegration(Integration):
         """Activates the integration."""
         from zenml.integrations.tensorboard import services  # noqa
 
-
-TensorBoardIntegration.check_installation()

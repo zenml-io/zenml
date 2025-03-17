@@ -32,5 +32,3 @@ class PolarsIntegration(Integration):
         """Activates the integration."""
         from zenml.integrations.polars import materializers  # noqa
 
-
-PolarsIntegration.check_installation()

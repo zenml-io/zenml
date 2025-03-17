@@ -83,6 +83,3 @@ class GcpIntegration(Integration):
             VertexOrchestratorFlavor,
             VertexStepOperatorFlavor,
         ]
-
-
-GcpIntegration.check_installation()

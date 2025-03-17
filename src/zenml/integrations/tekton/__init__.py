@@ -46,4 +46,3 @@ class TektonIntegration(Integration):
         return [TektonOrchestratorFlavor]
 
 
-TektonIntegration.check_installation()
