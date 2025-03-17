@@ -439,6 +439,36 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         # Authorize pod to run Kubernetes commands inside the cluster.
         service_account_name = self._get_service_account_name(settings)
 
+        # We set some default minimum resource requests for the orchestrator pod
+        # here if the user has not specified any, because the orchestrator pod
+        # takes up some memory resources itself and, if not specified, the pod
+        # will be scheduled on any node regardless of available memory and risk
+        # negatively impacting or even crashing the node due to memory pressure.
+        orchestrator_pod_settings = self.apply_default_resource_requests(
+            memory="400Mi",
+            cpu="100m",
+            pod_settings=settings.orchestrator_pod_settings,
+        )
+
+        if self.config.pass_zenml_token_as_secret:
+            secret_name = pod_name
+            token = environment.pop("ZENML_STORE_API_TOKEN")
+
+            kube_utils.create_secret(
+                core_api=self._k8s_core_api,
+                namespace=self.config.kubernetes_namespace,
+                secret_name=secret_name,
+                data={"ZENML_STORE_API_TOKEN": token},
+            )
+
+            orchestrator_pod_settings.env_from.append(
+                {
+                    "secretRef": {
+                        "name": secret_name,
+                    },
+                }
+            )
+
         # Schedule as CRON job if CRON schedule is given.
         if deployment.schedule:
             if not deployment.schedule.cron_expression:
@@ -458,7 +488,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 args=args,
                 service_account_name=service_account_name,
                 privileged=False,
-                pod_settings=settings.orchestrator_pod_settings,
+                pod_settings=orchestrator_pod_settings,
                 env=environment,
                 mount_local_stores=self.config.is_local,
             )
@@ -472,56 +502,45 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 f'`"{cron_expression}"`.'
             )
             return
-
-        # We set some default minimum resource requests for the orchestrator pod
-        # here if the user has not specified any, because the orchestrator pod
-        # takes up some memory resources itself and, if not specified, the pod
-        # will be scheduled on any node regardless of available memory and risk
-        # negatively impacting or even crashing the node due to memory pressure.
-        orchestrator_pod_settings = self.apply_default_resource_requests(
-            memory="400Mi",
-            cpu="100m",
-            pod_settings=settings.orchestrator_pod_settings,
-        )
-
-        # Create and run the orchestrator pod.
-        pod_manifest = build_pod_manifest(
-            run_name=orchestrator_run_name,
-            pod_name=pod_name,
-            pipeline_name=pipeline_name,
-            image_name=image,
-            command=command,
-            args=args,
-            privileged=False,
-            pod_settings=orchestrator_pod_settings,
-            service_account_name=service_account_name,
-            env=environment,
-            mount_local_stores=self.config.is_local,
-        )
-
-        self._k8s_core_api.create_namespaced_pod(
-            namespace=self.config.kubernetes_namespace,
-            body=pod_manifest,
-        )
-
-        # Wait for the orchestrator pod to finish and stream logs.
-        if settings.synchronous:
-            logger.info("Waiting for Kubernetes orchestrator pod...")
-            kube_utils.wait_pod(
-                kube_client_fn=self.get_kube_client,
-                pod_name=pod_name,
-                namespace=self.config.kubernetes_namespace,
-                exit_condition_lambda=kube_utils.pod_is_done,
-                timeout_sec=settings.timeout,
-                stream_logs=True,
-            )
         else:
-            logger.info(
-                f"Orchestration started asynchronously in pod "
-                f"`{self.config.kubernetes_namespace}:{pod_name}`. "
-                f"Run the following command to inspect the logs: "
-                f"`kubectl logs {pod_name} -n {self.config.kubernetes_namespace}`."
+            # Create and run the orchestrator pod.
+            pod_manifest = build_pod_manifest(
+                run_name=orchestrator_run_name,
+                pod_name=pod_name,
+                pipeline_name=pipeline_name,
+                image_name=image,
+                command=command,
+                args=args,
+                privileged=False,
+                pod_settings=orchestrator_pod_settings,
+                service_account_name=service_account_name,
+                env=environment,
+                mount_local_stores=self.config.is_local,
             )
+
+            self._k8s_core_api.create_namespaced_pod(
+                namespace=self.config.kubernetes_namespace,
+                body=pod_manifest,
+            )
+
+            # Wait for the orchestrator pod to finish and stream logs.
+            if settings.synchronous:
+                logger.info("Waiting for Kubernetes orchestrator pod...")
+                kube_utils.wait_pod(
+                    kube_client_fn=self.get_kube_client,
+                    pod_name=pod_name,
+                    namespace=self.config.kubernetes_namespace,
+                    exit_condition_lambda=kube_utils.pod_is_done,
+                    timeout_sec=settings.timeout,
+                    stream_logs=True,
+                )
+            else:
+                logger.info(
+                    f"Orchestration started asynchronously in pod "
+                    f"`{self.config.kubernetes_namespace}:{pod_name}`. "
+                    f"Run the following command to inspect the logs: "
+                    f"`kubectl logs {pod_name} -n {self.config.kubernetes_namespace}`."
+                )
 
     def _get_service_account_name(
         self, settings: KubernetesOrchestratorSettings

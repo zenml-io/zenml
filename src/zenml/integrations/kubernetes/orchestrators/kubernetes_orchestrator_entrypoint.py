@@ -128,6 +128,17 @@ def main() -> None:
             pod_settings=settings.pod_settings,
         )
 
+        if orchestrator.config.pass_zenml_token_as_secret:
+            env.pop("ZENML_STORE_API_TOKEN")
+            secret_name = orchestrator_run_id
+            pod_settings.env_from.append(
+                {
+                    "secretRef": {
+                        "name": secret_name,
+                    },
+                }
+            )
+
         # Define Kubernetes pod manifest.
         pod_manifest = build_pod_manifest(
             pod_name=pod_name,
