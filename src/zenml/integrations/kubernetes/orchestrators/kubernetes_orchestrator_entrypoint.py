@@ -130,11 +130,17 @@ def main() -> None:
 
         if orchestrator.config.pass_zenml_token_as_secret:
             env.pop("ZENML_STORE_API_TOKEN")
-            secret_name = orchestrator_run_id
-            pod_settings.env_from.append(
+            secret_name = orchestrator.get_token_secret_name(
+                deployment_config.id
+            )
+            pod_settings.env.append(
                 {
-                    "secretRef": {
-                        "name": secret_name,
+                    "name": "ZENML_STORE_API_TOKEN",
+                    "valueFrom": {
+                        "secretKeyRef": {
+                            "name": secret_name,
+                            "key": "token",
+                        }
                     },
                 }
             )
