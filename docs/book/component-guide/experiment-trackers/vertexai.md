@@ -51,7 +51,7 @@ zenml stack register custom_stack -e vertex_experiment_tracker ... --set
 
 ### Authentication Methods
 
-Integrating and using a Vertex AI Experiment Tracker in your pipelines is not possible without employing some form of authentication. If you're looking for a quick way to get started locally, you can use the _Implicit Authentication_ method. However, the recommended way to authenticate to the Google Cloud Platform is through a [GCP Service Connector](../../how-to/infrastructure-deployment/auth-management/gcp-service-connector.md). This is particularly useful if you are configuring ZenML stacks that combine the Vertex AI Experiment Tracker with other remote stack components also running in GCP.
+Integrating and using a Vertex AI Experiment Tracker in your pipelines is not possible without employing some form of authentication. If you're looking for a quick way to get started locally, you can use the _Implicit Authentication_ method. However, the recommended way to authenticate to the Google Cloud Platform is through a [GCP Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/gcp-service-connector). This is particularly useful if you are configuring ZenML stacks that combine the Vertex AI Experiment Tracker with other remote stack components also running in GCP.
 
 > **Note**: Regardless of your chosen authentication method, you must grant your account the necessary roles to use Vertex AI Experiment Tracking.
 >
@@ -80,7 +80,7 @@ zenml stack register custom_stack -e vertex_experiment_tracker ... --set
 {% endtab %}
 
 {% tab title="GCP Service Connector (recommended)" %}
-To set up the Vertex AI Experiment Tracker to authenticate to GCP, it is recommended to leverage the many features provided by the [GCP Service Connector](../../how-to/infrastructure-deployment/auth-management/gcp-service-connector.md) such as auto-configuration, best security practices regarding long-lived credentials and reusing the same credentials across multiple stack components.
+To set up the Vertex AI Experiment Tracker to authenticate to GCP, it is recommended to leverage the many features provided by the [GCP Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/gcp-service-connector) such as auto-configuration, best security practices regarding long-lived credentials and reusing the same credentials across multiple stack components.
 
 If you don't already have a GCP Service Connector configured in your ZenML deployment, you can register one using the interactive CLI command. You have the option to configure a GCP Service Connector that can be used to access more than one type of GCP resource:
 
@@ -307,6 +307,6 @@ def step_one(
     ...
 ```
 
-Check out [this docs page](../../how-to/pipeline-development/use-configuration-files/runtime-configuration.md) for more information on how to specify settings.
+Check out [this docs page](https://docs.zenml.io/how-to/pipeline-development/use-configuration-files/runtime-configuration) for more information on how to specify settings.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

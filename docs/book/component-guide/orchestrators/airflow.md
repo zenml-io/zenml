@@ -30,7 +30,7 @@ setup is necessary.
 
 There are many options to use a deployed Airflow server:
 
-* Use [the ZenML GCP Terraform module](../../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform.md)\
+* Use [the ZenML GCP Terraform module](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform)\
   which includes a [Google Cloud Composer](https://cloud.google.com/composer) component.
 * Use a managed deployment of Airflow such as [Google Cloud Composer](https://cloud.google.com/composer)\
   , [Amazon MWAA](https://aws.amazon.com/managed-workflows-for-apache-airflow/),\
@@ -164,13 +164,13 @@ of your Airflow deployment.
 {% hint style="info" %}
 ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use\
 it to run your pipeline steps in Airflow. Check\
-out [this page](../../how-to/customize-docker-builds/) if you want to learn\
+out [this page](https://docs.zenml.io/how-to/customize-docker-builds/) if you want to learn\
 more about how ZenML builds these images and how you can customize them.
 {% endhint %}
 
 #### Scheduling
 
-You can [schedule pipeline runs](../../how-to/pipeline-development/build-pipelines/schedule-a-pipeline.md)\
+You can [schedule pipeline runs](https://docs.zenml.io/how-to/pipeline-development/build-pipelines/schedule-a-pipeline)\
 on Airflow similarly to other orchestrators. However, note that**Airflow schedules always need to be set in the past**, e.g.,:
 
 ```python
@@ -208,13 +208,13 @@ The username will always be `admin`.
 For additional configuration of the Airflow orchestrator, you can pass `AirflowOrchestratorSettings` when defining or\
 running your pipeline. Check out\
 the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-airflow/#zenml.integrations.airflow.flavors.airflow_orchestrator_flavor.AirflowOrchestratorSettings)\
-for a full list of available attributes and [this docs page](../../how-to/pipeline-development/use-configuration-files/) for\
+for a full list of available attributes and [this docs page](https://docs.zenml.io/how-to/pipeline-development/use-configuration-files/) for\
 more information on how to specify settings.
 
 #### Enabling CUDA for GPU-backed hardware
 
 Note that if you wish to use this orchestrator to run steps on a GPU, you will need to\
-follow [the instructions on this page](../../how-to/pipeline-development/training-with-gpus/) to ensure that it\
+follow [the instructions on this page](https://docs.zenml.io/how-to/pipeline-development/training-with-gpus/) to ensure that it\
 works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full\
 acceleration.
 
@@ -302,7 +302,7 @@ the [original module](https://github.com/zenml-io/zenml/blob/main/src/zenml/inte
 . For this reason, we suggest starting by copying the original and modifying it according to your needs.
 
 Check out our docs on how to apply settings to your\
-pipelines [here](../../how-to/pipeline-development/use-configuration-files/).
+pipelines [here](https://docs.zenml.io/how-to/pipeline-development/use-configuration-files/).
 
 For more information and a full list of configurable attributes of the Airflow orchestrator, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-airflow/#zenml.integrations.airflow.orchestrators.airflow_orchestrator.AirflowOrchestrator) .
 

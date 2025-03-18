@@ -24,9 +24,9 @@ You should use the Vertex orchestrator if:
 
 {% hint style="info" %}
 Would you like to skip ahead and deploy a full ZenML cloud stack already,\
-including a Vertex AI orchestrator? Check out the[in-browser stack deployment wizard](../../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack.md),\
-the [stack registration wizard](../../how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack.md),\
-or [the ZenML GCP Terraform module](../../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform.md)\
+including a Vertex AI orchestrator? Check out the[in-browser stack deployment wizard](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack),\
+the [stack registration wizard](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack),\
+or [the ZenML GCP Terraform module](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform)\
 for a shortcut on how to deploy & register this stack component.
 {% endhint %}
 
@@ -57,7 +57,7 @@ You also have three different options to provide credentials to the orchestrator
 
 * use the [`gcloud` CLI](https://cloud.google.com/sdk/gcloud) to authenticate locally with GCP
 * configure the orchestrator to use a [service account key file](https://cloud.google.com/iam/docs/creating-managing-service-account-keys) to authenticate with GCP by setting the `service_account_path` parameter in the orchestrator configuration.
-* (recommended) configure [a GCP Service Connector](../../how-to/infrastructure-deployment/auth-management/gcp-service-connector.md) with GCP credentials and then link the Vertex AI Orchestrator stack component to the Service Connector.
+* (recommended) configure [a GCP Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/gcp-service-connector) with GCP credentials and then link the Vertex AI Orchestrator stack component to the Service Connector.
 
 This section [explains the different components and GCP resources](vertex.md#vertex-ai-pipeline-components) involved in running a Vertex AI pipeline and what permissions they need, then provides instructions for three different configuration use-cases:
 
@@ -138,7 +138,7 @@ The following GCP service accounts are needed:
 
 A key is also needed for the "client" service account. You can create a key for this service account and download it to your local machine (e.g. in a `connectors-vertex-ai-workload.json` file).
 
-With all the service accounts and the key ready, we can register [the GCP Service Connector](../../how-to/infrastructure-deployment/auth-management/gcp-service-connector.md) and Vertex AI orchestrator as follows:
+With all the service accounts and the key ready, we can register [the GCP Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/gcp-service-connector) and Vertex AI orchestrator as follows:
 
 ```shell
 zenml service-connector register <CONNECTOR_NAME> --type gcp --auth-method=service-account --project_id=<PROJECT_ID> --service_account_json=@connectors-vertex-ai-workload.json --resource-type gcp-generic
@@ -162,7 +162,7 @@ zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
 ```
 
 {% hint style="info" %}
-ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your pipeline steps in Vertex AI. Check out [this page](../../how-to/customize-docker-builds/) if you want to learn more about how ZenML builds these images and how you can customize them.
+ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your pipeline steps in Vertex AI. Check out [this page](https://docs.zenml.io/how-to/customize-docker-builds/) if you want to learn more about how ZenML builds these images and how you can customize them.
 {% endhint %}
 
 You can now run any ZenML pipeline using the Vertex orchestrator:
@@ -303,13 +303,13 @@ def my_pipeline():
 
 You can find available accelerator types [here](https://cloud.google.com/vertex-ai/docs/training/configure-compute#specifying_gpus).
 
-Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-gcp/#zenml.integrations.gcp.flavors.vertex_orchestrator_flavor.VertexOrchestratorSettings) for a full list of available attributes and [this docs page](../../how-to/pipeline-development/use-configuration-files/runtime-configuration.md) for more information on how to specify settings.
+Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-gcp/#zenml.integrations.gcp.flavors.vertex_orchestrator_flavor.VertexOrchestratorSettings) for a full list of available attributes and [this docs page](https://docs.zenml.io/how-to/pipeline-development/use-configuration-files/runtime-configuration) for more information on how to specify settings.
 
 For more information and a full list of configurable attributes of the Vertex orchestrator, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-gcp/#zenml.integrations.gcp.orchestrators.vertex_orchestrator.VertexOrchestrator) .
 
 ### Enabling CUDA for GPU-backed hardware
 
-Note that if you wish to use this orchestrator to run steps on a GPU, you will need to follow [the instructions on this page](../../how-to/pipeline-development/training-with-gpus/) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
+Note that if you wish to use this orchestrator to run steps on a GPU, you will need to follow [the instructions on this page](https://docs.zenml.io/how-to/pipeline-development/training-with-gpus/) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
 
 ### Using Persistent Resources for Faster Development
 

@@ -63,12 +63,12 @@ def my_step(...) -> ...:
 #### Specifying per-step resources
 
 If your steps require additional hardware resources, you can specify them on your steps as\
-described [here](../../how-to/pipeline-development/training-with-gpus/).
+described [here](https://docs.zenml.io/how-to/pipeline-development/training-with-gpus/).
 
 #### Enabling CUDA for GPU-backed hardware
 
 Note that if you wish to use step operators to run steps on a GPU, you will need to\
-follow [the instructions on this page](../../how-to/pipeline-development/training-with-gpus/) to ensure\
+follow [the instructions on this page](https://docs.zenml.io/how-to/pipeline-development/training-with-gpus/) to ensure\
 that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to\
 give its full acceleration.
 

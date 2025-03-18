@@ -32,9 +32,9 @@ and brings them together in a pipeline.
 
 {% hint style="info" %}
 Would you like to skip ahead and deploy a full ZenML cloud stack already,\
-including an AzureML orchestrator? Check out the [in-browser stack deployment wizard](../../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack.md),\
-the [stack registration wizard](../../how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack.md),\
-or [the ZenML Azure Terraform module](../../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform.md)\
+including an AzureML orchestrator? Check out the [in-browser stack deployment wizard](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack),\
+the [stack registration wizard](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack),\
+or [the ZenML Azure Terraform module](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform)\
 for a shortcut on how to deploy & register this stack component.
 {% endhint %}
 
@@ -42,7 +42,7 @@ In order to use an AzureML orchestrator, you need to first\
 deploy [ZenML to the cloud](../../getting-started/deploying-zenml/).\
 It would be recommended to deploy ZenML in the same region as you plan on\
 using for AzureML, but it is not necessary to do so. You must ensure that\
-you are [connected to the remote ZenML server](../../how-to/manage-zenml-server/connecting-to-zenml/connect-in-with-your-user-interactive.md)\
+you are [connected to the remote ZenML server](https://docs.zenml.io/how-to/manage-zenml-server/connecting-to-zenml/connect-in-with-your-user-interactive)\
 before using this stack component.
 
 ## How to use it
@@ -69,7 +69,7 @@ There are two ways of authenticating your orchestrator with AzureML:
     of service principals on Azure to allow you to connect your cloud components\
     with proper authentication. For this method, you will need to [create a service\
     principal on Azure](https://learn.microsoft.com/en-us/azure/developer/python/sdk/authentication-on-premises-apps?tabs=azure-portal),\
-    assign it the correct permissions and use it to [register a ZenML Azure Service Connector](../../how-to/infrastructure-deployment/auth-management/azure-service-connector.md).
+    assign it the correct permissions and use it to [register a ZenML Azure Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/azure-service-connector).
 
     ```bash
     zenml service-connector register <CONNECTOR_NAME> --type azure -i
@@ -79,7 +79,7 @@ There are two ways of authenticating your orchestrator with AzureML:
 ## Docker
 
 For each pipeline run, ZenML will build a Docker image called`<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code\
-and use it to run your pipeline steps in AzureML. Check out[this page](../../how-to/customize-docker-builds/) if you want to\
+and use it to run your pipeline steps in AzureML. Check out[this page](https://docs.zenml.io/how-to/customize-docker-builds/) if you want to\
 learn more about how ZenML builds these images and how you can customize them.
 
 ## AzureML UI
