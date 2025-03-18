@@ -27,7 +27,7 @@ Owing to ZenML's vast documentation, we have created multiple `llms.txt` files t
 
 **Tokens**: 120k
 
-This is where you should start. It covers the [User Guides](../user-guide/starter-guide/README.md) and the [Getting Started](../getting-started/installation.md) section of the ZenML documentation, unsummarized, and can be used for answering basic questions about ZenML. This file can also be used alongside other domain-specific files in cases where you need better answers.
+This is where you should start. It covers the [User Guides](https://docs.zenml.io/user-guides/starter-guide) and the [Getting Started](../getting-started/installation.md) section of the ZenML documentation, unsummarized, and can be used for answering basic questions about ZenML. This file can also be used alongside other domain-specific files in cases where you need better answers.
 
 2. [component-guide.txt](https://zenml.io/component-guide.txt)
 
