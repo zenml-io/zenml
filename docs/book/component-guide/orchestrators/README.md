@@ -52,7 +52,7 @@ zenml orchestrator flavor list
 ### How to use it
 
 You don't need to directly interact with any ZenML orchestrator in your code. As long as the orchestrator that you want\
-to use is part of your active [ZenML stack](../../user-guide/production-guide/understand-stacks.md), using the\
+to use is part of your active [ZenML stack](https://docs.zenml.io/user-guides/production-guide/understand-stacks), using the\
 orchestrator is as simple as executing a Python file\
 that [runs a ZenML pipeline](https://docs.zenml.io/user-guides/starter-guide/starter-project):
 

@@ -19,7 +19,7 @@ In addition to pipeline artifacts, the Artifact Store may also be used as storag
 
 Related concepts:
 
-* the Artifact Store is a type of Stack Component that needs to be registered as part of your ZenML [Stack](../../user-guide/production-guide/understand-stacks.md).
+* the Artifact Store is a type of Stack Component that needs to be registered as part of your ZenML [Stack](https://docs.zenml.io/user-guides/production-guide/understand-stacks).
 * the objects circulated through your pipelines are serialized and stored in the Artifact Store using [Materializer](https://docs.zenml.io/how-to/data-artifact-management/handle-data-artifacts/handle-custom-data-types). Materializers implement the logic required to serialize and deserialize the artifact contents and to store them and retrieve their contents to/from the Artifact Store.
 
 ### When to use it
