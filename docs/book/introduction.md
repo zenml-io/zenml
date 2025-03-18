@@ -13,7 +13,7 @@ icon: torii-gate
 {% tab title="For MLOps Platform Engineers" %}
 ZenML enables MLOps infrastructure experts to define, deploy, and manage sophisticated production environments that are easy to share with colleagues.
 
-* <mark style="color:purple;">**ZenML Pro**</mark>**:** [ZenML Pro](getting-started/zenml-pro/) provides a control plane that allows you to deploy a managed ZenML instance and get access to exciting new features such as CI/CD, Model Control Plane, and RBAC.
+* <mark style="color:purple;">**ZenML Pro**</mark>**:** [ZenML Pro](getting-started/zenml-pro/README.md) provides a control plane that allows you to deploy a managed ZenML instance and get access to exciting new features such as CI/CD, Model Control Plane, and RBAC.
 
 <figure><img src=".gitbook/assets/zenml-cloud-tenant-overview.png" alt=""><figcaption></figcaption></figure>
 
@@ -37,7 +37,7 @@ zenml orchestrator register kfp_orchestrator -f kubeflow
 zenml stack register production --orchestrator kubeflow ...
 ```
 
-* Registering your environments as ZenML stacks also enables you to browse and explore them in a convenient user interface. Try it out at [https://www.zenml.io/live-demo](https://www.zenml.io/live-demo)!
+* Registering your environments as ZenML stacks also enables you to browse and explore them in a convenient user interface. 
 *   **No Vendor Lock-In:** Since infrastructure is decoupled from code, ZenML gives you the freedom to switch to a different tooling stack whenever it suits you. By avoiding vendor lock-in, you have the flexibility to transition between cloud providers or services, ensuring that you receive the best performance and pricing available in the market at any time.
 
     ```bash
@@ -51,7 +51,7 @@ zenml stack register production --orchestrator kubeflow ...
 
 Ready to deploy and manage your MLOps infrastructure with ZenML? Here is a collection of pages you can take a look at next:
 
-<table data-view="cards"><thead><tr><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f3d7">🏗️</span> <mark style="color:purple;"><strong>Switch to production</strong></mark></td><td>Set up and manage production-ready infrastructure with ZenML.</td><td><a href="user-guide/production-guide/cloud-orchestration.md">cloud-orchestration.md</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f4cb">📋</span> <mark style="color:purple;"><strong>Component guide</strong></mark></td><td>Explore the existing infrastructure and tooling integrations of ZenML.</td><td><a href="component-guide/">component-guide</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f64b">🙋</span> <mark style="color:purple;"><strong>FAQ</strong></mark></td><td>Find answers to the most frequently asked questions.</td><td><a href="reference/faq.md">faq.md</a></td></tr></tbody></table>
+<table data-view="cards"><thead><tr><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f3d7">🏗️</span> <mark style="color:purple;"><strong>Switch to production</strong></mark></td><td>Set up and manage production-ready infrastructure with ZenML.</td><td><a href="https://docs.zenml.io/user-guides/starter-guide">cloud-orchestration.md</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f4cb">📋</span> <mark style="color:purple;"><strong>Component guide</strong></mark></td><td>Explore the existing infrastructure and tooling integrations of ZenML.</td><td><a href="https://docs.zenml.io/stacks">component-guide</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f64b">🙋</span> <mark style="color:purple;"><strong>FAQ</strong></mark></td><td>Find answers to the most frequently asked questions.</td><td><a href="reference/faq.md">faq.md</a></td></tr></tbody></table>
 {% endtab %}
 
 {% tab title="For Data Scientists" %}
@@ -87,10 +87,10 @@ def my_pipeline():
 my_pipeline()
 ```
 
-* **Automatic Metadata Tracking:** ZenML automatically tracks the metadata of all your runs and saves all your datasets and models to disk and versions them. Using the ZenML dashboard, you can see detailed visualizations of all your experiments. Try it out at [https://www.zenml.io/live-demo](https://www.zenml.io/live-demo)!
+* **Automatic Metadata Tracking:** ZenML automatically tracks the metadata of all your runs and saves all your datasets and models to disk and versions them. Using the ZenML dashboard, you can see detailed visualizations of all your experiments. 
 
 {% hint style="info" %}
-ZenML integrates seamlessly with many popular open-source tools, so you can also combine ZenML with other popular experiment tracking tools like [Weights & Biases](component-guide/experiment-trackers/wandb.md), [MLflow](component-guide/experiment-trackers/mlflow.md), or [Neptune](component-guide/experiment-trackers/neptune.md) for even better reproducibility.
+ZenML integrates seamlessly with many popular open-source tools, so you can also combine ZenML with other popular experiment tracking tools like [Weights & Biases](https://docs.zenml.io/stacks/experiment-trackers/wandb), [MLflow](https://docs.zenml.io/stacks/experiment-trackers/mlflow), or [Neptune](https://docs.zenml.io/stacks/experiment-trackers/neptune) for even better reproducibility.
 {% endhint %}
 
 :rocket: **Learn More**
