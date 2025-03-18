@@ -31,7 +31,7 @@ class SkypilotAzureIntegration(Integration):
     """Definition of Skypilot (Azure) Integration for ZenML."""
 
     NAME = SKYPILOT_AZURE
-    REQUIREMENTS = ["skypilot[azure]>=0.6.1"]
+    REQUIREMENTS = ["skypilot[azure]"]
     APT_PACKAGES = ["openssh-client", "rsync"]
 
     @classmethod
