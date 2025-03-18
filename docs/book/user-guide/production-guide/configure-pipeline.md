@@ -125,7 +125,7 @@ Here we are configuring the entire pipeline with a certain amount of memory, whi
 
 <summary>Instructions for Microsoft Azure Users</summary>
 
-As discussed [before](cloud-orchestration.md), we are using the [Kubernetes orchestrator](../../component-guide/orchestrators/kubernetes.md) for Azure users. In order to scale compute for the Kubernetes orchestrator, the
+As discussed [before](cloud-orchestration.md), we are using the [Kubernetes orchestrator](https://docs.zenml.io/stacks/orchestrators/kubernetes) for Azure users. In order to scale compute for the Kubernetes orchestrator, the
 YAML file needs to look like this:
 
 ```yaml
