@@ -83,6 +83,9 @@ def main() -> None:
     kube_client = orchestrator.get_kube_client(incluster=True)
     core_api = k8s_client.CoreV1Api(kube_client)
 
+    env = get_config_environment_vars()
+    env[ENV_ZENML_KUBERNETES_RUN_ID] = orchestrator_run_id
+    
     def run_step_on_kubernetes(step_name: str) -> None:
         """Run a pipeline step in a separate Kubernetes pod.
 
@@ -116,9 +119,6 @@ def main() -> None:
             orchestrator_settings
         )
 
-        env = get_config_environment_vars()
-        env[ENV_ZENML_KUBERNETES_RUN_ID] = orchestrator_run_id
-
         # We set some default minimum memory resource requests for the step pod
         # here if the user has not specified any, because the step pod takes up
         # some memory resources itself and, if not specified, the pod will be
@@ -130,7 +130,7 @@ def main() -> None:
         )
 
         if orchestrator.config.pass_zenml_token_as_secret:
-            env.pop("ZENML_STORE_API_TOKEN")
+            env.pop("ZENML_STORE_API_TOKEN", None)
             secret_name = orchestrator.get_token_secret_name(
                 deployment_config.id
             )
