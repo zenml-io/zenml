@@ -111,11 +111,6 @@ class Resource(BaseModel):
             Resource string representation.
         """
         project_id = self.project_id
-        if self.type == ResourceType.PROJECT and self.id:
-            # TODO: For now, we duplicate the project ID in the string
-            # representation when describing a project instance, because
-            # this is what is expected by the RBAC implementation.
-            project_id = self.id
 
         if project_id:
             representation = f"{project_id}:"
@@ -126,6 +121,36 @@ class Resource(BaseModel):
             representation += f"/{self.id}"
 
         return representation
+
+    @classmethod
+    def parse(cls, resource: str) -> "Resource":
+        """Parse an RBAC resource string into a Resource object.
+
+        Args:
+            resource: The resource to convert.
+
+        Returns:
+            The converted resource.
+        """
+        project_id: Optional[str] = None
+        if ":" in resource:
+            (
+                project_id,
+                resource_type_and_id,
+            ) = resource.split(":", maxsplit=1)
+        else:
+            project_id = None
+            resource_type_and_id = resource
+
+        resource_id: Optional[str] = None
+        if "/" in resource_type_and_id:
+            resource_type, resource_id = resource_type_and_id.split("/")
+        else:
+            resource_type = resource_type_and_id
+
+        return Resource(
+            type=resource_type, id=resource_id, project_id=project_id
+        )
 
     @model_validator(mode="after")
     def validate_project_id(self) -> "Resource":

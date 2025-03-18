@@ -5,7 +5,7 @@ description: >
 
 # Using the ZenML Pro API
 
-ZenML Pro offers a powerful API that allows you to interact with your ZenML resources. Whether you're using the [SaaS version](https://cloud.zenml.io) or a self-hosted ZenML Pro instance, you can leverage this API to manage tenants, organizations, users, roles, and more.
+ZenML Pro offers a powerful API that allows you to interact with your ZenML resources. Whether you're using the [SaaS version](https://cloud.zenml.io) or a self-hosted ZenML Pro instance, you can leverage this API to manage workspaces, organizations, users, roles, and more.
 
 The SaaS version of ZenML Pro API is hosted at [https://cloudapi.zenml.io](https://cloudapi.zenml.io).
 
@@ -13,7 +13,7 @@ The SaaS version of ZenML Pro API is hosted at [https://cloudapi.zenml.io](https
 
 The ZenML Pro API is a RESTful API that follows OpenAPI 3.1.0 specifications. It provides endpoints for various resources and operations, including:
 
-- Tenant management
+- Workspace management
 - Organization management
 - User management
 - Role-based access control (RBAC)
@@ -69,9 +69,9 @@ To generate a new API token for the ZenML Pro API:
 - Tokens are scoped to your user account and inherit your permissions
 {% endhint %}
 
-### Tenant programmatic access
+### Workspace programmatic access
 
-Programmatic access to the ZenML Pro tenant API is achieved essentially the same way as the ZenML OSS server API. You can use one of these two methods:
+Programmatic access to the ZenML Pro workspace API is achieved essentially the same way as the ZenML OSS server API. You can use one of these two methods:
 
 * [Generate and use temporary API tokens](../../reference/api-reference.md#using-a-short-lived-api-token)
 * [Create a service account and use its API key](../../reference/api-reference.md#using-a-service-account-and-an-api-key)
@@ -82,12 +82,12 @@ Please consult the indicated sections for more information.
 
 Here are some important endpoints you can use with the ZenML Pro API:
 
-### Tenant Management
+### Workspace Management
 
-- List tenants: `GET /tenants`
-- Create a tenant: `POST /tenants`
-- Get tenant details: `GET /tenants/{tenant_id}`
-- Update a tenant: `PATCH /tenants/{tenant_id}`
+- List workspaces: `GET /workspaces`
+- Create a workspace: `POST /workspaces`
+- Get workspace details: `GET /workspaces/{workspace_id}`
+- Update a workspace: `PATCH /workspaces/{workspace_id}`
 
 ### Organization Management
 

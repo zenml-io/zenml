@@ -36,7 +36,7 @@ logger = get_logger(__name__)
 
 
 def get_cloud_dashboard_url() -> Optional[str]:
-    """Get the base url of the cloud dashboard if the server is a cloud tenant.
+    """Get the base url of the cloud dashboard if the server is a ZenML Pro workspace.
 
     Returns:
         The base url of the cloud dashboard.

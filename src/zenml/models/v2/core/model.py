@@ -13,7 +13,15 @@
 #  permissions and limitations under the License.
 """Models representing models."""
 
-from typing import TYPE_CHECKING, Any, ClassVar, List, Optional, Type, TypeVar
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    List,
+    Optional,
+    Type,
+    TypeVar,
+)
 from uuid import UUID
 
 from pydantic import Field

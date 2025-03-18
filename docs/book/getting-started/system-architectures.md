@@ -18,9 +18,9 @@ read [this guide](../getting-started/deploying-zenml/README.md).
 A ZenML OSS deployment consists of the following moving pieces:
 
 * **ZenML OSS Server**: This is a FastAPI app that manages metadata of pipelines, artifacts, stacks etc.
-  Note: In ZenML Pro, the notion of a ZenML server is replaced with what is known as a "Tenant". For
-  all intents and purposes, consider a ZenML Tenant to be a ZenML OSS server that comes with more functionality. 
-* **OSS Metadata Store**: This is where all ZenML tenant metadata is stored, including
+  Note: In ZenML Pro, the notion of a ZenML server is replaced with what is known as a "Workspace". For
+  all intents and purposes, consider a ZenML Workspace to be a ZenML OSS server that comes with more functionality. 
+* **OSS Metadata Store**: This is where all ZenML workspace metadata is stored, including
   ML metadata such as tracking and versioning information about pipelines and
   models.
 * **OSS Dashboard**: This is a ReactJS app that shows pipelines, runs, etc.
@@ -49,11 +49,11 @@ If would like to self-host ZenML Pro, please [book a demo](https://zenml.io/book
 
 The above deployment can be augmented with the ZenML Pro components:
 
-* **ZenML Pro Control Plane**: This is the central controlling entity of all tenants.
+* **ZenML Pro Control Plane**: This is the central controlling entity of all workspaces.
 * **Pro Dashboard**: This is a dashboard that builds on top of the OSS dashboard, and
 add further functionality.
 * **Pro Metadata Store**: This is a PostgreSQL database where all ZenML Pro related metadata is stored such
-as roles, permissions, teams, and tenant management related data.
+as roles, permissions, teams, and workspace management related data.
 * **Pro Add-ons**: These are Python modules injected into the OSS Server for enhanced functionality.
 * **Identity Provider**: ZenML Pro offers flexible authentication options.
   In cloud-hosted deployments, it integrates with [Auth0](https://auth0.com/),
@@ -98,8 +98,8 @@ quite easily by configuring
 an [artifact store](../component-guide/artifact-stores/artifact-stores.md)
 with your MLOps stack.
 
-Your tenant only needs permissions to read from this data to display artifacts
-on the ZenML dashboard. The tenant also needs direct access to parts of the
+Your workspace only needs permissions to read from this data to display artifacts
+on the ZenML dashboard. The workspace also needs direct access to parts of the
 customer infrastructure services to support dashboard control plane features
 such as CI/CD, triggering and running pipelines, triggering model deployments
 and so on.

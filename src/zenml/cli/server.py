@@ -222,7 +222,7 @@ def status() -> None:
                 )
                 if pro_credentials:
                     pro_client = ZenMLProClient(pro_credentials.url)
-                    pro_servers = pro_client.tenant.list(
+                    pro_servers = pro_client.workspace.list(
                         url=store_cfg.url, member_only=True
                     )
                     if pro_servers:
@@ -577,7 +577,7 @@ def server_list(
     from zenml.login.credentials_store import get_credentials_store
     from zenml.login.pro.client import ZenMLProClient
     from zenml.login.pro.constants import ZENML_PRO_API_URL
-    from zenml.login.pro.tenant.models import TenantRead, TenantStatus
+    from zenml.login.pro.workspace.models import WorkspaceRead, WorkspaceStatus
 
     pro_api_url = pro_api_url or ZENML_PRO_API_URL
     pro_api_url = pro_api_url.rstrip("/")
@@ -603,10 +603,10 @@ def server_list(
         # that the user has never connected to (and are therefore not stored in
         # the credentials store).
 
-        accessible_pro_servers: List[TenantRead] = []
+        accessible_pro_servers: List[WorkspaceRead] = []
         try:
             client = ZenMLProClient(pro_api_url)
-            accessible_pro_servers = client.tenant.list(member_only=not all)
+            accessible_pro_servers = client.workspace.list(member_only=not all)
         except AuthorizationException as e:
             cli_utils.warning(f"ZenML Pro authorization error: {e}")
 
@@ -640,7 +640,7 @@ def server_list(
             accessible_pro_servers = [
                 s
                 for s in accessible_pro_servers
-                if s.status == TenantStatus.AVAILABLE
+                if s.status == WorkspaceStatus.AVAILABLE
             ]
 
         if not accessible_pro_servers:

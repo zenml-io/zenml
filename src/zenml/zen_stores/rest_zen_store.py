@@ -4098,7 +4098,7 @@ class RestZenStore(BaseZenStore):
                     "password": password,
                 }
             elif self.server_info.is_pro_server():
-                # ZenML Pro tenants use a proprietary authorization grant
+                # ZenML Pro workspaces use a proprietary authorization grant
                 # where the ZenML Pro API session token is exchanged for a
                 # regular ZenML server access token.
 

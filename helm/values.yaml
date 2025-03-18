@@ -44,11 +44,11 @@ zenml:
     # Additional origins to allow in the CORS policy.
     extraCorsOrigins:
 
-    # The ID of the ZenML Pro tenant to use.
-    tenantID:
+    # The ID of the ZenML Pro workspace to use.
+    workspaceID:
 
-    # The name of the ZenML Pro tenant to use.
-    tenantName:
+    # The name of the ZenML Pro workspace to use.
+    workspaceName:
 
     # The ID of the ZenML Pro organization to use.
     organizationID:
@@ -56,7 +56,7 @@ zenml:
     # The name of the ZenML Pro organization to use.
     organizationName:
 
-    # The enrollment key to use for the ZenML Pro tenant. If not specified,
+    # The enrollment key to use for the ZenML Pro workspace. If not specified,
     # an enrollment key will be auto-generated.
     enrollmentKey:
 
