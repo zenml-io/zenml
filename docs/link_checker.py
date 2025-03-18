@@ -58,9 +58,8 @@ import argparse
 import os
 import re
 import sys
-import time
-from typing import List, Set, Tuple, Dict, Optional
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import Dict, List, Optional, Tuple
 
 try:
     import requests
@@ -375,9 +374,9 @@ def replace_links_in_file(
         if substring is None:
             return True
 
-        # For internal documentation paths, only include relative links
+        # For internal documentation paths, only include relative links that contain the substring
         if substring in internal_paths:
-            return link.startswith("../")
+            return substring in link
 
         # For other substrings, include all links containing the substring
         return substring in link
