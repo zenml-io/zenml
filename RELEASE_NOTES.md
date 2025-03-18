@@ -67,7 +67,7 @@ The 0.80.0 release introduces a major refactoring of workspaces into projects, e
 * Minor fix for the docs by @avishniakov in https://github.com/zenml-io/zenml/pull/3411
 * Listing tags filtered by resource type by @bcdurak in https://github.com/zenml-io/zenml/pull/3406
 * Adding removing tags with various update models by @bcdurak in https://github.com/zenml-io/zenml/pull/3404
-* Exclusive tag behaviour by @bcdurak in https://github.com/zenml-io/zenml/pull/3405
+* Exclusive tag behavior by @bcdurak in https://github.com/zenml-io/zenml/pull/3405
 * Rename tenant to workspace and implement new RBAC API resource format by @stefannica in https://github.com/zenml-io/zenml/pull/3414
 * API Docs -> SDK Docs by @htahir1 in https://github.com/zenml-io/zenml/pull/3415
 * Removed step by @AlexejPenner in https://github.com/zenml-io/zenml/pull/3416
