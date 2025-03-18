@@ -16,7 +16,6 @@
 import os
 from typing import Optional
 from urllib.parse import urlparse
-from uuid import UUID
 
 from zenml import constants
 from zenml.client import Client
@@ -26,6 +25,7 @@ from zenml.environment import get_environment
 from zenml.logger import get_logger
 from zenml.models import (
     ComponentResponse,
+    ModelVersionResponse,
     PipelineRunResponse,
     ServerDeploymentType,
     StackResponse,
@@ -118,7 +118,7 @@ def get_run_url(run: PipelineRunResponse) -> Optional[str]:
     """
     cloud_url = get_cloud_dashboard_url()
     if cloud_url:
-        return f"{cloud_url}{constants.RUNS}/{run.id}"
+        return f"{cloud_url}{constants.PROJECTS}/{run.project.id}{constants.RUNS}/{run.id}"
 
     dashboard_url = get_server_dashboard_url()
     if dashboard_url:
@@ -127,18 +127,20 @@ def get_run_url(run: PipelineRunResponse) -> Optional[str]:
     return None
 
 
-def get_model_version_url(model_version_id: UUID) -> Optional[str]:
+def get_model_version_url(
+    model_version: ModelVersionResponse,
+) -> Optional[str]:
     """Function to get the dashboard URL of a given model version.
 
     Args:
-        model_version_id: the id of the model version.
+        model_version: the response model of the given model version.
 
     Returns:
         the URL to the model version if the dashboard is available, else None.
     """
     cloud_url = get_cloud_dashboard_url()
     if cloud_url:
-        return f"{cloud_url}/model-versions/{str(model_version_id)}"
+        return f"{cloud_url}{constants.PROJECTS}/{model_version.project.id}/model-versions/{str(model_version.id)}"
 
     return None
 
