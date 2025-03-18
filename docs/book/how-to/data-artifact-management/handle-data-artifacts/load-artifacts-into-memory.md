@@ -1,6 +1,6 @@
 # Load artifacts into memory
 
-Often ZenML pipeline steps consume artifacts produced by one another directly in the pipeline code, but there are scenarios where you need to pull external data into your steps. Such external data could be artifacts produced by non-ZenML codes. For those cases, it is advised to use [ExternalArtifact](../../../user-guide/starter-guide/manage-artifacts.md#consuming-external-artifacts-within-a-pipeline), but what if we plan to exchange data created with other ZenML pipelines?
+Often ZenML pipeline steps consume artifacts produced by one another directly in the pipeline code, but there are scenarios where you need to pull external data into your steps. Such external data could be artifacts produced by non-ZenML codes. For those cases, it is advised to use [ExternalArtifact](https://docs.zenml.io/user-guides/starter-guide/manage-artifacts#consuming-external-artifacts-within-a-pipeline), but what if we plan to exchange data created with other ZenML pipelines?
 
 ZenML pipelines are first compiled and only executed at some later point. During the compilation phase, all function calls are executed, and this data is fixed as step input parameters. Given all this, the late materialization of dynamic objects, like data artifacts, is crucial. Without late materialization, it would not be possible to pass not-yet-existing artifacts as step inputs, or their metadata, which is often the case in a multi-pipeline setting.
 

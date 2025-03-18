@@ -58,7 +58,7 @@ def my_pipeline(...):
     def my_pipeline(...):
         ...
     ```
-* Specify a list of [ZenML integrations](../../component-guide/README.md) that you're using in your pipeline:
+* Specify a list of [ZenML integrations](https://docs.zenml.io/stacks) that you're using in your pipeline:
 
 ```python
 from zenml.integrations.constants import PYTORCH, EVIDENTLY

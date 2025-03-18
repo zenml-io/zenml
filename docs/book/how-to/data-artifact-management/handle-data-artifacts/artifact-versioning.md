@@ -12,21 +12,21 @@ Each time a ZenML pipeline runs, the system first checks if there have been any 
 
 ![Artifact Stores Under the Hood](../../../.gitbook/assets/zenml_artifact_store_underthehood_1.png)
 
-Suppose a step is new or has been modified. In that case, ZenML creates a new directory structure in the [Artifact Store](../../../component-guide/artifact-stores/artifact-stores.md) with a unique ID and stores the data using the appropriate materializers in this directory.
+Suppose a step is new or has been modified. In that case, ZenML creates a new directory structure in the [Artifact Store](https://docs.zenml.io/stacks/artifact-stores) with a unique ID and stores the data using the appropriate materializers in this directory.
 
 ![Artifact Stores Under the Hood](../../../.gitbook/assets/zenml_artifact_store_underthehood_2.png)
 
-On the other hand, if the step remains unchanged, ZenML intelligently decides whether to cache the step or not. By caching steps that have not been modified, ZenML can save [valuable time and computational resources](../../../user-guide/starter-guide/cache-previous-executions.md), allowing you to focus on experimenting with different configurations and improving your machine-learning models without the need to rerun unchanged parts of your pipeline.
+On the other hand, if the step remains unchanged, ZenML intelligently decides whether to cache the step or not. By caching steps that have not been modified, ZenML can save [valuable time and computational resources](https://docs.zenml.io/user-guides/starter-guide/cache-previous-executions), allowing you to focus on experimenting with different configurations and improving your machine-learning models without the need to rerun unchanged parts of your pipeline.
 
 With ZenML, you can easily trace an artifact back to its origins and understand the exact sequence of executions that led to its creation, such as a trained model. This feature enables you to gain insights into the entire lineage of your artifacts, providing a clear understanding of how your data has been processed and transformed throughout your machine-learning pipelines. With ZenML, you can ensure the reproducibility of your results, and identify potential issues or bottlenecks in your pipelines. This level of transparency and traceability is essential for maintaining the reliability and trustworthiness of machine learning projects, especially when working in a team or across different environments.
 
-For more details on how to adjust the names or versions assigned to your artifacts, assign tags to them, or adjust other artifact properties, see the [documentation on artifact versioning and configuration](../../../user-guide/starter-guide/manage-artifacts.md).
+For more details on how to adjust the names or versions assigned to your artifacts, assign tags to them, or adjust other artifact properties, see the [documentation on artifact versioning and configuration](https://docs.zenml.io/user-guides/starter-guide/manage-artifacts).
 
 By tracking the lineage of artifacts across environments and stacks, ZenML enables ML engineers to reproduce results and understand the exact steps taken to create a model. This is crucial for ensuring the reliability and reproducibility of machine learning models, especially when working in a team or across different environments.
 
 ## Saving and Loading Artifacts with Materializers
 
-[Materializers](handle-custom-data-types.md) play a crucial role in ZenML's artifact management system. They are responsible for handling the serialization and deserialization of artifacts, ensuring that data is consistently stored and retrieved from the [artifact store](../../../component-guide/artifact-stores/artifact-stores.md). Each materializer stores data flowing through a pipeline in one or more files within a unique directory in the artifact store:
+[Materializers](handle-custom-data-types.md) play a crucial role in ZenML's artifact management system. They are responsible for handling the serialization and deserialization of artifacts, ensuring that data is consistently stored and retrieved from the [artifact store](https://docs.zenml.io/stacks/artifact-stores). Each materializer stores data flowing through a pipeline in one or more files within a unique directory in the artifact store:
 
 ![Visualizing artifacts](../../../.gitbook/assets/zenml_artifact_store_underthehood_3.png)
 

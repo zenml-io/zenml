@@ -125,14 +125,14 @@ curl -X POST http://$INGRESS_HOST/seldon/default/iris-model/api/v1.0/predictions
 
 ### Using a Service Connector
 
-To set up the Seldon Core Model Deployer to authenticate to a remote Kubernetes cluster, it is recommended to leverage the many features provided by [the Service Connectors](../../how-to/infrastructure-deployment/auth-management/) such as auto-configuration, local client login, best security practices regarding long-lived credentials and fine-grained access control and reusing the same credentials across multiple stack components.
+To set up the Seldon Core Model Deployer to authenticate to a remote Kubernetes cluster, it is recommended to leverage the many features provided by [the Service Connectors](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/) such as auto-configuration, local client login, best security practices regarding long-lived credentials and fine-grained access control and reusing the same credentials across multiple stack components.
 
 Depending on where your target Kubernetes cluster is running, you can use one of the following Service Connectors:
 
-* [the AWS Service Connector](../../how-to/infrastructure-deployment/auth-management/aws-service-connector.md), if you are using an AWS EKS cluster.
-* [the GCP Service Connector](../../how-to/infrastructure-deployment/auth-management/gcp-service-connector.md), if you are using a GKE cluster.
-* [the Azure Service Connector](../../how-to/infrastructure-deployment/auth-management/azure-service-connector.md), if you are using an AKS cluster.
-* [the generic Kubernetes Service Connector](../../how-to/infrastructure-deployment/auth-management/kubernetes-service-connector.md) for any other Kubernetes cluster.
+* [the AWS Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/aws-service-connector), if you are using an AWS EKS cluster.
+* [the GCP Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/gcp-service-connector), if you are using a GKE cluster.
+* [the Azure Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/azure-service-connector), if you are using an AKS cluster.
+* [the generic Kubernetes Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/kubernetes-service-connector) for any other Kubernetes cluster.
 
 If you don't already have a Service Connector configured in your ZenML deployment, you can register one using the interactive CLI command. You have the option to configure a Service Connector that can be used to access more than one Kubernetes cluster or even more than one type of cloud resource:
 
@@ -163,7 +163,7 @@ Alternatively, you can configure a Service Connector through the ZenML dashboard
 
 ![AWS Service Connector Type](../../.gitbook/assets/aws-service-connector-type.png) ![AWS EKS Service Connector Configuration](../../.gitbook/assets/aws-eks-service-connector-configuration.png)
 
-> **Note**: Please remember to grant the entity associated with your cloud credentials permissions to access the Kubernetes cluster and to list accessible Kubernetes clusters. For a full list of permissions required to use a AWS Service Connector to access one or more Kubernetes cluster, please refer to the [documentation for your Service Connector of choice](../../how-to/infrastructure-deployment/auth-management/) or read the documentation available in the interactive CLI commands and dashboard. The Service Connectors supports many different authentication methods with different levels of security and convenience. You should pick the one that best fits your use-case.
+> **Note**: Please remember to grant the entity associated with your cloud credentials permissions to access the Kubernetes cluster and to list accessible Kubernetes clusters. For a full list of permissions required to use a AWS Service Connector to access one or more Kubernetes cluster, please refer to the [documentation for your Service Connector of choice](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/) or read the documentation available in the interactive CLI commands and dashboard. The Service Connectors supports many different authentication methods with different levels of security and convenience. You should pick the one that best fits your use-case.
 
 If you already have one or more Service Connectors configured in your ZenML deployment, you can check which of them can be used to access the Kubernetes cluster that you want to use for your Seldon Core Model Deployer by running e.g.:
 
@@ -239,7 +239,7 @@ If you want to use a custom persistent storage with Seldon Core, or if you prefe
 
 **Advanced: Configuring a Custom Seldon Core Secret**
 
-The Seldon Core model deployer stack component allows configuring an additional `secret` attribute that can be used to specify custom credentials that Seldon Core should use to authenticate to the persistent storage service where models are located. This is useful if you want to connect Seldon Core to a persistent storage service that is not supported as a ZenML Artifact Store, or if you don't want to configure or use the same credentials configured for your Artifact Store. The `secret` attribute must be set to the name of [a ZenML secret](../../how-to/project-setup-and-management/interact-with-secrets.md) containing credentials configured in the format supported by Seldon Core.
+The Seldon Core model deployer stack component allows configuring an additional `secret` attribute that can be used to specify custom credentials that Seldon Core should use to authenticate to the persistent storage service where models are located. This is useful if you want to connect Seldon Core to a persistent storage service that is not supported as a ZenML Artifact Store, or if you don't want to configure or use the same credentials configured for your Artifact Store. The `secret` attribute must be set to the name of [a ZenML secret](https://docs.zenml.io/how-to/project-setup-and-management/interact-with-secrets) containing credentials configured in the format supported by Seldon Core.
 
 {% hint style="info" %}
 This method is not recommended, because it limits the Seldon Core model deployer to a single persistent storage service, whereas using the Artifact Store credentials gives you more flexibility in combining the Seldon Core model deployer with any Artifact Store in the same ZenML stack.

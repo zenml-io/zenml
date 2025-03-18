@@ -38,7 +38,7 @@ command as outlined [here](../installation.md).
 This Python package gives you [the `zenml` command-line interface](https://sdkdocs.zenml.io/latest/cli/) which
 you can use to interact with the ZenML server for common tasks like managing
 stacks, setting up secrets, and so on. It also gives you the general framework that lets you
-[author and deploy pipelines](../../user-guide/starter-guide/README.md) and so forth.
+[author and deploy pipelines](https://docs.zenml.io/user-guides/starter-guide) and so forth.
 
 If you want to have more fine-grained control and access to the metadata that
 ZenML manages, you can use the Python SDK to access the API. This allows you to

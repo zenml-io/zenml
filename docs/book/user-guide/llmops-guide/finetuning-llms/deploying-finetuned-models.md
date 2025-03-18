@@ -64,7 +64,7 @@ requirements like speed, throughput, and accuracy needs.
 
 [vLLM](https://github.com/vllm-project/vllm) is a fast and easy-to-use library
 for running large language models (LLMs) at high throughputs and low latency.
-ZenML comes with a [vLLM integration](../../../component-guide/model-deployers/vllm.md)
+ZenML comes with a [vLLM integration](https://docs.zenml.io/stacks/model-deployers/vllm)
 that makes it easy to deploy your finetuned model using vLLM. You can use a
 pre-built step that exposes a `VLLMDeploymentService` that can be used as part of
 your deployment pipeline.
@@ -96,7 +96,7 @@ can be a model ID on the Hugging Face Hub. This will then deploy the model
 locally using vLLM and you can then use the `VLLMDeploymentService` for batch
 inference requests using the OpenAI-compatible API.
 
-For more details on how to use this deployer, see the [vLLM integration documentation](../../../component-guide/model-deployers/vllm.md).
+For more details on how to use this deployer, see the [vLLM integration documentation](https://docs.zenml.io/stacks/model-deployers/vllm).
 
 ## Cloud-Specific Deployment Options
 

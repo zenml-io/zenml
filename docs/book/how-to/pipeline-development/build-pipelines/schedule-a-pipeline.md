@@ -10,21 +10,21 @@ Schedules don't work for all orchestrators. Here is a list of all supported orch
 
 | Orchestrator                                                                     | Scheduling Support |
 |----------------------------------------------------------------------------------|--------------------|
-| [AirflowOrchestrator](../../../component-guide/orchestrators/airflow.md)            | ✅                 |
-| [AzureMLOrchestrator](../../../component-guide/orchestrators/azureml.md)            | ✅                 |
-| [DatabricksOrchestrator](../../../component-guide/orchestrators/databricks.md)      | ✅                 |
-| [HyperAIOrchestrator](../../../component-guide/orchestrators/hyperai.md)            | ✅                 |
-| [KubeflowOrchestrator](../../../component-guide/orchestrators/kubeflow.md)          | ✅                 |
-| [KubernetesOrchestrator](../../../component-guide/orchestrators/kubernetes.md)      | ✅                 |
-| [LocalOrchestrator](../../../component-guide/orchestrators/local.md)                | ⛔️                 |
-| [LocalDockerOrchestrator](../../../component-guide/orchestrators/local-docker.md)   | ⛔️                 |
-| [SagemakerOrchestrator](../../../component-guide/orchestrators/sagemaker.md)        | ✅                  |
-| [SkypilotAWSOrchestrator](../../../component-guide/orchestrators/skypilot-vm.md)    | ⛔️                 |
-| [SkypilotAzureOrchestrator](../../../component-guide/orchestrators/skypilot-vm.md)  | ⛔️                 |
-| [SkypilotGCPOrchestrator](../../../component-guide/orchestrators/skypilot-vm.md)    | ⛔️                 |
-| [SkypilotLambdaOrchestrator](../../../component-guide/orchestrators/skypilot-vm.md) | ⛔️                 |
-| [TektonOrchestrator](../../../component-guide/orchestrators/tekton.md)              | ⛔️                 |
-| [VertexOrchestrator](../../../component-guide/orchestrators/vertex.md)              | ✅                 |
+| [AirflowOrchestrator](https://docs.zenml.io/stacks/orchestrators/airflow)            | ✅                 |
+| [AzureMLOrchestrator](https://docs.zenml.io/stacks/orchestrators/azureml)            | ✅                 |
+| [DatabricksOrchestrator](https://docs.zenml.io/stacks/orchestrators/databricks)      | ✅                 |
+| [HyperAIOrchestrator](https://docs.zenml.io/stacks/orchestrators/hyperai)            | ✅                 |
+| [KubeflowOrchestrator](https://docs.zenml.io/stacks/orchestrators/kubeflow)          | ✅                 |
+| [KubernetesOrchestrator](https://docs.zenml.io/stacks/orchestrators/kubernetes)      | ✅                 |
+| [LocalOrchestrator](https://docs.zenml.io/stacks/orchestrators/local)                | ⛔️                 |
+| [LocalDockerOrchestrator](https://docs.zenml.io/stacks/orchestrators/local-docker)   | ⛔️                 |
+| [SagemakerOrchestrator](https://docs.zenml.io/stacks/orchestrators/sagemaker)        | ✅                  |
+| [SkypilotAWSOrchestrator](https://docs.zenml.io/stacks/orchestrators/skypilot-vm)    | ⛔️                 |
+| [SkypilotAzureOrchestrator](https://docs.zenml.io/stacks/orchestrators/skypilot-vm)  | ⛔️                 |
+| [SkypilotGCPOrchestrator](https://docs.zenml.io/stacks/orchestrators/skypilot-vm)    | ⛔️                 |
+| [SkypilotLambdaOrchestrator](https://docs.zenml.io/stacks/orchestrators/skypilot-vm) | ⛔️                 |
+| [TektonOrchestrator](https://docs.zenml.io/stacks/orchestrators/tekton)              | ⛔️                 |
+| [VertexOrchestrator](https://docs.zenml.io/stacks/orchestrators/vertex)              | ✅                 |
 
 
 ### Set a schedule
@@ -78,7 +78,7 @@ Note that ZenML only gets involved to schedule a run, but maintaining the lifecy
         <td>Schedules rely on remote orchestrators, learn about those here</td>
         <td></td>
         <td></td>
-        <td><a href="../../../component-guide/orchestrators/orchestrators.md">orchestrators.md</a></td>
+        <td><a href="https://docs.zenml.io/stacks/orchestrators">orchestrators.md</a></td>
     </tr>
     </tbody>
 </table>

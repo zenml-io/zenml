@@ -175,7 +175,7 @@ You should use the Spark step operator:
 
 To use the `KubernetesSparkStepOperator` you will need to setup a few things first:
 
-* **Remote ZenML server:** See the [deployment guide](../../getting-started/deploying-zenml/) for more information.
+* **Remote ZenML server:** See the [deployment guide](https://docs.zenml.io/getting-started/deploying-zenml/) for more information.
 * **Kubernetes cluster:** There are many ways to deploy a Kubernetes cluster using different cloud providers or on your custom infrastructure. For AWS, you can follow the [Spark EKS Setup Guide](spark-kubernetes.md#spark-eks-setup-guide) below.
 
 ### Spark EKS Setup Guide
@@ -325,7 +325,7 @@ def step_on_spark(...) -> ...:
 After successfully running any step with a `KubernetesSparkStepOperator`, you should be able to see that a Spark driver pod was created in your cluster for each pipeline step when running `kubectl get pods -n $KUBERNETES_NAMESPACE`.
 
 {% hint style="info" %}
-Instead of hardcoding a step operator name, you can also use the [Client](../../reference/python-client.md) to dynamically use the step operator of your active stack:
+Instead of hardcoding a step operator name, you can also use the [Client](https://docs.zenml.io/reference/python-client) to dynamically use the step operator of your active stack:
 
 ```python
 from zenml.client import Client
@@ -340,6 +340,6 @@ def step_on_spark(...) -> ...:
 
 ### Additional configuration
 
-For additional configuration of the Spark step operator, you can pass `SparkStepOperatorSettings` when defining or running your pipeline. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-spark/#zenml.integrations.spark.flavors.spark_step_operator_flavor.SparkStepOperatorSettings) for a full list of available attributes and [this docs page](../../how-to/pipeline-development/use-configuration-files/runtime-configuration.md) for more information on how to specify settings.
+For additional configuration of the Spark step operator, you can pass `SparkStepOperatorSettings` when defining or running your pipeline. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-spark/#zenml.integrations.spark.flavors.spark_step_operator_flavor.SparkStepOperatorSettings) for a full list of available attributes and [this docs page](https://docs.zenml.io/how-to/pipeline-development/use-configuration-files/runtime-configuration) for more information on how to specify settings.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

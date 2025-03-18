@@ -85,7 +85,7 @@ def resource_intensive_step():
    ...
 ```
 
-For more details and advanced options, see the [full SkyPilot VM Orchestrator documentation](../../component-guide/orchestrators/skypilot-vm.md).
+For more details and advanced options, see the [full SkyPilot VM Orchestrator documentation](https://docs.zenml.io/stacks/orchestrators/skypilot-vm).
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

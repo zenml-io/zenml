@@ -40,7 +40,7 @@ You need to configure the following credentials for authentication to the Comet 
 
 {% tabs %}
 {% tab title="ZenML Secret (Recommended)" %}
-This method requires you to [configure a ZenML secret](../../getting-started/deploying-zenml/secret-management.md) to store the Comet tracking service credentials securely.
+This method requires you to [configure a ZenML secret](https://docs.zenml.io/getting-started/deploying-zenml/secret-management) to store the Comet tracking service credentials securely.
 
 You can create the secret using the `zenml secret create` command:
 
@@ -67,7 +67,7 @@ zenml stack register custom_stack -e comet_experiment_tracker ... --set
 ```
 
 {% hint style="info" %}
-Read more about [ZenML Secrets](../../getting-started/deploying-zenml/secret-management.md) in the ZenML documentation.
+Read more about [ZenML Secrets](https://docs.zenml.io/getting-started/deploying-zenml/secret-management) in the ZenML documentation.
 {% endhint %}
 {% endtab %}
 
@@ -123,7 +123,7 @@ def my_step():
 ```
 
 {% hint style="info" %}
-Instead of hardcoding an experiment tracker name, you can also use the [Client](../../reference/python-client.md) to dynamically use the experiment tracker of your active stack, as shown in the example above.
+Instead of hardcoding an experiment tracker name, you can also use the [Client](https://docs.zenml.io/reference/python-client) to dynamically use the experiment tracker of your active stack, as shown in the example above.
 {% endhint %}
 
 ### Comet UI
@@ -284,6 +284,6 @@ def my_step():
     ...
 ```
 
-Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-comet/#zenml.integrations.comet.flavors.comet_experiment_tracker_flavor.CometExperimentTrackerSettings) for a full list of available attributes and [this docs page](../../how-to/pipeline-development/use-configuration-files/runtime-configuration.md) for more information on how to specify settings.
+Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-comet/#zenml.integrations.comet.flavors.comet_experiment_tracker_flavor.CometExperimentTrackerSettings) for a full list of available attributes and [this docs page](https://docs.zenml.io/how-to/pipeline-development/use-configuration-files/runtime-configuration) for more information on how to specify settings.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

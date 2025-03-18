@@ -99,7 +99,7 @@ zenml artifact-store connect ${ARTIFACT_STORE_NAME} -i
 ```
 
 {% hint style="info" %}
-Head on over to our [docs](../../component-guide/artifact-stores/gcp.md) to learn more about artifact stores and how to configure them.
+Head on over to our [docs](https://docs.zenml.io/stacks/artifact-stores/gcp) to learn more about artifact stores and how to configure them.
 {% endhint %}
 {% endtab %}
 {% endtabs %}
@@ -122,7 +122,7 @@ zenml orchestrator connect ${ORCHESTRATOR_NAME} -i
 ```
 
 {% hint style="info" %}
-Head on over to our [docs](../../component-guide/orchestrators/vertex.md) to learn more about orchestrators and how to configure them.
+Head on over to our [docs](https://docs.zenml.io/stacks/orchestrators/vertex) to learn more about orchestrators and how to configure them.
 {% endhint %}
 {% endtab %}
 {% endtabs %}
@@ -141,7 +141,7 @@ zenml container-registry connect ${CONTAINER_REGISTRY_NAME} -i
 ```
 
 {% hint style="info" %}
-Head on over to our [docs](../../component-guide/container-registries/container-registries.md) to learn more about container registries and how to configure them.
+Head on over to our [docs](https://docs.zenml.io/stacks/container-registries) to learn more about container registries and how to configure them.
 {% endhint %}
 {% endtab %}
 {% endtabs %}

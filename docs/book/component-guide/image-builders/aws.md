@@ -18,8 +18,8 @@ You should use the AWS image builder if:
 
 {% hint style="info" %}
 Would you like to skip ahead and deploy a full ZenML cloud stack already,\
-including the AWS image builder? Check out the[in-browser stack deployment wizard](../../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack.md),\
-or [the ZenML AWS Terraform module](../../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform.md)\
+including the AWS image builder? Check out the[in-browser stack deployment wizard](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack),\
+or [the ZenML AWS Terraform module](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform)\
 for a shortcut on how to deploy & register this stack component.
 {% endhint %}
 
@@ -81,7 +81,7 @@ The user must take care that the **Service Role** attached to the CodeBuild proj
 }
 ```
 
-* Recommended: Grant ZenML access to trigger AWS CodeBuild builds by registering an [AWS Service Connector](../../how-to/infrastructure-deployment/auth-management/aws-service-connector.md) with the proper credentials and permissions, as covered in the [Authentication Methods](aws.md#authentication-methods) section. If not provided, the AWS credentials will be inferred from the environment where the pipeline is triggered.
+* Recommended: Grant ZenML access to trigger AWS CodeBuild builds by registering an [AWS Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/aws-service-connector) with the proper credentials and permissions, as covered in the [Authentication Methods](aws.md#authentication-methods) section. If not provided, the AWS credentials will be inferred from the environment where the pipeline is triggered.
 
 We can register the image builder and use it in our active stack:
 
@@ -98,19 +98,19 @@ You also need to set up [authentication](aws.md#authentication-methods) required
 
 #### Authentication Methods
 
-Integrating and using an AWS Image Builder in your pipelines is not possible without employing some form of authentication. If you're looking for a quick way to get started locally, you can use the _Local Authentication_ method. However, the recommended way to authenticate to the AWS cloud platform is through [an AWS Service Connector](../../how-to/infrastructure-deployment/auth-management/aws-service-connector.md). This is particularly useful if you are configuring ZenML stacks that combine the AWS Image Builder with other remote stack components also running in AWS.
+Integrating and using an AWS Image Builder in your pipelines is not possible without employing some form of authentication. If you're looking for a quick way to get started locally, you can use the _Local Authentication_ method. However, the recommended way to authenticate to the AWS cloud platform is through [an AWS Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/aws-service-connector). This is particularly useful if you are configuring ZenML stacks that combine the AWS Image Builder with other remote stack components also running in AWS.
 
 {% tabs %}
 {% tab title="Implicit Authentication" %}
 This method uses the implicit AWS authentication available _in the environment where the ZenML code is running_. On your local machine, this is the quickest way to configure an AWS Image Builder. You don't need to supply credentials explicitly when you register the AWS Image Builder, as it leverages the local credentials and configuration that the AWS CLI stores on your local machine. However, you will need to install and set up the AWS CLI on your machine as a prerequisite, as covered in [the AWS CLI documentation](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html), before you register the AWS Image Builder.
 
 {% hint style="warning" %}
-Stacks using the AWS Image Builder set up with local authentication are not portable across environments. To make ZenML pipelines fully portable, it is recommended to use [an AWS Service Connector](../../how-to/infrastructure-deployment/auth-management/aws-service-connector.md) to authenticate your AWS Image Builder to the AWS cloud platform.
+Stacks using the AWS Image Builder set up with local authentication are not portable across environments. To make ZenML pipelines fully portable, it is recommended to use [an AWS Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/aws-service-connector) to authenticate your AWS Image Builder to the AWS cloud platform.
 {% endhint %}
 {% endtab %}
 
 {% tab title="AWS Service Connector (recommended)" %}
-To set up the AWS Image Builder to authenticate to AWS and access the AWS CodeBuild services, it is recommended to leverage the many features provided by [the AWS Service Connector](../../how-to/infrastructure-deployment/auth-management/aws-service-connector.md) such as auto-configuration, best security practices regarding long-lived credentials and reusing the same credentials across multiple stack components.
+To set up the AWS Image Builder to authenticate to AWS and access the AWS CodeBuild services, it is recommended to leverage the many features provided by [the AWS Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/aws-service-connector) such as auto-configuration, best security practices regarding long-lived credentials and reusing the same credentials across multiple stack components.
 
 If you don't already have an AWS Service Connector configured in your ZenML deployment, you can register one using the interactive CLI command. You also have the option to configure an AWS Service Connector that can be used to access more than just the AWS CodeBuild service:
 
@@ -154,7 +154,7 @@ Successfully registered service connector `aws-generic` with access to the follo
 > }
 > ```
 
-The AWS Service Connector supports [many different authentication methods](../../how-to/infrastructure-deployment/auth-management/aws-service-connector.md#authentication-methods) with different levels of security and convenience. You should pick the one that best fits your use case.
+The AWS Service Connector supports [many different authentication methods](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/aws-service-connector#authentication-methods) with different levels of security and convenience. You should pick the one that best fits your use case.
 
 If you already have one or more AWS Service Connectors configured in your ZenML deployment, you can check which of them can be used to access generic AWS resources like the one required for your AWS Image Builder by running e.g.:
 
