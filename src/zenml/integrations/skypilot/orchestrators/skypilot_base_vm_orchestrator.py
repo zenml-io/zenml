@@ -318,30 +318,36 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                     disk_tier=settings.disk_tier,
                 )
             )
-            # Set the cluster name
+            # Do not detach run if logs are being streamed
+            # Otherwise, the logs will not be streamed after the task is submitted
+            # Could also be a parameter in the settings to control this behavior
+            detach_run = not settings.stream_logs
+
+            launch_new_cluster = True
             if settings.cluster_name:
-                sky.exec(
-                    task,
-                    settings.cluster_name,
-                    down=down,
-                    stream_logs=settings.stream_logs,
-                    backend=None,
-                    detach_run=True,
+                cluster_info = sky.status(
+                    refresh=True, cluster_names=settings.cluster_name
                 )
+                if cluster_info:
+                    logger.info(
+                        f"Found existing cluster {settings.cluster_name}. Reusing..."
+                    )
+                    launch_new_cluster = False
+
+                else:
+                    logger.info(
+                        f"Cluster {settings.cluster_name} not found. Launching a new one..."
+                    )
+                    cluster_name = settings.cluster_name
             else:
-                # Find existing cluster
-                for i in sky.status(refresh=True):
-                    if isinstance(
-                        i["handle"].launched_resources.cloud, type(self.cloud)
-                    ):
-                        cluster_name = i["handle"].cluster_name
-                        logger.info(
-                            f"Found existing cluster {cluster_name}. Reusing..."
-                        )
                 cluster_name = self.sanitize_cluster_name(
                     f"{orchestrator_run_name}"
                 )
-                # Launch the cluster
+                logger.info(
+                    f"No cluster name provided. Launching a new cluster with name {cluster_name}..."
+                )
+
+            if launch_new_cluster:
                 sky.launch(
                     task,
                     cluster_name,
@@ -349,7 +355,26 @@ class SkypilotBaseOrchestrator(ContainerizedOrchestrator):
                     idle_minutes_to_autostop=idle_minutes_to_autostop,
                     down=down,
                     stream_logs=settings.stream_logs,
+                    backend=None,
                     detach_setup=True,
+                    detach_run=detach_run,
+                )
+            else:
+                # Make sure the cluster is up -
+                # If the cluster is already up, this will not do anything
+                sky.start(
+                    settings.cluster_name,
+                    down=down,
+                    idle_minutes_to_autostop=idle_minutes_to_autostop,
+                    retry_until_up=settings.retry_until_up,
+                )
+                sky.exec(
+                    task,
+                    settings.cluster_name,
+                    down=down,
+                    stream_logs=settings.stream_logs,
+                    backend=None,
+                    detach_run=detach_run,
                 )
 
         except Exception as e:
