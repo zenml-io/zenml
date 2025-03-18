@@ -4,7 +4,7 @@ description: Structuring an MLOps project
 
 # Connecting artifacts via a Model
 
-Now that we've learned about managing [artifacts](../../../user-guide/starter-guide/manage-artifacts.md) and [models](../../../user-guide/starter-guide/track-ml-models.md), we can shift our attention again to the thing that brings them together: [Pipelines](../../../user-guide/starter-guide/create-an-ml-pipeline.md). This trifecta together will then inform how we structure our project.
+Now that we've learned about managing [artifacts](../../../user-guide/starter-guide/manage-artifacts.md) and [models](../../../user-guide/starter-guide/track-ml-models.md), we can shift our attention again to the thing that brings them together: [Pipelines](https://docs.zenml.io/user-guides/starter-guide/create-an-ml-pipeline). This trifecta together will then inform how we structure our project.
 
 {% hint style="info" %}
 In order to see the recommended repository structure of a ZenML MLOps project, read the [best practices](../../project-setup-and-management/setting-up-a-project-repository/README.md) section.
@@ -60,13 +60,13 @@ Please note, that in the above example, the `train_data` and `test_data` artifac
 
 While passing around artifacts with IDs or names is very useful, it is often desirable to have the ZenML Model be the point of reference instead.
 
-For example, let's say we have a training pipeline called `train_and_promote` and an inference pipeline called `do_predictions`. The training pipeline produces many different model artifacts, all of which are collected within a [ZenML Model](../../../user-guide/starter-guide/track-ml-models.md). Each time the `train_and_promote` pipeline runs, it creates a new `iris_classifier`. However, it only promotes the model to `production` if a certain accuracy threshold is met. The promotion can be also be done manually with human intervention, or it can be automated through setting a particular threshold.
+For example, let's say we have a training pipeline called `train_and_promote` and an inference pipeline called `do_predictions`. The training pipeline produces many different model artifacts, all of which are collected within a [ZenML Model](https://docs.zenml.io/user-guides/starter-guide/track-ml-models). Each time the `train_and_promote` pipeline runs, it creates a new `iris_classifier`. However, it only promotes the model to `production` if a certain accuracy threshold is met. The promotion can be also be done manually with human intervention, or it can be automated through setting a particular threshold.
 
 On the other side, the `do_predictions` pipeline simply picks up the latest promoted model and runs batch inference on it. It need not know of the IDs or names of any of the artifacts produced by the training pipeline's many runs. This way these two pipelines can independently be run, but can rely on each other's output.
 
 <figure><img src="../../../.gitbook/assets/mcp_pipeline_overview.png" alt=""><figcaption><p>A simple artifact exchange between pipelines through the Model Control Plane.</p></figcaption></figure>
 
-In code, this is very simple. Once the [pipelines are configured to use a particular model](../../../user-guide/starter-guide/track-ml-models.md#configuring-a-model-in-a-pipeline), we can use `get_step_context` to fetch the configured model within a step directly. Assuming there is a `predict` step in the `do_predictions` pipeline, we can fetch the `production` model like so:
+In code, this is very simple. Once the [pipelines are configured to use a particular model](https://docs.zenml.io/user-guides/starter-guide/track-ml-models#configuring-a-model-in-a-pipeline), we can use `get_step_context` to fetch the configured model within a step directly. Assuming there is a `predict` step in the `do_predictions` pipeline, we can fetch the `production` model like so:
 
 ```python
 from zenml import step, get_step_context

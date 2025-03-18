@@ -35,7 +35,7 @@ python run.py --embeddings --argilla
 
 This assumes that you've set up an Argilla annotator in your stack. The code\
 checks for the annotator and downloads the data that was annotated in Argilla.\
-Please see our [guide to using the Argilla integration with ZenML](../../../component-guide/annotators/argilla.md) for more details.
+Please see our [guide to using the Argilla integration with ZenML](https://docs.zenml.io/stacks/annotators/argilla) for more details.
 
 ### Finetuning with Sentence Transformers
 

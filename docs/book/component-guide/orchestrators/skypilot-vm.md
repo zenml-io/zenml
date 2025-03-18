@@ -7,7 +7,7 @@ description: Orchestrating your pipelines to run on VMs using SkyPilot.
 The SkyPilot VM Orchestrator is an integration provided by ZenML that allows you to provision and manage virtual machines (VMs) on any cloud provider supported by the [SkyPilot framework](https://skypilot.readthedocs.io/en/latest/index.html). This integration is designed to simplify the process of running machine learning workloads on the cloud, offering cost savings, high GPU availability, and managed execution, We recommend using the SkyPilot VM Orchestrator if you need access to GPUs for your workloads, but don't want to deal with the complexities of managing cloud infrastructure or expensive managed solutions.
 
 {% hint style="warning" %}
-This component is only meant to be used within the context of a [remote ZenML deployment scenario](../../getting-started/deploying-zenml/). Usage with a local ZenML deployment may lead to unexpected behavior!
+This component is only meant to be used within the context of a [remote ZenML deployment scenario](https://docs.zenml.io/getting-started/deploying-zenml/). Usage with a local ZenML deployment may lead to unexpected behavior!
 {% endhint %}
 
 ## When to use it
@@ -28,7 +28,7 @@ You can configure the SkyPilot VM Orchestrator to use a specific VM type, and re
 {% endhint %}
 
 {% hint style="warning" %}
-The SkyPilot VM Orchestrator does not currently support the ability to [schedule pipelines runs](../../how-to/pipeline-development/build-pipelines/schedule-a-pipeline.md)
+The SkyPilot VM Orchestrator does not currently support the ability to [schedule pipelines runs](https://docs.zenml.io/how-to/pipeline-development/build-pipelines/schedule-a-pipeline)
 {% endhint %}
 
 {% hint style="info" %}
@@ -37,7 +37,7 @@ All ZenML pipeline runs are executed using Docker containers within the VMs prov
 
 ## How to deploy it
 
-You don't need to do anything special to deploy the SkyPilot VM Orchestrator. As the SkyPilot integration itself takes care of provisioning VMs, you can simply use the orchestrator as you would any other ZenML orchestrator. However, you will need to ensure that you have the appropriate permissions to provision VMs on your cloud provider of choice and to configure your SkyPilot orchestrator accordingly using the [service connectors](../../how-to/infrastructure-deployment/auth-management/service-connectors-guide.md) feature.
+You don't need to do anything special to deploy the SkyPilot VM Orchestrator. As the SkyPilot integration itself takes care of provisioning VMs, you can simply use the orchestrator as you would any other ZenML orchestrator. However, you will need to ensure that you have the appropriate permissions to provision VMs on your cloud provider of choice and to configure your SkyPilot orchestrator accordingly using the [service connectors](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/service-connectors-guide) feature.
 
 {% hint style="info" %}
 The SkyPilot VM Orchestrator currently only supports the AWS, GCP, and Azure cloud platforms.
@@ -65,9 +65,9 @@ To use the SkyPilot VM Orchestrator, you need:
 * [Docker](https://www.docker.com) installed and running.
 * A [remote artifact store](../artifact-stores/) as part of your stack.
 * A [remote container registry](../container-registries/) as part of your stack.
-* A [remote ZenML deployment](../../getting-started/deploying-zenml/).
+* A [remote ZenML deployment](https://docs.zenml.io/getting-started/deploying-zenml/).
 * The appropriate permissions to provision VMs on your cloud provider of choice.
-* A [service connector](../../how-to/infrastructure-deployment/auth-management/service-connectors-guide.md) configured to authenticate with your cloud provider of choice.
+* A [service connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/service-connectors-guide) configured to authenticate with your cloud provider of choice.
 
 {% tabs %}
 {% tab title="AWS" %}
@@ -78,7 +78,7 @@ We need first to install the SkyPilot integration for AWS and the AWS connectors
   zenml integration install aws skypilot_aws 
 ```
 
-To provision VMs on AWS, your VM Orchestrator stack component needs to be configured to authenticate with [AWS Service Connector](../../how-to/infrastructure-deployment/auth-management/aws-service-connector.md). To configure the AWS Service Connector, you need to register a new service connector configured with AWS credentials that have at least the minimum permissions required by SkyPilot as documented [here](https://skypilot.readthedocs.io/en/latest/cloud-setup/cloud-permissions/aws.html).
+To provision VMs on AWS, your VM Orchestrator stack component needs to be configured to authenticate with [AWS Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/aws-service-connector). To configure the AWS Service Connector, you need to register a new service connector configured with AWS credentials that have at least the minimum permissions required by SkyPilot as documented [here](https://skypilot.readthedocs.io/en/latest/cloud-setup/cloud-permissions/aws.html).
 
 First, check that the AWS service connector type is available using the following command:
 
@@ -126,7 +126,7 @@ We need first to install the SkyPilot integration for GCP and the GCP extra for 
   zenml integration install gcp skypilot_gcp
 ```
 
-To provision VMs on GCP, your VM Orchestrator stack component needs to be configured to authenticate with [GCP Service Connector](../../how-to/infrastructure-deployment/auth-management/gcp-service-connector.md)
+To provision VMs on GCP, your VM Orchestrator stack component needs to be configured to authenticate with [GCP Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/gcp-service-connector)
 
 To configure the GCP Service Connector, you need to register a new service connector, but first let's check the available service connectors types using the following command:
 
@@ -182,7 +182,7 @@ We need first to install the SkyPilot integration for Azure and the Azure extra 
   zenml integration install azure skypilot_azure 
 ```
 
-To provision VMs on Azure, your VM Orchestrator stack component needs to be configured to authenticate with [Azure Service Connector](../../how-to/infrastructure-deployment/auth-management/azure-service-connector.md)
+To provision VMs on Azure, your VM Orchestrator stack component needs to be configured to authenticate with [Azure Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/azure-service-connector)
 
 To configure the Azure Service Connector, you need to register a new service connector, but first let's check the available service connectors types using the following command:
 
@@ -249,7 +249,7 @@ We need first to install the SkyPilot integration for Kubernetes, using the foll
   zenml integration install skypilot_kubernetes
 ```
 
-To provision skypilot on kubernetes cluster, your orchestrator stack components needs to be configured to authenticate with a[Service Connector](../../how-to/infrastructure-deployment/auth-management/service-connectors-guide.md). To configure the Service Connector, you need to register a new service connector configured with the appropriate credentials and permissions to access the K8s cluster. You can then use the service connector to configure your registered the Orchestrator stack component using the following command:
+To provision skypilot on kubernetes cluster, your orchestrator stack components needs to be configured to authenticate with a[Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/service-connectors-guide). To configure the Service Connector, you need to register a new service connector configured with the appropriate credentials and permissions to access the K8s cluster. You can then use the service connector to configure your registered the Orchestrator stack component using the following command:
 
 First, check that the Kubernetes service connector type is available using the following command:
 
@@ -515,6 +515,6 @@ When configuring pipeline or step-specific resources, you can use the `settings`
 
 By using the `settings` parameter, you can tailor the resources for each step according to its specific needs. This flexibility allows you to optimize your pipeline execution for both performance and cost.
 
-Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-skypilot/#zenml.integrations.skypilot.flavors.skypilot_orchestrator_base_vm_flavor.SkypilotBaseOrchestratorSettings) for a full list of available attributes and [this docs page](../../how-to/pipeline-development/use-configuration-files/runtime-configuration.md) for more information on how to specify settings.
+Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-skypilot/#zenml.integrations.skypilot.flavors.skypilot_orchestrator_base_vm_flavor.SkypilotBaseOrchestratorSettings) for a full list of available attributes and [this docs page](https://docs.zenml.io/how-to/pipeline-development/use-configuration-files/runtime-configuration) for more information on how to specify settings.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

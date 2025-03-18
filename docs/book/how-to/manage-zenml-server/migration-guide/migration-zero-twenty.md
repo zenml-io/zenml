@@ -126,7 +126,7 @@ The Dashboard will be available at `http://localhost:8237` by default:
 
 ![ZenML Dashboard Preview](../../user-guide/assets/migration/zenml-dashboard.png)
 
-For more details on other possible deployment options, see the [ZenML deployment documentation](../../../getting-started/deploying-zenml/README.md), and/or follow the [starter guide](../../../user-guide/starter-guide/README.md) to learn more.
+For more details on other possible deployment options, see the [ZenML deployment documentation](../../../getting-started/deploying-zenml/README.md), and/or follow the [starter guide](https://docs.zenml.io/user-guides/starter-guide) to learn more.
 
 ## Removal of Profiles and the local YAML database
 
@@ -298,7 +298,7 @@ We also introduce the notion of `local` vs `non-local` stack components. Local s
 * stacks made up of local stack components should not be shared on a central ZenML Server, even though this is not enforced by the system.
 * stacks made up of non-local stack components are only functional if they are shared through a remotely deployed ZenML Server.
 
-Read more about shared stacks in the new [starter guide](../../user-guide/starter-guide/stacks/managing-stacks.md#sharing-stacks-over-a-zenml-server).
+Read more about shared stacks in the new [starter guide](https://docs.zenml.io/user-guides/starter-guide/stacks/managing-stacks#sharing-stacks-over-a-zenml-server).
 
 ## Other changes
 

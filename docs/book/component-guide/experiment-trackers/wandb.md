@@ -55,7 +55,7 @@ zenml stack register custom_stack -e wandb_experiment_tracker ... --set
 {% endtab %}
 
 {% tab title="ZenML Secret (Recommended)" %}
-This method requires you to [configure a ZenML secret](../../how-to/project-setup-and-management/interact-with-secrets.md) to store the Weights & Biases tracking service credentials securely.
+This method requires you to [configure a ZenML secret](https://docs.zenml.io/how-to/project-setup-and-management/interact-with-secrets) to store the Weights & Biases tracking service credentials securely.
 
 You can create the secret using the `zenml secret create` command:
 
@@ -79,7 +79,7 @@ zenml experiment-tracker register wandb_tracker \
 ```
 
 {% hint style="info" %}
-Read more about [ZenML Secrets](../../how-to/project-setup-and-management/interact-with-secrets.md) in the ZenML documentation.
+Read more about [ZenML Secrets](https://docs.zenml.io/how-to/project-setup-and-management/interact-with-secrets) in the ZenML documentation.
 {% endhint %}
 {% endtab %}
 {% endtabs %}
@@ -125,7 +125,7 @@ def tf_trainer(
 ```
 
 {% hint style="info" %}
-Instead of hardcoding an experiment tracker name, you can also use the [Client](../../reference/python-client.md) to dynamically use the experiment tracker of your active stack:
+Instead of hardcoding an experiment tracker name, you can also use the [Client](https://docs.zenml.io/reference/python-client) to dynamically use the experiment tracker of your active stack:
 
 ```python
 from zenml.client import Client
@@ -517,4 +517,4 @@ if __name__ == "__main__":
 
 </details>
 
-Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-wandb/#zenml.integrations.wandb.flavors.wandb_experiment_tracker_flavor.WandbExperimentTrackerSettings) for a full list of available attributes and [this docs page](../../how-to/pipeline-development/use-configuration-files/runtime-configuration.md) for more information on how to specify settings.
+Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-wandb/#zenml.integrations.wandb.flavors.wandb_experiment_tracker_flavor.WandbExperimentTrackerSettings) for a full list of available attributes and [this docs page](https://docs.zenml.io/how-to/pipeline-development/use-configuration-files/runtime-configuration) for more information on how to specify settings.

@@ -2,7 +2,7 @@
 description: Seamlessly register a cloud stack by using existing infrastructure
 ---
 
-In ZenML, the [stack](../../../user-guide/production-guide/understand-stacks.md) 
+In ZenML, the [stack](https://docs.zenml.io/user-guides/production-guide/understand-stacks) 
 is a fundamental concept that represents the configuration of your 
 infrastructure. In a normal workflow, creating a stack requires you to first 
 deploy the necessary pieces of infrastructure and then define them as stack 

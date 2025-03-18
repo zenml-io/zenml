@@ -128,7 +128,7 @@ zenml artifact-store register azure_artifact_store -f azure \
 ```
 
 For more information regarding Azure Blob Storage artifact stores, feel free to
-[check the docs](../../component-guide/artifact-stores/azure.md).
+[check the docs](https://docs.zenml.io/stacks/artifact-stores/azure).
 
 ### Orchestrator (AzureML)
 
@@ -144,7 +144,7 @@ zenml orchestrator register azure_orchestrator -f azureml \
 ```
 
 For more information regarding AzureML orchestrator, feel free to
-[check the docs](../../component-guide/orchestrators/azureml.md).
+[check the docs](https://docs.zenml.io/stacks/orchestrators/azureml).
 
 ### Container Registry (Azure Container Registry)
 
@@ -158,7 +158,7 @@ zenml container-registry register azure_container_registry -f azure \
 ```
 
 For more information regarding Azure container registries, feel free to
-[check the docs](../../component-guide/container-registries/azure.md).
+[check the docs](https://docs.zenml.io/stacks/container-registries/azure).
 
 ## 6. Create a Stack
 
@@ -206,8 +206,8 @@ Now that you have a functional Azure stack set up with ZenML, you can explore
 more advanced features and capabilities offered by ZenML. Some next steps to 
 consider:
 
-* Dive deeper into ZenML's [production guide](../../user-guide/production-guide/README.md) to learn best practices for deploying and managing production-ready pipelines.
-* Explore ZenML's [integrations](../../component-guide/README.md) with other popular tools and frameworks in the machine learning ecosystem.
+* Dive deeper into ZenML's [production guide](https://docs.zenml.io/user-guides/production-guide) to learn best practices for deploying and managing production-ready pipelines.
+* Explore ZenML's [integrations](https://docs.zenml.io/stacks) with other popular tools and frameworks in the machine learning ecosystem.
 * Join the [ZenML community](https://zenml.io/slack) to connect with other users, ask questions, and get support.
 
 <!-- For scarf -->
