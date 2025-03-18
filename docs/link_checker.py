@@ -1,17 +1,52 @@
 #!/usr/bin/env python3
-"""
-Link Checker Script
+"""Link Checker Script.
 
-This script scans markdown files for links and detects if they contain a specified substring.
-It can process either a directory of markdown files or a list of specific files.
-It can also replace relative links with absolute URLs.
-It can validate links by making HTTP requests to check if they are broken.
+This script is a comprehensive tool for managing and validating links in ZenML's documentation.
+It provides several key features:
 
-Usage:
+1. Link Detection:
+   - Scans markdown files for various types of links (inline, reference-style, HTML, and bare URLs)
+   - Can search for links containing specific substrings
+   - Supports both directory-wide and file-specific scanning
+
+2. Link Transformation:
+   - Converts relative documentation links to absolute URLs
+   - Handles various link formats including README.md files
+   - Preserves fragments and query parameters
+
+3. Link Validation:
+   - Validates links by making HTTP requests
+   - Supports parallel validation for better performance
+   - Provides detailed error reporting for broken links
+
+Usage Examples:
+    # Find all links containing 'docs.zenml.io' in a directory
     python link_checker.py --dir docs/book --substring docs.zenml.io
-    python link_checker.py --files file1.md file2.md --substring docs.zenml.io
+
+    # Check specific files for links containing 'how-to'
+    python link_checker.py --files file1.md file2.md --substring how-to
+
+    # Preview link replacements without making changes
     python link_checker.py --files file1.md --replace-links --dry-run
+
+    # Replace and validate links
     python link_checker.py --files file1.md --replace-links --validate-links
+
+    # Customize HTTP request timeout
+    python link_checker.py --files file1.md --validate-links --timeout 15
+
+Arguments:
+    --dir: Directory containing markdown files to scan
+    --files: List of specific markdown files to scan
+    --substring: Substring to search for in links
+    --replace-links: Replace relative links with absolute URLs
+    --dry-run: Show what would be changed without modifying files
+    --validate-links: Check if links are valid by making HTTP requests
+    --timeout: Timeout for HTTP requests in seconds (default: 10)
+
+Note:
+    The 'requests' package is required for link validation. Install it with:
+    pip install requests
 """
 
 import argparse
