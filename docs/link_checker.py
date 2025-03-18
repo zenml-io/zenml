@@ -281,13 +281,17 @@ def transform_relative_link(link: str) -> Optional[str]:
 
 
 def replace_links_in_file(
-    file_path: str, dry_run: bool = False, validate_links: bool = False
+    file_path: str,
+    substring: str,
+    dry_run: bool = False,
+    validate_links: bool = False,
 ) -> Dict[str, Tuple[str, bool, Optional[str]]]:
     """
     Replace relative links in the file with absolute URLs.
 
     Args:
         file_path: Path to the markdown file
+        substring: Substring to search for in links
         dry_run: If True, don't actually modify the file
         validate_links: If True, validate the generated links
 
@@ -300,6 +304,23 @@ def replace_links_in_file(
     replacements = {}
     transformed_urls = []
     modified = False
+
+    # List of internal documentation paths that should only match relative links
+    internal_paths = ["how-to", "user-guide", "component-guide", "book"]
+
+    def should_replace_link(link: str) -> bool:
+        if not link.startswith("../"):
+            return False
+
+        if substring is None:
+            return True
+
+        # For internal documentation paths, only include relative links
+        if substring in internal_paths:
+            return link.startswith("../")
+
+        # For other substrings, include all links containing the substring
+        return substring in link
 
     # First, handle inline links and HTML links
     for i, line in enumerate(lines):
@@ -319,6 +340,9 @@ def replace_links_in_file(
         for pattern, group in patterns:
             for match in pattern.finditer(line):
                 relative_link = match.group(group)
+                if not should_replace_link(relative_link):
+                    continue
+
                 transformed_link = transform_relative_link(relative_link)
 
                 if transformed_link:
@@ -344,6 +368,9 @@ def replace_links_in_file(
         if match:
             ref_id = match.group(1)
             relative_link = match.group(2)
+            if not should_replace_link(relative_link):
+                continue
+
             transformed_link = transform_relative_link(relative_link)
 
             if transformed_link:
@@ -459,7 +486,10 @@ def main():
         for file_path in files_to_scan:
             try:
                 replacements = replace_links_in_file(
-                    file_path, args.dry_run, args.validate_links
+                    file_path,
+                    args.substring,
+                    args.dry_run,
+                    args.validate_links,
                 )
                 if replacements:
                     print(f"\n{file_path}:")
