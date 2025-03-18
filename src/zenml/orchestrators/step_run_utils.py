@@ -352,7 +352,7 @@ def log_model_version_dashboard_url(
     """
     from zenml.utils.dashboard_utils import get_model_version_url
 
-    if model_version_url := get_model_version_url(model_version.id):
+    if model_version_url := get_model_version_url(model_version):
         logger.info(
             "Dashboard URL for Model Version `%s (%s)`:\n%s",
             model_version.model.name,

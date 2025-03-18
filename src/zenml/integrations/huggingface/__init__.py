@@ -75,4 +75,3 @@ class HuggingfaceIntegration(Integration):
         return [HuggingFaceModelDeployerFlavor]
 
 
-HuggingfaceIntegration.check_installation()

@@ -27,6 +27,3 @@ class PillowIntegration(Integration):
     def activate(cls) -> None:
         """Activates the integration."""
         from zenml.integrations.pillow import materializers  # noqa
-
-
-PillowIntegration.check_installation()

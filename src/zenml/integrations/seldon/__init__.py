@@ -67,5 +67,3 @@ class SeldonIntegration(Integration):
         return cls.REQUIREMENTS + \
             NumpyIntegration.get_requirements(target_os=target_os)
 
-
-SeldonIntegration.check_installation()

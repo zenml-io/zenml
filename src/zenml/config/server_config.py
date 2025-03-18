@@ -598,7 +598,7 @@ class ServerConfiguration(BaseModel):
             )
             server_config.feature_gate_implementation_source = "zenml.zen_server.feature_gate.zenml_cloud_feature_gate.ZenMLCloudFeatureGateInterface"
             server_config.reportable_resources = DEFAULT_REPORTABLE_RESOURCES
-            server_config.dashboard_url = f"{server_pro_config.dashboard_url}/workspaces/{server_pro_config.workspace_id}"
+            server_config.dashboard_url = f"{server_pro_config.dashboard_url}/workspaces/{server_pro_config.workspace_name}"
             server_config.metadata.update(
                 dict(
                     account_id=str(server_pro_config.organization_id),

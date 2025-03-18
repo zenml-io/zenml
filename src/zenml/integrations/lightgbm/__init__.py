@@ -30,4 +30,3 @@ class LightGBMIntegration(Integration):
         from zenml.integrations.lightgbm import materializers  # noqa
 
 
-LightGBMIntegration.check_installation()

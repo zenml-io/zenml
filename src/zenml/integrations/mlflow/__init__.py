@@ -111,5 +111,3 @@ class MlflowIntegration(Integration):
             MLFlowModelRegistryFlavor,
         ]
 
-
-MlflowIntegration.check_installation()

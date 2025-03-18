@@ -64,5 +64,3 @@ class TensorflowIntegration(Integration):
             requirements.append("typing-extensions>=4.6.1")
         return requirements
 
-
-TensorflowIntegration.check_installation()

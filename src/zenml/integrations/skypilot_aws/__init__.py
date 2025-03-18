@@ -48,5 +48,3 @@ class SkypilotAWSIntegration(Integration):
 
         return [SkypilotAWSOrchestratorFlavor]
 
-
-SkypilotAWSIntegration.check_installation()

@@ -48,5 +48,3 @@ class SkypilotKubernetesIntegration(Integration):
 
         return [SkypilotKubernetesOrchestratorFlavor]
 
-
-SkypilotKubernetesIntegration.check_installation()
