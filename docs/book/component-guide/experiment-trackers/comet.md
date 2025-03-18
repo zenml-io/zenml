@@ -40,7 +40,7 @@ You need to configure the following credentials for authentication to the Comet 
 
 {% tabs %}
 {% tab title="ZenML Secret (Recommended)" %}
-This method requires you to [configure a ZenML secret](../../getting-started/deploying-zenml/secret-management.md) to store the Comet tracking service credentials securely.
+This method requires you to [configure a ZenML secret](https://docs.zenml.io/getting-started/deploying-zenml/secret-management) to store the Comet tracking service credentials securely.
 
 You can create the secret using the `zenml secret create` command:
 
@@ -67,7 +67,7 @@ zenml stack register custom_stack -e comet_experiment_tracker ... --set
 ```
 
 {% hint style="info" %}
-Read more about [ZenML Secrets](../../getting-started/deploying-zenml/secret-management.md) in the ZenML documentation.
+Read more about [ZenML Secrets](https://docs.zenml.io/getting-started/deploying-zenml/secret-management) in the ZenML documentation.
 {% endhint %}
 {% endtab %}
 

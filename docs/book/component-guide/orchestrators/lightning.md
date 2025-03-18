@@ -7,7 +7,7 @@ description: Orchestrating your pipelines to run on Lightning AI.
 [Lightning AI Studio](https://lightning.ai/) is a platform that simplifies the development and deployment of AI applications. The Lightning AI orchestrator is an integration provided by ZenML that allows you to run your pipelines on Lightning AI's infrastructure, leveraging its scalable compute resources and managed environment.
 
 {% hint style="warning" %}
-This component is only meant to be used within the context of a [remote ZenML deployment scenario](../../getting-started/deploying-zenml/). Usage with a local ZenML deployment may lead to unexpected behavior!
+This component is only meant to be used within the context of a [remote ZenML deployment scenario](https://docs.zenml.io/getting-started/deploying-zenml/). Usage with a local ZenML deployment may lead to unexpected behavior!
 {% endhint %}
 
 ## When to use it

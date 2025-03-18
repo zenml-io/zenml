@@ -11,7 +11,7 @@ Docker container which is scheduled and started using Airflow.
 
 {% hint style="warning" %}
 If you're going to use a remote deployment of Airflow, you'll also need\
-a [remote ZenML deployment](../../getting-started/deploying-zenml/).
+a [remote ZenML deployment](https://docs.zenml.io/getting-started/deploying-zenml/).
 {% endhint %}
 
 ### When to use it
@@ -146,7 +146,7 @@ python file_that_runs_a_zenml_pipeline.py
 When using the Airflow orchestrator with a remote deployment, you'll additionally need:
 
 * A remote ZenML server deployed to the cloud. See\
-  the [deployment guide](../../getting-started/deploying-zenml/)\
+  the [deployment guide](https://docs.zenml.io/getting-started/deploying-zenml/)\
   for more information.
 * A deployed Airflow server. See the [deployment section](airflow.md#how-to-deploy-it) for more information.
 * A [remote artifact store](../artifact-stores/) as part of your stack.

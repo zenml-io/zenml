@@ -7,7 +7,7 @@ description: Orchestrating your pipelines to run on Kubeflow.
 The Kubeflow orchestrator is an [orchestrator](./) flavor provided by the ZenML `kubeflow` integration that uses [Kubeflow Pipelines](https://www.kubeflow.org/docs/components/pipelines/overview/) to run your pipelines.
 
 {% hint style="warning" %}
-This component is only meant to be used within the context of a [remote ZenML deployment scenario](../../getting-started/deploying-zenml/). Usage with a local ZenML deployment may lead to unexpected behavior!
+This component is only meant to be used within the context of a [remote ZenML deployment scenario](https://docs.zenml.io/getting-started/deploying-zenml/). Usage with a local ZenML deployment may lead to unexpected behavior!
 {% endhint %}
 
 ### When to use it
@@ -93,7 +93,7 @@ If you're installing Kubeflow Pipelines manually, make sure the Kubernetes servi
 To use the Kubeflow orchestrator, we need:
 
 * A Kubernetes cluster with Kubeflow pipelines installed. See the [deployment section](kubeflow.md#how-to-deploy-it) for more information.
-* A ZenML server deployed remotely where it can be accessed from the Kubernetes cluster. See the [deployment guide](../../getting-started/deploying-zenml/) for more information.
+* A ZenML server deployed remotely where it can be accessed from the Kubernetes cluster. See the [deployment guide](https://docs.zenml.io/getting-started/deploying-zenml/) for more information.
 *   The ZenML `kubeflow` integration installed. If you haven't done so, run
 
     ```shell

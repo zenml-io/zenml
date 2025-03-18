@@ -107,7 +107,7 @@ zenml stack register custom_stack -e vertex_experiment_tracker ... --set
 {% endtab %}
 
 {% tab title="GCP Credentials" %}
-When you register the Vertex AI Experiment Tracker, you can [generate a GCP Service Account Key](https://cloud.google.com/docs/authentication/application-default-credentials#attached-sa), store it in a [ZenML Secret](../../getting-started/deploying-zenml/secret-management.md) and then reference it in the Experiment Tracker configuration.
+When you register the Vertex AI Experiment Tracker, you can [generate a GCP Service Account Key](https://cloud.google.com/docs/authentication/application-default-credentials#attached-sa), store it in a [ZenML Secret](https://docs.zenml.io/getting-started/deploying-zenml/secret-management) and then reference it in the Experiment Tracker configuration.
 
 This method has some advantages over the implicit authentication method:
 

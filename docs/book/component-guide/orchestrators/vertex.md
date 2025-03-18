@@ -7,7 +7,7 @@ description: Orchestrating your pipelines to run on Vertex AI.
 [Vertex AI Pipelines](https://cloud.google.com/vertex-ai/docs/pipelines/introduction) is a serverless ML workflow tool running on the Google Cloud Platform. It is an easy way to quickly run your code in a production-ready, repeatable cloud orchestrator that requires minimal setup without provisioning and paying for standby compute.
 
 {% hint style="warning" %}
-This component is only meant to be used within the context of a [remote ZenML deployment scenario](../../getting-started/deploying-zenml/). Usage with a local ZenML deployment may lead to unexpected behavior!
+This component is only meant to be used within the context of a [remote ZenML deployment scenario](https://docs.zenml.io/getting-started/deploying-zenml/). Usage with a local ZenML deployment may lead to unexpected behavior!
 {% endhint %}
 
 ## When to use it
@@ -30,7 +30,7 @@ or [the ZenML GCP Terraform module](https://docs.zenml.io/how-to/infrastructure-
 for a shortcut on how to deploy & register this stack component.
 {% endhint %}
 
-In order to use a Vertex AI orchestrator, you need to first deploy [ZenML to the cloud](../../getting-started/deploying-zenml/). It would be recommended to deploy ZenML in the same Google Cloud project as where the Vertex infrastructure is deployed, but it is not necessary to do so. You must ensure that you are connected to the remote ZenML server before using this stack component.
+In order to use a Vertex AI orchestrator, you need to first deploy [ZenML to the cloud](https://docs.zenml.io/getting-started/deploying-zenml/). It would be recommended to deploy ZenML in the same Google Cloud project as where the Vertex infrastructure is deployed, but it is not necessary to do so. You must ensure that you are connected to the remote ZenML server before using this stack component.
 
 The only other thing necessary to use the ZenML Vertex orchestrator is enabling Vertex-relevant APIs on the Google Cloud project.
 

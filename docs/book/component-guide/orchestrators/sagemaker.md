@@ -7,7 +7,7 @@ description: Orchestrating your pipelines to run on Amazon Sagemaker.
 [Sagemaker Pipelines](https://aws.amazon.com/sagemaker/pipelines) is a serverless ML workflow tool running on AWS. It is an easy way to quickly run your code in a production-ready, repeatable cloud orchestrator that requires minimal setup without provisioning and paying for standby compute.
 
 {% hint style="warning" %}
-This component is only meant to be used within the context of a [remote ZenML deployment scenario](../../getting-started/deploying-zenml/). Usage with a local ZenML deployment may lead to unexpected behavior!
+This component is only meant to be used within the context of a [remote ZenML deployment scenario](https://docs.zenml.io/getting-started/deploying-zenml/). Usage with a local ZenML deployment may lead to unexpected behavior!
 {% endhint %}
 
 ## When to use it
@@ -34,7 +34,7 @@ or [the ZenML AWS Terraform module](https://docs.zenml.io/how-to/infrastructure-
 for a shortcut on how to deploy & register this stack component.
 {% endhint %}
 
-In order to use a Sagemaker AI orchestrator, you need to first deploy [ZenML to the cloud](../../getting-started/deploying-zenml/). It would be recommended to deploy ZenML in the same region as you plan on using for Sagemaker, but it is not necessary to do so. You must ensure that you are connected to the remote ZenML server before using this stack component.
+In order to use a Sagemaker AI orchestrator, you need to first deploy [ZenML to the cloud](https://docs.zenml.io/getting-started/deploying-zenml/). It would be recommended to deploy ZenML in the same region as you plan on using for Sagemaker, but it is not necessary to do so. You must ensure that you are connected to the remote ZenML server before using this stack component.
 
 The only other thing necessary to use the ZenML Sagemaker orchestrator is enabling the relevant permissions for your particular role.
 

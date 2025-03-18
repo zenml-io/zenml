@@ -13,7 +13,7 @@ Overall, the Kubernetes orchestrator is quite similar to the Kubeflow orchestrat
 Compared to Kubeflow, this means that the Kubernetes-native orchestrator is faster and much simpler since you do not need to install and maintain Kubeflow on your cluster. The Kubernetes-native orchestrator is an ideal choice for teams in need of distributed orchestration that do not want to go with a fully-managed offering.
 
 {% hint style="warning" %}
-This component is only meant to be used within the context of a [remote ZenML deployment scenario](../../getting-started/deploying-zenml/). Usage with a local ZenML deployment may lead to unexpected behavior!
+This component is only meant to be used within the context of a [remote ZenML deployment scenario](https://docs.zenml.io/getting-started/deploying-zenml/). Usage with a local ZenML deployment may lead to unexpected behavior!
 {% endhint %}
 
 ### When to use it
@@ -28,7 +28,7 @@ You should use the Kubernetes orchestrator if:
 
 The Kubernetes orchestrator requires a Kubernetes cluster in order to run. There are many ways to deploy a Kubernetes cluster using different cloud providers or on your custom infrastructure, and we can't possibly cover all of them, but you can check out our [our cloud guide](../../user-guide/cloud-guide/cloud-guide.md).
 
-If the above Kubernetes cluster is deployed remotely on the cloud, then another pre-requisite to use this orchestrator would be to deploy and connect to a [remote ZenML server](../../getting-started/deploying-zenml/).
+If the above Kubernetes cluster is deployed remotely on the cloud, then another pre-requisite to use this orchestrator would be to deploy and connect to a [remote ZenML server](https://docs.zenml.io/getting-started/deploying-zenml/).
 
 ### How to use it
 

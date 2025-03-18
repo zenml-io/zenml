@@ -175,7 +175,7 @@ You should use the Spark step operator:
 
 To use the `KubernetesSparkStepOperator` you will need to setup a few things first:
 
-* **Remote ZenML server:** See the [deployment guide](../../getting-started/deploying-zenml/) for more information.
+* **Remote ZenML server:** See the [deployment guide](https://docs.zenml.io/getting-started/deploying-zenml/) for more information.
 * **Kubernetes cluster:** There are many ways to deploy a Kubernetes cluster using different cloud providers or on your custom infrastructure. For AWS, you can follow the [Spark EKS Setup Guide](spark-kubernetes.md#spark-eks-setup-guide) below.
 
 ### Spark EKS Setup Guide
