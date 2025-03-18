@@ -192,7 +192,6 @@
 * [Global settings](reference/global-settings.md)
 * [Environment Variables](reference/environment-variables.md)
 * [API reference](reference/api-reference.md)
-* [SDK & CLI reference](https://sdkdocs.zenml.io/)
 * [How do I...?](reference/how-do-i.md)
 * [Community & content](reference/community-and-content.md)
 * [FAQ](reference/faq.md)
