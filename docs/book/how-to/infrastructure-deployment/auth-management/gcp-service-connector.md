@@ -51,7 +51,7 @@ zenml service-connector register -i --type gcp
 
 This resource type allows Stack Components to use the GCP Service Connector to connect to any GCP service or resource. When used by Stack Components, they are provided a Python google-auth credentials object populated with a GCP OAuth 2.0 token. This credentials object can then be used to create GCP Python clients for any particular GCP service.
 
-This generic GCP resource type is meant to be used with Stack Components that are not represented by one of the other, more specific resource types like GCS buckets, Kubernetes clusters, or Docker registries. For example, it can be used with [the Google Cloud Image Builder](../../../component-guide/image-builders/gcp.md) stack component, or [the Vertex AI Orchestrator](../../../component-guide/orchestrators/vertex.md) and [Step Operator](https://docs.zenml.io/stacks/step-operators/vertex). It should be accompanied by a matching set of GCP permissions that allow access to the set of remote resources required by the client and Stack Component (see the documentation of each Stack Component for more details).
+This generic GCP resource type is meant to be used with Stack Components that are not represented by one of the other, more specific resource types like GCS buckets, Kubernetes clusters, or Docker registries. For example, it can be used with [the Google Cloud Image Builder](https://docs.zenml.io/stacks/image-builders/gcp) stack component, or [the Vertex AI Orchestrator](https://docs.zenml.io/stacks/orchestrators/vertex) and [Step Operator](https://docs.zenml.io/stacks/step-operators/vertex). It should be accompanied by a matching set of GCP permissions that allow access to the set of remote resources required by the client and Stack Component (see the documentation of each Stack Component for more details).
 
 The resource name represents the GCP project that the connector is authorized to access.
 
@@ -1084,7 +1084,7 @@ The 'gcp-user-account' GCP Service Connector connector was used to successfully 
 
 The[ GCS Artifact Store Stack Component](https://docs.zenml.io/stacks/artifact-stores/gcp) can be connected to a remote GCS bucket through a GCP Service Connector.
 
-The [Google Cloud Image Builder Stack Component](../../../component-guide/image-builders/gcp.md), [VertexAI Orchestrator](../../../component-guide/orchestrators/vertex.md), and [VertexAI Step Operator](https://docs.zenml.io/stacks/step-operators/vertex) can be connected and use the resources of a target GCP project through a GCP Service Connector.
+The [Google Cloud Image Builder Stack Component](https://docs.zenml.io/stacks/image-builders/gcp), [VertexAI Orchestrator](https://docs.zenml.io/stacks/orchestrators/vertex), and [VertexAI Step Operator](https://docs.zenml.io/stacks/step-operators/vertex) can be connected and use the resources of a target GCP project through a GCP Service Connector.
 
 The GCP Service Connector can also be used with any Orchestrator or Model Deployer stack component flavor that relies on Kubernetes clusters to manage workloads. This allows GKE Kubernetes container workloads to be managed without the need to configure and maintain explicit GCP or Kubernetes `kubectl` configuration contexts and credentials in the target environment or in the Stack Component itself.
 

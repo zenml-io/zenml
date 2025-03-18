@@ -44,7 +44,7 @@ ZenML handles the Docker image configuration, creation, and pushing, starting wi
 
 ## Image Builder Environment
 
-By default, execution environments are created locally in the [client environment](#client-environment-or-the-runner-environment) using the local Docker client. However, this requires Docker installation and permissions. ZenML offers [image builders](../../../component-guide/image-builders/image-builders.md), a special [stack component](https://docs.zenml.io/stacks), allowing users to build and push Docker images in a different specialized _image builder environment_.
+By default, execution environments are created locally in the [client environment](#client-environment-or-the-runner-environment) using the local Docker client. However, this requires Docker installation and permissions. ZenML offers [image builders](https://docs.zenml.io/stacks/image-builders/image-builders), a special [stack component](https://docs.zenml.io/stacks), allowing users to build and push Docker images in a different specialized _image builder environment_.
 
 Note that even if you don't configure an image builder in your stack, ZenML still uses the [local image builder](https://docs.zenml.io/stacks/image-builders/local) to retain consistency across all builds. In this case, the image builder environment is the same as the client environment.
 

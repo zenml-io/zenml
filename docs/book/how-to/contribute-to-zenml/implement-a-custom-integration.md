@@ -14,7 +14,7 @@ _However, what if you want to make your extension of ZenML part of the main code
 
 In [the previous page](../infrastructure-deployment/stack-deployment/implement-a-custom-stack-component.md), we looked at the categories and abstractions that core ZenML defines. In order to create a new integration into ZenML, you would need to first find the categories that your integration belongs to. The list of categories can be found [here](https://docs.zenml.io/stacks) as well.
 
-Note that one integration may belong to different categories: For example, the cloud integrations (AWS/GCP/Azure) contain [container registries](../../component-guide/container-registries/container-registries.md), [artifact stores](https://docs.zenml.io/stacks/artifact-stores/artifact-stores) etc.
+Note that one integration may belong to different categories: For example, the cloud integrations (AWS/GCP/Azure) contain [container registries](https://docs.zenml.io/stacks/container-registries/container-registries), [artifact stores](https://docs.zenml.io/stacks/artifact-stores/artifact-stores) etc.
 
 ### Step 2: Create individual stack component flavors
 
@@ -38,7 +38,7 @@ Afterward, you should see the new flavor in the list of available flavors:
 zenml orchestrator flavor list
 ```
 
-See the docs on extensibility of the different components [here](../../component-guide/README.md) or get inspired by the many integrations that are already implemented such as [the MLflow experiment tracker](https://docs.zenml.io/stacks/experiment-trackers/mlflow).
+See the docs on extensibility of the different components [here](https://docs.zenml.io/stacks) or get inspired by the many integrations that are already implemented such as [the MLflow experiment tracker](https://docs.zenml.io/stacks/experiment-trackers/mlflow).
 
 ### Step 3: Create an integration class
 
