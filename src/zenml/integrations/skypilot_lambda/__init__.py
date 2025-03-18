@@ -46,5 +46,3 @@ class SkypilotLambdaIntegration(Integration):
 
         return [SkypilotLambdaOrchestratorFlavor]
 
-
-SkypilotLambdaIntegration.check_installation()

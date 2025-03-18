@@ -43,5 +43,3 @@ class AirflowIntegration(Integration):
 
         return [AirflowOrchestratorFlavor]
 
-
-AirflowIntegration.check_installation()

@@ -476,6 +476,11 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                             "Volume mounts are set but not supported in "
                             "Vertex with Kubeflow Pipelines 2.x. Ignoring..."
                         )
+                    if pod_settings.env or pod_settings.env_from:
+                        logger.warning(
+                            "Environment variables are set but not supported "
+                            "in Vertex with Vertex Pipelines 2.x. Ignoring..."
+                        )
                     for key in pod_settings.node_selectors:
                         if (
                             key

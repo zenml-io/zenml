@@ -46,5 +46,3 @@ class SkypilotGCPIntegration(Integration):
         )
 
         return [SkypilotGCPOrchestratorFlavor]
-
-SkypilotGCPIntegration.check_installation()

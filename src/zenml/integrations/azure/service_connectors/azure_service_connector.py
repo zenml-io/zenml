@@ -1738,7 +1738,7 @@ class AzureServiceConnector(ServiceConnector):
             ):
                 assert isinstance(self.config, AzureServicePrincipalConfig)
                 username = str(self.config.client_id)
-                password = str(self.config.client_secret)
+                password = self.config.client_secret.get_secret_value()
 
             # Without a service principal, we try to use the AzureDefaultCredentials to authenticate against the ACR.
             # If this fails, we try to use the admin account.

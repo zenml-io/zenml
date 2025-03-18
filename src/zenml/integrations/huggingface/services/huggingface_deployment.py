@@ -28,11 +28,13 @@ from huggingface_hub.errors import HfHubHTTPError
 from pydantic import Field
 
 from zenml.client import Client
+from zenml.enums import ServiceState
 from zenml.integrations.huggingface.flavors.huggingface_model_deployer_flavor import (
     HuggingFaceBaseConfig,
 )
 from zenml.logger import get_logger
-from zenml.services import ServiceState, ServiceStatus, ServiceType
+from zenml.models.v2.misc.service import ServiceType
+from zenml.services import ServiceStatus
 from zenml.services.service import BaseDeploymentService, ServiceConfig
 
 logger = get_logger(__name__)

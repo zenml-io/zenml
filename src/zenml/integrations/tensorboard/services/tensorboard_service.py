@@ -19,6 +19,7 @@ from typing import Any, Dict, Union
 from tensorboard import default, program  # type: ignore [import-untyped]
 
 from zenml.logger import get_logger
+from zenml.models.v2.misc.service import ServiceType
 from zenml.services import (
     HTTPEndpointHealthMonitor,
     HTTPEndpointHealthMonitorConfig,
@@ -27,7 +28,6 @@ from zenml.services import (
     LocalDaemonServiceEndpoint,
     LocalDaemonServiceEndpointConfig,
     ServiceEndpointProtocol,
-    ServiceType,
 )
 
 logger = get_logger(__name__)

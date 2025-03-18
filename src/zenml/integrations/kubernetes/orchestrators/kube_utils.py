@@ -34,7 +34,7 @@ Adjusted from https://github.com/tensorflow/tfx/blob/master/tfx/utils/kube_utils
 import enum
 import re
 import time
-from typing import Any, Callable, Optional, TypeVar, cast
+from typing import Any, Callable, Dict, Optional, TypeVar, cast
 
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
@@ -43,6 +43,7 @@ from kubernetes.client.rest import ApiException
 from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
     build_namespace_manifest,
     build_role_binding_manifest_for_service_account,
+    build_secret_manifest,
     build_service_account_manifest,
 )
 from zenml.logger import get_logger
@@ -371,3 +372,90 @@ def create_namespace(core_api: k8s_client.CoreV1Api, namespace: str) -> None:
     """
     manifest = build_namespace_manifest(namespace)
     _if_not_exists(core_api.create_namespace)(body=manifest)
+
+
+def create_secret(
+    core_api: k8s_client.CoreV1Api,
+    namespace: str,
+    secret_name: str,
+    data: Dict[str, Optional[str]],
+) -> None:
+    """Create a Kubernetes secret.
+
+    Args:
+        core_api: Client of Core V1 API of Kubernetes API.
+        namespace: The namespace in which to create the secret.
+        secret_name: The name of the secret to create.
+        data: The secret data.
+    """
+    core_api.create_namespaced_secret(
+        namespace=namespace,
+        body=build_secret_manifest(name=secret_name, data=data),
+    )
+
+
+def update_secret(
+    core_api: k8s_client.CoreV1Api,
+    namespace: str,
+    secret_name: str,
+    data: Dict[str, Optional[str]],
+) -> None:
+    """Update a Kubernetes secret.
+
+    Args:
+        core_api: Client of Core V1 API of Kubernetes API.
+        namespace: The namespace in which to update the secret.
+        secret_name: The name of the secret to update.
+        data: The secret data. If the value is None, the key will be removed
+            from the secret.
+    """
+    core_api.patch_namespaced_secret(
+        namespace=namespace,
+        name=secret_name,
+        body=build_secret_manifest(name=secret_name, data=data),
+    )
+
+
+def create_or_update_secret(
+    core_api: k8s_client.CoreV1Api,
+    namespace: str,
+    secret_name: str,
+    data: Dict[str, Optional[str]],
+) -> None:
+    """Create a Kubernetes secret if it doesn't exist, or update it if it does.
+
+    Args:
+        core_api: Client of Core V1 API of Kubernetes API.
+        namespace: The namespace in which to create or update the secret.
+        secret_name: The name of the secret to create or update.
+        data: The secret data. If the value is None, the key will be removed
+            from the secret.
+
+    Raises:
+        ApiException: If the secret creation failed for any reason other than
+            the secret already existing.
+    """
+    try:
+        create_secret(core_api, namespace, secret_name, data)
+    except ApiException as e:
+        if e.status != 409:
+            raise
+        update_secret(core_api, namespace, secret_name, data)
+
+
+def delete_secret(
+    core_api: k8s_client.CoreV1Api,
+    namespace: str,
+    secret_name: str,
+) -> None:
+    """Delete a Kubernetes secret.
+
+    Args:
+        core_api: Client of Core V1 API of Kubernetes API.
+        namespace: The namespace in which to delete the secret.
+        secret_name: The name of the secret to delete.
+    """
+    core_api.delete_namespaced_secret(
+        name=secret_name,
+        namespace=namespace,
+    )
