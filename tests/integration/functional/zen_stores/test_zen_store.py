@@ -2873,9 +2873,7 @@ def test_deleting_run_deletes_steps():
 
 @step
 def step_to_log_metadata(metadata: Union[str, int, bool]) -> int:
-    log_metadata(
-        metadata={"blupus": metadata, "luna": "nova"}, infer_artifact=True
-    )
+    log_metadata(metadata={"blupus": metadata}, infer_artifact=True)
     return 42
 
 
@@ -2952,38 +2950,38 @@ def test_run_metadata_filtering(clean_client):
         pipeline_to_log_metadata(v)
 
     # Test run metadata filtering with string value
-    runs_filter = StepRunFilter(run_metadata={"blupus": "random_string"})
-    runs = store.list_run_steps(step_run_filter_model=runs_filter)
-    assert len(runs.items) == 1
+    av_filter = ArtifactVersionFilter(run_metadata=["blupus:random_string"])
+    avs = store.list_artifact_versions(artifact_version_filter_model=av_filter)
+    assert len(avs.items) == 1
 
     # Test run metadata filtering with boolean value
-    runs_filter = StepRunFilter(run_metadata={"blupus": True})
-    runs = store.list_run_steps(step_run_filter_model=runs_filter)
-    assert len(runs.items) == 1
+    av_filter = ArtifactVersionFilter(run_metadata=["blupus:true"])
+    avs = store.list_artifact_versions(artifact_version_filter_model=av_filter)
+    assert len(avs.items) == 1
 
     # Test run metadata filtering with int value
-    runs_filter = StepRunFilter(run_metadata={"blupus": 3})
-    runs = store.list_run_steps(step_run_filter_model=runs_filter)
-    assert len(runs.items) == 1
+    av_filter = ArtifactVersionFilter(run_metadata=["blupus:3"])
+    avs = store.list_artifact_versions(artifact_version_filter_model=av_filter)
+    assert len(avs.items) == 1
 
     # Test run metadata filtering for a non-existent key
-    runs_filter = StepRunFilter(run_metadata={"non-existent": 3})
-    runs = store.list_run_steps(step_run_filter_model=runs_filter)
-    assert len(runs) == 0
+    av_filter = ArtifactVersionFilter(run_metadata=["non-existent:3"])
+    avs = store.list_artifact_versions(artifact_version_filter_model=av_filter)
+    assert len(avs.items) == 0
 
     # Test run metadata filtering with non-existent value
-    runs_filter = StepRunFilter(run_metadata={"blupus": "non-existent"})
-    runs = store.list_run_steps(step_run_filter_model=runs_filter)
-    assert len(runs.items) == 0
+    av_filter = ArtifactVersionFilter(run_metadata=["blupus:non-existent"])
+    avs = store.list_artifact_versions(artifact_version_filter_model=av_filter)
+    assert len(avs.items) == 0
 
     # Test run metadata filtering with operator value
-    runs_filter = StepRunFilter(run_metadata={"blupus": "lt:30"})
-    runs = store.list_run_steps(step_run_filter_model=runs_filter)
-    assert len(runs) == 2  # The run with 3 and 25
+    av_filter = ArtifactVersionFilter(run_metadata=["blupus:lt:30"])
+    avs = store.list_artifact_versions(artifact_version_filter_model=av_filter)
+    assert len(avs.items) == 2  # The run with 3 and 25
 
-    for r in runs:
-        assert isinstance(r.run_metadata["blupus"], int)
-        assert r.run_metadata["blupus"] < 30
+    for av in avs.items:
+        assert isinstance(av.run_metadata["blupus"], int)
+        assert av.run_metadata["blupus"] < 30
 
 
 # .--------------------.
