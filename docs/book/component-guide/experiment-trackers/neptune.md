@@ -4,7 +4,7 @@ description: Logging and visualizing experiments with neptune.ai
 
 # Neptune
 
-The Neptune Experiment Tracker is an [Experiment Tracker](./experiment-trackers.md) flavor provided with the Neptune-ZenML integration that uses [neptune.ai](https://neptune.ai/product/experiment-tracking) to log and visualize information from your pipeline steps (e.g. models, parameters, metrics).
+The Neptune Experiment Tracker is an [Experiment Tracker](./) flavor provided with the Neptune-ZenML integration that uses [neptune.ai](https://neptune.ai/product/experiment-tracking) to log and visualize information from your pipeline steps (e.g. models, parameters, metrics).
 
 ### When would you want to use it?
 
@@ -16,7 +16,7 @@ You should use the Neptune Experiment Tracker:
 * if you are looking for a more visually interactive way of navigating the results produced from your ZenML pipeline runs (e.g. models, metrics, datasets)
 * if you would like to connect ZenML to neptune.ai to share the artifacts and metrics logged by your pipelines with your team, organization, or external stakeholders
 
-You should consider one of the other [Experiment Tracker flavors](./experiment-trackers.md#experiment-tracker-flavors) if you have never worked with neptune.ai before and would rather use another experiment tracking tool that you are more familiar with.
+You should consider one of the other [Experiment Tracker flavors](./#experiment-tracker-flavors) if you have never worked with neptune.ai before and would rather use another experiment tracking tool that you are more familiar with.
 
 ### How do you deploy it?
 
@@ -63,8 +63,8 @@ zenml stack register neptune_stack -e neptune_experiment_tracker ... --set
 {% hint style="info" %}
 Read more about [ZenML Secrets](../../how-to/project-setup-and-management/interact-with-secrets.md) in the ZenML documentation.
 {% endhint %}
-
 {% endtab %}
+
 {% tab title="Basic Authentication" %}
 This option configures the credentials for neptune.ai directly as stack component attributes.
 

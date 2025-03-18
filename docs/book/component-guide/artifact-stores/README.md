@@ -59,7 +59,7 @@ The Artifact Store provides low-level object storage services for other ZenML me
 * return one or more objects from your pipeline steps to have them automatically saved in the active Artifact Store as pipeline artifacts.
 * [retrieve pipeline artifacts](../../how-to/data-artifact-management/handle-data-artifacts/load-artifacts-into-memory.md) from the active Artifact Store after a pipeline run is complete.
 
-You will probably need to interact with the [low-level Artifact Store API](artifact-stores.md#the-artifact-store-api) directly:
+You will probably need to interact with the [low-level Artifact Store API](./#the-artifact-store-api) directly:
 
 * if you implement custom [Materializers](../../how-to/data-artifact-management/handle-data-artifacts/handle-custom-data-types.md) for your artifact data types
 * if you want to store custom objects in the Artifact Store
@@ -70,8 +70,8 @@ All ZenML Artifact Stores implement [the same IO API](custom.md) that resembles 
 
 Accessing the low-level Artifact Store API can be done through the following Python modules:
 
-* `zenml.io.fileio` provides low-level utilities for manipulating Artifact Store objects (e.g. `open`, `copy`, `rename` , `remove`, `mkdir`). These functions work seamlessly across Artifact Stores types. They have the same signature as the [Artifact Store abstraction methods](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-artifact\_stores/#zenml.artifact\_stores.base\_artifact\_store.BaseArtifactStore) ( in fact, they are one and the same under the hood).
-* [zenml.utils.io\_utils](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-utils/#zenml.utils.io\_utils) includes some higher-level helper utilities that make it easier to find and transfer objects between the Artifact Store and the local filesystem or memory.
+* `zenml.io.fileio` provides low-level utilities for manipulating Artifact Store objects (e.g. `open`, `copy`, `rename` , `remove`, `mkdir`). These functions work seamlessly across Artifact Stores types. They have the same signature as the [Artifact Store abstraction methods](https://sdkdocs.zenml.io/latest/core_code_docs/core-artifact_stores/#zenml.artifact_stores.base_artifact_store.BaseArtifactStore) ( in fact, they are one and the same under the hood).
+* [zenml.utils.io\_utils](https://sdkdocs.zenml.io/latest/core_code_docs/core-utils/#zenml.utils.io_utils) includes some higher-level helper utilities that make it easier to find and transfer objects between the Artifact Store and the local filesystem or memory.
 
 {% hint style="info" %}
 When calling the Artifact Store API, you should always use URIs that are relative to the Artifact Store root path, otherwise, you risk using an unsupported protocol or storing objects outside the store. You can use the `Repository` singleton to retrieve the root path of the active Artifact Store and then use it as a base path for artifact URIs, e.g.:

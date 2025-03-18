@@ -4,7 +4,7 @@ description: Logging and visualizing experiments with Comet.
 
 # Comet
 
-The Comet Experiment Tracker is an [Experiment Tracker](./experiment-trackers.md) flavor provided with the Comet ZenML integration that uses [the Comet experiment tracking platform](https://www.comet.com/site/products/ml-experiment-tracking/) to log and visualize information from your pipeline steps (e.g., models, parameters, metrics).
+The Comet Experiment Tracker is an [Experiment Tracker](./) flavor provided with the Comet ZenML integration that uses [the Comet experiment tracking platform](https://www.comet.com/site/products/ml-experiment-tracking/) to log and visualize information from your pipeline steps (e.g., models, parameters, metrics).
 
 <figure><img src="../../.gitbook/assets/comet_pipeline.png" alt=""><figcaption><p>A pipeline with a Comet experiment tracker url as metadata</p></figcaption></figure>
 
@@ -18,7 +18,7 @@ You should use the Comet Experiment Tracker:
 * if you are looking for a more visually interactive way of navigating the results produced from your ZenML pipeline runs (e.g., models, metrics, datasets)
 * if you would like to connect ZenML to Comet to share the artifacts and metrics logged by your pipelines with your team, organization, or external stakeholders
 
-You should consider one of the other [Experiment Tracker flavors](./experiment-trackers.md#experiment-tracker-flavors) if you have never worked with Comet before and would rather use another experiment tracking tool that you are more familiar with.
+You should consider one of the other [Experiment Tracker flavors](./#experiment-tracker-flavors) if you have never worked with Comet before and would rather use another experiment tracking tool that you are more familiar with.
 
 ### How do you deploy it?
 
@@ -39,7 +39,6 @@ You need to configure the following credentials for authentication to the Comet 
 * `workspace`: Optional. The name of the workspace where your project is located. If not specified, the default workspace associated with your API key will be used.
 
 {% tabs %}
-
 {% tab title="ZenML Secret (Recommended)" %}
 This method requires you to [configure a ZenML secret](../../getting-started/deploying-zenml/secret-management.md) to store the Comet tracking service credentials securely.
 
@@ -88,7 +87,6 @@ zenml experiment-tracker register comet_experiment_tracker --flavor=comet \
 zenml stack register custom_stack -e comet_experiment_tracker ... --set
 ```
 {% endtab %}
-
 {% endtabs %}
 
 <figure><img src="../../.gitbook/assets/comet_stack.png" alt=""><figcaption><p>A stack with the Comet experiment tracker</p></figcaption></figure>

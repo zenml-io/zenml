@@ -8,11 +8,11 @@ description: Learning how to develop a custom artifact store.
 Before diving into the specifics of this component type, it is beneficial to familiarize yourself with our [general guide to writing custom component flavors in ZenML](../../how-to/infrastructure-deployment/stack-deployment/implement-a-custom-stack-component.md). This guide provides an essential understanding of ZenML's component flavor concepts.
 {% endhint %}
 
-ZenML comes equipped with [Artifact Store implementations](./artifact-stores.md#artifact-store-flavors) that you can use to store artifacts on a local filesystem or in the managed AWS, GCP, or Azure cloud object storage services. However, if you need to use a different type of object storage service as a backend for your ZenML Artifact Store, you can extend ZenML to provide your own custom Artifact Store implementation.
+ZenML comes equipped with [Artifact Store implementations](./#artifact-store-flavors) that you can use to store artifacts on a local filesystem or in the managed AWS, GCP, or Azure cloud object storage services. However, if you need to use a different type of object storage service as a backend for your ZenML Artifact Store, you can extend ZenML to provide your own custom Artifact Store implementation.
 
 ### Base Abstraction
 
-The Artifact Store establishes one of the main components in every ZenML stack. Now, let us take a deeper dive into the fundamentals behind its abstraction, namely [the `BaseArtifactStore` class](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-artifact\_stores/#zenml.artifact\_stores.base\_artifact\_store.BaseArtifactStore):
+The Artifact Store establishes one of the main components in every ZenML stack. Now, let us take a deeper dive into the fundamentals behind its abstraction, namely [the `BaseArtifactStore` class](https://sdkdocs.zenml.io/latest/core_code_docs/core-artifact_stores/#zenml.artifact_stores.base_artifact_store.BaseArtifactStore):
 
 1. As ZenML only supports filesystem-based artifact stores, it features a configuration parameter called `path`, which will indicate the root path of the artifact store. When registering an artifact store, users will have to define this parameter.
 2. Moreover, there is another variable in the config class called `SUPPORTED_SCHEMES`. This is a class variable that needs to be defined in every subclass of the base artifact store configuration. It indicates the supported file path schemes for the corresponding implementation. For instance, for the Azure artifact store, this set will be defined as `{"abfs://", "az://"}`.
@@ -126,7 +126,7 @@ class BaseArtifactStoreFlavor(Flavor):
 ```
 
 {% hint style="info" %}
-This is a slimmed-down version of the base implementation which aims to highlight the abstraction layer. In order to see the full implementation and get the complete docstrings, please check the [SDK docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-artifact\_stores/#zenml.artifact\_stores.base\_artifact\_store.BaseArtifactStore) .
+This is a slimmed-down version of the base implementation which aims to highlight the abstraction layer. In order to see the full implementation and get the complete docstrings, please check the [SDK docs](https://sdkdocs.zenml.io/latest/core_code_docs/core-artifact_stores/#zenml.artifact_stores.base_artifact_store.BaseArtifactStore) .
 {% endhint %}
 
 **The effect on the `zenml.io.fileio`**
@@ -139,7 +139,7 @@ This means that when you utilize a method such as `fileio.open(...)` with a file
 
 If you want to implement your own custom Artifact Store, you can follow the following steps:
 
-1. Create a class that inherits from [the `BaseArtifactStore` class](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-artifact\_stores/#zenml.artifact\_stores.base\_artifact\_store.BaseArtifactStore) and implements the abstract methods.
+1. Create a class that inherits from [the `BaseArtifactStore` class](https://sdkdocs.zenml.io/latest/core_code_docs/core-artifact_stores/#zenml.artifact_stores.base_artifact_store.BaseArtifactStore) and implements the abstract methods.
 2. Create a class that inherits from [the `BaseArtifactStoreConfig` class](custom.md) and fill in the `SUPPORTED_SCHEMES` based on your file system.
 3. Bring both of these classes together by inheriting from [the `BaseArtifactStoreFlavor` class](custom.md).
 

@@ -6,7 +6,7 @@ description: >-
 
 # Deepchecks
 
-The Deepchecks [Data Validator](./data-validators.md) flavor provided with the ZenML integration uses [Deepchecks](https://deepchecks.com/) to run data integrity, data drift, model drift and model performance tests on the datasets and models circulated in your ZenML pipelines. The test results can be used to implement automated corrective actions in your pipelines or to render interactive representations for further visual interpretation, evaluation and documentation.
+The Deepchecks [Data Validator](./) flavor provided with the ZenML integration uses [Deepchecks](https://deepchecks.com/) to run data integrity, data drift, model drift and model performance tests on the datasets and models circulated in your ZenML pipelines. The test results can be used to implement automated corrective actions in your pipelines or to render interactive representations for further visual interpretation, evaluation and documentation.
 
 ### When would you want to use it?
 
@@ -19,9 +19,9 @@ You should use the Deepchecks Data Validator when you need the following data an
 * Data Integrity Checks [for tabular](https://docs.deepchecks.com/stable/tabular/auto_checks/data_integrity/index.html) or [computer vision](https://docs.deepchecks.com/stable/vision/auto_checks/data_integrity/index.html) data: detect data integrity problems within a single dataset (e.g. missing values, conflicting labels, mixed data types etc.).
 * Data Drift Checks [for tabular](https://docs.deepchecks.com/stable/tabular/auto_checks/train_test_validation/index.html) or [computer vision](https://docs.deepchecks.com/stable/vision/auto_checks/train_test_validation/index.html) data: detect data skew and data drift problems by comparing a target dataset against a reference dataset (e.g. feature drift, label drift, new labels etc.).
 * Model Performance Checks [for tabular](https://docs.deepchecks.com/stable/tabular/auto_checks/model_evaluation/index.html) or [computer vision](https://docs.deepchecks.com/stable/vision/auto_checks/model_evaluation/index.html) data: evaluate a model and detect problems with its performance (e.g. confusion matrix, boosting overfit, model error analysis)
-* Multi-Model Performance Reports [for tabular](https://docs.deepchecks.com/stable/tabular/auto_checks/model_evaluation/plot_multi_model_performance_report.html#sphx-glr-tabular-auto-checks-model-evaluation-plot-multi-model-performance-report-py): produce a summary of performance scores for multiple models on test datasets. 
+* Multi-Model Performance Reports [for tabular](https://docs.deepchecks.com/stable/tabular/auto_checks/model_evaluation/plot_multi_model_performance_report.html#sphx-glr-tabular-auto-checks-model-evaluation-plot-multi-model-performance-report-py): produce a summary of performance scores for multiple models on test datasets.
 
-You should consider one of the other [Data Validator flavors](./data-validators.md#data-validator-flavors) if you need a different set of data validation features.
+You should consider one of the other [Data Validator flavors](./#data-validator-flavors) if you need a different set of data validation features.
 
 ### How do you deploy it?
 
@@ -50,7 +50,7 @@ The ZenML integration restructures the way Deepchecks validation checks are orga
 * **model validation checks** require a single dataset and a mandatory model as input. This list includes a subset of the model evaluation checks provided by Deepchecks [for tabular data](https://docs.deepchecks.com/stable/tabular/auto_checks/model_evaluation/index.html) and [for computer vision](https://docs.deepchecks.com/stable/vision/auto_checks/model_evaluation/index.html) that expect a single dataset as input.
 * **model drift checks** require two datasets and a mandatory model as input. This list includes a subset of the model evaluation checks provided by Deepchecks [for tabular data](https://docs.deepchecks.com/stable/tabular/auto_checks/model_evaluation/index.html) and [for computer vision](https://docs.deepchecks.com/stable/vision/auto_checks/model_evaluation/index.html) that expect two datasets as input: target and reference.
 
-This structure is directly reflected in how Deepchecks can be used with ZenML: there are four different Deepchecks standard steps and four different [ZenML enums for Deepchecks checks](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-deepchecks/#zenml.integrations.deepchecks.validation\_checks) . [The Deepchecks Data Validator API](deepchecks.md#the-deepchecks-data-validator) is also modeled to reflect this same structure.
+This structure is directly reflected in how Deepchecks can be used with ZenML: there are four different Deepchecks standard steps and four different [ZenML enums for Deepchecks checks](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-deepchecks/#zenml.integrations.deepchecks.validation_checks) . [The Deepchecks Data Validator API](deepchecks.md#the-deepchecks-data-validator) is also modeled to reflect this same structure.
 
 A notable characteristic of Deepchecks is that you don't need to customize the set of Deepchecks tests that are part of a test suite. Both ZenML and Deepchecks provide sane defaults that will run all available Deepchecks tests in a given category with their default conditions if a custom list of tests and conditions are not provided.
 
@@ -78,7 +78,7 @@ RUN apt-get update
 RUN apt-get install ffmpeg libsm6 libxext6  -y
 ```
 
-Then, place the following snippet above your pipeline definition. Note that the path of the `dockerfile` are relative to where the pipeline definition file is. Read [the containerization guide](../../how-to/customize-docker-builds/README.md) for more details:
+Then, place the following snippet above your pipeline definition. Note that the path of the `dockerfile` are relative to where the pipeline definition file is. Read [the containerization guide](../../how-to/customize-docker-builds/) for more details:
 
 ```python
 import zenml
@@ -400,7 +400,7 @@ def data_integrity_check(
 
 You can view visualizations of the suites and results generated by your pipeline steps directly in the ZenML dashboard by clicking on the respective artifact in the pipeline run DAG.
 
-Alternatively, if you are running inside a Jupyter notebook, you can load and render the suites and results using the [artifact.visualize() method](../../how-to/data-artifact-management/visualize-artifacts/README.md), e.g.:
+Alternatively, if you are running inside a Jupyter notebook, you can load and render the suites and results using the [artifact.visualize() method](../../how-to/data-artifact-management/visualize-artifacts/), e.g.:
 
 ```python
 from zenml.client import Client

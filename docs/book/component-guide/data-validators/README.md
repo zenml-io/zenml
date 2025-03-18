@@ -1,8 +1,8 @@
 ---
-icon: chart-column
 description: >-
   How to enhance and maintain the quality of your data and the performance of
   your models with data profiling and validation
+icon: chart-column
 ---
 
 # Data Validators
@@ -14,7 +14,7 @@ Data profiling, data integrity testing, data and model drift detection are all w
 Related concepts:
 
 * the Data Validator is an optional type of Stack Component that needs to be registered as part of your ZenML [Stack](../../user-guide/production-guide/understand-stacks.md).
-* Data Validators used in ZenML pipelines usually generate data profiles and data quality check reports that are versioned and stored in the [Artifact Store](../artifact-stores/artifact-stores.md) and can be [retrieved and visualized](../../how-to/data-artifact-management/visualize-artifacts/README.md) later.
+* Data Validators used in ZenML pipelines usually generate data profiles and data quality check reports that are versioned and stored in the [Artifact Store](../artifact-stores/) and can be [retrieved and visualized](../../how-to/data-artifact-management/visualize-artifacts/) later.
 
 ### When to use it
 
@@ -50,6 +50,6 @@ Every Data Validator has different data profiling and testing capabilities and u
 * every integration includes one or more builtin data validation steps that you can add to your pipelines. Of course, you can also use the libraries directly in your own custom pipeline steps and simply return the results (e.g. data profiles, test reports) as artifacts that are versioned and stored by ZenML in its Artifact Store.
 * you can access the data validation artifacts in subsequent pipeline steps, or [fetch them afterwards](../../how-to/data-artifact-management/handle-data-artifacts/load-artifacts-into-memory.md) to process them or visualize them as needed.
 
-Consult the documentation for the particular [Data Validator flavor](data-validators.md#data-validator-flavors) that you plan on using or are using in your stack for detailed information about how to use it in your ZenML pipelines.
+Consult the documentation for the particular [Data Validator flavor](./#data-validator-flavors) that you plan on using or are using in your stack for detailed information about how to use it in your ZenML pipelines.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

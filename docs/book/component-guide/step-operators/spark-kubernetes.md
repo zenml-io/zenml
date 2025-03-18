@@ -175,7 +175,7 @@ You should use the Spark step operator:
 
 To use the `KubernetesSparkStepOperator` you will need to setup a few things first:
 
-* **Remote ZenML server:** See the [deployment guide](../../getting-started/deploying-zenml/README.md) for more information.
+* **Remote ZenML server:** See the [deployment guide](../../getting-started/deploying-zenml/) for more information.
 * **Kubernetes cluster:** There are many ways to deploy a Kubernetes cluster using different cloud providers or on your custom infrastructure. For AWS, you can follow the [Spark EKS Setup Guide](spark-kubernetes.md#spark-eks-setup-guide) below.
 
 ### Spark EKS Setup Guide
@@ -184,7 +184,7 @@ The following guide will walk you through how to spin up and configure a [Amazon
 
 #### EKS Kubernetes Cluster
 
-* Follow [this guide](https://docs.aws.amazon.com/eks/latest/userguide/service\_IAM\_role.html#create-service-role) to create an Amazon EKS cluster role.
+* Follow [this guide](https://docs.aws.amazon.com/eks/latest/userguide/service_IAM_role.html#create-service-role) to create an Amazon EKS cluster role.
 * Follow [this guide](https://docs.aws.amazon.com/eks/latest/userguide/create-node-role.html#create-worker-node-role) to create an Amazon EC2 node role.
 * Go to the [IAM website](https://console.aws.amazon.com/iam), and select `Roles` to edit both roles.
 * Attach the `AmazonRDSFullAccess` and `AmazonS3FullAccess` policies to both roles.
@@ -285,8 +285,8 @@ To use the `KubernetesSparkStepOperator`, you need:
     zenml integration install spark
     ```
 * [Docker](https://www.docker.com) installed and running.
-* A [remote artifact store](../artifact-stores/artifact-stores.md) as part of your stack.
-* A [remote container registry](../container-registries/container-registries.md) as part of your stack.
+* A [remote artifact store](../artifact-stores/) as part of your stack.
+* A [remote container registry](../container-registries/) as part of your stack.
 * A Kubernetes cluster [deployed](spark-kubernetes.md#how-to-deploy-it).
 
 We can then register the step operator and use it in our active stack:
@@ -340,6 +340,6 @@ def step_on_spark(...) -> ...:
 
 ### Additional configuration
 
-For additional configuration of the Spark step operator, you can pass `SparkStepOperatorSettings` when defining or running your pipeline. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-spark/#zenml.integrations.spark.flavors.spark\_step\_operator\_flavor.SparkStepOperatorSettings) for a full list of available attributes and [this docs page](../../how-to/pipeline-development/use-configuration-files/runtime-configuration.md) for more information on how to specify settings.
+For additional configuration of the Spark step operator, you can pass `SparkStepOperatorSettings` when defining or running your pipeline. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-spark/#zenml.integrations.spark.flavors.spark_step_operator_flavor.SparkStepOperatorSettings) for a full list of available attributes and [this docs page](../../how-to/pipeline-development/use-configuration-files/runtime-configuration.md) for more information on how to specify settings.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

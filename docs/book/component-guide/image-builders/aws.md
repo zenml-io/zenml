@@ -4,7 +4,7 @@ description: Building container images with AWS CodeBuild
 
 # AWS Image Builder
 
-The AWS image builder is an [image builder](./image-builders.md) flavor provided by the ZenML `aws` integration that uses [AWS CodeBuild](https://aws.amazon.com/codebuild) to build container images.
+The AWS image builder is an [image builder](./) flavor provided by the ZenML `aws` integration that uses [AWS CodeBuild](https://aws.amazon.com/codebuild) to build container images.
 
 ### When to use it
 
@@ -17,10 +17,9 @@ You should use the AWS image builder if:
 ### How to deploy it
 
 {% hint style="info" %}
-Would you like to skip ahead and deploy a full ZenML cloud stack already,
-including the AWS image builder? Check out the
-[in-browser stack deployment wizard](../../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack.md),
-or [the ZenML AWS Terraform module](../../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform.md)
+Would you like to skip ahead and deploy a full ZenML cloud stack already,\
+including the AWS image builder? Check out the[in-browser stack deployment wizard](../../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack.md),\
+or [the ZenML AWS Terraform module](../../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform.md)\
 for a shortcut on how to deploy & register this stack component.
 {% endhint %}
 
@@ -34,14 +33,14 @@ To use the AWS image builder, you need:
     zenml integration install aws
     ```
 * An [S3 Artifact Store](../artifact-stores/s3.md) where the build context will be uploaded, so AWS CodeBuild can access it.
-* Recommended: an [AWS container registry](../container-registries/aws.md) where the built image will be pushed. The AWS CodeBuild service can also work with other container registries, but [explicit authentication](#authentication-methods) must be enabled in this case.
+* Recommended: an [AWS container registry](../container-registries/aws.md) where the built image will be pushed. The AWS CodeBuild service can also work with other container registries, but [explicit authentication](aws.md#authentication-methods) must be enabled in this case.
 * An [AWS CodeBuild project](https://aws.amazon.com/codebuild) created in the AWS account and region where you want to build the Docker images, preferably in the same region as the ECR container registry where images will be pushed (if applicable). The CodeBuild project configuration is largely irrelevant, as ZenML will override most of the default settings for each build according to the [AWS Docker build guide](https://docs.aws.amazon.com/codebuild/latest/userguide/sample-docker-section.html). Some example default configuration values are:
-    *  **Source Type**: `Amazon S3`
-    *  **Bucket**: The same S3 bucket used by the ZenML S3 Artifact Store.
-    *  **S3 folder**: any value (e.g. `codebuild`);
-    *  **Environment Type**: `Linux Container`
-    *  **Environment Image**: `bentolor/docker-dind-awscli`
-    *  **Privileged Mode**: `false`
+  * **Source Type**: `Amazon S3`
+  * **Bucket**: The same S3 bucket used by the ZenML S3 Artifact Store.
+  * **S3 folder**: any value (e.g. `codebuild`);
+  * **Environment Type**: `Linux Container`
+  * **Environment Image**: `bentolor/docker-dind-awscli`
+  * **Privileged Mode**: `false`
 
 The user must take care that the **Service Role** attached to the CodeBuild project also has the necessary permissions to access the S3 bucket to read objects and the ECR container registry to push images (if applicable):
 
@@ -138,7 +137,7 @@ Successfully registered service connector `aws-generic` with access to the follo
 {% endcode %}
 
 > **Note**: Please remember to grant the entity associated with your AWS credentials permissions to access the CodeBuild API and to run CodeBuilder builds:
-> 
+>
 > ```json
 > {
 >     "Version": "2012-10-17",
@@ -154,7 +153,6 @@ Successfully registered service connector `aws-generic` with access to the follo
 >     ]
 > }
 > ```
-> 
 
 The AWS Service Connector supports [many different authentication methods](../../how-to/infrastructure-deployment/auth-management/aws-service-connector.md#authentication-methods) with different levels of security and convenience. You should pick the one that best fits your use case.
 
@@ -215,9 +213,8 @@ zenml stack register <STACK_NAME> -i <IMAGE_BUILDER_NAME> ... --set
 
 The AWS Image Builder can be customized to a certain extent by providing additional configuration options when registering the image builder. The following additional attributes can be set:
 
-* `build_image`: The Docker image used to build the Docker image. The default is `bentolor/docker-dind-awscli`,
-which is a Docker image that includes both Docker-in-Docker and the AWS CLI.
-
+* `build_image`: The Docker image used to build the Docker image. The default is `bentolor/docker-dind-awscli`,\
+  which is a Docker image that includes both Docker-in-Docker and the AWS CLI.
 
 {% hint style="info" %}
 If you are running into Docker Hub rate-limits, it might be a good idea to copy this image to your own container registry and customize the `build_image` attribute to point to your own image.
@@ -226,9 +223,7 @@ If you are running into Docker Hub rate-limits, it might be a good idea to copy 
 * `compute_type`: The compute type used for the CodeBuild project. The default is `BUILD_GENERAL1_SMALL`.
 * `custom_env_vars`: A dictionary of custom environment variables to be set in the CodeBuild project.
 * `implicit_container_registry_auth`: A boolean flag that indicates whether to use implicit or explicit authentication when authenticating the AWS CodeBuild build to the target container registry:
-
   * when this is set to `true` (default), the builds will be configured to use whatever implicit authentication credentials are already available within the build container. As a special case for ECR registries, the service IAM role attached to the CodeBuild project is used to authenticate to the target ECR container registry and therefore the service role must include the necessary permissions to push images to the target ECR registry.
   * when set to `false`, the credentials attached to the ZenML Container Registry stack component in the active stack will be set as build environment variables and used to authenticate to the target container registry. This is useful when the target container registry is not an ECR registry or when the service role attached to the CodeBuild project does not have the necessary permissions to push images to the target ECR registry. This works best when the ZenML Container Registry stack component is also linked to the external container registry via a Service Connector.
-
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

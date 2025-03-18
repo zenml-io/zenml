@@ -4,23 +4,22 @@ description: Storing container images in Azure.
 
 # Azure Container Registry
 
-The Azure container registry is a [container registry](./container-registries.md) flavor that comes built-in with ZenML and uses the [Azure Container Registry](https://azure.microsoft.com/en-us/services/container-registry/) to store container images.
+The Azure container registry is a [container registry](./) flavor that comes built-in with ZenML and uses the [Azure Container Registry](https://azure.microsoft.com/en-us/services/container-registry/) to store container images.
 
 ### When to use it
 
 You should use the Azure container registry if:
 
 * one or more components of your stack need to pull or push container images.
-* you have access to Azure. If you're not using Azure, take a look at the other [container registry flavors](./container-registries.md#container-registry-flavors).
+* you have access to Azure. If you're not using Azure, take a look at the other [container registry flavors](./#container-registry-flavors).
 
 ### How to deploy it
 
 {% hint style="info" %}
-Would you like to skip ahead and deploy a full ZenML cloud stack already,
-including an Azure container registry? Check out the
-[in-browser stack deployment wizard](../../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack.md),
-the [stack registration wizard](../../how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack.md),
-or [the ZenML Azure Terraform module](../../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform.md)
+Would you like to skip ahead and deploy a full ZenML cloud stack already,\
+including an Azure container registry? Check out the[in-browser stack deployment wizard](../../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack.md),\
+the [stack registration wizard](../../how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack.md),\
+or [the ZenML Azure Terraform module](../../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform.md)\
 for a shortcut on how to deploy & register this stack component.
 {% endhint %}
 
@@ -189,6 +188,6 @@ The 'azure-demo' Docker Service Connector connector was used to successfully con
 {% endtab %}
 {% endtabs %}
 
-For more information and a full list of configurable attributes of the Azure container registry, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-container\_registries/#zenml.container\_registries.azure\_container\_registry.AzureContainerRegistry) .
+For more information and a full list of configurable attributes of the Azure container registry, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/core_code_docs/core-container_registries/#zenml.container_registries.azure_container_registry.AzureContainerRegistry) .
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

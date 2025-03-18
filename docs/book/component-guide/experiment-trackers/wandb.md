@@ -4,7 +4,7 @@ description: Logging and visualizing experiments with Weights & Biases.
 
 # Weights & Biases
 
-The Weights & Biases Experiment Tracker is an [Experiment Tracker](./experiment-trackers.md) flavor provided with the Weights & Biases ZenML integration that uses [the Weights & Biases experiment tracking platform](https://wandb.ai/site/experiment-tracking) to log and visualize information from your pipeline steps (e.g. models, parameters, metrics).
+The Weights & Biases Experiment Tracker is an [Experiment Tracker](./) flavor provided with the Weights & Biases ZenML integration that uses [the Weights & Biases experiment tracking platform](https://wandb.ai/site/experiment-tracking) to log and visualize information from your pipeline steps (e.g. models, parameters, metrics).
 
 ### When would you want to use it?
 
@@ -16,11 +16,11 @@ You should use the Weights & Biases Experiment Tracker:
 * if you are looking for a more visually interactive way of navigating the results produced from your ZenML pipeline runs (e.g. models, metrics, datasets)
 * if you would like to connect ZenML to Weights & Biases to share the artifacts and metrics logged by your pipelines with your team, organization, or external stakeholders
 
-You should consider one of the other [Experiment Tracker flavors](./experiment-trackers.md#experiment-tracker-flavors) if you have never worked with Weights & Biases before and would rather use another experiment tracking tool that you are more familiar with.
+You should consider one of the other [Experiment Tracker flavors](./#experiment-tracker-flavors) if you have never worked with Weights & Biases before and would rather use another experiment tracking tool that you are more familiar with.
 
 ### How do you deploy it?
 
-The Weights & Biases Experiment Tracker flavor is provided by the W&B ZenML integration, you need to install it on your local machine to be able to register a Weights & Biases Experiment Tracker and add it to your stack:
+The Weights & Biases Experiment Tracker flavor is provided by the W\&B ZenML integration, you need to install it on your local machine to be able to register a Weights & Biases Experiment Tracker and add it to your stack:
 
 ```shell
 zenml integration install wandb -y
@@ -84,7 +84,7 @@ Read more about [ZenML Secrets](../../how-to/project-setup-and-management/intera
 {% endtab %}
 {% endtabs %}
 
-For more, up-to-date information on the Weights & Biases Experiment Tracker implementation and its configuration, you can have a look at [the SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-wandb/#zenml.integrations.wandb.experiment\_trackers.wandb\_experiment\_tracker) .
+For more, up-to-date information on the Weights & Biases Experiment Tracker implementation and its configuration, you can have a look at [the SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-wandb/#zenml.integrations.wandb.experiment_trackers.wandb_experiment_tracker) .
 
 ### How do you use it?
 
@@ -169,7 +169,7 @@ The naming convention of each Weights & Biases experiment run is `{pipeline_run_
 
 #### Additional configuration
 
-For additional configuration of the Weights & Biases experiment tracker, you can pass `WandbExperimentTrackerSettings` to overwrite the [wandb.Settings](https://github.com/wandb/client/blob/master/wandb/sdk/wandb\_settings.py#L353) or pass additional tags for your runs:
+For additional configuration of the Weights & Biases experiment tracker, you can pass `WandbExperimentTrackerSettings` to overwrite the [wandb.Settings](https://github.com/wandb/client/blob/master/wandb/sdk/wandb_settings.py#L353) or pass additional tags for your runs:
 
 ```python
 import wandb
@@ -285,7 +285,7 @@ def my_step_without_weave() -> str:
 
 When using Weave with ZenML, there are a few important behaviors to understand:
 
-1. If `enable_weave=True` and a `project_name` is specified in your W&B experiment tracker, Weave will be initialized with that project name.
+1. If `enable_weave=True` and a `project_name` is specified in your W\&B experiment tracker, Weave will be initialized with that project name.
 2. If `enable_weave=True` but no `project_name` is specified, Weave initialization will be skipped.
 3. If `enable_weave=False` and a `project_name` is specified (explicit disabling), Weave will be disabled with `settings={"disabled": True}`.
 4. If `enable_weave=False` and no `project_name` is specified, Weave disabling will be skipped.
@@ -296,7 +296,7 @@ For more information about Weights & Biases Weave and its capabilities, visit th
 
 ## Full Code Example
 
-This section shows an end to end run with the ZenML W&B integration.
+This section shows an end to end run with the ZenML W\&B integration.
 
 <details>
 
@@ -517,4 +517,4 @@ if __name__ == "__main__":
 
 </details>
 
-Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-wandb/#zenml.integrations.wandb.flavors.wandb\_experiment\_tracker\_flavor.WandbExperimentTrackerSettings) for a full list of available attributes and [this docs page](../../how-to/pipeline-development/use-configuration-files/runtime-configuration.md) for more information on how to specify settings.
+Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-wandb/#zenml.integrations.wandb.flavors.wandb_experiment_tracker_flavor.WandbExperimentTrackerSettings) for a full list of available attributes and [this docs page](../../how-to/pipeline-development/use-configuration-files/runtime-configuration.md) for more information on how to specify settings.

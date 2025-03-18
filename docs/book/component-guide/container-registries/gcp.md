@@ -4,7 +4,7 @@ description: Storing container images in GCP.
 
 # Google Cloud Container Registry
 
-The GCP container registry is a [container registry](./container-registries.md) flavor that comes built-in with ZenML and uses the [Google Artifact Registry](https://cloud.google.com/artifact-registry).
+The GCP container registry is a [container registry](./) flavor that comes built-in with ZenML and uses the [Google Artifact Registry](https://cloud.google.com/artifact-registry).
 
 {% hint style="warning" %}
 **Important Notice: Google Container Registry** [**is being replaced by Artifact Registry**](https://cloud.google.com/artifact-registry/docs/transition/transition-from-gcr)**. Please start using Artifact Registry for your containers. As per Google's documentation, "after May 15, 2024, Artifact Registry will host images for the gcr.io domain in Google Cloud projects without previous Container Registry usage. After March 18, 2025, Container Registry will be shut down."** The terms `container registry` and `artifact registry` will be used interchangeably throughout this document.
@@ -15,16 +15,15 @@ The GCP container registry is a [container registry](./container-registries.md) 
 You should use the GCP container registry if:
 
 * one or more components of your stack need to pull or push container images.
-* you have access to GCP. If you're not using GCP, take a look at the other [container registry flavors](./container-registries.md#container-registry-flavors).
+* you have access to GCP. If you're not using GCP, take a look at the other [container registry flavors](./#container-registry-flavors).
 
 ### How to deploy it
 
 {% hint style="info" %}
-Would you like to skip ahead and deploy a full ZenML cloud stack already,
-including a Google Artifact Registry? Check out the
-[in-browser stack deployment wizard](../../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack.md),
-the [stack registration wizard](../../how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack.md),
-or [the ZenML GCP Terraform module](../../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform.md)
+Would you like to skip ahead and deploy a full ZenML cloud stack already,\
+including a Google Artifact Registry? Check out the[in-browser stack deployment wizard](../../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack.md),\
+the [stack registration wizard](../../how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack.md),\
+or [the ZenML GCP Terraform module](../../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform.md)\
 for a shortcut on how to deploy & register this stack component.
 {% endhint %}
 
@@ -139,10 +138,10 @@ If you already have one or more GCP Service Connectors configured in your ZenML 
 
 ```sh
 zenml service-connector list-resources --connector-type gcp --resource-type docker-registry
-``` 
+```
 
 {% code title="Example Command Output" %}
-```text
+```
 The following 'docker-registry' resources can be accessed by 'gcp' service connectors that you have configured:
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃             CONNECTOR ID             │ CONNECTOR NAME   │ CONNECTOR TYPE │ RESOURCE TYPE      │ RESOURCE NAMES                                  ┃
@@ -195,7 +194,7 @@ zenml service-connector login <CONNECTOR_NAME> --resource-type docker-registry
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 $ zenml service-connector login gcp-zenml-core --resource-type docker-registry
 ⠋ Attempting to configure local client using service connector 'gcp-zenml-core'...
 WARNING! Your password will be stored unencrypted in /home/stefan/.docker/config.json.
@@ -208,7 +207,7 @@ The 'gcp-zenml-core' Docker Service Connector connector was used to successfully
 {% endhint %}
 
 {% code title="Example Command Output" %}
-```text
+```
 $ zenml container-registry connect gcp-zenml-core --connector gcp-zenml-core 
 Successfully connected container registry `gcp-zenml-core` to the following resources:
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -228,6 +227,6 @@ zenml stack register <STACK_NAME> -c <CONTAINER_REGISTRY_NAME> ... --set
 {% endtab %}
 {% endtabs %}
 
-For more information and a full list of configurable attributes of the GCP container registry, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-container\_registries/#zenml.container\_registries.gcp\_container\_registry.GCPContainerRegistry) .
+For more information and a full list of configurable attributes of the GCP container registry, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/core_code_docs/core-container_registries/#zenml.container_registries.gcp_container_registry.GCPContainerRegistry) .
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

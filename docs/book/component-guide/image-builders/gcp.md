@@ -4,7 +4,7 @@ description: Building container images with Google Cloud Build
 
 # Google Cloud Image Builder
 
-The Google Cloud image builder is an [image builder](./image-builders.md) flavor provided by the ZenML `gcp` integration that uses [Google Cloud Build](https://cloud.google.com/build) to build container images.
+The Google Cloud image builder is an [image builder](./) flavor provided by the ZenML `gcp` integration that uses [Google Cloud Build](https://cloud.google.com/build) to build container images.
 
 ### When to use it
 
@@ -17,11 +17,10 @@ You should use the Google Cloud image builder if:
 ### How to deploy it
 
 {% hint style="info" %}
-Would you like to skip ahead and deploy a full ZenML cloud stack already,
-including the Google Cloud image builder? Check out the
-[in-browser stack deployment wizard](../../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack.md),
-the [stack registration wizard](../../how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack.md),
-or [the ZenML GCP Terraform module](../../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform.md)
+Would you like to skip ahead and deploy a full ZenML cloud stack already,\
+including the Google Cloud image builder? Check out the[in-browser stack deployment wizard](../../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack.md),\
+the [stack registration wizard](../../how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack.md),\
+or [the ZenML GCP Terraform module](../../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform.md)\
 for a shortcut on how to deploy & register this stack component.
 {% endhint %}
 
@@ -42,7 +41,7 @@ To use the Google Cloud image builder, we need:
 * Optionally, you can change:
   * the Docker image used by Google Cloud Build to execute the steps to build and push the Docker image. By default, the builder image will be `'gcr.io/cloud-builders/docker'`.
   * The network to which the container used to build the ZenML pipeline Docker image will be attached. More information: [Cloud build network](https://cloud.google.com/build/docs/build-config-file-schema#network).
-  * The build timeout for the build, and for the blocking operation waiting for the build to finish. More information: [Build Timeout](https://cloud.google.com/build/docs/build-config-file-schema#timeout\_2).
+  * The build timeout for the build, and for the blocking operation waiting for the build to finish. More information: [Build Timeout](https://cloud.google.com/build/docs/build-config-file-schema#timeout_2).
 
 We can register the image builder and use it in our active stack:
 
@@ -99,7 +98,7 @@ Successfully registered service connector `gcp-generic` with access to the follo
 ```
 {% endcode %}
 
-> **Note**: Please remember to grant the entity associated with your GCP credentials permissions to access the Cloud Build API and to run Cloud Builder jobs (e.g. the [Cloud Build Editor IAM role](https://cloud.google.com/build/docs/iam-roles-permissions#predefined\_roles)). The GCP Service Connector supports [many different authentication methods](../../how-to/infrastructure-deployment/auth-management/gcp-service-connector.md#authentication-methods) with different levels of security and convenience. You should pick the one that best fits your use case.
+> **Note**: Please remember to grant the entity associated with your GCP credentials permissions to access the Cloud Build API and to run Cloud Builder jobs (e.g. the [Cloud Build Editor IAM role](https://cloud.google.com/build/docs/iam-roles-permissions#predefined_roles)). The GCP Service Connector supports [many different authentication methods](../../how-to/infrastructure-deployment/auth-management/gcp-service-connector.md#authentication-methods) with different levels of security and convenience. You should pick the one that best fits your use case.
 
 If you already have one or more GCP Service Connectors configured in your ZenML deployment, you can check which of them can be used to access generic GCP resources like the GCP Image Builder required for your GCP Image Builder by running e.g.:
 
@@ -162,7 +161,7 @@ When you register the GCP Image Builder, you can [generate a GCP Service Account
 
 This method has the advantage that you don't need to install and configure the GCP CLI on your host, but it's still not as secure as using a GCP Service Connector and the stack component configuration is not portable to other hosts.
 
-For this method, you need to [create a user-managed GCP service account](https://cloud.google.com/iam/docs/service-accounts-create), and grant it privileges to access the Cloud Build API and to run Cloud Builder jobs (e.g. the [Cloud Build Editor IAM role](https://cloud.google.com/build/docs/iam-roles-permissions#predefined\_roles).
+For this method, you need to [create a user-managed GCP service account](https://cloud.google.com/iam/docs/service-accounts-create), and grant it privileges to access the Cloud Build API and to run Cloud Builder jobs (e.g. the [Cloud Build Editor IAM role](https://cloud.google.com/build/docs/iam-roles-permissions#predefined_roles).
 
 With the service account key downloaded to a local file, you can register the GCP Image Builder as follows:
 

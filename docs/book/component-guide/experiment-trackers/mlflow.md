@@ -4,7 +4,7 @@ description: Logging and visualizing experiments with MLflow.
 
 # MLflow
 
-The MLflow Experiment Tracker is an [Experiment Tracker](./experiment-trackers.md) flavor provided with the MLflow ZenML integration that uses [the MLflow tracking service](https://mlflow.org/docs/latest/tracking.html) to log and visualize information from your pipeline steps (e.g. models, parameters, metrics).
+The MLflow Experiment Tracker is an [Experiment Tracker](./) flavor provided with the MLflow ZenML integration that uses [the MLflow tracking service](https://mlflow.org/docs/latest/tracking.html) to log and visualize information from your pipeline steps (e.g. models, parameters, metrics).
 
 ## When would you want to use it?
 
@@ -16,7 +16,7 @@ You should use the MLflow Experiment Tracker:
 * if you are looking for a more visually interactive way of navigating the results produced from your ZenML pipeline runs (e.g. models, metrics, datasets)
 * if you or your team already have a shared MLflow Tracking service deployed somewhere on-premise or in the cloud, and you would like to connect ZenML to it to share the artifacts and metrics logged by your pipelines
 
-You should consider one of the other [Experiment Tracker flavors](./experiment-trackers.md#experiment-tracker-flavors) if you have never worked with MLflow before and would rather use another experiment tracking tool that you are more familiar with.
+You should consider one of the other [Experiment Tracker flavors](./#experiment-tracker-flavors) if you have never worked with MLflow before and would rather use another experiment tracking tool that you are more familiar with.
 
 ## How do you configure it?
 
@@ -111,7 +111,7 @@ Read more about [ZenML Secrets](../../how-to/project-setup-and-management/intera
 {% endtab %}
 {% endtabs %}
 
-For more, up-to-date information on the MLflow Experiment Tracker implementation and its configuration, you can have a look at [the SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-mlflow/#zenml.integrations.mlflow.experiment\_trackers.mlflow\_experiment\_tracker) .
+For more, up-to-date information on the MLflow Experiment Tracker implementation and its configuration, you can have a look at [the SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-mlflow/#zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker) .
 
 ## How do you use it?
 

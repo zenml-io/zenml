@@ -4,10 +4,10 @@ description: Orchestrating your pipelines to run on HyperAI.ai instances.
 
 # HyperAI Orchestrator
 
-[HyperAI](https://www.hyperai.ai) is a cutting-edge cloud compute platform designed to make AI accessible for everyone. The HyperAI orchestrator is an [orchestrator](./orchestrators.md) flavor that allows you to easily deploy your pipelines on HyperAI instances.
+[HyperAI](https://www.hyperai.ai) is a cutting-edge cloud compute platform designed to make AI accessible for everyone. The HyperAI orchestrator is an [orchestrator](./) flavor that allows you to easily deploy your pipelines on HyperAI instances.
 
 {% hint style="warning" %}
-This component is only meant to be used within the context of a [remote ZenML deployment scenario](../../getting-started/deploying-zenml/README.md). Usage with a local ZenML deployment may lead to unexpected behavior!
+This component is only meant to be used within the context of a [remote ZenML deployment scenario](../../getting-started/deploying-zenml/). Usage with a local ZenML deployment may lead to unexpected behavior!
 {% endhint %}
 
 ### When to use it
@@ -78,6 +78,6 @@ python file_that_runs_a_zenml_pipeline.py
 
 #### Enabling CUDA for GPU-backed hardware
 
-Note that if you wish to use this orchestrator to run steps on a GPU, you will need to follow [the instructions on this page](../../how-to/pipeline-development/training-with-gpus/README.md) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
+Note that if you wish to use this orchestrator to run steps on a GPU, you will need to follow [the instructions on this page](../../how-to/pipeline-development/training-with-gpus/) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

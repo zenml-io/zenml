@@ -2,7 +2,7 @@
 description: Executing individual steps in Kubernetes Pods.
 ---
 
-# Kubernetes Step Operator
+# Kubernetes
 
 ZenML's Kubernetes step operator allows you to submit individual steps to be run on Kubernetes pods.
 
@@ -20,15 +20,15 @@ The Kubernetes step operator requires a Kubernetes cluster in order to run. Ther
 ### How to use it
 
 To use the Kubernetes step operator, we need:
+
 *   The ZenML `kubernetes` integration installed. If you haven't done so, run
 
     ```shell
     zenml integration install kubernetes
     ```
 * A Kubernetes cluster [deployed](kubernetes.md#how-to-deploy-it)
-* Either [Docker](https://www.docker.com) installed and running or a remote [image builder](../image-builders/image-builders.md) in your stack.
-* A [remote artifact store](../artifact-stores/artifact-stores.md) as part of your stack. This is needed so that both your orchestration environment and Kubernetes Pods can read and write step artifacts. Check out the documentation page of the artifact store you want to use for more information on how to set that up and configure authentication for it.
-
+* Either [Docker](https://www.docker.com) installed and running or a remote [image builder](../image-builders/) in your stack.
+* A [remote artifact store](../artifact-stores/) as part of your stack. This is needed so that both your orchestration environment and Kubernetes Pods can read and write step artifacts. Check out the documentation page of the artifact store you want to use for more information on how to set that up and configure authentication for it.
 
 {% hint style="info" %}
 It is recommended that you set up [a Service Connector](../../how-to/infrastructure-deployment/auth-management/service-connectors-guide.md) and use it to connect the Kubernetes step operator to the Kubernetes cluster, especially if you are using a Kubernetes cluster managed by a cloud provider like AWS, GCP or Azure.
@@ -93,9 +93,8 @@ def trainer(...) -> ...:
 ```
 
 {% hint style="info" %}
-ZenML will build a Docker images which includes your code and use it to run your steps in Kubernetes. Check out [this page](../../how-to/customize-docker-builds/README.md) if you want to learn more about how ZenML builds these images and how you can customize them.
+ZenML will build a Docker images which includes your code and use it to run your steps in Kubernetes. Check out [this page](../../how-to/customize-docker-builds/) if you want to learn more about how ZenML builds these images and how you can customize them.
 {% endhint %}
-
 
 #### Interacting with pods via kubectl
 
@@ -232,12 +231,12 @@ def my_kubernetes_step():
     ...
 ```
 
-Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-kubernetes/#zenml.integrations.kubernetes.flavors.kubernetes\_step\_operator\_flavor.KubernetesStepOperatorSettings) for a full list of available attributes and [this docs page](../../how-to/pipeline-development/use-configuration-files/runtime-configuration.md) for more information on how to specify settings.
+Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-kubernetes/#zenml.integrations.kubernetes.flavors.kubernetes_step_operator_flavor.KubernetesStepOperatorSettings) for a full list of available attributes and [this docs page](../../how-to/pipeline-development/use-configuration-files/runtime-configuration.md) for more information on how to specify settings.
 
-For more information and a full list of configurable attributes of the Kubernetes steop operator, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-kubernetes/#zenml.integrations.kubernetes.step\_operators.kubernetes\step\_operator.KubernetesStepOperator) .
+For more information and a full list of configurable attributes of the Kubernetes steop operator, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-kubernetes/#zenml.integrations.kubernetes.step_operators.kubernetes\step_operator.KubernetesStepOperator) .
 
 #### Enabling CUDA for GPU-backed hardware
 
-Note that if you wish to use this step operator to run steps on a GPU, you will need to follow [the instructions on this page](../../how-to/pipeline-development/training-with-gpus/README.md) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
+Note that if you wish to use this step operator to run steps on a GPU, you will need to follow [the instructions on this page](../../how-to/pipeline-development/training-with-gpus/) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

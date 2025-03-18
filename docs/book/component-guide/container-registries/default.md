@@ -4,11 +4,11 @@ description: Storing container images locally.
 
 # Default Container Registry
 
-The Default container registry is a [container registry](./container-registries.md) flavor that comes built-in with ZenML and allows container registry URIs of any format.
+The Default container registry is a [container registry](./) flavor that comes built-in with ZenML and allows container registry URIs of any format.
 
 ### When to use it
 
-You should use the Default container registry if you want to use a **local** container registry or when using a remote container registry that is not covered by other [container registry flavors](./container-registries.md#container-registry-flavors).
+You should use the Default container registry if you want to use a **local** container registry or when using a remote container registry that is not covered by other [container registry flavors](./#container-registry-flavors).
 
 ### Local registry URI format
 
@@ -48,7 +48,7 @@ You may also need to set up [authentication](default.md#authentication-methods) 
 
 If you are using a private container registry, you will need to configure some form of authentication to login to the registry. If you're looking for a quick way to get started locally, you can use the _Local Authentication_ method. However, the recommended way to authenticate to a remote private container registry is through [a Docker Service Connector](../../how-to/infrastructure-deployment/auth-management/docker-service-connector.md).
 
-If your target private container registry comes from a cloud provider like AWS, GCP or Azure, you should use the [container registry flavor](./container-registries.md#container-registry-flavors) targeted at that cloud provider. For example, if you're using AWS, you should use the [AWS Container Registry](aws.md) flavor. These cloud provider flavors also use specialized cloud provider Service Connectors to authenticate to the container registry.
+If your target private container registry comes from a cloud provider like AWS, GCP or Azure, you should use the [container registry flavor](./#container-registry-flavors) targeted at that cloud provider. For example, if you're using AWS, you should use the [AWS Container Registry](aws.md) flavor. These cloud provider flavors also use specialized cloud provider Service Connectors to authenticate to the container registry.
 
 {% tabs %}
 {% tab title="Local Authentication" %}
@@ -168,6 +168,6 @@ The 'dockerhub' Docker Service Connector connector was used to successfully conf
 {% endtab %}
 {% endtabs %}
 
-For more information and a full list of configurable attributes of the Default container registry, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-aws/#zenml.integrations.aws.container\_registries.default\_container\_registry.DefaultContainerRegistry) .
+For more information and a full list of configurable attributes of the Default container registry, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-aws/#zenml.integrations.aws.container_registries.default_container_registry.DefaultContainerRegistry) .
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

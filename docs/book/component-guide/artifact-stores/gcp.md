@@ -4,7 +4,7 @@ description: Storing artifacts using GCP Cloud Storage.
 
 # Google Cloud Storage (GCS)
 
-The GCS Artifact Store is an [Artifact Store](./artifact-stores.md) flavor provided with the GCP ZenML integration that uses [the Google Cloud Storage managed object storage service](https://cloud.google.com/storage/docs/introduction) to store ZenML artifacts in a GCP Cloud Storage bucket.
+The GCS Artifact Store is an [Artifact Store](./) flavor provided with the GCP ZenML integration that uses [the Google Cloud Storage managed object storage service](https://cloud.google.com/storage/docs/introduction) to store ZenML artifacts in a GCP Cloud Storage bucket.
 
 ### When would you want to use it?
 
@@ -17,16 +17,15 @@ Running ZenML pipelines with [the local Artifact Store](local.md) is usually suf
 
 In all these cases, you need an Artifact Store that is backed by a form of public cloud or self-hosted shared object storage service.
 
-You should use the GCS Artifact Store when you decide to keep your ZenML artifacts in a shared object storage and if you have access to the Google Cloud Storage managed service. You should consider one of the other [Artifact Store flavors](./artifact-stores.md#artifact-store-flavors) if you don't have access to the GCP Cloud Storage service.
+You should use the GCS Artifact Store when you decide to keep your ZenML artifacts in a shared object storage and if you have access to the Google Cloud Storage managed service. You should consider one of the other [Artifact Store flavors](./#artifact-store-flavors) if you don't have access to the GCP Cloud Storage service.
 
 ### How do you deploy it?
 
 {% hint style="info" %}
-Would you like to skip ahead and deploy a full ZenML cloud stack already,
-including a GCS Artifact Store? Check out the
-[in-browser stack deployment wizard](../../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack.md),
-the [stack registration wizard](../../how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack.md),
-or [the ZenML GCP Terraform module](../../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform.md)
+Would you like to skip ahead and deploy a full ZenML cloud stack already,\
+including a GCS Artifact Store? Check out the[in-browser stack deployment wizard](../../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack.md),\
+the [stack registration wizard](../../how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack.md),\
+or [the ZenML GCP Terraform module](../../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform.md)\
 for a shortcut on how to deploy & register this stack component.
 {% endhint %}
 
@@ -63,9 +62,9 @@ Certain dashboard functionality, such as visualizing or deleting artifacts, is n
 
 The implicit authentication method also needs to be coordinated with other stack components that are highly dependent on the Artifact Store and need to interact with it directly to the function. If these components are not running on your machine, they do not have access to the local Google Cloud CLI configuration and will encounter authentication failures while trying to access the GCS Artifact Store:
 
-* [Orchestrators](../orchestrators/orchestrators.md) need to access the Artifact Store to manage pipeline artifacts
-* [Step Operators](../step-operators/step-operators.md) need to access the Artifact Store to manage step-level artifacts
-* [Model Deployers](../model-deployers/model-deployers.md) need to access the Artifact Store to load served models
+* [Orchestrators](../orchestrators/) need to access the Artifact Store to manage pipeline artifacts
+* [Step Operators](../step-operators/) need to access the Artifact Store to manage step-level artifacts
+* [Model Deployers](../model-deployers/) need to access the Artifact Store to load served models
 
 To enable these use cases, it is recommended to use [a GCP Service Connector](../../how-to/infrastructure-deployment/auth-management/gcp-service-connector.md) to link your GCS Artifact Store to the remote GCS bucket.
 {% endhint %}
@@ -191,10 +190,10 @@ zenml stack register custom_stack -a gs_store ... --set
 {% endtab %}
 {% endtabs %}
 
-For more, up-to-date information on the GCS Artifact Store implementation and its configuration, you can have a look at [the SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-gcp/#zenml.integrations.gcp.artifact\_stores.gcp\_artifact\_store) .
+For more, up-to-date information on the GCS Artifact Store implementation and its configuration, you can have a look at [the SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-gcp/#zenml.integrations.gcp.artifact_stores.gcp_artifact_store) .
 
 ### How do you use it?
 
-Aside from the fact that the artifacts are stored in GCP Cloud Storage, using the GCS Artifact Store is no different from [using any other flavor of Artifact Store](./artifact-stores.md#how-to-use-it).
+Aside from the fact that the artifacts are stored in GCP Cloud Storage, using the GCS Artifact Store is no different from [using any other flavor of Artifact Store](./#how-to-use-it).
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
