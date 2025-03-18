@@ -112,7 +112,7 @@ If you are using a single-tenant Kubeflow installed in a Kubernetes cluster mana
 
 We can then register the orchestrator and use it in our active stack. This can be done in two ways:
 
-1.  If you have [a Service Connector](../../how-to/infrastructure-deployment/auth-management/service-connectors-guide.md) configured to access the remote Kubernetes cluster, you no longer need to set the `kubernetes_context` attribute to a local `kubectl` context. In fact, you don't need the local Kubernetes CLI at all. You can [connect the stack component to the Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/service-connectors-guide#connect-stack-components-to-resources) instead:
+1.  If you have [a Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/service-connectors-guide) configured to access the remote Kubernetes cluster, you no longer need to set the `kubernetes_context` attribute to a local `kubectl` context. In fact, you don't need the local Kubernetes CLI at all. You can [connect the stack component to the Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/service-connectors-guide#connect-stack-components-to-resources) instead:
 
     ```shell
     # List all available Kubernetes clusters that can be accessed by service connectors
