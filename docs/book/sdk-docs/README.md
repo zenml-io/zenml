@@ -12,7 +12,7 @@ SDK Docs Website
 
 ## CLI Methods
 
-{% embed url="https://sdkdocs.zenml.io/0.75.0/cli/" %}
+{% embed url="https://sdkdocs.zenml.io/0.75.0/cli.html" %}
 The `zenml`CLI
 {% endembed %}
 
@@ -21,12 +21,9 @@ The `zenml`CLI
 {% embed url="https://sdkdocs.zenml.io/0.75.0/core_code_docs/core-client.html" %}
 
 
-
-
-
 ## Learn more about Integration
 
-{% embed url="https://sdkdocs.zenml.io/0.75.0/integration_code_docs/integrations-airflow/" %}
+{% embed url="https://sdkdocs.zenml.io/0.75.0/integration_code_docs/integrations-airflow.html" %}
 ZenML integration code docs
 {% endembed %}
 
