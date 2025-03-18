@@ -9330,6 +9330,11 @@ class SqlZenStore(BaseZenStore):
                 include_metadata=True, include_resources=True
             )
 
+            self._update_onboarding_state(
+                completed_steps={OnboardingStep.PROJECT_CREATED},
+                session=session,
+            )
+
         return project_model
 
     def get_project(
