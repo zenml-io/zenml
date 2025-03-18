@@ -741,7 +741,6 @@ class BaseFilter(BaseModel):
         value: Any,
         table: Type[SQLModel],
         column: str,
-        json_encode_value: bool = False,
     ) -> "ColumnElement[bool]":
         """Generate custom filter conditions for a column of a table.
 
@@ -749,7 +748,6 @@ class BaseFilter(BaseModel):
             value: The filter value.
             table: The table which contains the column.
             column: The column name.
-            json_encode_value: Whether to json encode the value.
 
         Returns:
             The query conditions.

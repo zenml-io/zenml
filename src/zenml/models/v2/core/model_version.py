@@ -40,7 +40,7 @@ from zenml.models.v2.base.scoped import (
     ProjectScopedResponseBody,
     ProjectScopedResponseMetadata,
     ProjectScopedResponseResources,
-    RunMetadataAttachedFilter,
+    RunMetadataFilterMixin,
     TaggableFilter,
 )
 from zenml.models.v2.core.service import ServiceResponse
@@ -566,31 +566,31 @@ class ModelVersionResponse(
 
 
 class ModelVersionFilter(
-    ProjectScopedFilter, TaggableFilter, RunMetadataAttachedFilter
+    ProjectScopedFilter, TaggableFilter, RunMetadataFilterMixin
 ):
     """Filter model for model versions."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
         *TaggableFilter.FILTER_EXCLUDE_FIELDS,
-        *RunMetadataAttachedFilter.FILTER_EXCLUDE_FIELDS,
+        *RunMetadataFilterMixin.FILTER_EXCLUDE_FIELDS,
         "model",
     ]
     CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
         *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
         *TaggableFilter.CUSTOM_SORTING_OPTIONS,
-        *RunMetadataAttachedFilter.CUSTOM_SORTING_OPTIONS,
+        *RunMetadataFilterMixin.CUSTOM_SORTING_OPTIONS,
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
         *TaggableFilter.CLI_EXCLUDE_FIELDS,
-        *RunMetadataAttachedFilter.CLI_EXCLUDE_FIELDS,
+        *RunMetadataFilterMixin.CLI_EXCLUDE_FIELDS,
         "model",
     ]
     API_MULTI_INPUT_PARAMS: ClassVar[List[str]] = [
         *ProjectScopedFilter.API_MULTI_INPUT_PARAMS,
         *TaggableFilter.API_MULTI_INPUT_PARAMS,
-        *RunMetadataAttachedFilter.API_MULTI_INPUT_PARAMS,
+        *RunMetadataFilterMixin.API_MULTI_INPUT_PARAMS,
     ]
 
     name: Optional[str] = Field(

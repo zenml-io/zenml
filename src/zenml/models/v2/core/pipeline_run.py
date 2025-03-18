@@ -42,7 +42,7 @@ from zenml.models.v2.base.scoped import (
     ProjectScopedResponseBody,
     ProjectScopedResponseMetadata,
     ProjectScopedResponseResources,
-    RunMetadataAttachedFilter,
+    RunMetadataFilterMixin,
     TaggableFilter,
 )
 from zenml.models.v2.core.model_version import ModelVersionResponse
@@ -584,14 +584,14 @@ class PipelineRunResponse(
 
 
 class PipelineRunFilter(
-    ProjectScopedFilter, TaggableFilter, RunMetadataAttachedFilter
+    ProjectScopedFilter, TaggableFilter, RunMetadataFilterMixin
 ):
     """Model to enable advanced filtering of all pipeline runs."""
 
     CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
         *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
         *TaggableFilter.CUSTOM_SORTING_OPTIONS,
-        *RunMetadataAttachedFilter.CUSTOM_SORTING_OPTIONS,
+        *RunMetadataFilterMixin.CUSTOM_SORTING_OPTIONS,
         "tag",
         "stack",
         "pipeline",
@@ -601,7 +601,7 @@ class PipelineRunFilter(
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
         *TaggableFilter.FILTER_EXCLUDE_FIELDS,
-        *RunMetadataAttachedFilter.FILTER_EXCLUDE_FIELDS,
+        *RunMetadataFilterMixin.FILTER_EXCLUDE_FIELDS,
         "unlisted",
         "code_repository_id",
         "build_id",
@@ -619,12 +619,12 @@ class PipelineRunFilter(
     CLI_EXCLUDE_FIELDS = [
         *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
         *TaggableFilter.CLI_EXCLUDE_FIELDS,
-        *RunMetadataAttachedFilter.CLI_EXCLUDE_FIELDS,
+        *RunMetadataFilterMixin.CLI_EXCLUDE_FIELDS,
     ]
     API_MULTI_INPUT_PARAMS: ClassVar[List[str]] = [
         *ProjectScopedFilter.API_MULTI_INPUT_PARAMS,
         *TaggableFilter.API_MULTI_INPUT_PARAMS,
-        *RunMetadataAttachedFilter.API_MULTI_INPUT_PARAMS,
+        *RunMetadataFilterMixin.API_MULTI_INPUT_PARAMS,
     ]
 
     name: Optional[str] = Field(
