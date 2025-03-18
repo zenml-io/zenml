@@ -249,7 +249,7 @@ class StrFilter(Filter):
             return column.in_(self.value)
 
         if self.operation == GenericFilterOps.CONTAINS:
-            return column.like(self.value)
+            return column.like(f"%{self.value}%")
         if self.operation == GenericFilterOps.STARTSWITH:
             return or_(
                 column.startswith(self.value),
