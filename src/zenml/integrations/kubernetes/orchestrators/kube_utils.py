@@ -430,6 +430,10 @@ def create_or_update_secret(
         secret_name: The name of the secret to create or update.
         data: The secret data. If the value is None, the key will be removed
             from the secret.
+
+    Raises:
+        ApiException: If the secret creation failed for any reason other than
+            the secret already existing.
     """
     try:
         create_secret(core_api, namespace, secret_name, data)

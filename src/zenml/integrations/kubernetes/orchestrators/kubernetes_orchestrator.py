@@ -373,6 +373,9 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
     def get_token_secret_name(self, deployment_id: UUID) -> str:
         """Returns the name of the secret that contains the ZenML token.
 
+        Args:
+            deployment_id: The ID of the deployment.
+
         Returns:
             The name of the secret that contains the ZenML token.
         """
