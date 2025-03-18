@@ -29,6 +29,7 @@ from zenml.models.v2.base.base import (
 )
 from zenml.models.v2.base.scoped import (
     TaggableFilter,
+    RunMetadataFilterMixin,
     UserScopedRequest,
     UserScopedFilter,
     UserScopedResponse,
@@ -517,6 +518,7 @@ __all__ = [
     "NumericFilter",
     "UUIDFilter",
     "TaggableFilter",
+    "RunMetadataFilterMixin",
     "Page",
     # V2 Core
     "ActionFilter",

@@ -426,6 +426,10 @@ class TaggableFilter(BaseFilter):
         *BaseFilter.CUSTOM_SORTING_OPTIONS,
         "tags",
     ]
+    API_MULTI_INPUT_PARAMS: ClassVar[List[str]] = [
+        *BaseFilter.API_MULTI_INPUT_PARAMS,
+        "tags",
+    ]
 
     @model_validator(mode="after")
     def add_tag_to_tags(self) -> "TaggableFilter":
@@ -583,3 +587,131 @@ class TaggableFilter(BaseFilter):
             return query
 
         return super().apply_sorting(query=query, table=table)
+
+
+class RunMetadataFilterMixin(BaseFilter):
+    """Model to enable filtering and sorting by run metadata."""
+
+    run_metadata: Optional[List[str]] = Field(
+        default=None,
+        description="The run_metadata to filter the pipeline runs by.",
+    )
+    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *BaseFilter.FILTER_EXCLUDE_FIELDS,
+        "run_metadata",
+    ]
+    API_MULTI_INPUT_PARAMS: ClassVar[List[str]] = [
+        *BaseFilter.API_MULTI_INPUT_PARAMS,
+        "run_metadata",
+    ]
+
+    @model_validator(mode="after")
+    def validate_run_metadata_format(self) -> "RunMetadataFilterMixin":
+        """Validates that run_metadata entries are in the correct format.
+
+        Each run_metadata entry must be in one of the following formats:
+        1. "key:value" - Direct equality comparison (key equals value)
+        2. "key:filterop:value" - Where filterop is one of the GenericFilterOps:
+           - equals: Exact match
+           - notequals: Not equal to
+           - contains: String contains value
+           - startswith: String starts with value
+           - endswith: String ends with value
+           - oneof: Value is one of the specified options
+           - gte: Greater than or equal to
+           - gt: Greater than
+           - lte: Less than or equal to
+           - lt: Less than
+           - in: Value is in a list
+
+        Examples:
+        - "status:completed" - Find entries where status equals "completed"
+        - "name:contains:test" - Find entries where name contains "test"
+        - "duration:gt:10" - Find entries where duration is greater than 10
+
+        Returns:
+            self
+
+        Raises:
+            ValueError: If any entry in run_metadata does not contain a colon.
+        """
+        if self.run_metadata:
+            for entry in self.run_metadata:
+                if ":" not in entry:
+                    raise ValueError(
+                        f"Invalid run_metadata entry format: '{entry}'. "
+                        "Entry must be in format 'key:value' for direct "
+                        "equality comparison or 'key:filterop:value' where "
+                        "filterop is one of: equals, notequals, "
+                        f"contains, startswith, endswith, oneof, gte, gt, "
+                        f"lte, lt, in."
+                    )
+        return self
+
+    def get_custom_filters(
+        self, table: Type["AnySchema"]
+    ) -> List["ColumnElement[bool]"]:
+        """Get custom run metadata filters.
+
+        Args:
+            table: The query table.
+
+        Returns:
+            A list of custom filters.
+        """
+        custom_filters = super().get_custom_filters(table)
+
+        if self.run_metadata is not None:
+            from sqlmodel import exists, select
+
+            from zenml.enums import MetadataResourceTypes
+            from zenml.zen_stores.schemas import (
+                ArtifactVersionSchema,
+                ModelVersionSchema,
+                PipelineRunSchema,
+                RunMetadataResourceSchema,
+                RunMetadataSchema,
+                ScheduleSchema,
+                StepRunSchema,
+            )
+
+            resource_type_mapping = {
+                ArtifactVersionSchema: MetadataResourceTypes.ARTIFACT_VERSION,
+                ModelVersionSchema: MetadataResourceTypes.MODEL_VERSION,
+                PipelineRunSchema: MetadataResourceTypes.PIPELINE_RUN,
+                StepRunSchema: MetadataResourceTypes.STEP_RUN,
+                ScheduleSchema: MetadataResourceTypes.SCHEDULE,
+            }
+
+            # Create an EXISTS subquery for each run_metadata filter
+            for entry in self.run_metadata:
+                # Split at the first colon to get the key
+                key, value = entry.split(":", 1)
+
+                # Create an exists subquery
+                exists_subquery = exists(
+                    select(RunMetadataResourceSchema.id)
+                    .join(
+                        RunMetadataSchema,
+                        RunMetadataSchema.id  # type: ignore[arg-type]
+                        == RunMetadataResourceSchema.run_metadata_id,
+                    )
+                    .where(
+                        RunMetadataResourceSchema.resource_id == table.id,
+                        RunMetadataResourceSchema.resource_type
+                        == resource_type_mapping[table].value,
+                        self.generate_custom_query_conditions_for_column(
+                            value=key,
+                            table=RunMetadataSchema,
+                            column="key",
+                        ),
+                        self.generate_custom_query_conditions_for_column(
+                            value=value,
+                            table=RunMetadataSchema,
+                            column="value",
+                        ),
+                    )
+                )
+                custom_filters.append(exists_subquery)
+
+        return custom_filters
