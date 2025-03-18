@@ -107,7 +107,7 @@ resource "zenml_stack_component" "artifact_store" {
 
 ### Register the stack components
 
-Register different types of [components](../../../component-guide/README.md):
+Register different types of [components](https://docs.zenml.io/stacks):
 
 ```hcl
 # Generic component registration pattern
