@@ -336,3 +336,4 @@
 * [How do I...?](reference/how-do-i.md)
 * [Community & content](reference/community-and-content.md)
 * [FAQ](reference/faq.md)
+* [Legacy docs](reference/legacy-docs.md)
