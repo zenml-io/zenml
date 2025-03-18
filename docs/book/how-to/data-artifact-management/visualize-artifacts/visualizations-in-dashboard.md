@@ -8,7 +8,7 @@ In order for the visualizations to show up on the dashboard, the following must 
 
 ## Configuring a Service Connector
 
-Visualizations are usually stored alongside the artifact, in the [artifact store](https://docs.zenml.io/stacks/artifact-stores/artifact-stores). Therefore, if a user would like to see the visualization displayed on the ZenML dashboard, they must give access to the server to connect to the artifact store.
+Visualizations are usually stored alongside the artifact, in the [artifact store](https://docs.zenml.io/stacks/artifact-stores). Therefore, if a user would like to see the visualization displayed on the ZenML dashboard, they must give access to the server to connect to the artifact store.
 
 The [service connector](../../infrastructure-deployment/auth-management/README.md) documentation goes deeper into the concept of service connectors and how they can be configured to give the server permission to access the artifact store. For a concrete example, see the [AWS S3](https://docs.zenml.io/stacks/artifact-stores/s3) artifact store documentation.
 

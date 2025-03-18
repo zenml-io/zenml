@@ -11,7 +11,7 @@ description: >
 
 The [stack](https://docs.zenml.io/user-guides/production-guide/understand-stacks) is a fundamental component of the ZenML framework. Put simply, a stack represents the configuration of the infrastructure and tooling that defines where and how a pipeline executes.
 
-A stack comprises different stack components, where each component is responsible for a specific task. For example, a stack might have a [container registry](https://docs.zenml.io/stacks/container-registries/container-registries), a [Kubernetes cluster](https://docs.zenml.io/stacks/orchestrators/kubernetes) as an [orchestrator](https://docs.zenml.io/stacks/orchestrators/orchestrators), an [artifact store](https://docs.zenml.io/stacks/artifact-stores/artifact-stores), an [experiment tracker](https://docs.zenml.io/stacks/experiment-trackers/experiment-trackers) like MLflow and so on.
+A stack comprises different stack components, where each component is responsible for a specific task. For example, a stack might have a [container registry](https://docs.zenml.io/stacks/container-registries), a [Kubernetes cluster](https://docs.zenml.io/stacks/orchestrators/kubernetes) as an [orchestrator](https://docs.zenml.io/stacks/orchestrators), an [artifact store](https://docs.zenml.io/stacks/artifact-stores), an [experiment tracker](https://docs.zenml.io/stacks/experiment-trackers) like MLflow and so on.
 
 ## Stacks as a way to organize your execution environment
 

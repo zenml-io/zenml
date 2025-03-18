@@ -8,8 +8,8 @@ Until now, we've only run pipelines locally. The next step is to get free from o
 
 In order to do this, we need to get familiar with two more stack components:
 
-* The [orchestrator](https://docs.zenml.io/stacks/orchestrators/orchestrators) manages the workflow and execution of your pipelines.
-* The [container registry](https://docs.zenml.io/stacks/container-registries/container-registries) is a storage and content delivery system that holds your Docker container images.
+* The [orchestrator](https://docs.zenml.io/stacks/orchestrators) manages the workflow and execution of your pipelines.
+* The [container registry](https://docs.zenml.io/stacks/container-registries) is a storage and content delivery system that holds your Docker container images.
 
 These, along with [remote storage](remote-storage.md), complete a basic cloud stack where our pipeline is entirely running on the cloud.
 
@@ -43,7 +43,7 @@ To summarize, here is the broad sequence of events that happen when you run a pi
 
 ## Provisioning and registering an orchestrator alongside a container registry
 
-While there are detailed docs on [how to set up a Skypilot orchestrator](https://docs.zenml.io/stacks/orchestrators/skypilot-vm) and a [container registry](https://docs.zenml.io/stacks/container-registries/container-registries) on each public cloud, we have put the most relevant details here for convenience:
+While there are detailed docs on [how to set up a Skypilot orchestrator](https://docs.zenml.io/stacks/orchestrators/skypilot-vm) and a [container registry](https://docs.zenml.io/stacks/container-registries) on each public cloud, we have put the most relevant details here for convenience:
 
 {% tabs %}
 {% tab title="AWS" %}

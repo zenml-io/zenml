@@ -14,7 +14,7 @@ _However, what if you want to make your extension of ZenML part of the main code
 
 In [the previous page](../infrastructure-deployment/stack-deployment/implement-a-custom-stack-component.md), we looked at the categories and abstractions that core ZenML defines. In order to create a new integration into ZenML, you would need to first find the categories that your integration belongs to. The list of categories can be found [here](https://docs.zenml.io/stacks) as well.
 
-Note that one integration may belong to different categories: For example, the cloud integrations (AWS/GCP/Azure) contain [container registries](https://docs.zenml.io/stacks/container-registries/container-registries), [artifact stores](https://docs.zenml.io/stacks/artifact-stores/artifact-stores) etc.
+Note that one integration may belong to different categories: For example, the cloud integrations (AWS/GCP/Azure) contain [container registries](https://docs.zenml.io/stacks/container-registries), [artifact stores](https://docs.zenml.io/stacks/artifact-stores) etc.
 
 ### Step 2: Create individual stack component flavors
 

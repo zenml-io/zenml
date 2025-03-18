@@ -78,7 +78,7 @@ Note that ZenML only gets involved to schedule a run, but maintaining the lifecy
         <td>Schedules rely on remote orchestrators, learn about those here</td>
         <td></td>
         <td></td>
-        <td><a href="https://docs.zenml.io/stacks/orchestrators/orchestrators">orchestrators.md</a></td>
+        <td><a href="https://docs.zenml.io/stacks/orchestrators">orchestrators.md</a></td>
     </tr>
     </tbody>
 </table>

@@ -141,7 +141,7 @@ zenml container-registry connect ${CONTAINER_REGISTRY_NAME} -i
 ```
 
 {% hint style="info" %}
-Head on over to our [docs](https://docs.zenml.io/stacks/container-registries/container-registries) to learn more about container registries and how to configure them.
+Head on over to our [docs](https://docs.zenml.io/stacks/container-registries) to learn more about container registries and how to configure them.
 {% endhint %}
 {% endtab %}
 {% endtabs %}

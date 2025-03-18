@@ -25,8 +25,8 @@ In all the environments, you should use your preferred package manager (e.g., `p
 The client environment typically follows these key steps when starting a pipeline:
 
 1. Compiling an intermediate pipeline representation via the `@pipeline` function.
-2. Creating or triggering [pipeline and step build environments](https://docs.zenml.io/stacks/image-builders/image-builders) if running remotely.
-3. Triggering a run in the [orchestrator](https://docs.zenml.io/stacks/orchestrators/orchestrators).
+2. Creating or triggering [pipeline and step build environments](https://docs.zenml.io/stacks/image-builders) if running remotely.
+3. Triggering a run in the [orchestrator](https://docs.zenml.io/stacks/orchestrators).
 
 Please note that the `@pipeline` function in your code is **only ever called** in this environment. Therefore, any computational logic that is executed in the pipeline function needs to be relevant to this so-called _compile time_, rather than at _execution_ time, which happens later.
 
@@ -38,13 +38,13 @@ See also [here](./configure-the-server-environment.md) for more on [configuring 
 
 ## Execution Environments
 
-When running locally, there is no real concept of an `execution` environment as the client, server, and execution environment are all the same. However, when running a pipeline remotely, ZenML needs to transfer your code and environment over to the remote [orchestrator](https://docs.zenml.io/stacks/orchestrators/orchestrators). In order to achieve this, ZenML builds Docker images known as `execution environments`.
+When running locally, there is no real concept of an `execution` environment as the client, server, and execution environment are all the same. However, when running a pipeline remotely, ZenML needs to transfer your code and environment over to the remote [orchestrator](https://docs.zenml.io/stacks/orchestrators). In order to achieve this, ZenML builds Docker images known as `execution environments`.
 
 ZenML handles the Docker image configuration, creation, and pushing, starting with a [base image](https://hub.docker.com/r/zenmldocker/zenml) containing ZenML and Python, then adding pipeline dependencies. To manage the Docker image configuration, follow the steps in the [containerize your pipeline](../../../how-to/customize-docker-builds/README.md) guide, including specifying additional pip dependencies, using a custom parent image, and customizing the build process.
 
 ## Image Builder Environment
 
-By default, execution environments are created locally in the [client environment](#client-environment-or-the-runner-environment) using the local Docker client. However, this requires Docker installation and permissions. ZenML offers [image builders](https://docs.zenml.io/stacks/image-builders/image-builders), a special [stack component](https://docs.zenml.io/stacks), allowing users to build and push Docker images in a different specialized _image builder environment_.
+By default, execution environments are created locally in the [client environment](#client-environment-or-the-runner-environment) using the local Docker client. However, this requires Docker installation and permissions. ZenML offers [image builders](https://docs.zenml.io/stacks/image-builders), a special [stack component](https://docs.zenml.io/stacks), allowing users to build and push Docker images in a different specialized _image builder environment_.
 
 Note that even if you don't configure an image builder in your stack, ZenML still uses the [local image builder](https://docs.zenml.io/stacks/image-builders/local) to retain consistency across all builds. In this case, the image builder environment is the same as the client environment.
 

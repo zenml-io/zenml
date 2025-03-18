@@ -24,7 +24,7 @@ for a shortcut on how to deploy & register a cloud stack.
 
 ## Provisioning and registering a remote artifact store
 
-Out of the box, ZenML ships with [many different supported artifact store flavors](https://docs.zenml.io/stacks/artifact-stores/artifact-stores). For convenience, here are some brief instructions on how to quickly get up and running on the major cloud providers:
+Out of the box, ZenML ships with [many different supported artifact store flavors](https://docs.zenml.io/stacks/artifact-stores). For convenience, here are some brief instructions on how to quickly get up and running on the major cloud providers:
 
 {% tabs %}
 {% tab title="AWS" %}
@@ -103,7 +103,7 @@ For more information, read the [dedicated Azure artifact store flavor guide](htt
 {% endtab %}
 
 {% tab title="Other" %}
-You can create a remote artifact store in pretty much any environment, including other cloud providers using a cloud-agnostic artifact storage such as [Minio](https://docs.zenml.io/stacks/artifact-stores/artifact-stores).
+You can create a remote artifact store in pretty much any environment, including other cloud providers using a cloud-agnostic artifact storage such as [Minio](https://docs.zenml.io/stacks/artifact-stores).
 
 It is also relatively simple to create a [custom stack component flavor](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/implement-a-custom-stack-component) for your use case.
 {% endtab %}
