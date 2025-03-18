@@ -2,6 +2,44 @@
 
 # 0.80.0
 
+The 0.80.0 release introduces a major refactoring of workspaces into projects, enhances tagging capabilities, and improves GitLab repository support. This version also features significant performance optimizations for Docker builds and CLI operations.
+
+## Features
+
+- Refactored workspaces into projects with improved RBAC API resource format
+- Enhanced tagging system with resource type filtering and exclusive tag behavior
+- Added persistent resource support for the Vertex orchestrator
+- Store build duration information for better tracking
+- Allow passing step artifacts to specify upstream steps
+- Support for environment variables in KubernetesPodSettings
+
+## Improvements
+
+- Updated devel dockerfiles to make rebuilds faster
+- Improved CLI response time through optimized imports
+- Allow registering public GitLab repositories without token
+- Enable Weave integration in Wandb settings
+- Allow the service account project ID to be overridden in the GCP service connector
+- Pass API token as Kubernetes secret for enhanced security
+
+## Fixes
+
+- Fixed GitLab URL parsing and matching
+- Corrected CLI command to describe flavors
+- Fixed taggable filter model and filter models with multiple inputs
+- Fixed project statistics endpoint and ZenML Pro project URLs
+- Fixed the ACR support in the Azure service connector
+- Resolved SkyPilot Orchestrator cluster name handling
+- Fixed deprecation messages for GitHub code repository
+- Don't retry REST API calls if runtime errors occur
+
+## Documentation
+
+- Renamed API Docs to SDK Docs for clarity
+- Fixed SDK docs rendering with proper directory structure and links
+- Removed deprecated caveat from Kubernetes docs
+- Various documentation fixes and clarifications
+
 ## What's Changed
 * Update devel dockerfiles to make rebuilds faster by @stefannica in https://github.com/zenml-io/zenml/pull/3385
 * Deepchecks fix for the CI by @bcdurak in https://github.com/zenml-io/zenml/pull/3389
