@@ -209,6 +209,5 @@ def main() -> None:
                 logger.error(f"Error cleaning up secret {secret_name}: {e}")
 
 
-
 if __name__ == "__main__":
     main()
