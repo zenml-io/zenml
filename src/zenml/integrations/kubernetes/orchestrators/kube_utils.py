@@ -378,7 +378,7 @@ def create_secret(
     core_api: k8s_client.CoreV1Api,
     namespace: str,
     secret_name: str,
-    data: Dict[str, str],
+    data: Dict[str, Optional[str]],
 ) -> None:
     """Create a Kubernetes secret.
 
@@ -391,4 +391,67 @@ def create_secret(
     core_api.create_namespaced_secret(
         namespace=namespace,
         body=build_secret_manifest(name=secret_name, data=data),
+    )
+
+
+def update_secret(
+    core_api: k8s_client.CoreV1Api,
+    namespace: str,
+    secret_name: str,
+    data: Dict[str, Optional[str]],
+) -> None:
+    """Update a Kubernetes secret.
+
+    Args:
+        core_api: Client of Core V1 API of Kubernetes API.
+        namespace: The namespace in which to update the secret.
+        secret_name: The name of the secret to update.
+        data: The secret data. If the value is None, the key will be removed
+            from the secret.
+    """
+    core_api.patch_namespaced_secret(
+        namespace=namespace,
+        name=secret_name,
+        body=build_secret_manifest(name=secret_name, data=data),
+    )
+
+
+def create_or_update_secret(
+    core_api: k8s_client.CoreV1Api,
+    namespace: str,
+    secret_name: str,
+    data: Dict[str, Optional[str]],
+) -> None:
+    """Create a Kubernetes secret if it doesn't exist, or update it if it does.
+
+    Args:
+        core_api: Client of Core V1 API of Kubernetes API.
+        namespace: The namespace in which to create or update the secret.
+        secret_name: The name of the secret to create or update.
+        data: The secret data. If the value is None, the key will be removed
+            from the secret.
+    """
+    try:
+        create_secret(core_api, namespace, secret_name, data)
+    except ApiException as e:
+        if e.status != 409:
+            raise
+        update_secret(core_api, namespace, secret_name, data)
+
+
+def delete_secret(
+    core_api: k8s_client.CoreV1Api,
+    namespace: str,
+    secret_name: str,
+) -> None:
+    """Delete a Kubernetes secret.
+
+    Args:
+        core_api: Client of Core V1 API of Kubernetes API.
+        namespace: The namespace in which to delete the secret.
+        secret_name: The name of the secret to delete.
+    """
+    core_api.delete_namespaced_secret(
+        name=secret_name,
+        namespace=namespace,
     )

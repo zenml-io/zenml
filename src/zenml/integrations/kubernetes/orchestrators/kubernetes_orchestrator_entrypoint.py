@@ -28,6 +28,7 @@ from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import
 from zenml.integrations.kubernetes.orchestrators import kube_utils
 from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator import (
     ENV_ZENML_KUBERNETES_RUN_ID,
+    KUBERNETES_SECRET_TOKEN_KEY_NAME,
     KubernetesOrchestrator,
 )
 from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
@@ -139,7 +140,7 @@ def main() -> None:
                     "valueFrom": {
                         "secretKeyRef": {
                             "name": secret_name,
-                            "key": "token",
+                            "key": KUBERNETES_SECRET_TOKEN_KEY_NAME,
                         }
                     },
                 }
@@ -190,6 +191,20 @@ def main() -> None:
     ).run()
 
     logger.info("Orchestration pod completed.")
+
+    if (
+        orchestrator.config.pass_zenml_token_as_secret
+        and deployment_config.schedule is None
+    ):
+        secret_name = orchestrator.get_token_secret_name(deployment_config.id)
+        try:
+            kube_utils.delete_secret(
+                core_api=core_api,
+                namespace=args.kubernetes_namespace,
+                secret_name=secret_name,
+            )
+        except k8s_client.rest.ApiException as e:
+            logger.error(f"Error cleaning up secret {secret_name}: {e}")
 
 
 if __name__ == "__main__":

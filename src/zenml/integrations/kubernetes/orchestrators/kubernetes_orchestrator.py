@@ -73,6 +73,7 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 ENV_ZENML_KUBERNETES_RUN_ID = "ZENML_KUBERNETES_RUN_ID"
+KUBERNETES_SECRET_TOKEN_KEY_NAME = "zenml_api_token"
 
 
 class KubernetesOrchestrator(ContainerizedOrchestrator):
@@ -369,12 +370,8 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
 
         return pod_settings
 
-    @classmethod
-    def get_token_secret_name(cls, deployment_id: UUID) -> str:
+    def get_token_secret_name(self, deployment_id: UUID) -> str:
         """Returns the name of the secret that contains the ZenML token.
-
-        Args:
-            deployment_id: The deployment id.
 
         Returns:
             The name of the secret that contains the ZenML token.
@@ -466,11 +463,11 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         if self.config.pass_zenml_token_as_secret:
             secret_name = self.get_token_secret_name(deployment.id)
             token = environment.pop("ZENML_STORE_API_TOKEN")
-            kube_utils.create_secret(
+            kube_utils.create_or_update_secret(
                 core_api=self._k8s_core_api,
                 namespace=self.config.kubernetes_namespace,
                 secret_name=secret_name,
-                data={"token": token},
+                data={KUBERNETES_SECRET_TOKEN_KEY_NAME: token},
             )
             orchestrator_pod_settings.env.append(
                 {
@@ -478,7 +475,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                     "valueFrom": {
                         "secretKeyRef": {
                             "name": secret_name,
-                            "key": "token",
+                            "key": KUBERNETES_SECRET_TOKEN_KEY_NAME,
                         }
                     },
                 }

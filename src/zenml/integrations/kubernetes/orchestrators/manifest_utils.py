@@ -16,7 +16,7 @@
 import base64
 import os
 import sys
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Mapping, Optional
 
 from kubernetes import client as k8s_client
 
@@ -395,7 +395,7 @@ def build_namespace_manifest(namespace: str) -> Dict[str, Any]:
 
 def build_secret_manifest(
     name: str,
-    data: Dict[str, str],
+    data: Mapping[str, Optional[str]],
     secret_type: str = "Opaque",
 ) -> Dict[str, Any]:
     """Builds a Kubernetes secret manifest.
@@ -409,7 +409,7 @@ def build_secret_manifest(
         The secret manifest.
     """
     encoded_data = {
-        key: base64.b64encode(value.encode()).decode()
+        key: base64.b64encode(value.encode()).decode() if value else None
         for key, value in data.items()
     }
 
