@@ -41,6 +41,7 @@ The 0.80.0 release introduces a major refactoring of workspaces into projects, e
 - Various documentation fixes and clarifications
 
 ## What's Changed
+
 * Update devel dockerfiles to make rebuilds faster by @stefannica in https://github.com/zenml-io/zenml/pull/3385
 * Deepchecks fix for the CI by @bcdurak in https://github.com/zenml-io/zenml/pull/3389
 * Fixing the CI  by @bcdurak in https://github.com/zenml-io/zenml/pull/3391
@@ -57,7 +58,7 @@ The 0.80.0 release introduces a major refactoring of workspaces into projects, e
 * Fix taggable filter model by @schustmi in https://github.com/zenml-io/zenml/pull/3403
 * Testing the CLI with the profiler by @bcdurak in https://github.com/zenml-io/zenml/pull/3400
 * Don't retry REST API calls if runtime errors occur by @stefannica in https://github.com/zenml-io/zenml/pull/3408
-* Allow the service account project ID to be overriden in the GCP service connector by @stefannica in https://github.com/zenml-io/zenml/pull/3398
+* Allow the service account project ID to be overridden in the GCP service connector by @stefannica in https://github.com/zenml-io/zenml/pull/3398
 * Allow passing step artifacts to specify upstream steps by @schustmi in https://github.com/zenml-io/zenml/pull/3401
 * Add Reo Javascript snippet to main.html by @htahir1 in https://github.com/zenml-io/zenml/pull/3409
 * Rename workspace to project by @stefannica in https://github.com/zenml-io/zenml/pull/3407
@@ -89,12 +90,12 @@ The 0.80.0 release introduces a major refactoring of workspaces into projects, e
 * Fixing filter models with multiple inputs by @bcdurak in https://github.com/zenml-io/zenml/pull/3410
 
 ## New Contributors
+
 * @dragosmc made their first contribution in https://github.com/zenml-io/zenml/pull/3392
 * @VicSev made their first contribution in https://github.com/zenml-io/zenml/pull/3397
 * @BjoernBiltzinger made their first contribution in https://github.com/zenml-io/zenml/pull/3417
 
 **Full Changelog**: https://github.com/zenml-io/zenml/compare/0.75.0...0.80.0
-
 
 # 0.75.0
 
