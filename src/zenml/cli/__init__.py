@@ -1880,7 +1880,7 @@ Connecting to a ZenML Server
 ----------------------------
 
 The ZenML client can be [configured to connect to a local ZenML server, a remote
-database or a remote ZenML server](https://docs.zenml.io/how-to/connecting-to-zenml)
+database or a remote ZenML server](https://docs.zenml.io/how-to/manage-zenml-server/connecting-to-zenml)
 with the `zenml login` command.
 
 To connect or re-connect to any ZenML server, if you know its URL, you can
