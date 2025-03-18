@@ -47,4 +47,3 @@ class VLLMIntegration(Integration):
         return [VLLMModelDeployerFlavor]
 
 
-VLLMIntegration.check_installation()

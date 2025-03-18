@@ -47,4 +47,3 @@ class WandbIntegration(Integration):
         return [WandbExperimentTrackerFlavor]
 
 
-WandbIntegration.check_installation()

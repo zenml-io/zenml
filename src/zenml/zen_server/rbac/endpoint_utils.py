@@ -306,8 +306,7 @@ def verify_permissions_and_delete_entity(
     Returns:
         The deleted entity.
     """
-    # We don't need the hydrated version here
-    model = get_method(id, False)
+    model = get_method(id, True)
     verify_permission_for_model(model, action=Action.DELETE)
     delete_method(model.id, **delete_method_kwargs)
     delete_model_resource(model)

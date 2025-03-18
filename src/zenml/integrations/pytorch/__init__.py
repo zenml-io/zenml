@@ -31,4 +31,3 @@ class PytorchIntegration(Integration):
         from zenml.integrations.pytorch import materializers  # noqa
 
 
-PytorchIntegration.check_installation()

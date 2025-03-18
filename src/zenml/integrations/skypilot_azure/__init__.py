@@ -47,4 +47,3 @@ class SkypilotAzureIntegration(Integration):
 
         return [SkypilotAzureOrchestratorFlavor]
 
-SkypilotAzureIntegration.check_installation()
