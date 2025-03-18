@@ -2929,7 +2929,7 @@ def test_filters_with_oneof_tags_and_run_metadata(clean_client):
     assert len(artifact_versions) == 1  # The run with "random_string"
 
     artifact_version_filter = ArtifactVersionFilter(
-        run_metadata=["blupus:random_string", "luna:nova"]
+        run_metadata=["blupus:random_string"]
     )
     artifact_versions = store.list_artifact_versions(
         artifact_version_filter_model=artifact_version_filter
