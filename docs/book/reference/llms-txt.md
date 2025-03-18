@@ -33,7 +33,7 @@ This is where you should start. It covers the [User Guides](https://docs.zenml.i
 
 **Tokens**: 180k
 
-This file covers all the [stack components in ZenML](../component-guide/README.md), unsummarized, and can be used when you want to find answers pertaining to all of our integrations, how to configure/use them and more.
+This file covers all the [stack components in ZenML](https://docs.zenml.io/stacks), unsummarized, and can be used when you want to find answers pertaining to all of our integrations, how to configure/use them and more.
 
 3. [how-to-guides.txt](https://zenml.io/how-to-guides.txt)
 
