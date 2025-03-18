@@ -73,6 +73,9 @@ python link_checker.py --files file1.md --replace-links --dry-run
 
 # Replace and validate links
 python link_checker.py --files file1.md --replace-links --validate-links
+
+# Transform paths using custom URL mappings
+python link_checker.py --dir docs/book --replace-links --url-mapping user-guide=user-guides
 ```
 
 ### Features
@@ -86,6 +89,7 @@ python link_checker.py --files file1.md --replace-links --validate-links
    - Converts relative documentation links to absolute URLs
    - Handles README.md files and various link formats
    - Preserves fragments and query parameters
+   - Supports custom URL path mappings to transform specific path segments
 
 3. **Link Validation**:
    - Validates links via HTTP requests

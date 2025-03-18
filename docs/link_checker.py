@@ -13,6 +13,7 @@ It provides several key features:
    - Converts relative documentation links to absolute URLs
    - Handles various link formats including README.md files
    - Preserves fragments and query parameters
+   - Supports custom URL path mappings for specific directories or path segments
 
 3. Link Validation:
    - Validates links by making HTTP requests
@@ -35,6 +36,9 @@ Usage Examples:
     # Customize HTTP request timeout
     python link_checker.py --files file1.md --validate-links --timeout 15
 
+    # Use custom URL path mappings
+    python link_checker.py --dir docs --replace-links --url-mapping user-guide=user-guides
+
 Arguments:
     --dir: Directory containing markdown files to scan
     --files: List of specific markdown files to scan
@@ -43,6 +47,7 @@ Arguments:
     --dry-run: Show what would be changed without modifying files
     --validate-links: Check if links are valid by making HTTP requests
     --timeout: Timeout for HTTP requests in seconds (default: 10)
+    --url-mapping: Path segment mappings in format old=new (can be used multiple times)
 
 Note:
     The 'requests' package is required for link validation. Install it with:
@@ -263,9 +268,11 @@ def validate_urls(
     return results
 
 
-def transform_relative_link(link: str) -> Optional[str]:
+def transform_relative_link(
+    link: str, url_mappings: Dict[str, str] = None
+) -> Optional[str]:
     """
-    Transform a relative link to an absolute URL.
+    Transform a relative link to an absolute URL, applying any custom path mappings.
 
     Examples:
     - "../../how-to/pipeline-development/use-configuration-files/README.md" ->
@@ -273,7 +280,16 @@ def transform_relative_link(link: str) -> Optional[str]:
     - "../../how-to/model-management-metrics/track-metrics-metadata/fetch-metadata-within-pipeline.md" ->
       "https://docs.zenml.io/how-to/model-management-metrics/track-metrics-metadata/fetch-metadata-within-pipeline"
 
-    Returns None if the link is not a relative link or doesn't need transformation.
+    With url_mappings={"user-guide": "user-guides"}:
+    - "../../user-guide/starter-guide/starter-project.md" ->
+      "https://docs.zenml.io/user-guides/starter-guide/starter-project"
+
+    Args:
+        link: The relative link to transform
+        url_mappings: Dictionary of path segment mappings {old: new}
+
+    Returns:
+        The absolute URL, or None if the link is not a relative link or doesn't need transformation.
     """
     # Skip links that are already absolute URLs
     if link.startswith(("http://", "https://", "ftp://")):
@@ -309,6 +325,13 @@ def transform_relative_link(link: str) -> Optional[str]:
     elif clean_link.endswith(".md"):
         clean_link = clean_link[:-3]  # Remove '.md'
 
+    # Apply URL mappings if provided
+    if url_mappings:
+        for old_path, new_path in url_mappings.items():
+            # Match both path/old_path/ and path/old_path (at the start or with slashes)
+            pattern = f"(^|/)({re.escape(old_path)})(/?|$|/)"
+            clean_link = re.sub(pattern, r"\1" + new_path + r"\3", clean_link)
+
     # Create absolute URL and add back fragment/query if present
     absolute_url = f"https://docs.zenml.io/{clean_link}{fragment}{query}"
 
@@ -320,6 +343,7 @@ def replace_links_in_file(
     substring: str,
     dry_run: bool = False,
     validate_links: bool = False,
+    url_mappings: Dict[str, str] = None,
 ) -> Dict[str, Tuple[str, bool, Optional[str]]]:
     """
     Replace relative links in the file with absolute URLs.
@@ -329,6 +353,7 @@ def replace_links_in_file(
         substring: Substring to search for in links
         dry_run: If True, don't actually modify the file
         validate_links: If True, validate the generated links
+        url_mappings: Dictionary of path segment mappings {old: new}
 
     Returns:
         Dictionary of {original_link: (new_link, is_valid, error_message)}
@@ -378,7 +403,9 @@ def replace_links_in_file(
                 if not should_replace_link(relative_link):
                     continue
 
-                transformed_link = transform_relative_link(relative_link)
+                transformed_link = transform_relative_link(
+                    relative_link, url_mappings
+                )
 
                 if transformed_link:
                     replacements[relative_link] = (
@@ -406,7 +433,9 @@ def replace_links_in_file(
             if not should_replace_link(relative_link):
                 continue
 
-            transformed_link = transform_relative_link(relative_link)
+            transformed_link = transform_relative_link(
+                relative_link, url_mappings
+            )
 
             if transformed_link:
                 replacements[relative_link] = (transformed_link, None, None)
@@ -491,6 +520,11 @@ def main():
         default=10,
         help="Timeout for HTTP requests in seconds (default: 10)",
     )
+    parser.add_argument(
+        "--url-mapping",
+        action="append",
+        help="Path segment mappings in format old=new (can be used multiple times)",
+    )
     args = parser.parse_args()
 
     # Check for requests module if validation is enabled
@@ -501,6 +535,18 @@ def main():
 
     if not args.substring and not args.replace_links:
         parser.error("Either --substring or --replace-links must be specified")
+
+    # Process URL mappings if provided
+    url_mappings = {}
+    if args.url_mapping:
+        for mapping in args.url_mapping:
+            try:
+                old, new = mapping.split("=", 1)
+                url_mappings[old] = new
+            except ValueError:
+                print(
+                    f"Warning: Invalid URL mapping format: {mapping}. Expected format: old=new"
+                )
 
     files_to_scan = []
     if args.dir:
@@ -525,6 +571,7 @@ def main():
                     args.substring,
                     args.dry_run,
                     args.validate_links,
+                    url_mappings,
                 )
                 if replacements:
                     print(f"\n{file_path}:")
@@ -587,7 +634,7 @@ def main():
                             # For relative links, transform them to absolute URLs first
                             if link.startswith("../"):
                                 transformed_link = transform_relative_link(
-                                    link
+                                    link, url_mappings
                                 )
                                 if transformed_link:
                                     links_to_validate.append(transformed_link)
