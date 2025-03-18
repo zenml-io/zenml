@@ -590,7 +590,7 @@ If you used a custom CA certificate to sign the TLS certificates for the ZenML P
 {% endhint %}
 
 
-The above are infrastructure requirements for ZenML Pro. If, in addition to ZenML, you would also like to reuse the same Kubernetes cluster to run machine learning workloads with ZenML, you will require the following additional infrastructure resources and services to be able to set up [a remote ZenML Stack](../../user-guide/production-guide/understand-stacks.md):
+The above are infrastructure requirements for ZenML Pro. If, in addition to ZenML, you would also like to reuse the same Kubernetes cluster to run machine learning workloads with ZenML, you will require the following additional infrastructure resources and services to be able to set up [a remote ZenML Stack](https://docs.zenml.io/user-guides/production-guide/understand-stacks):
 
 - [a Kubernetes ZenML Orchestrator](../../component-guide/orchestrators/kubernetes.md) can be set up to run on the same cluster as ZenML Pro. For authentication, you will be able to configure [a ZenML Kubernetes Service Connector using service account tokens](../../how-to/infrastructure-deployment/auth-management/kubernetes-service-connector.md)
 - you'll need a container registry to store the container images built by ZenML. If you don't have one already, you can install [Docker registry](https://github.com/twuni/docker-registry.helm) on the same cluster as ZenML Pro.
