@@ -184,27 +184,30 @@ def main() -> None:
     parallel_node_startup_waiting_period = (
         orchestrator.config.parallel_step_startup_waiting_period or 0.0
     )
-    ThreadedDagRunner(
-        dag=pipeline_dag,
-        run_fn=run_step_on_kubernetes,
-        parallel_node_startup_waiting_period=parallel_node_startup_waiting_period,
-    ).run()
-
-    logger.info("Orchestration pod completed.")
-
-    if (
-        orchestrator.config.pass_zenml_token_as_secret
-        and deployment_config.schedule is None
-    ):
-        secret_name = orchestrator.get_token_secret_name(deployment_config.id)
-        try:
-            kube_utils.delete_secret(
-                core_api=core_api,
-                namespace=args.kubernetes_namespace,
-                secret_name=secret_name,
+    try:
+        ThreadedDagRunner(
+            dag=pipeline_dag,
+            run_fn=run_step_on_kubernetes,
+            parallel_node_startup_waiting_period=parallel_node_startup_waiting_period,
+        ).run()
+        logger.info("Orchestration pod completed.")
+    finally:
+        if (
+            orchestrator.config.pass_zenml_token_as_secret
+            and deployment_config.schedule is None
+        ):
+            secret_name = orchestrator.get_token_secret_name(
+                deployment_config.id
             )
-        except k8s_client.rest.ApiException as e:
-            logger.error(f"Error cleaning up secret {secret_name}: {e}")
+            try:
+                kube_utils.delete_secret(
+                    core_api=core_api,
+                    namespace=args.kubernetes_namespace,
+                    secret_name=secret_name,
+                )
+            except k8s_client.rest.ApiException as e:
+                logger.error(f"Error cleaning up secret {secret_name}: {e}")
+
 
 
 if __name__ == "__main__":
