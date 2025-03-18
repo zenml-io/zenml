@@ -16,9 +16,50 @@ In the local case (i.e. using `zenml login --local`, the docs are available on `
 
 ![ZenML API Redoc](../.gitbook/assets/zenml_api_redoc.png)
 
-## Using a bearer token to access the API programmatically
+ZenML provides comprehensive API documentation for both the open-source and Pro versions:
 
-If you are using the ZenML server API using the methods displayed above, it is enough to be logged in to your ZenML account in the same browser session. However, in order to do this programmatically, you can use one of the methods documented in the following sections.
+* **OSS API Documentation**: [https://docs.zenml.io/api-reference/oss-api/oss-api](https://docs.zenml.io/api-reference/oss-api/oss-api) - Live API documentation for the open-source ZenML API.
+* **Pro API Documentation**: [https://docs.zenml.io/api-reference/pro-api/pro-api](https://docs.zenml.io/api-reference/pro-api/pro-api) - Live API documentation for ZenML Pro API with additional enterprise features.
+
+## ZenML Pro API
+
+The ZenML Pro API extends the open-source API with additional features designed for enterprise users, including:
+
+- Enhanced team collaboration features
+- Advanced role-based access control
+- Enterprise-grade security features
+
+To access the Pro API, you need a ZenML Pro license. Refer to the [Pro API documentation](https://docs.zenml.io/api-reference/pro-api/pro-api) for detailed information on the available endpoints and features.
+
+### Accessing the ZenML Pro API
+
+The ZenML Pro API is distinct from the OSS server API:
+
+- The SaaS version of ZenML Pro API is hosted at [https://cloudapi.zenml.io](https://cloudapi.zenml.io)
+- You can access the API docs directly at [https://cloudapi.zenml.io](https://cloudapi.zenml.io)
+- If you're logged into your ZenML Pro account at [https://cloud.zenml.io](https://cloud.zenml.io), you can use the same browser session to authenticate requests directly in the OpenAPI docs
+
+### Pro API Authentication
+
+To programmatically access the ZenML Pro API:
+
+1. Navigate to the organization settings page in your ZenML Pro dashboard
+2. Select "API Tokens" from the left sidebar
+3. Click the "Create new token" button to generate a new API token
+4. Use the API token as the bearer token in your HTTP requests:
+
+```bash
+# Example of accessing the Pro API
+curl -H "Authorization: Bearer YOUR_API_TOKEN" https://cloudapi.zenml.io/users/me
+```
+
+Note that for workspace programmatic access, you can use the same methods described below for the OSS API (temporary API tokens or service accounts).
+
+For full details on using the ZenML Pro API, including available endpoints and features, see the [Pro API guide](../getting-started/zenml-pro/pro-api.md).
+
+## Accessing the ZenML OSS API
+
+If you are using the ZenML OSS server API using the methods displayed above, it is enough to be logged in to your ZenML account in the same browser session. However, in order to do this programmatically, you can use one of the methods documented in the following sections.
 
 ### Using a short-lived API token
 
