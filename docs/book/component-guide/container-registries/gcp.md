@@ -105,7 +105,7 @@ If you don't already have a GCP Service Connector configured in your ZenML deplo
 zenml service-connector register --type gcp -i
 ```
 
-A non-interactive CLI example that leverages [the GCP CLI configuration](https://docs.gcp.amazon.com/cli/latest/userguide/getting-started-install.html) on your local machine to auto-configure a GCP Service Connector targeting a GCR registry is:
+A non-interactive CLI example that leverages [the GCP CLI configuration](https://cloud.google.com/sdk/docs/install-sdk) on your local machine to auto-configure a GCP Service Connector targeting a GCR registry is:
 
 ```sh
 zenml service-connector register <CONNECTOR_NAME> --type gcp --resource-type docker-registry --auto-configure
