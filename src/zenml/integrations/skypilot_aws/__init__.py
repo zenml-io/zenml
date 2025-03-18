@@ -32,7 +32,7 @@ class SkypilotAWSIntegration(Integration):
 
     NAME = SKYPILOT_AWS
     # all 0.6.x versions of skypilot[aws] are compatible
-    REQUIREMENTS = ["skypilot[aws]"]
+    REQUIREMENTS = ["skypilot[aws]~=0.8.0"]
     APT_PACKAGES = ["openssh-client", "rsync"]
 
     @classmethod
