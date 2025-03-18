@@ -364,6 +364,9 @@ def replace_links_in_file(
     transformed_urls = []
     modified = False
 
+    # Store line-specific replacements
+    line_replacements = [[] for _ in range(len(lines))]
+
     # List of internal documentation paths that should only match relative links
     internal_paths = ["how-to", "user-guide", "component-guide", "book"]
 
@@ -414,13 +417,16 @@ def replace_links_in_file(
                     )
                     transformed_urls.append(transformed_link)
 
-                    # Only actually replace if not in dry run mode
+                    # Store replacement details for this line
                     if not dry_run:
-                        new_line = line.replace(
-                            relative_link, transformed_link
+                        line_replacements[i].append(
+                            (
+                                match.start(group),  # start position
+                                match.end(group),  # end position
+                                relative_link,  # original text
+                                transformed_link,  # replacement text
+                            )
                         )
-                        lines[i] = new_line
-                        modified = True
 
     # Handle reference-style links
     ref_link_pattern = re.compile(r"^\[([^\]]+)\]:\s*(\.\./\S+)")
@@ -449,6 +455,30 @@ def replace_links_in_file(
                     )
                     lines[i] = new_line
                     modified = True
+
+    # Apply all line replacements from right to left to maintain positions
+    if not dry_run:
+        for i, line_replace_data in enumerate(line_replacements):
+            if line_replace_data:
+                # Sort replacements right-to-left (by start position, descending)
+                line_replace_data.sort(key=lambda x: x[0], reverse=True)
+
+                # Apply all replacements for this line
+                line_text = lines[i]
+                for (
+                    start_pos,
+                    end_pos,
+                    original,
+                    replacement,
+                ) in line_replace_data:
+                    line_text = (
+                        line_text[:start_pos]
+                        + replacement
+                        + line_text[end_pos:]
+                    )
+
+                lines[i] = line_text
+                modified = True
 
     # Write the modified content back to the file
     if not dry_run and modified:
