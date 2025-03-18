@@ -1,7 +1,6 @@
 # Table of contents
 
-## User Guide
-
+* [README](README.md)
 * [Starter guide](starter-guide/README.md)
   * [Create an ML pipeline](starter-guide/create-an-ml-pipeline.md)
   * [Cache previous executions](starter-guide/cache-previous-executions.md)
@@ -34,11 +33,11 @@
     * [Understanding reranking](llmops-guide/reranking/understanding-reranking.md)
     * [Implementing reranking in ZenML](llmops-guide/reranking/implementing-reranking.md)
     * [Evaluating reranking performance](llmops-guide/reranking/evaluating-reranking-performance.md)
-  * [Improve retrieval by finetuning embeddings](llmops-guide/finetuning-embeddings/finetuning-embeddings.md)
+  * [Improve retrieval by finetuning embeddings](llmops-guide/finetuning-embeddings/README.md)
     * [Synthetic data generation](llmops-guide/finetuning-embeddings/synthetic-data-generation.md)
     * [Finetuning embeddings with Sentence Transformers](llmops-guide/finetuning-embeddings/finetuning-embeddings-with-sentence-transformers.md)
     * [Evaluating finetuned embeddings](llmops-guide/finetuning-embeddings/evaluating-finetuned-embeddings.md)
-  * [Finetuning LLMs with ZenML](llmops-guide/finetuning-llms/finetuning-llms.md)
+  * [Finetuning LLMs with ZenML](llmops-guide/finetuning-llms/README.md)
     * [Finetuning in 100 lines of code](llmops-guide/finetuning-llms/finetuning-100-loc.md)
     * [Why and when to finetune LLMs](llmops-guide/finetuning-llms/why-and-when-to-finetune-llms.md)
     * [Starter choices with finetuning](llmops-guide/finetuning-llms/starter-choices-for-finetuning-llms.md)
@@ -47,12 +46,11 @@
     * [Deploying finetuned models](llmops-guide/finetuning-llms/deploying-finetuned-models.md)
     * [Next steps](llmops-guide/finetuning-llms/next-steps.md)
 
-
 ## Examples
 
 * [Quickstart](https://github.com/zenml-io/zenml/blob/main/examples/quickstart)
 * [End-to-End Batch Inference](https://github.com/zenml-io/zenml/tree/main/examples/e2e)
-* [Basic NLP with BERT](https://github.com/zenml-io/zenml/tree/main/examples/e2e\_nlp)
+* [Basic NLP with BERT](https://github.com/zenml-io/zenml/tree/main/examples/e2e_nlp)
 * [Computer Vision with YoloV8](https://github.com/zenml-io/zenml-projects/tree/main/end-to-end-computer-vision)
-* [LLM Finetuning](https://github.com/zenml-io/zenml/tree/main/examples/llm\_finetuning)
+* [LLM Finetuning](https://github.com/zenml-io/zenml/tree/main/examples/llm_finetuning)
 * [More Projects...](https://github.com/zenml-io/zenml-projects)
