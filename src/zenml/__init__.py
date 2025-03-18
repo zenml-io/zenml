@@ -54,6 +54,8 @@ from zenml.entrypoints import entrypoint
 
 __all__ = [
     "add_tags",
+    "remove_tags",
+    "Tag",
     "ArtifactConfig",
     "ExternalArtifact",
     "get_pipeline_context",
