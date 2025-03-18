@@ -1,6 +1,9 @@
 # Table of contents
 
 * [About](README.md)
+
+## OSS API
+
 * [OSS API](oss-api-docs/README.md)
   * [V1](oss-api-docs/v1/README.md)
     * [Actions](oss-api-docs/v1/actions.md)
@@ -94,6 +97,9 @@
       * [Config](oss-api-docs/v1/stack-deployment/config.md)
       * [Stack](oss-api-docs/v1/stack-deployment/stack.md)
   * [OSS API Specification](https://1cf18d95-zenml.cloudinfra.zenml.io/openapi.json)
+ 
+## Pro API
+
 * [Pro API](pro-api-docs/README.md)
   * [API reference](pro-api-docs/api-reference/README.md)
     * [Tenants](pro-api-docs/api-reference/tenants/README.md)
