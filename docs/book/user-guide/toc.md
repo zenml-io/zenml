@@ -1,7 +1,5 @@
 # Table of contents
 
-* [README](README.md)
-
 ## User Guide
 
 * [Starter guide](starter-guide/README.md)
@@ -49,11 +47,12 @@
     * [Deploying finetuned models](llmops-guide/finetuning-llms/deploying-finetuned-models.md)
     * [Next steps](llmops-guide/finetuning-llms/next-steps.md)
 
+
 ## Examples
 
 * [Quickstart](https://github.com/zenml-io/zenml/blob/main/examples/quickstart)
 * [End-to-End Batch Inference](https://github.com/zenml-io/zenml/tree/main/examples/e2e)
-* [Basic NLP with BERT](https://github.com/zenml-io/zenml/tree/main/examples/e2e_nlp)
+* [Basic NLP with BERT](https://github.com/zenml-io/zenml/tree/main/examples/e2e\_nlp)
 * [Computer Vision with YoloV8](https://github.com/zenml-io/zenml-projects/tree/main/end-to-end-computer-vision)
-* [LLM Finetuning](https://github.com/zenml-io/zenml/tree/main/examples/llm_finetuning)
+* [LLM Finetuning](https://github.com/zenml-io/zenml/tree/main/examples/llm\_finetuning)
 * [More Projects...](https://github.com/zenml-io/zenml-projects)
