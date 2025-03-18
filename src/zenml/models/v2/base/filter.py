@@ -199,6 +199,23 @@ class StrFilter(Filter):
                 raise ValueError(ONEOF_ERROR)
         return self
 
+    def _check_if_column_is_json_encoded(self, column: Any) -> bool:
+        """Check if the column is json encoded.
+
+        Args:
+            column: The column of an SQLModel table on which to filter.
+
+        Returns:
+            True if the column is json encoded, False otherwise.
+        """
+        from zenml.zen_stores.schemas import RunMetadataSchema
+
+        JSON_ENCODED_COLUMNS = [RunMetadataSchema.value]
+
+        if column in JSON_ENCODED_COLUMNS:
+            return True
+        return False
+
     def generate_query_conditions_from_column(self, column: Any) -> Any:
         """Generate query conditions for a string column.
 
@@ -211,58 +228,167 @@ class StrFilter(Filter):
         Raises:
             ValueError: the comparison of the column to a numeric value fails.
         """
+        # Handle numeric comparisons (GT, LT, GTE, LTE)
         if self.operation in {
             GenericFilterOps.GT,
             GenericFilterOps.LT,
             GenericFilterOps.GTE,
             GenericFilterOps.LTE,
         }:
-            try:
-                numeric_column = cast(column, Float)
+            return self._handle_numeric_comparison(column)
 
-                assert self.value is not None
+        # Handle operations that need special treatment for JSON-encoded columns
+        is_json_encoded = self._check_if_column_is_json_encoded(column)
 
-                if self.operation == GenericFilterOps.GT:
-                    return and_(
-                        numeric_column, numeric_column > float(self.value)
-                    )
-                if self.operation == GenericFilterOps.LT:
-                    return and_(
-                        numeric_column, numeric_column < float(self.value)
-                    )
-                if self.operation == GenericFilterOps.GTE:
-                    return and_(
-                        numeric_column, numeric_column >= float(self.value)
-                    )
-                if self.operation == GenericFilterOps.LTE:
-                    return and_(
-                        numeric_column, numeric_column <= float(self.value)
-                    )
-            except Exception as e:
-                raise ValueError(
-                    f"Failed to compare the column '{column}' to the "
-                    f"value '{self.value}' (must be numeric): {e}"
-                )
-
+        # Handle list operations
         if self.operation == GenericFilterOps.ONEOF:
             assert isinstance(self.value, list)
-            return column.in_(self.value)
+            return self._handle_oneof(column, is_json_encoded)
 
+        # Handle pattern matching operations
         if self.operation == GenericFilterOps.CONTAINS:
             return column.like(f"%{self.value}%")
+
         if self.operation == GenericFilterOps.STARTSWITH:
+            return self._handle_startswith(column, is_json_encoded)
+
+        if self.operation == GenericFilterOps.ENDSWITH:
+            return self._handle_endswith(column, is_json_encoded)
+
+        if self.operation == GenericFilterOps.NOT_EQUALS:
+            return self._handle_not_equals(column, is_json_encoded)
+
+        # Default case (EQUALS)
+        return self._handle_equals(column, is_json_encoded)
+
+    def _handle_numeric_comparison(self, column: Any) -> Any:
+        """Handle numeric comparison operations.
+
+        Args:
+            column: The column to compare.
+
+        Returns:
+            The query condition.
+
+        Raises:
+            ValueError: If the comparison fails.
+        """
+        try:
+            numeric_column = cast(column, Float)
+            assert self.value is not None
+
+            operations = {
+                GenericFilterOps.GT: lambda col, val: and_(
+                    col, col > float(val)
+                ),
+                GenericFilterOps.LT: lambda col, val: and_(
+                    col, col < float(val)
+                ),
+                GenericFilterOps.GTE: lambda col, val: and_(
+                    col, col >= float(val)
+                ),
+                GenericFilterOps.LTE: lambda col, val: and_(
+                    col, col <= float(val)
+                ),
+            }
+
+            return operations[self.operation](numeric_column, self.value)  # type: ignore[no-untyped-call]
+        except Exception as e:
+            raise ValueError(
+                f"Failed to compare the column '{column}' to the "
+                f"value '{self.value}' (must be numeric): {e}"
+            )
+
+    def _handle_oneof(self, column: Any, is_json_encoded: bool) -> Any:
+        """Handle the ONEOF operation.
+
+        Args:
+            column: The column to check.
+            is_json_encoded: Whether the column is JSON encoded.
+
+        Returns:
+            The query condition.
+        """
+        from sqlalchemy import or_
+
+        conditions = []
+
+        assert isinstance(self.value, list)
+
+        for value in self.value:
+            if is_json_encoded:
+                # For JSON encoded columns, add conditions for both raw and JSON-quoted values
+                conditions.append(column == value)
+                conditions.append(column == f'"{value}"')
+            else:
+                conditions.append(column == value)
+
+        return or_(*conditions)
+
+    def _handle_startswith(self, column: Any, is_json_encoded: bool) -> Any:
+        """Handle the STARTSWITH operation.
+
+        Args:
+            column: The column to check.
+            is_json_encoded: Whether the column is JSON encoded.
+
+        Returns:
+            The query condition.
+        """
+        if is_json_encoded:
             return or_(
                 column.startswith(self.value),
                 column.startswith(f'"{self.value}'),
             )
-        if self.operation == GenericFilterOps.ENDSWITH:
+        else:
+            return column.startswith(self.value)
+
+    def _handle_endswith(self, column: Any, is_json_encoded: bool) -> Any:
+        """Handle the ENDSWITH operation.
+
+        Args:
+            column: The column to check.
+            is_json_encoded: Whether the column is JSON encoded.
+
+        Returns:
+            The query condition.
+        """
+        if is_json_encoded:
             return or_(
                 column.endswith(self.value), column.endswith(f'{self.value}"')
             )
-        if self.operation == GenericFilterOps.NOT_EQUALS:
-            return and_(column != self.value, column != f'"{self.value}"')
+        else:
+            return column.endswith(self.value)
 
-        return or_(column == self.value, column == f'"{self.value}"')
+    def _handle_not_equals(self, column: Any, is_json_encoded: bool) -> Any:
+        """Handle the NOT_EQUALS operation.
+
+        Args:
+            column: The column to check.
+            is_json_encoded: Whether the column is JSON encoded.
+
+        Returns:
+            The query condition.
+        """
+        if is_json_encoded:
+            return and_(column != self.value, column != f'"{self.value}"')
+        else:
+            return column != self.value
+
+    def _handle_equals(self, column: Any, is_json_encoded: bool) -> Any:
+        """Handle the EQUALS operation (default).
+
+        Args:
+            column: The column to check.
+            is_json_encoded: Whether the column is JSON encoded.
+
+        Returns:
+            The query condition.
+        """
+        if is_json_encoded:
+            return or_(column == self.value, column == f'"{self.value}"')
+        else:
+            return column == self.value
 
 
 class UUIDFilter(StrFilter):
