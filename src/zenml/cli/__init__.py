@@ -80,7 +80,7 @@ You can also pass in a directory path manually using the
 zenml init --path /path/to/dir
 ```
 
-If you wish to use one of [the available ZenML project templates](https://docs.zenml.io/how-to/setting-up-a-project-repository/using-project-templates#list-of-zenml-project-templates)
+If you wish to use one of [the available ZenML project templates](https://docs.zenml.io/how-to/project-setup-and-management/collaborate-with-team/project-templates)
 to generate a ready-to-use project scaffold in your repository, you can do so by
 passing the ``--template`` option:
 
@@ -1389,7 +1389,7 @@ zenml model-registry --help
 Managing your Stacks
 --------------------
 
-[The stack](https://docs.zenml.io/user-guide/production-guide/understand-stacks)
+[The stack](https://docs.zenml.io/user-guides/production-guide/understand-stacks)
 is a grouping of your artifact store, your orchestrator, and other
 optional MLOps tools like experiment trackers or model deployers.
 With the ZenML tool, switching from a local stack to a distributed cloud
@@ -1588,7 +1588,7 @@ Managing your Models
 --------------------
 
 ZenML provides several CLI commands to help you administer your models and
-their versions as part of [the Model Control Plane](https://docs.zenml.io/user-guide/starter-guide/track-ml-models).
+their versions as part of [the Model Control Plane](https://docs.zenml.io/user-guides/starter-guide/track-ml-models).
 
 To register a new model, you can use the following CLI command:
 
@@ -1672,7 +1672,7 @@ Managing your Pipelines & Artifacts
 -----------------------------------
 
 ZenML provides several CLI commands to help you [administer your pipelines and
-pipeline runs](https://docs.zenml.io/user-guide/starter-guide/manage-artifacts).
+pipeline runs](https://docs.zenml.io/user-guides/starter-guide/manage-artifacts).
 
 To explicitly register a pipeline you need to point to a pipeline instance
 in your Python code. Let's say you have a Python file called `run.py` and
@@ -2306,7 +2306,7 @@ zenml service-account api-key <SERVICE_ACCOUNT_NAME> delete <API_KEY_NAME>
 Managing Code Repositories
 --------------------------
 
-[Code repositories](https://docs.zenml.io/user-guide/production-guide/connect-code-repository)
+[Code repositories](https://docs.zenml.io/user-guides/production-guide/connect-code-repository)
 enable ZenML to keep track of the code version that you use for your pipeline
 runs. Additionally, running a pipeline which is tracked in a registered code
 repository can decrease the time it takes Docker to build images for
