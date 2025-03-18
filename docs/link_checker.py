@@ -100,12 +100,38 @@ def extract_links_from_markdown(
 def check_links_with_substring(
     file_path: str, substring: str
 ) -> List[Tuple[str, int, str, int, int]]:
-    """Check links in the file and return those that contain the given substring."""
+    """
+    Check links in the file and return those that contain the given substring.
+    For internal documentation paths (like 'how-to'), only consider relative links.
+    For other substrings, consider all links.
+
+    Args:
+        file_path: Path to the markdown file
+        substring: Substring to search for in links
+
+    Returns:
+        List of tuples: (link, line_num, full_line, start_pos, end_pos)
+    """
     links = extract_links_from_markdown(file_path)
+
+    # List of internal documentation paths that should only match relative links
+    internal_paths = ["how-to", "user-guide", "component-guide", "book"]
+
+    def should_include_link(link: str) -> bool:
+        if substring not in link:
+            return False
+
+        # For internal documentation paths, only include relative links
+        if substring in internal_paths:
+            return link.startswith("../")
+
+        # For other substrings, include all links
+        return True
+
     return [
         (link, line_num, line, start_pos, end_pos)
         for link, line_num, line, start_pos, end_pos in links
-        if substring in link
+        if should_include_link(link)
     ]
 
 
@@ -255,17 +281,13 @@ def transform_relative_link(link: str) -> Optional[str]:
 
 
 def replace_links_in_file(
-    file_path: str,
-    substring: Optional[str] = None,
-    dry_run: bool = False,
-    validate_links: bool = False,
+    file_path: str, dry_run: bool = False, validate_links: bool = False
 ) -> Dict[str, Tuple[str, bool, Optional[str]]]:
     """
     Replace relative links in the file with absolute URLs.
 
     Args:
         file_path: Path to the markdown file
-        substring: Optional substring to filter links (only replace links containing this)
         dry_run: If True, don't actually modify the file
         validate_links: If True, validate the generated links
 
@@ -281,8 +303,11 @@ def replace_links_in_file(
 
     # First, handle inline links and HTML links
     for i, line in enumerate(lines):
+        # Regular expressions for different types of markdown links
         patterns = [
+            # [text](url)
             (re.compile(r"\[(?:[^\]]+)\]\((\.\./[^)]+)\)"), 1),
+            # <a href="url">
             (
                 re.compile(
                     r'<a\s+(?:[^>]*?)href=["\'](\.\./.+?)["\']', re.IGNORECASE
@@ -294,11 +319,8 @@ def replace_links_in_file(
         for pattern, group in patterns:
             for match in pattern.finditer(line):
                 relative_link = match.group(group)
-                # Skip if substring is specified and link doesn't contain it
-                if substring and substring not in relative_link:
-                    continue
-
                 transformed_link = transform_relative_link(relative_link)
+
                 if transformed_link:
                     replacements[relative_link] = (
                         transformed_link,
@@ -307,6 +329,7 @@ def replace_links_in_file(
                     )
                     transformed_urls.append(transformed_link)
 
+                    # Only actually replace if not in dry run mode
                     if not dry_run:
                         new_line = line.replace(
                             relative_link, transformed_link
@@ -321,17 +344,19 @@ def replace_links_in_file(
         if match:
             ref_id = match.group(1)
             relative_link = match.group(2)
-            # Skip if substring is specified and link doesn't contain it
-            if substring and substring not in relative_link:
-                continue
-
             transformed_link = transform_relative_link(relative_link)
+
             if transformed_link:
                 replacements[relative_link] = (transformed_link, None, None)
                 transformed_urls.append(transformed_link)
 
+                # Only actually replace if not in dry run mode
                 if not dry_run:
-                    new_line = f"[{ref_id}]: {transformed_link}\n"
+                    new_line = (
+                        f"[{ref_id}]: {transformed_link}\n"
+                        if not line.endswith("\n")
+                        else f"[{ref_id}]: {transformed_link}\n"
+                    )
                     lines[i] = new_line
                     modified = True
 
@@ -434,10 +459,7 @@ def main():
         for file_path in files_to_scan:
             try:
                 replacements = replace_links_in_file(
-                    file_path,
-                    args.substring,
-                    args.dry_run,
-                    args.validate_links,
+                    file_path, args.dry_run, args.validate_links
                 )
                 if replacements:
                     print(f"\n{file_path}:")
