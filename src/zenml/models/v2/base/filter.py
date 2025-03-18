@@ -224,9 +224,6 @@ class StrFilter(Filter):
 
         Returns:
             A list of query conditions.
-
-        Raises:
-            ValueError: the comparison of the column to a numeric value fails.
         """
         # Handle numeric comparisons (GT, LT, GTE, LTE)
         if self.operation in {
