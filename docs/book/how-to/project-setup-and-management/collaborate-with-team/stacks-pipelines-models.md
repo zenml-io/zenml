@@ -11,10 +11,10 @@ about these concepts and how to best utilize them.
 
 Before we begin, here is a quick overview of the concepts we will be discussing:
 
-- **Stacks**: [Stacks](../../../user-guide/production-guide/understand-stacks.md) represent the configuration of tools and infrastructure that your pipelines can run on. A stack is built of multiple stack components like an orchestrator, a container registry, an artifact store, etc. Each of these components deal with one part of your workflow and work together to run your pipeline.
-- **Pipelines**: [Pipelines](../../../user-guide/starter-guide/create-an-ml-pipeline.md) are a series of steps that each represent a specific task in your ML workflow and are executed in a sequence that ZenML determines from your pipeline definition. Pipelines help you automate many tasks, standardize your executions, and add visibility into what your code is doing.
+- **Stacks**: [Stacks](https://docs.zenml.io/user-guides/production-guide/understand-stacks) represent the configuration of tools and infrastructure that your pipelines can run on. A stack is built of multiple stack components like an orchestrator, a container registry, an artifact store, etc. Each of these components deal with one part of your workflow and work together to run your pipeline.
+- **Pipelines**: [Pipelines](https://docs.zenml.io/user-guides/starter-guide/create-an-ml-pipeline) are a series of steps that each represent a specific task in your ML workflow and are executed in a sequence that ZenML determines from your pipeline definition. Pipelines help you automate many tasks, standardize your executions, and add visibility into what your code is doing.
 - **Models**: [Models](../../model-management-metrics/model-control-plane/README.md) are entities that groups pipelines, artifacts, metadata, and other crucial business data together. You may think of a ZenML Model as a "project" or a "workspace" that spans multiple pipelines.
-- **Artifacts**: [Artifacts](../../../user-guide/starter-guide/manage-artifacts.md) are the output of a pipeline step that you want to track and reuse across multiple pipelines.
+- **Artifacts**: [Artifacts](https://docs.zenml.io/user-guides/starter-guide/manage-artifacts) are the output of a pipeline step that you want to track and reuse across multiple pipelines.
 
 Understanding the relationships between stacks, pipelines, models, and artifacts is crucial for effective MLOps with ZenML.
 

@@ -129,7 +129,7 @@ build: <INSERT-BUILD-ID-HERE>
 
 ### Configuring the `model`
 
-Specifies the ZenML [Model](../../../user-guide/starter-guide/track-ml-models.md) to use for this pipeline.
+Specifies the ZenML [Model](https://docs.zenml.io/user-guides/starter-guide/track-ml-models) to use for this pipeline.
 
 ```yaml
 model:

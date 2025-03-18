@@ -114,7 +114,7 @@ steps:
         materializer_source: run.MyMaterializer
 ```
 
-Check out [this page](../../../user-guide/starter-guide/manage-artifacts.md) for information on your step output names and how to customize them.
+Check out [this page](https://docs.zenml.io/user-guides/starter-guide/manage-artifacts) for information on your step output names and how to customize them.
 
 #### Defining a materializer globally
 

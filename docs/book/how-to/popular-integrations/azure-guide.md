@@ -206,7 +206,7 @@ Now that you have a functional Azure stack set up with ZenML, you can explore
 more advanced features and capabilities offered by ZenML. Some next steps to 
 consider:
 
-* Dive deeper into ZenML's [production guide](../../user-guide/production-guide/README.md) to learn best practices for deploying and managing production-ready pipelines.
+* Dive deeper into ZenML's [production guide](https://docs.zenml.io/user-guides/production-guide) to learn best practices for deploying and managing production-ready pipelines.
 * Explore ZenML's [integrations](../../component-guide/README.md) with other popular tools and frameworks in the machine learning ecosystem.
 * Join the [ZenML community](https://zenml.io/slack) to connect with other users, ask questions, and get support.
 

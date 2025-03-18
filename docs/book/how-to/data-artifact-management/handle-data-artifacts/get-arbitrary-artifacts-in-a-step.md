@@ -26,7 +26,7 @@ artifacts from other pipelines or steps that are not directly upstream.
 
 ## See Also
 
-- [Managing artifacts](../../../user-guide/starter-guide/manage-artifacts.md) -
+- [Managing artifacts](https://docs.zenml.io/user-guides/starter-guide/manage-artifacts) -
   learn about the `ExternalArtifact` type and how to pass artifacts between steps.
 
 <!-- For scarf -->

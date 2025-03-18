@@ -139,7 +139,7 @@ status = run.status
 
 #### Configuration
 
-The `pipeline_configuration` is an object that contains all configurations of the pipeline and pipeline run, including the [pipeline-level settings](../../../user-guide/production-guide/configure-pipeline.md), which we will learn more about later:
+The `pipeline_configuration` is an object that contains all configurations of the pipeline and pipeline run, including the [pipeline-level settings](https://docs.zenml.io/user-guides/production-guide/configure-pipeline), which we will learn more about later:
 
 ```python
 pipeline_config = run.config
@@ -207,7 +207,7 @@ my_pytorch_model = output.load()
 Similarly, you can use the `inputs` and `input` properties to get the input artifacts of a step instead.
 
 {% hint style="info" %}
-Check out [this page](../../../user-guide/starter-guide/manage-artifacts.md#giving-names-to-your-artifacts) to see what the output names of your steps are and how to customize them.
+Check out [this page](https://docs.zenml.io/user-guides/starter-guide/manage-artifacts#giving-names-to-your-artifacts) to see what the output names of your steps are and how to customize them.
 {% endhint %}
 
 Note that the output of a step corresponds to a specific artifact version.
@@ -247,7 +247,7 @@ output_metadata = output.run_metadata
 storage_size_in_bytes = output_metadata["storage_size"].value
 ```
 
-We will talk more about metadata [in the next section](../../../user-guide/starter-guide/manage-artifacts.md#logging-metadata-for-an-artifact).
+We will talk more about metadata [in the next section](https://docs.zenml.io/user-guides/starter-guide/manage-artifacts#logging-metadata-for-an-artifact).
 
 #### Visualizations
 
