@@ -28,5 +28,3 @@ class NumpyIntegration(Integration):
         """Activates the integration."""
         from zenml.integrations.numpy import materializers  # noqa
 
-
-NumpyIntegration.check_installation()

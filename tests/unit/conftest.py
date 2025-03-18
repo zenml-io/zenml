@@ -28,7 +28,12 @@ from zenml.container_registries.base_container_registry import (
     BaseContainerRegistry,
     BaseContainerRegistryConfig,
 )
-from zenml.enums import ArtifactSaveType, ArtifactType, ExecutionStatus
+from zenml.enums import (
+    ArtifactSaveType,
+    ArtifactType,
+    ExecutionStatus,
+    ServiceState,
+)
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.models import (
     ArtifactResponse,
@@ -73,12 +78,11 @@ from zenml.models.v2.core.service import (
     ServiceResponseBody,
     ServiceResponseMetadata,
 )
+from zenml.models.v2.misc.service import ServiceType
 from zenml.orchestrators.base_orchestrator import BaseOrchestratorConfig
 from zenml.orchestrators.local.local_orchestrator import LocalOrchestrator
 from zenml.pipelines import pipeline
 from zenml.pipelines.pipeline_definition import Pipeline
-from zenml.services.service_status import ServiceState
-from zenml.services.service_type import ServiceType
 from zenml.stack.stack import Stack
 from zenml.stack.stack_component import (
     StackComponentConfig,

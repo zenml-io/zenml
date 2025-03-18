@@ -66,6 +66,3 @@ class GreatExpectationsIntegration(Integration):
 
         return cls.REQUIREMENTS + \
             PandasIntegration.get_requirements(target_os=target_os)
-
-
-GreatExpectationsIntegration.check_installation()

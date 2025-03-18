@@ -38,5 +38,3 @@ class KanikoIntegration(Integration):
 
         return [KanikoImageBuilderFlavor]
 
-
-KanikoIntegration.check_installation()

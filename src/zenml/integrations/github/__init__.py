@@ -39,5 +39,3 @@ class GitHubIntegration(Integration):
 
         return [GithubWebhookEventSourceFlavor]
 
-
-GitHubIntegration.check_installation()
