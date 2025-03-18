@@ -268,13 +268,17 @@ def get_project_statistics(
     run_filter = PipelineRunFilter(project=project.id)
     run_filter.configure_rbac(
         authenticated_user_id=user_id,
-        id=get_allowed_resource_ids(resource_type=ResourceType.PIPELINE_RUN),
+        id=get_allowed_resource_ids(
+            resource_type=ResourceType.PIPELINE_RUN, project_id=project.id
+        ),
     )
 
     pipeline_filter = PipelineFilter(project=project.id)
     pipeline_filter.configure_rbac(
         authenticated_user_id=user_id,
-        id=get_allowed_resource_ids(resource_type=ResourceType.PIPELINE),
+        id=get_allowed_resource_ids(
+            resource_type=ResourceType.PIPELINE, project_id=project.id
+        ),
     )
 
     return ProjectStatistics(
