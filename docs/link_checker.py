@@ -174,6 +174,26 @@ def check_links_with_substring(
     ]
 
 
+def is_local_development_url(url: str) -> bool:
+    """Check if a URL is for local development.
+
+    Args:
+        url: The URL to check
+
+    Returns:
+        bool: True if the URL is for local development, False otherwise
+    """
+    local_patterns = [
+        "http://0.0.0.0",
+        "https://0.0.0.0",
+        "http://localhost",
+        "https://localhost",
+        "http://127.0.0.1",
+        "https://127.0.0.1",
+    ]
+    return any(url.startswith(pattern) for pattern in local_patterns)
+
+
 def check_link_validity(
     url: str, timeout: int = 10
 ) -> Tuple[str, bool, Optional[str], Optional[int]]:
@@ -192,6 +212,10 @@ def check_link_validity(
 
     # Skip non-HTTP links
     if not url.startswith(("http://", "https://")):
+        return url, True, None, None
+
+    # Skip local development URLs
+    if is_local_development_url(url):
         return url, True, None, None
 
     # Configure session with retries
