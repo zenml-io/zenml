@@ -17,6 +17,7 @@ import traceback
 
 from zenml import get_step_context
 from zenml.client import Client
+from zenml.hooks import get_failure_template, get_success_template
 from zenml.logger import get_logger
 
 # Import these classes in the function body to avoid circular imports
@@ -100,51 +101,16 @@ Error: {exception_str}
 {plain_traceback}
 """
 
-    # For HTML email, we need to create a custom HTML body to properly format the traceback
-    html_body = f"""
-    <html>
-      <body style="font-family: Arial, sans-serif; padding: 20px;">
-        <div style="max-width: 600px; margin: 0 auto; background-color: #f9f9f9; padding: 20px; border-radius: 5px;">
-          <div style="text-align: center; margin-bottom: 20px;">
-            <img src="https://zenml-strapi-media.s3.eu-central-1.amazonaws.com/03_Zen_ML_Logo_Square_White_efefc24ae7.png" alt="ZenML Logo" width="100" style="background-color: #361776; padding: 10px; border-radius: 10px;">
-          </div>
-          <h2 style="color: #361776; margin-bottom: 20px;">ZenML Pipeline Failure Alert</h2>
-          <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-            <tr>
-              <td style="padding: 10px; border-bottom: 1px solid #ddd; width: 30%;"><strong>Pipeline:</strong></td>
-              <td style="padding: 10px; border-bottom: 1px solid #ddd;">{context.pipeline.name}</td>
-            </tr>
-            <tr>
-              <td style="padding: 10px; border-bottom: 1px solid #ddd;"><strong>Step:</strong></td>
-              <td style="padding: 10px; border-bottom: 1px solid #ddd;">{context.step_run.name}</td>
-            </tr>
-            <tr>
-              <td style="padding: 10px; border-bottom: 1px solid #ddd;"><strong>Run:</strong></td>
-              <td style="padding: 10px; border-bottom: 1px solid #ddd;">{context.pipeline_run.name}</td>
-            </tr>
-            <tr>
-              <td style="padding: 10px; border-bottom: 1px solid #ddd;"><strong>Stack:</strong></td>
-              <td style="padding: 10px; border-bottom: 1px solid #ddd;">{Client().active_stack.name}</td>
-            </tr>
-            <tr>
-              <td style="padding: 10px; border-bottom: 1px solid #ddd;"><strong>Exception Type:</strong></td>
-              <td style="padding: 10px; border-bottom: 1px solid #ddd;">{type(exception).__name__}</td>
-            </tr>
-          </table>
-          <div style="background-color: #f3f3f3; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
-            <p style="margin: 0;"><strong>Error Message:</strong></p>
-            <p style="margin-top: 10px; color: #e53935;">{exception_str}</p>
-          </div>
-          <div style="background-color: #f8f8f8; padding: 15px; border-radius: 5px; margin-bottom: 20px; overflow-x: auto;">
-            <pre style="margin: 0; font-family: monospace; white-space: pre-wrap; font-size: 12px; padding: 10px; background-color: #f0f0f0; border-radius: 3px;">{plain_traceback}</pre>
-          </div>
-          <div style="text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd; color: #777; font-size: 12px;">
-            <p>This is an automated message from ZenML. Please do not reply to this email.</p>
-          </div>
-        </div>
-      </body>
-    </html>
-    """
+    # Use the shared template for consistent styling
+    html_body = get_failure_template(
+        pipeline_name=context.pipeline.name,
+        step_name=context.step_run.name,
+        run_name=context.pipeline_run.name,
+        stack_name=Client().active_stack.name,
+        exception_type=type(exception).__name__,
+        exception_str=exception_str,
+        traceback=plain_traceback,
+    )
 
     # Create a payload with relevant pipeline information
     payload = SMTPEmailAlerterPayload(
@@ -222,44 +188,13 @@ Stack: {Client().active_stack.name}
 The step has completed successfully.
 """
 
-    # For HTML email, we need to create a custom HTML body with proper formatting
-    html_body = f"""
-    <html>
-      <body style="font-family: Arial, sans-serif; padding: 20px;">
-        <div style="max-width: 600px; margin: 0 auto; background-color: #f9f9f9; padding: 20px; border-radius: 5px;">
-          <div style="text-align: center; margin-bottom: 20px;">
-            <img src="https://zenml-strapi-media.s3.eu-central-1.amazonaws.com/03_Zen_ML_Logo_Square_White_efefc24ae7.png" alt="ZenML Logo" width="100" style="background-color: #361776; padding: 10px; border-radius: 10px;">
-          </div>
-          <h2 style="color: #361776; margin-bottom: 20px;">ZenML Pipeline Success</h2>
-          <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-            <tr>
-              <td style="padding: 10px; border-bottom: 1px solid #ddd; width: 30%;"><strong>Pipeline:</strong></td>
-              <td style="padding: 10px; border-bottom: 1px solid #ddd;">{context.pipeline.name}</td>
-            </tr>
-            <tr>
-              <td style="padding: 10px; border-bottom: 1px solid #ddd;"><strong>Step:</strong></td>
-              <td style="padding: 10px; border-bottom: 1px solid #ddd;">{context.step_run.name}</td>
-            </tr>
-            <tr>
-              <td style="padding: 10px; border-bottom: 1px solid #ddd;"><strong>Run:</strong></td>
-              <td style="padding: 10px; border-bottom: 1px solid #ddd;">{context.pipeline_run.name}</td>
-            </tr>
-            <tr>
-              <td style="padding: 10px; border-bottom: 1px solid #ddd;"><strong>Stack:</strong></td>
-              <td style="padding: 10px; border-bottom: 1px solid #ddd;">{Client().active_stack.name}</td>
-            </tr>
-          </table>
-          <div style="background-color: #e8f5e9; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
-            <p style="margin: 0; color: #2e7d32;"><strong>Status:</strong></p>
-            <p style="margin-top: 10px; color: #2e7d32;">The step has completed successfully.</p>
-          </div>
-          <div style="text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd; color: #777; font-size: 12px;">
-            <p>This is an automated message from ZenML. Please do not reply to this email.</p>
-          </div>
-        </div>
-      </body>
-    </html>
-    """
+    # Use the shared template for consistent styling
+    html_body = get_success_template(
+        pipeline_name=context.pipeline.name,
+        step_name=context.step_run.name,
+        run_name=context.pipeline_run.name,
+        stack_name=Client().active_stack.name,
+    )
 
     # Create a payload with relevant pipeline information
     payload = SMTPEmailAlerterPayload(

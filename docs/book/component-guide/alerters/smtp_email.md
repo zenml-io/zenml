@@ -241,6 +241,8 @@ These specialized hooks automatically:
 - Support Markdown-style formatting (backticks, asterisks)
 - Display traceback code in monospaced font with proper formatting
 
+ZenML uses a standardized email template system across all email-based alerts (including OpenAI integration) to ensure consistent styling and formatting. The template system handles the HTML structure, styling, and layout, while allowing each integration to customize the content as needed.
+
 These hooks are strongly recommended when using SMTP email alerters, as they provide a significantly better user experience compared to the standard hooks which were primarily designed for chat services.
 
 ### Using the Predefined Step

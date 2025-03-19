@@ -20,6 +20,7 @@ from openai import OpenAI
 
 from zenml import get_step_context
 from zenml.client import Client
+from zenml.hooks import get_failure_template
 from zenml.logger import get_logger
 
 logger = get_logger(__name__)
@@ -291,62 +292,29 @@ OpenAI ChatGPT's suggestion (model = {model_name}) on how to fix it:
 
 {plain_traceback}
 """
-            # For HTML email, create a custom HTML body with proper formatting
-            html_body = f"""
-            <html>
-              <body style="font-family: Arial, sans-serif; padding: 20px;">
-                <div style="max-width: 600px; margin: 0 auto; background-color: #f9f9f9; padding: 20px; border-radius: 5px;">
-                  <div style="text-align: center; margin-bottom: 20px;">
-                    <img src="https://zenml-strapi-media.s3.eu-central-1.amazonaws.com/03_Zen_ML_Logo_Square_White_efefc24ae7.png" alt="ZenML Logo" width="100" style="background-color: #361776; padding: 10px; border-radius: 10px;">
-                  </div>
-                  <h2 style="color: #361776; margin-bottom: 20px;">ZenML OpenAI Pipeline Failure Alert</h2>
-                  <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-                    <tr>
-                      <td style="padding: 10px; border-bottom: 1px solid #ddd; width: 30%;"><strong>Pipeline:</strong></td>
-                      <td style="padding: 10px; border-bottom: 1px solid #ddd;">{context.pipeline.name}</td>
-                    </tr>
-                    <tr>
-                      <td style="padding: 10px; border-bottom: 1px solid #ddd;"><strong>Step:</strong></td>
-                      <td style="padding: 10px; border-bottom: 1px solid #ddd;">{context.step_run.name}</td>
-                    </tr>
-                    <tr>
-                      <td style="padding: 10px; border-bottom: 1px solid #ddd;"><strong>Run:</strong></td>
-                      <td style="padding: 10px; border-bottom: 1px solid #ddd;">{context.pipeline_run.name}</td>
-                    </tr>
-                    <tr>
-                      <td style="padding: 10px; border-bottom: 1px solid #ddd;"><strong>Stack:</strong></td>
-                      <td style="padding: 10px; border-bottom: 1px solid #ddd;">{client.active_stack.name}</td>
-                    </tr>
-                    <tr>
-                      <td style="padding: 10px; border-bottom: 1px solid #ddd;"><strong>Parameters:</strong></td>
-                      <td style="padding: 10px; border-bottom: 1px solid #ddd;"><code>{context.step_run.config.parameters}</code></td>
-                    </tr>
-                    <tr>
-                      <td style="padding: 10px; border-bottom: 1px solid #ddd;"><strong>Exception Type:</strong></td>
-                      <td style="padding: 10px; border-bottom: 1px solid #ddd;">{type(exception).__name__}</td>
-                    </tr>
-                  </table>
-                  <div style="background-color: #f3f3f3; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
-                    <p style="margin: 0;"><strong>Error Message:</strong></p>
-                    <p style="margin-top: 10px; color: #e53935;">{exception}</p>
-                  </div>
-                  <div style="background-color: #f0f7ff; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
-                    <p style="margin: 0;"><strong>OpenAI ChatGPT's suggestion (model = {model_name}):</strong></p>
-                    <div style="margin-top: 10px;">
-                    {_format_markdown_for_html(suggestion) if suggestion else "No suggestion available."}
-                    </div>
-                  </div>
-                  <div style="background-color: #f8f8f8; padding: 15px; border-radius: 5px; margin-bottom: 20px; overflow-x: auto;">
-                    <p style="margin: 0;"><strong>Traceback:</strong></p>
-                    <pre style="margin: 0; font-family: monospace; white-space: pre-wrap; font-size: 12px; padding: 10px; background-color: #f0f0f0; border-radius: 3px;">{plain_traceback}</pre>
-                  </div>
-                  <div style="text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd; color: #777; font-size: 12px;">
-                    <p>This is an automated message from ZenML. Please do not reply to this email.</p>
-                  </div>
-                </div>
-              </body>
-            </html>
-            """
+            # Use the shared template for consistency, but add an OpenAI-specific section
+            additional_content = [
+                {
+                    "title": f"OpenAI ChatGPT's suggestion (model = {model_name})",
+                    "content": _format_markdown_for_html(suggestion)
+                    if suggestion
+                    else "No suggestion available.",
+                    "bg_color": "#f0f7ff",
+                    "is_pre": False,
+                }
+            ]
+
+            html_body = get_failure_template(
+                pipeline_name=context.pipeline.name,
+                step_name=context.step_run.name,
+                run_name=context.pipeline_run.name,
+                stack_name=client.active_stack.name,
+                exception_type=type(exception).__name__,
+                exception_str=str(exception),
+                traceback=plain_traceback,
+                additional_content=additional_content,
+                title="ZenML OpenAI Pipeline Failure Alert",
+            )
 
             # Create a payload with relevant pipeline information
             payload = SMTPEmailAlerterPayload(
