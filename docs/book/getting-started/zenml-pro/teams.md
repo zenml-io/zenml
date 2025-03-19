@@ -3,6 +3,11 @@ description: >
   Learn about Teams in ZenML Pro and how they can be used to manage groups of users across your organization and tenants.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Organize users in Teams
 
 ZenML Pro introduces the concept of Teams to help you manage groups of users efficiently. A team is a collection of users that acts as a single entity within your organization and tenants. This guide will help you understand how teams work, how to create and manage them, and how to use them effectively in your MLOps workflows.

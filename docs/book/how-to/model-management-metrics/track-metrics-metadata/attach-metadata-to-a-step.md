@@ -2,6 +2,11 @@
 description: Learn how to attach metadata to a step.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Attach metadata to a step
 
 In ZenML, you can log metadata for a specific step during or after its 
