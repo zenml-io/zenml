@@ -89,9 +89,9 @@ ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE
 
 #### Additional configuration
 
-For additional configuration of the SageMaker step operator, you can pass `SagemakerStepOperatorSettings` when defining or running your pipeline. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-aws/#zenml.integrations.aws.flavors.sagemaker_step_operator_flavor.SagemakerStepOperatorSettings) for a full list of available attributes and [this docs page](https://docs.zenml.io/how-to/pipeline-development/use-configuration-files/runtime-configuration) for more information on how to specify settings.
+For additional configuration of the SageMaker step operator, you can pass `SagemakerStepOperatorSettings` when defining or running your pipeline. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-aws.html#zenml.integrations.aws) for a full list of available attributes and [this docs page](https://docs.zenml.io/how-to/pipeline-development/use-configuration-files/runtime-configuration) for more information on how to specify settings.
 
-For more information and a full list of configurable attributes of the SageMaker step operator, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-aws/#zenml.integrations.aws.step_operators.sagemaker_step_operator.SagemakerStepOperator) .
+For more information and a full list of configurable attributes of the SageMaker step operator, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-aws.html#zenml.integrations.aws) .
 
 #### Enabling CUDA for GPU-backed hardware
 

@@ -148,7 +148,7 @@ def my_azureml_step():
     ...
 ```
 
-You can check out the [AzureMLStepOperatorSettings SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-azure/#zenml.integrations.azure.flavors.azureml\_step\_operator\_flavor.AzureMLStepOperatorSettings) for a full list of available attributes and [this docs page](https://docs.zenml.io/how-to/pipeline-development/use-configuration-files/runtime-configuration) for more information on how to specify settings.
+You can check out the [AzureMLStepOperatorSettings SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-azure.html#zenml.integrations.azure) for a full list of available attributes and [this docs page](https://docs.zenml.io/how-to/pipeline-development/use-configuration-files/runtime-configuration) for more information on how to specify settings.
 
 #### Enabling CUDA for GPU-backed hardware
 
