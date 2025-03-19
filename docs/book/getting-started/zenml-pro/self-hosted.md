@@ -199,6 +199,11 @@ To access the ZenML Pro container images stored in Google Cloud Platform (GCP) A
 
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 - **Step 1: Create a GCP Account**
     1. Visit the [Google Cloud Console](https://console.cloud.google.com/).
     2. Click **Get Started for Free** or sign in with an existing Google account.

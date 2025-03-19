@@ -2,6 +2,11 @@
 description: Logging and visualizing experiments with Vertex AI Experiment Tracker.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Vertex AI Experiment Tracker
 
 The Vertex AI Experiment Tracker is an [Experiment Tracker](./experiment-trackers.md) flavor provided with the Vertex AI ZenML integration. It uses the [Vertex AI tracking service](https://cloud.google.com/vertex-ai/docs/experiments/intro-vertex-ai-experiments) to log and visualize information from your pipeline steps (e.g., models, parameters, metrics).
