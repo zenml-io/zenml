@@ -42,7 +42,6 @@ def _get_vertex_orchestrator(**kwargs):
         flavor="gcp",
         type=StackComponentType.ORCHESTRATOR,
         user=uuid4(),
-        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -77,7 +76,6 @@ def test_vertex_orchestrator_stack_validation(
         flavor="azure",
         type=StackComponentType.ARTIFACT_STORE,
         user=uuid4(),
-        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )

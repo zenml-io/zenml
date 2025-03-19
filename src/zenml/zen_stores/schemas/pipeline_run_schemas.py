@@ -45,13 +45,13 @@ from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
     PipelineDeploymentSchema,
 )
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
+from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.stack_schemas import StackSchema
 from zenml.zen_stores.schemas.trigger_schemas import TriggerExecutionSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import RunMetadataInterface
-from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.logs_schemas import LogsSchema
@@ -77,8 +77,8 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         ),
         UniqueConstraint(
             "name",
-            "workspace_id",
-            name="unique_run_name_in_workspace",
+            "project_id",
+            name="unique_run_name_in_project",
         ),
     )
 
@@ -108,10 +108,10 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    workspace_id: UUID = build_foreign_key_field(
+    project_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target=WorkspaceSchema.__tablename__,
-        source_column="workspace_id",
+        target=ProjectSchema.__tablename__,
+        source_column="project_id",
         target_column="id",
         ondelete="CASCADE",
         nullable=False,
@@ -137,7 +137,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
     deployment: Optional["PipelineDeploymentSchema"] = Relationship(
         back_populates="pipeline_runs"
     )
-    workspace: "WorkspaceSchema" = Relationship(back_populates="runs")
+    project: "ProjectSchema" = Relationship(back_populates="runs")
     user: Optional["UserSchema"] = Relationship(back_populates="runs")
     run_metadata: List["RunMetadataSchema"] = Relationship(
         sa_relationship_kwargs=dict(
@@ -241,7 +241,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         orchestrator_environment = json.dumps(request.orchestrator_environment)
 
         return cls(
-            workspace_id=request.workspace,
+            project_id=request.project,
             user_id=request.user,
             name=request.name,
             orchestrator_run_id=request.orchestrator_run_id,
@@ -251,7 +251,6 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             pipeline_id=request.pipeline,
             deployment_id=request.deployment,
             trigger_execution_id=request.trigger_execution_id,
-            model_version_id=request.model_version_id,
         )
 
     def fetch_metadata_collection(self) -> Dict[str, List[RunMetadataEntry]]:
@@ -385,7 +384,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 else {}
             )
             metadata = PipelineRunResponseMetadata(
-                workspace=self.workspace.to_model(),
+                project=self.project.to_model(),
                 run_metadata=self.fetch_metadata(),
                 config=config,
                 steps=steps,
@@ -435,8 +434,6 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
         if run_update.status:
             self.status = run_update.status.value
             self.end_time = run_update.end_time
-        if run_update.model_version_id and self.model_version_id is None:
-            self.model_version_id = run_update.model_version_id
 
         self.updated = utc_now()
         return self

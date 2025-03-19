@@ -28,23 +28,26 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import ConfigDict, Field
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus
 from zenml.metadata.metadata_types import MetadataType
+from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
+    ProjectScopedFilter,
+    ProjectScopedRequest,
+    ProjectScopedResponse,
+    ProjectScopedResponseBody,
+    ProjectScopedResponseMetadata,
+    ProjectScopedResponseResources,
+    RunMetadataFilterMixin,
     TaggableFilter,
-    WorkspaceScopedFilter,
-    WorkspaceScopedRequest,
-    WorkspaceScopedResponse,
-    WorkspaceScopedResponseBody,
-    WorkspaceScopedResponseMetadata,
-    WorkspaceScopedResponseResources,
 )
 from zenml.models.v2.core.model_version import ModelVersionResponse
 from zenml.models.v2.core.tag import TagResponse
+from zenml.utils.tag_utils import Tag
 
 if TYPE_CHECKING:
     from sqlalchemy.sql.elements import ColumnElement
@@ -69,7 +72,7 @@ AnyQuery = TypeVar("AnyQuery", bound=Any)
 # ------------------ Request Model ------------------
 
 
-class PipelineRunRequest(WorkspaceScopedRequest):
+class PipelineRunRequest(ProjectScopedRequest):
     """Request model for pipeline runs."""
 
     name: str = Field(
@@ -117,14 +120,9 @@ class PipelineRunRequest(WorkspaceScopedRequest):
         default=None,
         title="ID of the trigger execution that triggered this run.",
     )
-    tags: Optional[List[str]] = Field(
+    tags: Optional[List[Union[str, Tag]]] = Field(
         default=None,
         title="Tags of the pipeline run.",
-    )
-    model_version_id: Optional[UUID] = Field(
-        title="The ID of the model version that was "
-        "configured by this pipeline run explicitly.",
-        default=None,
     )
 
     model_config = ConfigDict(protected_namespaces=())
@@ -133,16 +131,11 @@ class PipelineRunRequest(WorkspaceScopedRequest):
 # ------------------ Update Model ------------------
 
 
-class PipelineRunUpdate(BaseModel):
+class PipelineRunUpdate(BaseUpdate):
     """Pipeline run update model."""
 
     status: Optional[ExecutionStatus] = None
     end_time: Optional[datetime] = None
-    model_version_id: Optional[UUID] = Field(
-        title="The ID of the model version that was "
-        "configured by this pipeline run explicitly.",
-        default=None,
-    )
     # TODO: we should maybe have a different update model here, the upper
     #  three attributes should only be for internal use
     add_tags: Optional[List[str]] = Field(
@@ -158,7 +151,7 @@ class PipelineRunUpdate(BaseModel):
 # ------------------ Response Model ------------------
 
 
-class PipelineRunResponseBody(WorkspaceScopedResponseBody):
+class PipelineRunResponseBody(ProjectScopedResponseBody):
     """Response body for pipeline runs."""
 
     status: ExecutionStatus = Field(
@@ -194,7 +187,7 @@ class PipelineRunResponseBody(WorkspaceScopedResponseBody):
     model_config = ConfigDict(protected_namespaces=())
 
 
-class PipelineRunResponseMetadata(WorkspaceScopedResponseMetadata):
+class PipelineRunResponseMetadata(ProjectScopedResponseMetadata):
     """Response metadata for pipeline runs."""
 
     run_metadata: Dict[str, MetadataType] = Field(
@@ -252,7 +245,7 @@ class PipelineRunResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
-class PipelineRunResponseResources(WorkspaceScopedResponseResources):
+class PipelineRunResponseResources(ProjectScopedResponseResources):
     """Class for all resource models associated with the pipeline run entity."""
 
     model_version: Optional[ModelVersionResponse] = None
@@ -270,7 +263,7 @@ class PipelineRunResponseResources(WorkspaceScopedResponseResources):
 
 
 class PipelineRunResponse(
-    WorkspaceScopedResponse[
+    ProjectScopedResponse[
         PipelineRunResponseBody,
         PipelineRunResponseMetadata,
         PipelineRunResponseResources,
@@ -590,12 +583,15 @@ class PipelineRunResponse(
 # ------------------ Filter Model ------------------
 
 
-class PipelineRunFilter(WorkspaceScopedFilter, TaggableFilter):
-    """Model to enable advanced filtering of all Workspaces."""
+class PipelineRunFilter(
+    ProjectScopedFilter, TaggableFilter, RunMetadataFilterMixin
+):
+    """Model to enable advanced filtering of all pipeline runs."""
 
     CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
-        *WorkspaceScopedFilter.CUSTOM_SORTING_OPTIONS,
+        *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
         *TaggableFilter.CUSTOM_SORTING_OPTIONS,
+        *RunMetadataFilterMixin.CUSTOM_SORTING_OPTIONS,
         "tag",
         "stack",
         "pipeline",
@@ -603,8 +599,9 @@ class PipelineRunFilter(WorkspaceScopedFilter, TaggableFilter):
         "model_version",
     ]
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
+        *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
         *TaggableFilter.FILTER_EXCLUDE_FIELDS,
+        *RunMetadataFilterMixin.FILTER_EXCLUDE_FIELDS,
         "unlisted",
         "code_repository_id",
         "build_id",
@@ -618,11 +615,16 @@ class PipelineRunFilter(WorkspaceScopedFilter, TaggableFilter):
         "stack_component",
         "pipeline_name",
         "templatable",
-        "run_metadata",
     ]
     CLI_EXCLUDE_FIELDS = [
-        *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
+        *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
         *TaggableFilter.CLI_EXCLUDE_FIELDS,
+        *RunMetadataFilterMixin.CLI_EXCLUDE_FIELDS,
+    ]
+    API_MULTI_INPUT_PARAMS: ClassVar[List[str]] = [
+        *ProjectScopedFilter.API_MULTI_INPUT_PARAMS,
+        *TaggableFilter.API_MULTI_INPUT_PARAMS,
+        *RunMetadataFilterMixin.API_MULTI_INPUT_PARAMS,
     ]
 
     name: Optional[str] = Field(
@@ -688,10 +690,6 @@ class PipelineRunFilter(WorkspaceScopedFilter, TaggableFilter):
         union_mode="left_to_right",
     )
     unlisted: Optional[bool] = None
-    run_metadata: Optional[Dict[str, Any]] = Field(
-        default=None,
-        description="The run_metadata to filter the pipeline runs by.",
-    )
     # TODO: Remove once frontend is ready for it. This is replaced by the more
     #   generic `pipeline` filter below.
     pipeline_name: Optional[str] = Field(
@@ -748,8 +746,6 @@ class PipelineRunFilter(WorkspaceScopedFilter, TaggableFilter):
             PipelineDeploymentSchema,
             PipelineRunSchema,
             PipelineSchema,
-            RunMetadataResourceSchema,
-            RunMetadataSchema,
             ScheduleSchema,
             StackComponentSchema,
             StackCompositionSchema,
@@ -907,30 +903,6 @@ class PipelineRunFilter(WorkspaceScopedFilter, TaggableFilter):
                 )
 
             custom_filters.append(templatable_filter)
-        if self.run_metadata is not None:
-            from zenml.enums import MetadataResourceTypes
-
-            for key, value in self.run_metadata.items():
-                additional_filter = and_(
-                    RunMetadataResourceSchema.resource_id
-                    == PipelineRunSchema.id,
-                    RunMetadataResourceSchema.resource_type
-                    == MetadataResourceTypes.PIPELINE_RUN.value,
-                    RunMetadataResourceSchema.run_metadata_id
-                    == RunMetadataSchema.id,
-                    self.generate_custom_query_conditions_for_column(
-                        value=key,
-                        table=RunMetadataSchema,
-                        column="key",
-                    ),
-                    self.generate_custom_query_conditions_for_column(
-                        value=value,
-                        table=RunMetadataSchema,
-                        column="value",
-                        json_encode_value=True,
-                    ),
-                )
-                custom_filters.append(additional_filter)
 
         return custom_filters
 

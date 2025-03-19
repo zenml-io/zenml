@@ -44,4 +44,3 @@ class SlackIntegration(Integration):
         return [SlackAlerterFlavor]
 
 
-SlackIntegration.check_installation()

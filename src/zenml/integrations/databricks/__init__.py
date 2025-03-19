@@ -66,5 +66,3 @@ class DatabricksIntegration(Integration):
             DatabricksOrchestratorFlavor,
             DatabricksModelDeployerFlavor,
         ]
-
-DatabricksIntegration.check_installation()

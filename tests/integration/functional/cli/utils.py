@@ -22,10 +22,8 @@ from zenml.cli.utils import (
 )
 from zenml.client import Client
 from zenml.models import (
-    TagFilter,
-    TagRequest,
+    ProjectResponse,
     UserResponse,
-    WorkspaceResponse,
 )
 from zenml.utils.string_utils import random_str
 
@@ -91,16 +89,16 @@ def test_parse_name_and_extra_arguments_returns_a_dict_of_known_options() -> (
     assert name == "axl"
 
 
-def sample_workspace_name() -> str:
-    """Function to get random workspace name."""
-    return f"cat_prj_{random_str(4)}"
+def sample_project_name() -> str:
+    """Function to get random project name."""
+    return f"cat_prj_{random_str(4).lower()}"
 
 
-def create_sample_workspace() -> WorkspaceResponse:
-    """Fixture to get a workspace."""
-    return Client().create_workspace(
-        name=sample_workspace_name(),
-        description="This workspace aims to ensure world domination for all "
+def create_sample_project() -> ProjectResponse:
+    """Fixture to get a project."""
+    return Client().create_project(
+        name=sample_project_name(),
+        description="This project aims to ensure world domination for all "
         "cat-kind.",
     )
 
@@ -137,33 +135,31 @@ def cleanup_secrets(
             pass
 
 
-def test_temporarily_setting_the_active_stack(clean_workspace):
+def test_temporarily_setting_the_active_stack(clean_project):
     """Tests the context manager to temporarily activate a stack."""
-    initial_stack = clean_workspace.active_stack_model
+    initial_stack = clean_project.active_stack_model
     components = {
         key: components[0].id
         for key, components in initial_stack.components.items()
     }
-    new_stack = clean_workspace.create_stack(name="new", components=components)
+    new_stack = clean_project.create_stack(name="new", components=components)
 
     with temporary_active_stack():
-        assert clean_workspace.active_stack_model == initial_stack
+        assert clean_project.active_stack_model == initial_stack
 
     with temporary_active_stack(stack_name_or_id=new_stack.id):
-        assert clean_workspace.active_stack_model == new_stack
+        assert clean_project.active_stack_model == new_stack
 
-    assert clean_workspace.active_stack_model == initial_stack
+    assert clean_project.active_stack_model == initial_stack
 
 
 @contextmanager
 def tags_killer(tag_create_count: int = 5):
     tags = []
     for _ in range(tag_create_count):
-        tags.append(
-            Client().create_tag(TagRequest(name=random_resource_name()))
-        )
+        tags.append(Client().create_tag(name=random_resource_name()))
     yield tags
-    for tag in Client().list_tags(TagFilter(size=999)).items:
+    for tag in Client().list_tags(size=999).items:
         Client().delete_tag(tag.id)
 
 

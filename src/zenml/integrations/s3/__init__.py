@@ -58,5 +58,3 @@ class S3Integration(Integration):
 
         return [S3ArtifactStoreFlavor]
 
-
-S3Integration.check_installation()

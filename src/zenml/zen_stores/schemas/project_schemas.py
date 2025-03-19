@@ -11,18 +11,19 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""SQL Model Implementations for Workspaces."""
+"""SQL Model Implementations for projects."""
 
 from typing import TYPE_CHECKING, Any, List
 
+from sqlalchemy import UniqueConstraint
 from sqlmodel import Relationship
 
 from zenml.models import (
-    WorkspaceRequest,
-    WorkspaceResponse,
-    WorkspaceResponseBody,
-    WorkspaceResponseMetadata,
-    WorkspaceUpdate,
+    ProjectRequest,
+    ProjectResponse,
+    ProjectResponseBody,
+    ProjectResponseMetadata,
+    ProjectUpdate,
 )
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
@@ -33,7 +34,6 @@ if TYPE_CHECKING:
         ArtifactVersionSchema,
         CodeRepositorySchema,
         EventSourceSchema,
-        FlavorSchema,
         ModelSchema,
         ModelVersionSchema,
         PipelineBuildSchema,
@@ -42,128 +42,115 @@ if TYPE_CHECKING:
         PipelineSchema,
         RunMetadataSchema,
         ScheduleSchema,
-        SecretSchema,
-        ServiceConnectorSchema,
         ServiceSchema,
-        StackComponentSchema,
-        StackSchema,
         StepRunSchema,
         TriggerSchema,
     )
 
 
-class WorkspaceSchema(NamedSchema, table=True):
-    """SQL Model for workspaces."""
+class ProjectSchema(NamedSchema, table=True):
+    """SQL Model for projects."""
 
-    __tablename__ = "workspace"
+    __tablename__ = "project"
+    __table_args__ = (
+        UniqueConstraint(
+            "name",
+            name="unique_project_name",
+        ),
+    )
 
+    display_name: str
     description: str
 
-    stacks: List["StackSchema"] = Relationship(
-        back_populates="workspace",
-        sa_relationship_kwargs={"cascade": "delete"},
-    )
-    components: List["StackComponentSchema"] = Relationship(
-        back_populates="workspace",
-        sa_relationship_kwargs={"cascade": "delete"},
-    )
-    flavors: List["FlavorSchema"] = Relationship(
-        back_populates="workspace",
-        sa_relationship_kwargs={"cascade": "delete"},
-    )
     pipelines: List["PipelineSchema"] = Relationship(
-        back_populates="workspace",
+        back_populates="project",
         sa_relationship_kwargs={"cascade": "delete"},
     )
     schedules: List["ScheduleSchema"] = Relationship(
-        back_populates="workspace",
+        back_populates="project",
         sa_relationship_kwargs={"cascade": "delete"},
     )
     runs: List["PipelineRunSchema"] = Relationship(
-        back_populates="workspace",
+        back_populates="project",
         sa_relationship_kwargs={"cascade": "delete"},
     )
     step_runs: List["StepRunSchema"] = Relationship(
-        back_populates="workspace",
+        back_populates="project",
         sa_relationship_kwargs={"cascade": "delete"},
     )
     builds: List["PipelineBuildSchema"] = Relationship(
-        back_populates="workspace",
+        back_populates="project",
         sa_relationship_kwargs={"cascade": "delete"},
     )
     artifact_versions: List["ArtifactVersionSchema"] = Relationship(
-        back_populates="workspace",
+        back_populates="project",
         sa_relationship_kwargs={"cascade": "delete"},
     )
     run_metadata: List["RunMetadataSchema"] = Relationship(
-        back_populates="workspace",
-        sa_relationship_kwargs={"cascade": "delete"},
-    )
-    secrets: List["SecretSchema"] = Relationship(
-        back_populates="workspace",
+        back_populates="project",
         sa_relationship_kwargs={"cascade": "delete"},
     )
     actions: List["ActionSchema"] = Relationship(
-        back_populates="workspace",
+        back_populates="project",
         sa_relationship_kwargs={"cascade": "delete"},
     )
     triggers: List["TriggerSchema"] = Relationship(
-        back_populates="workspace",
+        back_populates="project",
         sa_relationship_kwargs={"cascade": "delete"},
     )
     event_sources: List["EventSourceSchema"] = Relationship(
-        back_populates="workspace",
+        back_populates="project",
         sa_relationship_kwargs={"cascade": "delete"},
     )
 
     deployments: List["PipelineDeploymentSchema"] = Relationship(
-        back_populates="workspace",
+        back_populates="project",
         sa_relationship_kwargs={"cascade": "delete"},
     )
     code_repositories: List["CodeRepositorySchema"] = Relationship(
-        back_populates="workspace",
+        back_populates="project",
         sa_relationship_kwargs={"cascade": "delete"},
     )
     services: List["ServiceSchema"] = Relationship(
-        back_populates="workspace",
-        sa_relationship_kwargs={"cascade": "delete"},
-    )
-    service_connectors: List["ServiceConnectorSchema"] = Relationship(
-        back_populates="workspace",
+        back_populates="project",
         sa_relationship_kwargs={"cascade": "delete"},
     )
     models: List["ModelSchema"] = Relationship(
-        back_populates="workspace",
+        back_populates="project",
         sa_relationship_kwargs={"cascade": "delete"},
     )
     model_versions: List["ModelVersionSchema"] = Relationship(
-        back_populates="workspace",
+        back_populates="project",
         sa_relationship_kwargs={"cascade": "delete"},
     )
 
     @classmethod
-    def from_request(cls, workspace: WorkspaceRequest) -> "WorkspaceSchema":
-        """Create a `WorkspaceSchema` from a `WorkspaceResponse`.
+    def from_request(cls, project: ProjectRequest) -> "ProjectSchema":
+        """Create a `ProjectSchema` from a `ProjectResponse`.
 
         Args:
-            workspace: The `WorkspaceResponse` from which to create the schema.
+            project: The `ProjectResponse` from which to create the schema.
 
         Returns:
-            The created `WorkspaceSchema`.
+            The created `ProjectSchema`.
         """
-        return cls(name=workspace.name, description=workspace.description)
+        return cls(
+            name=project.name,
+            description=project.description,
+            display_name=project.display_name,
+        )
 
-    def update(self, workspace_update: WorkspaceUpdate) -> "WorkspaceSchema":
-        """Update a `WorkspaceSchema` from a `WorkspaceUpdate`.
+    def update(self, project_update: ProjectUpdate) -> "ProjectSchema":
+        """Update a `ProjectSchema` from a `ProjectUpdate`.
 
         Args:
-            workspace_update: The `WorkspaceUpdate` from which to update the
+            project_update: The `ProjectUpdate` from which to update the
                 schema.
 
         Returns:
-            The updated `WorkspaceSchema`.
+            The updated `ProjectSchema`.
         """
-        for field, value in workspace_update.model_dump(
+        for field, value in project_update.model_dump(
             exclude_unset=True
         ).items():
             setattr(self, field, value)
@@ -176,8 +163,8 @@ class WorkspaceSchema(NamedSchema, table=True):
         include_metadata: bool = False,
         include_resources: bool = False,
         **kwargs: Any,
-    ) -> WorkspaceResponse:
-        """Convert a `WorkspaceSchema` to a `WorkspaceResponse`.
+    ) -> ProjectResponse:
+        """Convert a `ProjectSchema` to a `ProjectResponse`.
 
         Args:
             include_metadata: Whether the metadata will be filled.
@@ -186,17 +173,18 @@ class WorkspaceSchema(NamedSchema, table=True):
 
 
         Returns:
-            The converted `WorkspaceResponseModel`.
+            The converted `ProjectResponseModel`.
         """
         metadata = None
         if include_metadata:
-            metadata = WorkspaceResponseMetadata(
+            metadata = ProjectResponseMetadata(
                 description=self.description,
             )
-        return WorkspaceResponse(
+        return ProjectResponse(
             id=self.id,
             name=self.name,
-            body=WorkspaceResponseBody(
+            body=ProjectResponseBody(
+                display_name=self.display_name,
                 created=self.created,
                 updated=self.updated,
             ),

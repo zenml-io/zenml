@@ -13,43 +13,52 @@
 #  permissions and limitations under the License.
 """Models representing secrets."""
 
-from datetime import datetime
-from typing import Any, ClassVar, Dict, List, Optional, Union
+from typing import (
+    TYPE_CHECKING,
+    ClassVar,
+    Dict,
+    List,
+    Optional,
+    Type,
+    TypeVar,
+)
 
 from pydantic import Field, SecretStr
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
-from zenml.enums import (
-    GenericFilterOps,
-    LogicalOperators,
-    SecretScope,
-    SorterOps,
-)
 from zenml.models.v2.base.base import BaseUpdate
+from zenml.models.v2.base.filter import AnyQuery
 from zenml.models.v2.base.scoped import (
-    WorkspaceScopedFilter,
-    WorkspaceScopedRequest,
-    WorkspaceScopedResponse,
-    WorkspaceScopedResponseBody,
-    WorkspaceScopedResponseMetadata,
-    WorkspaceScopedResponseResources,
+    UserScopedFilter,
+    UserScopedRequest,
+    UserScopedResponse,
+    UserScopedResponseBody,
+    UserScopedResponseMetadata,
+    UserScopedResponseResources,
 )
 from zenml.utils.secret_utils import PlainSerializedSecretStr
+
+if TYPE_CHECKING:
+    from zenml.zen_stores.schemas.base_schemas import BaseSchema
+
+    AnySchema = TypeVar("AnySchema", bound=BaseSchema)
 
 # ------------------ Request Model ------------------
 
 
-class SecretRequest(WorkspaceScopedRequest):
-    """Request models for secrets."""
+class SecretRequest(UserScopedRequest):
+    """Request model for secrets."""
 
-    ANALYTICS_FIELDS: ClassVar[List[str]] = ["scope"]
+    ANALYTICS_FIELDS: ClassVar[List[str]] = ["private"]
 
     name: str = Field(
         title="The name of the secret.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
-    scope: SecretScope = Field(
-        SecretScope.WORKSPACE, title="The scope of the secret."
+    private: bool = Field(
+        False,
+        title="Whether the secret is private. A private secret is only "
+        "accessible to the user who created it.",
     )
     values: Dict[str, Optional[PlainSerializedSecretStr]] = Field(
         default_factory=dict, title="The values stored in this secret."
@@ -78,17 +87,19 @@ class SecretRequest(WorkspaceScopedRequest):
 
 
 class SecretUpdate(BaseUpdate):
-    """Secret update model."""
+    """Update model for secrets."""
 
-    ANALYTICS_FIELDS: ClassVar[List[str]] = ["scope"]
+    ANALYTICS_FIELDS: ClassVar[List[str]] = ["private"]
 
     name: Optional[str] = Field(
         title="The name of the secret.",
         max_length=STR_FIELD_MAX_LENGTH,
         default=None,
     )
-    scope: Optional[SecretScope] = Field(
-        default=None, title="The scope of the secret."
+    private: Optional[bool] = Field(
+        default=None,
+        title="Whether the secret is private. A private secret is only "
+        "accessible to the user who created it.",
     )
     values: Optional[Dict[str, Optional[PlainSerializedSecretStr]]] = Field(
         title="The values stored in this secret.",
@@ -113,33 +124,37 @@ class SecretUpdate(BaseUpdate):
 # ------------------ Response Model ------------------
 
 
-class SecretResponseBody(WorkspaceScopedResponseBody):
+class SecretResponseBody(UserScopedResponseBody):
     """Response body for secrets."""
 
-    scope: SecretScope = Field(
-        SecretScope.WORKSPACE, title="The scope of the secret."
+    private: bool = Field(
+        False,
+        title="Whether the secret is private. A private secret is only "
+        "accessible to the user who created it.",
     )
     values: Dict[str, Optional[PlainSerializedSecretStr]] = Field(
         default_factory=dict, title="The values stored in this secret."
     )
 
 
-class SecretResponseMetadata(WorkspaceScopedResponseMetadata):
+class SecretResponseMetadata(UserScopedResponseMetadata):
     """Response metadata for secrets."""
 
 
-class SecretResponseResources(WorkspaceScopedResponseResources):
-    """Class for all resource models associated with the secret entity."""
+class SecretResponseResources(UserScopedResponseResources):
+    """Response resources for secrets."""
 
 
 class SecretResponse(
-    WorkspaceScopedResponse[
-        SecretResponseBody, SecretResponseMetadata, SecretResponseResources
+    UserScopedResponse[
+        SecretResponseBody,
+        SecretResponseMetadata,
+        SecretResponseResources,
     ]
 ):
     """Response model for secrets."""
 
-    ANALYTICS_FIELDS: ClassVar[List[str]] = ["scope"]
+    ANALYTICS_FIELDS: ClassVar[List[str]] = ["private"]
 
     name: str = Field(
         title="The name of the secret.",
@@ -147,7 +162,7 @@ class SecretResponse(
     )
 
     def get_hydrated_version(self) -> "SecretResponse":
-        """Get the hydrated version of this workspace.
+        """Get the hydrated version of this secret.
 
         Returns:
             an instance of the same entity with the metadata field attached.
@@ -159,13 +174,13 @@ class SecretResponse(
     # Body and metadata properties
 
     @property
-    def scope(self) -> SecretScope:
-        """The `scope` property.
+    def private(self) -> bool:
+        """The `private` property.
 
         Returns:
             the value of the property.
         """
-        return self.get_body().scope
+        return self.get_body().private
 
     @property
     def values(self) -> Dict[str, Optional[SecretStr]]:
@@ -240,11 +255,11 @@ class SecretResponse(
 # ------------------ Filter Model ------------------
 
 
-class SecretFilter(WorkspaceScopedFilter):
-    """Model to enable advanced filtering of all Secrets."""
+class SecretFilter(UserScopedFilter):
+    """Model to enable advanced secret filtering."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
+        *UserScopedFilter.FILTER_EXCLUDE_FIELDS,
         "values",
     ]
 
@@ -252,103 +267,54 @@ class SecretFilter(WorkspaceScopedFilter):
         default=None,
         description="Name of the secret",
     )
-    scope: Optional[Union[SecretScope, str]] = Field(
+    private: Optional[bool] = Field(
         default=None,
-        description="Scope in which to filter secrets",
-        union_mode="left_to_right",
+        description="Whether to filter secrets by private status",
     )
 
-    @staticmethod
-    def _get_filtering_value(value: Optional[Any]) -> str:
-        """Convert the value to a string that can be used for lexicographical filtering and sorting.
+    def apply_filter(
+        self,
+        query: AnyQuery,
+        table: Type["AnySchema"],
+    ) -> AnyQuery:
+        """Applies the filter to a query.
 
         Args:
-            value: The value to convert.
+            query: The query to which to apply the filter.
+            table: The query table.
 
         Returns:
-            The value converted to string format that can be used for
-            lexicographical sorting and filtering.
+            The query with filter applied.
         """
-        if value is None:
-            return ""
-        str_value = str(value)
-        if isinstance(value, datetime):
-            str_value = value.strftime("%Y-%m-%d %H:%M:%S")
-        return str_value
+        # The secret user scoping works a bit differently than the other
+        # scoped filters. We have to filter out all private secrets that are
+        # not owned by the current user.
+        if not self.scope_user:
+            return super().apply_filter(query=query, table=table)
 
-    def secret_matches(self, secret: SecretResponse) -> bool:
-        """Checks if a secret matches the filter criteria.
+        scope_user = self.scope_user
 
-        Args:
-            secret: The secret to check.
+        # First we apply the inherited filters without the user scoping
+        # applied.
+        self.scope_user = None
+        query = super().apply_filter(query=query, table=table)
+        self.scope_user = scope_user
 
-        Returns:
-            True if the secret matches the filter criteria, False otherwise.
-        """
-        for filter in self.list_of_filters:
-            column_value: Optional[Any] = None
-            if filter.column == "workspace_id":
-                column_value = secret.workspace.id
-            elif filter.column == "user_id":
-                column_value = secret.user.id if secret.user else None
-            else:
-                column_value = getattr(secret, filter.column)
+        # Then we apply the user scoping filter.
+        if self.scope_user:
+            from sqlmodel import and_, or_
 
-            # Convert the values to strings for lexicographical comparison.
-            str_column_value = self._get_filtering_value(column_value)
-            str_filter_value = self._get_filtering_value(filter.value)
+            query = query.where(
+                or_(
+                    and_(
+                        getattr(table, "user_id") == self.scope_user,
+                        getattr(table, "private") == True,  # noqa: E712
+                    ),
+                    getattr(table, "private") == False,  # noqa: E712
+                )
+            )
 
-            # Compare the lexicographical values according to the operation.
-            if filter.operation == GenericFilterOps.EQUALS:
-                result = str_column_value == str_filter_value
-            elif filter.operation == GenericFilterOps.CONTAINS:
-                result = str_filter_value in str_column_value
-            elif filter.operation == GenericFilterOps.STARTSWITH:
-                result = str_column_value.startswith(str_filter_value)
-            elif filter.operation == GenericFilterOps.ENDSWITH:
-                result = str_column_value.endswith(str_filter_value)
-            elif filter.operation == GenericFilterOps.GT:
-                result = str_column_value > str_filter_value
-            elif filter.operation == GenericFilterOps.GTE:
-                result = str_column_value >= str_filter_value
-            elif filter.operation == GenericFilterOps.LT:
-                result = str_column_value < str_filter_value
-            elif filter.operation == GenericFilterOps.LTE:
-                result = str_column_value <= str_filter_value
-
-            # Exit early if the result is False for AND, and True for OR
-            if self.logical_operator == LogicalOperators.AND:
-                if not result:
-                    return False
-            else:
-                if result:
-                    return True
-
-        # If we get here, all filters have been checked and the result is
-        # True for AND, and False for OR
-        if self.logical_operator == LogicalOperators.AND:
-            return True
         else:
-            return False
+            query = query.where(getattr(table, "private") == False)  # noqa: E712
 
-    def sort_secrets(
-        self, secrets: List[SecretResponse]
-    ) -> List[SecretResponse]:
-        """Sorts a list of secrets according to the filter criteria.
-
-        Args:
-            secrets: The list of secrets to sort.
-
-        Returns:
-            The sorted list of secrets.
-        """
-        column, sort_op = self.sorting_params
-        sorted_secrets = sorted(
-            secrets,
-            key=lambda secret: self._get_filtering_value(
-                getattr(secret, column)
-            ),
-            reverse=sort_op == SorterOps.DESCENDING,
-        )
-
-        return sorted_secrets
+        return query

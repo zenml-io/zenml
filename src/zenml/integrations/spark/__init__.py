@@ -49,4 +49,3 @@ class SparkIntegration(Integration):
         return [KubernetesSparkStepOperatorFlavor]
 
 
-SparkIntegration.check_installation()

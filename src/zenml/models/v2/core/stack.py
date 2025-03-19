@@ -32,13 +32,14 @@ from sqlmodel import and_
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import StackComponentType
-from zenml.models.v2.base.base import BaseRequest, BaseUpdate
+from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
-    WorkspaceScopedFilter,
-    WorkspaceScopedResponse,
-    WorkspaceScopedResponseBody,
-    WorkspaceScopedResponseMetadata,
-    WorkspaceScopedResponseResources,
+    UserScopedFilter,
+    UserScopedRequest,
+    UserScopedResponse,
+    UserScopedResponseBody,
+    UserScopedResponseMetadata,
+    UserScopedResponseResources,
 )
 from zenml.models.v2.misc.info_models import (
     ComponentInfo,
@@ -57,11 +58,8 @@ if TYPE_CHECKING:
 # ------------------ Request Model ------------------
 
 
-class StackRequest(BaseRequest):
-    """Request model for a stack."""
-
-    user: Optional[UUID] = None
-    workspace: Optional[UUID] = None
+class StackRequest(UserScopedRequest):
+    """Request model for stack creation."""
 
     name: str = Field(
         title="The name of the stack.", max_length=STR_FIELD_MAX_LENGTH
@@ -131,6 +129,10 @@ class StackRequest(BaseRequest):
         return self
 
 
+class DefaultStackRequest(StackRequest):
+    """Internal stack request model used only for default stacks."""
+
+
 # ------------------ Update Model ------------------
 
 
@@ -165,11 +167,11 @@ class StackUpdate(BaseUpdate):
 # ------------------ Response Model ------------------
 
 
-class StackResponseBody(WorkspaceScopedResponseBody):
+class StackResponseBody(UserScopedResponseBody):
     """Response body for stacks."""
 
 
-class StackResponseMetadata(WorkspaceScopedResponseMetadata):
+class StackResponseMetadata(UserScopedResponseMetadata):
     """Response metadata for stacks."""
 
     components: Dict[StackComponentType, List["ComponentResponse"]] = Field(
@@ -191,13 +193,15 @@ class StackResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
-class StackResponseResources(WorkspaceScopedResponseResources):
-    """Class for all resource models associated with the stack entity."""
+class StackResponseResources(UserScopedResponseResources):
+    """Response resources for stacks."""
 
 
 class StackResponse(
-    WorkspaceScopedResponse[
-        StackResponseBody, StackResponseMetadata, StackResponseResources
+    UserScopedResponse[
+        StackResponseBody,
+        StackResponseMetadata,
+        StackResponseResources,
     ]
 ):
     """Response model for stacks."""
@@ -324,17 +328,11 @@ class StackResponse(
 # ------------------ Filter Model ------------------
 
 
-class StackFilter(WorkspaceScopedFilter):
-    """Model to enable advanced filtering of all StackModels.
-
-    The Stack Model needs additional scoping. As such the `_scope_user` field
-    can be set to the user that is doing the filtering. The
-    `generate_filter()` method of the baseclass is overwritten to include the
-    scoping.
-    """
+class StackFilter(UserScopedFilter):
+    """Model to enable advanced stack filtering."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
+        *UserScopedFilter.FILTER_EXCLUDE_FIELDS,
         "component_id",
         "component",
     ]

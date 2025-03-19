@@ -49,4 +49,3 @@ class KubeflowIntegration(Integration):
         return [KubeflowOrchestratorFlavor]
 
 
-KubeflowIntegration.check_installation()

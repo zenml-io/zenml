@@ -16,9 +16,10 @@
 from typing import Any, Optional, Tuple
 
 from zenml.constants import DEFAULT_LOCAL_SERVICE_IP_ADDRESS
+from zenml.enums import ServiceState
 from zenml.logger import get_logger
 from zenml.services.service_monitor import BaseServiceEndpointHealthMonitor
-from zenml.services.service_status import ServiceState, ServiceStatus
+from zenml.services.service_status import ServiceStatus
 from zenml.utils.enum_utils import StrEnum
 from zenml.utils.typed_model import BaseTypedModel
 

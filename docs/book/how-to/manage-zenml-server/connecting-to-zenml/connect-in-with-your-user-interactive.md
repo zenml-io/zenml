@@ -14,7 +14,7 @@ zenml login https://...
 This command will start a series of steps to validate the device from where you are connecting that will happen in your browser. You can choose whether to mark your respective device as trusted or not. If you choose not to click `Trust this device`, a 24-hour token will be issued for authentication services. Choosing to trust the device will issue a 30-day token instead.
 
 {% hint style="warning" %}
-When you are connecting to a ZenML Pro tenant, managing your authorized devices as described above is not yet supported. This feature is coming soon.
+When you are connecting to a ZenML Pro workspace, managing your authorized devices as described above is not yet supported. This feature is coming soon.
 {% endhint %}
 
 To see all devices you've permitted, use the following command:
@@ -44,7 +44,7 @@ To keep things simple, we can summarize the steps:
 
 ### Important notice
 
-Using the ZenML CLI is a secure and comfortable way to interact with your ZenML tenants. It's important to always ensure that only trusted devices are used to maintain security and privacy.
+Using the ZenML CLI is a secure and comfortable way to interact with your ZenML servers. It's important to always ensure that only trusted devices are used to maintain security and privacy.
 
 Don't forget to manage your device trust levels regularly for optimal security. Should you feel a device trust needs to be revoked, lock the device immediately. Every token issued is a potential gateway to access your data, secrets and infrastructure.
 <!-- For scarf -->

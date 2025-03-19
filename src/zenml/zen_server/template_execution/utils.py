@@ -18,8 +18,8 @@ from zenml.config.pipeline_run_configuration import (
 )
 from zenml.config.step_configurations import Step, StepConfiguration
 from zenml.constants import (
+    ENV_ZENML_ACTIVE_PROJECT_ID,
     ENV_ZENML_ACTIVE_STACK_ID,
-    ENV_ZENML_ACTIVE_WORKSPACE_ID,
 )
 from zenml.enums import ExecutionStatus, StackComponentType, StoreType
 from zenml.logger import get_logger
@@ -134,7 +134,7 @@ def run_template(
     ).access_token
 
     environment = {
-        ENV_ZENML_ACTIVE_WORKSPACE_ID: str(new_deployment.workspace.id),
+        ENV_ZENML_ACTIVE_PROJECT_ID: str(new_deployment.project.id),
         ENV_ZENML_ACTIVE_STACK_ID: str(stack.id),
         "ZENML_VERSION": zenml_version,
         "ZENML_STORE_URL": server_url,
@@ -149,9 +149,10 @@ def run_template(
     )
 
     def _task() -> None:
-        pypi_requirements, apt_packages = (
-            requirements_utils.get_requirements_for_stack(stack=stack)
-        )
+        (
+            pypi_requirements,
+            apt_packages,
+        ) = requirements_utils.get_requirements_for_stack(stack=stack)
 
         if build.python_version:
             version_info = version.parse(build.python_version)
@@ -406,8 +407,7 @@ def deployment_request_from_template(
     assert deployment.stack
     assert deployment.build
     deployment_request = PipelineDeploymentRequest(
-        user=user_id,
-        workspace=deployment.workspace.id,
+        project=deployment.project.id,
         run_name_template=config.run_name
         or get_default_run_name(pipeline_name=pipeline_configuration.name),
         pipeline_configuration=pipeline_configuration,
@@ -463,6 +463,7 @@ def get_pipeline_run_analytics_metadata(
     }
 
     return {
+        "project_id": deployment.project.id,
         "store_type": "rest",  # This method is called from within a REST endpoint
         **stack_metadata,
         "total_steps": len(deployment.step_configurations),

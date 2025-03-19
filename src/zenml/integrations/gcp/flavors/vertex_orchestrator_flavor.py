@@ -23,6 +23,9 @@ from zenml.integrations.gcp import (
 from zenml.integrations.gcp.google_credentials_mixin import (
     GoogleCredentialsConfigMixin,
 )
+from zenml.integrations.gcp.vertex_custom_job_parameters import (
+    VertexCustomJobParameters,
+)
 from zenml.integrations.kubernetes.pod_settings import KubernetesPodSettings
 from zenml.models import ServiceConnectorRequirements
 from zenml.orchestrators import BaseOrchestratorConfig, BaseOrchestratorFlavor
@@ -60,6 +63,8 @@ class VertexOrchestratorSettings(BaseSettings):
     synchronous: bool = True
     node_selector_constraint: Optional[Tuple[str, str]] = None
     pod_settings: Optional[KubernetesPodSettings] = None
+
+    custom_job_parameters: Optional[VertexCustomJobParameters] = None
 
     _node_selector_deprecation = (
         deprecation_utils.deprecate_pydantic_attributes(

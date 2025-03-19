@@ -58,7 +58,6 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=Page[TriggerResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -90,7 +89,6 @@ def list_triggers(
 
 @router.get(
     "/{trigger_id}",
-    response_model=TriggerResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -116,7 +114,6 @@ def get_trigger(
 
 @router.post(
     "",
-    response_model=TriggerResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -162,14 +159,12 @@ def create_trigger(
 
     return verify_permissions_and_create_entity(
         request_model=trigger,
-        resource_type=ResourceType.TRIGGER,
         create_method=zen_store().create_trigger,
     )
 
 
 @router.put(
     "/{trigger_id}",
-    response_model=TriggerResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -245,9 +240,11 @@ def delete_trigger(
     Args:
         trigger_id: Name of the trigger.
     """
-    trigger = zen_store().get_trigger(trigger_id=trigger_id)
-    verify_permission_for_model(trigger, action=Action.DELETE)
-    zen_store().delete_trigger(trigger_id=trigger_id)
+    verify_permissions_and_delete_entity(
+        id=trigger_id,
+        get_method=zen_store().get_trigger,
+        delete_method=zen_store().delete_trigger,
+    )
 
 
 executions_router = APIRouter(

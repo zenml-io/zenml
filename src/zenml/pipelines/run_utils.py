@@ -81,14 +81,14 @@ def create_placeholder_run(
         # running.
         start_time=start_time,
         orchestrator_run_id=None,
-        user=deployment.user.id,
-        workspace=deployment.workspace.id,
+        project=deployment.project.id,
         deployment=deployment.id,
         pipeline=deployment.pipeline.id if deployment.pipeline else None,
         status=ExecutionStatus.INITIALIZING,
         tags=deployment.pipeline_configuration.tags,
     )
-    return Client().zen_store.create_run(run_request)
+    run, _ = Client().zen_store.get_or_create_run(run_request)
+    return run
 
 
 def get_placeholder_run(
@@ -213,7 +213,7 @@ def validate_stack_is_runnable_from_server(
         assert len(flavors) == 1
         flavor_model = flavors[0]
 
-        if flavor_model.workspace is not None:
+        if flavor_model.is_custom:
             raise ValueError("No custom stack component flavors allowed.")
 
         flavor = Flavor.from_model(flavor_model)

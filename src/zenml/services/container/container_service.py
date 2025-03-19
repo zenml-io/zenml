@@ -27,12 +27,13 @@ from docker.models.containers import Container
 from pydantic import Field
 
 from zenml.constants import ENV_ZENML_CONFIG_PATH
+from zenml.enums import ServiceState
 from zenml.logger import get_logger
 from zenml.services.container.container_service_endpoint import (
     ContainerServiceEndpoint,
 )
 from zenml.services.service import BaseService, ServiceConfig
-from zenml.services.service_status import ServiceState, ServiceStatus
+from zenml.services.service_status import ServiceStatus
 from zenml.utils import docker_utils
 from zenml.utils.io_utils import (
     create_dir_recursive_if_not_exists,

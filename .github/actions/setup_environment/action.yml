@@ -17,15 +17,6 @@ inputs:
     description: Install ZenML integrations
     required: false
     default: 'yes'
-  runners_cache_access_key_id:
-    description: Runner cache AWS access key ID
-    required: true
-  runners_cache_secret_access_key:
-    description: Runner cache AWS secret access key
-    required: true
-  discord_webhook:
-    description: Discord webhook URL
-    required: true
 runs:
   using: composite
   steps:
@@ -55,55 +46,6 @@ runs:
         "C:\Program Files\Git\bin\git.exe" config --global user.email "info@zenml.io"
         "C:\Program Files\Git\bin\git.exe" config --global user.name "ZenML
         GmbH"
-    # - name: Get current week
-    #   shell: bash
-    #   id: date
-    #   run: echo "::set-output name=week::$(date +'calendar-week-%W')"
-    # - uses: syphar/restore-virtualenv@v1
-    #   if: ${{ inputs.os != 'arc-runner-set' }}
-    #   id: cache-virtualenv
-    #   with:
-    #     requirement_files: pyproject.toml
-    #  # The virtualenv cache is invalidated when:
-    #  # - manually triggered by means of a custom cache version token
-    #  # - on a weekly basis
-    #  # - any of the integration requirements change (a hash of the
-    #  # __init__.py files is included in the cache key)
-    #     custom_cache_key_element: ${{ inputs.cache_version }}-${{steps.date.outputs.week}}-${{inputs.install_integrations}}-${{
-    #       hashFiles('src/zenml/integrations/*/__init__.py') }}
-    # - uses: tespkg/actions-cache@v1
-    #   if: ${{ inputs.os == 'arc-runner-set' }}
-    #   id: custom-cache-pip
-    #   env:
-    #     AWS_ACCESS_KEY_ID: ${{ inputs.runners_cache_access_key_id }}
-    #     AWS_SECRET_ACCESS_KEY: ${{ inputs.runners_cache_secret_access_key }}
-    #   with:
-    #     endpoint: minio-service.minio.svc.cluster.local  # optional
-    #     insecure: true  # optional, use http instead of https. default false
-    #     bucket: caching  # required
-    #     use-fallback: false  # optional, use github actions cache fallback, default false
-    #     key: ${{ inputs.os }}-${{ inputs.cache_version }}-${{ inputs.python-version
-    #       }}-${{inputs.install_integrations}}
-    #     path: |
-    #       ~/.cache/pip
-    #     restore-keys: |
-    #       ${{ inputs.os }}-${{ inputs.cache_version }}-${{ inputs.python-version }}-${{inputs.install_integrations}}
-    # - name: Custom runners cache miss
-    #   uses: rjstone/discord-webhook-notify@v1
-    #   if: steps.custom-cache-pip.outputs.cache-hit != 'true'
-    #   continue-on-error: true
-    #   with:
-    #     severity: warn
-    #     details: The custom github runnners cache was missed and failed to restore
-    #       the cache from minio bucket
-    #     webhookUrl: ${{ inputs.discord_webhook }}
-    #  # Disabled for now because it doesn't work well with multiple parallel jobs
-    #  # - uses: syphar/restore-pip-download-cache@v1
-    #  #   with:
-    # #     requirement_files: 'pyproject.toml'
-    #  # The pip download cache can be updated on a weekly basis as new packages
-    #  # don't appear that often
-    #  #     custom_cache_key_element: ${{ inputs.cache_version }}-${{ inputs.python-version }}-${{steps.date.outputs.week}}
     - name: Install Terraform (Windows)
       if: ${{ inputs.os == 'windows-latest' }}
       shell: bash

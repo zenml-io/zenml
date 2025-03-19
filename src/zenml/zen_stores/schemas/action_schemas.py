@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
 from pydantic.json import pydantic_encoder
-from sqlalchemy import TEXT, Column
+from sqlalchemy import TEXT, Column, UniqueConstraint
 from sqlmodel import Field, Relationship
 
 from zenml.models import (
@@ -32,9 +32,9 @@ from zenml.models import (
 )
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
+from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
-from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import TriggerSchema
@@ -44,16 +44,23 @@ class ActionSchema(NamedSchema, table=True):
     """SQL Model for actions."""
 
     __tablename__ = "action"
+    __table_args__ = (
+        UniqueConstraint(
+            "name",
+            "project_id",
+            name="unique_action_name_in_project",
+        ),
+    )
 
-    workspace_id: UUID = build_foreign_key_field(
+    project_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target=WorkspaceSchema.__tablename__,
-        source_column="workspace_id",
+        target=ProjectSchema.__tablename__,
+        source_column="project_id",
         target_column="id",
         ondelete="CASCADE",
         nullable=False,
     )
-    workspace: "WorkspaceSchema" = Relationship(back_populates="actions")
+    project: "ProjectSchema" = Relationship(back_populates="actions")
 
     user_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -104,7 +111,7 @@ class ActionSchema(NamedSchema, table=True):
         """
         return cls(
             name=request.name,
-            workspace_id=request.workspace,
+            project_id=request.project,
             user_id=request.user,
             configuration=base64.b64encode(
                 json.dumps(
@@ -171,7 +178,7 @@ class ActionSchema(NamedSchema, table=True):
         metadata = None
         if include_metadata:
             metadata = ActionResponseMetadata(
-                workspace=self.workspace.to_model(),
+                project=self.project.to_model(),
                 configuration=json.loads(
                     base64.b64decode(self.configuration).decode()
                 ),

@@ -20,22 +20,22 @@ from pydantic import Field
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import PluginSubType
-from zenml.models.v2.base.base import BaseZenModel
+from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.page import Page
 from zenml.models.v2.base.scoped import (
-    WorkspaceScopedFilter,
-    WorkspaceScopedRequest,
-    WorkspaceScopedResponse,
-    WorkspaceScopedResponseBody,
-    WorkspaceScopedResponseMetadata,
-    WorkspaceScopedResponseResources,
+    ProjectScopedFilter,
+    ProjectScopedRequest,
+    ProjectScopedResponse,
+    ProjectScopedResponseBody,
+    ProjectScopedResponseMetadata,
+    ProjectScopedResponseResources,
 )
 from zenml.models.v2.core.trigger import TriggerResponse
 
 # ------------------ Request Model ------------------
 
 
-class EventSourceRequest(WorkspaceScopedRequest):
+class EventSourceRequest(ProjectScopedRequest):
     """BaseModel for all event sources."""
 
     name: str = Field(
@@ -63,7 +63,7 @@ class EventSourceRequest(WorkspaceScopedRequest):
 # ------------------ Update Model ------------------
 
 
-class EventSourceUpdate(BaseZenModel):
+class EventSourceUpdate(BaseUpdate):
     """Update model for event sources."""
 
     name: Optional[str] = Field(
@@ -108,7 +108,7 @@ class EventSourceUpdate(BaseZenModel):
 # ------------------ Response Model ------------------
 
 
-class EventSourceResponseBody(WorkspaceScopedResponseBody):
+class EventSourceResponseBody(ProjectScopedResponseBody):
     """ResponseBody for event sources."""
 
     flavor: str = Field(
@@ -123,7 +123,7 @@ class EventSourceResponseBody(WorkspaceScopedResponseBody):
     )
 
 
-class EventSourceResponseMetadata(WorkspaceScopedResponseMetadata):
+class EventSourceResponseMetadata(ProjectScopedResponseMetadata):
     """Response metadata for event sources."""
 
     description: str = Field(
@@ -136,7 +136,7 @@ class EventSourceResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
-class EventSourceResponseResources(WorkspaceScopedResponseResources):
+class EventSourceResponseResources(ProjectScopedResponseResources):
     """Class for all resource models associated with the code repository entity."""
 
     triggers: Page[TriggerResponse] = Field(
@@ -145,7 +145,7 @@ class EventSourceResponseResources(WorkspaceScopedResponseResources):
 
 
 class EventSourceResponse(
-    WorkspaceScopedResponse[
+    ProjectScopedResponse[
         EventSourceResponseBody,
         EventSourceResponseMetadata,
         EventSourceResponseResources,
@@ -226,7 +226,7 @@ class EventSourceResponse(
 # ------------------ Filter Model ------------------
 
 
-class EventSourceFilter(WorkspaceScopedFilter):
+class EventSourceFilter(ProjectScopedFilter):
     """Model to enable advanced filtering of all EventSourceModels."""
 
     name: Optional[str] = Field(

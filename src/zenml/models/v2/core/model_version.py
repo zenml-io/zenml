@@ -25,28 +25,28 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, field_validator
+from pydantic import ConfigDict, Field, field_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ArtifactType, ModelStages
 from zenml.metadata.metadata_types import MetadataType
+from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.filter import AnyQuery
 from zenml.models.v2.base.page import Page
 from zenml.models.v2.base.scoped import (
+    ProjectScopedFilter,
+    ProjectScopedRequest,
+    ProjectScopedResponse,
+    ProjectScopedResponseBody,
+    ProjectScopedResponseMetadata,
+    ProjectScopedResponseResources,
+    RunMetadataFilterMixin,
     TaggableFilter,
-    WorkspaceScopedFilter,
-    WorkspaceScopedRequest,
-    WorkspaceScopedResponse,
-    WorkspaceScopedResponseBody,
-    WorkspaceScopedResponseMetadata,
-    WorkspaceScopedResponseResources,
 )
 from zenml.models.v2.core.service import ServiceResponse
 from zenml.models.v2.core.tag import TagResponse
 
 if TYPE_CHECKING:
-    from sqlalchemy.sql.elements import ColumnElement
-
     from zenml.model.model import Model
     from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
     from zenml.models.v2.core.model import ModelResponse
@@ -59,7 +59,7 @@ if TYPE_CHECKING:
 # ------------------ Request Model ------------------
 
 
-class ModelVersionRequest(WorkspaceScopedRequest):
+class ModelVersionRequest(ProjectScopedRequest):
     """Request model for model versions."""
 
     name: Optional[str] = Field(
@@ -90,12 +90,9 @@ class ModelVersionRequest(WorkspaceScopedRequest):
 # ------------------ Update Model ------------------
 
 
-class ModelVersionUpdate(BaseModel):
+class ModelVersionUpdate(BaseUpdate):
     """Update model for model versions."""
 
-    model: UUID = Field(
-        description="The ID of the model containing version",
-    )
     stage: Optional[Union[str, ModelStages]] = Field(
         description="Target model version stage to be set",
         default=None,
@@ -137,7 +134,7 @@ class ModelVersionUpdate(BaseModel):
 # ------------------ Response Model ------------------
 
 
-class ModelVersionResponseBody(WorkspaceScopedResponseBody):
+class ModelVersionResponseBody(ProjectScopedResponseBody):
     """Response body for model versions."""
 
     stage: Optional[str] = Field(
@@ -180,7 +177,7 @@ class ModelVersionResponseBody(WorkspaceScopedResponseBody):
     model_config = ConfigDict(protected_namespaces=())
 
 
-class ModelVersionResponseMetadata(WorkspaceScopedResponseMetadata):
+class ModelVersionResponseMetadata(ProjectScopedResponseMetadata):
     """Response metadata for model versions."""
 
     description: Optional[str] = Field(
@@ -194,7 +191,7 @@ class ModelVersionResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
-class ModelVersionResponseResources(WorkspaceScopedResponseResources):
+class ModelVersionResponseResources(ProjectScopedResponseResources):
     """Class for all resource models associated with the model version entity."""
 
     services: Page[ServiceResponse] = Field(
@@ -203,7 +200,7 @@ class ModelVersionResponseResources(WorkspaceScopedResponseResources):
 
 
 class ModelVersionResponse(
-    WorkspaceScopedResponse[
+    ProjectScopedResponse[
         ModelVersionResponseBody,
         ModelVersionResponseMetadata,
         ModelVersionResponseResources,
@@ -446,7 +443,7 @@ class ModelVersionResponse(
         artifact_versions = Client().list_artifact_versions(
             sort_by="desc:created",
             size=1,
-            name=name,
+            artifact=name,
             version=version,
             model_version_id=self.id,
             type=type,
@@ -568,21 +565,32 @@ class ModelVersionResponse(
 # ------------------ Filter Model ------------------
 
 
-class ModelVersionFilter(WorkspaceScopedFilter, TaggableFilter):
+class ModelVersionFilter(
+    ProjectScopedFilter, TaggableFilter, RunMetadataFilterMixin
+):
     """Filter model for model versions."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
+        *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
         *TaggableFilter.FILTER_EXCLUDE_FIELDS,
-        "run_metadata",
+        *RunMetadataFilterMixin.FILTER_EXCLUDE_FIELDS,
+        "model",
     ]
-    CUSTOM_SORTING_OPTIONS = [
-        *WorkspaceScopedFilter.CUSTOM_SORTING_OPTIONS,
+    CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
+        *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
         *TaggableFilter.CUSTOM_SORTING_OPTIONS,
+        *RunMetadataFilterMixin.CUSTOM_SORTING_OPTIONS,
     ]
-    CLI_EXCLUDE_FIELDS = [
-        *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
+    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
         *TaggableFilter.CLI_EXCLUDE_FIELDS,
+        *RunMetadataFilterMixin.CLI_EXCLUDE_FIELDS,
+        "model",
+    ]
+    API_MULTI_INPUT_PARAMS: ClassVar[List[str]] = [
+        *ProjectScopedFilter.API_MULTI_INPUT_PARAMS,
+        *TaggableFilter.API_MULTI_INPUT_PARAMS,
+        *RunMetadataFilterMixin.API_MULTI_INPUT_PARAMS,
     ]
 
     name: Optional[str] = Field(
@@ -598,69 +606,14 @@ class ModelVersionFilter(WorkspaceScopedFilter, TaggableFilter):
         default=None,
         union_mode="left_to_right",
     )
-    run_metadata: Optional[Dict[str, str]] = Field(
+    model: Optional[Union[str, UUID]] = Field(
         default=None,
-        description="The run_metadata to filter the model versions by.",
+        description="The name or ID of the model which the search is scoped "
+        "to. This field must always be set and is always applied in addition "
+        "to the other filters, regardless of the value of the "
+        "logical_operator field.",
+        union_mode="left_to_right",
     )
-
-    _model_id: UUID = PrivateAttr(None)
-
-    def set_scope_model(self, model_name_or_id: Union[str, UUID]) -> None:
-        """Set the model to scope this response.
-
-        Args:
-            model_name_or_id: The model to scope this response to.
-        """
-        try:
-            model_id = UUID(str(model_name_or_id))
-        except ValueError:
-            from zenml.client import Client
-
-            model_id = Client().get_model(model_name_or_id).id
-
-        self._model_id = model_id
-
-    def get_custom_filters(
-        self, table: Type["AnySchema"]
-    ) -> List["ColumnElement[bool]"]:
-        """Get custom filters.
-
-        Args:
-            table: The query table.
-
-        Returns:
-            A list of custom filters.
-        """
-        custom_filters = super().get_custom_filters(table)
-
-        from sqlmodel import and_
-
-        from zenml.zen_stores.schemas import (
-            ModelVersionSchema,
-            RunMetadataResourceSchema,
-            RunMetadataSchema,
-        )
-
-        if self.run_metadata is not None:
-            from zenml.enums import MetadataResourceTypes
-
-            for key, value in self.run_metadata.items():
-                additional_filter = and_(
-                    RunMetadataResourceSchema.resource_id
-                    == ModelVersionSchema.id,
-                    RunMetadataResourceSchema.resource_type
-                    == MetadataResourceTypes.MODEL_VERSION,
-                    RunMetadataResourceSchema.run_metadata_id
-                    == RunMetadataSchema.id,
-                    self.generate_custom_query_conditions_for_column(
-                        value=value,
-                        table=RunMetadataSchema,
-                        column="value",
-                    ),
-                )
-                custom_filters.append(additional_filter)
-
-        return custom_filters
 
     def apply_filter(
         self,
@@ -675,10 +628,28 @@ class ModelVersionFilter(WorkspaceScopedFilter, TaggableFilter):
 
         Returns:
             The query with filter applied.
+
+        Raises:
+            ValueError: if the filter is not scoped to a model.
         """
         query = super().apply_filter(query=query, table=table)
 
-        if self._model_id:
-            query = query.where(getattr(table, "model_id") == self._model_id)
+        # The model scope must always be set and must be a UUID. If the
+        # client sets this to a string, the server will try to resolve it to a
+        # model ID.
+        #
+        # If not set by the client, the server will raise a ValueError.
+        #
+        # See: SqlZenStore._set_filter_model_id
+
+        if not self.model:
+            raise ValueError("Model scope missing from the filter.")
+
+        if not isinstance(self.model, UUID):
+            raise ValueError(
+                f"Model scope must be a UUID, got {type(self.model)}."
+            )
+
+        query = query.where(getattr(table, "model_id") == self.model)
 
         return query

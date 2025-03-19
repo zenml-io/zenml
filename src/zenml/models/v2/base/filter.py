@@ -37,7 +37,7 @@ from pydantic import (
     field_validator,
     model_validator,
 )
-from sqlalchemy import Float, and_, asc, cast, desc
+from sqlalchemy import Float, and_, asc, cast, desc, or_
 from sqlmodel import SQLModel
 
 from zenml.constants import (
@@ -171,8 +171,6 @@ class BoolFilter(Filter):
 class StrFilter(Filter):
     """Filter for all string fields."""
 
-    json_encode_value: bool = False
-
     ALLOWED_OPS: ClassVar[List[str]] = [
         GenericFilterOps.EQUALS,
         GenericFilterOps.NOT_EQUALS,
@@ -201,6 +199,23 @@ class StrFilter(Filter):
                 raise ValueError(ONEOF_ERROR)
         return self
 
+    def _check_if_column_is_json_encoded(self, column: Any) -> bool:
+        """Check if the column is json encoded.
+
+        Args:
+            column: The column of an SQLModel table on which to filter.
+
+        Returns:
+            True if the column is json encoded, False otherwise.
+        """
+        from zenml.zen_stores.schemas import RunMetadataSchema
+
+        JSON_ENCODED_COLUMNS = [RunMetadataSchema.value]
+
+        if column in JSON_ENCODED_COLUMNS:
+            return True
+        return False
+
     def generate_query_conditions_from_column(self, column: Any) -> Any:
         """Generate query conditions for a string column.
 
@@ -209,70 +224,168 @@ class StrFilter(Filter):
 
         Returns:
             A list of query conditions.
-
-        Raises:
-            ValueError: the comparison of the column to a numeric value fails.
         """
+        # Handle numeric comparisons (GT, LT, GTE, LTE)
         if self.operation in {
             GenericFilterOps.GT,
             GenericFilterOps.LT,
             GenericFilterOps.GTE,
             GenericFilterOps.LTE,
         }:
-            try:
-                numeric_column = cast(column, Float)
+            return self._handle_numeric_comparison(column)
 
-                assert self.value is not None
+        # Handle operations that need special treatment for JSON-encoded columns
+        is_json_encoded = self._check_if_column_is_json_encoded(column)
 
-                if self.operation == GenericFilterOps.GT:
-                    return and_(
-                        numeric_column, numeric_column > float(self.value)
-                    )
-                if self.operation == GenericFilterOps.LT:
-                    return and_(
-                        numeric_column, numeric_column < float(self.value)
-                    )
-                if self.operation == GenericFilterOps.GTE:
-                    return and_(
-                        numeric_column, numeric_column >= float(self.value)
-                    )
-                if self.operation == GenericFilterOps.LTE:
-                    return and_(
-                        numeric_column, numeric_column <= float(self.value)
-                    )
-            except Exception as e:
-                raise ValueError(
-                    f"Failed to compare the column '{column}' to the "
-                    f"value '{self.value}' (must be numeric): {e}"
-                )
-
+        # Handle list operations
         if self.operation == GenericFilterOps.ONEOF:
             assert isinstance(self.value, list)
-            # Convert the list of values to a list of json strings
-            json_list = (
-                [json.dumps(v) for v in self.value]
-                if self.json_encode_value
-                else self.value
-            )
-            return column.in_(json_list)
+            return self._handle_oneof(column, is_json_encoded)
 
-        # Don't convert the value to a json string if the operation is contains
-        # because the quotes around strings will mess with the comparison
+        # Handle pattern matching operations
         if self.operation == GenericFilterOps.CONTAINS:
             return column.like(f"%{self.value}%")
 
-        json_value = (
-            json.dumps(self.value) if self.json_encode_value else self.value
-        )
-
         if self.operation == GenericFilterOps.STARTSWITH:
-            return column.startswith(f"{json_value}")
-        if self.operation == GenericFilterOps.ENDSWITH:
-            return column.endswith(f"{json_value}")
-        if self.operation == GenericFilterOps.NOT_EQUALS:
-            return column != json_value
+            return self._handle_startswith(column, is_json_encoded)
 
-        return column == json_value
+        if self.operation == GenericFilterOps.ENDSWITH:
+            return self._handle_endswith(column, is_json_encoded)
+
+        if self.operation == GenericFilterOps.NOT_EQUALS:
+            return self._handle_not_equals(column, is_json_encoded)
+
+        # Default case (EQUALS)
+        return self._handle_equals(column, is_json_encoded)
+
+    def _handle_numeric_comparison(self, column: Any) -> Any:
+        """Handle numeric comparison operations.
+
+        Args:
+            column: The column to compare.
+
+        Returns:
+            The query condition.
+
+        Raises:
+            ValueError: If the comparison fails.
+        """
+        try:
+            numeric_column = cast(column, Float)
+            assert self.value is not None
+
+            operations = {
+                GenericFilterOps.GT: lambda col, val: and_(
+                    col, col > float(val)
+                ),
+                GenericFilterOps.LT: lambda col, val: and_(
+                    col, col < float(val)
+                ),
+                GenericFilterOps.GTE: lambda col, val: and_(
+                    col, col >= float(val)
+                ),
+                GenericFilterOps.LTE: lambda col, val: and_(
+                    col, col <= float(val)
+                ),
+            }
+
+            return operations[self.operation](numeric_column, self.value)  # type: ignore[no-untyped-call]
+        except Exception as e:
+            raise ValueError(
+                f"Failed to compare the column '{column}' to the "
+                f"value '{self.value}' (must be numeric): {e}"
+            )
+
+    def _handle_oneof(self, column: Any, is_json_encoded: bool) -> Any:
+        """Handle the ONEOF operation.
+
+        Args:
+            column: The column to check.
+            is_json_encoded: Whether the column is JSON encoded.
+
+        Returns:
+            The query condition.
+        """
+        from sqlalchemy import or_
+
+        conditions = []
+
+        assert isinstance(self.value, list)
+
+        for value in self.value:
+            if is_json_encoded:
+                # For JSON encoded columns, add conditions for both raw and JSON-quoted values
+                conditions.append(column == value)
+                conditions.append(column == f'"{value}"')
+            else:
+                conditions.append(column == value)
+
+        return or_(*conditions)
+
+    def _handle_startswith(self, column: Any, is_json_encoded: bool) -> Any:
+        """Handle the STARTSWITH operation.
+
+        Args:
+            column: The column to check.
+            is_json_encoded: Whether the column is JSON encoded.
+
+        Returns:
+            The query condition.
+        """
+        if is_json_encoded:
+            return or_(
+                column.startswith(self.value),
+                column.startswith(f'"{self.value}'),
+            )
+        else:
+            return column.startswith(self.value)
+
+    def _handle_endswith(self, column: Any, is_json_encoded: bool) -> Any:
+        """Handle the ENDSWITH operation.
+
+        Args:
+            column: The column to check.
+            is_json_encoded: Whether the column is JSON encoded.
+
+        Returns:
+            The query condition.
+        """
+        if is_json_encoded:
+            return or_(
+                column.endswith(self.value), column.endswith(f'{self.value}"')
+            )
+        else:
+            return column.endswith(self.value)
+
+    def _handle_not_equals(self, column: Any, is_json_encoded: bool) -> Any:
+        """Handle the NOT_EQUALS operation.
+
+        Args:
+            column: The column to check.
+            is_json_encoded: Whether the column is JSON encoded.
+
+        Returns:
+            The query condition.
+        """
+        if is_json_encoded:
+            return and_(column != self.value, column != f'"{self.value}"')
+        else:
+            return column != self.value
+
+    def _handle_equals(self, column: Any, is_json_encoded: bool) -> Any:
+        """Handle the EQUALS operation (default).
+
+        Args:
+            column: The column to check.
+            is_json_encoded: Whether the column is JSON encoded.
+
+        Returns:
+            The query condition.
+        """
+        if is_json_encoded:
+            return or_(column == self.value, column == f'"{self.value}"')
+        else:
+            return column == self.value
 
 
 class UUIDFilter(StrFilter):
@@ -421,7 +534,7 @@ class BaseFilter(BaseModel):
     ```
     ResourceListModel(
         name="contains:default",
-        workspace="default"
+        project="default"
         count_steps="gte:5"
         sort_by="created",
         page=2,
@@ -716,7 +829,7 @@ class BaseFilter(BaseModel):
             value: The filter value.
             table: The table to filter.
             additional_columns: Additional table columns that should also
-                filtered for the given value as part of the or condition.
+                filter for the given value as part of the or condition.
 
         Returns:
             The query conditions.
@@ -751,7 +864,6 @@ class BaseFilter(BaseModel):
         value: Any,
         table: Type[SQLModel],
         column: str,
-        json_encode_value: bool = False,
     ) -> "ColumnElement[bool]":
         """Generate custom filter conditions for a column of a table.
 
@@ -759,7 +871,6 @@ class BaseFilter(BaseModel):
             value: The filter value.
             table: The table which contains the column.
             column: The column name.
-            json_encode_value: Whether to json encode the value.
 
         Returns:
             The query conditions.
@@ -768,9 +879,6 @@ class BaseFilter(BaseModel):
         filter_ = FilterGenerator(table).define_filter(
             column=column, value=value, operator=operator
         )
-        if isinstance(filter_, StrFilter):
-            filter_.json_encode_value = json_encode_value
-
         return filter_.generate_query_conditions(table=table)
 
     @property

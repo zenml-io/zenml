@@ -18,7 +18,7 @@ import json
 from typing import Any, List, Optional, cast
 from uuid import UUID
 
-from sqlalchemy import TEXT, Column
+from sqlalchemy import TEXT, Column, UniqueConstraint
 from sqlmodel import Field, Relationship
 
 from zenml.config.schedule import Schedule
@@ -41,26 +41,33 @@ from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.action_schemas import ActionSchema
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.event_source_schemas import EventSourceSchema
+from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import get_page_from_list
-from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 
 class TriggerSchema(NamedSchema, table=True):
     """SQL Model for triggers."""
 
     __tablename__ = "trigger"
+    __table_args__ = (
+        UniqueConstraint(
+            "name",
+            "project_id",
+            name="unique_trigger_name_in_project",
+        ),
+    )
 
-    workspace_id: UUID = build_foreign_key_field(
+    project_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target=WorkspaceSchema.__tablename__,
-        source_column="workspace_id",
+        target=ProjectSchema.__tablename__,
+        source_column="project_id",
         target_column="id",
         ondelete="CASCADE",
         nullable=False,
     )
-    workspace: "WorkspaceSchema" = Relationship(back_populates="triggers")
+    project: "ProjectSchema" = Relationship(back_populates="triggers")
 
     user_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -77,7 +84,7 @@ class TriggerSchema(NamedSchema, table=True):
 
     event_source_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
-        target=EventSourceSchema.__tablename__,  # type: ignore[has-type]
+        target=EventSourceSchema.__tablename__,
         source_column="event_source_id",
         target_column="id",
         # This won't happen because the SQL zen store prevents an event source
@@ -148,7 +155,7 @@ class TriggerSchema(NamedSchema, table=True):
         """
         return cls(
             name=request.name,
-            workspace_id=request.workspace,
+            project_id=request.project,
             user_id=request.user,
             action_id=request.action_id,
             event_source_id=request.event_source_id,
@@ -201,7 +208,7 @@ class TriggerSchema(NamedSchema, table=True):
         metadata = None
         if include_metadata:
             metadata = TriggerResponseMetadata(
-                workspace=self.workspace.to_model(),
+                project=self.project.to_model(),
                 event_filter=json.loads(
                     base64.b64decode(self.event_filter).decode()
                 ),

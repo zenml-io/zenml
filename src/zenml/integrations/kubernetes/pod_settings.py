@@ -35,6 +35,8 @@ class KubernetesPodSettings(BaseSettings):
         host_ipc: Whether to enable host IPC for the pod.
         image_pull_secrets: Image pull secrets to use for the pod.
         labels: Labels to apply to the pod.
+        env: Environment variables to apply to the container.
+        env_from: Environment variables to apply to the container.
     """
 
     node_selectors: Dict[str, str] = {}
@@ -47,6 +49,8 @@ class KubernetesPodSettings(BaseSettings):
     host_ipc: bool = False
     image_pull_secrets: List[str] = []
     labels: Dict[str, str] = {}
+    env: List[Dict[str, Any]] = []
+    env_from: List[Dict[str, Any]] = []
 
     @field_validator("volumes", mode="before")
     @classmethod
@@ -155,3 +159,51 @@ class KubernetesPodSettings(BaseSettings):
             return serialization_utils.serialize_kubernetes_model(value)
         else:
             return value
+
+    @field_validator("env", mode="before")
+    @classmethod
+    def _convert_env(cls, value: Any) -> Any:
+        """Converts Kubernetes EnvVar to a dict.
+
+        Args:
+            value: The env value.
+
+        Returns:
+            The converted value.
+        """
+        from kubernetes.client.models import V1EnvVar
+
+        result = []
+        for element in value:
+            if isinstance(element, V1EnvVar):
+                result.append(
+                    serialization_utils.serialize_kubernetes_model(element)
+                )
+            else:
+                result.append(element)
+
+        return result
+
+    @field_validator("env_from", mode="before")
+    @classmethod
+    def _convert_env_from(cls, value: Any) -> Any:
+        """Converts Kubernetes EnvFromSource to a dict.
+
+        Args:
+            value: The env from value.
+
+        Returns:
+            The converted value.
+        """
+        from kubernetes.client.models import V1EnvFromSource
+
+        result = []
+        for element in value:
+            if isinstance(element, V1EnvFromSource):
+                result.append(
+                    serialization_utils.serialize_kubernetes_model(element)
+                )
+            else:
+                result.append(element)
+
+        return result

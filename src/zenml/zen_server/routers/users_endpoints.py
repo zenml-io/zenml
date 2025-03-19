@@ -33,6 +33,7 @@ from zenml.exceptions import AuthorizationException, IllegalOperationError
 from zenml.logger import get_logger
 from zenml.models import (
     Page,
+    ProjectScopedResponse,
     UserAuthModel,
     UserFilter,
     UserRequest,
@@ -87,7 +88,6 @@ current_user_router = APIRouter(
 
 @router.get(
     "",
-    response_model=Page[UserResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -133,7 +133,6 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
     @router.post(
         "",
-        response_model=UserResponse,
         responses={
             401: error_response,
             409: error_response,
@@ -174,7 +173,6 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
         # new_user = verify_permissions_and_create_entity(
         #     request_model=user,
-        #     resource_type=ResourceType.USER,
         #     create_method=zen_store().create_user,
         # )
         new_user = zen_store().create_user(user)
@@ -188,7 +186,6 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
 @router.get(
     "/{user_name_or_id}",
-    response_model=UserResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -233,7 +230,6 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
     @router.put(
         "/{user_name_or_id}",
-        response_model=UserResponse,
         responses={
             401: error_response,
             404: error_response,
@@ -403,7 +399,6 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
     @activation_router.put(
         "/{user_name_or_id}" + ACTIVATE,
-        response_model=UserResponse,
         responses={
             401: error_response,
             404: error_response,
@@ -464,7 +459,6 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
     @router.put(
         "/{user_name_or_id}" + DEACTIVATE,
-        response_model=UserResponse,
         responses={
             401: error_response,
             404: error_response,
@@ -555,7 +549,6 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
     @router.put(
         "/{user_name_or_id}" + EMAIL_ANALYTICS,
-        response_model=UserResponse,
         responses={
             401: error_response,
             404: error_response,
@@ -608,7 +601,6 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
 @current_user_router.get(
     "/current-user",
-    response_model=UserResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -632,7 +624,6 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
 
     @current_user_router.put(
         "/current-user",
-        response_model=UserResponse,
         responses={
             401: error_response,
             404: error_response,
@@ -752,8 +743,6 @@ if server_config().rbac_enabled:
             )
 
         resource_type = ResourceType(resource_type)
-        resource = Resource(type=resource_type, id=resource_id)
-
         schema_class = get_schema_for_resource_type(resource_type)
         model = zen_store().get_entity_by_id(
             entity_id=resource_id, schema_class=schema_class
@@ -764,6 +753,14 @@ if server_config().rbac_enabled:
                 f"Resource of type {resource_type} with ID {resource_id} does "
                 "not exist."
             )
+
+        project_id = None
+        if isinstance(model, ProjectScopedResponse):
+            project_id = model.project.id
+
+        resource = Resource(
+            type=resource_type, id=resource_id, project_id=project_id
+        )
 
         verify_permission_for_model(model=model, action=Action.SHARE)
         for action in actions:

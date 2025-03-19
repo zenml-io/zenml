@@ -27,7 +27,7 @@ from zenml.models import (
 
 
 def test_model_version_response_artifact_fetching(
-    clean_client, mocker, sample_workspace_model
+    clean_client, mocker, sample_project_model
 ):
     """Test artifact fetching from a model version response."""
     mock_list_artifact_versions = mocker.patch.object(
@@ -44,7 +44,7 @@ def test_model_version_response_artifact_fetching(
             tags=[],
         ),
         metadata=ModelResponseMetadata(
-            workspace=sample_workspace_model,
+            project=sample_project_model,
         ),
     )
     mv = ModelVersionResponse(
@@ -57,7 +57,7 @@ def test_model_version_response_artifact_fetching(
             number=-1,
         ),
         metadata=ModelVersionResponseMetadata(
-            workspace=sample_workspace_model,
+            project=sample_project_model,
         ),
     )
 
@@ -68,7 +68,7 @@ def test_model_version_response_artifact_fetching(
     mock_list_artifact_versions.assert_called_once_with(
         sort_by="desc:created",
         size=1,
-        name=artifact_name,
+        artifact=artifact_name,
         version=version_name,
         model_version_id=mv.id,
         type=None,
@@ -80,7 +80,7 @@ def test_model_version_response_artifact_fetching(
     mock_list_artifact_versions.assert_called_once_with(
         sort_by="desc:created",
         size=1,
-        name=artifact_name,
+        artifact=artifact_name,
         version=version_name,
         model_version_id=mv.id,
         type=ArtifactType.DATA,
@@ -92,7 +92,7 @@ def test_model_version_response_artifact_fetching(
     mock_list_artifact_versions.assert_called_once_with(
         sort_by="desc:created",
         size=1,
-        name=artifact_name,
+        artifact=artifact_name,
         version=version_name,
         model_version_id=mv.id,
         type=ArtifactType.MODEL,
@@ -104,7 +104,7 @@ def test_model_version_response_artifact_fetching(
     mock_list_artifact_versions.assert_called_once_with(
         sort_by="desc:created",
         size=1,
-        name=artifact_name,
+        artifact=artifact_name,
         version=version_name,
         model_version_id=mv.id,
         type=ArtifactType.SERVICE,
