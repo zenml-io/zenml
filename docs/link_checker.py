@@ -48,6 +48,7 @@ Arguments:
     --validate-links: Check if links are valid by making HTTP requests
     --timeout: Timeout for HTTP requests in seconds (default: 10)
     --url-mapping: Path segment mappings in format old=new (can be used multiple times)
+    --ci-mode: CI mode: only report broken links and exit with error code on failures
 
 Note:
     The 'requests' package is required for link validation. Install it with:
@@ -640,6 +641,11 @@ def main():
         action="append",
         help="Path segment mappings in format old=new (can be used multiple times)",
     )
+    parser.add_argument(
+        "--ci-mode",
+        action="store_true",
+        help="CI mode: only report broken links and exit with error code on failures",
+    )
     args = parser.parse_args()
 
     # Check for requests module if validation is enabled
@@ -666,12 +672,14 @@ def main():
     files_to_scan = []
     if args.dir:
         files_to_scan = find_markdown_files(args.dir)
-        print(
-            f"Found {len(files_to_scan)} markdown files in directory: {args.dir}"
-        )
+        if not args.ci_mode:
+            print(
+                f"Found {len(files_to_scan)} markdown files in directory: {args.dir}"
+            )
     else:
         files_to_scan = args.files
-        print(f"Scanning {len(files_to_scan)} specified markdown files")
+        if not args.ci_mode:
+            print(f"Scanning {len(files_to_scan)} specified markdown files")
 
     if args.replace_links:
         # Replace links mode
@@ -689,7 +697,8 @@ def main():
                     url_mappings,
                 )
                 if replacements:
-                    print(f"\n{file_path}:")
+                    if not args.ci_mode:
+                        print(f"\n{file_path}:")
                     for original, (
                         new,
                         is_valid,
@@ -698,51 +707,62 @@ def main():
                         total_replacements += 1
 
                         if args.validate_links and is_valid is not None:
-                            status = (
-                                "✅ Valid"
-                                if is_valid
-                                else f"❌ Broken: {error}"
-                            )
-                            print(f"  {original} -> {new} [{status}]")
-
                             if is_valid:
                                 valid_links += 1
+                                if not args.ci_mode:
+                                    print(f"  {original} -> {new} [✅ Valid]")
                             else:
                                 broken_links += 1
-                        else:
+                                # Always print broken links even in CI mode
+                                status = f"❌ Broken: {error}"
+                                if args.ci_mode:
+                                    print(f"{file_path}:")
+                                print(f"  {original} -> {new} [{status}]")
+                        elif not args.ci_mode:
                             print(f"  {original} -> {new}")
             except Exception as e:
                 print(f"Error processing {file_path}: {e}", file=sys.stderr)
 
         mode = "Would replace" if args.dry_run else "Replaced"
-        print(
-            f"\n{mode} {total_replacements} links across {len(files_to_scan)} files."
-        )
-
-        if args.validate_links and (valid_links > 0 or broken_links > 0):
+        if not args.ci_mode:
             print(
-                f"Link validation: {valid_links} valid, {broken_links} broken"
+                f"\n{mode} {total_replacements} links across {len(files_to_scan)} files."
             )
+
+            if args.validate_links and (valid_links > 0 or broken_links > 0):
+                print(
+                    f"Link validation: {valid_links} valid, {broken_links} broken"
+                )
+
+        # In CI mode, exit with error code if broken links were found
+        if args.ci_mode and broken_links > 0:
+            print(f"\nFound {broken_links} broken links")
+            sys.exit(1)
 
     elif args.substring:
         # Find links mode
         total_matches = 0
         links_to_validate = []
         file_links_map = {}
+        has_broken_links = False
 
         for file_path in files_to_scan:
             try:
                 matches = check_links_with_substring(file_path, args.substring)
                 if matches:
                     file_links = []
-                    print(f"\n{file_path}:")
+                    if not args.ci_mode:
+                        print(f"\n{file_path}:")
                     for link, line_num, _, _, _ in matches:
                         # Create clickable link to the file at the specific line
                         clickable_path = get_clickable_path(
                             file_path, line_num
                         )
-                        print(f"  Line {line_num}: {link}")
-                        print(f"    ↳ {clickable_path}")
+
+                        if not args.ci_mode:
+                            print(f"  Line {line_num}: {link}")
+                            print(f"    ↳ {clickable_path}")
+
                         total_matches += 1
 
                         if args.validate_links:
@@ -763,7 +783,7 @@ def main():
                                     (link, line_num, link)
                                 )  # Original and transformed are the same
                             # If neither, log it but don't validate
-                            else:
+                            elif not args.ci_mode:
                                 print(
                                     f"    ↳ Skipping validation (not a recognized link format)"
                                 )
@@ -773,13 +793,15 @@ def main():
             except Exception as e:
                 print(f"Error processing {file_path}: {e}", file=sys.stderr)
 
-        print(
-            f"\nFound {total_matches} links containing '{args.substring}' across {len(files_to_scan)} files."
-        )
+        if not args.ci_mode:
+            print(
+                f"\nFound {total_matches} links containing '{args.substring}' across {len(files_to_scan)} files."
+            )
 
         # Validate links if requested
         if args.validate_links and links_to_validate:
-            print(f"\nValidating {len(links_to_validate)} links...")
+            if not args.ci_mode:
+                print(f"\nValidating {len(links_to_validate)} links...")
             validation_results = validate_urls(list(set(links_to_validate)))
 
             valid_count = sum(
@@ -787,12 +809,16 @@ def main():
             )
             broken_count = len(validation_results) - valid_count
 
-            print(
-                f"\nLink validation: {valid_count} valid, {broken_count} broken"
-            )
+            if not args.ci_mode:
+                print(
+                    f"\nLink validation: {valid_count} valid, {broken_count} broken"
+                )
 
             if broken_count > 0:
-                print("\nBroken links:")
+                has_broken_links = True
+                if not args.ci_mode:
+                    print("\nBroken links:")
+
                 for file_path, links in file_links_map.items():
                     broken_in_file = []
                     for transformed_link, line_num, original_link in links:
@@ -822,7 +848,10 @@ def main():
                             # Show the original link in the output, but we validated the transformed one
                             print(f"  Line {line_num}: {original_link}")
                             print(f"    ↳ ❌ {status_info}")
-                            if original_link != transformed_link:
+                            if (
+                                original_link != transformed_link
+                                and not args.ci_mode
+                            ):
                                 print(
                                     f"    ↳ Validated as: {transformed_link}"
                                 )
@@ -830,6 +859,10 @@ def main():
                                 file_path, line_num
                             )
                             print(f"    ↳ {clickable_path}")
+
+        # In CI mode, exit with error code if broken links were found
+        if args.ci_mode and has_broken_links:
+            sys.exit(1)
 
 
 if __name__ == "__main__":

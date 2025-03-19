@@ -10,7 +10,7 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  check:
+  check-absolute-links:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     steps:
@@ -19,14 +19,60 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.11"
+          python-version: '3.11'
       - name: Install dependencies
         run: pip install requests
       - name: Check Absolute Links
+        id: check-absolute
         run: |
           # Only check absolute links (http/https), not relative links
-          python docs/link_checker.py --dir docs/book --substring "http" --validate-links --timeout 15
+          python docs/link_checker.py --dir docs/book --substring "http" --validate-links --timeout 15 --ci-mode
+        # Continue on error so both checks can run to completion
+        continue-on-error: true
+  check-relative-links:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
       - name: Check Relative Links
+        id: check-relative
         run: |-
           # Check if relative links resolve within the repository
           python scripts/check_relative_links.py --dir docs/book
+        # Continue on error so both checks can run to completion
+        continue-on-error: true
+  summary:
+    needs: [check-absolute-links, check-relative-links]
+    if: always() && github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create Summary
+        run: |-
+          echo "# Documentation Link Check Results" >> $GITHUB_STEP_SUMMARY
+
+          # Check for failures in absolute links job
+          if [[ "${{ needs.check-absolute-links.result }}" == "failure" ]]; then
+            echo "❌ **Absolute links check failed**" >> $GITHUB_STEP_SUMMARY
+            echo "There are broken absolute links in the documentation. Please check the job logs for details." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ **Absolute links check passed**" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Check for failures in relative links job
+          if [[ "${{ needs.check-relative-links.result }}" == "failure" ]]; then
+            echo "❌ **Relative links check failed**" >> $GITHUB_STEP_SUMMARY
+            echo "There are broken relative links in the documentation. Please check the job logs for details." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ **Relative links check passed**" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Set job status based on both child jobs
+          if [[ "${{ needs.check-absolute-links.result }}" == "failure" || "${{ needs.check-relative-links.result }}" == "failure" ]]; then
+            echo "::error::One or more link checks failed. Please fix the broken links."
+            exit 1
+          fi
