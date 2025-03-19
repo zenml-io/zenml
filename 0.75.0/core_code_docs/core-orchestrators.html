@@ -1152,24 +1152,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#zenml.orchestrators.BaseOrchestrator._cleanup_run" class="md-nav__link">
-    <span class="md-ellipsis">
-      _cleanup_run
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#zenml.orchestrators.BaseOrchestrator._prepare_run" class="md-nav__link">
-    <span class="md-ellipsis">
-      _prepare_run
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#zenml.orchestrators.BaseOrchestrator.fetch_status" class="md-nav__link">
     <span class="md-ellipsis">
       fetch_status
@@ -1284,15 +1266,6 @@
   <a href="#zenml.orchestrators.BaseOrchestratorConfig.supports_client_side_caching" class="md-nav__link">
     <span class="md-ellipsis">
       supports_client_side_caching
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#zenml.orchestrators.BaseOrchestratorConfig._deprecations" class="md-nav__link">
-    <span class="md-ellipsis">
-      _deprecations
     </span>
   </a>
   
@@ -3459,24 +3432,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#zenml.orchestrators.BaseOrchestrator._cleanup_run" class="md-nav__link">
-    <span class="md-ellipsis">
-      _cleanup_run
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#zenml.orchestrators.BaseOrchestrator._prepare_run" class="md-nav__link">
-    <span class="md-ellipsis">
-      _prepare_run
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#zenml.orchestrators.BaseOrchestrator.fetch_status" class="md-nav__link">
     <span class="md-ellipsis">
       fetch_status
@@ -3591,15 +3546,6 @@
   <a href="#zenml.orchestrators.BaseOrchestratorConfig.supports_client_side_caching" class="md-nav__link">
     <span class="md-ellipsis">
       supports_client_side_caching
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#zenml.orchestrators.BaseOrchestratorConfig._deprecations" class="md-nav__link">
-    <span class="md-ellipsis">
-      _deprecations
     </span>
   </a>
   
@@ -4564,99 +4510,6 @@ the pipeline to some remote infrastructure.</p>
 </div>
 
 
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="zenml.orchestrators.BaseOrchestrator._cleanup_run" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">_cleanup_run</span><span class="p">()</span></code>
-
-</h3>
-
-
-    <div class="doc doc-contents ">
-
-        <p>Cleans up the active run.</p>
-
-
-            <details class="quote">
-              <summary>Source code in <code>src/zenml/orchestrators/base_orchestrator.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">312</span>
-<span class="normal">313</span>
-<span class="normal">314</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_cleanup_run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Cleans up the active run.&quot;&quot;&quot;</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">_active_deployment</span> <span class="o">=</span> <span class="kc">None</span>
-</code></pre></div></td></tr></table></div>
-            </details>
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="zenml.orchestrators.BaseOrchestrator._prepare_run" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">_prepare_run</span><span class="p">(</span><span class="n">deployment</span><span class="p">)</span></code>
-
-</h3>
-
-
-    <div class="doc doc-contents ">
-
-        <p>Prepares a run.</p>
-
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>deployment</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="zenml.models.PipelineDeploymentResponse" href="../index.html#zenml.models.PipelineDeploymentResponse">PipelineDeploymentResponse</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The deployment to prepare.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-            <details class="quote">
-              <summary>Source code in <code>src/zenml/orchestrators/base_orchestrator.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">304</span>
-<span class="normal">305</span>
-<span class="normal">306</span>
-<span class="normal">307</span>
-<span class="normal">308</span>
-<span class="normal">309</span>
-<span class="normal">310</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_prepare_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeploymentResponse&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Prepares a run.</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        deployment: The deployment to prepare.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="bp">self</span><span class="o">.</span><span class="n">_active_deployment</span> <span class="o">=</span> <span class="n">deployment</span>
-</code></pre></div></td></tr></table></div>
-            </details>
-    </div>
-
-</div>
 
 <div class="doc doc-object doc-function">
 
@@ -5804,131 +5657,6 @@ This will be deleted in case the pipeline deployment failed.</p>
 </div>
 
 
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="zenml.orchestrators.BaseOrchestratorConfig._deprecations" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">_deprecations</span><span class="p">(</span><span class="n">data</span><span class="p">)</span></code>
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
-  </span>
-
-</h3>
-
-
-    <div class="doc doc-contents ">
-
-        <p>Validate and/or remove deprecated fields.</p>
-
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>data</code>
-            </td>
-            <td>
-                  <code><span title="typing.Dict">Dict</span>[<span title="str">str</span>, <span title="typing.Any">Any</span>]</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The values to validate.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><span title="typing.Dict">Dict</span>[<span title="str">str</span>, <span title="typing.Any">Any</span>]</code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The validated values.</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-            <details class="quote">
-              <summary>Source code in <code>src/zenml/orchestrators/base_orchestrator.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">45</span>
-<span class="normal">46</span>
-<span class="normal">47</span>
-<span class="normal">48</span>
-<span class="normal">49</span>
-<span class="normal">50</span>
-<span class="normal">51</span>
-<span class="normal">52</span>
-<span class="normal">53</span>
-<span class="normal">54</span>
-<span class="normal">55</span>
-<span class="normal">56</span>
-<span class="normal">57</span>
-<span class="normal">58</span>
-<span class="normal">59</span>
-<span class="normal">60</span>
-<span class="normal">61</span>
-<span class="normal">62</span>
-<span class="normal">63</span>
-<span class="normal">64</span>
-<span class="normal">65</span>
-<span class="normal">66</span>
-<span class="normal">67</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;before&quot;</span><span class="p">)</span>
-<span class="nd">@classmethod</span>
-<span class="nd">@before_validator_handler</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">_deprecations</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Validate and/or remove deprecated fields.</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        data: The values to validate.</span>
-
-<span class="sd">    Returns:</span>
-<span class="sd">        The validated values.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="s2">&quot;custom_docker_base_image_name&quot;</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
-        <span class="n">image_name</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;custom_docker_base_image_name&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">image_name</span><span class="p">:</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                <span class="s2">&quot;The &#39;custom_docker_base_image_name&#39; field has been &quot;</span>
-                <span class="s2">&quot;deprecated. To use a custom base container image with your &quot;</span>
-                <span class="s2">&quot;orchestrators, please use the DockerSettings in your &quot;</span>
-                <span class="s2">&quot;pipeline (see https://docs.zenml.io/how-to/infrastructure-deployment/customize-docker-builds).&quot;</span>
-            <span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">data</span>
-</code></pre></div></td></tr></table></div>
-            </details>
-    </div>
-
-</div>
 
 
 

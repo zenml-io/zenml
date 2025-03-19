@@ -736,15 +736,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#zenml.entrypoints.StepEntrypointConfiguration._run_step" class="md-nav__link">
-    <span class="md-ellipsis">
-      _run_step
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#zenml.entrypoints.StepEntrypointConfiguration.get_entrypoint_arguments" class="md-nav__link">
     <span class="md-ellipsis">
       get_entrypoint_arguments
@@ -3066,15 +3057,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#zenml.entrypoints.StepEntrypointConfiguration._run_step" class="md-nav__link">
-    <span class="md-ellipsis">
-      _run_step
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#zenml.entrypoints.StepEntrypointConfiguration.get_entrypoint_arguments" class="md-nav__link">
     <span class="md-ellipsis">
       get_entrypoint_arguments
@@ -3713,102 +3695,6 @@ class MyOrchestrator(BaseOrchestrator):
 
 
 
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="zenml.entrypoints.StepEntrypointConfiguration._run_step" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">_run_step</span><span class="p">(</span><span class="n">step</span><span class="p">,</span> <span class="n">deployment</span><span class="p">)</span></code>
-
-</h3>
-
-
-    <div class="doc doc-contents ">
-
-        <p>Runs a single step.</p>
-
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>step</code>
-            </td>
-            <td>
-                  <code><span title="zenml.config.step_configurations.Step">Step</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The step to run.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>deployment</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-internal" title="zenml.models.PipelineDeploymentResponse" href="../index.html#zenml.models.PipelineDeploymentResponse">PipelineDeploymentResponse</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The deployment configuration.</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-            <details class="quote">
-              <summary>Source code in <code>src/zenml/entrypoints/step_entrypoint_configuration.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">185</span>
-<span class="normal">186</span>
-<span class="normal">187</span>
-<span class="normal">188</span>
-<span class="normal">189</span>
-<span class="normal">190</span>
-<span class="normal">191</span>
-<span class="normal">192</span>
-<span class="normal">193</span>
-<span class="normal">194</span>
-<span class="normal">195</span>
-<span class="normal">196</span>
-<span class="normal">197</span>
-<span class="normal">198</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">_run_step</span><span class="p">(</span>
-    <span class="bp">self</span><span class="p">,</span>
-    <span class="n">step</span><span class="p">:</span> <span class="s2">&quot;Step&quot;</span><span class="p">,</span>
-    <span class="n">deployment</span><span class="p">:</span> <span class="s2">&quot;PipelineDeploymentResponse&quot;</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Runs a single step.</span>
-
-<span class="sd">    Args:</span>
-<span class="sd">        step: The step to run.</span>
-<span class="sd">        deployment: The deployment configuration.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">orchestrator</span> <span class="o">=</span> <span class="n">Client</span><span class="p">()</span><span class="o">.</span><span class="n">active_stack</span><span class="o">.</span><span class="n">orchestrator</span>
-    <span class="n">orchestrator</span><span class="o">.</span><span class="n">_prepare_run</span><span class="p">(</span><span class="n">deployment</span><span class="o">=</span><span class="n">deployment</span><span class="p">)</span>
-    <span class="n">orchestrator</span><span class="o">.</span><span class="n">run_step</span><span class="p">(</span><span class="n">step</span><span class="o">=</span><span class="n">step</span><span class="p">)</span>
-</code></pre></div></td></tr></table></div>
-            </details>
-    </div>
-
-</div>
 
 <div class="doc doc-object doc-function">
 
