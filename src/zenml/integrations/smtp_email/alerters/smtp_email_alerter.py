@@ -16,7 +16,7 @@
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from typing import List, Optional, Type, cast, Never
+from typing import List, Never, Optional, Type, cast
 
 from pydantic import BaseModel
 
@@ -99,12 +99,7 @@ class SMTPEmailAlerter(BaseAlerter):
             raise RuntimeError(
                 "The config object must be of type `BaseAlerterStepParameters`."
             )
-        if (
-            params
-            and isinstance(params, SMTPEmailAlerterParameters)
-            and hasattr(params, "recipient_email")
-            and params.recipient_email is not None
-        ):
+        if params and params.recipient_email is not None:
             return params.recipient_email
 
         try:
