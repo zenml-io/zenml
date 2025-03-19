@@ -37,8 +37,8 @@ To use the AzureML step operator, we need:
     zenml integration install azure
     ```
 * [Docker](https://www.docker.com) installed and running.
-* An [Azure container registry](https://docs.zenml.io/stacks/container-registries/azure) as part of your stack. Take a look [here](https://docs.zenml.io/container-registries/azure#how-to-deploy-it) for a guide on how to set that up.
-* An [Azure artifact store](https://docs.zenml.io/stacks/artifact-stores/azure) as part of your stack. This is needed so that both your orchestration environment and AzureML can read and write step artifacts. Take a look [here](https://docs.zenml.io/container-registries/azure#how-to-deploy-it) for a guide on how to set that up.
+* An [Azure container registry](https://docs.zenml.io/stacks/container-registries/azure) as part of your stack. Take a look [here](https://docs.zenml.io/stacks/container-registries/azure#how-to-deploy-it) for a guide on how to set that up.
+* An [Azure artifact store](https://docs.zenml.io/stacks/artifact-stores/azure) as part of your stack. This is needed so that both your orchestration environment and AzureML can read and write step artifacts. Take a look [here](https://docs.zenml.io/stacks/container-registries/azure#how-to-deploy-it) for a guide on how to set that up.
 * An AzureML workspace and an optional compute cluster. Note that the AzureML workspace can share the Azure container registry and Azure storage account that are required above. See the [deployment section](azureml.md#how-to-deploy-it) for detailed instructions.
 
 There are two ways you can authenticate your step operator to be able to run steps on Azure:

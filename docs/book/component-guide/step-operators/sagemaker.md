@@ -28,7 +28,7 @@ To use the SageMaker step operator, we need:
     ```
 * [Docker](https://www.docker.com) installed and running.
 * An IAM role with the correct permissions. See the [deployment section](sagemaker.md#how-to-deploy-it) for detailed instructions.
-* An [AWS container registry](https://docs.zenml.io/stacks/container-registries/aws) as part of our stack. Take a look [here](https://docs.zenml.io/container-registries/aws#how-to-deploy-it) for a guide on how to set that up.
+* An [AWS container registry](https://docs.zenml.io/stacks/container-registries/aws) as part of our stack. Take a look [here](https://docs.zenml.io/stacks/container-registries/aws#how-to-deploy-it) for a guide on how to set that up.
 * A [remote artifact store](https://docs.zenml.io/stacks/artifact-stores/) as part of your stack. This is needed so that both your orchestration environment and SageMaker can read and write step artifacts. Check out the documentation page of the artifact store you want to use for more information on how to set that up and configure authentication for it.
 * An instance type that we want to execute our steps on. See [here](https://docs.aws.amazon.com/sagemaker/latest/dg/notebooks-available-instance-types.html) for a list of available instance types.
 * (Optional) An experiment that is used to group SageMaker runs. Check [this guide](https://docs.aws.amazon.com/sagemaker/latest/dg/experiments-create.html) to see how to create an experiment.
