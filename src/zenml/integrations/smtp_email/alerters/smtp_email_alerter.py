@@ -79,6 +79,80 @@ class SMTPEmailAlerter(BaseAlerter):
         """
         return SMTPEmailAlerterSettings
 
+    def _get_attribute_value(
+        self,
+        attribute_name: str,
+        params: Optional[BaseAlerterStepParameters] = None,
+        fail_if_missing: bool = False,
+        param_class: Type = None,
+    ) -> any:
+        """Generic method to get configuration attributes from different sources.
+
+        Args:
+            attribute_name: The name of the attribute to retrieve.
+            params: Optional parameters.
+            fail_if_missing: Whether to raise an error if the attribute is not found.
+            param_class: The expected class type for params checking.
+
+        Returns:
+            The value of the requested attribute.
+
+        Raises:
+            RuntimeError: If params are not of the expected type.
+            ValueError: If the attribute is not found and fail_if_missing is True.
+        """
+        # Check basic params validity
+        if params and param_class and not isinstance(params, param_class):
+            raise RuntimeError(
+                f"The params object must be of type `{param_class.__name__}`."
+            )
+
+        # Check in params first
+        if params:
+            # For special case of SMTPEmailAlerterParameters attributes
+            if isinstance(params, SMTPEmailAlerterParameters):
+                if (
+                    hasattr(params, attribute_name)
+                    and getattr(params, attribute_name) is not None
+                ):
+                    return getattr(params, attribute_name)
+            # For BaseAlerterStepParameters attributes
+            elif (
+                hasattr(params, attribute_name)
+                and getattr(params, attribute_name) is not None
+            ):
+                return getattr(params, attribute_name)
+
+        # Try to get from settings
+        try:
+            settings = cast(
+                SMTPEmailAlerterSettings,
+                self.get_settings(get_step_context().step_run),
+            )
+        except RuntimeError:
+            settings = None
+
+        if settings is not None and hasattr(settings, attribute_name):
+            setting_value = getattr(settings, attribute_name)
+            if setting_value is not None:
+                return setting_value
+
+        # Fall back to config value
+        if hasattr(self.config, attribute_name):
+            config_value = getattr(self.config, attribute_name)
+            if config_value is not None or not fail_if_missing:
+                return config_value
+
+        # If we get here and fail_if_missing is True, raise an error
+        if fail_if_missing:
+            raise ValueError(
+                f"The `{attribute_name}` is not set either in the runtime parameters, "
+                f"settings, or the component configuration. Please specify at "
+                f"least one."
+            )
+
+        return None
+
     def _get_recipient_email(
         self, params: Optional[BaseAlerterStepParameters] = None
     ) -> str:
@@ -95,31 +169,11 @@ class SMTPEmailAlerter(BaseAlerter):
             ValueError: if an email recipient was neither defined in the config
                 nor in the alerter component.
         """
-        if params and not isinstance(params, BaseAlerterStepParameters):
-            raise RuntimeError(
-                "The config object must be of type `BaseAlerterStepParameters`."
-            )
-        if params and params.recipient_email is not None:
-            return params.recipient_email
-
-        try:
-            settings = cast(
-                SMTPEmailAlerterSettings,
-                self.get_settings(get_step_context().step_run),
-            )
-        except RuntimeError:
-            settings = None
-
-        if settings is not None and settings.recipient_email is not None:
-            return settings.recipient_email
-
-        if self.config.recipient_email is not None:
-            return self.config.recipient_email
-
-        raise ValueError(
-            "The `recipient_email` is not set either in the runtime settings, "
-            "or the component configuration of the alerter. Please specify at "
-            "least one."
+        return self._get_attribute_value(
+            attribute_name="recipient_email",
+            params=params,
+            fail_if_missing=True,
+            param_class=BaseAlerterStepParameters,
         )
 
     def _should_include_html(
@@ -133,26 +187,9 @@ class SMTPEmailAlerter(BaseAlerter):
         Returns:
             Boolean indicating if HTML should be included.
         """
-        if (
-            params
-            and isinstance(params, SMTPEmailAlerterParameters)
-            and hasattr(params, "include_html")
-            and params.include_html is not None
-        ):
-            return params.include_html
-
-        try:
-            settings = cast(
-                SMTPEmailAlerterSettings,
-                self.get_settings(get_step_context().step_run),
-            )
-        except RuntimeError:
-            settings = None
-
-        if settings is not None and settings.include_html is not None:
-            return settings.include_html
-
-        return self.config.include_html
+        return self._get_attribute_value(
+            attribute_name="include_html", params=params
+        )
 
     def _get_subject_prefix(self) -> str:
         """Get the subject prefix to use.
@@ -160,18 +197,7 @@ class SMTPEmailAlerter(BaseAlerter):
         Returns:
             String prefix for email subjects.
         """
-        try:
-            settings = cast(
-                SMTPEmailAlerterSettings,
-                self.get_settings(get_step_context().step_run),
-            )
-        except RuntimeError:
-            settings = None
-
-        if settings is not None and settings.subject_prefix is not None:
-            return settings.subject_prefix
-
-        return self.config.subject_prefix
+        return self._get_attribute_value(attribute_name="subject_prefix")
 
     def _create_html_body(
         self, message: str, params: Optional[BaseAlerterStepParameters] = None
