@@ -2,15 +2,15 @@
 
 # 0.80.0
 
-The 0.80.0 release introduces a major refactoring of workspaces into projects, enhances tagging capabilities, and improves GitLab repository support. This version also features significant performance optimizations for Docker builds and CLI operations.
+The 0.80.0 release is one of our biggest updates in a while! This version introduces a major refactoring of workspaces into projects, enhances tagging capabilities, and improves GitLab repository support. This release also features significant performance optimizations for Docker builds and CLI operations.
 
 ## Features
 
-- Refactored workspaces into projects with improved RBAC API resource format
-- Enhanced tagging system with resource type filtering and exclusive tag behavior
-- Added persistent resource support for the Vertex orchestrator
+- For our Pro users: Refactored workspaces into projects with improved RBAC API resource format (We will release separate docs on this soon.)
+- [Enhanced tagging system](https://docs.zenml.io/how-to/data-artifact-management/handle-data-artifacts/tagging) with resource type filtering and exclusive tag behavior
+- [Added persistent resource support for the Vertex orchestrator](https://docs.zenml.io/stacks/orchestrators/vertex#using-persistent-resources-for-faster-development)
 - Store build duration information for better tracking
-- Allow passing step artifacts to specify upstream steps
+- [Allow passing step artifacts to specify upstream steps](https://docs.zenml.io/how-to/pipeline-development/build-pipelines/control-execution-order-of-steps)
 - Support for environment variables in KubernetesPodSettings
 
 ## Improvements
@@ -18,9 +18,9 @@ The 0.80.0 release introduces a major refactoring of workspaces into projects, e
 - Updated devel dockerfiles to make rebuilds faster
 - Improved CLI response time through optimized imports
 - Allow registering public GitLab repositories without token
-- Enable Weave integration in Wandb settings
-- Allow the service account project ID to be overridden in the GCP service connector
-- Pass API token as Kubernetes secret for enhanced security
+- [Enable Weave integration](https://docs.zenml.io/stacks/experiment-trackers/wandb#using-weights-and-biases-weave) in Wandb settings
+- Allow the service account project ID to be overridden in [the GCP service connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/gcp-service-connector)
+- [Pass API token as Kubernetes secret](https://docs.zenml.io/stacks/orchestrators/kubernetes#additional-configuration), allowing Kubernetess orchestrator to run workloads without exposing any sensitive API tokens in the environment
 
 ## Fixes
 
