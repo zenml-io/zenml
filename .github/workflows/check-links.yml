@@ -1,0 +1,32 @@
+---
+name: Check Links
+on:
+  workflow_dispatch:
+  push:
+  pull_request:
+    types: [opened, synchronize, reopened]
+concurrency:
+  # New commit on branch cancels running workflows of the same branch
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  check:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: pip install requests
+      - name: Check Absolute Links
+        run: |
+          # Only check absolute links (http/https), not relative links
+          python docs/link_checker.py --dir docs/book --substring "http" --validate-links --timeout 15
+      - name: Check Relative Links
+        run: |-
+          # Check if relative links resolve within the repository
+          python scripts/check_relative_links.py --dir docs/book
