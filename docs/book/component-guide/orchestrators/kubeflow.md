@@ -99,7 +99,7 @@ To use the Kubeflow orchestrator, we need:
     ```shell
     zenml integration install kubeflow
     ```
-* [Docker](https://www.docker.com) installed and running (unless you are using a remote [Image Builder](../image-builders/) in your ZenML stack).
+* [Docker](https://www.docker.com) installed and running (unless you are using a remote [Image Builder](https://docs.zenml.io/stacks/image-builders/) in your ZenML stack).
 * [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) installed (optional, see below)
 
 {% hint style="info" %}
@@ -107,8 +107,8 @@ If you are using a single-tenant Kubeflow installed in a Kubernetes cluster mana
 {% endhint %}
 
 * The name of your Kubernetes context which points to your remote cluster. Run `kubectl config get-contexts` to see a list of available contexts. **NOTE**: this is no longer required if you are using [a Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/service-connectors-guide) to connect your Kubeflow Orchestrator Stack Component to the remote Kubernetes cluster.
-* A [remote artifact store](../artifact-stores/) as part of your stack.
-* A [remote container registry](../container-registries/) as part of your stack.
+* A [remote artifact store](https://docs.zenml.io/stacks/artifact-stores/) as part of your stack.
+* A [remote container registry](https://docs.zenml.io/stacks/container-registries/) as part of your stack.
 
 We can then register the orchestrator and use it in our active stack. This can be done in two ways:
 

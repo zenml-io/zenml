@@ -21,7 +21,7 @@ Let's say we have a feature engineering pipeline and a training pipeline. The fe
 
 <figure><img src="../../.gitbook/assets/artifact_exchange.png" alt=""><figcaption><p>A simple artifact exchange between two pipelines</p></figcaption></figure>
 
-In this scenario, the [ZenML Client](../../../reference/python-client.md#client-methods) can be used to facilitate such an exchange:
+In this scenario, the [ZenML Client](https://docs.zenml.io/reference/python-client#client-methods) can be used to facilitate such an exchange:
 
 ```python
 from zenml import pipeline
@@ -47,7 +47,7 @@ def training_pipeline():
 ```
 
 {% hint style="info" %}
-Note that in the above example, the `train_data` and `test_data` artifacts are not [materialized](../../../how-to/data-artifact-management/handle-data-artifacts/artifact-versioning.md) in memory in the `@pipeline` function, but rather the `train_data` and `test_data` objects are simply references to where this data is stored in the artifact store. Therefore, one cannot use any logic regarding the nature of this data itself during compilation time (i.e. in the `@pipeline` function).
+Note that in the above example, the `train_data` and `test_data` artifacts are not [materialized](https://docs.zenml.io//how-to/data-artifact-management/handle-data-artifacts/artifact-versioning) in memory in the `@pipeline` function, but rather the `train_data` and `test_data` objects are simply references to where this data is stored in the artifact store. Therefore, one cannot use any logic regarding the nature of this data itself during compilation time (i.e. in the `@pipeline` function).
 {% endhint %}
 
 ## Pattern 2: Artifact exchange between pipelines through a `Model`

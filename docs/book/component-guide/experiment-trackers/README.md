@@ -15,12 +15,12 @@ Related concepts:
 * the Experiment Tracker is an optional type of Stack Component that needs to be registered as part of your\
   ZenML [Stack](https://docs.zenml.io/user-guides/production-guide/understand-stacks).
 * ZenML already provides versioning and tracking for the pipeline artifacts by storing artifacts in\
-  the [Artifact Store](../artifact-stores/).
+  the [Artifact Store](https://docs.zenml.io/stacks/artifact-stores/).
 
 ### When to use it
 
 ZenML already records information about the artifacts circulated through your pipelines by means of the\
-mandatory [Artifact Store](../artifact-stores/).
+mandatory [Artifact Store](https://docs.zenml.io/stacks/artifact-stores/).
 
 However, these ZenML mechanisms are meant to be used programmatically and can be more difficult to work with without a\
 visual interface.

@@ -37,8 +37,8 @@ To use the AzureML step operator, we need:
     zenml integration install azure
     ```
 * [Docker](https://www.docker.com) installed and running.
-* An [Azure container registry](../container-registries/azure.md) as part of your stack. Take a look [here](https://docs.zenml.io/container-registries/azure#how-to-deploy-it) for a guide on how to set that up.
-* An [Azure artifact store](../artifact-stores/azure.md) as part of your stack. This is needed so that both your orchestration environment and AzureML can read and write step artifacts. Take a look [here](https://docs.zenml.io/container-registries/azure#how-to-deploy-it) for a guide on how to set that up.
+* An [Azure container registry](https://docs.zenml.io/stacks/container-registries/azure) as part of your stack. Take a look [here](https://docs.zenml.io/container-registries/azure#how-to-deploy-it) for a guide on how to set that up.
+* An [Azure artifact store](https://docs.zenml.io/stacks/artifact-stores/azure) as part of your stack. This is needed so that both your orchestration environment and AzureML can read and write step artifacts. Take a look [here](https://docs.zenml.io/container-registries/azure#how-to-deploy-it) for a guide on how to set that up.
 * An AzureML workspace and an optional compute cluster. Note that the AzureML workspace can share the Azure container registry and Azure storage account that are required above. See the [deployment section](azureml.md#how-to-deploy-it) for detailed instructions.
 
 There are two ways you can authenticate your step operator to be able to run steps on Azure:
@@ -64,7 +64,7 @@ zenml stack register <STACK_NAME> -s <STEP_OPERATOR_NAME> ... --set
 {% tab title="Implicit Authentication" %}
 If you don't connect your step operator to a service connector:
 
-* If using a [local orchestrator](../orchestrators/local.md): ZenML will try to implicitly authenticate to Azure via the local [Azure CLI configuration](https://learn.microsoft.com/en-us/cli/azure/authenticate-azure-cli-interactively). Make sure the Azure CLI has permissions to create and manage AzureML jobs (e.g. [the `AzureML Data Scientist` and `AzureML Compute Operator` managed roles](https://learn.microsoft.com/en-us/azure/machine-learning/how-to-assign-roles?view=azureml-api-2&tabs=team-lead)).
+* If using a [local orchestrator](https://docs.zenml.io/stacks/orchestrators/local): ZenML will try to implicitly authenticate to Azure via the local [Azure CLI configuration](https://learn.microsoft.com/en-us/cli/azure/authenticate-azure-cli-interactively). Make sure the Azure CLI has permissions to create and manage AzureML jobs (e.g. [the `AzureML Data Scientist` and `AzureML Compute Operator` managed roles](https://learn.microsoft.com/en-us/azure/machine-learning/how-to-assign-roles?view=azureml-api-2&tabs=team-lead)).
 * If using a remote orchestrator: the remote environment in which the orchestrator runs needs to be able to implicitly authenticate to Azure and have permissions to create and manage AzureML jobs. This is only possible if the orchestrator is also running in Azure and uses a form of implicit workload authentication like a service role. If this is not the case, you will need to use a service connector.
 
 ```shell

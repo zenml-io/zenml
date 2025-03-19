@@ -50,7 +50,7 @@ Some Great Expectations CLI commands will not work well with the deployment meth
 
 {% tabs %}
 {% tab title="Let ZenML Manage The Configuration" %}
-The default Data Validator setup plugs Great Expectations directly into the [Artifact Store](../artifact-stores/) component that is part of the same stack. As a result, the Expectation Suites, Validation Results and Data Docs are stored in the ZenML Artifact Store and you don't have to configure Great Expectations at all, ZenML takes care of that for you:
+The default Data Validator setup plugs Great Expectations directly into the [Artifact Store](https://docs.zenml.io/stacks/artifact-stores/) component that is part of the same stack. As a result, the Expectation Suites, Validation Results and Data Docs are stored in the ZenML Artifact Store and you don't have to configure Great Expectations at all, ZenML takes care of that for you:
 
 ```shell
 # Register the Great Expectations data validator

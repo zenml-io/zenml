@@ -73,8 +73,8 @@ To generate a new API token for the ZenML Pro API:
 
 Programmatic access to the ZenML Pro workspace API is achieved essentially the same way as the ZenML OSS server API. You can use one of these two methods:
 
-* [Generate and use temporary API tokens](../../reference/api-reference.md#using-a-short-lived-api-token)
-* [Create a service account and use its API key](../../reference/api-reference.md#using-a-service-account-and-an-api-key)
+* [Generate and use temporary API tokens](https://docs.zenml.io/reference/api-reference#using-a-short-lived-api-token)
+* [Create a service account and use its API key](https://docs.zenml.io/reference/api-reference#using-a-service-account-and-an-api-key)
 
 Please consult the indicated sections for more information.
 

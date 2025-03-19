@@ -10,8 +10,8 @@ Stack Component Config vs Settings in ZenML
 
 Part of the configuration of a pipeline are its `Settings`. These allow you to configure runtime configurations for stack components and pipelines. Concretely, they allow you to configure:
 
-* The [resources](../../advanced-topics/training-with-gpus/training-with-gpus.md#specify-resource-requirements-for-steps) required for a step
-* Configuring the [containerization](../../../how-to/customize-docker-builds/README.md) process of a pipeline (e.g. What requirements get installed in the Docker image)
+* The [resources](https://docs.zenml.io/how-to/pipeline-development/training-with-gpus/#specify-resource-requirements-for-steps) required for a step
+* Configuring the [containerization](https://docs.zenml.io/how-to/customize-docker-builds) process of a pipeline (e.g. What requirements get installed in the Docker image)
 * Stack component-specific configuration, e.g., if you have an experiment tracker passing in the name of the experiment at runtime
 
 You will learn about all of the above in more detail later, but for now, let's try to understand that all of this configuration flows through one central concept called `BaseSettings`. (From here on, we use `settings` and `BaseSettings` as analogous in this guide).
@@ -21,8 +21,8 @@ You will learn about all of the above in more detail later, but for now, let's t
 Settings are categorized into two types:
 
 * **General settings** that can be used on all ZenML pipelines. Examples of these are:
-  * [`DockerSettings`](../../../how-to/customize-docker-builds/README.md) to specify Docker settings.
-  * [`ResourceSettings`](../../../how-to/pipeline-development/training-with-gpus/README.md) to specify resource settings.
+  * [`DockerSettings`](https://docs.zenml.io//how-to/customize-docker-builds) to specify Docker settings.
+  * [`ResourceSettings`](https://docs.zenml.io//how-to/pipeline-development/training-with-gpus) to specify resource settings.
 * **Stack-component-specific settings**: These can be used to supply runtime configurations to certain stack components (the key should be `<COMPONENT_CATEGORY>` or `<COMPONENT_CATEGORY>.<COMPONENT_FLAVOR>`). Settings for components not in the active stack will be ignored. Examples of these are:
   * [`SkypilotAWSOrchestratorSettings`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-skypilot_aws/#zenml.integrations.skypilot_aws.flavors.skypilot_orchestrator_aws_vm_flavor.SkypilotAWSOrchestratorSettings) to specify Skypilot settings (works for `SkypilotGCPOrchestratorSettings` and `SkypilotAzureOrchestratorSettings` as well).
   * [`KubeflowOrchestratorSettings`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-kubeflow/#zenml.integrations.kubeflow.flavors.kubeflow_orchestrator_flavor.KubeflowOrchestratorSettings) to specify Kubeflow settings.

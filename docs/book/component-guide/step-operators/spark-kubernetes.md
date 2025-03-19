@@ -285,8 +285,8 @@ To use the `KubernetesSparkStepOperator`, you need:
     zenml integration install spark
     ```
 * [Docker](https://www.docker.com) installed and running.
-* A [remote artifact store](../artifact-stores/) as part of your stack.
-* A [remote container registry](../container-registries/) as part of your stack.
+* A [remote artifact store](https://docs.zenml.io/stacks/artifact-stores/) as part of your stack.
+* A [remote container registry](https://docs.zenml.io/stacks/container-registries/) as part of your stack.
 * A Kubernetes cluster [deployed](spark-kubernetes.md#how-to-deploy-it).
 
 We can then register the step operator and use it in our active stack:

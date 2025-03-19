@@ -76,9 +76,9 @@ Certain dashboard functionality, such as visualizing or deleting artifacts, is n
 
 The implicit authentication method also needs to be coordinated with other stack components that are highly dependent on the Artifact Store and need to interact with it directly to the function. If these components are not running on your machine, they do not have access to the local environment variables and will encounter authentication failures while trying to access the Azure Artifact Store:
 
-* [Orchestrators](../orchestrators/) need to access the Artifact Store to manage pipeline artifacts
-* [Step Operators](../step-operators/) need to access the Artifact Store to manage step-level artifacts
-* [Model Deployers](../model-deployers/) need to access the Artifact Store to load served models
+* [Orchestrators](https://docs.zenml.io/stacks/orchestrators/) need to access the Artifact Store to manage pipeline artifacts
+* [Step Operators](https://docs.zenml.io/stacks/step-operators/) need to access the Artifact Store to manage step-level artifacts
+* [Model Deployers](https://docs.zenml.io/stacks/model-deployers/) need to access the Artifact Store to load served models
 
 To enable these use cases, it is recommended to use [an Azure Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/azure-service-connector) to link your Azure Artifact Store to the remote Azure Blob storage container.
 {% endhint %}

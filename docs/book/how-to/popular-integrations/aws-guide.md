@@ -10,9 +10,9 @@ This page aims to quickly set up a minimal production stack on AWS. With just a 
 Would you like to skip ahead and deploy a full AWS ZenML cloud stack already?
 
 Check out the
-[in-browser stack deployment wizard](../../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack.md),
-the [stack registration wizard](../../how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack.md),
-or [the ZenML AWS Terraform module](../../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform.md)
+[in-browser stack deployment wizard](https://docs.zenml.io//how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack),
+the [stack registration wizard](https://docs.zenml.io//how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack),
+or [the ZenML AWS Terraform module](https://docs.zenml.io//how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform)
 for a shortcut on how to deploy & register this stack.
 {% endhint %}
 
@@ -22,7 +22,7 @@ for a shortcut on how to deploy & register this stack.
 To follow this guide, you need:
 
 * An active AWS account with necessary permissions for AWS S3, SageMaker, ECR, and ECS.
-* ZenML [installed](../../getting-started/installation.md)
+* ZenML [installed](https://docs.zenml.io/getting-started/installation)
 * AWS CLI installed and configured with your AWS credentials. You can follow the instructions [here](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html).
 
 Once ready, navigate to the AWS console:

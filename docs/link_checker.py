@@ -214,6 +214,30 @@ def check_link_validity(
             response = session.get(url, timeout=timeout, allow_redirects=True)
 
         is_valid = response.status_code < 400
+
+        # Additional check for Gitbook URLs that return 200 for non-existent pages
+        if is_valid and "docs.zenml.io" in url:
+            # We need to check for "noindex" meta tag which indicates a 404 page in Gitbook
+            try:
+                # Use GET to fetch the page content
+                content_response = session.get(url, timeout=timeout)
+                content = content_response.text.lower()
+
+                # Look for the "noindex" meta tag which indicates a 404 page
+                if (
+                    'name="robots" content="noindex"' in content
+                    or 'content="noindex"' in content
+                ):
+                    return (
+                        url,
+                        False,
+                        "Page returns 200 but contains noindex tag (actual 404)",
+                        response.status_code,
+                    )
+            except requests.RequestException:
+                # If we can't check the content, just trust the status code
+                pass
+
         return (
             url,
             is_valid,
@@ -298,6 +322,11 @@ def transform_relative_link(
     if not link.startswith("../"):
         return None
 
+    # Skip links to assets
+    clean_test = re.sub(r"^(\.\.\/)+", "", link)
+    if "assets" in clean_test or ".gitbook" in clean_test:
+        return None
+
     # Extract the fragment and query parts if present
     fragment = ""
     query = ""
@@ -362,7 +391,7 @@ def replace_links_in_file(
 
     replacements = {}
     transformed_urls = []
-    modified = False
+    valid_replacements = {}  # Track which replacements are valid
 
     # Store line-specific replacements
     line_replacements = [[] for _ in range(len(lines))]
@@ -372,6 +401,10 @@ def replace_links_in_file(
 
     def should_replace_link(link: str) -> bool:
         if not link.startswith("../"):
+            return False
+
+        # Skip links to assets
+        if "assets" in link or ".gitbook" in link:
             return False
 
         if substring is None:
@@ -384,7 +417,8 @@ def replace_links_in_file(
         # For other substrings, include all links containing the substring
         return substring in link
 
-    # First, handle inline links and HTML links
+    # First, collect all potential replacements
+    # For inline links and HTML links
     for i, line in enumerate(lines):
         # Regular expressions for different types of markdown links
         patterns = [
@@ -417,19 +451,19 @@ def replace_links_in_file(
                     )
                     transformed_urls.append(transformed_link)
 
-                    # Store replacement details for this line
-                    if not dry_run:
-                        line_replacements[i].append(
-                            (
-                                match.start(group),  # start position
-                                match.end(group),  # end position
-                                relative_link,  # original text
-                                transformed_link,  # replacement text
-                            )
+                    # Store replacement details for this line (will be applied only if valid)
+                    line_replacements[i].append(
+                        (
+                            match.start(group),  # start position
+                            match.end(group),  # end position
+                            relative_link,  # original text
+                            transformed_link,  # replacement text
                         )
+                    )
 
     # Handle reference-style links
     ref_link_pattern = re.compile(r"^\[([^\]]+)\]:\s*(\.\./\S+)")
+    ref_link_replacements = []  # Store reference link replacements
     for i, line in enumerate(lines):
         match = ref_link_pattern.match(line)
         if match:
@@ -445,47 +479,12 @@ def replace_links_in_file(
             if transformed_link:
                 replacements[relative_link] = (transformed_link, None, None)
                 transformed_urls.append(transformed_link)
-
-                # Only actually replace if not in dry run mode
-                if not dry_run:
-                    new_line = (
-                        f"[{ref_id}]: {transformed_link}\n"
-                        if not line.endswith("\n")
-                        else f"[{ref_id}]: {transformed_link}\n"
-                    )
-                    lines[i] = new_line
-                    modified = True
-
-    # Apply all line replacements from right to left to maintain positions
-    if not dry_run:
-        for i, line_replace_data in enumerate(line_replacements):
-            if line_replace_data:
-                # Sort replacements right-to-left (by start position, descending)
-                line_replace_data.sort(key=lambda x: x[0], reverse=True)
-
-                # Apply all replacements for this line
-                line_text = lines[i]
-                for (
-                    start_pos,
-                    end_pos,
-                    original,
-                    replacement,
-                ) in line_replace_data:
-                    line_text = (
-                        line_text[:start_pos]
-                        + replacement
-                        + line_text[end_pos:]
-                    )
-
-                lines[i] = line_text
-                modified = True
-
-    # Write the modified content back to the file
-    if not dry_run and modified:
-        with open(file_path, "w", encoding="utf-8") as file:
-            file.writelines(lines)
+                ref_link_replacements.append(
+                    (i, ref_id, relative_link, transformed_link)
+                )
 
     # Validate links if requested
+    validation_results = {}
     if validate_links and transformed_urls:
         validation_results = validate_urls(transformed_urls)
 
@@ -494,6 +493,69 @@ def replace_links_in_file(
             if trans_link in validation_results:
                 is_valid, error_message, _ = validation_results[trans_link]
                 replacements[rel_link] = (trans_link, is_valid, error_message)
+                # Mark which replacements are valid
+                if is_valid:
+                    valid_replacements[rel_link] = trans_link
+
+    # If not validating, all replacements are considered valid
+    if not validate_links:
+        for rel_link, (trans_link, _, _) in replacements.items():
+            valid_replacements[rel_link] = trans_link
+
+    # Only apply replacements that are valid (or all if not validating)
+    if not dry_run:
+        modified = False
+
+        # Apply reference link replacements
+        for (
+            i,
+            ref_id,
+            relative_link,
+            transformed_link,
+        ) in ref_link_replacements:
+            # Only replace if valid or not validating
+            if relative_link in valid_replacements:
+                new_line = f"[{ref_id}]: {transformed_link}\n"
+                lines[i] = new_line
+                modified = True
+
+        # Apply inline and HTML link replacements
+        for i, line_replace_data in enumerate(line_replacements):
+            if line_replace_data:
+                # Filter to only valid replacements
+                valid_line_replacements = [
+                    (start_pos, end_pos, original, replacement)
+                    for start_pos, end_pos, original, replacement in line_replace_data
+                    if original in valid_replacements
+                ]
+
+                if valid_line_replacements:
+                    # Sort replacements right-to-left (by start position, descending)
+                    valid_line_replacements.sort(
+                        key=lambda x: x[0], reverse=True
+                    )
+
+                    # Apply all valid replacements for this line
+                    line_text = lines[i]
+                    for (
+                        start_pos,
+                        end_pos,
+                        original,
+                        replacement,
+                    ) in valid_line_replacements:
+                        line_text = (
+                            line_text[:start_pos]
+                            + replacement
+                            + line_text[end_pos:]
+                        )
+
+                    lines[i] = line_text
+                    modified = True
+
+        # Write the modified content back to the file
+        if modified:
+            with open(file_path, "w", encoding="utf-8") as file:
+                file.writelines(lines)
 
     return replacements
 

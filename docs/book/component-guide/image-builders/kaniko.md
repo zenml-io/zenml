@@ -27,8 +27,8 @@ To use the Kaniko image builder, we need:
     zenml integration install kaniko
     ```
 * [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) installed.
-* A [remote container registry](../container-registries/) as part of your stack.
-* By default, the Kaniko image builder transfers the build context using the Kubernetes API. If you instead want to transfer the build context by storing it in the artifact store, you need to register it with the `store_context_in_artifact_store` attribute set to `True`. In this case, you also need a [remote artifact store](../artifact-stores/) as part of your stack.
+* A [remote container registry](https://docs.zenml.io/stacks/container-registries/) as part of your stack.
+* By default, the Kaniko image builder transfers the build context using the Kubernetes API. If you instead want to transfer the build context by storing it in the artifact store, you need to register it with the `store_context_in_artifact_store` attribute set to `True`. In this case, you also need a [remote artifact store](https://docs.zenml.io/stacks/artifact-stores/) as part of your stack.
 * Optionally, you can change the timeout (in seconds) until the Kaniko pod is running in the orchestrator using the `pod_running_timeout` attribute.
 
 We can then register the image builder and use it in our active stack:

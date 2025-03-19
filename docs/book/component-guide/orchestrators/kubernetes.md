@@ -26,7 +26,7 @@ You should use the Kubernetes orchestrator if:
 
 ### How to deploy it
 
-The Kubernetes orchestrator requires a Kubernetes cluster in order to run. There are many ways to deploy a Kubernetes cluster using different cloud providers or on your custom infrastructure, and we can't possibly cover all of them, but you can check out our [our cloud guide](../../user-guide/cloud-guide/cloud-guide.md).
+The Kubernetes orchestrator requires a Kubernetes cluster in order to run. There are many ways to deploy a Kubernetes cluster using different cloud providers or on your custom infrastructure, and we can't possibly cover all of them, but you can check out our [our cloud guide](https://docs.zenml.io/reference/cloud-guide).
 
 If the above Kubernetes cluster is deployed remotely on the cloud, then another pre-requisite to use this orchestrator would be to deploy and connect to a [remote ZenML server](https://docs.zenml.io/getting-started/deploying-zenml/).
 

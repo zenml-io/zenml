@@ -17,9 +17,9 @@ Furthermore, the local Artifact Store doesn't cover services like high-availabil
 
 The fact that it stores artifacts on your local filesystem also means that not all stack components can be used in the same stack as a local Artifact Store:
 
-* only [Orchestrators](../orchestrators/) running on the local machine, such as the [local Orchestrator](../orchestrators/local.md), a [local Kubeflow Orchestrator](../orchestrators/kubeflow.md), or a [local Kubernetes Orchestrator](../orchestrators/kubernetes.md) can be combined with a local Artifact Store
-* only [Model Deployers](../model-deployers/) that are running locally, such as the [MLflow Model Deployer](../model-deployers/mlflow.md), can be used in combination with a local Artifact Store
-* [Step Operators](../step-operators/): none of the Step Operators can be used in the same stack as a local Artifact Store, given that their very purpose is to run ZenML steps in remote specialized environments
+* only [Orchestrators](https://docs.zenml.io/stacks/orchestrators/) running on the local machine, such as the [local Orchestrator](https://docs.zenml.io/stacks/orchestrators/local), a [local Kubeflow Orchestrator](https://docs.zenml.io/stacks/orchestrators/kubeflow), or a [local Kubernetes Orchestrator](https://docs.zenml.io/stacks/orchestrators/kubernetes) can be combined with a local Artifact Store
+* only [Model Deployers](https://docs.zenml.io/stacks/model-deployers/) that are running locally, such as the [MLflow Model Deployer](https://docs.zenml.io/stacks/model-deployers/mlflow), can be used in combination with a local Artifact Store
+* [Step Operators](https://docs.zenml.io/stacks/step-operators/): none of the Step Operators can be used in the same stack as a local Artifact Store, given that their very purpose is to run ZenML steps in remote specialized environments
 
 As you transition to a team setting or a production setting, you can replace the local Artifact Store in your stack with one of the other flavors that are better suited for these purposes, with no changes required in your code.
 {% endhint %}

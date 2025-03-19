@@ -102,10 +102,10 @@ As previously mentioned, a workspace is a supercharged ZenML server that you can
 
 Some Pro-only features that you can leverage in your workspace are as follows:
 
-- [Model Control Plane](../../../../docs/book/how-to/model-management-metrics/model-control-plane/register-a-model.md)
-- [Artifact Control Plane](../../how-to/data-artifact-management/handle-data-artifacts/README.md)
-- [Ability to run pipelines from the Dashboard](../../../../docs/book/how-to/trigger-pipelines/use-templates-rest-api.md), 
-- [Create templates out of your pipeline runs](../../../../docs/book/how-to/trigger-pipelines/use-templates-rest-api.md)
+- [Model Control Plane](https://docs.zenml.io/how-to/model-management-metrics/model-control-plane/register-a-model)
+- [Artifact Control Plane](https://docs.zenml.io/how-to/data-artifact-management/handle-data-artifacts)
+- [Ability to run pipelines from the Dashboard](https://docs.zenml.io/docs/book/how-to/trigger-pipelines/use-templates-rest-api), 
+- [Create templates out of your pipeline runs](https://docs.zenml.io/how-to/trigger-pipelines/use-templates-rest-api)
 
 and [more](https://zenml.io/pro)!
 
@@ -116,7 +116,7 @@ Simply visit `<WORKSPACE_URL>/docs` on your browser to see a full list of method
 
 ![Image showing the workspace swagger docs](../../.gitbook/assets/swagger_docs_zenml.png)
 
-Read more about to access the API [here](../../reference/api-reference.md).<!-- For scarf -->
+Read more about to access the API [here](https://docs.zenml.io/reference/api-reference).<!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
 
 

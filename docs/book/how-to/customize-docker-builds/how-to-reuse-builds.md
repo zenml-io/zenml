@@ -27,7 +27,7 @@ You can use the options to specify the configuration file and the stack to use f
 
 ## Reusing builds
 
-As already mentioned, ZenML will find an existing build if it matches your pipeline and stack, by itself. However, you can also force it to use a specific build by [passing the build ID](../../pipeline-development/use-configuration-files/what-can-be-configured.md#build-id) to the `build` parameter of the pipeline configuration.
+As already mentioned, ZenML will find an existing build if it matches your pipeline and stack, by itself. However, you can also force it to use a specific build by [passing the build ID](https://docs.zenml.io/how-to/pipeline-development/use-configuration-files/what-can-be-configured#build-id) to the `build` parameter of the pipeline configuration.
 
 While reusing Docker builds is useful, it can be limited. This is because specifying a custom build when running a pipeline will **not run the code on your client machine** but will use the code **included in the Docker images of the build**. As a consequence, even if you make local code changes, reusing a build will _always_ execute the code bundled in the Docker image, rather than the local code. Therefore, if you would like to reuse a Docker build AND make sure your local code changes are also downloaded into the image, you need to disconnect your code from the build. You can do this either by registering a code repository or by letting ZenML use the artifact store to upload your code.
 
@@ -60,7 +60,7 @@ Once you have registered one or more code repositories, ZenML will check whether
 
 If a [local code repository checkout](#detecting-local-code-repository-checkouts) is detected when running a pipeline, ZenML will store a reference to the current commit for the pipeline run, so you'll be able to know exactly which code was used. Note that this reference is only tracked if your local checkout is clean (i.e. it does not contain any untracked or uncommitted files). This is to ensure that your pipeline is actually running with the exact code stored at the specific code repository commit.
 
-When using [code repositories](../../how-to/project-setup-and-management/setting-up-a-project-repository/connect-your-git-repository.md),
+When using [code repositories](https://docs.zenml.io//how-to/project-setup-and-management/setting-up-a-project-repository/connect-your-git-repository),
 ZenML will by default require the local checkout to have no uncommitted or untracked files
 in order to use the code repository to track the commit and download files.
 

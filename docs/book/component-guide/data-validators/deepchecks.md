@@ -64,7 +64,7 @@ You can visualize Deepchecks results in Jupyter notebooks or view them directly 
 
 ### Warning! Usage in remote orchestrators
 
-The current ZenML version has a limitation in its base Docker image that requires a workaround for _all_ pipelines using Deepchecks with a remote orchestrator (e.g. [Kubeflow](../orchestrators/kubeflow.md) , [Vertex](../orchestrators/vertex.md)). The limitation being that the base Docker image needs to be extended to include binaries that are required by `opencv2`, which is a package that Deepchecks requires.
+The current ZenML version has a limitation in its base Docker image that requires a workaround for _all_ pipelines using Deepchecks with a remote orchestrator (e.g. [Kubeflow](https://docs.zenml.io/stacks/orchestrators/kubeflow) , [Vertex](https://docs.zenml.io/stacks/orchestrators/vertex)). The limitation being that the base Docker image needs to be extended to include binaries that are required by `opencv2`, which is a package that Deepchecks requires.
 
 While these binaries might be available on most operating systems out of the box (and therefore not a problem with the default local orchestrator), we need to tell ZenML to add them to the containerization step when running in remote settings. Here is how:
 

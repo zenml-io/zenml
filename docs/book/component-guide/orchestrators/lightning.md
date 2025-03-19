@@ -41,7 +41,7 @@ To use the Lightning AI orchestrator, you need:
 zenml integration install lightning
 ```
 
-* A [remote artifact store](../artifact-stores/) as part of your stack.
+* A [remote artifact store](https://docs.zenml.io/stacks/artifact-stores/) as part of your stack.
 * [Lightning AI credentials](lightning.md#lightning-ai-credentials)
 
 ### Lightning AI credentials
