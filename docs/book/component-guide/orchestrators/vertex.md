@@ -23,11 +23,7 @@ You should use the Vertex orchestrator if:
 ## How to deploy it
 
 {% hint style="info" %}
-Would you like to skip ahead and deploy a full ZenML cloud stack already,\
-including a Vertex AI orchestrator? Check out the[in-browser stack deployment wizard](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack),\
-the [stack registration wizard](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack),\
-or [the ZenML GCP Terraform module](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform)\
-for a shortcut on how to deploy & register this stack component.
+Would you like to skip ahead and deploy a full ZenML cloud stack already, including a Vertex AI orchestrator? Check out the[in-browser stack deployment wizard](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack), the [stack registration wizard](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack), or [the ZenML GCP Terraform module](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform) for a shortcut on how to deploy & register this stack component.
 {% endhint %}
 
 In order to use a Vertex AI orchestrator, you need to first deploy [ZenML to the cloud](https://docs.zenml.io/getting-started/deploying-zenml/). It would be recommended to deploy ZenML in the same Google Cloud project as where the Vertex infrastructure is deployed, but it is not necessary to do so. You must ensure that you are connected to the remote ZenML server before using this stack component.
@@ -260,8 +256,7 @@ from zenml.config import ResourceSettings
 resource_settings = ResourceSettings(cpu_count=8, memory="16GB")
 ```
 
-To run your pipeline (or some steps of it) on a GPU, you will need to set both\
-a node selector and the GPU count as follows:
+To run your pipeline (or some steps of it) on a GPU, you will need to set both a node selector and the GPU count as follows:
 
 ```python
 from zenml import step, pipeline
@@ -315,9 +310,7 @@ Note that if you wish to use this orchestrator to run steps on a GPU, you will n
 
 When developing ML pipelines that use Vertex AI, the startup time for each step can be significant since Vertex needs to provision new compute resources for each run. To speed up development iterations, you can use Vertex AI's [Persistent Resources](https://cloud.google.com/vertex-ai/docs/training/persistent-resource-overview) feature, which keeps compute resources warm between runs.
 
-To use persistent resources with the Vertex orchestrator, you first need to create a persistent resource using the GCP Cloud UI, or by [following instructions in the GCP docs](https://cloud.google.com/vertex-ai/docs/training/persistent-resource-create).\
-Next, you'll need to configure your orchestrator to run on the persistent resource. This can be done either through the dashboard or CLI in which case it applies to all pipelines that will be\
-run using this orchestrator, or dynamically in code for a specific pipeline or even just single steps.
+To use persistent resources with the Vertex orchestrator, you first need to create a persistent resource using the GCP Cloud UI, or by [following instructions in the GCP docs](https://cloud.google.com/vertex-ai/docs/training/persistent-resource-create). Next, you'll need to configure your orchestrator to run on the persistent resource. This can be done either through the dashboard or CLI in which case it applies to all pipelines that will be run using this orchestrator, or dynamically in code for a specific pipeline or even just single steps.
 
 {% hint style="warning" %}
 Note that a service account with permissions to access the persistent resource is mandatory, so make sure to always include it in the configuration:
@@ -332,8 +325,7 @@ zenml orchestrator register <NAME> -f vertex --custom_job_parameters='{"persiste
 
 #### Configure the orchestrator using the dashboard
 
-Navigate to the `Stacks` section in your ZenML dashboard and either create a new Vertex orchestrator or update an existing one.\
-During the creation/update, set the persistent resource ID and other values in the `custom_job_parameters` attribute.
+Navigate to the `Stacks` section in your ZenML dashboard and either create a new Vertex orchestrator or update an existing one. During the creation/update, set the persistent resource ID and other values in the `custom_job_parameters` attribute.
 
 #### Configure the orchestrator dynamically in code
 

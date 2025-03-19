@@ -27,11 +27,7 @@ The ZenML Sagemaker orchestrator works with [Sagemaker Pipelines](https://aws.am
 ## How to deploy it
 
 {% hint style="info" %}
-Would you like to skip ahead and deploy a full ZenML cloud stack already,\
-including a Sagemaker orchestrator? Check out the[in-browser stack deployment wizard](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack),\
-the [stack registration wizard](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack),\
-or [the ZenML AWS Terraform module](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform)\
-for a shortcut on how to deploy & register this stack component.
+Would you like to skip ahead and deploy a full ZenML cloud stack already, including a Sagemaker orchestrator? Check out the[in-browser stack deployment wizard](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack), the [stack registration wizard](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack), or [the ZenML AWS Terraform module](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform) for a shortcut on how to deploy & register this stack component.
 {% endhint %}
 
 In order to use a Sagemaker AI orchestrator, you need to first deploy [ZenML to the cloud](https://docs.zenml.io/getting-started/deploying-zenml/). It would be recommended to deploy ZenML in the same region as you plan on using for Sagemaker, but it is not necessary to do so. You must ensure that you are connected to the remote ZenML server before using this stack component.
@@ -368,9 +364,7 @@ Note that if you wish to use this orchestrator to run steps on a GPU, you will n
 
 ### Scheduling Pipelines
 
-The SageMaker orchestrator supports running pipelines on a schedule using\
-SageMaker's native scheduling capabilities. You can configure schedules in\
-three ways:
+The SageMaker orchestrator supports running pipelines on a schedule using SageMaker's native scheduling capabilities. You can configure schedules in three ways:
 
 * Using a cron expression
 * Using a fixed interval
@@ -423,21 +417,12 @@ When you deploy a scheduled pipeline, ZenML will:
 3. Enable automatic execution based on the schedule
 
 {% hint style="info" %}
-If you run the same pipeline with a schedule multiple times, the existing\
-schedule will **not** be updated with the new settings. Rather, ZenML will\
-create a new SageMaker pipeline and attach a new schedule to it. The user\
-must manually delete the old pipeline and their attached schedule using the\
-AWS CLI or API (`aws scheduler delete-schedule <SCHEDULE_NAME>`). See details\
-here: [SageMaker Pipeline Schedules](https://docs.aws.amazon.com/sagemaker/latest/dg/pipeline-eventbridge.html)
+If you run the same pipeline with a schedule multiple times, the existing schedule will **not** be updated with the new settings. Rather, ZenML will create a new SageMaker pipeline and attach a new schedule to it. The user must manually delete the old pipeline and their attached schedule using the AWS CLI or API (`aws scheduler delete-schedule <SCHEDULE_NAME>`). See details here: [SageMaker Pipeline Schedules](https://docs.aws.amazon.com/sagemaker/latest/dg/pipeline-eventbridge.html)
 {% endhint %}
 
 #### Required IAM Permissions for schedules
 
-When using scheduled pipelines, you need to ensure your IAM role has the\
-correct permissions and trust relationships. You can set this up by either\
-defining an explicit `scheduler_role` in your orchestrator configuration or\
-you can adjust the role that you are already using on the client side to manage\
-Sagemaker pipelines.
+When using scheduled pipelines, you need to ensure your IAM role has the correct permissions and trust relationships. You can set this up by either defining an explicit `scheduler_role` in your orchestrator configuration or you can adjust the role that you are already using on the client side to manage Sagemaker pipelines.
 
 ```bash
 # When registering the orchestrator
@@ -451,13 +436,9 @@ zenml orchestrator update sagemaker-orchestrator \
 ```
 
 {% hint style="info" %}
-The IAM role that you are using on the client side can come from multiple\
-sources depending on how you configured your orchestrator, such as explicit\
-credentials, a service connector or an implicit authentication.
+The IAM role that you are using on the client side can come from multiple sources depending on how you configured your orchestrator, such as explicit credentials, a service connector or an implicit authentication.
 
-If you are using a service connector, keep in mind, this only works with\
-authentication methods that involve IAM roles (IAM role, Implicit\
-authentication). LINK
+If you are using a service connector, keep in mind, this only works with authentication methods that involve IAM roles (IAM role, Implicit authentication). LINK
 {% endhint %}
 
 This is particularly useful when:
@@ -466,10 +447,7 @@ This is particularly useful when:
 * Your organization's security policies require separate roles for different operations
 * You need to grant specific permissions only to the scheduling operations
 
-1.  **Trust Relationships**\
-    Your `scheduler_role` (or your client role if you did not configure\
-    a `scheduler_role`) needs to be assumed by the EventBridge Scheduler\
-    service:
+1.  **Trust Relationships** Your `scheduler_role` (or your client role if you did not configure a `scheduler_role`) needs to be assumed by the EventBridge Scheduler service:
 
     ```json
     {
@@ -490,9 +468,7 @@ This is particularly useful when:
     ```
 2.  **Required IAM Permissions for the client role**
 
-    In addition to permissions needed to manage pipelines, the role on the\
-    client side also needs the following permissions to create schedules on\
-    EventBridge:
+    In addition to permissions needed to manage pipelines, the role on the client side also needs the following permissions to create schedules on EventBridge:
 
     ```json
     {
@@ -532,12 +508,9 @@ This is particularly useful when:
     * Managing IAM policies required for the scheduled execution
     * Cleanup of resources when schedules are removed
 
-    Without these permissions, the scheduling functionality will fail. Make\
-    sure to configure them before attempting to use scheduled pipelines.
+    Without these permissions, the scheduling functionality will fail. Make sure to configure them before attempting to use scheduled pipelines.
 3.  **Required IAM Permissions for the `scheduler_role`**
 
-    The `scheduler_role` requires the same permissions as the client role (that\
-    would run the pipeline in a non-scheduled case) to launch and manage Sagemaker\
-    jobs. This would be covered by the `AmazonSageMakerFullAccess` permission.
+    The `scheduler_role` requires the same permissions as the client role (that would run the pipeline in a non-scheduled case) to launch and manage Sagemaker jobs. This would be covered by the `AmazonSageMakerFullAccess` permission.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
