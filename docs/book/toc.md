@@ -2,7 +2,10 @@
 
 ## Getting Started
 
-* [Introduction](introduction.md)
+* [Welcome to ZenML](introduction.md)
+  * [For MLOps Platform Engineers](getting-started/introduction/for-mlops-platform-engineers.md)
+  * [For Data Scientists](getting-started/introduction/for-data-scientists.md)
+  * [For ML Engineers](getting-started/introduction/for-ml-engineers.md)
 * [Installation](getting-started/installation.md)
 * [Core concepts](getting-started/core-concepts.md)
 * [System Architecture](getting-started/system-architectures.md)
@@ -13,7 +16,6 @@
   * [Deploy with custom images](getting-started/deploying-zenml/deploy-with-custom-image.md)
   * [Secret management](getting-started/deploying-zenml/secret-management.md)
   * [Custom secret stores](getting-started/deploying-zenml/custom-secret-stores.md)
-
 
 ## How-To
 

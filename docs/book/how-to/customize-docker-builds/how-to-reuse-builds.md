@@ -1,6 +1,5 @@
 ---
-description: >
-  Learn how to reuse builds to speed up your pipeline runs.
+description: Learn how to reuse builds to speed up your pipeline runs.
 ---
 
 # How to reuse builds
@@ -53,20 +52,20 @@ zenml integration install github
 
 Once you have registered one or more code repositories, ZenML will check whether the files you use when running a pipeline are tracked inside one of those code repositories. This happens as follows:
 
-* First, the [source root](./which-files-are-built-into-the-image.md) is computed
+* First, the [source root](which-files-are-built-into-the-image.md) is computed
 * Next, ZenML checks whether this source root directory is included in a local checkout of one of the registered code repositories
 
 ### Tracking code versions for pipeline runs
 
-If a [local code repository checkout](#detecting-local-code-repository-checkouts) is detected when running a pipeline, ZenML will store a reference to the current commit for the pipeline run, so you'll be able to know exactly which code was used. Note that this reference is only tracked if your local checkout is clean (i.e. it does not contain any untracked or uncommitted files). This is to ensure that your pipeline is actually running with the exact code stored at the specific code repository commit.
+If a [local code repository checkout](how-to-reuse-builds.md#detecting-local-code-repository-checkouts) is detected when running a pipeline, ZenML will store a reference to the current commit for the pipeline run, so you'll be able to know exactly which code was used. Note that this reference is only tracked if your local checkout is clean (i.e. it does not contain any untracked or uncommitted files). This is to ensure that your pipeline is actually running with the exact code stored at the specific code repository commit.
 
-When using [code repositories](https://docs.zenml.io//how-to/project-setup-and-management/setting-up-a-project-repository/connect-your-git-repository),
-ZenML will by default require the local checkout to have no uncommitted or untracked files
+When using [code repositories](https://docs.zenml.io/how-to/project-setup-and-management/setting-up-a-project-repository/connect-your-git-repository),\
+ZenML will by default require the local checkout to have no uncommitted or untracked files\
 in order to use the code repository to track the commit and download files.
 
 {% hint style="info" %}
-If you want to ignore untracked files, you can set
-the `ZENML_CODE_REPOSITORY_IGNORE_UNTRACKED_FILES` environment variable to `True`. When doing this, you're responsible that
+If you want to ignore untracked files, you can set\
+the `ZENML_CODE_REPOSITORY_IGNORE_UNTRACKED_FILES` environment variable to `True`. When doing this, you're responsible that\
 the files committed to the repository includes everything necessary to run your pipeline.
 {% endhint %}
 
@@ -75,7 +74,6 @@ the files committed to the repository includes everything necessary to run your 
 It is also important to take some additional points into consideration:
 
 * The file download is only possible if the local checkout is clean (i.e. it does not contain any untracked or uncommitted files) and the latest commit has been pushed to the remote repository. This is necessary as otherwise, the file download inside the Docker container will fail.
-* If you want to disable or enforce the downloading of files, check out [this docs page](./docker-settings-on-a-pipeline.md) for the available options.
-
+* If you want to disable or enforce the downloading of files, check out [this docs page](docker-settings-on-a-pipeline.md) for the available options.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
