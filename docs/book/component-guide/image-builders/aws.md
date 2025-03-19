@@ -17,10 +17,7 @@ You should use the AWS image builder if:
 ### How to deploy it
 
 {% hint style="info" %}
-Would you like to skip ahead and deploy a full ZenML cloud stack already,\
-including the AWS image builder? Check out the[in-browser stack deployment wizard](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack),\
-or [the ZenML AWS Terraform module](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform)\
-for a shortcut on how to deploy & register this stack component.
+Would you like to skip ahead and deploy a full ZenML cloud stack already, including the AWS image builder? Check out the[in-browser stack deployment wizard](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack), or [the ZenML AWS Terraform module](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform) for a shortcut on how to deploy & register this stack component.
 {% endhint %}
 
 ### How to use it
@@ -213,8 +210,7 @@ zenml stack register <STACK_NAME> -i <IMAGE_BUILDER_NAME> ... --set
 
 The AWS Image Builder can be customized to a certain extent by providing additional configuration options when registering the image builder. The following additional attributes can be set:
 
-* `build_image`: The Docker image used to build the Docker image. The default is `bentolor/docker-dind-awscli`,\
-  which is a Docker image that includes both Docker-in-Docker and the AWS CLI.
+* `build_image`: The Docker image used to build the Docker image. The default is `bentolor/docker-dind-awscli`, which is a Docker image that includes both Docker-in-Docker and the AWS CLI.
 
 {% hint style="info" %}
 If you are running into Docker Hub rate-limits, it might be a good idea to copy this image to your own container registry and customize the `build_image` attribute to point to your own image.

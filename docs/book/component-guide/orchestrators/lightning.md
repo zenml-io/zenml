@@ -54,14 +54,9 @@ You will need the following credentials to use the Lightning AI orchestrator:
 * `LIGHTNING_TEAMSPACE`: Your Lightning AI teamspace (optional)
 * `LIGHTNING_ORG`: Your Lightning AI organization (optional)
 
-To find these credentials, log in to your [Lightning AI](https://lightning.ai/)\
-account and click on your avatar in the top right corner. Then click on "Global\
-Settings". There are some tabs you can click on the left hand side. Click on the\
-one that says "Keys" and you will see two ways to get your credentials. The\
-'Login via CLI' will give you the `LIGHTNING_USER_ID` and `LIGHTNING_API_KEY`.
+To find these credentials, log in to your [Lightning AI](https://lightning.ai/) account and click on your avatar in the top right corner. Then click on "Global Settings". There are some tabs you can click on the left hand side. Click on the one that says "Keys" and you will see two ways to get your credentials. The 'Login via CLI' will give you the `LIGHTNING_USER_ID` and `LIGHTNING_API_KEY`.
 
-You can set these credentials as environment variables or you can set them\
-when registering the orchestrator:
+You can set these credentials as environment variables or you can set them when registering the orchestrator:
 
 ```shell
 zenml orchestrator register lightning_orchestrator \
@@ -103,10 +98,7 @@ def my_pipeline():
 ```
 
 {% hint style="info" %}
-ZenML will archive the current zenml repository (the code within the path where\
-you run `zenml init`) and upload it to the Lightning AI studio. For this reason\
-you need make sure that you have run `zenml init` in the same repository root directory where\
-you are running your pipeline.
+ZenML will archive the current zenml repository (the code within the path where you run `zenml init`) and upload it to the Lightning AI studio. For this reason you need make sure that you have run `zenml init` in the same repository root directory where you are running your pipeline.
 {% endhint %}
 
 ![Lightning AI studio VSCode](../../.gitbook/assets/lightning_studio_vscode.png)

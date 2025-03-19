@@ -59,8 +59,7 @@ To run ZenML pipelines on Kubeflow, you'll need to set up a Kubernetes cluster a
 * [Install](https://www.kubeflow.org/docs/components/pipelines/operator-guides/installation/#deploying-kubeflow-pipelines) Kubeflow Pipelines onto your cluster.
 
 {% hint style="info" %}
-Since Kubernetes v1.19, AKS has shifted to [`containerd`](https://docs.microsoft.com/en-us/azure/aks/cluster-configuration#container-settings).\
-However, the workflow controller installed with the Kubeflow installation has `Docker` set as the default runtime. In order to make your pipelines work, you have to change the value to one of the options listed [here](https://argoproj.github.io/argo-workflows/workflow-executors/#workflow-executors), preferably `k8sapi`.
+Since Kubernetes v1.19, AKS has shifted to [`containerd`](https://docs.microsoft.com/en-us/azure/aks/cluster-configuration#container-settings). However, the workflow controller installed with the Kubeflow installation has `Docker` set as the default runtime. In order to make your pipelines work, you have to change the value to one of the options listed [here](https://argoproj.github.io/argo-workflows/workflow-executors/#workflow-executors), preferably `k8sapi`.
 
 This change has to be made by editing the `containerRuntimeExecutor` property of the `ConfigMap` corresponding to the workflow controller. Run the following commands to first know what config map to change and then to edit it to reflect your new value:
 
@@ -169,9 +168,7 @@ We can then register the orchestrator and use it in our active stack. This can b
 2.  if you don't have a Service Connector on hand and you don't want to [register one](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/service-connectors-guide#register-service-connectors), the local Kubernetes `kubectl` client needs to be configured with a configuration context pointing to the remote cluster. The `kubernetes_context` must also be configured with the value of that context:
 
     ```shell
-    zenml orchestrator register <ORCHESTRATOR_NAME> \
-        --flavor=kubeflow \
-        --kubernetes_context=<KUBERNETES_CONTEXT>
+    zenml orchestrator register <ORCHESTRATOR_NAME> --flavor=kubeflow --kubernetes_context=<KUBERNETES_CONTEXT>
 
     # Register a new stack with the orchestrator
     zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> -a <ARTIFACT_STORE_NAME> -c <CONTAINER_REGISTRY_NAME> ... # Add other stack components as needed
