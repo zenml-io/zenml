@@ -14,6 +14,8 @@
 
 """Utility functions and classes to run ZenML steps."""
 
+from __future__ import annotations
+
 import ast
 import contextlib
 import inspect
@@ -25,12 +27,13 @@ from typing import (
     Dict,
     Optional,
     Tuple,
+    TypeVar,
     Union,
 )
 from uuid import UUID
 
 from pydantic import BaseModel
-from typing_extensions import Annotated
+from typing_extensions import Annotated, ParamSpec
 
 from zenml.artifacts.artifact_config import ArtifactConfig
 from zenml.client import Client
@@ -48,6 +51,9 @@ from zenml.utils import settings_utils, source_code_utils, typing_utils
 
 if TYPE_CHECKING:
     from zenml.steps import BaseStep
+
+    P = ParamSpec("P")
+    R = TypeVar("R")
 
 
 logger = get_logger(__name__)
@@ -499,7 +505,7 @@ def log_step_metadata(
 
 
 def run_as_single_step_pipeline(
-    __step: "BaseStep", *args: Any, **kwargs: Any
+    __step: "BaseStep[P,R]", *args: Any, **kwargs: Any
 ) -> Any:
     """Runs the step as a single step pipeline.
 

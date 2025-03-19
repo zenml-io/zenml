@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 """Step decorator function."""
 
+from __future__ import annotations
+
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -26,6 +28,8 @@ from typing import (
     Union,
     overload,
 )
+
+from typing_extensions import ParamSpec
 
 from zenml.logger import get_logger
 
@@ -46,14 +50,15 @@ if TYPE_CHECKING:
         Mapping[str, MaterializerClassOrSource],
         Mapping[str, Sequence[MaterializerClassOrSource]],
     ]
-    F = TypeVar("F", bound=Callable[..., Any])
+    P = ParamSpec("P")
+    R = TypeVar("R")
 
 
 logger = get_logger(__name__)
 
 
 @overload
-def step(_func: "F") -> "BaseStep": ...
+def step(_func: "Callable[P, R]") -> "BaseStep[P, R]": ...
 
 
 @overload
@@ -74,11 +79,11 @@ def step(
     model: Optional["Model"] = None,
     retry: Optional["StepRetryConfig"] = None,
     substitutions: Optional[Dict[str, str]] = None,
-) -> Callable[["F"], "BaseStep"]: ...
+) -> Callable[["Callable[P, R]"], "BaseStep[P,R]"]: ...
 
 
 def step(
-    _func: Optional["F"] = None,
+    _func: Optional["Callable[P, R]"] = None,
     *,
     name: Optional[str] = None,
     enable_cache: Optional[bool] = None,
@@ -95,7 +100,7 @@ def step(
     model: Optional["Model"] = None,
     retry: Optional["StepRetryConfig"] = None,
     substitutions: Optional[Dict[str, str]] = None,
-) -> Union["BaseStep", Callable[["F"], "BaseStep"]]:
+) -> Union["BaseStep[P,R]", Callable[["Callable[P, R]"], "BaseStep[P,R]"]]:
     """Decorator to create a ZenML step.
 
     Args:
@@ -132,10 +137,10 @@ def step(
         The step instance.
     """
 
-    def inner_decorator(func: "F") -> "BaseStep":
+    def inner_decorator(func: "Callable[P, R]") -> "BaseStep[P,R]":
         from zenml.steps.decorated_step import _DecoratedStep
 
-        class_: Type["BaseStep"] = type(
+        class_: Type["BaseStep[P,R]"] = type(
             func.__name__,
             (_DecoratedStep,),
             {

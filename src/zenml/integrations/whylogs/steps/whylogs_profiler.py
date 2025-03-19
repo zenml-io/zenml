@@ -13,8 +13,10 @@
 #  permissions and limitations under the License.
 """Implementation of the whylogs profiler step."""
 
+from __future__ import annotations
+
 import datetime
-from typing import Optional, cast
+from typing import Any, Optional, cast
 
 import pandas as pd
 from whylogs.core import DatasetProfileView  # type: ignore
@@ -58,7 +60,7 @@ def get_whylogs_profiler_step(
     dataset_timestamp: Optional[datetime.datetime] = None,
     dataset_id: Optional[str] = None,
     enable_whylabs: bool = True,
-) -> BaseStep:
+) -> BaseStep[..., Any]:
     """Shortcut function to create a new instance of the WhylogsProfilerStep step.
 
     The returned WhylogsProfilerStep can be used in a pipeline to generate a
