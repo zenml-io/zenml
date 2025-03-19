@@ -79,7 +79,7 @@ The above components interact with other MLOps stack components, secrets, and da
 the following scenarios described below.
 
 {% hint style="info" %}
-To learn more about the core concepts for ZenML Pro, go [here](../getting-started/zenml-pro/core-concepts.md)
+To learn more about the core concepts for ZenML Pro, go [here](https://docs.zenml.io/pro/core-concepts)
 {% endhint %}
 
 ### ZenML Pro SaaS Architecture
