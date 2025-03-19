@@ -35,15 +35,16 @@ def extract_relative_links(file_path: str) -> List[Tuple[str, int, str]]:
         lines = file.readlines()
 
     # Regular expressions for different types of markdown links
-    # Only match relative links that don't start with http/https/ftp
+    # Only match relative links that don't start with http/https/ftp/mailto
     inline_link_pattern = re.compile(
-        r"\[(?:[^\]]+)\]\(((?!https?:|ftp:)[^)]+)\)"
+        r"\[(?:[^\]]+)\]\(((?!https?:|ftp:|mailto:)[^)]+)\)"
     )
     reference_link_def_pattern = re.compile(
-        r"^\s*\[(?:[^\]]+)\]:\s*((?!https?:|ftp:)\S+)"
+        r"^\s*\[(?:[^\]]+)\]:\s*((?!https?:|ftp:|mailto:)\S+)"
     )
     html_link_pattern = re.compile(
-        r'<a\s+(?:[^>]*?)href=["\']((?!https?:|ftp:).*?)["\']', re.IGNORECASE
+        r'<a\s+(?:[^>]*?)href=["\']((?!https?:|ftp:|mailto:).*?)["\']',
+        re.IGNORECASE,
     )
 
     for line_num, line in enumerate(lines, 1):
@@ -157,6 +158,7 @@ def check_relative_links(dir_path: str) -> bool:
                     ".svg",
                     "assets",
                     ".gitbook",
+                    "mailto:",
                 ]
             ):
                 continue
