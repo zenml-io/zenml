@@ -12,7 +12,7 @@ You should use the AWS image builder if:
 
 * you're **unable** to install or use [Docker](https://www.docker.com) on your client machine.
 * you're already using AWS.
-* your stack is mainly composed of other AWS components such as the [S3 Artifact Store](../artifact-stores/s3.md) or the [SageMaker Orchestrator](../orchestrators/sagemaker.md).
+* your stack is mainly composed of other AWS components such as the [S3 Artifact Store](https://docs.zenml.io/stacks/artifact-stores/s3) or the [SageMaker Orchestrator](https://docs.zenml.io/stacks/orchestrators/sagemaker).
 
 ### How to deploy it
 
@@ -32,8 +32,8 @@ To use the AWS image builder, you need:
     ```shell
     zenml integration install aws
     ```
-* An [S3 Artifact Store](../artifact-stores/s3.md) where the build context will be uploaded, so AWS CodeBuild can access it.
-* Recommended: an [AWS container registry](../container-registries/aws.md) where the built image will be pushed. The AWS CodeBuild service can also work with other container registries, but [explicit authentication](aws.md#authentication-methods) must be enabled in this case.
+* An [S3 Artifact Store](https://docs.zenml.io/stacks/artifact-stores/s3) where the build context will be uploaded, so AWS CodeBuild can access it.
+* Recommended: an [AWS container registry](https://docs.zenml.io/stacks/container-registries/aws) where the built image will be pushed. The AWS CodeBuild service can also work with other container registries, but [explicit authentication](aws.md#authentication-methods) must be enabled in this case.
 * An [AWS CodeBuild project](https://aws.amazon.com/codebuild) created in the AWS account and region where you want to build the Docker images, preferably in the same region as the ECR container registry where images will be pushed (if applicable). The CodeBuild project configuration is largely irrelevant, as ZenML will override most of the default settings for each build according to the [AWS Docker build guide](https://docs.aws.amazon.com/codebuild/latest/userguide/sample-docker-section.html). Some example default configuration values are:
   * **Source Type**: `Amazon S3`
   * **Bucket**: The same S3 bucket used by the ZenML S3 Artifact Store.

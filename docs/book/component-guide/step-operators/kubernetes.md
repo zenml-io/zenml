@@ -27,8 +27,8 @@ To use the Kubernetes step operator, we need:
     zenml integration install kubernetes
     ```
 * A Kubernetes cluster [deployed](kubernetes.md#how-to-deploy-it)
-* Either [Docker](https://www.docker.com) installed and running or a remote [image builder](../image-builders/) in your stack.
-* A [remote artifact store](../artifact-stores/) as part of your stack. This is needed so that both your orchestration environment and Kubernetes Pods can read and write step artifacts. Check out the documentation page of the artifact store you want to use for more information on how to set that up and configure authentication for it.
+* Either [Docker](https://www.docker.com) installed and running or a remote [image builder](https://docs.zenml.io/stacks/image-builders/) in your stack.
+* A [remote artifact store](https://docs.zenml.io/stacks/artifact-stores/) as part of your stack. This is needed so that both your orchestration environment and Kubernetes Pods can read and write step artifacts. Check out the documentation page of the artifact store you want to use for more information on how to set that up and configure authentication for it.
 
 {% hint style="info" %}
 It is recommended that you set up [a Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/service-connectors-guide) and use it to connect the Kubernetes step operator to the Kubernetes cluster, especially if you are using a Kubernetes cluster managed by a cloud provider like AWS, GCP or Azure.

@@ -49,8 +49,8 @@ zenml integration install aws s3
 ```
 
 * [Docker](https://www.docker.com) installed and running.
-* A [remote artifact store](../artifact-stores/) as part of your stack (configured with an `authentication_secret` attribute).
-* A [remote container registry](../container-registries/) as part of your stack.
+* A [remote artifact store](https://docs.zenml.io/stacks/artifact-stores/) as part of your stack (configured with an `authentication_secret` attribute).
+* A [remote container registry](https://docs.zenml.io/stacks/container-registries/) as part of your stack.
 * An IAM role or user with [an `AmazonSageMakerFullAccess` managed policy](https://docs.aws.amazon.com/sagemaker/latest/dg/security-iam-awsmanpol.html) applied to it as well as `sagemaker.amazonaws.com` added as a Principal Service. Full details on these permissions can be found [here](https://docs.aws.amazon.com/sagemaker/latest/dg/sagemaker-roles.html) or use the ZenML recipe (when available) which will set up the necessary permissions for you.
 * The local client (whoever is running the pipeline) will also have to have the necessary permissions or roles to be able to launch Sagemaker jobs. (This would be covered by the `AmazonSageMakerFullAccess` policy suggested above.)
 * If you want to use schedules, you also need to set up the correct roles, permissions and policies covered [here](sagemaker.md#required-iam-permissions-for-schedules).

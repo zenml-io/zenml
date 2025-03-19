@@ -11,9 +11,9 @@ machine-learning pipelines and steps can be executed in remote environments.
 ### When to use it
 
 The image builder is needed whenever other components of your stack need to build container images. Currently, this is\
-the case for most of ZenML's remote [orchestrators](../orchestrators/)\
-, [step operators](../step-operators/), and\
-some [model deployers](../model-deployers/). These containerize your pipeline code and therefore\
+the case for most of ZenML's remote [orchestrators](https://docs.zenml.io/stacks/orchestrators/)\
+, [step operators](https://docs.zenml.io/stacks/step-operators/), and\
+some [model deployers](https://docs.zenml.io/stacks/model-deployers/). These containerize your pipeline code and therefore\
 require an image builder to build [Docker](https://www.docker.com/) images.
 
 ### Image Builder Flavors

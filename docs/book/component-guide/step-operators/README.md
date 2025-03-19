@@ -10,7 +10,7 @@ optimized for certain workloads. These specialized environments can give your st
 distributed processing frameworks like [Spark](https://spark.apache.org/).
 
 {% hint style="info" %}
-**Comparison to orchestrators:** The [orchestrator](../orchestrators/) is a mandatory stack component\
+**Comparison to orchestrators:** The [orchestrator](https://docs.zenml.io/stacks/orchestrators/) is a mandatory stack component\
 that is responsible for executing all steps of a pipeline in the correct order and providing additional features such as\
 scheduling pipeline runs. The step operator on the other hand is used to only execute individual steps of the pipeline\
 in a separate environment in case the environment provided by the orchestrator is not feasible.
@@ -19,9 +19,9 @@ in a separate environment in case the environment provided by the orchestrator i
 ### When to use it
 
 A step operator should be used if one or more steps of a pipeline require resources that are not available in the\
-runtime environments provided by the [orchestrator](../orchestrators/). An example would be a step that\
+runtime environments provided by the [orchestrator](https://docs.zenml.io/stacks/orchestrators/). An example would be a step that\
 trains a computer vision model and requires a GPU to run in a reasonable time, combined with\
-a [Kubeflow orchestrator](../orchestrators/kubeflow.md) running on a Kubernetes cluster that does not contain any GPU\
+a [Kubeflow orchestrator](https://docs.zenml.io/stacks/orchestrators/kubeflow) running on a Kubernetes cluster that does not contain any GPU\
 nodes. In that case, it makes sense to include a step operator like [SageMaker](sagemaker.md), [Vertex](vertex.md),\
 or [AzureML](azureml.md) to execute the training step with a GPU.
 

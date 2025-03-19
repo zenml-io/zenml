@@ -12,9 +12,9 @@ environment that allows code to run in an isolated manner.
 ### When to use it
 
 The container registry is needed whenever other components of your stack need to push or pull container images.\
-Currently, this is the case for most of ZenML's remote [orchestrators](../orchestrators/)\
-, [step operators](../step-operators/), and\
-some [model deployers](../model-deployers/). These containerize your pipeline code and therefore\
+Currently, this is the case for most of ZenML's remote [orchestrators](https://docs.zenml.io/stacks/orchestrators/)\
+, [step operators](https://docs.zenml.io/stacks/step-operators/), and\
+some [model deployers](https://docs.zenml.io/stacks/model-deployers/). These containerize your pipeline code and therefore\
 require a container registry to store the resulting [Docker](https://www.docker.com/) images. Take a look at the\
 documentation page of the component you want to use in your stack to see if it requires a container registry or even a\
 specific container registry flavor.

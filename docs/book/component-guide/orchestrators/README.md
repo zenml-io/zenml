@@ -78,6 +78,6 @@ If your steps require the orchestrator to execute them on specific hardware, you
 as described [here](https://docs.zenml.io/how-to/pipeline-development/use-configuration-files/runtime-configuration).
 
 If your orchestrator of choice or the underlying hardware doesn't support this, you can also take a look\
-at [step operators](../step-operators/).
+at [step operators](https://docs.zenml.io/stacks/step-operators/).
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

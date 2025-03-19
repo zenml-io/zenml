@@ -26,7 +26,7 @@ You should use the Kubernetes orchestrator if:
 
 ### How to deploy it
 
-The Kubernetes orchestrator requires a Kubernetes cluster in order to run. There are many ways to deploy a Kubernetes cluster using different cloud providers or on your custom infrastructure, and we can't possibly cover all of them, but you can check out our [our cloud guide](../../user-guide/cloud-guide/cloud-guide.md).
+The Kubernetes orchestrator requires a Kubernetes cluster in order to run. There are many ways to deploy a Kubernetes cluster using different cloud providers or on your custom infrastructure, and we can't possibly cover all of them, but you can check out our [our cloud guide](https://docs.zenml.io/reference/cloud-guide).
 
 If the above Kubernetes cluster is deployed remotely on the cloud, then another pre-requisite to use this orchestrator would be to deploy and connect to a [remote ZenML server](https://docs.zenml.io/getting-started/deploying-zenml/).
 
@@ -41,8 +41,8 @@ To use the Kubernetes orchestrator, we need:
     ```
 * [Docker](https://www.docker.com) installed and running.
 * [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) installed.
-* A [remote artifact store](../artifact-stores/) as part of your stack.
-* A [remote container registry](../container-registries/) as part of your stack.
+* A [remote artifact store](https://docs.zenml.io/stacks/artifact-stores/) as part of your stack.
+* A [remote container registry](https://docs.zenml.io/stacks/container-registries/) as part of your stack.
 * A Kubernetes cluster [deployed](kubernetes.md#how-to-deploy-it)
 * [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) installed and the name of the Kubernetes configuration context which points to the target cluster (i.e. run`kubectl config get-contexts` to see a list of available contexts) . This is optional (see below).
 

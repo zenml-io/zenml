@@ -28,7 +28,7 @@ zenml integration install mlflow -y
 
 The MLflow Experiment Tracker can be configured to accommodate the following [MLflow deployment scenarios](https://mlflow.org/docs/latest/tracking.html#common-setups):
 
-* [Localhost (default)](https://mlflow.org/docs/latest/tracking.html#common-setups) and [Local Tracking with Local Database](https://mlflow.org/docs/latest/tracking/tutorials/local-database.html): This scenario requires that you use a [local Artifact Store](../artifact-stores/local.md) alongside the MLflow Experiment Tracker in your ZenML stack. The local Artifact Store comes with limitations regarding what other types of components you can use in the same stack. This scenario should only be used to run ZenML locally and is not suitable for collaborative and production settings. No parameters need to be supplied when configuring the MLflow Experiment Tracker, e.g:
+* [Localhost (default)](https://mlflow.org/docs/latest/tracking.html#common-setups) and [Local Tracking with Local Database](https://mlflow.org/docs/latest/tracking/tutorials/local-database.html): This scenario requires that you use a [local Artifact Store](https://docs.zenml.io/stacks/artifact-stores/local) alongside the MLflow Experiment Tracker in your ZenML stack. The local Artifact Store comes with limitations regarding what other types of components you can use in the same stack. This scenario should only be used to run ZenML locally and is not suitable for collaborative and production settings. No parameters need to be supplied when configuring the MLflow Experiment Tracker, e.g:
 
 ```shell
 # Register the MLflow experiment tracker

@@ -149,8 +149,8 @@ When using the Airflow orchestrator with a remote deployment, you'll additionall
   the [deployment guide](https://docs.zenml.io/getting-started/deploying-zenml/)\
   for more information.
 * A deployed Airflow server. See the [deployment section](airflow.md#how-to-deploy-it) for more information.
-* A [remote artifact store](../artifact-stores/) as part of your stack.
-* A [remote container registry](../container-registries/) as part of your stack.
+* A [remote artifact store](https://docs.zenml.io/stacks/artifact-stores/) as part of your stack.
+* A [remote container registry](https://docs.zenml.io/stacks/container-registries/) as part of your stack.
 
 In the remote case, the Airflow orchestrator works differently than other ZenML orchestrators. Executing a python file\
 which runs a pipeline by calling `pipeline.run()` will not actually run the pipeline, but instead will create a `.zip`\
