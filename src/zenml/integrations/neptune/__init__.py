@@ -46,5 +46,3 @@ class NeptuneIntegration(Integration):
             NeptuneExperimentTrackerFlavor,
         ]
 
-
-NeptuneIntegration.check_installation()  # this checks if the requirements are installed

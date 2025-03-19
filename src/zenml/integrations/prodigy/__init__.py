@@ -45,4 +45,3 @@ class ProdigyIntegration(Integration):
         return [ProdigyAnnotatorFlavor]
 
 
-ProdigyIntegration.check_installation()

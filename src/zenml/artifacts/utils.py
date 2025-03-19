@@ -35,9 +35,7 @@ from zenml.artifacts.preexisting_data_materializer import (
     PreexistingDataMaterializer,
 )
 from zenml.client import Client
-from zenml.constants import (
-    MODEL_METADATA_YAML_FILE_NAME,
-)
+from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
 from zenml.enums import (
     ArtifactSaveType,
     ArtifactType,
@@ -45,10 +43,7 @@ from zenml.enums import (
     StackComponentType,
     VisualizationType,
 )
-from zenml.exceptions import (
-    DoesNotExistException,
-    StepContextError,
-)
+from zenml.exceptions import DoesNotExistException, StepContextError
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import validate_metadata
@@ -76,6 +71,7 @@ if TYPE_CHECKING:
     MaterializerClassOrSource = Union[str, Source, Type[BaseMaterializer]]
 
 logger = get_logger(__name__)
+
 
 # ----------
 # Public API
@@ -320,7 +316,7 @@ def register_artifact(
         The saved artifact response.
 
     Raises:
-        FileNotFoundError: If the folder URI is outside of the artifact store
+        FileNotFoundError: If the folder URI is outside the artifact store
             bounds.
     """
     client = Client()

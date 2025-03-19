@@ -41,4 +41,3 @@ class PigeonIntegration(Integration):
         return [PigeonAnnotatorFlavor]
 
 
-PigeonIntegration.check_installation()

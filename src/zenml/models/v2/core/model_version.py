@@ -40,14 +40,13 @@ from zenml.models.v2.base.scoped import (
     ProjectScopedResponseBody,
     ProjectScopedResponseMetadata,
     ProjectScopedResponseResources,
+    RunMetadataFilterMixin,
     TaggableFilter,
 )
 from zenml.models.v2.core.service import ServiceResponse
 from zenml.models.v2.core.tag import TagResponse
 
 if TYPE_CHECKING:
-    from sqlalchemy.sql.elements import ColumnElement
-
     from zenml.model.model import Model
     from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
     from zenml.models.v2.core.model import ModelResponse
@@ -566,23 +565,32 @@ class ModelVersionResponse(
 # ------------------ Filter Model ------------------
 
 
-class ModelVersionFilter(ProjectScopedFilter, TaggableFilter):
+class ModelVersionFilter(
+    ProjectScopedFilter, TaggableFilter, RunMetadataFilterMixin
+):
     """Filter model for model versions."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
         *TaggableFilter.FILTER_EXCLUDE_FIELDS,
+        *RunMetadataFilterMixin.FILTER_EXCLUDE_FIELDS,
         "model",
-        "run_metadata",
     ]
     CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
         *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
         *TaggableFilter.CUSTOM_SORTING_OPTIONS,
+        *RunMetadataFilterMixin.CUSTOM_SORTING_OPTIONS,
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
         *TaggableFilter.CLI_EXCLUDE_FIELDS,
+        *RunMetadataFilterMixin.CLI_EXCLUDE_FIELDS,
         "model",
+    ]
+    API_MULTI_INPUT_PARAMS: ClassVar[List[str]] = [
+        *ProjectScopedFilter.API_MULTI_INPUT_PARAMS,
+        *TaggableFilter.API_MULTI_INPUT_PARAMS,
+        *RunMetadataFilterMixin.API_MULTI_INPUT_PARAMS,
     ]
 
     name: Optional[str] = Field(
@@ -598,10 +606,6 @@ class ModelVersionFilter(ProjectScopedFilter, TaggableFilter):
         default=None,
         union_mode="left_to_right",
     )
-    run_metadata: Optional[Dict[str, str]] = Field(
-        default=None,
-        description="The run_metadata to filter the model versions by.",
-    )
     model: Optional[Union[str, UUID]] = Field(
         default=None,
         description="The name or ID of the model which the search is scoped "
@@ -610,48 +614,6 @@ class ModelVersionFilter(ProjectScopedFilter, TaggableFilter):
         "logical_operator field.",
         union_mode="left_to_right",
     )
-
-    def get_custom_filters(
-        self, table: Type["AnySchema"]
-    ) -> List["ColumnElement[bool]"]:
-        """Get custom filters.
-
-        Args:
-            table: The query table.
-
-        Returns:
-            A list of custom filters.
-        """
-        custom_filters = super().get_custom_filters(table)
-
-        from sqlmodel import and_
-
-        from zenml.zen_stores.schemas import (
-            ModelVersionSchema,
-            RunMetadataResourceSchema,
-            RunMetadataSchema,
-        )
-
-        if self.run_metadata is not None:
-            from zenml.enums import MetadataResourceTypes
-
-            for key, value in self.run_metadata.items():
-                additional_filter = and_(
-                    RunMetadataResourceSchema.resource_id
-                    == ModelVersionSchema.id,
-                    RunMetadataResourceSchema.resource_type
-                    == MetadataResourceTypes.MODEL_VERSION,
-                    RunMetadataResourceSchema.run_metadata_id
-                    == RunMetadataSchema.id,
-                    self.generate_custom_query_conditions_for_column(
-                        value=value,
-                        table=RunMetadataSchema,
-                        column="value",
-                    ),
-                )
-                custom_filters.append(additional_filter)
-
-        return custom_filters
 
     def apply_filter(
         self,

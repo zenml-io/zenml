@@ -48,5 +48,3 @@ class KubernetesIntegration(Integration):
 
         return [KubernetesOrchestratorFlavor, KubernetesStepOperatorFlavor]
 
-
-KubernetesIntegration.check_installation()

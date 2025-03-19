@@ -58,7 +58,7 @@ from zenml.constants import (
     FILTERING_DATETIME_FORMAT,
     IS_DEBUG_ENV,
 )
-from zenml.enums import GenericFilterOps, StackComponentType
+from zenml.enums import GenericFilterOps, ServiceState, StackComponentType
 from zenml.logger import get_logger
 from zenml.model_registries.base_model_registry import (
     RegisteredModel,
@@ -75,7 +75,7 @@ from zenml.models import (
     UUIDFilter,
 )
 from zenml.models.v2.base.filter import FilterGenerator
-from zenml.services import BaseService, ServiceState
+from zenml.services import BaseService
 from zenml.stack import StackComponent
 from zenml.stack.flavor import Flavor
 from zenml.stack.stack_component import StackComponentConfig
@@ -1199,7 +1199,7 @@ def get_service_state_emoji(state: "ServiceState") -> str:
     Returns:
         String representing the emoji.
     """
-    from zenml.services.service_status import ServiceState
+    from zenml.enums import ServiceState
 
     if state == ServiceState.ACTIVE:
         return ":white_check_mark:"

@@ -30,6 +30,7 @@ from zenml.integrations.mlflow.experiment_trackers.mlflow_experiment_tracker imp
     MLFlowExperimentTracker,
 )
 from zenml.logger import get_logger
+from zenml.models.v2.misc.service import ServiceType
 from zenml.services import (
     HTTPEndpointHealthMonitor,
     HTTPEndpointHealthMonitorConfig,
@@ -38,7 +39,6 @@ from zenml.services import (
     LocalDaemonServiceEndpoint,
     LocalDaemonServiceEndpointConfig,
     ServiceEndpointProtocol,
-    ServiceType,
 )
 from zenml.services.service import BaseDeploymentService
 

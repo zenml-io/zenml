@@ -45,5 +45,3 @@ class FacetsIntegration(Integration):
         return cls.REQUIREMENTS + \
             PandasIntegration.get_requirements(target_os=target_os)
 
-
-FacetsIntegration.check_installation()

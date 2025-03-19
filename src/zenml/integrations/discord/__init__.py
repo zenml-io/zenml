@@ -44,5 +44,3 @@ class DiscordIntegration(Integration):
 
         return [DiscordAlerterFlavor]
 
-
-DiscordIntegration.check_installation()

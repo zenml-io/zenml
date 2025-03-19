@@ -43,4 +43,3 @@ class ModalIntegration(Integration):
         return [ModalStepOperatorFlavor]
 
 
-ModalIntegration.check_installation()

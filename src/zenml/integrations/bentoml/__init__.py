@@ -53,5 +53,3 @@ class BentoMLIntegration(Integration):
 
         return [BentoMLModelDeployerFlavor]
 
-
-BentoMLIntegration.check_installation()

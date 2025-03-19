@@ -42,5 +42,3 @@ class LabelStudioIntegration(Integration):
 
         return [LabelStudioAnnotatorFlavor]
 
-
-LabelStudioIntegration.check_installation()

@@ -27,12 +27,14 @@ from zenml.cli.login import login, logout
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
-from zenml.enums import CliCategories, StoreType
+from zenml.enums import CliCategories, ServiceState, StoreType
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
 from zenml.login.credentials import ServerCredentials, ServerType
-from zenml.services.service_status import ServiceState
-from zenml.zen_server.utils import connected_to_local_server, get_local_server
+from zenml.utils.server_utils import (
+    connected_to_local_server,
+    get_local_server,
+)
 
 logger = get_logger(__name__)
 
@@ -402,7 +404,7 @@ def connect(
             "filesystem and is no longer supported. The web login workflow will "
             "be used instead. An alternative for non-interactive environments "
             "is to create and use a service account API key (see "
-            "https://docs.zenml.io/how-to/connecting-to-zenml/connect-with-a-service-account "
+            "https://docs.zenml.io/how-to/manage-zenml-server/connecting-to-zenml/connect-with-a-service-account "
             "for more information)."
         )
 

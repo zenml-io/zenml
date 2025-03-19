@@ -85,5 +85,3 @@ class DeepchecksIntegration(Integration):
 
         return [DeepchecksDataValidatorFlavor]
 
-
-DeepchecksIntegration.check_installation()
