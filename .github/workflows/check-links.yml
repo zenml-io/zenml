@@ -3,8 +3,11 @@ name: Check Links
 on:
   workflow_dispatch:
   push:
+    branches: [main]
+    paths-ignore: [src/**, tests/**, '**.py']
   pull_request:
     types: [opened, synchronize, reopened]
+    paths-ignore: [src/**, tests/**, '**.py']
 concurrency:
   # New commit on branch cancels running workflows of the same branch
   group: ${{ github.workflow }}-${{ github.ref }}
