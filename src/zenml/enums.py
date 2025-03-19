@@ -405,6 +405,7 @@ class OnboardingStep(StrEnum):
     """All onboarding steps."""
 
     DEVICE_VERIFIED = "device_verified"
+    PROJECT_CREATED = "project_created"
     PIPELINE_RUN = "pipeline_run"
     STARTER_SETUP_COMPLETED = "starter_setup_completed"
     STACK_WITH_REMOTE_ORCHESTRATOR_CREATED = (
@@ -422,3 +423,14 @@ class StackDeploymentProvider(StrEnum):
     AWS = "aws"
     GCP = "gcp"
     AZURE = "azure"
+
+
+class ServiceState(StrEnum):
+    """Possible states for the service and service endpoint."""
+
+    INACTIVE = "inactive"
+    ACTIVE = "active"
+    PENDING_STARTUP = "pending_startup"
+    PENDING_SHUTDOWN = "pending_shutdown"
+    ERROR = "error"
+    SCALED_TO_ZERO = "scaled_to_zero"

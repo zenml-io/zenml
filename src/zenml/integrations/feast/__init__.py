@@ -60,5 +60,3 @@ class FeastIntegration(Integration):
         return cls.REQUIREMENTS + \
             PandasIntegration.get_requirements(target_os=target_os)
 
-
-FeastIntegration.check_installation()

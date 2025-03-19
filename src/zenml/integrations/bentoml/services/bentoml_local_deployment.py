@@ -26,6 +26,7 @@ from zenml.integrations.bentoml.constants import (
     BENTOML_PREDICTION_URL_PATH,
 )
 from zenml.logger import get_logger
+from zenml.models.v2.misc.service import ServiceType
 from zenml.services import (
     HTTPEndpointHealthMonitor,
     HTTPEndpointHealthMonitorConfig,
@@ -34,7 +35,6 @@ from zenml.services import (
     LocalDaemonServiceEndpoint,
     LocalDaemonServiceEndpointConfig,
     ServiceEndpointProtocol,
-    ServiceType,
 )
 from zenml.services.service import BaseDeploymentService
 

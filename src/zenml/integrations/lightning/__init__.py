@@ -44,5 +44,3 @@ class LightningIntegration(Integration):
         return [
             LightningOrchestratorFlavor,
         ]
-
-LightningIntegration.check_installation()

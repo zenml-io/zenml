@@ -49,8 +49,8 @@ from zenml.integrations.registry import integration_registry
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils.io_utils import copy_dir, get_global_config_directory
+from zenml.utils.server_utils import get_local_server
 from zenml.utils.yaml_utils import write_yaml
-from zenml.zen_server.utils import get_local_server
 
 logger = get_logger(__name__)
 # WT_SESSION is a Windows Terminal specific environment variable. If it
@@ -264,7 +264,7 @@ def init(
         f"will only take effect when you're running ZenML from the initialized "
         f"repository root, or from a subdirectory. For more information on "
         f"repositories and configurations, please visit "
-        f"https://docs.zenml.io/user-guide/production-guide/understand-stacks."
+        f"https://docs.zenml.io/user-guides/production-guide/understand-stacks."
     )
 
 

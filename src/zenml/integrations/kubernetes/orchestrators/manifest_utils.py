@@ -13,9 +13,10 @@
 #  permissions and limitations under the License.
 """Utility functions for building manifests for k8s pods."""
 
+import base64
 import os
 import sys
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Mapping, Optional
 
 from kubernetes import client as k8s_client
 
@@ -389,4 +390,35 @@ def build_namespace_manifest(namespace: str) -> Dict[str, Any]:
         "metadata": {
             "name": namespace,
         },
+    }
+
+
+def build_secret_manifest(
+    name: str,
+    data: Mapping[str, Optional[str]],
+    secret_type: str = "Opaque",
+) -> Dict[str, Any]:
+    """Builds a Kubernetes secret manifest.
+
+    Args:
+        name: Name of the secret.
+        data: The secret data.
+        secret_type: The secret type.
+
+    Returns:
+        The secret manifest.
+    """
+    encoded_data = {
+        key: base64.b64encode(value.encode()).decode() if value else None
+        for key, value in data.items()
+    }
+
+    return {
+        "apiVersion": "v1",
+        "kind": "Secret",
+        "metadata": {
+            "name": name,
+        },
+        "type": secret_type,
+        "data": encoded_data,
     }

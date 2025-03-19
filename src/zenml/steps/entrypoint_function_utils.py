@@ -174,7 +174,7 @@ class EntrypointFunctionDefinition(NamedTuple):
                 f"'{key}' is not JSON serializable and can not be passed as "
                 "a parameter. This input can either be provided by the "
                 "output of another step or as an external artifact: "
-                "https://docs.zenml.io/user-guide/starter-guide/manage-artifacts#managing-artifacts-not-produced-by-zenml-pipelines"
+                "https://docs.zenml.io/user-guides/starter-guide/manage-artifacts#managing-artifacts-not-produced-by-zenml-pipelines"
             )
 
         try:

@@ -38,5 +38,3 @@ class BitbucketIntegration(Integration):
 
         return [BitbucketWebhookEventSourceFlavor]
 
-
-BitbucketIntegration.check_installation()

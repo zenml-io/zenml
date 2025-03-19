@@ -24,4 +24,3 @@ class OpenAIIntegration(Integration):
     REQUIREMENTS = ["openai>=1.0.0"]
 
 
-OpenAIIntegration.check_installation()

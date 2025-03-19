@@ -29,6 +29,7 @@ from zenml.models.v2.base.base import (
 )
 from zenml.models.v2.base.scoped import (
     TaggableFilter,
+    RunMetadataFilterMixin,
     UserScopedRequest,
     UserScopedFilter,
     UserScopedResponse,
@@ -389,6 +390,7 @@ from zenml.models.v2.misc.server_models import (
     ServerDatabaseType,
     ServerDeploymentType,
 )
+from zenml.models.v2.misc.service import ServiceType
 from zenml.models.v2.core.server_settings import (
     ServerActivationRequest,
     ServerSettingsResponse,
@@ -516,6 +518,7 @@ __all__ = [
     "NumericFilter",
     "UUIDFilter",
     "TaggableFilter",
+    "RunMetadataFilterMixin",
     "Page",
     # V2 Core
     "ActionFilter",
@@ -760,6 +763,7 @@ __all__ = [
     "ServerDatabaseType",
     "ServerDeploymentType",
     "ServerStatistics",
+    "ServiceType",
     "StackDeploymentConfig",
     "StackDeploymentInfo",
     "OAuthDeviceAuthorizationRequest",

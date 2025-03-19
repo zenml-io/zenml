@@ -80,5 +80,3 @@ class AzureIntegration(Integration):
             AzureMLOrchestratorFlavor,
         ]
 
-
-AzureIntegration.check_installation()

@@ -33,5 +33,3 @@ class NeuralProphetIntegration(Integration):
         """Activates the integration."""
         from zenml.integrations.neural_prophet import materializers  # noqa
 
-
-NeuralProphetIntegration.check_installation()
