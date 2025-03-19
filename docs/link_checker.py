@@ -214,6 +214,30 @@ def check_link_validity(
             response = session.get(url, timeout=timeout, allow_redirects=True)
 
         is_valid = response.status_code < 400
+
+        # Additional check for Gitbook URLs that return 200 for non-existent pages
+        if is_valid and "docs.zenml.io" in url:
+            # We need to check for "noindex" meta tag which indicates a 404 page in Gitbook
+            try:
+                # Use GET to fetch the page content
+                content_response = session.get(url, timeout=timeout)
+                content = content_response.text.lower()
+
+                # Look for the "noindex" meta tag which indicates a 404 page
+                if (
+                    'name="robots" content="noindex"' in content
+                    or 'content="noindex"' in content
+                ):
+                    return (
+                        url,
+                        False,
+                        "Page returns 200 but contains noindex tag (actual 404)",
+                        response.status_code,
+                    )
+            except requests.RequestException:
+                # If we can't check the content, just trust the status code
+                pass
+
         return (
             url,
             is_valid,
@@ -298,6 +322,11 @@ def transform_relative_link(
     if not link.startswith("../"):
         return None
 
+    # Skip links to assets
+    clean_test = re.sub(r"^(\.\.\/)+", "", link)
+    if "assets" in clean_test or ".gitbook" in clean_test:
+        return None
+
     # Extract the fragment and query parts if present
     fragment = ""
     query = ""
@@ -372,6 +401,10 @@ def replace_links_in_file(
 
     def should_replace_link(link: str) -> bool:
         if not link.startswith("../"):
+            return False
+
+        # Skip links to assets
+        if "assets" in link or ".gitbook" in link:
             return False
 
         if substring is None:
