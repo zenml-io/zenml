@@ -16,7 +16,7 @@ However, there is one exception: if you would like to trigger a pipeline from th
 or another pipeline, you would need to pass the `PipelineRunConfiguration` object.
 Learn more about this [here](https://docs.zenml.io/how-to/trigger-pipelines/use-templates-python#advanced-usage-run-a-template-from-another-pipeline).
 
-<table data-view="cards"><thead><tr><th></th><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td>Using config files</td><td></td><td></td><td><a href="../../use-configuration-files/README.md">../../pipeline-development/use-configuration-files/README.md</a></td></tr></tbody></table>
+<table data-view="cards"><thead><tr><th></th><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td>Using config files</td><td></td><td></td><td><a href="https://docs.zenml.io/how-to/pipeline-development/use-configuration-files">../../pipeline-development/use-configuration-files/README.md</a></td></tr></tbody></table>
 
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>

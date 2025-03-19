@@ -10,8 +10,8 @@ Stack Component Config vs Settings in ZenML
 
 Part of the configuration of a pipeline are its `Settings`. These allow you to configure runtime configurations for stack components and pipelines. Concretely, they allow you to configure:
 
-* The [resources](../../advanced-topics/training-with-gpus/training-with-gpus.md#specify-resource-requirements-for-steps) required for a step
-* Configuring the [containerization](https://docs.zenml.io//how-to/customize-docker-builds) process of a pipeline (e.g. What requirements get installed in the Docker image)
+* The [resources](https://docs.zenml.io/how-to/pipeline-development/training-with-gpus/#specify-resource-requirements-for-steps) required for a step
+* Configuring the [containerization](https://docs.zenml.io/how-to/customize-docker-builds) process of a pipeline (e.g. What requirements get installed in the Docker image)
 * Stack component-specific configuration, e.g., if you have an experiment tracker passing in the name of the experiment at runtime
 
 You will learn about all of the above in more detail later, but for now, let's try to understand that all of this configuration flows through one central concept called `BaseSettings`. (From here on, we use `settings` and `BaseSettings` as analogous in this guide).

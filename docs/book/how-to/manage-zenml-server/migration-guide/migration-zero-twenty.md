@@ -429,7 +429,7 @@ All the aforementioned configurations as well as additional information required
 
 Once a pipeline has been executed, it is represented by a `PipelineSpec` that uniquely identifies it. Therefore, users are no longer able to edit a pipeline once it has been run once. There are now three options to get around this:
 
-* Pipeline runs can be created without being associated with a pipeline explicitly: We call these `unlisted` runs. Read more about unlisted runs [here](../../../how-to/pipeline-development/parameters-and-caching.md#unlisted-runs).
+* Pipeline runs can be created without being associated with a pipeline explicitly: We call these `unlisted` runs. Read more about unlisted runs [here](https://docs.zenml.io/how-to/pipeline-development/develop-locally/keep-your-dashboard-server-clean#unlisted-runs).
 * Pipelines can be deleted and created again.
 * Pipelines can be given unique names each time they are run to uniquely identify them.
 

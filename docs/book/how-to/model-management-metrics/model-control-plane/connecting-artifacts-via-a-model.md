@@ -4,7 +4,7 @@ description: Structuring an MLOps project
 
 # Connecting artifacts via a Model
 
-Now that we've learned about managing [artifacts](../../../user-guide/starter-guide/manage-artifacts.md) and [models](../../../user-guide/starter-guide/track-ml-models.md), we can shift our attention again to the thing that brings them together: [Pipelines](https://docs.zenml.io/user-guides/starter-guide/create-an-ml-pipeline). This trifecta together will then inform how we structure our project.
+Now that we've learned about managing [artifacts](https://docs.zenml.io/user-guides/starter-guide/manage-artifacts) and [models](https://docs.zenml.io/user-guides/starter-guide/track-ml-models), we can shift our attention again to the thing that brings them together: [Pipelines](https://docs.zenml.io/user-guides/starter-guide/create-an-ml-pipeline). This trifecta together will then inform how we structure our project.
 
 {% hint style="info" %}
 In order to see the recommended repository structure of a ZenML MLOps project, read the [best practices](https://docs.zenml.io/how-to/project-setup-and-management/setting-up-a-project-repository) section.
