@@ -45,7 +45,7 @@ ZenML manages, you can use the Python SDK to access the API. This allows you to
 create your own custom automations and scripts and is the most common way teams
 access the metadata stored in the ZenML server. The full documentation for the
 Python SDK can be found [here](https://sdkdocs.zenml.io/latest/). The full HTTP
-[API documentation](../../reference/api-reference.md) can also be found by adding the 
+[API documentation](https://docs.zenml.io/reference/api-reference) can also be found by adding the 
 `/doc` suffix to the URL when accessing your deployed ZenML server.
 
 </details>
