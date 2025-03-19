@@ -69,6 +69,7 @@ from zenml.enums import (
     SorterOps,
     StackComponentType,
     StoreType,
+    TaggableResourceTypes,
 )
 from zenml.exceptions import (
     AuthorizationException,
@@ -3895,7 +3896,7 @@ class Client(metaclass=ClientMetaClass):
         tag: Optional[str] = None,
         tags: Optional[List[str]] = None,
         user: Optional[Union[UUID, str]] = None,
-        run_metadata: Optional[Dict[str, Any]] = None,
+        run_metadata: Optional[List[str]] = None,
         pipeline: Optional[Union[UUID, str]] = None,
         code_repository: Optional[Union[UUID, str]] = None,
         model: Optional[Union[UUID, str]] = None,
@@ -4048,7 +4049,7 @@ class Client(metaclass=ClientMetaClass):
         user: Optional[Union[UUID, str]] = None,
         model_version_id: Optional[Union[str, UUID]] = None,
         model: Optional[Union[UUID, str]] = None,
-        run_metadata: Optional[Dict[str, Any]] = None,
+        run_metadata: Optional[List[str]] = None,
         hydrate: bool = False,
     ) -> Page[StepRunResponse]:
         """List all pipelines.
@@ -4361,7 +4362,7 @@ class Client(metaclass=ClientMetaClass):
         user: Optional[Union[UUID, str]] = None,
         model: Optional[Union[UUID, str]] = None,
         pipeline_run: Optional[Union[UUID, str]] = None,
-        run_metadata: Optional[Dict[str, Any]] = None,
+        run_metadata: Optional[List[str]] = None,
         tag: Optional[str] = None,
         tags: Optional[List[str]] = None,
         hydrate: bool = False,
@@ -6508,7 +6509,7 @@ class Client(metaclass=ClientMetaClass):
         id: Optional[Union[UUID, str]] = None,
         number: Optional[int] = None,
         stage: Optional[Union[str, ModelStages]] = None,
-        run_metadata: Optional[Dict[str, str]] = None,
+        run_metadata: Optional[List[str]] = None,
         user: Optional[Union[UUID, str]] = None,
         hydrate: bool = False,
         tag: Optional[str] = None,
@@ -7770,6 +7771,7 @@ class Client(metaclass=ClientMetaClass):
         name: Optional[str] = None,
         color: Optional[Union[str, ColorVariants]] = None,
         exclusive: Optional[bool] = None,
+        resource_type: Optional[Union[str, TaggableResourceTypes]] = None,
         hydrate: bool = False,
     ) -> Page[TagResponse]:
         """Get tags by filter.
@@ -7777,7 +7779,7 @@ class Client(metaclass=ClientMetaClass):
         Args:
             sort_by: The column to sort by.
             page: The page of items.
-            size: The maximum size of all pages.
+            size: The maximum size of all pages
             logical_operator: Which logical operator to use [and, or].
             id: Use the id of stacks to filter by.
             user: Use the user to filter by.
@@ -7786,6 +7788,7 @@ class Client(metaclass=ClientMetaClass):
             name: The name of the tag.
             color: The color of the tag.
             exclusive: Flag indicating whether the tag is exclusive.
+            resource_type: Filter tags associated with a specific resource type.
             hydrate: Flag deciding whether to hydrate the output model(s)
                 by including metadata fields in the response.
 
@@ -7805,6 +7808,7 @@ class Client(metaclass=ClientMetaClass):
                 name=name,
                 color=color,
                 exclusive=exclusive,
+                resource_type=resource_type,
             ),
             hydrate=hydrate,
         )

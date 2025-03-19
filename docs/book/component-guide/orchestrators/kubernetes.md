@@ -40,7 +40,6 @@ To use the Kubernetes orchestrator, we need:
     zenml integration install kubernetes
     ```
 * [Docker](https://www.docker.com) installed and running.
-* [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) installed.
 * A [remote artifact store](../artifact-stores/artifact-stores.md) as part of your stack.
 * A [remote container registry](../container-registries/container-registries.md) as part of your stack.
 * A Kubernetes cluster [deployed](kubernetes.md#how-to-deploy-it)
@@ -126,12 +125,13 @@ The Kubernetes orchestrator will by default use a Kubernetes namespace called `z
 
 * `kubernetes_namespace`: The Kubernetes namespace to use for running the pipelines. The namespace must already exist in the Kubernetes cluster.
 * `service_account_name`: The name of a Kubernetes service account to use for running the pipelines. If configured, it must point to an existing service account in the default or configured `namespace` that has associated RBAC roles granting permissions to create and manage pods in that namespace. This can also be configured as an individual pipeline setting in addition to the global orchestrator setting.
+* `pass_zenml_token_as_secret`: By default, the Kubernetes orchestrator will pass a short-lived API token to authenticate to the ZenML server as an environment variable as part of the Pod manifest. If you want this token to be stored in a Kubernetes secret instead, set `pass_zenml_token_as_secret=True` when registering your orchestrator. If you do so, make sure the service connector that you configure for your has permissions to create Kubernetes secrets. Additionally, the service account used for the Pods running your pipeline must have permissions to delete secrets, otherwise the cleanup will fail and you'll be left with orphaned secrets.
 
 For additional configuration of the Kubernetes orchestrator, you can pass `KubernetesOrchestratorSettings` which allows you to configure (among others) the following attributes:
 
-* `pod_settings`: Node selectors, labels, affinity, and tolerations, and image pull secrets to apply to the Kubernetes Pods running the steps of your pipeline. These can be either specified using the Kubernetes model objects or as dictionaries.
+* `pod_settings`: Node selectors, labels, affinity, and tolerations, secrets, environment variables and image pull secrets to apply to the Kubernetes Pods running the steps of your pipeline. These can be either specified using the Kubernetes model objects or as dictionaries.
 
-* `orchestrator_pod_settings`:  Node selectors, labels, affinity, and tolerations, and image pull secrets to apply to the Kubernetes Pod that is responsible for orchestrating the pipeline and starting the other Pods. These can be either specified using the Kubernetes model objects or as dictionaries.
+* `orchestrator_pod_settings`:  Node selectors, labels, affinity, tolerations, secrets, environment variables and image pull secrets to apply to the Kubernetes Pod that is responsible for orchestrating the pipeline and starting the other Pods. These can be either specified using the Kubernetes model objects or as dictionaries.
 
 ```python
 from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import KubernetesOrchestratorSettings
@@ -212,6 +212,19 @@ kubernetes_settings = KubernetesOrchestratorSettings(
                 "name": "config-volume",
                 "mountPath": "/etc/ml-config",
                 "readOnly": True
+            }
+        ],
+        "env": [
+            {
+                "name": "MY_ENVIRONMENT_VARIABLE",
+                "value": "1",
+            }
+        ],
+        "env_from": [
+            {
+                "secretRef": {
+                    "name": "secret-name",
+                }
             }
         ],
         "host_ipc": True,

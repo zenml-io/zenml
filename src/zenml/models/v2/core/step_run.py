@@ -16,7 +16,6 @@
 from datetime import datetime
 from typing import (
     TYPE_CHECKING,
-    Any,
     ClassVar,
     Dict,
     List,
@@ -41,6 +40,7 @@ from zenml.models.v2.base.scoped import (
     ProjectScopedResponseBody,
     ProjectScopedResponseMetadata,
     ProjectScopedResponseResources,
+    RunMetadataFilterMixin,
 )
 from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
 from zenml.models.v2.core.model_version import ModelVersionResponse
@@ -504,13 +504,25 @@ class StepRunResponse(
 # ------------------ Filter Model ------------------
 
 
-class StepRunFilter(ProjectScopedFilter):
+class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
     """Model to enable advanced filtering of step runs."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
+        *RunMetadataFilterMixin.FILTER_EXCLUDE_FIELDS,
         "model",
-        "run_metadata",
+    ]
+    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
+        *RunMetadataFilterMixin.CLI_EXCLUDE_FIELDS,
+    ]
+    CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
+        *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
+        *RunMetadataFilterMixin.CUSTOM_SORTING_OPTIONS,
+    ]
+    API_MULTI_INPUT_PARAMS: ClassVar[List[str]] = [
+        *ProjectScopedFilter.API_MULTI_INPUT_PARAMS,
+        *RunMetadataFilterMixin.API_MULTI_INPUT_PARAMS,
     ]
 
     name: Optional[str] = Field(
@@ -563,10 +575,6 @@ class StepRunFilter(ProjectScopedFilter):
         default=None,
         description="Name/ID of the model associated with the step run.",
     )
-    run_metadata: Optional[Dict[str, Any]] = Field(
-        default=None,
-        description="The run_metadata to filter the step runs by.",
-    )
     model_config = ConfigDict(protected_namespaces=())
 
     def get_custom_filters(
@@ -587,8 +595,6 @@ class StepRunFilter(ProjectScopedFilter):
         from zenml.zen_stores.schemas import (
             ModelSchema,
             ModelVersionSchema,
-            RunMetadataResourceSchema,
-            RunMetadataSchema,
             StepRunSchema,
         )
 
@@ -601,28 +607,5 @@ class StepRunFilter(ProjectScopedFilter):
                 ),
             )
             custom_filters.append(model_filter)
-        if self.run_metadata is not None:
-            from zenml.enums import MetadataResourceTypes
-
-            for key, value in self.run_metadata.items():
-                additional_filter = and_(
-                    RunMetadataResourceSchema.resource_id == StepRunSchema.id,
-                    RunMetadataResourceSchema.resource_type
-                    == MetadataResourceTypes.STEP_RUN.value,
-                    RunMetadataResourceSchema.run_metadata_id
-                    == RunMetadataSchema.id,
-                    self.generate_custom_query_conditions_for_column(
-                        value=key,
-                        table=RunMetadataSchema,
-                        column="key",
-                    ),
-                    self.generate_custom_query_conditions_for_column(
-                        value=value,
-                        table=RunMetadataSchema,
-                        column="value",
-                        json_encode_value=True,
-                    ),
-                )
-                custom_filters.append(additional_filter)
 
         return custom_filters

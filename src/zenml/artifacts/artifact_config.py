@@ -107,7 +107,7 @@ class ArtifactConfig(BaseModel):
                 "`ArtifactConfig(..., is_model_artifact=True)` is deprecated "
                 "and will be removed soon. Use `ArtifactConfig(..., "
                 "artifact_type=ArtifactType.MODEL)` instead. For more info: "
-                "https://docs.zenml.io/user-guide/starter-guide/manage-artifacts"
+                "https://docs.zenml.io/user-guides/starter-guide/manage-artifacts"
             )
             data.setdefault("artifact_type", ArtifactType.MODEL)
         elif is_deployment_artifact:
@@ -115,7 +115,7 @@ class ArtifactConfig(BaseModel):
                 "`ArtifactConfig(..., is_deployment_artifact=True)` is "
                 "deprecated and will be removed soon. Use `ArtifactConfig(..., "
                 "artifact_type=ArtifactType.SERVICE)` instead. For more info: "
-                "https://docs.zenml.io/user-guide/starter-guide/manage-artifacts"
+                "https://docs.zenml.io/user-guides/starter-guide/manage-artifacts"
             )
             data.setdefault("artifact_type", ArtifactType.SERVICE)
 

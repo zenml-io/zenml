@@ -145,8 +145,8 @@ def get_onboarding_state(
 
 
 # We don't have any concrete value that tells us whether a server is a cloud
-# tenant, so we use `external_server_id` as the best proxy option.
-# For cloud tenants, we don't add these endpoints as the server settings don't
+# workspace, so we use `external_server_id` as the best proxy option.
+# For cloud workspaces, we don't add these endpoints as the server settings don't
 # have any effect and even allow users to disable functionality that is
 # necessary for the cloud onboarding to work.
 if server_config().external_server_id is None:

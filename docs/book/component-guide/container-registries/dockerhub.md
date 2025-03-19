@@ -42,7 +42,7 @@ To figure out the URI for your registry:
 
 ### How to use it
 
-To use the Azure container registry, we need:
+To use the DockerHub container registry, we need:
 
 * [Docker](https://www.docker.com) installed and running.
 * The registry URI. Check out the [previous section](dockerhub.md#how-to-find-the-registry-uri) on the URI format and how to get the URI for your registry.

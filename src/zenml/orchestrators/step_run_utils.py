@@ -344,7 +344,7 @@ def log_model_version_dashboard_url(
 ) -> None:
     """Log the dashboard URL for a model version.
 
-    If the current server is not a ZenML Pro tenant, a fallback message is
+    If the current server is not a ZenML Pro workspace, a fallback message is
     logged instead.
 
     Args:
@@ -352,7 +352,7 @@ def log_model_version_dashboard_url(
     """
     from zenml.utils.dashboard_utils import get_model_version_url
 
-    if model_version_url := get_model_version_url(model_version.id):
+    if model_version_url := get_model_version_url(model_version):
         logger.info(
             "Dashboard URL for Model Version `%s (%s)`:\n%s",
             model_version.model.name,

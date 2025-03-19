@@ -47,7 +47,7 @@ from tests.integration.functional.zen_stores.utils import (
 from tests.unit.pipelines.test_build_utils import (
     StubLocalRepositoryContext,
 )
-from zenml import Model, log_metadata, pipeline, step
+from zenml import Model, Tag, add_tags, log_metadata, pipeline, step
 from zenml.artifacts.utils import (
     _load_artifact_store,
 )
@@ -2873,16 +2873,21 @@ def test_deleting_run_deletes_steps():
 
 @step
 def step_to_log_metadata(metadata: Union[str, int, bool]) -> int:
-    log_metadata(metadata={"blupus": metadata})
+    log_metadata(metadata={"blupus": metadata}, infer_artifact=True)
     return 42
 
 
-@pipeline(name="aria", model=Model(name="axl"), tags=["cats", "squirrels"])
+@pipeline(
+    name="aria",
+    model=Model(name="axl"),
+    tags=["cats", "squirrels"],
+    enable_cache=False,
+)
 def pipeline_to_log_metadata(metadata):
     step_to_log_metadata(metadata)
 
 
-def test_pipeline_run_filters_with_oneof(clean_client):
+def test_filters_with_oneof_tags_and_run_metadata(clean_client):
     store = clean_client.zen_store
 
     metadata_values = [3, 25, 100, "random_string", True]
@@ -2914,6 +2919,23 @@ def test_pipeline_run_filters_with_oneof(clean_client):
     runs = store.list_runs(runs_filter_model=runs_filter)
     assert len(runs) == 0  # No runs
 
+    # Test oneof: run_metadata filtering
+    artifact_version_filter = ArtifactVersionFilter(
+        run_metadata=["blupus:startswith:r"]
+    )
+    artifact_versions = store.list_artifact_versions(
+        artifact_version_filter_model=artifact_version_filter
+    )
+    assert len(artifact_versions) == 1  # The run with "random_string"
+
+    artifact_version_filter = ArtifactVersionFilter(
+        run_metadata=["blupus:random_string"]
+    )
+    artifact_versions = store.list_artifact_versions(
+        artifact_version_filter_model=artifact_version_filter
+    )
+    assert len(artifact_versions) == 1  # The run with "random_string"
+
     # Test oneof: formatting
     with pytest.raises(ValidationError):
         PipelineRunFilter(name="oneof:random_value")
@@ -2928,38 +2950,38 @@ def test_run_metadata_filtering(clean_client):
         pipeline_to_log_metadata(v)
 
     # Test run metadata filtering with string value
-    runs_filter = StepRunFilter(run_metadata={"blupus": "random_string"})
-    runs = store.list_run_steps(step_run_filter_model=runs_filter)
-    assert len(runs.items) == 1
+    av_filter = ArtifactVersionFilter(run_metadata=["blupus:random_string"])
+    avs = store.list_artifact_versions(artifact_version_filter_model=av_filter)
+    assert len(avs.items) == 1
 
     # Test run metadata filtering with boolean value
-    runs_filter = StepRunFilter(run_metadata={"blupus": True})
-    runs = store.list_run_steps(step_run_filter_model=runs_filter)
-    assert len(runs.items) == 1
+    av_filter = ArtifactVersionFilter(run_metadata=["blupus:true"])
+    avs = store.list_artifact_versions(artifact_version_filter_model=av_filter)
+    assert len(avs.items) == 1
 
     # Test run metadata filtering with int value
-    runs_filter = StepRunFilter(run_metadata={"blupus": 3})
-    runs = store.list_run_steps(step_run_filter_model=runs_filter)
-    assert len(runs.items) == 1
+    av_filter = ArtifactVersionFilter(run_metadata=["blupus:3"])
+    avs = store.list_artifact_versions(artifact_version_filter_model=av_filter)
+    assert len(avs.items) == 1
 
     # Test run metadata filtering for a non-existent key
-    runs_filter = StepRunFilter(run_metadata={"non-existent": 3})
-    runs = store.list_run_steps(step_run_filter_model=runs_filter)
-    assert len(runs) == 0
+    av_filter = ArtifactVersionFilter(run_metadata=["non-existent:3"])
+    avs = store.list_artifact_versions(artifact_version_filter_model=av_filter)
+    assert len(avs.items) == 0
 
     # Test run metadata filtering with non-existent value
-    runs_filter = StepRunFilter(run_metadata={"blupus": "non-existent"})
-    runs = store.list_run_steps(step_run_filter_model=runs_filter)
-    assert len(runs.items) == 0
+    av_filter = ArtifactVersionFilter(run_metadata=["blupus:non-existent"])
+    avs = store.list_artifact_versions(artifact_version_filter_model=av_filter)
+    assert len(avs.items) == 0
 
     # Test run metadata filtering with operator value
-    runs_filter = StepRunFilter(run_metadata={"blupus": "lt:30"})
-    runs = store.list_run_steps(step_run_filter_model=runs_filter)
-    assert len(runs) == 2  # The run with 3 and 25
+    av_filter = ArtifactVersionFilter(run_metadata=["blupus:lt:30"])
+    avs = store.list_artifact_versions(artifact_version_filter_model=av_filter)
+    assert len(avs.items) == 2  # The run with 3 and 25
 
-    for r in runs:
-        assert isinstance(r.run_metadata["blupus"], int)
-        assert r.run_metadata["blupus"] < 30
+    for av in avs.items:
+        assert isinstance(av.run_metadata["blupus"], int)
+        assert av.run_metadata["blupus"] < 30
 
 
 # .--------------------.
@@ -5578,3 +5600,55 @@ def test_updating_the_pipeline_run_status(step_status, expected_run_status):
         )
         run_status = Client().get_pipeline_run(run_context.runs[-1].id).status
         assert run_status == expected_run_status
+
+
+@step
+def produce_artifact() -> int:
+    """Produces an artifact and tags it."""
+    add_tags(tags=["tag2"], infer_artifact=True)
+    return 42
+
+
+@pipeline(tags=["tag3", Tag(name="tag4", cascade=True)])
+def tag_filter_test_pipeline():
+    """Pipeline that produces an artifact and tags it."""
+    _ = produce_artifact()
+
+
+def test_tag_filter_with_resource_type(clean_client: "Client"):
+    """Tests that tags can be filtered by resource type."""
+    # Create some tags to use
+    _ = clean_client.create_tag(name="tag1", color="red")
+
+    # Run the pipeline
+    tag_filter_test_pipeline()
+
+    # Test filtering tags by pipeline run resource type
+    tags = clean_client.list_tags(
+        resource_type=TaggableResourceTypes.PIPELINE_RUN
+    )
+    assert len(tags) == 2
+    assert {t.name for t in tags} == {"tag3", "tag4"}
+
+    # Test filtering tags by artifact version resource type
+    tags = clean_client.list_tags(
+        resource_type=TaggableResourceTypes.ARTIFACT_VERSION
+    )
+    assert len(tags) == 2
+    assert {t.name for t in tags} == {"tag2", "tag4"}
+
+    # Test default behavior (no resource type filter)
+    tags = clean_client.list_tags()
+    assert len(tags) == 4
+    assert {t.name for t in tags} == {"tag1", "tag2", "tag3", "tag4"}
+
+    # Test combining resource type filter with name filter
+    tags = clean_client.list_tags(
+        resource_type=TaggableResourceTypes.ARTIFACT_VERSION, name="tag2"
+    )
+    assert len(tags) == 1
+    assert tags[0].name == "tag2"
+
+    # Test filtering for a resource type that doesn't have tags
+    tags = clean_client.list_tags(resource_type=TaggableResourceTypes.MODEL)
+    assert len(tags) == 0

@@ -14,12 +14,12 @@
 """Models representing tags."""
 
 import random
-from typing import Optional
+from typing import TYPE_CHECKING, ClassVar, List, Optional, Type, TypeVar
 
-from pydantic import Field
+from pydantic import Field, field_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
-from zenml.enums import ColorVariants
+from zenml.enums import ColorVariants, TaggableResourceTypes
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
     UserScopedFilter,
@@ -29,6 +29,14 @@ from zenml.models.v2.base.scoped import (
     UserScopedResponseMetadata,
     UserScopedResponseResources,
 )
+from zenml.utils.uuid_utils import is_valid_uuid
+
+if TYPE_CHECKING:
+    from sqlalchemy.sql.elements import ColumnElement
+
+    from zenml.zen_stores.schemas import BaseSchema
+
+    AnySchema = TypeVar("AnySchema", bound="BaseSchema")
 
 # ------------------ Request Model ------------------
 
@@ -49,6 +57,28 @@ class TagRequest(UserScopedRequest):
         default_factory=lambda: random.choice(list(ColorVariants)),
     )
 
+    @field_validator("name")
+    @classmethod
+    def validate_name_not_uuid(cls, value: str) -> str:
+        """Validates that the tag name is not a UUID.
+
+        Args:
+            value: The tag name to validate.
+
+        Returns:
+            The validated tag name.
+
+        Raises:
+            ValueError: If the tag name can be converted
+                to a UUID.
+        """
+        if is_valid_uuid(value):
+            raise ValueError(
+                "Tag names cannot be UUIDs or strings that "
+                "can be converted to UUIDs."
+            )
+        return value
+
 
 # ------------------ Update Model ------------------
 
@@ -59,6 +89,27 @@ class TagUpdate(BaseUpdate):
     name: Optional[str] = None
     exclusive: Optional[bool] = None
     color: Optional[ColorVariants] = None
+
+    @field_validator("name")
+    @classmethod
+    def validate_name_not_uuid(cls, value: Optional[str]) -> Optional[str]:
+        """Validates that the tag name is not a UUID.
+
+        Args:
+            value: The tag name to validate.
+
+        Returns:
+            The validated tag name.
+
+        Raises:
+            ValueError: If the tag name can be converted to a UUID.
+        """
+        if value is not None and is_valid_uuid(value):
+            raise ValueError(
+                "Tag names cannot be UUIDs or strings that "
+                "can be converted to UUIDs."
+            )
+        return value
 
 
 # ------------------ Response Model ------------------
@@ -143,6 +194,11 @@ class TagResponse(
 class TagFilter(UserScopedFilter):
     """Model to enable advanced filtering of all tags."""
 
+    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *UserScopedFilter.FILTER_EXCLUDE_FIELDS,
+        "resource_type",
+    ]
+
     name: Optional[str] = Field(
         description="The unique title of the tag.", default=None
     )
@@ -153,3 +209,40 @@ class TagFilter(UserScopedFilter):
         description="The flag signifying whether the tag is an exclusive tag.",
         default=None,
     )
+    resource_type: Optional[TaggableResourceTypes] = Field(
+        description="Filter tags associated with a specific resource type.",
+        default=None,
+    )
+
+    def get_custom_filters(
+        self, table: Type["AnySchema"]
+    ) -> List["ColumnElement[bool]"]:
+        """Get custom filters.
+
+        Args:
+            table: The query table.
+
+        Returns:
+            A list of custom filters.
+        """
+        custom_filters = super().get_custom_filters(table)
+
+        from sqlmodel import exists, select
+
+        from zenml.zen_stores.schemas import (
+            TagResourceSchema,
+            TagSchema,
+        )
+
+        if self.resource_type:
+            # Filter for tags that have at least one association with the specified resource type
+            resource_type_filter = exists(
+                select(TagResourceSchema).where(
+                    TagResourceSchema.tag_id == TagSchema.id,
+                    TagResourceSchema.resource_type
+                    == self.resource_type.value,
+                )
+            )
+            custom_filters.append(resource_type_filter)
+
+        return custom_filters
