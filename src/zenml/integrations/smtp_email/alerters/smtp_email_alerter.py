@@ -16,7 +16,7 @@
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from typing import List, Optional, Type, cast
+from typing import List, Optional, Type, cast, Never
 
 from pydantic import BaseModel
 
@@ -378,7 +378,7 @@ class SMTPEmailAlerter(BaseAlerter):
 
     def ask(
         self, question: str, params: Optional[BaseAlerterStepParameters] = None
-    ) -> bool:
+    ) -> Never:
         """Method not supported for email alerters.
 
         Email doesn't support interactive approvals like chat services.
