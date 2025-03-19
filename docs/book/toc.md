@@ -13,14 +13,7 @@
   * [Deploy with custom images](getting-started/deploying-zenml/deploy-with-custom-image.md)
   * [Secret management](getting-started/deploying-zenml/secret-management.md)
   * [Custom secret stores](getting-started/deploying-zenml/custom-secret-stores.md)
-* [ZenML Pro](getting-started/zenml-pro/README.md)
-  * [Core Concepts](getting-started/zenml-pro/core-concepts.md)
-    * [Organizations](getting-started/zenml-pro/organization.md)
-    * [Workspaces](getting-started/zenml-pro/workspaces.md)
-    * [Teams](getting-started/zenml-pro/teams.md)
-    * [Roles & Permissions](getting-started/zenml-pro/roles.md)
-  * [Self-hosted deployment](getting-started/zenml-pro/self-hosted.md)
-  * [Accessing the ZenML Pro API](getting-started/zenml-pro/pro-api.md)
+
 
 ## How-To
 
