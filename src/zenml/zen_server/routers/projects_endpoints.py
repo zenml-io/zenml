@@ -37,6 +37,9 @@ from zenml.models import (
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.feature_gate.endpoint_utils import (
+    report_decrement,
+)
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_create_entity,
     verify_permissions_and_delete_entity,
@@ -51,6 +54,7 @@ from zenml.zen_server.rbac.utils import (
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
+    server_config,
     zen_store,
 )
 
@@ -225,11 +229,14 @@ def delete_project(
     Args:
         project_name_or_id: Name or ID of the project.
     """
-    verify_permissions_and_delete_entity(
+    project = verify_permissions_and_delete_entity(
         id=project_name_or_id,
         get_method=zen_store().get_project,
         delete_method=zen_store().delete_project,
     )
+    if server_config().feature_gate_enabled:
+        if ResourceType.PROJECT in server_config().reportable_resources:
+            report_decrement(ResourceType.PROJECT, resource_id=project.id)
 
 
 # TODO: kept for backwards compatibility only; to be removed after the migration
