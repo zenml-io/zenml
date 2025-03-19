@@ -50,7 +50,7 @@ The ZenML integration restructures the way Deepchecks validation checks are orga
 * **model validation checks** require a single dataset and a mandatory model as input. This list includes a subset of the model evaluation checks provided by Deepchecks [for tabular data](https://docs.deepchecks.com/stable/tabular/auto_checks/model_evaluation/index.html) and [for computer vision](https://docs.deepchecks.com/stable/vision/auto_checks/model_evaluation/index.html) that expect a single dataset as input.
 * **model drift checks** require two datasets and a mandatory model as input. This list includes a subset of the model evaluation checks provided by Deepchecks [for tabular data](https://docs.deepchecks.com/stable/tabular/auto_checks/model_evaluation/index.html) and [for computer vision](https://docs.deepchecks.com/stable/vision/auto_checks/model_evaluation/index.html) that expect two datasets as input: target and reference.
 
-This structure is directly reflected in how Deepchecks can be used with ZenML: there are four different Deepchecks standard steps and four different [ZenML enums for Deepchecks checks](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-deepchecks/#zenml.integrations.deepchecks.validation_checks) . [The Deepchecks Data Validator API](deepchecks.md#the-deepchecks-data-validator) is also modeled to reflect this same structure.
+This structure is directly reflected in how Deepchecks can be used with ZenML: there are four different Deepchecks standard steps and four different [ZenML enums for Deepchecks checks](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-deepchecks.html#zenml.integrations.deepchecks) . [The Deepchecks Data Validator API](deepchecks.md#the-deepchecks-data-validator) is also modeled to reflect this same structure.
 
 A notable characteristic of Deepchecks is that you don't need to customize the set of Deepchecks tests that are part of a test suite. Both ZenML and Deepchecks provide sane defaults that will run all available Deepchecks tests in a given category with their default conditions if a custom list of tests and conditions are not provided.
 
@@ -109,10 +109,10 @@ From here on, you can continue to use the deepchecks integration as is explained
 
 ZenML wraps the Deepchecks functionality for tabular data in the form of four standard steps:
 
-* [`deepchecks_data_integrity_check_step`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-deepchecks/#zenml.integrations.deepchecks.steps.deepchecks_data_integrity): use it in your pipelines to run data integrity tests on a single dataset
-* [`deepchecks_data_drift_check_step`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-deepchecks/#zenml.integrations.deepchecks.steps.deepchecks_data_drift): use it in your pipelines to run data drift tests on two datasets as input: target and reference.
-* [`deepchecks_model_validation_check_step`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-deepchecks/#zenml.integrations.deepchecks.steps.deepchecks_model_validation): use it in your pipelines to run model performance tests using a single dataset and a mandatory model artifact as input
-* [`deepchecks_model_drift_check_step`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-deepchecks/#zenml.integrations.deepchecks.steps.deepchecks_model_drift): use it in your pipelines to run model comparison/drift tests using a mandatory model artifact and two datasets as input: target and reference.
+* [`deepchecks_data_integrity_check_step`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-deepchecks.html#zenml.integrations.deepchecks): use it in your pipelines to run data integrity tests on a single dataset
+* [`deepchecks_data_drift_check_step`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-deepchecks.html#zenml.integrations.deepchecks): use it in your pipelines to run data drift tests on two datasets as input: target and reference.
+* [`deepchecks_model_validation_check_step`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-deepchecks.html#zenml.integrations.deepchecks): use it in your pipelines to run model performance tests using a single dataset and a mandatory model artifact as input
+* [`deepchecks_model_drift_check_step`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-deepchecks.html#zenml.integrations.deepchecks): use it in your pipelines to run model comparison/drift tests using a mandatory model artifact and two datasets as input: target and reference.
 
 The integration doesn't yet include standard steps for computer vision, but you can still write your own custom steps that call [the Deepchecks Data Validator API](deepchecks.md#the-deepchecks-data-validator) or even [call the Deepchecks library directly](deepchecks.md#call-deepchecks-directly).
 
@@ -335,7 +335,7 @@ def data_integrity_check(
 
 The arguments that the Deepchecks Data Validator methods can take in are the same as those used for [the Deepchecks standard steps](deepchecks.md#the-deepchecks-standard-steps).
 
-Have a look at [the complete list of methods and parameters available in the `DeepchecksDataValidator` API](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-deepchecks/#zenml.integrations.deepchecks.data_validators.deepchecks_data_validator.DeepchecksDataValidator) in the SDK docs.
+Have a look at [the complete list of methods and parameters available in the `DeepchecksDataValidator` API](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-deepchecks.html#zenml.integrations.deepchecks) in the SDK docs.
 
 #### Call Deepchecks directly
 

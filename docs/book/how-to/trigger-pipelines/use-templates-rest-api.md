@@ -18,7 +18,7 @@ REST API:
 
 1. `GET /pipelines?name=<PIPELINE_NAME>` -> This returns a response, where a <PIPELINE_ID> can be copied
 2. `GET /run_templates?pipeline_id=<PIPELINE_ID>` -> This returns a list of responses where a <TEMPLATE_ID> can be chosen
-3. `POST /run_templates/<TEMPLATE_ID>/runs` -> This runs the pipeline. You can pass the [PipelineRunConfiguration](https://sdkdocs.zenml.io/latest/core_code_docs/core-config/#zenml.config.pipeline_run_configuration.PipelineRunConfiguration) in the body
+3. `POST /run_templates/<TEMPLATE_ID>/runs` -> This runs the pipeline. You can pass the [PipelineRunConfiguration](https://sdkdocs.zenml.io/latest/core_code_docs/core-config.html#zenml.config.pipeline_run_configuration) in the body
 
 ## A working example
 

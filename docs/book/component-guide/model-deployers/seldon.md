@@ -367,7 +367,7 @@ We can now use the model deployer in our stack.
 zenml stack update seldon_stack --model-deployer=seldon_deployer
 ```
 
-See the [seldon\_model\_deployer\_step](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-seldon/#zenml.integrations.seldon.steps.seldon_deployer.seldon_model_deployer_step) for an example of using the Seldon Core Model Deployer to deploy a model inside a ZenML pipeline step.
+See the [seldon\_model\_deployer\_step](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-seldon.html#zenml.integrations.seldon) for an example of using the Seldon Core Model Deployer to deploy a model inside a ZenML pipeline step.
 
 ### Configuration
 
@@ -383,7 +383,7 @@ Within the `SeldonDeploymentConfig` you can configure:
 * `resources`: the resources to be allocated to the model. This can be configured by passing a `SeldonResourceRequirements` object with the `requests` and `limits` properties. The values for these properties can be a dictionary with the `cpu` and `memory` keys. The values for these keys can be a string with the amount of CPU and memory to be allocated to the model.
 * `serviceAccount` The name of the Service Account applied to the deployment.
 
-For more information and a full list of configurable attributes of the Seldon Core Model Deployer, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-seldon/#zenml.integrations.seldon.model_deployers) .
+For more information and a full list of configurable attributes of the Seldon Core Model Deployer, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-seldon.html#zenml.integrations.seldon) .
 
 ### Custom Code Deployment
 
@@ -470,6 +470,6 @@ Before creating your custom model class, you should take a look at the [custom P
 
 The built-in Seldon Core custom deployment step is a good starting point for deploying your custom models. However, if you want to deploy more than the trained model, you can create your own custom class and a custom step to achieve this.
 
-See the [ZenML custom Seldon model class](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-seldon/#zenml.integrations.seldon.custom_deployer.zenml_custom_model.ZenMLCustomModel) as a reference.
+See the [ZenML custom Seldon model class](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-seldon.html#zenml.integrations.seldon) as a reference.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

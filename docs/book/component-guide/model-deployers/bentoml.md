@@ -381,6 +381,6 @@ The `bentoctl` CLI provides a list of operators which are plugins that interact 
 
 You can find more information about the `bentoctl` tool [on the official GitHub repository](https://github.com/bentoml/bentoctl).
 
-For more information and a full list of configurable attributes of the BentoML Model Deployer, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-bentoml/#zenml.integrations.bentoml.model_deployers.bentoml_model_deployer) .
+For more information and a full list of configurable attributes of the BentoML Model Deployer, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-bentoml.html#zenml.integrations.bentoml) .
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

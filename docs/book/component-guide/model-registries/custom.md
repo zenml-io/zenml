@@ -187,6 +187,6 @@ It is important to draw attention to how and when these base abstractions are co
 The design behind this interaction lets us separate the configuration of the flavor from its implementation. This way we can register flavors and components even when the major dependencies behind their implementation are not installed in our local setting (assuming the `CustomModelRegistryFlavor` and the `CustomModelRegistryConfig` are implemented in a different module/path than the actual `CustomModelRegistry`).
 {% endhint %}
 
-For a full implementation example, please check out the [MLFlowModelRegistry](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-mlflow/#zenml.integrations.mlflow.model_registry.MLFlowModelRegistry)
+For a full implementation example, please check out the [MLFlowModelRegistry](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-mlflow.html#zenml.integrations.mlflow)
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

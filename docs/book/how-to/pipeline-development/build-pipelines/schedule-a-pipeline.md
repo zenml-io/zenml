@@ -48,7 +48,7 @@ my_pipeline()
 ```
 
 {% hint style="info" %}
-Check out our [SDK docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-config/#zenml.config.schedule.Schedule) to learn more about the different scheduling options.
+Check out our [SDK docs](https://sdkdocs.zenml.io/latest/core_code_docs/core-config.html#zenml.config.schedule) to learn more about the different scheduling options.
 {% endhint %}
 
 ### Pause/Stop a schedule

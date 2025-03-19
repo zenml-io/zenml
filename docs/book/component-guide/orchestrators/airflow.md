@@ -207,7 +207,7 @@ The username will always be `admin`.
 
 For additional configuration of the Airflow orchestrator, you can pass `AirflowOrchestratorSettings` when defining or\
 running your pipeline. Check out\
-the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-airflow/#zenml.integrations.airflow.flavors.airflow_orchestrator_flavor.AirflowOrchestratorSettings)\
+the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-airflow.html#zenml.integrations.airflow)\
 for a full list of available attributes and [this docs page](https://docs.zenml.io/how-to/pipeline-development/use-configuration-files/) for\
 more information on how to specify settings.
 
@@ -304,6 +304,6 @@ the [original module](https://github.com/zenml-io/zenml/blob/main/src/zenml/inte
 Check out our docs on how to apply settings to your\
 pipelines [here](https://docs.zenml.io/how-to/pipeline-development/use-configuration-files/).
 
-For more information and a full list of configurable attributes of the Airflow orchestrator, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-airflow/#zenml.integrations.airflow.orchestrators.airflow_orchestrator.AirflowOrchestrator) .
+For more information and a full list of configurable attributes of the Airflow orchestrator, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-airflow.html#zenml.integrations.airflow) .
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

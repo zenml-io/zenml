@@ -79,9 +79,9 @@ client.list_pipeline_runs(
 )
 ```
 
-These methods always return a [Page](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-models/#zenml.models.page\_model) of resources, which behaves like a standard Python list and contains, by default, the first 50 results. You can modify the page size by passing the `size` argument or fetch a subsequent page by passing the `page` argument to the list method.
+These methods always return a [Page](https://sdkdocs.zenml.io/latest/core_code_docs/core-models.html#zenml.models.page_model) of resources, which behaves like a standard Python list and contains, by default, the first 50 results. You can modify the page size by passing the `size` argument or fetch a subsequent page by passing the `page` argument to the list method.
 
-You can further restrict your search by passing additional arguments that will be used to filter the results. E.g., most resources have a `user_id` associated with them that can be set to only list resources created by that specific user. The available filter argument options are different for each list method; check out the method declaration in the [Client SDK documentation](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-client/) to find out which exact arguments are supported or have a look at the fields of the corresponding filter model class.
+You can further restrict your search by passing additional arguments that will be used to filter the results. E.g., most resources have a `user_id` associated with them that can be set to only list resources created by that specific user. The available filter argument options are different for each list method; check out the method declaration in the [Client SDK documentation](https://sdkdocs.zenml.io/latest/core_code_docs/core-client.html) to find out which exact arguments are supported or have a look at the fields of the corresponding filter model class.
 
 Except for pipeline runs, all other resources will by default be ordered by creation time ascending. E.g., `client.list_artifacts()` would return the first 50 artifacts ever created. You can change the ordering by specifying the `sort_by` argument when calling list methods.
 
@@ -97,7 +97,7 @@ client.get_pipeline_run("first_pipeline-2023_06_20-16")  # Name prefix
 
 **Create, Update, and Delete Methods**
 
-Methods for creating / updating / deleting resources are only available for some of the resources and the required arguments are different for each resource. Checkout the [Client SDK Documentation](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-client/) to find out whether a specific resource supports write operations through the Client and which arguments are required.
+Methods for creating / updating / deleting resources are only available for some of the resources and the required arguments are different for each resource. Checkout the [Client SDK Documentation](https://sdkdocs.zenml.io/latest/core_code_docs/core-client.html) to find out whether a specific resource supports write operations through the Client and which arguments are required.
 
 #### Active User and Active Stack
 
@@ -121,7 +121,7 @@ You can think of these models as similar to types in strictly-typed languages, o
 ZenML also has similar models that define which information is required to create, update, or search resources, named **Request Models**, **Update Models**, and **Filter Models** respectively. However, these models are only used for the server API endpoints, and not for the Client methods.
 
 {% hint style="info" %}
-To find out which fields a specific resource model contains, checkout the [ZenML Models SDK Documentation](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-models/#zenml.models) and expand the source code to see a list of all fields of the respective model. Note that all resources have **Base Models** that define fields that response, request, update, and filter models have in common, so you need to take a look at the base model source code as well.
+To find out which fields a specific resource model contains, checkout the [ZenML Models SDK Documentation](https://sdkdocs.zenml.io/latest/core_code_docs/core-models.html#zenml.models) and expand the source code to see a list of all fields of the respective model. Note that all resources have **Base Models** that define fields that response, request, update, and filter models have in common, so you need to take a look at the base model source code as well.
 {% endhint %}
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

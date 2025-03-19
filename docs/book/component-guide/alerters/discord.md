@@ -9,10 +9,10 @@ directly from within your ZenML pipelines.
 
 The `discord` integration contains the following two standard steps:
 
-* [discord\_alerter\_post\_step](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-discord/#zenml.integrations.discord.steps.discord_alerter_post_step.discord_alerter_post_step)\
+* [discord\_alerter\_post\_step](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-discord.html#zenml.integrations.discord)\
   takes a string message, posts it to a Discord channel, and returns whether the\
   operation was successful.
-* [discord\_alerter\_ask\_step](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-discord/#zenml.integrations.discord.steps.discord_alerter_ask_step.discord_alerter_ask_step)\
+* [discord\_alerter\_ask\_step](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-discord.html#zenml.integrations.discord)\
   also posts a message to a Discord channel, but waits for user feedback, and\
   only returns `True` if a user explicitly approved the operation from within\
   Discord (e.g., by sending "approve" / "reject" to the bot in response).
@@ -98,8 +98,8 @@ permissions:
 ### How to Use the Discord Alerter
 
 After you have a `DiscordAlerter` configured in your stack, you can directly import\
-the [discord\_alerter\_post\_step](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-discord/#zenml.integrations.discord.steps.discord_alerter_post_step.discord_alerter_post_step)\
-and [discord\_alerter\_ask\_step](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-discord/#zenml.integrations.discord.steps.discord_alerter_ask_step.discord_alerter_ask_step)\
+the [discord\_alerter\_post\_step](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-discord.html#zenml.integrations.discord)\
+and [discord\_alerter\_ask\_step](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-discord.html#zenml.integrations.discord)\
 steps and use them in your pipelines.
 
 Since these steps expect a string message as input (which needs to be the output of another step), you typically also\
@@ -131,7 +131,7 @@ if __name__ == "__main__":
 ```
 
 For more information and a full list of configurable attributes of the Discord alerter, check out\
-the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-discord/#zenml.integrations.discord.alerters.discord_alerter.DiscordAlerter)\
+the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-discord.html#zenml.integrations.discord)\
 .
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

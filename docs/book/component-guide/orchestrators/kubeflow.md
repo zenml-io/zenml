@@ -253,7 +253,7 @@ kubeflow_settings = KubeflowOrchestratorSettings(
 ...
 ```
 
-Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-kubeflow/#zenml.integrations.kubeflow.flavors.kubeflow_orchestrator_flavor.KubeflowOrchestratorSettings) for a full list of available attributes and [this docs page](https://docs.zenml.io/how-to/pipeline-development/use-configuration-files/runtime-configuration) for more information on how to specify settings.
+Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-kubeflow.html#zenml.integrations.kubeflow) for a full list of available attributes and [this docs page](https://docs.zenml.io/how-to/pipeline-development/use-configuration-files/runtime-configuration) for more information on how to specify settings.
 
 #### Enabling CUDA for GPU-backed hardware
 
@@ -345,6 +345,6 @@ kubeflow_settings = KubeflowOrchestratorSettings(
 
 See full documentation of using ZenML secrets [here](https://docs.zenml.io/how-to/project-setup-and-management/interact-with-secrets).
 
-For more information and a full list of configurable attributes of the Kubeflow orchestrator, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-kubeflow/#zenml.integrations.kubeflow.orchestrators.kubeflow_orchestrator.KubeflowOrchestrator) .
+For more information and a full list of configurable attributes of the Kubeflow orchestrator, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-kubeflow.html#zenml.integrations.kubeflow) .
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

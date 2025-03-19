@@ -228,7 +228,7 @@ text_data_report = evidently_report_step.with_options(
 )
 ```
 
-You can view [the complete list of configuration parameters](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-evidently/#zenml.integrations.evidently.steps.evidently_report.evidently_report_step) in the SDK docs.
+You can view [the complete list of configuration parameters](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-evidently.html#zenml.integrations.evidently) in the SDK docs.
 
 #### Data Validation
 
@@ -405,7 +405,7 @@ text_data_test = evidently_test_step.with_options(
 )
 ```
 
-You can view [the complete list of configuration parameters](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-evidently/#zenml.integrations.evidently.steps.evidently_test.evidently_test_step) in the SDK docs.
+You can view [the complete list of configuration parameters](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-evidently.html#zenml.integrations.evidently) in the SDK docs.
 
 #### The Evidently Data Validator
 
@@ -528,7 +528,7 @@ def data_validation(
     return test_suite.json(), HTMLString(test_suite.show(mode="inline").data)
 ```
 
-Have a look at [the complete list of methods and parameters available in the `EvidentlyDataValidator` API](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-evidently/#zenml.integrations.evidently.data_validators.evidently_data_validator.EvidentlyDataValidator) in the SDK docs.
+Have a look at [the complete list of methods and parameters available in the `EvidentlyDataValidator` API](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-evidently.html#zenml.integrations.evidently) in the SDK docs.
 
 #### Call Evidently directly
 

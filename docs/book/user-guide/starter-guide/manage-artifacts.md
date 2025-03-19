@@ -68,7 +68,7 @@ To prevent visual clutter, make sure to assign names to your most important arti
 
 ZenML automatically versions all created artifacts using auto-incremented numbering. I.e., if you have defined a step creating an artifact named `iris_dataset` as shown above, the first execution of the step will create an artifact with this name and version "1", the second execution will create version "2", and so on.
 
-While ZenML handles artifact versioning automatically, you have the option to specify custom versions using the [`ArtifactConfig`](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-model/#zenml.model.artifact\_config.DataArtifactConfig). This may come into play during critical runs like production releases.
+While ZenML handles artifact versioning automatically, you have the option to specify custom versions using the [`ArtifactConfig`](https://sdkdocs.zenml.io/latest/core_code_docs/core-model.html#zenml.model.artifact_config). This may come into play during critical runs like production releases.
 
 ```python
 from zenml import step, ArtifactConfig
@@ -244,7 +244,7 @@ if __name__ == "__main__":
     printing_pipeline()
 ```
 
-Optionally, you can configure the `ExternalArtifact` to use a custom [materializer](https://docs.zenml.io/how-to/data-artifact-management/handle-data-artifacts/handle-custom-data-types) for your data or disable artifact metadata and visualizations. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-artifacts/#zenml.artifacts.external\_artifact.ExternalArtifact) for all available options.
+Optionally, you can configure the `ExternalArtifact` to use a custom [materializer](https://docs.zenml.io/how-to/data-artifact-management/handle-data-artifacts/handle-custom-data-types) for your data or disable artifact metadata and visualizations. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/core_code_docs/core-artifacts.html#zenml.artifacts.external_artifact) for all available options.
 
 {% hint style="info" %}
 Using an `ExternalArtifact` for your step automatically disables caching for the step.

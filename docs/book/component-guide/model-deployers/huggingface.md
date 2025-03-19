@@ -58,7 +58,7 @@ If you'd like to see this in action, check out this example of of [a deployment 
 
 ### Deploying a model
 
-The pre-built [huggingface\_model\_deployer\_step](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/huggingface/steps/huggingface_deployer.py#L35) exposes a [`HuggingFaceServiceConfig`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-huggingface/#zenml.integrations.huggingface.services.huggingface_deployment.HuggingFaceServiceConfig) that you can use in your pipeline. Here is an example snippet:
+The pre-built [huggingface\_model\_deployer\_step](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/huggingface/steps/huggingface_deployer.py#L35) exposes a [`HuggingFaceServiceConfig`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-huggingface.html#zenml.integrations.huggingface) that you can use in your pipeline. Here is an example snippet:
 
 ```python
 from zenml import pipeline
@@ -109,7 +109,7 @@ Within the `HuggingFaceServiceConfig` you can configure:
 * `namespace`: The namespace where the Inference Endpoint will be created. The same namespace can be passed used while registering the Hugging Face model deployer.
 * `endpoint_type`: (Optional) The type of the Inference Endpoint, which can be `"protected"`, `"public"` (default) or `"private"`.
 
-For more information and a full list of configurable attributes of the Hugging Face Model Deployer, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-huggingface/) and Hugging Face endpoint [code](https://github.com/huggingface/huggingface_hub/blob/5e3b603ccc7cd6523d998e75f82848215abf9415/src/huggingface_hub/hf_api.py#L6957).
+For more information and a full list of configurable attributes of the Hugging Face Model Deployer, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-huggingface.html) and Hugging Face endpoint [code](https://github.com/huggingface/huggingface_hub/blob/5e3b603ccc7cd6523d998e75f82848215abf9415/src/huggingface_hub/hf_api.py#L6957).
 
 ### Running inference on a provisioned inference endpoint
 
@@ -185,6 +185,6 @@ def huggingface_deployment_inference_pipeline(
     predictions = predictor(model_deployment_service, inference_data)
 ```
 
-For more information and a full list of configurable attributes of the Hugging Face Model Deployer, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-huggingface/#zenml.integrations.huggingface.model\_deployers).
+For more information and a full list of configurable attributes of the Hugging Face Model Deployer, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-huggingface.html#zenml.integrations.huggingface).
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

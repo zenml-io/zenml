@@ -35,7 +35,7 @@ The ZenML client is a Python package that you can install on your machine. It
 is used to interact with the ZenML server. You can install it using the `pip`
 command as outlined [here](../installation.md).
 
-This Python package gives you [the `zenml` command-line interface](https://sdkdocs.zenml.io/latest/cli/) which
+This Python package gives you [the `zenml` command-line interface](https://sdkdocs.zenml.io/latest/cli.html) which
 you can use to interact with the ZenML server for common tasks like managing
 stacks, setting up secrets, and so on. It also gives you the general framework that lets you
 [author and deploy pipelines](https://docs.zenml.io/user-guides/starter-guide) and so forth.

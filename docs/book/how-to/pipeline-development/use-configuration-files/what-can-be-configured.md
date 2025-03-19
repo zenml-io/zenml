@@ -207,7 +207,7 @@ settings:
 ```
 
 {% hint style="info" %}
-Find a complete list of all Docker Settings [here](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-config/#zenml.config.docker\_settings.DockerSettings). To learn more about pipeline containerization consult our documentation on this [here](https://docs.zenml.io//how-to/customize-docker-builds).
+Find a complete list of all Docker Settings [here](https://sdkdocs.zenml.io/latest/core_code_docs/core-config.html#zenml.config.docker_settings). To learn more about pipeline containerization consult our documentation on this [here](https://docs.zenml.io//how-to/customize-docker-builds).
 {% endhint %}
 
 ### Resource Settings
