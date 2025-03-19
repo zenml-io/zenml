@@ -111,6 +111,9 @@ def extract_links_from_markdown(
             url = match.group(1).split()[0]
             start_pos = match.start(1)
             end_pos = start_pos + len(url)
+
+            # Clean URLs with common escape sequences
+            # We preserve the original position for proper replacement later
             links.append((url, line_num, line, start_pos, end_pos))
 
         # Find reference link definitions [id]: url
@@ -137,6 +140,31 @@ def extract_links_from_markdown(
     return links
 
 
+def clean_url(url: str) -> str:
+    """
+    Clean up escaped characters in URLs from markdown files.
+
+    Args:
+        url: The URL to clean
+
+    Returns:
+        Cleaned URL with escape sequences properly handled
+    """
+    # Replace escaped underscores with actual underscores
+    cleaned = url.replace("\\_", "_")
+
+    # Replace escaped hyphens with actual hyphens
+    cleaned = cleaned.replace("\\-", "-")
+
+    # Handle other common escapes in Markdown
+    cleaned = cleaned.replace("\\.", ".")
+    cleaned = cleaned.replace("\\#", "#")
+    cleaned = cleaned.replace("\\(", "(")
+    cleaned = cleaned.replace("\\)", ")")
+
+    return cleaned
+
+
 def check_links_with_substring(
     file_path: str, substring: str
 ) -> List[Tuple[str, int, str, int, int]]:
@@ -158,7 +186,10 @@ def check_links_with_substring(
     internal_paths = ["how-to", "user-guide", "component-guide", "book"]
 
     def should_include_link(link: str) -> bool:
-        if substring not in link:
+        # Clean the link to properly handle escaped characters
+        cleaned_link = clean_url(link)
+
+        if substring not in cleaned_link and substring not in link:
             return False
 
         # For internal documentation paths, only include relative links
@@ -211,12 +242,16 @@ def check_link_validity(
     if not HAS_REQUESTS:
         return url, False, "requests module not installed", None
 
+    # Clean up escaped characters in URLs
+    # This helps with Markdown URLs that have escaped underscores, etc.
+    cleaned_url = clean_url(url)
+
     # Skip non-HTTP links
-    if not url.startswith(("http://", "https://")):
+    if not cleaned_url.startswith(("http://", "https://")):
         return url, True, None, None
 
     # Skip local development URLs
-    if is_local_development_url(url):
+    if is_local_development_url(cleaned_url):
         return url, True, None, None
 
     # Configure session with retries
@@ -232,20 +267,24 @@ def check_link_validity(
 
     try:
         # First try with HEAD request
-        response = session.head(url, timeout=timeout, allow_redirects=True)
+        response = session.head(
+            cleaned_url, timeout=timeout, allow_redirects=True
+        )
 
         # If HEAD fails, try GET
         if response.status_code >= 400:
-            response = session.get(url, timeout=timeout, allow_redirects=True)
+            response = session.get(
+                cleaned_url, timeout=timeout, allow_redirects=True
+            )
 
         is_valid = response.status_code < 400
 
         # Additional check for Gitbook URLs that return 200 for non-existent pages
-        if is_valid and "docs.zenml.io" in url:
+        if is_valid and "docs.zenml.io" in cleaned_url:
             # We need to check for "noindex" meta tag which indicates a 404 page in Gitbook
             try:
                 # Use GET to fetch the page content
-                content_response = session.get(url, timeout=timeout)
+                content_response = session.get(cleaned_url, timeout=timeout)
                 content = content_response.text.lower()
 
                 # Look for the "noindex" meta tag which indicates a 404 page
@@ -848,13 +887,22 @@ def main():
                             # Show the original link in the output, but we validated the transformed one
                             print(f"  Line {line_num}: {original_link}")
                             print(f"    ↳ ❌ {status_info}")
+
+                            # Always show what URL was actually validated
+                            cleaned_url = clean_url(original_link)
+                            if cleaned_url != original_link:
+                                print(
+                                    f"    ↳ URL with escapes removed: {cleaned_url}"
+                                )
                             if (
                                 original_link != transformed_link
+                                and cleaned_url != transformed_link
                                 and not args.ci_mode
                             ):
                                 print(
                                     f"    ↳ Validated as: {transformed_link}"
                                 )
+
                             clickable_path = get_clickable_path(
                                 file_path, line_num
                             )
