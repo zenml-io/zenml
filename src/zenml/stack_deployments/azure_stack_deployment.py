@@ -18,6 +18,9 @@ from typing import ClassVar, Dict, List
 
 from zenml.enums import StackDeploymentProvider
 from zenml.models import StackDeploymentConfig
+from zenml.stack_deployments.constants import (
+    TERRAFORM_PROVIDER_VERSION_REQUIREMENTS,
+)
 from zenml.stack_deployments.stack_deployment import ZenMLCloudStackDeployment
 
 AZURE_DEPLOYMENT_TYPE = "azure-cloud-shell"
@@ -269,6 +272,7 @@ ZenML's access to your Azure subscription.
         }}
         zenml = {{
             source = "zenml-io/zenml"
+            version = "{TERRAFORM_PROVIDER_VERSION_REQUIREMENTS}"
         }}
     }}
 }}

@@ -17,6 +17,9 @@ from typing import ClassVar, Dict, List, Optional
 
 from zenml.enums import StackDeploymentProvider
 from zenml.models import StackDeploymentConfig
+from zenml.stack_deployments.constants import (
+    TERRAFORM_PROVIDER_VERSION_REQUIREMENTS,
+)
 from zenml.stack_deployments.stack_deployment import (
     STACK_DEPLOYMENT_TERRAFORM,
     ZenMLCloudStackDeployment,
@@ -287,6 +290,7 @@ console.
         }}
         zenml = {{
             source = "zenml-io/zenml"
+            version = "{TERRAFORM_PROVIDER_VERSION_REQUIREMENTS}"
         }}
     }}
 }}
