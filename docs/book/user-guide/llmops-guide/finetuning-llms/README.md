@@ -41,6 +41,6 @@ when you might need to finetune an LLM, how to evaluate the performance of what\
 you do as well as decisions around what data to use and so on.
 
 To follow along with the example explained in this guide, please follow the\
-instructions in [the `llm-lora-finetuning` repository](https://github.com/zenml-io/zenml-projects/tree/main/llm-lora-finetuning) where the full code is also\
+instructions in [the `llm-lora-finetuning` repository](https://github.com/zenml-io/zenml-projects/tree/main/gamesense) where the full code is also\
 available. This code can be run locally (if you have a GPU attached to your\
 machine) or using cloud compute as you prefer.

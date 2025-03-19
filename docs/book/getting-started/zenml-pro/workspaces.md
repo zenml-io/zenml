@@ -104,7 +104,7 @@ Some Pro-only features that you can leverage in your workspace are as follows:
 
 - [Model Control Plane](https://docs.zenml.io/how-to/model-management-metrics/model-control-plane/register-a-model)
 - [Artifact Control Plane](https://docs.zenml.io/how-to/data-artifact-management/handle-data-artifacts)
-- [Ability to run pipelines from the Dashboard](https://docs.zenml.io/docs/book/how-to/trigger-pipelines/use-templates-rest-api), 
+- [Ability to run pipelines from the Dashboard](https://docs.zenml.io/how-to/trigger-pipelines/use-templates-rest-api), 
 - [Create templates out of your pipeline runs](https://docs.zenml.io/how-to/trigger-pipelines/use-templates-rest-api)
 
 and [more](https://zenml.io/pro)!

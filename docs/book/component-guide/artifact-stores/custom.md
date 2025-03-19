@@ -12,7 +12,7 @@ ZenML comes equipped with [Artifact Store implementations](./#artifact-store-fla
 
 ### Base Abstraction
 
-The Artifact Store establishes one of the main components in every ZenML stack. Now, let us take a deeper dive into the fundamentals behind its abstraction, namely [the `BaseArtifactStore` class](https://sdkdocs.zenml.io/latest/core_code_docs/core-artifact_stores/#zenml.artifact_stores.base_artifact_store.BaseArtifactStore):
+The Artifact Store establishes one of the main components in every ZenML stack. Now, let us take a deeper dive into the fundamentals behind its abstraction, namely [the `BaseArtifactStore` class](https://sdkdocs.zenml.io/latest/core_code_docs/core-artifact_stores.html#zenml.artifact_stores.base_artifact_store):
 
 1. As ZenML only supports filesystem-based artifact stores, it features a configuration parameter called `path`, which will indicate the root path of the artifact store. When registering an artifact store, users will have to define this parameter.
 2. Moreover, there is another variable in the config class called `SUPPORTED_SCHEMES`. This is a class variable that needs to be defined in every subclass of the base artifact store configuration. It indicates the supported file path schemes for the corresponding implementation. For instance, for the Azure artifact store, this set will be defined as `{"abfs://", "az://"}`.
@@ -126,7 +126,7 @@ class BaseArtifactStoreFlavor(Flavor):
 ```
 
 {% hint style="info" %}
-This is a slimmed-down version of the base implementation which aims to highlight the abstraction layer. In order to see the full implementation and get the complete docstrings, please check the [SDK docs](https://sdkdocs.zenml.io/latest/core_code_docs/core-artifact_stores/#zenml.artifact_stores.base_artifact_store.BaseArtifactStore) .
+This is a slimmed-down version of the base implementation which aims to highlight the abstraction layer. In order to see the full implementation and get the complete docstrings, please check the [SDK docs](https://sdkdocs.zenml.io/latest/core_code_docs/core-artifact_stores.html#zenml.artifact_stores.base_artifact_store) .
 {% endhint %}
 
 **The effect on the `zenml.io.fileio`**
@@ -139,7 +139,7 @@ This means that when you utilize a method such as `fileio.open(...)` with a file
 
 If you want to implement your own custom Artifact Store, you can follow the following steps:
 
-1. Create a class that inherits from [the `BaseArtifactStore` class](https://sdkdocs.zenml.io/latest/core_code_docs/core-artifact_stores/#zenml.artifact_stores.base_artifact_store.BaseArtifactStore) and implements the abstract methods.
+1. Create a class that inherits from [the `BaseArtifactStore` class](https://sdkdocs.zenml.io/latest/core_code_docs/core-artifact_stores.html#zenml.artifact_stores.base_artifact_store) and implements the abstract methods.
 2. Create a class that inherits from [the `BaseArtifactStoreConfig` class](custom.md) and fill in the `SUPPORTED_SCHEMES` based on your file system.
 3. Bring both of these classes together by inheriting from [the `BaseArtifactStoreFlavor` class](custom.md).
 

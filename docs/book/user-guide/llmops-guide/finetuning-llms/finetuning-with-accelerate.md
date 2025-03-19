@@ -19,7 +19,7 @@ structured meaning representations.
 For a
 full walkthrough of how to run the LLM finetuning yourself, visit [the LLM Lora
 Finetuning
-project](https://github.com/zenml-io/zenml-projects/tree/main/llm-lora-finetuning)
+project](https://github.com/zenml-io/zenml-projects/tree/main/gamesense)
 where you'll find instructions and the code.
 {% endhint %}
 

@@ -19,7 +19,7 @@ Skipping materialization might have unintended consequences for downstream tasks
 
 While materializers should in most cases be used to control how artifacts are returned and consumed from pipeline steps, you might sometimes need to have a completely unmaterialized artifact in a step, e.g., if you need to know the exact path to where your artifact is stored.
 
-An unmaterialized artifact is a [`zenml.materializers.UnmaterializedArtifact`](https://sdkdocs.zenml.io/latest/core_code_docs/core-artifacts/#zenml.artifacts.unmaterialized_artifact). Among others, it has a property `uri` that points to the unique path in the artifact store where the artifact is persisted. One can use an unmaterialized artifact by specifying `UnmaterializedArtifact` as the type in the step:
+An unmaterialized artifact is a [`zenml.materializers.UnmaterializedArtifact`](https://sdkdocs.zenml.io/latest/core_code_docs/core-artifacts.html#zenml.artifacts.unmaterialized_artifact). Among others, it has a property `uri` that points to the unique path in the artifact store where the artifact is persisted. One can use an unmaterialized artifact by specifying `UnmaterializedArtifact` as the type in the step:
 
 ```python
 from zenml.artifacts.unmaterialized_artifact import UnmaterializedArtifact

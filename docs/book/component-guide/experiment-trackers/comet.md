@@ -91,7 +91,7 @@ zenml stack register custom_stack -e comet_experiment_tracker ... --set
 
 <figure><img src="../../.gitbook/assets/comet_stack.png" alt=""><figcaption><p>A stack with the Comet experiment tracker</p></figcaption></figure>
 
-For more up-to-date information on the Comet Experiment Tracker implementation and its configuration, you can have a look at [the SDK docs for our Comet integration](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-comet/#zenml.integrations.comet.flavors.comet_experiment_tracker_flavor.CometExperimentTrackerConfig).
+For more up-to-date information on the Comet Experiment Tracker implementation and its configuration, you can have a look at [the SDK docs for our Comet integration](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-comet.html#zenml.integrations.comet).
 
 ### How do you use it?
 
@@ -284,6 +284,6 @@ def my_step():
     ...
 ```
 
-Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-comet/#zenml.integrations.comet.flavors.comet_experiment_tracker_flavor.CometExperimentTrackerSettings) for a full list of available attributes and [this docs page](https://docs.zenml.io/how-to/pipeline-development/use-configuration-files/runtime-configuration) for more information on how to specify settings.
+Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-comet.html#zenml.integrations.comet) for a full list of available attributes and [this docs page](https://docs.zenml.io/how-to/pipeline-development/use-configuration-files/runtime-configuration) for more information on how to specify settings.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

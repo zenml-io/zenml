@@ -99,7 +99,7 @@ The Great Expectations Data Validator has a few advanced configuration attribute
 * `configure_zenml_stores`: if set, ZenML will automatically update the Great Expectation configuration to include Metadata Stores that use the Artifact Store as a backend. If neither `context_root_dir` nor `context_config` are set, this is the default behavior. You can set this flag to use the ZenML Artifact Store as a backend for Great Expectations with any of the deployment methods described above. Note that ZenML will not copy the information in your existing Great Expectations stores (e.g. Expectation Suites, Validation Results) in the ZenML Artifact Store. This is something that you will have to do yourself.
 * `configure_local_docs`: set this flag to configure a local Data Docs site where Great Expectations docs are generated and can be visualized locally. Use this in case you don't already have a local Data Docs site in your existing Great Expectations configuration.
 
-For more, up-to-date information on the Great Expectations Data Validator configuration, you can have a look at [the SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-great_expectations/#zenml.integrations.great_expectations.data_validators.ge_data_validator.GreatExpectationsDataValidator) .
+For more, up-to-date information on the Great Expectations Data Validator configuration, you can have a look at [the SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-great_expectations.html#zenml.integrations.great_expectations) .
 
 ### How do you use it?
 

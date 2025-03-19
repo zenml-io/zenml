@@ -55,7 +55,7 @@ curl -H "Authorization: Bearer YOUR_API_TOKEN" https://cloudapi.zenml.io/users/m
 
 Note that for workspace programmatic access, you can use the same methods described below for the OSS API (temporary API tokens or service accounts).
 
-For full details on using the ZenML Pro API, including available endpoints and features, see the [Pro API guide](../getting-started/zenml-pro/pro-api.md).
+For full details on using the ZenML Pro API, including available endpoints and features, see the [Pro API guide](https://docs.zenml.io/pro/deployments/pro-api).
 
 ## Accessing the ZenML OSS API
 

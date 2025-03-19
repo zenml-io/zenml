@@ -24,14 +24,14 @@ Settings are categorized into two types:
   * [`DockerSettings`](https://docs.zenml.io//how-to/customize-docker-builds) to specify Docker settings.
   * [`ResourceSettings`](https://docs.zenml.io//how-to/pipeline-development/training-with-gpus) to specify resource settings.
 * **Stack-component-specific settings**: These can be used to supply runtime configurations to certain stack components (the key should be `<COMPONENT_CATEGORY>` or `<COMPONENT_CATEGORY>.<COMPONENT_FLAVOR>`). Settings for components not in the active stack will be ignored. Examples of these are:
-  * [`SkypilotAWSOrchestratorSettings`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-skypilot_aws/#zenml.integrations.skypilot_aws.flavors.skypilot_orchestrator_aws_vm_flavor.SkypilotAWSOrchestratorSettings) to specify Skypilot settings (works for `SkypilotGCPOrchestratorSettings` and `SkypilotAzureOrchestratorSettings` as well).
-  * [`KubeflowOrchestratorSettings`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-kubeflow/#zenml.integrations.kubeflow.flavors.kubeflow_orchestrator_flavor.KubeflowOrchestratorSettings) to specify Kubeflow settings.
-  * [`MLflowExperimentTrackerSettings`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-mlflow/#zenml.integrations.mlflow.flavors.mlflow_experiment_tracker_flavor.MLFlowExperimentTrackerSettings) to specify MLflow settings.
-  * [`WandbExperimentTrackerSettings`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-wandb/#zenml.integrations.wandb.flavors.wandb_experiment_tracker_flavor.WandbExperimentTrackerSettings) to specify W\&B settings.
-  * [`WhylogsDataValidatorSettings`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-whylogs/#zenml.integrations.whylogs.flavors.whylogs_data_validator_flavor.WhylogsDataValidatorSettings) to specify Whylogs settings.
-  * [`SagemakerStepOperatorSettings`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-aws/#zenml.integrations.aws.flavors.sagemaker_step_operator_flavor.SagemakerStepOperatorSettings) to specify AWS Sagemaker step operator settings.
-  * [`VertexStepOperatorSettings`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-gcp/#zenml.integrations.gcp.flavors.vertex_step_operator_flavor.VertexStepOperatorSettings) to specify GCP Vertex step operator settings.
-  * [`AzureMLStepOperatorSettings`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-azure/#zenml.integrations.azure.flavors.azureml_step_operator_flavor.AzureMLStepOperatorSettings) to specify AzureML step operator settings.
+  * [`SkypilotAWSOrchestratorSettings`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-skypilot_aws.html#zenml.integrations.skypilot_aws) to specify Skypilot settings (works for `SkypilotGCPOrchestratorSettings` and `SkypilotAzureOrchestratorSettings` as well).
+  * [`KubeflowOrchestratorSettings`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-kubeflow.html#zenml.integrations.kubeflow) to specify Kubeflow settings.
+  * [`MLflowExperimentTrackerSettings`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-mlflow.html#zenml.integrations.mlflow) to specify MLflow settings.
+  * [`WandbExperimentTrackerSettings`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-wandb.html#zenml.integrations.wandb) to specify W\&B settings.
+  * [`WhylogsDataValidatorSettings`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-whylogs.html#zenml.integrations.whylogs) to specify Whylogs settings.
+  * [`SagemakerStepOperatorSettings`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-aws.html#zenml.integrations.aws) to specify AWS Sagemaker step operator settings.
+  * [`VertexStepOperatorSettings`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-gcp.html#zenml.integrations.gcp) to specify GCP Vertex step operator settings.
+  * [`AzureMLStepOperatorSettings`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-azure.html#zenml.integrations.azure) to specify AzureML step operator settings.
 
 ### Difference between stack component settings at registration-time vs real-time
 
@@ -47,7 +47,7 @@ This means that all pipelines that run using this experiment tracker use nested 
 
 When specifying stack-component-specific settings, a key needs to be passed. This key should always correspond to the pattern: `<COMPONENT_CATEGORY>` or `<COMPONENT_CATEGORY>.<COMPONENT_FLAVOR>`. If you specify just the category (e.g. `step_operator` or `orchestrator`), ZenML will try to apply those settings to whatever flavor of component is in your stack when running a pipeline. If your settings don't apply to this flavor, they will be ignored.
 
-For example, the [SagemakerStepOperator](https://docs.zenml.io/stacks/step-operators/sagemaker) supports passing in [`estimator_args`](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-aws/#zenml.integrations.aws.flavors.sagemaker\_step\_operator\_flavor.SagemakerStepOperatorSettings). The way to specify this would be to use the key `step_operator`
+For example, the [SagemakerStepOperator](https://docs.zenml.io/stacks/step-operators/sagemaker) supports passing in [`estimator_args`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-aws.html#zenml.integrations.aws). The way to specify this would be to use the key `step_operator`
 
 ```python
 @step(step_operator="nameofstepoperator", settings= {"step_operator": {"estimator_args": {"instance_type": "m7g.medium"}}})

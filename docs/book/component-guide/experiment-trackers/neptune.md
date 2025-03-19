@@ -83,7 +83,7 @@ zenml stack register neptune_stack -e neptune_experiment_tracker ... --set
 {% endtab %}
 {% endtabs %}
 
-For more, up-to-date information on the Neptune Experiment Tracker implementation and its configuration, you can have a look at [the SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-neptune/#zenml.integrations.neptune.experiment_trackers.neptune_experiment_tracker) .
+For more, up-to-date information on the Neptune Experiment Tracker implementation and its configuration, you can have a look at [the SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-neptune.html#zenml.integrations.neptune) .
 
 ### How do you use it?
 
@@ -199,7 +199,7 @@ def my_step(
     ...
 ```
 
-Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-neptune/#zenml.integrations.neptune.flavors.neptune_experiment_tracker_flavor.NeptuneExperimentTrackerSettings) for a full list of available attributes
+Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-neptune.html#zenml.integrations.neptune) for a full list of available attributes
 
 ## Neptune UI
 

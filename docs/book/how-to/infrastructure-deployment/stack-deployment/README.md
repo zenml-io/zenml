@@ -55,7 +55,7 @@ If you follow this approach, you can keep your data scientists free from the has
 
 {% hint style="info" %}
 
-Please note that restricting permissions for users through roles is a ZenML Pro feature. You can read more about it [here](https://docs.zenml.io/getting-started/zenml-pro/roles). Sign up for a free trial here: https://cloud.zenml.io/.
+Please note that restricting permissions for users through roles is a ZenML Pro feature. You can read more about it [here](https://docs.zenml.io/pro/core-concepts/roles). Sign up for a free trial here: https://cloud.zenml.io/.
 
 {% endhint %}
 

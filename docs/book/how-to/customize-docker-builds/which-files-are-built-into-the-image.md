@@ -5,7 +5,7 @@ ZenML determines the root directory of your source files in the following order:
 * If you've initialized zenml (`zenml init`) in your current working directory or one of its parent directories, the repository root directory will be used.
 * Otherwise, the parent directory of the Python file you're executing will be the source root. For example, running `python /path/to/file.py`, the source root would be `/path/to`.
 
-You can specify how the files inside this root directory are handled using the following three attributes on the [DockerSettings](https://sdkdocs.zenml.io/latest/core_code_docs/core-config/#zenml.config.docker_settings.DockerSettings):
+You can specify how the files inside this root directory are handled using the following three attributes on the [DockerSettings](https://sdkdocs.zenml.io/latest/core_code_docs/core-config.html#zenml.config.docker_settings):
 * `allow_download_from_code_repository`: If this is set to `True` and your files are inside a registered [code repository](https://docs.zenml.io/user-guides/production-guide/connect-code-repository) and the repository has no local changes, the files will be downloaded from the code repository and not included in the image.
 * `allow_download_from_artifact_store`: If the previous option is disabled or no code repository without local changes exists for the root directory, ZenML will archive and upload your code to the artifact store if this is set to `True`.
 * `allow_including_files_in_images`: If both previous options were disabled or not possible, ZenML will include your files in the Docker image if this option is enabled. This means a new Docker image has to be built each time you modify one of your code files.

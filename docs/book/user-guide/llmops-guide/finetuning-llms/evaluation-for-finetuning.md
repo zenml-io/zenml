@@ -94,7 +94,7 @@ When using Generalized evals, it's important to consider their limitations and c
 - [nervaluate](https://github.com/MantisAI/nervaluate) (for NER)
 
 It's easy to build in one of these frameworks into your ZenML pipeline. The
-implementation of evaluation in [the `llm-lora-finetuning` project](https://github.com/zenml-io/zenml-projects/tree/main/llm-lora-finetuning) is a good
+implementation of evaluation in [the `llm-lora-finetuning` project](https://github.com/zenml-io/zenml-projects/tree/main/gamesense) is a good
 example of how to do this. We used the `evaluate` library for ROUGE evaluation,
 but you could easily swap this out for another framework if you prefer. See [the previous section](finetuning-with-accelerate.md#implementation-details) for more details.
 

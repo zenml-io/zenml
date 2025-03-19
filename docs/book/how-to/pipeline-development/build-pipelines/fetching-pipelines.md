@@ -27,7 +27,7 @@ Let us investigate how to traverse this hierarchy level by level:
 
 ### Get a pipeline via the client
 
-After you have run a pipeline at least once, you can also fetch the pipeline via the [`Client.get_pipeline()`](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-client/#zenml.client.Client.get\_pipeline) method.
+After you have run a pipeline at least once, you can also fetch the pipeline via the [`Client.get_pipeline()`](https://sdkdocs.zenml.io/latest/core_code_docs/core-client.html#zenml.client.Client) method.
 
 ```python
 from zenml.client import Client
@@ -45,7 +45,7 @@ If you're not sure which pipeline you need to fetch, you can find a list of all 
 
 {% tabs %}
 {% tab title="Python" %}
-You can use the [`Client.list_pipelines()`](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-client/#zenml.client.Client.list\_pipelines) method to get a list of all pipelines registered in ZenML:
+You can use the [`Client.list_pipelines()`](https://sdkdocs.zenml.io/latest/core_code_docs/core-client.html#zenml.client.Client) method to get a list of all pipelines registered in ZenML:
 
 ```python
 from zenml.client import Client
@@ -113,7 +113,7 @@ Client().get_pipeline_run(run.id) # to get a refreshed version
 
 ### Get a run via the client
 
-If you already know the exact run that you want to fetch (e.g., from looking at the dashboard), you can use the [`Client.get_pipeline_run()`](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-client/#zenml.client.Client.get\_pipeline\_run) method to fetch the run directly without having to query the pipeline first:
+If you already know the exact run that you want to fetch (e.g., from looking at the dashboard), you can use the [`Client.get_pipeline_run()`](https://sdkdocs.zenml.io/latest/core_code_docs/core-client.html#zenml.client.Client) method to fetch the run directly without having to query the pipeline first:
 
 ```python
 from zenml.client import Client
@@ -122,12 +122,12 @@ pipeline_run = Client().get_pipeline_run("first_pipeline-2023_06_20-16_20_13_274
 ```
 
 {% hint style="info" %}
-Similar to pipelines, you can query runs by either ID, name, or name prefix, and you can also discover runs through the Client or CLI via the [`Client.list_pipeline_runs()`](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-client/#zenml.client.Client.list\_pipeline\_runs) or `zenml pipeline runs list` commands.
+Similar to pipelines, you can query runs by either ID, name, or name prefix, and you can also discover runs through the Client or CLI via the [`Client.list_pipeline_runs()`](https://sdkdocs.zenml.io/latest/core_code_docs/core-client.html#zenml.client.Client) or `zenml pipeline runs list` commands.
 {% endhint %}
 
 ### Run information
 
-Each run has a collection of useful information which can help you reproduce your runs. In the following, you can find a list of some of the most useful pipeline run information, but there is much more available. See the [`PipelineRunResponse`](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-models/#zenml.models.v2.core.pipeline\_run.PipelineRunResponse) definition for a comprehensive list.
+Each run has a collection of useful information which can help you reproduce your runs. In the following, you can find a list of some of the most useful pipeline run information, but there is much more available. See the [`PipelineRunResponse`](https://sdkdocs.zenml.io/latest/core_code_docs/core-models.html#zenml.models.v2) definition for a comprehensive list.
 
 #### Status
 

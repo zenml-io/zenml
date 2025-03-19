@@ -4,7 +4,7 @@
 
 ## OSS API
 
-* [OSS API](oss-api-docs/README.md)
+* [OSS API](oss-api-docs)
     * [Artifacts](oss-api-docs/v1/artifacts.md)
     * [Artifact versions](oss-api-docs/v1/artifact-versions/README.md)
         * [Batch](oss-api-docs/v1/artifact-versions/batch.md)
@@ -55,7 +55,7 @@
  
 ## Pro API
 
-* [Pro API](pro-api-docs/README.md)
+* [Pro API](pro-api-docs)
   * [API reference](pro-api-docs/api-reference/README.md)
     * [Tenants](pro-api-docs/api-reference/tenants/README.md)
       * [Deploy](pro-api-docs/api-reference/tenants/deploy.md)

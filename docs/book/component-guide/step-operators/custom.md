@@ -70,7 +70,7 @@ class BaseStepOperatorFlavor(Flavor):
 ```
 
 {% hint style="info" %}
-This is a slimmed-down version of the base implementation which aims to highlight the abstraction layer. In order to see the full implementation and get the complete docstrings, please check the [SDK docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-step\_operators/#zenml.step\_operators.base\_step\_operator.BaseStepOperator) .
+This is a slimmed-down version of the base implementation which aims to highlight the abstraction layer. In order to see the full implementation and get the complete docstrings, please check the [SDK docs](https://sdkdocs.zenml.io/latest/core_code_docs/core-step_operators.html#zenml.step_operators.base_step_operator) .
 {% endhint %}
 
 ### Build your own custom step operator

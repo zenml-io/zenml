@@ -43,6 +43,6 @@ zenml image-builder register <NAME> --flavor=local
 zenml stack register <STACK_NAME> -i <NAME> ... --set
 ```
 
-For more information and a full list of configurable attributes of the local image builder, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/core_code_docs/core-image_builders/#zenml.image_builders.local_image_builder.LocalImageBuilder) .
+For more information and a full list of configurable attributes of the local image builder, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/core_code_docs/core-image_builders.html#zenml.image_builders.local_image_builder) .
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
