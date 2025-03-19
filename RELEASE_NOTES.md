@@ -57,7 +57,7 @@ The 0.80.0 release introduces a major refactoring of workspaces into projects, e
 * Fix taggable filter model by @schustmi in https://github.com/zenml-io/zenml/pull/3403
 * Testing the CLI with the profiler by @bcdurak in https://github.com/zenml-io/zenml/pull/3400
 * Don't retry REST API calls if runtime errors occur by @stefannica in https://github.com/zenml-io/zenml/pull/3408
-* Allow the service account project ID to be overriden in the GCP service connector by @stefannica in https://github.com/zenml-io/zenml/pull/3398
+* Allow the service account project ID to be overridden in the GCP service connector by @stefannica in https://github.com/zenml-io/zenml/pull/3398
 * Allow passing step artifacts to specify upstream steps by @schustmi in https://github.com/zenml-io/zenml/pull/3401
 * Add Reo Javascript snippet to main.html by @htahir1 in https://github.com/zenml-io/zenml/pull/3409
 * Rename workspace to project by @stefannica in https://github.com/zenml-io/zenml/pull/3407
@@ -66,7 +66,7 @@ The 0.80.0 release introduces a major refactoring of workspaces into projects, e
 * Minor fix for the docs by @avishniakov in https://github.com/zenml-io/zenml/pull/3411
 * Listing tags filtered by resource type by @bcdurak in https://github.com/zenml-io/zenml/pull/3406
 * Adding removing tags with various update models by @bcdurak in https://github.com/zenml-io/zenml/pull/3404
-* Exclusive tag behaviour by @bcdurak in https://github.com/zenml-io/zenml/pull/3405
+* Exclusive tag behavior by @bcdurak in https://github.com/zenml-io/zenml/pull/3405
 * Rename tenant to workspace and implement new RBAC API resource format by @stefannica in https://github.com/zenml-io/zenml/pull/3414
 * API Docs -> SDK Docs by @htahir1 in https://github.com/zenml-io/zenml/pull/3415
 * Removed step by @AlexejPenner in https://github.com/zenml-io/zenml/pull/3416
