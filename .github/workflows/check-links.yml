@@ -4,10 +4,10 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths-ignore: [src/**, tests/**, '**.py']
+    paths-ignore: [src/**, tests/**, "**.py"]
   pull_request:
     types: [opened, synchronize, reopened]
-    paths-ignore: [src/**, tests/**, '**.py']
+    paths-ignore: [src/**, tests/**, "**.py"]
 concurrency:
   # New commit on branch cancels running workflows of the same branch
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -24,7 +24,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
+          python-version: "3.11"
       - name: Install dependencies
         run: pip install requests
       - name: Check Absolute Links
@@ -46,7 +46,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
+          python-version: "3.11"
       - name: Check Relative Links
         id: check-relative
         run: |
