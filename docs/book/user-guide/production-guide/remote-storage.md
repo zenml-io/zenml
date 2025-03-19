@@ -115,7 +115,7 @@ Having trouble with setting up infrastructure? Join the [ZenML community](https:
 
 ## Configuring permissions with your first service connector
 
-While you can go ahead and [run your pipeline on your stack](remote-storage.md#running-a-pipeline-on-a-cloud-stack) if your local client is configured to access it, it is best practice to use a [service connector](https://docs.zenml.io/how-to/auth-management/) for this purpose. Service connectors are quite a complicated concept (We have a whole [docs section](https://docs.zenml.io/how-to/auth-management/) on them) - but we're going to be starting with a very basic approach.
+While you can go ahead and [run your pipeline on your stack](remote-storage.md#running-a-pipeline-on-a-cloud-stack) if your local client is configured to access it, it is best practice to use a [service connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management) for this purpose. Service connectors are quite a complicated concept (We have a whole [docs section](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management) on them) - but we're going to be starting with a very basic approach.
 
 First, let's understand what a service connector does. In simple words, a
 service connector contains credentials that grant stack components access to

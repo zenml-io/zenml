@@ -298,7 +298,7 @@ We also introduce the notion of `local` vs `non-local` stack components. Local s
 * stacks made up of local stack components should not be shared on a central ZenML Server, even though this is not enforced by the system.
 * stacks made up of non-local stack components are only functional if they are shared through a remotely deployed ZenML Server.
 
-Read more about shared stacks in the new [starter guide](https://docs.zenml.io/user-guides/starter-guide/stacks/managing-stacks#sharing-stacks-over-a-zenml-server).
+Read more about shared stacks in the [production guide](https://docs.zenml.io/user-guides/production-guide/understand-stacks).
 
 ## Other changes
 
