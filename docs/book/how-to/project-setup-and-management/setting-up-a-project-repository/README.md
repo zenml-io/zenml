@@ -49,9 +49,9 @@ Learn about organizing these components in the [Organizing Stacks, Pipelines, Mo
 Proper access management ensures that team members have the right permissions and responsibilities:
 
 - Define roles such as data scientists, MLOps engineers, and infrastructure managers
-- Set up [service connectors](../../infrastructure-deployment/auth-management/README.md) and manage authorizations
+- Set up [service connectors](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management) and manage authorizations
 - Establish processes for pipeline maintenance and server upgrades
-- Leverage [Teams in ZenML Pro](../../../getting-started/zenml-pro/teams.md) to assign roles and permissions to a group of users, to mimic your real-world team roles.
+- Leverage [Teams in ZenML Pro](https://docs.zenml.io/getting-started/zenml-pro/teams) to assign roles and permissions to a group of users, to mimic your real-world team roles.
 
 Explore access management strategies in the [Access Management and Roles guide](../collaborate-with-team/access-management.md).
 

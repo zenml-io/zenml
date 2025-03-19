@@ -7,7 +7,7 @@ description: Structuring an MLOps project
 Now that we've learned about managing [artifacts](../../../user-guide/starter-guide/manage-artifacts.md) and [models](../../../user-guide/starter-guide/track-ml-models.md), we can shift our attention again to the thing that brings them together: [Pipelines](https://docs.zenml.io/user-guides/starter-guide/create-an-ml-pipeline). This trifecta together will then inform how we structure our project.
 
 {% hint style="info" %}
-In order to see the recommended repository structure of a ZenML MLOps project, read the [best practices](../../project-setup-and-management/setting-up-a-project-repository/README.md) section.
+In order to see the recommended repository structure of a ZenML MLOps project, read the [best practices](https://docs.zenml.io/how-to/project-setup-and-management/setting-up-a-project-repository) section.
 {% endhint %}
 
 An MLOps project can often be broken down into many different pipelines. For example:
@@ -27,7 +27,7 @@ Let's say we have a feature engineering pipeline and a training pipeline. The fe
 
 <figure><img src="../../.gitbook/assets/artifact_exchange.png" alt=""><figcaption><p>A simple artifact exchange between two pipelines</p></figcaption></figure>
 
-In this scenario, the [ZenML Client](../../../reference/python-client.md#client-methods) can be used to facilitate such an exchange:
+In this scenario, the [ZenML Client](https://docs.zenml.io/reference/python-client#client-methods) can be used to facilitate such an exchange:
 
 ```python
 from zenml import pipeline
@@ -53,7 +53,7 @@ def training_pipeline():
 ```
 
 {% hint style="info" %}
-Please note, that in the above example, the `train_data` and `test_data` artifacts are not [materialized](../../data-artifact-management/handle-data-artifacts/artifact-versioning.md) in memory in the `@pipeline` function, but rather the `train_data` and `test_data` objects are simply references to where this data is stored in the artifact store. Therefore, one cannot use any logic regarding the nature of this data itself during compilation time (i.e. in the `@pipeline` function).
+Please note, that in the above example, the `train_data` and `test_data` artifacts are not [materialized](https://docs.zenml.io/how-to/data-artifact-management/handle-data-artifacts/artifact-versioning) in memory in the `@pipeline` function, but rather the `train_data` and `test_data` objects are simply references to where this data is stored in the artifact store. Therefore, one cannot use any logic regarding the nature of this data itself during compilation time (i.e. in the `@pipeline` function).
 {% endhint %}
 
 ## Pattern 2: Artifact exchange between pipelines through a `Model`
