@@ -21,7 +21,7 @@ redirects:
   how-to/model-management-metrics/track-metrics-metadata/attach-metadata-to-steps: how-to/model-management-metrics/track-metrics-metadata/attach-metadata-to-a-step.md
 
   # ZenML Pro
-  getting-started/zenml-pro/user-management: getting-started/zenml-pro/heirarchy.md
+  getting-started/zenml-pro/user-management: getting-started/zenml-pro/hierarchy.md
   getting-started/zenml-pro/zenml-cloud: getting-started/zenml-pro/README.md
 
   # Project Setup redirects
@@ -184,7 +184,7 @@ redirects:
   docs/getting-started/zenml-pro/core-concepts/tenants: getting-started/zenml-pro/tenants.md
   docs/introduction: introduction.md
   docs/getting-started/installation: getting-started/installation.md
-  docs/getting-started/core-concepts: getting-started/heirarchy.md
+  docs/getting-started/core-concepts: getting-started/hierarchy.md
   docs/getting-started/system-architectures: getting-started/system-architectures.md
   docs/getting-started/deploying-zenml/: getting-started/deploying-zenml/README.md
   docs/getting-started/zenml-pro/: getting-started/zenml-pro/README.md
