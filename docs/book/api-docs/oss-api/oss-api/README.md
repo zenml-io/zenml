@@ -20,7 +20,7 @@ If you are using the ZenML OSS server API using the methods displayed above, it 
 
 You can generate a short-lived (1 hour) API token from your ZenML dashboard. This is useful when you need a fast way to make authenticated HTTP requests to the ZenML API endpoints and you don't need a long-term solution.
 
-1. Generate a short-lived API token through the API Tokens page under your ZenML dashboard server settings, as documented in the [Using an API token](../how-to/manage-zenml-server/connecting-to-zenml/connect-with-an-api-token.md) guide.
+1. Generate a short-lived API token through the API Tokens page under your ZenML dashboard server settings, as documented in the [Using an API token](../../../how-to/manage-zenml-server/connecting-to-zenml/connect-with-an-api-token.md) guide.
 
 2. Use the API token as the bearer token in your HTTP requests. For example, you can use the following command to check your current user:
     * using curl:
@@ -55,7 +55,7 @@ You can generate a short-lived (1 hour) API token from your ZenML dashboard. Thi
 
 You can use a service account's API key to obtain short-lived API tokens for programmatic access to the ZenML server's REST API. This is particularly useful when you need a long-term, secure way to make authenticated HTTP requests to the ZenML API endpoints.
 
-1. Create a [service account](../how-to/manage-zenml-server/connecting-to-zenml/connect-with-a-service-account.md):
+1. Create a [service account](https://docs.zenml.io/how-to/manage-zenml-server/connecting-to-zenml/connect-with-a-service-account):
     ```shell
     zenml service-account create myserviceaccount
     ```

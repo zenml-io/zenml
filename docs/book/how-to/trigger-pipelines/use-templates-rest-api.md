@@ -23,7 +23,7 @@ REST API:
 
 {% hint style="info" %}
 Learn how to get a bearer token for the curl commands 
-[here](https://docs.zenml.io/reference/api-reference#using-a-bearer-token-to-access-the-api-programmatically).
+[here](https://docs.zenml.io/pro/deployments/pro-api#programmatic-access-with-api-tokens).
 {% endhint %}
 
 Here is an example. Let's say would we like to re-run a pipeline called 
