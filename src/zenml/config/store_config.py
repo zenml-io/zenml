@@ -89,6 +89,24 @@ class StoreConfiguration(BaseModel):
 
         return data
 
+    @model_validator(mode="before")
+    @classmethod
+    def validate_subclass(cls, data: Any) -> Any:
+        """Validate the store configuration.
+
+        Args:
+            data: The values of the store configuration.
+
+        Returns:
+            The values of the store configuration.
+        """
+        if cls == StoreConfiguration:
+            raise ValueError(
+                "StoreConfiguration cannot be instantiated directly, "
+                "use one of the subclasses based on the store type."
+            )
+        return data
+
     model_config = ConfigDict(
         # Validate attributes when assigning them. We need to set this in order
         # to have a mix of mutable and immutable attributes
