@@ -5,10 +5,14 @@ framework. This document walks you through the key differences and new concepts 
 
 ![Image showing the entity hierarchy in ZenML Pro](../../.gitbook/assets/org_hierarchy_pro.png)
 
+{% hint style="info" %}
+**Note**: Workspaces were previously called "Tenants" in earlier versions of ZenML Pro. We've updated the terminology to better reflect their role in organizing MLOps resources.
+{% endhint %}
+
 The image above shows the hierarchy of concepts in ZenML Pro.
 
 * At the top level is your [**Organization**](organization.md). An organization is a collection of users, teams, and workspaces.
-* Each [**Workspace**](workspaces.md) is an isolated deployment of a ZenML server (with some pro features). It contains multiple projects and their resources.
+* Each [**Workspace**](workspaces.md) (formerly `tenant`) is an isolated deployment of a ZenML server (with some pro features). It contains multiple projects and their resources.
 * Each [**Project**](projects.md) is a logical subdivision within a workspace that provides isolation for MLOps resources like pipelines, artifacts, and models. Projects have their own roles and access controls.
 * [**Teams**](teams.md) are groups of users within an organization. They help in organizing users and managing access to resources at organization, workspace, and project levels.
 * **Users** are single individual accounts on a ZenML Pro instance.

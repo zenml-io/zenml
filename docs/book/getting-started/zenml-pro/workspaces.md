@@ -4,6 +4,10 @@ description: Learn how to use workspaces in ZenML Pro.
 
 # Workspaces
 
+{% hint style="info" %}
+**Note**: Workspaces were previously called "Tenants" in earlier versions of ZenML Pro. We've updated the terminology to better reflect their role in organizing MLOps resources.
+{% endhint %}
+
 Workspaces are individual, isolated deployments of the ZenML server. Each workspace has its own set of users, roles, projects, and resources. Essentially, everything you do in ZenML Pro revolves around a workspace: all of your projects, pipelines, stacks, runs, connectors and so on are scoped to a workspace.
 
 
@@ -174,8 +178,12 @@ and [more](https://zenml.io/pro)!
 
 ### Accessing workspace docs
 
-Every workspace has a name which you can use to connect your `zenml` client to your deployed Pro server via the `zenml login`CLI command. The workspace URL can also be used to access the OpenAPI specification for the ZenML Server.\
+Every workspace (formerly known as tenant) has a name which you can use to connect your `zenml` client to your deployed Pro server via the `zenml login`CLI command. The workspace URL can also be used to access the OpenAPI specification for the ZenML Server.\
 Simply visit `<WORKSPACE_URL>/docs` on your browser to see a full list of methods that you can execute from it, like running a pipeline through the REST API.
+
+{% hint style="info" %}
+In the API documentation and some error messages, you might still see references to "tenant" instead of "workspace". These terms refer to the same concept and will be updated in future releases.
+{% endhint %}
 
 ![Image showing the workspace swagger docs](../../.gitbook/assets/swagger_docs_zenml.png)
 
