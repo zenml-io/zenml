@@ -6,7 +6,7 @@ description: >-
 
 # Deepchecks
 
-The Deepchecks [Data Validator](./) flavor provided with the ZenML integration uses [Deepchecks](https://www.deepchecks.com/) to run data integrity, data drift, model drift and model performance tests on the datasets and models circulated in your ZenML pipelines. The test results can be used to implement automated corrective actions in your pipelines or to render interactive representations for further visual interpretation, evaluation and documentation.
+The Deepchecks [Data Validator](./) flavor provided with the ZenML integration uses [Deepchecks](https://github.com/deepchecks/deepchecks) to run data integrity, data drift, model drift and model performance tests on the datasets and models circulated in your ZenML pipelines. The test results can be used to implement automated corrective actions in your pipelines or to render interactive representations for further visual interpretation, evaluation and documentation.
 
 ### When would you want to use it?
 
@@ -119,7 +119,7 @@ The integration doesn't yet include standard steps for computer vision, but you 
 All four standard steps behave similarly regarding the configuration parameters and returned artifacts, with the following differences:
 
 * the type and number of input artifacts are different, as mentioned above
-* each step expects a different enum data type to be used when explicitly listing the checks to be performed via the `check_list` configuration attribute. See the [`zenml.integrations.deepchecks.validation_checks`](https://sdkdocs.zenml.io/0.66.0/integration_code_docs/integrations-deepchecks/#zenml.integrations.deepchecks.validation_checks) module for more details about these enums (e.g. the data integrity step expects a list of `DeepchecksDataIntegrityCheck` values).
+* each step expects a different enum data type to be used when explicitly listing the checks to be performed via the `check_list` configuration attribute. See the [`zenml.integrations.deepchecks.validation_checks`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-deepchecks/#zenml.integrations.deepchecks.validation_checks) module for more details about these enums (e.g. the data integrity step expects a list of `DeepchecksDataIntegrityCheck` values).
 
 This section will only cover how you can use the data integrity step, with a similar usage to be easily inferred for the other three steps.
 
@@ -151,7 +151,7 @@ def data_validation_pipeline():
 data_validation_pipeline()
 ```
 
-As can be seen from the [step definition](https://sdkdocs.zenml.io/0.66.0/integration_code_docs/integrations-deepchecks/#zenml.integrations.deepchecks.steps.deepchecks_data_integrity) , the step takes in a dataset and it returns a Deepchecks `SuiteResult` object that contains the test results:
+As can be seen from the [step definition](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-deepchecks/#zenml.integrations.deepchecks.steps.deepchecks_data_integrity) , the step takes in a dataset and it returns a Deepchecks `SuiteResult` object that contains the test results:
 
 ```python
 @step

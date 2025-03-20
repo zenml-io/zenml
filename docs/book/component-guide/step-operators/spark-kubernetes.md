@@ -210,8 +210,8 @@ When you want to run your steps on a Kubernetes cluster, Spark will require you 
 
 When using Spark in EKS, you need to use the latter and utilize the `docker-image-tool`. However, before the build process, you also need to download the following packages
 
-* [`hadoop-aws` = 3.3.1](https://mvnrepository.com/artifact/org.apache.hadoop/hadoop-aws/3.3.1)
-* [`aws-java-sdk-bundle` = 1.12.150](https://mvnrepository.com/artifact/com.amazonaws/aws-java-sdk-bundle/1.12.150)
+* [`hadoop-aws` = 3.3.1](https://hadoop.apache.org/docs/r3.4.1/hadoop-aws/tools/hadoop-aws/index.html)
+* [`aws-java-sdk-bundle` = 1.12.150](https://mvnrepository.com/artifact/com.amazonaws/aws-java-sdk-bundle)
 
 and put them in the `jars` folder within your Spark installation. Once that is set up, you can build the image as follows:
 

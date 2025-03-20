@@ -17,7 +17,7 @@ answered it on Slack!
 
 ### Social Media: Bite-sized updates
 
-We are active on [LinkedIn](https://www.linkedin.com/company/zenml) and [Twitter](https://twitter.com/zenml\_io) where
+We are active on LinkedIn (linkedin.com/company/zenml/) and Twitter / X (@zenml_io) where
 we post bite-sized updates on releases, events, and MLOps in general. Follow us to interact and stay up to date! We
 would appreciate it if you could comment on and share our posts so more people can benefit from our work at ZenML!
 
