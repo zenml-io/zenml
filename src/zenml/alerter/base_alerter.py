@@ -14,7 +14,7 @@
 """Base class for all ZenML alerters."""
 
 from abc import ABC
-from typing import Optional, Type, cast
+from typing import Optional, Type, cast, Union
 
 from pydantic import BaseModel
 
@@ -44,12 +44,18 @@ class BaseAlerter(StackComponent, ABC):
         return cast(BaseAlerterConfig, self._config)
 
     def post(
-        self, message: str, params: Optional[BaseAlerterStepParameters] = None
+        self,
+        message: Union[str, "AlerterMessage"],
+        params: Optional[BaseAlerterStepParameters] = None
     ) -> bool:
         """Post a message to a chat service.
 
+        This method can handle either a plain string or an AlerterMessage object.
+        Subclasses should parse and format the message if it's an AlerterMessage,
+        then send it to the respective service.
+
         Args:
-            message: Message to be posted.
+            message: A string or an AlerterMessage containing alert info.
             params: Optional parameters of this function.
 
         Returns:
