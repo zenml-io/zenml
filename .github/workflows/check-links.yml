@@ -31,13 +31,13 @@ jobs:
         id: check-absolute
         run: |
           # Only check absolute links (http/https), not relative links
-          python docs/link_checker.py --dir docs/book --substring "http" --validate-links --timeout 15 --ci-mode || true
+          python docs/link_checker.py --dir docs/book --substring "http" --validate-links --timeout 15 --ci-mode
+          # Store the exit code in a variable
           echo "exit_code=$?" >> $GITHUB_OUTPUT
-      - name: Check for failures
+        continue-on-error: true
+      - name: Fail if links are broken
         if: steps.check-absolute.outputs.exit_code != '0'
-        run: |
-          echo "::error::Absolute links check failed. Please check the job logs for details."
-          exit 1
+        run: exit 1
   check-relative-links:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
@@ -54,13 +54,13 @@ jobs:
         id: check-relative
         run: |
           # Check if relative links resolve within the repository
-          python scripts/check_relative_links.py --dir docs/book || true
+          python scripts/check_relative_links.py --dir docs/book
+          # Store the exit code in a variable
           echo "exit_code=$?" >> $GITHUB_OUTPUT
-      - name: Check for failures
+        continue-on-error: true
+      - name: Fail if links are broken
         if: steps.check-relative.outputs.exit_code != '0'
-        run: |
-          echo "::error::Relative links check failed. Please check the job logs for details."
-          exit 1
+        run: exit 1
   summary:
     needs: [check-absolute-links, check-relative-links]
     if: always() && github.event.pull_request.draft == false
