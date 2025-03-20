@@ -67,7 +67,7 @@ Within the `DatabricksServiceConfig` you can configure:
 * `workload_type`: The type of workload that the model will be serving. This can be `CPU`, `GPU_LARGE`, `GPU_MEDIUM`, `GPU_SMALL`, or `MULTIGPU_MEDIUM`.
 * `endpoint_secret_name`: The name of the secret that will be used to secure the endpoint and authenticate requests.
 
-For more information and a full list of configurable attributes of the Databricks Model Deployer, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-databricks.html#zenml.integrations.databricks) and Databricks endpoint [code](https://github.com/databricks/databricks\_hub/blob/5e3b603ccc7cd6523d998e75f82848215abf9415/src/databricks\_hub/hf\_api.py#L6957).
+For more information and a full list of configurable attributes of the Databricks Model Deployer, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-databricks.html#zenml.integrations.databricks) and Databricks endpoint [code](https://docs.databricks.com/aws/en/machine-learning/model-serving/create-manage-serving-endpoints).
 
 ### Run inference on a provisioned inference endpoint
 
