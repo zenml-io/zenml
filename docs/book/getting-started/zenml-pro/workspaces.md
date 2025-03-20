@@ -4,7 +4,7 @@ description: Learn how to use workspaces in ZenML Pro.
 
 # Workspaces
 
-Workspaces are individual, isolated deployments of the ZenML server. Each workspace has its own set of users, roles, and resources. Essentially, everything you do in ZenML Pro revolves around a workspace: all of your pipelines, stacks, runs, connectors and so on are scoped to a workspace.
+Workspaces are individual, isolated deployments of the ZenML server. Each workspace has its own set of users, roles, projects, and resources. Essentially, everything you do in ZenML Pro revolves around a workspace: all of your projects, pipelines, stacks, runs, connectors and so on are scoped to a workspace.
 
 
 
@@ -14,7 +14,7 @@ The ZenML server that you get through a workspace is a supercharged version of t
 
 ## Create a Workspace in your organization
 
-A workspace is a crucial part of your Organization and holds all of your pipelines, experiments and models, among other things. You need to have a workspace to fully utilize the benefits that ZenML Pro brings. The following is how you can create a workspace yourself:
+A workspace is a crucial part of your Organization and serves as a container for your projects, which in turn hold your pipelines, experiments and models, among other things. You need to have a workspace to fully utilize the benefits that ZenML Pro brings. The following is how you can create a workspace yourself:
 
 {% stepper %}
 {% step %}
@@ -85,15 +85,15 @@ This separation allows for a clear distinction between experimental work and pro
 
 Another approach is to create workspaces based on your organization's structure or specific use cases. This method can help in:
 
-1. **Project-based Separation**: Create workspaces for different ML projects or products. For example:
-   * Recommendation System Workspace
-   * Natural Language Processing Workspace
-   * Computer Vision Workspace
+1. **Department-based Separation**: Create workspaces for different departments or business units:
+   * Data Science Department Workspace
+   * Research Department Workspace
+   * Production Department Workspace
 2. **Team-based Separation**: Align workspaces with your organizational structure:
-   * Data Science Team Workspace
    * ML Engineering Team Workspace
-   * Business Intelligence Team Workspace
-3. **Data Sensitivity Levels**: Separate workspaces based on data classification:
+   * Research Team Workspace
+   * Operations Team Workspace
+3. **Data Classification**: Separate workspaces based on data sensitivity:
    * Public Data Workspace
    * Internal Data Workspace
    * Highly Confidential Data Workspace
@@ -114,18 +114,20 @@ Regardless of the approach you choose, consider these best practices:
 
 1. **Clear Naming Conventions**: Use consistent, descriptive names for your workspaces to easily identify their purpose.
 2. **Access Control**: Implement [role-based access control](roles.md) within each workspace to manage permissions effectively.
-3. **Documentation**: Maintain clear documentation about the purpose and contents of each workspace.
-4. **Regular Reviews**: Periodically review your workspace structure to ensure it still aligns with your organization's needs.
-5. **Scalability**: Design your workspace structure to accommodate future growth and new projects.
+3. **Project Organization**: Structure [projects](projects.md) within workspaces to provide additional resource isolation and access control.
+4. **Documentation**: Maintain clear documentation about the purpose and contents of each workspace and its projects.
+5. **Regular Reviews**: Periodically review your workspace structure to ensure it still aligns with your organization's needs.
+6. **Scalability**: Design your workspace structure to accommodate future growth and new projects.
 
-By thoughtfully organizing your workspaces, you can create a more manageable, secure, and efficient MLOps environment that scales with your organization's needs.
+By thoughtfully organizing your workspaces and their projects, you can create a more manageable, secure, and efficient MLOps environment that scales with your organization's needs.
 
 ## Using your workspace
 
-As previously mentioned, a workspace is a supercharged ZenML server that you can use to run your pipelines, carry out experiments and perform all the other actions you expect out of your ZenML server.
+As previously mentioned, a workspace is a supercharged ZenML server that you can use to manage projects, run pipelines, carry out experiments and perform all the other actions you expect out of your ZenML server.
 
 Some Pro-only features that you can leverage in your workspace are as follows:
 
+* [Projects for Resource Organization](projects.md)
 * [Model Control Plane](https://docs.zenml.io/how-to/model-management-metrics/model-control-plane/register-a-model)
 * [Artifact Control Plane](https://docs.zenml.io/how-to/data-artifact-management/handle-data-artifacts)
 * [Ability to run pipelines from the Dashboard](https://docs.zenml.io/how-to/trigger-pipelines/use-templates-rest-api),

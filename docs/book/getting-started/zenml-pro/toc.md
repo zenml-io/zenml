@@ -12,6 +12,7 @@
 * [Heirarchy](heirarchy.md)
 * [Organizations](organization.md)
 * [Workspaces](workspaces.md)
+* [Projects](projects.md)
 * [Teams](teams.md)
 * [Roles & Permissions](roles.md)
 
