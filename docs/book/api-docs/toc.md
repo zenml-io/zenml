@@ -1,6 +1,6 @@
 # Table of contents
 
-* [Introduction](README.md)
+* [API Reference](README.md)
 
 ## OSS API
 
