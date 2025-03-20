@@ -32,6 +32,8 @@ from tests.harness.model import (
 )
 from zenml.constants import ENV_ZENML_CONFIG_PATH
 from zenml.enums import StoreType
+from zenml.zen_stores.rest_zen_store import RestZenStoreConfiguration
+from zenml.zen_stores.sql_zen_store import SqlZenStoreConfiguration
 
 if TYPE_CHECKING:
     from zenml.client import Client
@@ -289,7 +291,6 @@ class BaseTestDeployment(ABC):
         """
         from zenml.client import Client
         from zenml.config.global_config import GlobalConfiguration
-        from zenml.config.store_config import StoreConfiguration
         from zenml.login.credentials_store import CredentialsStore
         from zenml.zen_stores.base_zen_store import BaseZenStore
 
@@ -333,10 +334,18 @@ class BaseTestDeployment(ABC):
                     store_config_dict["username"] = custom_username
                 if custom_password is not None:
                     store_config_dict["password"] = custom_password
-            gc.store = StoreConfiguration(
-                type=store_type,
-                **store_config_dict,
-            )
+            if store_type == StoreType.SQL:
+                gc.store = SqlZenStoreConfiguration(
+                    type=store_type,
+                    **store_config_dict,
+                )
+            elif store_type == StoreType.REST:
+                gc.store = RestZenStoreConfiguration(
+                    type=store_type,
+                    **store_config_dict,
+                )
+            else:
+                raise ValueError(f"Unsupported store type: {store_type}")
 
         client = Client()
 
