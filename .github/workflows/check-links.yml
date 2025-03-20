@@ -118,11 +118,7 @@ jobs:
           # Save failed status to output
           echo "failed=$FAILED" >> $GITHUB_OUTPUT
 
-          # Exit with failure if any checks failed
-          if [[ "$FAILED" == "true" ]]; then
-            echo "::error::One or more link checks failed. Please fix the broken links."
-            exit 1
-          fi
+          # Do not exit with error - we want to post the comment first
 
       - name: Find Comment
         uses: peter-evans/find-comment@v3
@@ -141,3 +137,10 @@ jobs:
           issue-number: ${{ github.event.pull_request.number }}
           body: ${{ steps.create-summary.outputs.comment_body }}
           edit-mode: replace
+
+      # This step runs after comment is posted and fails the workflow if links are broken
+      - name: Report Link Check Status
+        if: steps.create-summary.outputs.failed == 'true'
+        run: |
+          echo "::error::One or more link checks failed. Please fix the broken links."
+          exit 1
