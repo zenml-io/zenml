@@ -404,7 +404,7 @@ def connect(
             "filesystem and is no longer supported. The web login workflow will "
             "be used instead. An alternative for non-interactive environments "
             "is to create and use a service account API key (see "
-            "https://docs.zenml.io/how-to/connecting-to-zenml/connect-with-a-service-account "
+            "https://docs.zenml.io/how-to/manage-zenml-server/connecting-to-zenml/connect-with-a-service-account "
             "for more information)."
         )
 
