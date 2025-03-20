@@ -22,7 +22,7 @@ You can also create a build manually using the CLI:
 zenml pipeline build --stack vertex-stack my_module.my_pipeline_instance
 ```
 
-You can use the options to specify the configuration file and the stack to use for the build. The source should be a path to a pipeline instance. Learn more about the build function [here](https://sdkdocs.zenml.io/latest/core_code_docs/core-new/#zenml.new.pipelines.pipeline.Pipeline.build).
+You can use the options to specify the configuration file and the stack to use for the build. The source should be a path to a pipeline instance. Learn more about the build function [here](https://sdkdocs.zenml.io/latest/cli.html#zenml.cli.Pipeline.build).
 
 ## Reusing builds
 

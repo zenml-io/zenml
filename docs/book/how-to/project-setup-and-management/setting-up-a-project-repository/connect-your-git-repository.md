@@ -137,7 +137,7 @@ After registering the GitLab code repository, ZenML will automatically detect if
 
 <summary>How to get a token for GitLab</summary>
 
-1. Go to your GitLab account settings and click on [Access Tokens](https://gitlab.com/-/profile/personal\_access\_tokens).
+1. Go to your GitLab account settings and click on Access Tokens.
 2.  Name the token and select the scopes that you need (e.g. `read_repository`, `read_user`, `read_api`)
 
     ![](../../../.gitbook/assets/gitlab-generate-access-token.png)

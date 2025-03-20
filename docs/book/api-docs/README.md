@@ -2,57 +2,11 @@
 description: The ZenML API Documentation
 ---
 
-# About
+# Introduction
 
 ## ZenML API Documentation
 
 Welcome to the ZenML API documentation. This guide provides information about both the open-source (OSS) and Pro API endpoints available in the ZenML platform.
-
-## Getting Started
-
-To begin using the ZenML Server API, follow these simple steps:
-
-{% stepper %}
-{% step %}
-### Setup
-
-Ensure you have an active ZenML server or workspace configured.
-{% endstep %}
-
-{% step %}
-### Authentication
-
-Obtain an API token from your service account, as detailed in our core documentation.
-
-{% tabs %}
-{% tab title="OSS API" %}
-* Obtain an API token from your service account
-* Include the token in the authorization header: `Authorization: Bearer YOUR_API_TOKEN`
-{% endtab %}
-
-{% tab title="Pro API" %}
-Use your Pro API key in the authorization header: `Authorization: Bearer YOUR_API_KEY`
-{% endtab %}
-{% endtabs %}
-
-
-{% endstep %}
-
-{% step %}
-### **API Access**
-
-Use the token to authenticate and start interacting with the API endpoints.
-{% endstep %}
-{% endstepper %}
-
-## API Endpoints Overview
-
-The API provides several endpoints to facilitate different operations such as:
-
-* **Pipelines**: Create, list, and manage your pipelines.
-* **Stacks**: Access and configure stack components, such as orchestrators, artifact stores, and more.
-* **Monitoring**: Retrieve logs and metrics to monitor the health of your operations.
-* **Pro Features**: For Pro users, access extended capabilities like organizations, tenants, and enterprise features.
 
 ## Use Cases
 
@@ -65,6 +19,3 @@ While the ZenML Python SDK covers most workflow requirements, the Server API off
 
 By leveraging the ZenML API, users can enhance the robustness and control of their machine learning workflows, ensuring operations are both efficient and scalable.
 
-***
-
-For detailed information on each endpoint and further usage examples, please refer to the specific API documentation sections.

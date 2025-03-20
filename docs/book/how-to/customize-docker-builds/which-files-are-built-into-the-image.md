@@ -16,7 +16,7 @@ Setting all of the above attributes to `False` is not recommended and will most 
 
 ## Control which files get downloaded
 
-When downloading files either from a code repository or the artifact store, ZenML downloads all contents of the root directory into the Docker container. To exclude files, track your code in a Git repository use a [gitignore](https://git-scm.com/docs/gitignore/en) to specify which files should be excluded.
+When downloading files either from a code repository or the artifact store, ZenML downloads all contents of the root directory into the Docker container. To exclude files, track your code in a Git repository use a gitignore to specify which files should be excluded.
 
 ## Control which files get included
 
