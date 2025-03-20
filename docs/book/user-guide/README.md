@@ -1,5 +1,29 @@
-# ZenML Guides
+---
+description: Guides, examples and projects
+---
 
-## General documentation
+# Learn ZenML
 
-Intro about guides WIP.
+Discover how to build production-ready ML pipelines with ZenML through our curated learning resources. Whether you're looking for step-by-step instructions, complete project implementations, or specific examples, you'll find resources to accelerate your ML workflow.
+
+## Guides
+
+Step-by-step instructions to help you master ZenML concepts and features.
+
+<table data-view="cards"><thead><tr><th></th><th></th><th data-hidden data-card-cover data-type="files"></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><strong>Starter Guide</strong></td><td>Get started with ZenML fundamentals and set up your first pipeline</td><td><a href=".gitbook/assets/starter.png">starter.png</a></td><td><a href="starter-guide/">starter-guide</a></td></tr><tr><td><strong>Production Guide</strong></td><td>Move your ML pipelines from development to production</td><td><a href=".gitbook/assets/prod.png">prod.png</a></td><td><a href="production-guide/">production-guide</a></td></tr><tr><td><strong>LLMOps Guide</strong></td><td>Build and deploy Large Language Model pipelines</td><td><a href=".gitbook/assets/llm.png">llm.png</a></td><td><a href="llmops-guide/">llmops-guide</a></td></tr></tbody></table>
+
+## Projects
+
+Complete end-to-end implementations that showcase ZenML in real-world scenarios.\
+[See all projects in our website →](https://www.zenml.io/projects)
+
+<table data-view="cards"><thead><tr><th></th><th></th><th data-hidden data-card-cover data-type="files"></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><strong>Sign Language Detection with YOLOv5</strong></td><td>End-to-end computer vision pipeline</td><td><a href=".gitbook/assets/project-03.jpg">project-03.jpg</a></td><td><a href="https://www.zenml.io/projects/sign-language-detection-with-yolov5">https://www.zenml.io/projects/sign-language-detection-with-yolov5</a></td></tr><tr><td><strong>NightWatch</strong></td><td>AI Database Summaries While You Sleep</td><td><a href=".gitbook/assets/project-04.jpg">project-04.jpg</a></td><td><a href="https://www.zenml.io/projects/nightwatch-ai-database-summaries-while-you-sleep">https://www.zenml.io/projects/nightwatch-ai-database-summaries-while-you-sleep</a></td></tr><tr><td><strong>GameSense</strong></td><td>The LLM That Understands Gamers</td><td><a href=".gitbook/assets/project-06.jpg">project-06.jpg</a></td><td><a href="https://www.zenml.io/projects/gamesense-the-llm-that-understands-gamers">https://www.zenml.io/projects/gamesense-the-llm-that-understands-gamers</a></td></tr><tr><td><strong>ZenCoder</strong></td><td>Your Own MLOps Engineer</td><td><a href=".gitbook/assets/project-05.jpg">project-05.jpg</a></td><td><a href="https://www.zenml.io/projects/zencoder-your-own-mlops-engineer">https://www.zenml.io/projects/zencoder-your-own-mlops-engineer</a></td></tr><tr><td><strong>ZenML Support Agent</strong></td><td>A production-ready agent that can help you with your ZenML questions.</td><td><a href=".gitbook/assets/project-01.jpg">project-01.jpg</a></td><td><a href="https://www.zenml.io/projects/zenml-support-agent">https://www.zenml.io/projects/zenml-support-agent</a></td></tr><tr><td><strong>Magic Photobooth</strong></td><td>A personalized AI image generation product that can create your avatars from a selfie.</td><td><a href=".gitbook/assets/project-07.jpg">project-07.jpg</a></td><td><a href="https://www.zenml.io/projects/magic-photobooth">https://www.zenml.io/projects/magic-photobooth</a></td></tr><tr><td><strong>EuroRate Predictor</strong></td><td>Turn European Central Bank data into actionable interest rate forecasts with this comprehensive MLOps solution.</td><td><a href=".gitbook/assets/project-08.jpg">project-08.jpg</a></td><td><a href="https://www.zenml.io/projects/eurorate-predictor">https://www.zenml.io/projects/eurorate-predictor</a></td></tr></tbody></table>
+
+
+
+## Examples
+
+Focused code snippets and templates that address specific ML workflow challenges.\
+[See all examples in GitHub →](https://github.com/zenml-io/zenml-projects)
+
+<table data-view="cards"><thead><tr><th></th><th></th><th data-hidden data-card-cover data-type="files"></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><strong>Quickstart</strong></td><td>Bridging Local Development and Cloud Deployment</td><td><a href=".gitbook/assets/example-01.png">example-01.png</a></td><td><a href="https://github.com/zenml-io/zenml/blob/main/examples/quickstart">https://github.com/zenml-io/zenml/blob/main/examples/quickstart</a></td></tr><tr><td><strong>End-to-End Batch Inference</strong></td><td>Supervised ML project built with the ZenML framework and its integration.</td><td><a href=".gitbook/assets/example-02.png">example-02.png</a></td><td></td></tr><tr><td><strong>Basic NLP with BERT</strong></td><td>Build NLP models with production-ready ML pipeline framework</td><td><a href=".gitbook/assets/example-03.png">example-03.png</a></td><td><a href="https://github.com/zenml-io/zenml/tree/main/examples/e2e_nlp">https://github.com/zenml-io/zenml/tree/main/examples/e2e_nlp</a></td></tr><tr><td><strong>Computer Vision with YoloV8</strong></td><td>End-to-end computer vision pipeline with modular design</td><td><a href=".gitbook/assets/example-04.png">example-04.png</a></td><td><a href="https://github.com/zenml-io/zenml-projects/tree/main/end-to-end-computer-vision">https://github.com/zenml-io/zenml-projects/tree/main/end-to-end-computer-vision</a></td></tr><tr><td><strong>LLM Finetuning</strong></td><td>LLM fine-tuning pipeline with PEFT approach</td><td><a href=".gitbook/assets/example-05.png">example-05.png</a></td><td><a href="https://github.com/zenml-io/zenml/tree/main/examples/llm_finetuning">https://github.com/zenml-io/zenml/tree/main/examples/llm_finetuning</a></td></tr></tbody></table>
