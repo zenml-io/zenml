@@ -91,7 +91,8 @@ def get_stack_url(stack: StackResponse) -> Optional[str]:
     base_url = get_server_dashboard_url()
 
     if base_url:
-        return base_url + constants.STACKS
+        # There is no filtering in OSS, we just link to the stack list.
+        return f"{base_url}{constants.STACKS}"
 
     return None
 
@@ -112,7 +113,7 @@ def get_component_url(component: ComponentResponse) -> Optional[str]:
     base_url = get_server_dashboard_url()
 
     if base_url:
-        return base_url + constants.STACKS
+        return f"{base_url}{constants.STACK_COMPONENTS}/{component.id}"
 
     return None
 
