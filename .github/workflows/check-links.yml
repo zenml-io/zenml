@@ -32,12 +32,16 @@ jobs:
         run: |
           # Only check absolute links (http/https), not relative links
           python docs/link_checker.py --dir docs/book --substring "http" --validate-links --timeout 15 --ci-mode
-          # Store the exit code in a variable
-          echo "exit_code=$?" >> $GITHUB_OUTPUT
-        continue-on-error: true
-      - name: Fail if links are broken
+          # Capture the exit code even if the command fails
+          EXIT_CODE=$?
+          echo "exit_code=$EXIT_CODE" >> $GITHUB_OUTPUT
+          # Don't exit with error yet, as we want to keep the exit code for the summary step
+          exit 0
+      - name: Mark job status based on check result
         if: steps.check-absolute.outputs.exit_code != '0'
-        run: exit 1
+        run: |
+          echo "::error::Absolute links check failed! Found broken links."
+          exit 1
   check-relative-links:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
@@ -55,12 +59,16 @@ jobs:
         run: |
           # Check if relative links resolve within the repository
           python scripts/check_relative_links.py --dir docs/book
-          # Store the exit code in a variable
-          echo "exit_code=$?" >> $GITHUB_OUTPUT
-        continue-on-error: true
-      - name: Fail if links are broken
+          # Capture the exit code even if the command fails
+          EXIT_CODE=$?
+          echo "exit_code=$EXIT_CODE" >> $GITHUB_OUTPUT
+          # Don't exit with error yet, as we want to keep the exit code for the summary step
+          exit 0
+      - name: Mark job status based on check result
         if: steps.check-relative.outputs.exit_code != '0'
-        run: exit 1
+        run: |
+          echo "::error::Relative links check failed! Found broken links."
+          exit 1
   summary:
     needs: [check-absolute-links, check-relative-links]
     if: always() && github.event.pull_request.draft == false
