@@ -6,8 +6,6 @@ The ZenML Pro API extends the open-source API with additional features designed 
 - Advanced role-based access control
 - Enterprise-grade security features
 
-To access the Pro API, you need a ZenML Pro license. Refer to the [Pro API documentation](https://docs.zenml.io/api-reference/pro-api/pro-api/api-reference) for detailed information on the available endpoints and features.
-
 ### Accessing the ZenML Pro API
 
 The ZenML Pro API is distinct from the OSS server API:

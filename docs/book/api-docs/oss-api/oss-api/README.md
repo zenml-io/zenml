@@ -7,9 +7,9 @@ of your ZenML server:
 In the local case (i.e. using `zenml login --local`, the docs are available on `http://127.0.0.1:8237/docs`)
 {% endhint %}
 
-![ZenML API docs](../.gitbook/assets/zenml_api_docs.png)
+![ZenML API docs](../../../.gitbook/assets/zenml_api_docs.png)
 
-![ZenML API Redoc](../.gitbook/assets/zenml_api_redoc.png)
+![ZenML API Redoc](../../../.gitbook/assets/zenml_api_redoc.png)
 
 
 ## Accessing the ZenML OSS API
