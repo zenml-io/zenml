@@ -20,7 +20,7 @@ from discord import Client, DiscordException, Embed, Intents, Message
 from pydantic import BaseModel
 
 from zenml.alerter.base_alerter import BaseAlerter, BaseAlerterStepParameters
-from zenml.alerter.message_models import AlerterMessage
+from zenml.models.v2.misc.alerter_models import AlerterMessage
 from zenml.integrations.discord.flavors.discord_alerter_flavor import (
     DiscordAlerterConfig,
 )

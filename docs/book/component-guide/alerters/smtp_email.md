@@ -252,7 +252,7 @@ ZenML provides a generic alerter step that works with any alerter flavor, includ
 ```python
 from zenml import pipeline
 from zenml.alerter.steps.alerter_post_step import alerter_post_step
-from zenml.alerter.message_models import AlerterMessage
+from zenml.models.v2.misc.alerter_models import AlerterMessage
 
 @pipeline(enable_cache=False)
 def notification_pipeline():

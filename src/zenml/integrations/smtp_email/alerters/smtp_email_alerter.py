@@ -22,7 +22,7 @@ from pydantic import BaseModel
 
 from zenml import get_step_context
 from zenml.alerter.base_alerter import BaseAlerter, BaseAlerterStepParameters
-from zenml.alerter.message_models import AlerterMessage
+from zenml.models.v2.misc.alerter_models import AlerterMessage
 from zenml.integrations.smtp_email.flavors.smtp_email_alerter_flavor import (
     SMTPEmailAlerterConfig,
     SMTPEmailAlerterSettings,

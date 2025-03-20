@@ -101,7 +101,7 @@ After you have a `DiscordAlerter` configured in your stack, you can use the gene
 ```python
 from zenml.alerter.steps.alerter_post_step import alerter_post_step
 from zenml.alerter.steps.alerter_ask_step import alerter_ask_step
-from zenml.alerter.message_models import AlerterMessage
+from zenml.models.v2.misc.alerter_models import AlerterMessage
 from zenml import step, pipeline
 
 
@@ -143,7 +143,7 @@ You can also use the `AlerterMessage` model directly with the Discord alerter's 
 
 ```python
 from zenml.client import Client
-from zenml.alerter.message_models import AlerterMessage
+from zenml.models.v2.misc.alerter_models import AlerterMessage
 from zenml import step
 
 @step

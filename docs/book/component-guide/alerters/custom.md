@@ -23,7 +23,7 @@ The base abstraction looks something like this:
 
 ```python
 from typing import Optional, Union
-from zenml.alerter.message_models import AlerterMessage
+from zenml.models.v2.misc.alerter_models import AlerterMessage
 
 class BaseAlerter(StackComponent, ABC):
     """Base class for all ZenML alerters."""
@@ -73,7 +73,7 @@ Creating your own custom alerter can be done in three steps:
     from typing import Optional, Union
 
     from zenml.alerter import BaseAlerter, BaseAlerterStepParameters
-    from zenml.alerter.message_models import AlerterMessage
+    from zenml.models.v2.misc.alerter_models import AlerterMessage
 
 
     class MyAlerter(BaseAlerter):

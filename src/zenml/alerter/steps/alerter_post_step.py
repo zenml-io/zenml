@@ -2,7 +2,7 @@ from typing import Optional
 
 from zenml import step
 from zenml.client import Client
-from zenml.alerter.message_models import AlerterMessage
+from zenml.models.v2.misc.alerter_models import AlerterMessage
 
 @step
 def alerter_post_step(msg: AlerterMessage) -> bool:

@@ -14,7 +14,9 @@
 """Base class for all ZenML alerters."""
 
 from abc import ABC
-from typing import Optional, Type, cast, Union
+from typing import Optional, Type, Union, cast
+
+from zenml.models.v2.misc.alerter_models import AlerterMessage
 
 from pydantic import BaseModel
 
@@ -45,7 +47,7 @@ class BaseAlerter(StackComponent, ABC):
 
     def post(
         self,
-        message: Union[str, "AlerterMessage"],
+        message: Union[str, AlerterMessage],
         params: Optional[BaseAlerterStepParameters] = None
     ) -> bool:
         """Post a message to a chat service.

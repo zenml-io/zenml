@@ -211,7 +211,7 @@ ZenML now provides a unified `AlerterMessage` model that works with all alerter 
 ```python
 from zenml import step
 from zenml.client import Client
-from zenml.alerter.message_models import AlerterMessage
+from zenml.models.v2.misc.alerter_models import AlerterMessage
 
 @step
 def send_alert() -> None:
@@ -236,7 +236,7 @@ ZenML provides generic alerter steps that can be used with any alerter flavor, i
 from zenml import pipeline
 from zenml.alerter.steps.alerter_post_step import alerter_post_step
 from zenml.alerter.steps.alerter_ask_step import alerter_ask_step
-from zenml.alerter.message_models import AlerterMessage
+from zenml.models.v2.misc.alerter_models import AlerterMessage
 
 
 @pipeline(enable_cache=False)

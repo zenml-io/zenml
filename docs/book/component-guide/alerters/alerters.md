@@ -54,7 +54,7 @@ and use `alerter_post_step`, passing an `AlerterMessage` object that you can fil
 
 ```python
 from zenml.alerter.steps.alerter_post_step import alerter_post_step
-from zenml.alerter.message_models import AlerterMessage
+from zenml.models.v2.misc.alerter_models import AlerterMessage
 from zenml import pipeline
 
 @pipeline
