@@ -50,7 +50,7 @@ The ZenML integration restructures the way Deepchecks validation checks are orga
 * **model validation checks** require a single dataset and a mandatory model as input. This list includes a subset of the model evaluation checks provided by Deepchecks [for tabular data](https://docs.deepchecks.com/stable/tabular/auto_checks/model_evaluation/index.html) and [for computer vision](https://docs.deepchecks.com/stable/vision/auto_checks/model_evaluation/index.html) that expect a single dataset as input.
 * **model drift checks** require two datasets and a mandatory model as input. This list includes a subset of the model evaluation checks provided by Deepchecks [for tabular data](https://docs.deepchecks.com/stable/tabular/auto_checks/model_evaluation/index.html) and [for computer vision](https://docs.deepchecks.com/stable/vision/auto_checks/model_evaluation/index.html) that expect two datasets as input: target and reference.
 
-This structure is directly reflected in how Deepchecks can be used with ZenML: there are four different Deepchecks standard steps and four different [ZenML enums for Deepchecks checks](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-deepchecks.html#zenml.integrations.deepchecks) . [The Deepchecks Data Validator API](deepchecks.md#the-deepchecks-data-validator) is also modeled to reflect this same structure.
+This structure is directly reflected in how Deepchecks can be used with ZenML: there are four different Deepchecks standard steps and four different [ZenML enums for Deepchecks checks](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-deepchecks.html) . [The Deepchecks Data Validator API](deepchecks.md#the-deepchecks-data-validator) is also modeled to reflect this same structure.
 
 A notable characteristic of Deepchecks is that you don't need to customize the set of Deepchecks tests that are part of a test suite. Both ZenML and Deepchecks provide sane defaults that will run all available Deepchecks tests in a given category with their default conditions if a custom list of tests and conditions are not provided.
 
@@ -119,7 +119,7 @@ The integration doesn't yet include standard steps for computer vision, but you 
 All four standard steps behave similarly regarding the configuration parameters and returned artifacts, with the following differences:
 
 * the type and number of input artifacts are different, as mentioned above
-* each step expects a different enum data type to be used when explicitly listing the checks to be performed via the `check_list` configuration attribute. See the [`zenml.integrations.deepchecks.validation_checks`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-deepchecks/#zenml.integrations.deepchecks.validation_checks) module for more details about these enums (e.g. the data integrity step expects a list of `DeepchecksDataIntegrityCheck` values).
+* each step expects a different enum data type to be used when explicitly listing the checks to be performed via the `check_list` configuration attribute. See the [`zenml.integrations.deepchecks.validation_checks`](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-deepchecks.html) module for more details about these enums (e.g. the data integrity step expects a list of `DeepchecksDataIntegrityCheck` values).
 
 This section will only cover how you can use the data integrity step, with a similar usage to be easily inferred for the other three steps.
 
@@ -151,7 +151,7 @@ def data_validation_pipeline():
 data_validation_pipeline()
 ```
 
-As can be seen from the [step definition](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-deepchecks/#zenml.integrations.deepchecks.steps.deepchecks_data_integrity) , the step takes in a dataset and it returns a Deepchecks `SuiteResult` object that contains the test results:
+As can be seen from the step definition, the step takes in a dataset and it returns a Deepchecks `SuiteResult` object that contains the test results:
 
 ```python
 @step
