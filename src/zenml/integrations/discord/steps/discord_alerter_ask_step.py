@@ -38,12 +38,6 @@ def discord_alerter_ask_step(
 
     This can be useful, e.g. to easily get a human in the loop before
     deploying models.
-    """
-    logger.warning(
-        "DEPRECATION NOTICE: `discord_alerter_ask_step` is deprecated and will "
-        "be removed in a future release. Please use `alerter_ask_step` with "
-        "an `AlerterMessage` object instead."
-    )
 
     Args:
         message: Initial message to be posted.
@@ -55,6 +49,12 @@ def discord_alerter_ask_step(
     Raises:
         RuntimeError: If currently active alerter is not a `DiscordAlerter`.
     """
+    logger.warning(
+        "DEPRECATION NOTICE: `discord_alerter_ask_step` is deprecated and will "
+        "be removed in a future release. Please use `alerter_ask_step` with "
+        "an `AlerterMessage` object instead."
+    )
+
     context = get_step_context()
     client = Client()
     active_stack = client.active_stack

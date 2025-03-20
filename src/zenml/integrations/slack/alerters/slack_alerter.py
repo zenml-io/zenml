@@ -15,7 +15,7 @@
 #  permissions and limitations under the License.
 
 import time
-from typing import Dict, List, Optional, Type, cast, Union
+from typing import Dict, List, Optional, Type, Union, cast
 
 from pydantic import BaseModel
 from slack_sdk import WebClient
@@ -23,12 +23,12 @@ from slack_sdk.errors import SlackApiError
 
 from zenml import get_step_context
 from zenml.alerter.base_alerter import BaseAlerter, BaseAlerterStepParameters
-from zenml.models.v2.misc.alerter_models import AlerterMessage
 from zenml.integrations.slack.flavors.slack_alerter_flavor import (
     SlackAlerterConfig,
     SlackAlerterSettings,
 )
 from zenml.logger import get_logger
+from zenml.models.v2.misc.alerter_models import AlerterMessage
 
 logger = get_logger(__name__)
 

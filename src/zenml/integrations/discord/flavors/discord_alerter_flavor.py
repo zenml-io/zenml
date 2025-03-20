@@ -47,7 +47,11 @@ class DiscordAlerterConfig(BaseAlerterConfig):
             True if the stack component is valid, False otherwise.
         """
         try:
-            from discord import Client, DiscordException, Intents  # type: ignore[import-not-found]
+            from discord import (  # type: ignore[import-not-found]
+                Client,
+                DiscordException,
+                Intents,
+            )
         except ImportError:
             logger.warning(
                 "Unable to validate Discord alerter credentials because the Discord integration is not installed."
@@ -61,9 +65,11 @@ class DiscordAlerterConfig(BaseAlerterConfig):
         try:
             # Check discord token validity
             # Cast the result of client.event to the proper type
-            def typed_event(coro: Callable[[], Awaitable[None]]) -> Callable[[], Awaitable[None]]:
+            def typed_event(
+                coro: Callable[[], Awaitable[None]],
+            ) -> Callable[[], Awaitable[None]]:
                 return cast(Callable[[], Awaitable[None]], client.event(coro))
-                
+
             @typed_event
             async def on_ready() -> None:
                 nonlocal valid

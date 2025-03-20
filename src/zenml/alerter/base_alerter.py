@@ -65,7 +65,9 @@ class BaseAlerter(StackComponent, ABC):
         return True
 
     def ask(
-        self, question: Union[str, AlerterMessage], params: Optional[BaseAlerterStepParameters] = None
+        self,
+        question: Union[str, AlerterMessage],
+        params: Optional[BaseAlerterStepParameters] = None,
     ) -> bool:
         """Post a message to a chat service and wait for approval.
 

@@ -383,14 +383,6 @@ class SMTPEmailAlerter(BaseAlerter):
             email_message["From"] = self.config.sender_email
             email_message["To"] = recipient_email
 
-            # If we had an AlerterMessage, we might set an email subject from it:
-            if isinstance(message, AlerterMessage) and message.title:
-                default_subject = (
-                    f"{self._get_subject_prefix()} {message.title}"
-                )
-            else:
-                default_subject = f"{self._get_subject_prefix()} {fallback_plain[:50]}{'...' if len(fallback_plain) > 50 else ''}"
-
             # Determine subject
             if (
                 params
@@ -399,7 +391,7 @@ class SMTPEmailAlerter(BaseAlerter):
             ):
                 subject = params.subject
             else:
-                # Use default subject with prefix 
+                # Use default subject with prefix
                 if isinstance(message, AlerterMessage):
                     # Use title or first part of body if available
                     msg_text = message.title or message.body or ""
@@ -444,7 +436,9 @@ class SMTPEmailAlerter(BaseAlerter):
             return False
 
     def ask(
-        self, question: Union[str, AlerterMessage], params: Optional[BaseAlerterStepParameters] = None
+        self,
+        question: Union[str, AlerterMessage],
+        params: Optional[BaseAlerterStepParameters] = None,
     ) -> Never:
         """Method not supported for email alerters.
 
