@@ -17,6 +17,42 @@ Projects offer several key benefits:
 3. **Team Organization**: Align projects with specific teams or initiatives within your organization
 4. **Resource Management**: Track and manage resources specific to each project independently
 
+## Using Projects with the CLI
+
+Before you can work with projects, you need to log in to your workspace using the ZenML CLI. Here's how to get started:
+
+### Logging into your workspace
+
+To log in to a workspace, use the following command:
+
+```bash
+zenml login <WORKSPACE_NAME>
+```
+
+If you're using a self-hosted version of ZenML Pro, you'll need to specify the API URL:
+
+```bash
+zenml login <WORKSPACE_NAME> --pro-api-url <URL_OF_API>
+```
+
+{% hint style="info" %}
+The `--pro-api-url` parameter is only required for self-hosted deployments. If you're using the SaaS version of ZenML Pro, you can omit this parameter.
+{% endhint %}
+
+### Setting an active project
+
+After initializing your ZenML repository (`zenml init`), you should set an active project. This is similar to how you set an active stack:
+
+```bash
+zenml project set default
+```
+
+This command sets the "default" project as your active project. All subsequent ZenML operations will be executed in the context of this project.
+
+{% hint style="warning" %}
+Best practice is to set your active project right after running `zenml init`, just like you would set an active stack. This ensures all your resources are properly organized within the project.
+{% endhint %}
+
 ## Creating and Managing Projects
 
 To create a new project:
@@ -46,6 +82,7 @@ In the project creation form, you'll need to provide:
 After creating the project, you can configure additional settings such as:
 * Adding team members and assigning roles
 * Setting up project-specific configurations
+* Configuring integrations
 {% endstep %}
 {% endstepper %}
 
@@ -87,6 +124,11 @@ Projects provide isolation for various MLOps resources:
 * Artifacts and models are isolated within their respective projects
 * Version control and lineage tracking is project-specific
 * Sharing artifacts between projects requires explicit permissions
+
+### Stacks and Components
+* Stack components can be scoped to specific projects
+* Projects can have their own default stack configurations
+* Component access is controlled by project roles
 
 ## Best Practices
 

@@ -12,6 +12,43 @@ Workspaces are individual, isolated deployments of the ZenML server. Each worksp
 
 The ZenML server that you get through a workspace is a supercharged version of the open-source ZenML server. This means that you get all the features of the open-source version, plus some extra Pro features.
 
+## Connecting to Your Workspace
+
+### Using the CLI
+
+To use a workspace, you first need to log in using the ZenML CLI. The basic command is:
+
+```bash
+zenml login <WORKSPACE_NAME>
+```
+
+If you're using a self-hosted version of ZenML Pro, you'll need to specify the API URL:
+
+```bash
+zenml login <WORKSPACE_NAME> --pro-api-url <URL_OF_STAGING>
+```
+
+{% hint style="info" %}
+The `--pro-api-url` parameter is only required for self-hosted deployments. If you're using the SaaS version of ZenML Pro, you can omit this parameter.
+{% endhint %}
+
+After logging in, you can initialize your ZenML repository and start working with your workspace resources:
+
+```bash
+# Initialize a new ZenML repository
+zenml init
+
+# Set up your active project (recommended)
+zenml project set default
+
+# Set up your active stack
+zenml stack set default
+```
+
+### Using the Dashboard
+
+You can also access your workspace through the web dashboard, which provides a graphical interface for managing all your MLOps resources.
+
 ## Create a Workspace in your organization
 
 A workspace is a crucial part of your Organization and serves as a container for your projects, which in turn hold your pipelines, experiments and models, among other things. You need to have a workspace to fully utilize the benefits that ZenML Pro brings. The following is how you can create a workspace yourself:
