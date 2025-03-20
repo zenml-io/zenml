@@ -15,7 +15,7 @@
 #  permissions and limitations under the License.
 
 import time
-from typing import Dict, List, Optional, Type, cast
+from typing import Dict, List, Optional, Type, cast, Union
 
 from pydantic import BaseModel
 from slack_sdk import WebClient
@@ -23,6 +23,7 @@ from slack_sdk.errors import SlackApiError
 
 from zenml import get_step_context
 from zenml.alerter.base_alerter import BaseAlerter, BaseAlerterStepParameters
+from zenml.alerter.message_models import AlerterMessage
 from zenml.integrations.slack.flavors.slack_alerter_flavor import (
     SlackAlerterConfig,
     SlackAlerterSettings,
@@ -261,24 +262,40 @@ class SlackAlerter(BaseAlerter):
 
     def post(
         self,
-        message: Optional[str] = None,
+        message: Union[str, AlerterMessage, None] = None,
         params: Optional[BaseAlerterStepParameters] = None,
     ) -> bool:
         """Post a message to a Slack channel.
 
+        This now accepts either a plain string or an AlerterMessage. If
+        it's an AlerterMessage, we parse title/body/metadata to build the final
+        text or blocks for Slack.
+
         Args:
-            message: Message to be posted.
+            message: A string or AlerterMessage to be posted.
             params: Optional parameters.
 
         Returns:
             True if operation succeeded, else False
         """
         slack_channel_id = self._get_channel_id(params=params)
+
+        if isinstance(message, AlerterMessage):
+            # Build a simple combined text from title + body.
+            combined_text = ""
+            if message.title:
+                combined_text += f"*{message.title}*\n"
+            if message.body:
+                combined_text += message.body
+            # Possibly use metadata or images to enrich Slack blocks in future
+            message_for_slack = combined_text.strip() or "(no content)"
+        else:
+            message_for_slack = message or "(no content)"
         client = WebClient(token=self.config.slack_token)
-        blocks = self._create_blocks(message, params)
+        blocks = self._create_blocks(message_for_slack, params)
         try:
             response = client.chat_postMessage(
-                channel=slack_channel_id, text=message, blocks=blocks
+                channel=slack_channel_id, text=message_for_slack, blocks=blocks
             )
             if not response.get("ok", False):
                 error_details = response.get("error", "Unknown error")

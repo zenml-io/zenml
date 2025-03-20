@@ -22,6 +22,9 @@ from zenml.integrations.slack.alerters.slack_alerter import (
     SlackAlerterParameters,
     SlackAlerterPayload,
 )
+from zenml.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 @step
@@ -30,6 +33,14 @@ def slack_alerter_ask_step(
     params: Optional[SlackAlerterParameters] = None,
 ) -> bool:
     """Posts a message to the Slack alerter component and waits for approval.
+
+    DEPRECATED: Please use `alerter_ask_step` instead. This step will be removed in a future release.
+    """
+    logger.warning(
+        "DEPRECATION NOTICE: `slack_alerter_ask_step` is deprecated and will "
+        "be removed in a future release. Please use `alerter_ask_step` with "
+        "an `AlerterMessage` object instead."
+    )
 
     This can be useful, e.g. to easily get a human in the loop before
     deploying models.
