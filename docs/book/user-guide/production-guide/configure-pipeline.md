@@ -16,7 +16,7 @@ training_pipeline_configured = training_pipeline.with_options(**pipeline_args)
 training_pipeline_configured()
 ```
 
-The above commands [configure our training pipeline](../starter-guide/create-an-ml-pipeline.md#configure-with-a-yaml-file) with a YAML configuration called `training_rf.yaml` (found [here in the source code](https://github.com/zenml-io/zenml/blob/main/examples/quickstart/configs/training\_rf.yaml)). Let's learn more about this configuration file.
+The above commands [configure our training pipeline](../starter-guide/create-an-ml-pipeline.md#configure-with-a-yaml-file) with a YAML configuration called `training_rf.yaml` (found [here in the source code](https://github.com/zenml-io/zenml/tree/main/examples/quickstart/configs)). Let's learn more about this configuration file.
 
 {% hint style="info" %}
 The `with_options` command that points to a YAML config is only one way to configure a pipeline. We can also directly configure a pipeline or a step in the decorator:
