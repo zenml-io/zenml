@@ -463,7 +463,7 @@ def model_finetuner_step(
 
 For further depth, there is an [advanced metadata logging guide](https://docs.zenml.io/how-to/model-management-metrics/track-metrics-metadata) that goes more into detail about logging metadata in ZenML.
 
-Additionally, there is a lot more to learn about artifacts within ZenML. Please read the [dedicated data management guide](https://docs.zenml.io/how-to/handle-data-artifacts/) for more information.
+Additionally, there is a lot more to learn about artifacts within ZenML. Please read the [dedicated data management guide](https://docs.zenml.io/how-to/data-artifact-management) for more information.
 
 ## Code example
 

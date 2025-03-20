@@ -88,7 +88,7 @@ Generalized evals and frameworks provide a structured approach to evaluating you
 When using Generalized evals, it's important to consider their limitations and caveats. While they provide valuable insights, they should be complemented with custom evals tailored to your specific use case. Some possible options for you to check out include:
 
 - [prodigy-evaluate](https://github.com/explosion/prodigy-evaluate?tab=readme-ov-file)
-- [ragas](https://docs.ragas.io/en/stable/getstarted/monitoring.html)
+- [ragas](https://docs.ragas.io/en/stable/getstarted/)
 - [giskard](https://docs.giskard.ai/en/stable/getting_started/quickstart/quickstart_llm.html)
 - [langcheck](https://github.com/citadel-ai/langcheck)
 - [nervaluate](https://github.com/MantisAI/nervaluate) (for NER)
