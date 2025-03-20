@@ -47,6 +47,7 @@ from zenml.models.v2.base.scoped import (
     ProjectScopedResponseBody,
     ProjectScopedResponseMetadata,
     ProjectScopedResponseResources,
+    RunMetadataFilterMixin,
     TaggableFilter,
 )
 from zenml.models.v2.core.artifact import ArtifactResponse
@@ -470,12 +471,15 @@ class ArtifactVersionResponse(
 # ------------------ Filter Model ------------------
 
 
-class ArtifactVersionFilter(ProjectScopedFilter, TaggableFilter):
+class ArtifactVersionFilter(
+    ProjectScopedFilter, TaggableFilter, RunMetadataFilterMixin
+):
     """Model to enable advanced filtering of artifact versions."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
         *TaggableFilter.FILTER_EXCLUDE_FIELDS,
+        *RunMetadataFilterMixin.FILTER_EXCLUDE_FIELDS,
         "artifact_id",
         "artifact",
         "only_unused",
@@ -483,16 +487,22 @@ class ArtifactVersionFilter(ProjectScopedFilter, TaggableFilter):
         "model",
         "pipeline_run",
         "model_version_id",
-        "run_metadata",
     ]
     CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
         *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
         *TaggableFilter.CUSTOM_SORTING_OPTIONS,
+        *RunMetadataFilterMixin.CUSTOM_SORTING_OPTIONS,
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
         *TaggableFilter.CLI_EXCLUDE_FIELDS,
+        *RunMetadataFilterMixin.CLI_EXCLUDE_FIELDS,
         "artifact_id",
+    ]
+    API_MULTI_INPUT_PARAMS: ClassVar[List[str]] = [
+        *ProjectScopedFilter.API_MULTI_INPUT_PARAMS,
+        *TaggableFilter.API_MULTI_INPUT_PARAMS,
+        *RunMetadataFilterMixin.API_MULTI_INPUT_PARAMS,
     ]
 
     artifact: Optional[Union[UUID, str]] = Field(
@@ -561,10 +571,6 @@ class ArtifactVersionFilter(ProjectScopedFilter, TaggableFilter):
         description="Name/ID of a pipeline run that is associated with this "
         "artifact version.",
     )
-    run_metadata: Optional[Dict[str, Any]] = Field(
-        default=None,
-        description="The run_metadata to filter the artifact versions by.",
-    )
 
     model_config = ConfigDict(protected_namespaces=())
 
@@ -590,8 +596,6 @@ class ArtifactVersionFilter(ProjectScopedFilter, TaggableFilter):
             ModelVersionArtifactSchema,
             ModelVersionSchema,
             PipelineRunSchema,
-            RunMetadataResourceSchema,
-            RunMetadataSchema,
             StepRunInputArtifactSchema,
             StepRunOutputArtifactSchema,
             StepRunSchema,
@@ -673,31 +677,6 @@ class ArtifactVersionFilter(ProjectScopedFilter, TaggableFilter):
                 ),
             )
             custom_filters.append(pipeline_run_filter)
-
-        if self.run_metadata is not None:
-            from zenml.enums import MetadataResourceTypes
-
-            for key, value in self.run_metadata.items():
-                additional_filter = and_(
-                    RunMetadataResourceSchema.resource_id
-                    == ArtifactVersionSchema.id,
-                    RunMetadataResourceSchema.resource_type
-                    == MetadataResourceTypes.ARTIFACT_VERSION.value,
-                    RunMetadataResourceSchema.run_metadata_id
-                    == RunMetadataSchema.id,
-                    self.generate_custom_query_conditions_for_column(
-                        value=key,
-                        table=RunMetadataSchema,
-                        column="key",
-                    ),
-                    self.generate_custom_query_conditions_for_column(
-                        value=value,
-                        table=RunMetadataSchema,
-                        column="value",
-                        json_encode_value=True,
-                    ),
-                )
-                custom_filters.append(additional_filter)
 
         return custom_filters
 
