@@ -21,6 +21,9 @@ from zenml.integrations.smtp_email.alerters.smtp_email_alerter import (
     SMTPEmailAlerterParameters,
     SMTPEmailAlerterPayload,
 )
+from zenml.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 @step
@@ -31,6 +34,8 @@ def smtp_email_alerter_post_step(
     include_pipeline_info: bool = True,
 ) -> None:
     """Step that sends an email alert using the active alerter.
+
+    DEPRECATED: Please use `alerter_post_step` instead. This step will be removed in a future release.
 
     Args:
         message: Message to be included in the email.
@@ -44,6 +49,11 @@ def smtp_email_alerter_post_step(
     Raises:
         RuntimeError: If no alerter is configured in the active stack.
     """
+    logger.warning(
+        "DEPRECATION NOTICE: `smtp_email_alerter_post_step` is deprecated and will "
+        "be removed in a future release. Please use `alerter_post_step` with "
+        "an `AlerterMessage` object instead."
+    )
     alerter = Client().active_stack.alerter
     if not alerter:
         raise RuntimeError(

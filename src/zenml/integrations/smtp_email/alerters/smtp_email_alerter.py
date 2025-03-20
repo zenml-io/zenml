@@ -16,12 +16,13 @@
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from typing import Any, List, Never, Optional, Type, cast
+from typing import Any, List, Never, Optional, Type, cast, Union
 
 from pydantic import BaseModel
 
 from zenml import get_step_context
 from zenml.alerter.base_alerter import BaseAlerter, BaseAlerterStepParameters
+from zenml.alerter.message_models import AlerterMessage
 from zenml.integrations.smtp_email.flavors.smtp_email_alerter_flavor import (
     SMTPEmailAlerterConfig,
     SMTPEmailAlerterSettings,
@@ -335,20 +336,35 @@ class SMTPEmailAlerter(BaseAlerter):
 
     def post(
         self,
-        message: Optional[str] = None,
+        message: Union[str, AlerterMessage, None] = None,
         params: Optional[BaseAlerterStepParameters] = None,
     ) -> bool:
         """Send an email alert.
 
+        This method now accepts a string or an AlerterMessage object.
+        If AlerterMessage, we parse title/body/metadata for the email.
+
         Args:
-            message: Message content for the email.
+            message: A string or AlerterMessage for email content.
             params: Optional parameters.
 
         Returns:
             True if operation succeeded, else False
         """
-        if message is None:
-            message = "ZenML Alert"
+        # If we got an AlerterMessage, let's extract a fallback string from it.
+        if isinstance(message, AlerterMessage):
+            extracted_title = message.title or ""
+            extracted_body = message.body or ""
+            # We can store a combined string to pass as the fallback plain text.
+            fallback_plain = (extracted_title + "\n" + extracted_body).strip()
+            if not fallback_plain:
+                fallback_plain = "ZenML Alert"
+        else:
+            # If it's None or a string, default the logic
+            if message is None:
+                fallback_plain = "ZenML Alert"
+            else:
+                fallback_plain = message
 
         try:
             recipient_email = self._get_recipient_email(params=params)
@@ -358,6 +374,12 @@ class SMTPEmailAlerter(BaseAlerter):
             email_message = MIMEMultipart("alternative")
             email_message["From"] = self.config.sender_email
             email_message["To"] = recipient_email
+
+            # If we had an AlerterMessage, we might set an email subject from it:
+            if isinstance(message, AlerterMessage) and message.title:
+                default_subject = f"{self._get_subject_prefix()} {message.title}"
+            else:
+                default_subject = f"{self._get_subject_prefix()} {fallback_plain[:50]}{'...' if len(fallback_plain) > 50 else ''}"
 
             # Determine subject
             if (
@@ -373,11 +395,15 @@ class SMTPEmailAlerter(BaseAlerter):
             email_message["Subject"] = subject
 
             # Attach plain text version
-            email_message.attach(MIMEText(message, "plain"))
+            email_message.attach(MIMEText(fallback_plain, "plain"))
 
             # Attach HTML version if enabled
             if include_html:
-                html_body = self._create_html_body(message, params)
+                # If we had an AlerterMessage, create HTML from that, else from the fallback string
+                if isinstance(message, AlerterMessage):
+                    html_body = self._create_html_body(message.body or "", params)
+                else:
+                    html_body = self._create_html_body(fallback_plain, params)
                 email_message.attach(MIMEText(html_body, "html"))
 
             # Send email
