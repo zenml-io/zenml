@@ -22,6 +22,9 @@ from zenml.integrations.discord.alerters.discord_alerter import (
     DiscordAlerterParameters,
     DiscordAlerterPayload,
 )
+from zenml.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 @step
@@ -30,6 +33,8 @@ def discord_alerter_post_step(
     params: Optional[DiscordAlerterParameters] = None,
 ) -> bool:
     """Post a message to the Discord alerter component of the active stack.
+
+    DEPRECATED: Please use `alerter_post_step` instead. This step will be removed in a future release.
 
     Args:
         message: Message to be posted.
@@ -41,6 +46,11 @@ def discord_alerter_post_step(
     Raises:
         RuntimeError: If currently active alerter is not a `DiscordAlerter`.
     """
+    logger.warning(
+        "DEPRECATION NOTICE: `discord_alerter_post_step` is deprecated and will "
+        "be removed in a future release. Please use `alerter_post_step` with "
+        "an `AlerterMessage` object instead."
+    )
     context = get_step_context()
     client = Client()
     active_stack = client.active_stack

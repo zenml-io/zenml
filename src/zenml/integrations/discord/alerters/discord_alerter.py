@@ -14,12 +14,13 @@
 """Implementation for discord flavor of alerter component."""
 
 import asyncio
-from typing import List, Optional, cast
+from typing import List, Optional, cast, Union
 
 from discord import Client, DiscordException, Embed, Intents, Message
 from pydantic import BaseModel
 
 from zenml.alerter.base_alerter import BaseAlerter, BaseAlerterStepParameters
+from zenml.alerter.message_models import AlerterMessage
 from zenml.integrations.discord.flavors.discord_alerter_flavor import (
     DiscordAlerterConfig,
 )
@@ -220,9 +221,21 @@ class DiscordAlerter(BaseAlerter):
             loop.close()
 
     def post(
-        self, message: str, params: Optional[BaseAlerterStepParameters] = None
+        self,
+        message: Union[str, AlerterMessage],
+        params: Optional[BaseAlerterStepParameters] = None
     ) -> bool:
         """Post a message to a Discord channel.
+
+        Now supports either a plain string or an AlerterMessage. If
+        it's an AlerterMessage, we parse title/body for final content.
+
+        Args:
+            message: A string or AlerterMessage to post.
+            params: Additional step parameters.
+
+        Returns:
+            True if message was successfully sent, else False.
 
         Args:
             message: Message to be posted.
@@ -236,7 +249,20 @@ class DiscordAlerter(BaseAlerter):
         intents.message_content = True
 
         client = Client(intents=intents)
-        embed_blocks = self._create_blocks(message, params)
+
+        if isinstance(message, AlerterMessage):
+            final_text = ""
+            if message.title:
+                final_text += f"**{message.title}**\n"
+            if message.body:
+                final_text += message.body
+            if not final_text:
+                final_text = "(no content)"
+            embed_blocks = self._create_blocks(final_text, params)
+        else:
+            final_text = message
+            embed_blocks = self._create_blocks(final_text, params)
+
         message_sent = False
 
         @client.event
@@ -249,7 +275,7 @@ class DiscordAlerter(BaseAlerter):
                     if embed_blocks:
                         await channel.send(embed=embed_blocks)  # type: ignore
                     else:
-                        await channel.send(content=message)  # type: ignore
+                        await channel.send(content=final_text)  # type: ignore
                     message_sent = True
                 else:
                     logger.error(
