@@ -16,7 +16,7 @@
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from typing import List, Never, Optional, Type, cast
+from typing import Any, List, Never, Optional, Type, cast
 
 from pydantic import BaseModel
 
@@ -84,8 +84,8 @@ class SMTPEmailAlerter(BaseAlerter):
         attribute_name: str,
         params: Optional[BaseAlerterStepParameters] = None,
         fail_if_missing: bool = False,
-        param_class: Type = None,
-    ) -> any:
+        param_class: Optional[Type[BaseAlerterStepParameters]] = None,
+    ) -> Any:
         """Generic method to get configuration attributes from different sources.
 
         Args:
@@ -169,12 +169,12 @@ class SMTPEmailAlerter(BaseAlerter):
             ValueError: if an email recipient was neither defined in the config
                 nor in the alerter component.
         """
-        return self._get_attribute_value(
+        return cast(str, self._get_attribute_value(
             attribute_name="recipient_email",
             params=params,
             fail_if_missing=True,
             param_class=BaseAlerterStepParameters,
-        )
+        ))
 
     def _should_include_html(
         self, params: Optional[BaseAlerterStepParameters] = None
@@ -187,9 +187,9 @@ class SMTPEmailAlerter(BaseAlerter):
         Returns:
             Boolean indicating if HTML should be included.
         """
-        return self._get_attribute_value(
+        return cast(bool, self._get_attribute_value(
             attribute_name="include_html", params=params
-        )
+        ))
 
     def _get_subject_prefix(self) -> str:
         """Get the subject prefix to use.
@@ -197,7 +197,7 @@ class SMTPEmailAlerter(BaseAlerter):
         Returns:
             String prefix for email subjects.
         """
-        return self._get_attribute_value(attribute_name="subject_prefix")
+        return cast(str, self._get_attribute_value(attribute_name="subject_prefix"))
 
     def _create_html_body(
         self, message: str, params: Optional[BaseAlerterStepParameters] = None
