@@ -120,7 +120,7 @@ jobs:
           fi
 
           # Add timestamp
-          cat << 'EOL' > comment_footer.txt
+          cat << EOL > comment_footer.txt
           <sub>Last checked: $(date -u '+%Y-%m-%d %H:%M:%S UTC')</sub>
           EOL
 
