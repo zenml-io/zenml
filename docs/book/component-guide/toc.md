@@ -1,6 +1,7 @@
 # Table of contents
 
 * [Overview](component-guide.md)
+* [Integrations](integrations.md)
 * [Orchestrators](orchestrators/README.md)
   * [Local Orchestrator](orchestrators/local.md)
   * [Local Docker Orchestrator](orchestrators/local-docker.md)
