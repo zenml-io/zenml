@@ -233,7 +233,7 @@ def notify_on_failure() -> None:
 
 ## Using the OpenAI ChatGPT failure hook
 
-The OpenAI ChatGPT failure hook is a hook that uses the OpenAI integration to generate a possible fix for whatever exception caused the step to fail. It is quite easy to use. (You will need [a valid OpenAI API key](https://help.openai.com/en/articles/4936850-where-do-i-find-my-secret-api-key) that has correctly set up billing for this.)
+The OpenAI ChatGPT failure hook is a hook that uses the OpenAI integration to generate a possible fix for whatever exception caused the step to fail. It is quite easy to use. (You will need [a valid OpenAI API key](https://help.openai.com/en/articles/4936850-where-do-i-find-my-openai-api-key) that has correctly set up billing for this.)
 
 {% hint style="warning" %}
 Note that using this integration will incur charges on your OpenAI account.

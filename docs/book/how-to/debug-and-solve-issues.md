@@ -113,7 +113,7 @@ export ZENML_LOGGING_VERBOSITY=DEBUG
 
 Read more about how to set environment variables for:
 
-* For [Linux](https://linuxize.com/post/how-to-set-and-list-environment-variables-in-linux/).
+* For [Linux](https://www3.ntu.edu.sg/home/ehchua/programming/howto/Environment_Variables.html#zz-3./).
 * For [macOS](https://youngstone89.medium.com/setting-up-environment-variables-in-mac-os-28e5941c771c).
 * For [Windows](https://www.computerhope.com/issues/ch000549.htm).
 
