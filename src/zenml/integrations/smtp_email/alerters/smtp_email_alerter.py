@@ -16,18 +16,18 @@
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from typing import Any, List, Never, Optional, Type, cast, Union
+from typing import Any, List, Never, Optional, Type, Union, cast
 
 from pydantic import BaseModel
 
 from zenml import get_step_context
 from zenml.alerter.base_alerter import BaseAlerter, BaseAlerterStepParameters
-from zenml.models.v2.misc.alerter_models import AlerterMessage
 from zenml.integrations.smtp_email.flavors.smtp_email_alerter_flavor import (
     SMTPEmailAlerterConfig,
     SMTPEmailAlerterSettings,
 )
 from zenml.logger import get_logger
+from zenml.models.v2.misc.alerter_models import AlerterMessage
 
 logger = get_logger(__name__)
 
@@ -170,12 +170,15 @@ class SMTPEmailAlerter(BaseAlerter):
             ValueError: if an email recipient was neither defined in the config
                 nor in the alerter component.
         """
-        return cast(str, self._get_attribute_value(
-            attribute_name="recipient_email",
-            params=params,
-            fail_if_missing=True,
-            param_class=BaseAlerterStepParameters,
-        ))
+        return cast(
+            str,
+            self._get_attribute_value(
+                attribute_name="recipient_email",
+                params=params,
+                fail_if_missing=True,
+                param_class=BaseAlerterStepParameters,
+            ),
+        )
 
     def _should_include_html(
         self, params: Optional[BaseAlerterStepParameters] = None
@@ -188,9 +191,12 @@ class SMTPEmailAlerter(BaseAlerter):
         Returns:
             Boolean indicating if HTML should be included.
         """
-        return cast(bool, self._get_attribute_value(
-            attribute_name="include_html", params=params
-        ))
+        return cast(
+            bool,
+            self._get_attribute_value(
+                attribute_name="include_html", params=params
+            ),
+        )
 
     def _get_subject_prefix(self) -> str:
         """Get the subject prefix to use.
@@ -198,7 +204,9 @@ class SMTPEmailAlerter(BaseAlerter):
         Returns:
             String prefix for email subjects.
         """
-        return cast(str, self._get_attribute_value(attribute_name="subject_prefix"))
+        return cast(
+            str, self._get_attribute_value(attribute_name="subject_prefix")
+        )
 
     def _create_html_body(
         self, message: str, params: Optional[BaseAlerterStepParameters] = None
@@ -377,7 +385,9 @@ class SMTPEmailAlerter(BaseAlerter):
 
             # If we had an AlerterMessage, we might set an email subject from it:
             if isinstance(message, AlerterMessage) and message.title:
-                default_subject = f"{self._get_subject_prefix()} {message.title}"
+                default_subject = (
+                    f"{self._get_subject_prefix()} {message.title}"
+                )
             else:
                 default_subject = f"{self._get_subject_prefix()} {fallback_plain[:50]}{'...' if len(fallback_plain) > 50 else ''}"
 
@@ -389,8 +399,16 @@ class SMTPEmailAlerter(BaseAlerter):
             ):
                 subject = params.subject
             else:
-                # Use default subject with prefix
-                subject = f"{self._get_subject_prefix()} {message[:50]}{'...' if len(message) > 50 else ''}"
+                # Use default subject with prefix 
+                if isinstance(message, AlerterMessage):
+                    # Use title or first part of body if available
+                    msg_text = message.title or message.body or ""
+                    truncated_text = msg_text[:50] if msg_text else ""
+                    subject = f"{self._get_subject_prefix()} {truncated_text}{'...' if msg_text and len(msg_text) > 50 else ''}"
+                else:
+                    # At this point message is a string
+                    msg_str = str(message)
+                    subject = f"{self._get_subject_prefix()} {msg_str[:50]}{'...' if len(msg_str) > 50 else ''}"
 
             email_message["Subject"] = subject
 
@@ -401,7 +419,9 @@ class SMTPEmailAlerter(BaseAlerter):
             if include_html:
                 # If we had an AlerterMessage, create HTML from that, else from the fallback string
                 if isinstance(message, AlerterMessage):
-                    html_body = self._create_html_body(message.body or "", params)
+                    html_body = self._create_html_body(
+                        message.body or "", params
+                    )
                 else:
                     html_body = self._create_html_body(fallback_plain, params)
                 email_message.attach(MIMEText(html_body, "html"))
@@ -424,7 +444,7 @@ class SMTPEmailAlerter(BaseAlerter):
             return False
 
     def ask(
-        self, question: str, params: Optional[BaseAlerterStepParameters] = None
+        self, question: Union[str, AlerterMessage], params: Optional[BaseAlerterStepParameters] = None
     ) -> Never:
         """Method not supported for email alerters.
 

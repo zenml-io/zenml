@@ -1,4 +1,3 @@
-from typing import Optional
 from zenml import step
 from zenml.client import Client
 from zenml.models.v2.misc.alerter_models import AlerterMessage

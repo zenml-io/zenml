@@ -16,11 +16,10 @@
 from abc import ABC
 from typing import Optional, Type, Union, cast
 
-from zenml.models.v2.misc.alerter_models import AlerterMessage
-
 from pydantic import BaseModel
 
 from zenml.enums import StackComponentType
+from zenml.models.v2.misc.alerter_models import AlerterMessage
 from zenml.stack import Flavor, StackComponent
 from zenml.stack.stack_component import StackComponentConfig
 
@@ -48,7 +47,7 @@ class BaseAlerter(StackComponent, ABC):
     def post(
         self,
         message: Union[str, AlerterMessage],
-        params: Optional[BaseAlerterStepParameters] = None
+        params: Optional[BaseAlerterStepParameters] = None,
     ) -> bool:
         """Post a message to a chat service.
 
@@ -66,7 +65,7 @@ class BaseAlerter(StackComponent, ABC):
         return True
 
     def ask(
-        self, question: str, params: Optional[BaseAlerterStepParameters] = None
+        self, question: Union[str, AlerterMessage], params: Optional[BaseAlerterStepParameters] = None
     ) -> bool:
         """Post a message to a chat service and wait for approval.
 
@@ -74,7 +73,7 @@ class BaseAlerter(StackComponent, ABC):
         deploying models.
 
         Args:
-            question: Question to ask (message to be posted).
+            question: Question to ask (either a string message or AlerterMessage to be posted).
             params: Optional parameters of this function.
 
         Returns:
