@@ -9,7 +9,7 @@
 
 ## Core Concepts
 
-* [Core Concepts](core-concepts.md)
+* [Heirarchy](heirarchy.md)
 * [Organizations](organization.md)
 * [Workspaces](workspaces.md)
 * [Teams](teams.md)
