@@ -19,25 +19,7 @@ Projects offer several key benefits:
 
 ## Using Projects with the CLI
 
-Before you can work with projects, you need to log in to your workspace using the ZenML CLI. Here's how to get started:
-
-### Logging into your workspace
-
-To log in to a workspace, use the following command:
-
-```bash
-zenml login <WORKSPACE_NAME>
-```
-
-If you're using a self-hosted version of ZenML Pro, you'll need to specify the API URL:
-
-```bash
-zenml login <WORKSPACE_NAME> --pro-api-url <URL_OF_API>
-```
-
-{% hint style="info" %}
-The `--pro-api-url` parameter is only required for self-hosted deployments. If you're using the SaaS version of ZenML Pro, you can omit this parameter.
-{% endhint %}
+Before you can work with projects, you need to be logged into your workspace. If you haven't done this yet, see the [Workspaces](workspaces.md#using-the-cli) documentation for instructions on logging in.
 
 ### Setting an active project
 
