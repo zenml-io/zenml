@@ -62,9 +62,7 @@ Use the **Add members** button to add new members
 Some points to note:
 
 * In addition to adding organization roles, you might also want to add workspace or project roles for people who you want to have access to specific resources.
-* An organization admin can add themselves to any workspace with any workspace role they desire.
 * However, organization viewers and members cannot add themselves to existing workspaces that they are not a part of.
-* Currently, you cannot create custom organization roles via the ZenML Pro dashboard. However, this is possible via the [ZenML Pro API](https://cloudapi.zenml.io/).
 
 ## Workspace-Level Roles
 

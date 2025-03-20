@@ -178,8 +178,7 @@ and [more](https://zenml.io/pro)!
 
 ### Accessing workspace docs
 
-Every workspace (formerly known as tenant) has a name which you can use to connect your `zenml` client to your deployed Pro server via the `zenml login`CLI command. The workspace URL can also be used to access the OpenAPI specification for the ZenML Server.\
-Simply visit `<WORKSPACE_URL>/docs` on your browser to see a full list of methods that you can execute from it, like running a pipeline through the REST API.
+Every workspace (formerly known as tenant) has a name which you can use to connect your `zenml` client to your deployed Pro server via the `zenml login` CLI command.
 
 {% hint style="info" %}
 In the API documentation and some error messages, you might still see references to "tenant" instead of "workspace". These terms refer to the same concept and will be updated in future releases.

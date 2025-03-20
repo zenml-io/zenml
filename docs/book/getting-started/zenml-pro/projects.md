@@ -107,11 +107,6 @@ Projects provide isolation for various MLOps resources:
 * Version control and lineage tracking is project-specific
 * Sharing artifacts between projects requires explicit permissions
 
-### Stacks and Components
-* Stack components can be scoped to specific projects
-* Projects can have their own default stack configurations
-* Component access is controlled by project roles
-
 ## Best Practices
 
 1. **Project Structure**
