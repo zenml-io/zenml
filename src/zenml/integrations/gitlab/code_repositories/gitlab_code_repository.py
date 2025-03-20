@@ -176,10 +176,13 @@ class GitLabCodeRepository(BaseCodeRepository):
         Returns:
             Whether the remote url is correct.
         """
+        host = self.config.host or "gitlab.com"
+        host = host.rstrip("/")
+
         parsed_url = urlparse(url)
         if (
             parsed_url.scheme == "https"
-            and parsed_url.hostname == self.config.host
+            and parsed_url.hostname == host
             and parsed_url.path
             == f"/{self.config.group}/{self.config.project}.git"
         ):
@@ -188,7 +191,7 @@ class GitLabCodeRepository(BaseCodeRepository):
         ssh_regex = re.compile(
             r"^(?P<scheme_with_delimiter>ssh://)?"
             r"(?P<userinfo>git)"
-            f"@{self.config.host}:"
+            f"@{host}:"
             r"(?P<port>\d+)?"
             r"(?(scheme_with_delimiter)/|/?)"
             f"{self.config.group}/{self.config.project}.git$",
