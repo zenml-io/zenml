@@ -14,5 +14,17 @@
 """Constants for the stack deployments."""
 
 # The ZenML Terraform provider compatible versions
-# (allows 2.0.0 through 2.x.x but not 3.0.0)
-TERRAFORM_PROVIDER_VERSION_REQUIREMENTS = "~> 2.0"
+# (>= 2.0.0, < 3.0.0)
+TERRAFORM_PROVIDER_VERSION_SPEC = "~> 2.0"
+
+# The ZenML AWS Terraform module compatible versions
+# (>= 2.0.0, < 3.0.0)
+TERRAFORM_AWS_MODULE_VERSION_SPEC = "~> 2.0"
+
+# The ZenML GCP Terraform module compatible versions
+# (>= 2.0.0, < 3.0.0)
+TERRAFORM_GCP_MODULE_VERSION_SPEC = "~> 2.0"
+
+# The ZenML Azure Terraform module compatible versions
+# (>= 2.0.0, < 3.0.0)
+TERRAFORM_AZURE_MODULE_VERSION_SPEC = "~> 2.0"
