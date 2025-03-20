@@ -7,22 +7,19 @@ description: Sending automated alerts to a Discord channel.
 The `DiscordAlerter` enables you to send messages to a dedicated Discord channel 
 directly from within your ZenML pipelines.
 
-The `discord` integration contains the following two standard steps:
+ZenML provides generic alerter steps that work with any alerter flavor, including Discord:
 
-* [discord\_alerter\_post\_step](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-discord/#zenml.integrations.discord.steps.discord\_alerter\_post\_step.discord\_alerter\_post\_step)
-  takes a string message, posts it to a Discord channel, and returns whether the 
-  operation was successful.
-* [discord\_alerter\_ask\_step](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-discord/#zenml.integrations.discord.steps.discord\_alerter\_ask\_step.discord\_alerter\_ask\_step)
-  also posts a message to a Discord channel, but waits for user feedback, and 
-  only returns `True` if a user explicitly approved the operation from within 
-  Discord (e.g., by sending "approve" / "reject" to the bot in response).
+* [alerter\_post\_step](https://sdkdocs.zenml.io/latest/api\_docs/alerter/#zenml.alerter.steps.alerter_post_step.alerter_post_step) takes an `AlerterMessage` object, posts it to a Discord channel using the active alerter, and returns whether the operation was successful.
+* [alerter\_ask\_step](https://sdkdocs.zenml.io/latest/api\_docs/alerter/#zenml.alerter.steps.alerter_ask_step.alerter_ask_step) also posts a message to a Discord channel, but waits for user feedback, and only returns `True` if a user explicitly approved the operation.
+
+{% hint style="warning" %}
+The specialized Discord steps (`discord_alerter_post_step` and `discord_alerter_ask_step`) are deprecated and will be removed in a future release. Please migrate to the generic `alerter_post_step` and `alerter_ask_step` steps which work with any alerter flavor.
+{% endhint %}
 
 Interacting with Discord from within your pipelines can be very useful in practice:
 
-* The `discord_alerter_post_step` allows you to get notified immediately when failures happen (e.g., model performance
-  degradation, data drift, ...),
-* The `discord_alerter_ask_step` allows you to integrate a human-in-the-loop into your pipelines before executing critical
-  steps, such as deploying new models.
+* The alerter steps allow you to get notified immediately when failures happen (e.g., model performance degradation, data drift, etc.).
+* The ask functionality allows you to integrate a human-in-the-loop into your pipelines before executing critical steps, such as deploying new models.
 
 ## How to use it
 
@@ -97,19 +94,96 @@ permissions:
 
 ### How to Use the Discord Alerter
 
-After you have a `DiscordAlerter` configured in your stack, you can directly import
-the [discord\_alerter\_post\_step](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-discord/#zenml.integrations.discord.steps.discord\_alerter\_post\_step.discord\_alerter\_post\_step)
-and [discord\_alerter\_ask\_step](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-discord/#zenml.integrations.discord.steps.discord\_alerter\_ask\_step.discord\_alerter\_ask\_step)
-steps and use them in your pipelines.
+#### Using the Generic Alerter Steps
 
-Since these steps expect a string message as input (which needs to be the output of another step), you typically also
-need to define a dedicated formatter step that takes whatever data you want to communicate and generates the string
-message that the alerter should post.
+After you have a `DiscordAlerter` configured in your stack, you can use the generic alerter steps that work with any alerter flavor:
 
-As an example, adding `discord_alerter_ask_step()` to your pipeline could look like this:
+```python
+from zenml.alerter.steps.alerter_post_step import alerter_post_step
+from zenml.alerter.steps.alerter_ask_step import alerter_ask_step
+from zenml.alerter.message_models import AlerterMessage
+from zenml import step, pipeline
+
+
+@step
+def my_formatter_step(artifact_to_be_communicated) -> AlerterMessage:
+    # Create a structured message with title, body, and metadata
+    return AlerterMessage(
+        title="Pipeline Update",
+        body=f"Here is my artifact {artifact_to_be_communicated}!",
+        metadata={"artifact_type": type(artifact_to_be_communicated).__name__}
+    )
+
+
+@pipeline
+def my_pipeline(...):
+    ...
+    artifact_to_be_communicated = ...
+    message = my_formatter_step(artifact_to_be_communicated)
+    
+    # Post the message
+    alerter_post_step(message)
+    
+    # Or ask for user approval
+    approval_message = AlerterMessage(
+        title="Approval Required",
+        body="Should we proceed with the deployment?",
+        metadata={"critical": True}
+    )
+    approved = alerter_ask_step(approval_message)
+    ... # Potentially have different behavior in subsequent steps if `approved`
+
+if __name__ == "__main__":
+    my_pipeline()
+```
+
+#### Using AlerterMessage Directly
+
+You can also use the `AlerterMessage` model directly with the Discord alerter's `post()` and `ask()` methods:
+
+```python
+from zenml.client import Client
+from zenml.alerter.message_models import AlerterMessage
+from zenml import step
+
+@step
+def alert_step():
+    # Get the active alerter from the stack
+    alerter = Client().active_stack.alerter
+    
+    # Create a structured message
+    msg = AlerterMessage(
+        title="Processing Complete",
+        body="All data processing steps have finished successfully.",
+        metadata={"execution_time": "10m 23s", "records_processed": 5432}
+    )
+    
+    # Send the alert
+    alerter.post(message=msg)
+
+@step
+def approval_step() -> bool:
+    # Get the active alerter from the stack
+    alerter = Client().active_stack.alerter
+    
+    # Create a question message
+    question = AlerterMessage(
+        title="Deployment Approval",
+        body="The model is ready for deployment. Should we proceed?",
+        metadata={"model_accuracy": 0.95, "requires_approval": True}
+    )
+    
+    # Ask for approval
+    return alerter.ask(question=question)
+```
+
+#### Using the Deprecated Discord-Specific Steps
+
+For backward compatibility, you can still use the Discord-specific steps, but they will show deprecation warnings:
 
 ```python
 from zenml.integrations.discord.steps.discord_alerter_ask_step import discord_alerter_ask_step
+from zenml.integrations.discord.steps.discord_alerter_post_step import discord_alerter_post_step
 from zenml import step, pipeline
 
 
@@ -123,7 +197,12 @@ def my_pipeline(...):
     ...
     artifact_to_be_communicated = ...
     message = my_formatter_step(artifact_to_be_communicated)
-    approved = discord_alerter_ask_step(message)
+    
+    # Post message (deprecated approach)
+    discord_alerter_post_step(message)
+    
+    # Ask for approval (deprecated approach)
+    approved = discord_alerter_ask_step("Should we proceed with the deployment?")
     ... # Potentially have different behavior in subsequent steps if `approved`
 
 if __name__ == "__main__":

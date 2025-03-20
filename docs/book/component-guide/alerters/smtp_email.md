@@ -245,23 +245,29 @@ ZenML uses a standardized email template system across all email-based alerts (i
 
 These hooks are strongly recommended when using SMTP email alerters, as they provide a significantly better user experience compared to the standard hooks which were primarily designed for chat services.
 
-### Using the Predefined Step
+### Using the Generic Alerter Step
 
-For convenience, the SMTP Email integration includes a predefined step for sending email alerts that you can use directly in your pipelines:
+ZenML provides a generic alerter step that works with any alerter flavor, including the SMTP Email alerter:
 
 ```python
 from zenml import pipeline
-from zenml.integrations.smtp_email.steps import smtp_email_alerter_post_step
+from zenml.alerter.steps.alerter_post_step import alerter_post_step
+from zenml.alerter.message_models import AlerterMessage
 
 @pipeline(enable_cache=False)
 def notification_pipeline():
-    # Send an email notification with pipeline information
-    smtp_email_alerter_post_step(
-        message="Pipeline execution started!",
-        subject="Pipeline Notification",
-        recipient_email="team@example.com",
-        include_pipeline_info=True
+    # Create an AlerterMessage object with title and body
+    message = AlerterMessage(
+        title="Pipeline Notification",
+        body="Pipeline execution started!",
+        metadata={
+            "recipient_email": "team@example.com",
+            "include_pipeline_info": True
+        }
     )
+    
+    # Send the email notification
+    alerter_post_step(message)
     
     # Perform other pipeline steps...
 
@@ -269,7 +275,7 @@ if __name__ == "__main__":
     notification_pipeline()
 ```
 
-This step provides a simple interface for sending email alerts without having to directly interact with the alerter API.
+This provides a unified interface for sending email alerts that works consistently across all alerter flavors.
 
 ## Notes
 

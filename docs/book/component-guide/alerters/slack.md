@@ -204,11 +204,70 @@ if __name__ == "__main__":
     my_pipeline()
 ```
 
-### Use the predefined steps
+## Use the `AlerterMessage` model
 
-If you want to only use it in a simple manner, you can also use the steps 
-`slack_alerter_post_step` and `slack_alerter_ask_step`, that are built-in to 
-the Slack integration of ZenML:
+ZenML now provides a unified `AlerterMessage` model that works with all alerter flavors. This model allows you to structure your alert content with fields like `title`, `body`, and `metadata`:
+
+```python
+from zenml import step
+from zenml.client import Client
+from zenml.alerter.message_models import AlerterMessage
+
+@step
+def send_alert() -> None:
+    # Create a structured alert message
+    msg = AlerterMessage(
+        title="Pipeline Completed",
+        body="All steps have executed successfully!",
+        metadata={"pipeline_id": "12345", "status": "SUCCESS"}
+    )
+    
+    # Send the alert through the active alerter (works with any flavor)
+    Client().active_stack.alerter.post(message=msg)
+```
+
+The Slack alerter will automatically format this message appropriately for Slack, including creating proper Slack blocks from the structured data.
+
+### Use the generic alerter steps
+
+ZenML provides generic alerter steps that can be used with any alerter flavor, including Slack:
+
+```python
+from zenml import pipeline
+from zenml.alerter.steps.alerter_post_step import alerter_post_step
+from zenml.alerter.steps.alerter_ask_step import alerter_ask_step
+from zenml.alerter.message_models import AlerterMessage
+
+
+@pipeline(enable_cache=False)
+def my_pipeline():
+    # Create an AlerterMessage with title and body
+    post_msg = AlerterMessage(
+        title="Pipeline Update",
+        body="Posting a statement."
+    )
+    alerter_post_step(post_msg)
+    
+    # Create a question message
+    ask_msg = AlerterMessage(
+        title="User Input Needed",
+        body="Asking a question. Should I continue?"
+    )
+    alerter_ask_step(ask_msg)
+
+
+if __name__ == "__main__":
+    my_pipeline()
+```
+
+{% hint style="warning" %}
+The previous specialized steps `slack_alerter_post_step` and `slack_alerter_ask_step` 
+are deprecated and will be removed in a future release. Please migrate to the generic 
+`alerter_post_step` and `alerter_ask_step` steps shown above.
+{% endhint %}
+
+For backward compatibility, you can still use the Slack-specific steps, but they will 
+show deprecation warnings:
 
 ```python
 from zenml import pipeline
