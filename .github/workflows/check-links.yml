@@ -64,6 +64,9 @@ jobs:
         run: |-
           echo "# Documentation Link Check Results" >> $GITHUB_STEP_SUMMARY
 
+          # Initialize FAILED variable
+          FAILED=false
+
           # Check for failures in absolute links job
           if [[ "${{ needs.check-absolute-links.outputs.exit_code }}" != "0" ]]; then
             echo "❌ **Absolute links check failed**" >> $GITHUB_STEP_SUMMARY
