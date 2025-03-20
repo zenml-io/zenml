@@ -4,10 +4,10 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths-ignore: [src/**, tests/**, "**.py"]
+    paths-ignore: [src/**, tests/**, '**.py']
   pull_request:
     types: [opened, synchronize, reopened]
-    paths-ignore: [src/**, tests/**, "**.py"]
+    paths-ignore: [src/**, tests/**, '**.py']
 concurrency:
   # New commit on branch cancels running workflows of the same branch
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -24,7 +24,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.11"
+          python-version: '3.11'
       - name: Install dependencies
         run: pip install requests
       - name: Check Absolute Links
@@ -53,7 +53,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.11"
+          python-version: '3.11'
       - name: Check Relative Links
         id: check-relative
         run: |
@@ -69,66 +69,81 @@ jobs:
         run: |
           echo "::error::Relative links check failed! Found broken links."
           exit 1
-  summary:
+  post-summary:
     needs: [check-absolute-links, check-relative-links]
     if: always() && github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     steps:
       - name: Create Summary
         id: create-summary
-        run: |-
+        run: |
           echo "# Documentation Link Check Results" >> $GITHUB_STEP_SUMMARY
 
           # Initialize FAILED variable
           FAILED=false
 
           # Create summary content for PR comment
-          COMMENT_BODY="## Documentation Link Check Results\n\n"
+          cat << 'EOL' > comment_beginning.txt
+          ## Documentation Link Check Results
+          EOL
 
           # Check for failures in absolute links job
           if [[ "${{ needs.check-absolute-links.outputs.exit_code }}" != "0" ]]; then
             echo "❌ **Absolute links check failed**" >> $GITHUB_STEP_SUMMARY
             echo "There are broken absolute links in the documentation. Please check the job logs for details." >> $GITHUB_STEP_SUMMARY
-            COMMENT_BODY+="❌ **Absolute links check failed**\n\nThere are broken absolute links in the documentation. [See workflow logs for details](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})\n\n"
+            cat << 'EOL' > comment_absolute.txt
+          ❌ **Absolute links check failed**
+          There are broken absolute links in the documentation. [See workflow logs for details](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          EOL
             FAILED=true
           else
             echo "✅ **Absolute links check passed**" >> $GITHUB_STEP_SUMMARY
-            COMMENT_BODY+="✅ **Absolute links check passed**\n\n"
+            cat << 'EOL' > comment_absolute.txt
+          ✅ **Absolute links check passed**
+          EOL
           fi
 
           # Check for failures in relative links job
           if [[ "${{ needs.check-relative-links.outputs.exit_code }}" != "0" ]]; then
             echo "❌ **Relative links check failed**" >> $GITHUB_STEP_SUMMARY
             echo "There are broken relative links in the documentation. Please check the job logs for details." >> $GITHUB_STEP_SUMMARY
-            COMMENT_BODY+="❌ **Relative links check failed**\n\nThere are broken relative links in the documentation. [See workflow logs for details](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})\n\n"
+            cat << 'EOL' > comment_relative.txt
+          ❌ **Relative links check failed**
+          There are broken relative links in the documentation. [See workflow logs for details](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          EOL
             FAILED=true
           else
             echo "✅ **Relative links check passed**" >> $GITHUB_STEP_SUMMARY
-            COMMENT_BODY+="✅ **Relative links check passed**\n\n"
+            cat << 'EOL' > comment_relative.txt
+          ✅ **Relative links check passed**
+          EOL
           fi
 
           # Add timestamp
-          COMMENT_BODY+="\n\n<sub>Last checked: $(date -u '+%Y-%m-%d %H:%M:%S UTC')</sub>"
+          cat << 'EOL' > comment_footer.txt
+          <sub>Last checked: $(date -u '+%Y-%m-%d %H:%M:%S UTC')</sub>
+          EOL
+
+          # Combine all parts
+          cat comment_beginning.txt comment_absolute.txt comment_relative.txt comment_footer.txt > full_comment.txt
 
           # Save comment body to output
           echo "comment_body<<EOF" >> $GITHUB_OUTPUT
-          echo "$COMMENT_BODY" >> $GITHUB_OUTPUT
+          cat full_comment.txt >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
           # Save failed status to output
           echo "failed=$FAILED" >> $GITHUB_OUTPUT
 
           # Do not exit with error - we want to post the comment first
-
       - name: Find Comment
         uses: peter-evans/find-comment@v3
         if: github.event_name == 'pull_request'
         id: find-comment
         with:
           issue-number: ${{ github.event.pull_request.number }}
-          comment-author: "github-actions[bot]"
-          body-includes: "Documentation Link Check Results"
-
+          comment-author: github-actions[bot]
+          body-includes: Documentation Link Check Results
       - name: Create or Update Comment
         uses: peter-evans/create-or-update-comment@v4
         if: github.event_name == 'pull_request'
@@ -141,6 +156,6 @@ jobs:
       # This step runs after comment is posted and fails the workflow if links are broken
       - name: Report Link Check Status
         if: steps.create-summary.outputs.failed == 'true'
-        run: |
+        run: |-
           echo "::error::One or more link checks failed. Please fix the broken links."
           exit 1
