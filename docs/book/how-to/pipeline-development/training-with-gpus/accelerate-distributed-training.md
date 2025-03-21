@@ -49,7 +49,7 @@ The `run_with_accelerate` decorator accepts various arguments to configure your 
 3. If `run_with_accelerate` is misused, it will raise a `RuntimeError` with a helpful message explaining the correct usage.
 
 {% hint style="info" %}
-To see a full example where Accelerate is used within a ZenML pipeline, check out our [llm-lora-finetuning](https://github.com/zenml-io/zenml-projects/blob/main/llm-lora-finetuning/README.md) project which leverages the distributed training functionalities while finetuning an LLM.
+To see a full example where Accelerate is used within a ZenML pipeline, check out our [llm-lora-finetuning](https://github.com/zenml-io/zenml-projects/blob/main/gamesense/README.md) project which leverages the distributed training functionalities while finetuning an LLM.
 {% endhint %}
 
 ## Ensure your container is Accelerate-ready
@@ -64,7 +64,7 @@ All steps using Accelerate will be executed within a containerized environment. 
 
 ### 1. Specify a CUDA-enabled parent image in your `DockerSettings`
 
-For complete details, refer to the [containerization page](../../customize-docker-builds/README.md). Here's an example using a CUDA-enabled PyTorch image:
+For complete details, refer to the [containerization page](https://docs.zenml.io/how-to/customize-docker-builds). Here's an example using a CUDA-enabled PyTorch image:
 
 ```python
 from zenml import pipeline

@@ -25,7 +25,7 @@ By connecting a Git repository, you avoid redundant builds and make your MLOps p
 
 ## Creating a GitHub Repository
 
-While ZenML supports [many different flavors of git repositories](../../how-to/project-setup-and-management/setting-up-a-project-repository/connect-your-git-repository.md), this guide will focus on [GitHub](https://github.com). To create a repository on GitHub:
+While ZenML supports [many different flavors of git repositories](https://docs.zenml.io/how-to/project-setup-and-management/setting-up-a-project-repository/connect-your-git-repository), this guide will focus on [GitHub](https://github.com). To create a repository on GitHub:
 
 1. Sign in to [GitHub](https://github.com/).
 2. Click the "+" icon and select "New repository."
@@ -100,6 +100,6 @@ python run.py --training-pipeline
 python run.py --training-pipeline
 ```
 
-You can read more about [the ZenML Git Integration here](../../how-to/project-setup-and-management/setting-up-a-project-repository/connect-your-git-repository.md).
+You can read more about [the ZenML Git Integration here](https://docs.zenml.io/how-to/project-setup-and-management/setting-up-a-project-repository/connect-your-git-repository).
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

@@ -5,7 +5,7 @@ description: Learning how to develop a custom model registry.
 # Develop a Custom Model Registry
 
 {% hint style="info" %}
-Before diving into the specifics of this component type, it is beneficial to familiarize yourself with our [general guide to writing custom component flavors in ZenML](../../how-to/infrastructure-deployment/stack-deployment/implement-a-custom-stack-component.md). This guide provides an essential understanding of ZenML's component flavor concepts.
+Before diving into the specifics of this component type, it is beneficial to familiarize yourself with our [general guide to writing custom component flavors in ZenML](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/implement-a-custom-stack-component). This guide provides an essential understanding of ZenML's component flavor concepts.
 {% endhint %}
 
 {% hint style="warning" %}
@@ -159,14 +159,14 @@ class BaseModelRegistry(StackComponent, ABC):
 ```
 
 {% hint style="info" %}
-This is a slimmed-down version of the base implementation which aims to highlight the abstraction layer. To see the full implementation and get the complete docstrings, please check [the source code on GitHub](https://github.com/zenml-io/zenml/blob/main/src/zenml/model\_registries/base\_model\_registry.py) .
+This is a slimmed-down version of the base implementation which aims to highlight the abstraction layer. To see the full implementation and get the complete docstrings, please check [the source code on GitHub](https://github.com/zenml-io/zenml/blob/main/src/zenml/model_registries/base_model_registry.py) .
 {% endhint %}
 
 ### Build your own custom model registry
 
 If you want to create your own custom flavor for a model registry, you can follow the following steps:
 
-1. Learn more about the core concepts for the model registry [here](./model-registries.md#model-registry-concepts-and-terminology). Your custom model registry will be built on top of these concepts so it helps to be aware of them.
+1. Learn more about the core concepts for the model registry [here](./#model-registry-concepts-and-terminology). Your custom model registry will be built on top of these concepts so it helps to be aware of them.
 2. Create a class that inherits from `BaseModelRegistry` and implements the abstract methods.
 3. Create a `ModelRegistryConfig` class that inherits from `BaseModelRegistryConfig` and adds any additional configuration parameters that you need.
 4. Bring the implementation and the configuration together by inheriting from the `BaseModelRegistryFlavor` class. Make sure that you give a `name` to the flavor through its abstract property.
@@ -187,6 +187,6 @@ It is important to draw attention to how and when these base abstractions are co
 The design behind this interaction lets us separate the configuration of the flavor from its implementation. This way we can register flavors and components even when the major dependencies behind their implementation are not installed in our local setting (assuming the `CustomModelRegistryFlavor` and the `CustomModelRegistryConfig` are implemented in a different module/path than the actual `CustomModelRegistry`).
 {% endhint %}
 
-For a full implementation example, please check out the [MLFlowModelRegistry](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-mlflow/#zenml.integrations.mlflow.model\_registry.MLFlowModelRegistry)
+For a full implementation example, please check out the [MLFlowModelRegistry](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-mlflow.html#zenml.integrations.mlflow)
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

@@ -15,7 +15,7 @@ Alternatively, any of these visualizations can also be displayed in Jupyter note
 Some examples of default visualizations are:
 
 - A statistical representation of a [Pandas](https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html) Dataframe represented as a png image.
-- Drift detection reports by [Evidently](../../../component-guide/data-validators/evidently.md), [Great Expectations](../../../component-guide/data-validators/great-expectations.md), and [whylogs](../../../component-guide/data-validators/whylogs.md).
+- Drift detection reports by [Evidently](https://docs.zenml.io/stacks/data-validators/evidently), [Great Expectations](https://docs.zenml.io/stacks/data-validators/great-expectations), and [whylogs](https://docs.zenml.io/stacks/data-validators/whylogs).
 - A [Hugging Face](https://zenml.io/integrations/huggingface) datasets viewer embedded as a HTML iframe.
 
 ![output.visualize() output for the Hugging Face datasets viewer](../../../.gitbook/assets/artifact_visualization_huggingface.gif)

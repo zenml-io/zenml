@@ -87,7 +87,7 @@ if __name__ == "__main__":
 
 ## Visualization via Materializers
 
-If you want to automatically extract visualizations for all artifacts of a certain data type, you can do so by overriding the `save_visualizations()` method of the corresponding [materializer](../../data-artifact-management/handle-data-artifacts/handle-custom-data-types.md#custom-materializers). Let's look at an example of how to visualize matplotlib figures in your ZenML dashboard:
+If you want to automatically extract visualizations for all artifacts of a certain data type, you can do so by overriding the `save_visualizations()` method of the corresponding [materializer](https://docs.zenml.io/how-to/data-artifact-management/handle-data-artifacts/handle-custom-data-types#custom-materializers). Let's look at an example of how to visualize matplotlib figures in your ZenML dashboard:
 
 ### Example: Matplotlib Figure Visualization
 
@@ -101,7 +101,7 @@ class MatplotlibVisualization(BaseModel):
     figure: Any  # This will hold the matplotlib figure
 ```
 
-**2. Materializer** Next, we create a [custom materializer](../../data-artifact-management/handle-data-artifacts/handle-custom-data-types.md#custom-materializers) that handles this class and implements the visualization logic:
+**2. Materializer** Next, we create a [custom materializer](https://docs.zenml.io/how-to/data-artifact-management/handle-data-artifacts/handle-custom-data-types#custom-materializers) that handles this class and implements the visualization logic:
 
 ```python
 class MatplotlibMaterializer(BaseMaterializer):

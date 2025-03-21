@@ -14,7 +14,7 @@ You're a system architect tasked with setting up a scalable ML infrastructure th
 
 ## The ZenML Approach
 
-ZenML introduces [stack components](../../../component-guide/README.md) as abstractions over infrastructure resources. Let's explore how to architect this effectively with Terraform using the official ZenML provider.
+ZenML introduces [stack components](https://docs.zenml.io/stacks) as abstractions over infrastructure resources. Let's explore how to architect this effectively with Terraform using the official ZenML provider.
 
 ## Part 1: Foundation - Stack Component Architecture
 

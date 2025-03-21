@@ -57,13 +57,13 @@ def trainer(...) -> ...:
 ```
 
 {% hint style="info" %}
-ZenML will build a Docker image which includes your code and use it to run your steps in Modal. Check out [this page](../../how-to/customize-docker-builds/README.md) if you want to learn more about how ZenML builds these images and how you can customize them.
+ZenML will build a Docker image which includes your code and use it to run your steps in Modal. Check out [this page](https://docs.zenml.io/how-to/customize-docker-builds) if you want to learn more about how ZenML builds these images and how you can customize them.
 {% endhint %}
 
 #### Additional configuration
 
 You can specify the hardware requirements for each step using the
-`ResourceSettings` class as described in our documentation on [resource settings](../../how-to/pipeline-development/training-with-gpus/README.md):
+`ResourceSettings` class as described in our documentation on [resource settings](https://docs.zenml.io/how-to/pipeline-development/training-with-gpus):
 
 ```python
 from zenml.config import ResourceSettings

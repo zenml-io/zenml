@@ -4,7 +4,7 @@ description: Deploying your models locally with MLflow.
 
 # MLflow
 
-The MLflow Model Deployer is one of the available flavors of the [Model Deployer](./model-deployers.md) stack component. Provided with the MLflow integration it can be used to deploy and manage [MLflow models](https://www.mlflow.org/docs/latest/python\_api/mlflow.deployments.html) on a local running MLflow server.
+The MLflow Model Deployer is one of the available flavors of the [Model Deployer](./) stack component. Provided with the MLflow integration it can be used to deploy and manage [MLflow models](https://www.mlflow.org/docs/latest/python_api/mlflow.deployments.html) on a local running MLflow server.
 
 {% hint style="warning" %}
 The MLflow Model Deployer is not yet available for use in production. This is a work in progress and will be available soon. At the moment it is only available for use in a local development environment.
@@ -19,7 +19,7 @@ You should use the MLflow Model Deployer:
 * if you want to have an easy way to deploy your models locally and perform real-time predictions using the running MLflow prediction server.
 * if you are looking to deploy your models in a simple way without the need for a dedicated deployment environment like Kubernetes or advanced infrastructure configuration.
 
-If you are looking to deploy your models in a more complex way, you should use one of the other [Model Deployer Flavors](./model-deployers.md#model-deployers-flavors) available in ZenML.
+If you are looking to deploy your models in a more complex way, you should use one of the other [Model Deployer Flavors](./#model-deployers-flavors) available in ZenML.
 
 ## How do you deploy it?
 
@@ -230,6 +230,6 @@ def predictor(
     return prediction
 ```
 
-For more information and a full list of configurable attributes of the MLflow Model Deployer, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-mlflow/#zenml.integrations.mlflow.model\_deployers) .
+For more information and a full list of configurable attributes of the MLflow Model Deployer, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-mlflow.html#zenml.integrations.mlflow) .
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

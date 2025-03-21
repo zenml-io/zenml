@@ -27,7 +27,7 @@ Learn more about setting up your repository in the [Set up repository guide](./s
 
 Integrating your ZenML project with version control systems like Git is crucial for team collaboration and code management. This allows for:
 
-- Makes creating pipeline builds faster, as you can leverage the same image and [have ZenML download code from your repository](../../infrastructure-deployment/customize-docker-builds/how-to-reuse-builds.md#use-code-repositories-to-speed-up-docker-build-times).
+- Makes creating pipeline builds faster, as you can leverage the same image and [have ZenML download code from your repository](https://docs.zenml.io/how-to/customize-docker-builds/how-to-reuse-builds#use-code-repositories-to-speed-up-docker-build-times).
 - Easy tracking of changes
 - Collaboration among team members
 
@@ -49,9 +49,9 @@ Learn about organizing these components in the [Organizing Stacks, Pipelines, Mo
 Proper access management ensures that team members have the right permissions and responsibilities:
 
 - Define roles such as data scientists, MLOps engineers, and infrastructure managers
-- Set up [service connectors](../../infrastructure-deployment/auth-management/README.md) and manage authorizations
+- Set up [service connectors](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management) and manage authorizations
 - Establish processes for pipeline maintenance and server upgrades
-- Leverage [Teams in ZenML Pro](../../../getting-started/zenml-pro/teams.md) to assign roles and permissions to a group of users, to mimic your real-world team roles.
+- Leverage [Teams in ZenML Pro](https://docs.zenml.io/pro/core-concepts/teams) to assign roles and permissions to a group of users, to mimic your real-world team roles.
 
 Explore access management strategies in the [Access Management and Roles guide](../collaborate-with-team/access-management.md).
 
@@ -81,7 +81,7 @@ As your project evolves, you may need to migrate existing codebases or upgrade y
 - Strategies for migrating legacy code to newer ZenML versions
 - Best practices for upgrading ZenML servers
 
-Discover migration strategies and maintenance best practices in the [Migration and Maintenance guide](../../advanced-topics/manage-zenml-server/best-practices-upgrading-zenml.md#upgrading-your-code).
+Discover migration strategies and maintenance best practices in the [Migration and Maintenance guide](https://docs.zenml.io/how-to/manage-zenml-server/best-practices-upgrading-zenml#upgrading-your-code).
 
 ## Getting Started
 

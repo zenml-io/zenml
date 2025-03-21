@@ -4,7 +4,7 @@ description: Orchestrating your pipelines to run in Docker.
 
 # Local Docker Orchestrator
 
-The local Docker orchestrator is an [orchestrator](./orchestrators.md) flavor that comes built-in with ZenML and runs your pipelines locally using Docker.
+The local Docker orchestrator is an [orchestrator](./) flavor that comes built-in with ZenML and runs your pipelines locally using Docker.
 
 ### When to use it
 
@@ -36,9 +36,9 @@ python file_that_runs_a_zenml_pipeline.py
 
 #### Additional configuration
 
-For additional configuration of the Local Docker orchestrator, you can pass `LocalDockerOrchestratorSettings` when defining or running your pipeline. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-orchestrators/#zenml.orchestrators.local\_docker.local\_docker\_orchestrator.LocalDockerOrchestratorSettings) for a full list of available attributes and [this docs page](../../how-to/pipeline-development/use-configuration-files/runtime-configuration.md) for more information on how to specify settings. A full list of what can be passed in via the `run_args` can be found [in the Docker Python SDK documentation](https://docker-py.readthedocs.io/en/stable/containers.html).
+For additional configuration of the Local Docker orchestrator, you can pass `LocalDockerOrchestratorSettings` when defining or running your pipeline. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/core_code_docs/core-orchestrators.html#zenml.orchestrators.local_docker) for a full list of available attributes and [this docs page](https://docs.zenml.io/how-to/pipeline-development/use-configuration-files/runtime-configuration) for more information on how to specify settings. A full list of what can be passed in via the `run_args` can be found [in the Docker Python SDK documentation](https://docker-py.readthedocs.io/en/stable/containers.html).
 
-For more information and a full list of configurable attributes of the local Docker orchestrator, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-orchestrators/#zenml.orchestrators.local\_docker.local\_docker\_orchestrator.LocalDockerOrchestrator) .
+For more information and a full list of configurable attributes of the local Docker orchestrator, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/core_code_docs/core-orchestrators.html#zenml.orchestrators.local_docker) .
 
 For example, if you wanted to specify the CPU count available for the Docker image (note: only configurable for Windows), you could write a simple pipeline like the following:
 
@@ -68,6 +68,6 @@ def simple_pipeline():
 
 #### Enabling CUDA for GPU-backed hardware
 
-Note that if you wish to use this orchestrator to run steps on a GPU, you will need to follow [the instructions on this page](../../how-to/pipeline-development/training-with-gpus/README.md) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
+Note that if you wish to use this orchestrator to run steps on a GPU, you will need to follow [the instructions on this page](https://docs.zenml.io/how-to/pipeline-development/training-with-gpus/) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

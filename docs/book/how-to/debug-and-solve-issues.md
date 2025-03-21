@@ -113,9 +113,9 @@ export ZENML_LOGGING_VERBOSITY=DEBUG
 
 Read more about how to set environment variables for:
 
-* For [Linux](https://linuxize.com/post/how-to-set-and-list-environment-variables-in-linux/).
+* For [Linux](https://www3.ntu.edu.sg/home/ehchua/programming/howto/Environment_Variables.html#zz-3./).
 * For [macOS](https://youngstone89.medium.com/setting-up-environment-variables-in-mac-os-28e5941c771c).
-* For [Windows](https://www.computerhope.com/issues/ch000549.htm).
+* For [Windows](https://www3.ntu.edu.sg/home/ehchua/programming/howto/Environment_Variables.html).
 
 ### Client and server logs
 
@@ -200,6 +200,6 @@ and update your stack with the experiment tracker:
 zenml stack update -e mlflow_tracker
 ```
 
-This also applies to all other [stack components](../component-guide/README.md).
+This also applies to all other [stack components](https://docs.zenml.io/stacks).
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

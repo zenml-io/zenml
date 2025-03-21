@@ -4,7 +4,7 @@ description: Logging and visualizing experiments with neptune.ai
 
 # Neptune
 
-The Neptune Experiment Tracker is an [Experiment Tracker](./experiment-trackers.md) flavor provided with the Neptune-ZenML integration that uses [neptune.ai](https://neptune.ai/product/experiment-tracking) to log and visualize information from your pipeline steps (e.g. models, parameters, metrics).
+The Neptune Experiment Tracker is an [Experiment Tracker](./) flavor provided with the Neptune-ZenML integration that uses [neptune.ai](https://neptune.ai/product/experiment-tracking) to log and visualize information from your pipeline steps (e.g. models, parameters, metrics).
 
 ### When would you want to use it?
 
@@ -16,7 +16,7 @@ You should use the Neptune Experiment Tracker:
 * if you are looking for a more visually interactive way of navigating the results produced from your ZenML pipeline runs (e.g. models, metrics, datasets)
 * if you would like to connect ZenML to neptune.ai to share the artifacts and metrics logged by your pipelines with your team, organization, or external stakeholders
 
-You should consider one of the other [Experiment Tracker flavors](./experiment-trackers.md#experiment-tracker-flavors) if you have never worked with neptune.ai before and would rather use another experiment tracking tool that you are more familiar with.
+You should consider one of the other [Experiment Tracker flavors](./#experiment-tracker-flavors) if you have never worked with neptune.ai before and would rather use another experiment tracking tool that you are more familiar with.
 
 ### How do you deploy it?
 
@@ -37,7 +37,7 @@ You need to configure the following credentials for authentication to Neptune:
 
 {% tabs %}
 {% tab title="ZenML Secret (Recommended)" %}
-This method requires you to [configure a ZenML secret](../../how-to/project-setup-and-management/interact-with-secrets.md) to store the Neptune tracking service credentials securely.
+This method requires you to [configure a ZenML secret](https://docs.zenml.io/how-to/project-setup-and-management/interact-with-secrets) to store the Neptune tracking service credentials securely.
 
 You can create the secret using the `zenml secret create` command:
 
@@ -61,10 +61,10 @@ zenml stack register neptune_stack -e neptune_experiment_tracker ... --set
 ```
 
 {% hint style="info" %}
-Read more about [ZenML Secrets](../../how-to/project-setup-and-management/interact-with-secrets.md) in the ZenML documentation.
+Read more about [ZenML Secrets](https://docs.zenml.io/how-to/project-setup-and-management/interact-with-secrets) in the ZenML documentation.
 {% endhint %}
-
 {% endtab %}
+
 {% tab title="Basic Authentication" %}
 This option configures the credentials for neptune.ai directly as stack component attributes.
 
@@ -83,7 +83,7 @@ zenml stack register neptune_stack -e neptune_experiment_tracker ... --set
 {% endtab %}
 {% endtabs %}
 
-For more, up-to-date information on the Neptune Experiment Tracker implementation and its configuration, you can have a look at [the SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-neptune/#zenml.integrations.neptune.experiment_trackers.neptune_experiment_tracker) .
+For more, up-to-date information on the Neptune Experiment Tracker implementation and its configuration, you can have a look at [the SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-neptune.html#zenml.integrations.neptune) .
 
 ### How do you use it?
 
@@ -127,7 +127,7 @@ def train_model() -> SVC:
 ```
 
 {% hint style="info" %}
-Instead of hardcoding an experiment tracker name, you can also use the [Client](../../reference/python-client.md) to dynamically use the experiment tracker of your active stack:
+Instead of hardcoding an experiment tracker name, you can also use the [Client](https://docs.zenml.io/reference/python-client) to dynamically use the experiment tracker of your active stack:
 
 ```python
 from zenml.client import Client
@@ -199,7 +199,7 @@ def my_step(
     ...
 ```
 
-Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-neptune/#zenml.integrations.neptune.flavors.neptune_experiment_tracker_flavor.NeptuneExperimentTrackerSettings) for a full list of available attributes
+Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-neptune.html#zenml.integrations.neptune) for a full list of available attributes
 
 ## Neptune UI
 

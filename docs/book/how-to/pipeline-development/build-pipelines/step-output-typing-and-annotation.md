@@ -11,10 +11,10 @@ description: >-
 Your functions will work as ZenML steps even if you don't provide any type annotations for their inputs and outputs. However, adding type annotations to your step functions gives you lots of additional benefits:
 
 * **Type validation of your step inputs**: ZenML makes sure that your step functions receive an object of the correct type from the upstream steps in your pipeline.
-* **Better serialization**: Without type annotations, ZenML uses [Cloudpickle](https://github.com/cloudpipe/cloudpickle) to serialize your step outputs. When provided with type annotations, ZenML can choose a [materializer](../../../getting-started/core-concepts.md#materializers) that is best suited for the output. In case none of the builtin materializers work, you can even [write a custom materializer](../../data-artifact-management/handle-data-artifacts/handle-custom-data-types.md).
+* **Better serialization**: Without type annotations, ZenML uses [Cloudpickle](https://github.com/cloudpipe/cloudpickle) to serialize your step outputs. When provided with type annotations, ZenML can choose a [materializer](https://docs.zenml.io/getting-started/core-concepts#materializers) that is best suited for the output. In case none of the builtin materializers work, you can even [write a custom materializer](https://docs.zenml.io/how-to/data-artifact-management/handle-data-artifacts/handle-custom-data-types).
 
 {% hint style="warning" %}
-ZenML provides a built-in [CloudpickleMaterializer](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-materializers/#zenml.materializers.cloudpickle\_materializer.CloudpickleMaterializer) that can handle any object by saving it with [cloudpickle](https://github.com/cloudpipe/cloudpickle). However, this is not production-ready because the resulting artifacts cannot be loaded when running with a different Python version. In such cases, you should consider building a [custom Materializer](../handle-data-artifacts/handle-custom-data-types.md#custom-materializers) to save your objects in a more robust and efficient format.
+ZenML provides a built-in [CloudpickleMaterializer](https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers.html#zenml.materializers.cloudpickle_materializer) that can handle any object by saving it with [cloudpickle](https://github.com/cloudpipe/cloudpickle). However, this is not production-ready because the resulting artifacts cannot be loaded when running with a different Python version. In such cases, you should consider building a [custom Materializer](https://docs.zenml.io/how-to/data-artifact-management/handle-data-artifacts/handle-custom-data-types#custom-materializers) to save your objects in a more robust and efficient format.
 
 Moreover, using the `CloudpickleMaterializer` could allow users to upload of any kind of object. This could be exploited to upload a malicious file, which could execute arbitrary code on the vulnerable system.
 {% endhint %}
@@ -105,7 +105,7 @@ def divide(a: int, b: int) -> Tuple[
 ```
 
 {% hint style="info" %}
-If you do not give your outputs custom names, the created artifacts will be named `{pipeline_name}::{step_name}::output` or `{pipeline_name}::{step_name}::output_{i}` in the dashboard. See the [documentation on artifact versioning and configuration](../../../user-guide/starter-guide/manage-artifacts.md) for more information.
+If you do not give your outputs custom names, the created artifacts will be named `{pipeline_name}::{step_name}::output` or `{pipeline_name}::{step_name}::output_{i}` in the dashboard. See the [documentation on artifact versioning and configuration](https://docs.zenml.io/user-guides/starter-guide/manage-artifacts) for more information.
 {% endhint %}
 
 
@@ -128,13 +128,13 @@ If you do not give your outputs custom names, the created artifacts will be name
         <td>Learn more about output annotation here</td>
         <td></td>
         <td></td>
-        <td><a href="../../data-artifact-management/handle-data-artifacts/return-multiple-outputs-from-a-step.md">return-multiple-outputs-from-a-step.md</a></td>
+        <td><a href="https://docs.zenml.io/how-to/data-artifact-management/handle-data-artifacts/return-multiple-outputs-from-a-step">return-multiple-outputs-from-a-step.md</a></td>
     </tr>
     <tr>
         <td>For custom data types you should check these docs out</td>
         <td></td>
         <td></td>
-        <td><a href="../../data-artifact-management/handle-data-artifacts/handle-custom-data-types.md">handle-custom-data-types.md</a></td>
+        <td><a href="https://docs.zenml.io/how-to/data-artifact-management/handle-data-artifacts/handle-custom-data-types">handle-custom-data-types.md</a></td>
     </tr>
     </tbody>
 </table>

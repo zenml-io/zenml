@@ -4,9 +4,9 @@ description: Skip materialization of artifacts.
 
 # Unmaterialized artifacts
 
-A ZenML pipeline is built in a data-centric way. The outputs and inputs of steps define how steps are connected and the order in which they are executed. Each step should be considered as its very own process that reads and writes its inputs and outputs from and to the [artifact store](../../../component-guide/artifact-stores/artifact-stores.md). This is where **materializers** come into play.
+A ZenML pipeline is built in a data-centric way. The outputs and inputs of steps define how steps are connected and the order in which they are executed. Each step should be considered as its very own process that reads and writes its inputs and outputs from and to the [artifact store](https://docs.zenml.io/stacks/artifact-stores). This is where **materializers** come into play.
 
-A materializer dictates how a given artifact can be written to and retrieved from the artifact store and also contains all serialization and deserialization logic. Whenever you pass artifacts as outputs from one pipeline step to other steps as inputs, the corresponding materializer for the respective data type defines how this artifact is first serialized and written to the artifact store, and then deserialized and read in the next step. Read more about this [here](../../../how-to/data-artifact-management/handle-data-artifacts/handle-custom-data-types.md).
+A materializer dictates how a given artifact can be written to and retrieved from the artifact store and also contains all serialization and deserialization logic. Whenever you pass artifacts as outputs from one pipeline step to other steps as inputs, the corresponding materializer for the respective data type defines how this artifact is first serialized and written to the artifact store, and then deserialized and read in the next step. Read more about this [here](https://docs.zenml.io//how-to/data-artifact-management/handle-data-artifacts/handle-custom-data-types).
 
 However, there are instances where you might **not** want to materialize an artifact in a step, but rather use a reference to it instead.
 This is where skipping materialization comes in.
@@ -19,7 +19,7 @@ Skipping materialization might have unintended consequences for downstream tasks
 
 While materializers should in most cases be used to control how artifacts are returned and consumed from pipeline steps, you might sometimes need to have a completely unmaterialized artifact in a step, e.g., if you need to know the exact path to where your artifact is stored.
 
-An unmaterialized artifact is a [`zenml.materializers.UnmaterializedArtifact`](https://sdkdocs.zenml.io/latest/core_code_docs/core-artifacts/#zenml.artifacts.unmaterialized_artifact). Among others, it has a property `uri` that points to the unique path in the artifact store where the artifact is persisted. One can use an unmaterialized artifact by specifying `UnmaterializedArtifact` as the type in the step:
+An unmaterialized artifact is a [`zenml.materializers.UnmaterializedArtifact`](https://sdkdocs.zenml.io/latest/core_code_docs/core-artifacts.html#zenml.artifacts.unmaterialized_artifact). Among others, it has a property `uri` that points to the unique path in the artifact store where the artifact is persisted. One can use an unmaterialized artifact by specifying `UnmaterializedArtifact` as the type in the step:
 
 ```python
 from zenml.artifacts.unmaterialized_artifact import UnmaterializedArtifact
@@ -89,6 +89,6 @@ def example_pipeline():
 example_pipeline()
 ```
 
-You can see another example of using an `UnmaterializedArtifact` when triggering a [pipeline from another](../../trigger-pipelines/use-templates-python.md#advanced-usage-run-a-template-from-another-pipeline).
+You can see another example of using an `UnmaterializedArtifact` when triggering a [pipeline from another](https://docs.zenml.io/how-to/trigger-pipelines/use-templates-python#advanced-usage-run-a-template-from-another-pipeline).
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

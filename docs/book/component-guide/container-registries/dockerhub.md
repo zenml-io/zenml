@@ -4,20 +4,20 @@ description: Storing container images in DockerHub.
 
 # DockerHub
 
-The DockerHub container registry is a [container registry](./container-registries.md) flavor that comes built-in with ZenML and uses [DockerHub](https://hub.docker.com/) to store container images.
+The DockerHub container registry is a [container registry](./) flavor that comes built-in with ZenML and uses [DockerHub](https://hub.docker.com/) to store container images.
 
 ### When to use it
 
 You should use the DockerHub container registry if:
 
 * one or more components of your stack need to pull or push container images.
-* you have a DockerHub account. If you're not using DockerHub, take a look at the other [container registry flavors](./container-registries.md#container-registry-flavors).
+* you have a DockerHub account. If you're not using DockerHub, take a look at the other [container registry flavors](./#container-registry-flavors).
 
 ### How to deploy it
 
 To use the DockerHub container registry, all you need to do is create a [DockerHub](https://hub.docker.com/) account.
 
-When this container registry is used in a ZenML stack, the Docker images that are built will be published in a \*\* public\*\* repository and everyone will be able to pull your images. If you want to use a **private** repository instead, you'll have to [create a private repository](https://docs.docker.com/docker-hub/repos/#creating-repositories) on the website before running the pipeline. The repository name depends on the remote [orchestrator](../orchestrators/orchestrators.md) or [step operator](../step-operators/step-operators.md) that you're using in your stack.
+When this container registry is used in a ZenML stack, the Docker images that are built will be published in a \*\* public\*\* repository and everyone will be able to pull your images. If you want to use a **private** repository instead, you'll have to [create a private repository](https://docs.docker.com/docker-hub/repos/#creating-repositories) on the website before running the pipeline. The repository name depends on the remote [orchestrator](https://docs.zenml.io/stacks/orchestrators/) or [step operator](https://docs.zenml.io/stacks/step-operators/) that you're using in your stack.
 
 ### How to find the registry URI
 
@@ -64,6 +64,6 @@ Additionally, we'll need to log in to the container registry so Docker can pull 
 docker login
 ```
 
-For more information and a full list of configurable attributes of the `dockerhub` container registry, check out the [SDK Docs](https://apidocs.zenml.io/latest/core\_code\_docs/core-container\_registries/#zenml.container\_registries.dockerhub\_container\_registry.DockerHubContainerRegistry) .
+For more information and a full list of configurable attributes of the `dockerhub` container registry, check out the [SDK Docs](https://apidocs.zenml.io/latest/core_code_docs/core-container_registries/#zenml.container_registries.dockerhub_container_registry.DockerHubContainerRegistry) .
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

@@ -24,7 +24,7 @@ To generate a new API token:
 
 You can use the generated API tokens for programmatic access to the ZenML server's REST API. This is the quickest way to access the ZenML API programmatically when you're not using the ZenML CLI or Python client and you don't want to set up a service account.
 
-Accessing the API with this method is thoroughly documented in the [API reference section](../../../reference/api-reference.md#using-a-short-lived-api-token).
+Accessing the API with this method is thoroughly documented in the [API reference section](https://docs.zenml.io/api-reference/oss-api/oss-api#using-a-short-lived-api-token).
 
 
 <!-- For scarf -->

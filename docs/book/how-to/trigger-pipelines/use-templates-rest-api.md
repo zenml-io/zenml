@@ -3,8 +3,7 @@ description: Create and run a template over the ZenML Rest API
 ---
 
 {% hint style="success" %}
-This is a [ZenML Pro](https://zenml.io/pro)-only feature. Please
-[sign up here](https://cloud.zenml.io) to get access.
+This is a [ZenML Pro](https://zenml.io/pro)-only feature. Please [sign up here](https://cloud.zenml.io) to get access.
 {% endhint %}
 
 ## Run a template 
@@ -18,13 +17,13 @@ REST API:
 
 1. `GET /pipelines?name=<PIPELINE_NAME>` -> This returns a response, where a <PIPELINE_ID> can be copied
 2. `GET /run_templates?pipeline_id=<PIPELINE_ID>` -> This returns a list of responses where a <TEMPLATE_ID> can be chosen
-3. `POST /run_templates/<TEMPLATE_ID>/runs` -> This runs the pipeline. You can pass the [PipelineRunConfiguration](https://sdkdocs.zenml.io/latest/core_code_docs/core-config/#zenml.config.pipeline_run_configuration.PipelineRunConfiguration) in the body
+3. `POST /run_templates/<TEMPLATE_ID>/runs` -> This runs the pipeline. You can pass the [PipelineRunConfiguration](https://sdkdocs.zenml.io/latest/core_code_docs/core-config.html#zenml.config.pipeline_run_configuration) in the body
 
 ## A working example
 
 {% hint style="info" %}
 Learn how to get a bearer token for the curl commands 
-[here](../../../reference/api-reference.md#using-a-bearer-token-to-access-the-api-programmatically).
+[here](https://docs.zenml.io/pro/deployments/pro-api#programmatic-access-with-api-tokens).
 {% endhint %}
 
 Here is an example. Let's say would we like to re-run a pipeline called 

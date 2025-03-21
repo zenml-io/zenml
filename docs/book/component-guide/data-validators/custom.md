@@ -5,24 +5,24 @@ description: How to develop a custom data validator
 # Develop a custom data validator
 
 {% hint style="info" %}
-Before diving into the specifics of this component type, it is beneficial to familiarize yourself with our [general guide to writing custom component flavors in ZenML](../../how-to/infrastructure-deployment/stack-deployment/implement-a-custom-stack-component.md). This guide provides an essential understanding of ZenML's component flavor concepts.
+Before diving into the specifics of this component type, it is beneficial to familiarize yourself with our [general guide to writing custom component flavors in ZenML](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/implement-a-custom-stack-component). This guide provides an essential understanding of ZenML's component flavor concepts.
 {% endhint %}
 
 {% hint style="warning" %}
 **Base abstraction in progress!**
 
-We are actively working on the base abstraction for the Data Validators, which will be available soon. As a result, their extension is not recommended at the moment. When you are selecting a data validator for your stack, you can use one of [the existing flavors](./data-validators.md#data-validator-flavors).
+We are actively working on the base abstraction for the Data Validators, which will be available soon. As a result, their extension is not recommended at the moment. When you are selecting a data validator for your stack, you can use one of [the existing flavors](./#data-validator-flavors).
 
 If you need to implement your own Data Validator flavor, you can still do so, but keep in mind that you may have to refactor it when the base abstraction is updated.
 {% endhint %}
 
-ZenML comes equipped with [Data Validator implementations](./data-validators.md#data-validator-flavors) that integrate a variety of data logging and validation libraries, frameworks and platforms. However, if you need to use a different library or service as a backend for your ZenML Data Validator, you can extend ZenML to provide your own custom Data Validator implementation.
+ZenML comes equipped with [Data Validator implementations](./#data-validator-flavors) that integrate a variety of data logging and validation libraries, frameworks and platforms. However, if you need to use a different library or service as a backend for your ZenML Data Validator, you can extend ZenML to provide your own custom Data Validator implementation.
 
 ### Build your own custom data validator
 
 If you want to implement your own custom Data Validator, you can follow the following steps:
 
-1. Create a class which inherits from [the `BaseDataValidator` class](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-data\_validators/#zenml.data\_validators.base\_data\_validator.BaseDataValidator) and override one or more of the abstract methods, depending on the capabilities of the underlying library/service that you want to integrate.
+1. Create a class which inherits from [the `BaseDataValidator` class](https://sdkdocs.zenml.io/latest/core_code_docs/core-data_validators.html#zenml.data_validators.base_data_validator) and override one or more of the abstract methods, depending on the capabilities of the underlying library/service that you want to integrate.
 2. If you need any configuration, you can create a class which inherits from the `BaseDataValidatorConfig` class.
 3. Bring both of these classes together by inheriting from the `BaseDataValidatorFlavor`.
 4. (Optional) You should also provide some standard steps that others can easily insert into their pipelines for instant access to data validation features.
@@ -40,7 +40,7 @@ zenml data-validator flavor register flavors.my_flavor.MyDataValidatorFlavor
 ```
 
 {% hint style="warning" %}
-ZenML resolves the flavor class by taking the path where you initialized zenml (via `zenml init`) as the starting point of resolution. Therefore, please ensure you follow [the best practice](../../how-to/infrastructure-deployment/infrastructure-as-code/best-practices.md) of initializing zenml at the root of your repository.
+ZenML resolves the flavor class by taking the path where you initialized zenml (via `zenml init`) as the starting point of resolution. Therefore, please ensure you follow [the best practice](https://docs.zenml.io/how-to/infrastructure-deployment/infrastructure-as-code/best-practices) of initializing zenml at the root of your repository.
 
 If ZenML does not find an initialized ZenML repository in any parent directory, it will default to the current working directory, but usually it's better to not have to rely on this mechanism, and initialize zenml at the root.
 {% endhint %}

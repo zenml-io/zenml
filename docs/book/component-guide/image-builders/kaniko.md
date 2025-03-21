@@ -4,7 +4,7 @@ description: Building container images with Kaniko.
 
 # Kaniko Image Builder
 
-The Kaniko image builder is an [image builder](./image-builders.md) flavor provided by the ZenML `kaniko` integration that uses [Kaniko](https://github.com/GoogleContainerTools/kaniko) to build container images.
+The Kaniko image builder is an [image builder](./) flavor provided by the ZenML `kaniko` integration that uses [Kaniko](https://github.com/GoogleContainerTools/kaniko) to build container images.
 
 ### When to use it
 
@@ -27,8 +27,8 @@ To use the Kaniko image builder, we need:
     zenml integration install kaniko
     ```
 * [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) installed.
-* A [remote container registry](../container-registries/container-registries.md) as part of your stack.
-* By default, the Kaniko image builder transfers the build context using the Kubernetes API. If you instead want to transfer the build context by storing it in the artifact store, you need to register it with the `store_context_in_artifact_store` attribute set to `True`. In this case, you also need a [remote artifact store](../artifact-stores/artifact-stores.md) as part of your stack.
+* A [remote container registry](https://docs.zenml.io/stacks/container-registries/) as part of your stack.
+* By default, the Kaniko image builder transfers the build context using the Kubernetes API. If you instead want to transfer the build context by storing it in the artifact store, you need to register it with the `store_context_in_artifact_store` attribute set to `True`. In this case, you also need a [remote artifact store](https://docs.zenml.io/stacks/artifact-stores/) as part of your stack.
 * Optionally, you can change the timeout (in seconds) until the Kaniko pod is running in the orchestrator using the `pod_running_timeout` attribute.
 
 We can then register the image builder and use it in our active stack:
@@ -43,14 +43,14 @@ zenml image-builder register <NAME> \
 zenml stack register <STACK_NAME> -i <NAME> ... --set
 ```
 
-For more information and a full list of configurable attributes of the Kaniko image builder, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-kaniko/#zenml.integrations.kaniko.image\_builders.kaniko\_image\_builder.KanikoImageBuilder) .
+For more information and a full list of configurable attributes of the Kaniko image builder, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-kaniko.html#zenml.integrations.kaniko) .
 
 #### Authentication for the container registry and artifact store
 
 The Kaniko image builder will create a Kubernetes pod that is running the build. This build pod needs to be able to pull from/push to certain container registries, and depending on the stack component configuration also needs to be able to read from the artifact store:
 
 * The pod needs to be authenticated to push to the container registry in your active stack.
-* In case the [parent image](../../how-to/customize-docker-builds/docker-settings-on-a-pipeline.md#using-a-custom-parent-image) you use in your `DockerSettings` is stored in a private registry, the pod needs to be authenticated to pull from this registry.
+* In case the [parent image](https://docs.zenml.io/how-to/customize-docker-builds/docker-settings-on-a-pipeline#using-a-custom-parent-image) you use in your `DockerSettings` is stored in a private registry, the pod needs to be authenticated to pull from this registry.
 * If you configured your image builder to store the build context in the artifact store, the pod needs to be authenticated to read files from the artifact store storage.
 
 ZenML is not yet able to handle setting all of the credentials of the various combinations of container registries and artifact stores on the Kaniko build pod, which is you're required to set this up yourself for now. The following section outlines how to handle it in the most straightforward (and probably also most common) scenario, when the Kubernetes cluster you're using for the Kaniko build is hosted on the same cloud provider as your container registry (and potentially the artifact store). For all other cases, check out the [official Kaniko repository](https://github.com/GoogleContainerTools/kaniko) for more information.
@@ -76,8 +76,8 @@ Check out [the Kaniko docs](https://github.com/GoogleContainerTools/kaniko#pushi
 {% endtab %}
 
 {% tab title="GCP" %}
-* [Enable workload identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity#enable\_on\_cluster) for your cluster
-* Follow the steps described [here](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity#authenticating\_to) to create a Google service account, a Kubernetes service account as well as an IAM policy binding between them.
+* [Enable workload identity](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity#enable_on_cluster) for your cluster
+* Follow the steps described [here](https://cloud.google.com/kubernetes-engine/docs/how-to/workload-identity#authenticating_to) to create a Google service account, a Kubernetes service account as well as an IAM policy binding between them.
 * Grant the Google service account permissions to push to your GCR registry and read from your GCP bucket.
 * Configure the image builder to run in the correct namespace and use the correct service account:
 

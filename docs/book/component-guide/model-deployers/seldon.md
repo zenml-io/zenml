@@ -40,7 +40,7 @@ To deploy and make use of the Seldon Core integration we need to have the follow
 
 1. access to a Kubernetes cluster. This can be configured using the `kubernetes_context` configuration attribute to point to a local `kubectl` context or an in-cluster configuration, but the recommended approach is to [use a Service Connector](seldon.md#using-a-service-connector) to link the Seldon Deployer Stack Component to a Kubernetes cluster.
 2. Seldon Core needs to be preinstalled and running in the target Kubernetes cluster. Check out the [official Seldon Core installation instructions](https://github.com/SeldonIO/seldon-core/tree/master/examples/auth#demo-setup) or the [EKS installation example below](seldon.md#installing-seldon-core-eg-in-an-eks-cluster).
-3. models deployed with Seldon Core need to be stored in some form of persistent shared storage that is accessible from the Kubernetes cluster where Seldon Core is installed (e.g. AWS S3, GCS, Azure Blob Storage, etc.). You can use one of the supported [remote artifact store flavors](../artifact-stores/artifact-stores.md) to store your models as part of your stack. For a smoother experience running Seldon Core with a cloud artifact store, we also recommend configuring explicit credentials for the artifact store. The Seldon Core model deployer knows how to automatically convert those credentials in the format needed by Seldon Core model servers to authenticate to the storage back-end where models are stored.
+3. models deployed with Seldon Core need to be stored in some form of persistent shared storage that is accessible from the Kubernetes cluster where Seldon Core is installed (e.g. AWS S3, GCS, Azure Blob Storage, etc.). You can use one of the supported [remote artifact store flavors](https://docs.zenml.io/stacks/artifact-stores/) to store your models as part of your stack. For a smoother experience running Seldon Core with a cloud artifact store, we also recommend configuring explicit credentials for the artifact store. The Seldon Core model deployer knows how to automatically convert those credentials in the format needed by Seldon Core model servers to authenticate to the storage back-end where models are stored.
 
 Since the Seldon Model Deployer is interacting with the Seldon Core model server deployed on a Kubernetes cluster, you need to provide a set of configuration parameters. These parameters are:
 
@@ -125,14 +125,14 @@ curl -X POST http://$INGRESS_HOST/seldon/default/iris-model/api/v1.0/predictions
 
 ### Using a Service Connector
 
-To set up the Seldon Core Model Deployer to authenticate to a remote Kubernetes cluster, it is recommended to leverage the many features provided by [the Service Connectors](../../how-to/infrastructure-deployment/auth-management/README.md) such as auto-configuration, local client login, best security practices regarding long-lived credentials and fine-grained access control and reusing the same credentials across multiple stack components.
+To set up the Seldon Core Model Deployer to authenticate to a remote Kubernetes cluster, it is recommended to leverage the many features provided by [the Service Connectors](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/) such as auto-configuration, local client login, best security practices regarding long-lived credentials and fine-grained access control and reusing the same credentials across multiple stack components.
 
 Depending on where your target Kubernetes cluster is running, you can use one of the following Service Connectors:
 
-* [the AWS Service Connector](../../how-to/infrastructure-deployment/auth-management/aws-service-connector.md), if you are using an AWS EKS cluster.
-* [the GCP Service Connector](../../how-to/infrastructure-deployment/auth-management/gcp-service-connector.md), if you are using a GKE cluster.
-* [the Azure Service Connector](../../how-to/infrastructure-deployment/auth-management/azure-service-connector.md), if you are using an AKS cluster.
-* [the generic Kubernetes Service Connector](../../how-to/infrastructure-deployment/auth-management/kubernetes-service-connector.md) for any other Kubernetes cluster.
+* [the AWS Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/aws-service-connector), if you are using an AWS EKS cluster.
+* [the GCP Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/gcp-service-connector), if you are using a GKE cluster.
+* [the Azure Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/azure-service-connector), if you are using an AKS cluster.
+* [the generic Kubernetes Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/kubernetes-service-connector) for any other Kubernetes cluster.
 
 If you don't already have a Service Connector configured in your ZenML deployment, you can register one using the interactive CLI command. You have the option to configure a Service Connector that can be used to access more than one Kubernetes cluster or even more than one type of cloud resource:
 
@@ -163,7 +163,7 @@ Alternatively, you can configure a Service Connector through the ZenML dashboard
 
 ![AWS Service Connector Type](../../.gitbook/assets/aws-service-connector-type.png) ![AWS EKS Service Connector Configuration](../../.gitbook/assets/aws-eks-service-connector-configuration.png)
 
-> **Note**: Please remember to grant the entity associated with your cloud credentials permissions to access the Kubernetes cluster and to list accessible Kubernetes clusters. For a full list of permissions required to use a AWS Service Connector to access one or more Kubernetes cluster, please refer to the [documentation for your Service Connector of choice](../../how-to/infrastructure-deployment/auth-management/README.md) or read the documentation available in the interactive CLI commands and dashboard. The Service Connectors supports many different authentication methods with different levels of security and convenience. You should pick the one that best fits your use-case.
+> **Note**: Please remember to grant the entity associated with your cloud credentials permissions to access the Kubernetes cluster and to list accessible Kubernetes clusters. For a full list of permissions required to use a AWS Service Connector to access one or more Kubernetes cluster, please refer to the [documentation for your Service Connector of choice](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/) or read the documentation available in the interactive CLI commands and dashboard. The Service Connectors supports many different authentication methods with different levels of security and convenience. You should pick the one that best fits your use-case.
 
 If you already have one or more Service Connectors configured in your ZenML deployment, you can check which of them can be used to access the Kubernetes cluster that you want to use for your Seldon Core Model Deployer by running e.g.:
 
@@ -225,7 +225,7 @@ A similar experience is available when you configure the Seldon Core Model Deplo
 
 The Seldon Core Model Deployer requires access to the persistent storage where models are located. In most cases, you will use the Seldon Core model deployer to serve models that are trained through ZenML pipelines and stored in the ZenML Artifact Store, which implies that the Seldon Core model deployer needs to access the Artifact Store.
 
-If Seldon Core is already running in the same cloud as the Artifact Store (e.g. S3 and an EKS cluster for AWS, or GCS and a GKE cluster for GCP), there are ways of configuring cloud workloads to have implicit access to other cloud resources like persistent storage without requiring explicit credentials. However, if Seldon Core is running in a different cloud, or on-prem, or if implicit in-cloud workload authentication is not enabled, then you need to configure explicit credentials for the Artifact Store to allow other components like the Seldon Core model deployer to authenticate to it. Every cloud Artifact Store flavor supports some way of configuring explicit credentials and this is documented for each individual flavor in the [Artifact Store documentation](../artifact-stores/artifact-stores.md).
+If Seldon Core is already running in the same cloud as the Artifact Store (e.g. S3 and an EKS cluster for AWS, or GCS and a GKE cluster for GCP), there are ways of configuring cloud workloads to have implicit access to other cloud resources like persistent storage without requiring explicit credentials. However, if Seldon Core is running in a different cloud, or on-prem, or if implicit in-cloud workload authentication is not enabled, then you need to configure explicit credentials for the Artifact Store to allow other components like the Seldon Core model deployer to authenticate to it. Every cloud Artifact Store flavor supports some way of configuring explicit credentials and this is documented for each individual flavor in the [Artifact Store documentation](https://docs.zenml.io/stacks/artifact-stores/).
 
 When explicit credentials are configured in the Artifact Store, the Seldon Core Model Deployer doesn't need any additional configuration and will use those credentials automatically to authenticate to the same persistent storage service used by the Artifact Store. If the Artifact Store doesn't have explicit credentials configured, then Seldon Core will default to using whatever implicit authentication method is available in the Kubernetes cluster where it is running. For example, in AWS this means using the IAM role attached to the EC2 or EKS worker nodes, and in GCP this means using the service account attached to the GKE worker nodes.
 
@@ -239,7 +239,7 @@ If you want to use a custom persistent storage with Seldon Core, or if you prefe
 
 **Advanced: Configuring a Custom Seldon Core Secret**
 
-The Seldon Core model deployer stack component allows configuring an additional `secret` attribute that can be used to specify custom credentials that Seldon Core should use to authenticate to the persistent storage service where models are located. This is useful if you want to connect Seldon Core to a persistent storage service that is not supported as a ZenML Artifact Store, or if you don't want to configure or use the same credentials configured for your Artifact Store. The `secret` attribute must be set to the name of [a ZenML secret](../../how-to/project-setup-and-management/interact-with-secrets.md) containing credentials configured in the format supported by Seldon Core.
+The Seldon Core model deployer stack component allows configuring an additional `secret` attribute that can be used to specify custom credentials that Seldon Core should use to authenticate to the persistent storage service where models are located. This is useful if you want to connect Seldon Core to a persistent storage service that is not supported as a ZenML Artifact Store, or if you don't want to configure or use the same credentials configured for your Artifact Store. The `secret` attribute must be set to the name of [a ZenML secret](https://docs.zenml.io/how-to/project-setup-and-management/interact-with-secrets) containing credentials configured in the format supported by Seldon Core.
 
 {% hint style="info" %}
 This method is not recommended, because it limits the Seldon Core model deployer to a single persistent storage service, whereas using the Artifact Store credentials gives you more flexibility in combining the Seldon Core model deployer with any Artifact Store in the same ZenML stack.
@@ -367,7 +367,7 @@ We can now use the model deployer in our stack.
 zenml stack update seldon_stack --model-deployer=seldon_deployer
 ```
 
-See the [seldon\_model\_deployer\_step](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-seldon/#zenml.integrations.seldon.steps.seldon\_deployer.seldon\_model\_deployer\_step) for an example of using the Seldon Core Model Deployer to deploy a model inside a ZenML pipeline step.
+See the [seldon\_model\_deployer\_step](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-seldon.html#zenml.integrations.seldon) for an example of using the Seldon Core Model Deployer to deploy a model inside a ZenML pipeline step.
 
 ### Configuration
 
@@ -383,7 +383,7 @@ Within the `SeldonDeploymentConfig` you can configure:
 * `resources`: the resources to be allocated to the model. This can be configured by passing a `SeldonResourceRequirements` object with the `requests` and `limits` properties. The values for these properties can be a dictionary with the `cpu` and `memory` keys. The values for these keys can be a string with the amount of CPU and memory to be allocated to the model.
 * `serviceAccount` The name of the Service Account applied to the deployment.
 
-For more information and a full list of configurable attributes of the Seldon Core Model Deployer, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-seldon/#zenml.integrations.seldon.model\_deployers) .
+For more information and a full list of configurable attributes of the Seldon Core Model Deployer, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-seldon.html#zenml.integrations.seldon) .
 
 ### Custom Code Deployment
 
@@ -465,11 +465,11 @@ def seldon_deployment_pipeline():
 #### Advanced Custom Code Deployment with Seldon Core Integration
 
 {% hint style="warning" %}
-Before creating your custom model class, you should take a look at the [custom Python model](https://docs.seldon.io/projects/seldon-core/en/latest/python/python\_wrapping\_docker.html) section of the Seldon Core documentation.
+Before creating your custom model class, you should take a look at the [custom Python model](https://docs.seldon.io/projects/seldon-core/en/latest/python/python_wrapping_docker.html) section of the Seldon Core documentation.
 {% endhint %}
 
 The built-in Seldon Core custom deployment step is a good starting point for deploying your custom models. However, if you want to deploy more than the trained model, you can create your own custom class and a custom step to achieve this.
 
-See the [ZenML custom Seldon model class](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-seldon/#zenml.integrations.seldon.custom_deployer.zenml_custom_model.ZenMLCustomModel) as a reference.
+See the [ZenML custom Seldon model class](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-seldon.html#zenml.integrations.seldon) as a reference.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

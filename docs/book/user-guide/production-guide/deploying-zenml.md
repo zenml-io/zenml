@@ -16,7 +16,7 @@ In order to move into production, you will need to deploy this server somewhere 
 
 ## Choosing how to deploy ZenML
 
-While there are many options on how to [deploy ZenML](../../getting-started/deploying-zenml/README.md), the two simplest ones are:
+While there are many options on how to [deploy ZenML](https://docs.zenml.io/getting-started/deploying-zenml), the two simplest ones are:
 
 ### Option 1: Sign up for a free ZenML Pro Trial
 
@@ -34,9 +34,9 @@ On top of the one-click SaaS experience, ZenML Pro also comes built-in with addi
 
 ### Option 2: Self-host ZenML on your cloud provider
 
-As ZenML is open source, it is easy to [self-host it](../../getting-started/deploying-zenml/README.md) in a Kubernetes cluster. If you don't have an existing Kubernetes cluster, you can create it manually using the documentation for your cloud provider. For convenience, here are links for [AWS](https://docs.aws.amazon.com/eks/latest/userguide/create-cluster.html), [Azure](https://learn.microsoft.com/en-us/azure/aks/learn/quick-kubernetes-deploy-portal?tabs=azure-cli), and [GCP](https://cloud.google.com/kubernetes-engine/docs/how-to/creating-a-zonal-cluster#before\_you\_begin).
+As ZenML is open source, it is easy to [self-host it](https://docs.zenml.io/getting-started/deploying-zenml) in a Kubernetes cluster. If you don't have an existing Kubernetes cluster, you can create it manually using the documentation for your cloud provider. For convenience, here are links for [AWS](https://docs.aws.amazon.com/eks/latest/userguide/create-cluster.html), [Azure](https://learn.microsoft.com/en-us/azure/aks/learn/quick-kubernetes-deploy-portal?tabs=azure-cli), and [GCP](https://cloud.google.com/kubernetes-engine/docs/how-to/creating-a-zonal-cluster#before\_you\_begin).
 
-To learn more about different options for [deploying ZenML, visit the deployment documentation](../../getting-started/deploying-zenml/README.md).
+To learn more about different options for [deploying ZenML, visit the deployment documentation](https://docs.zenml.io/getting-started/deploying-zenml).
 
 ## Connecting to a deployed ZenML
 
@@ -47,7 +47,7 @@ zenml login <server-url>
 ```
 
 {% hint style="info" %}
-Having trouble connecting with a browser? There are other ways to connect. Read [here](../../how-to/manage-zenml-server/connecting-to-zenml/README.md) for more details.
+Having trouble connecting with a browser? There are other ways to connect. Read [here](https://docs.zenml.io/how-to/manage-zenml-server/connecting-to-zenml) for more details.
 {% endhint %}
 
 This command will start a series of steps to validate the device from where you are connecting that will happen in your browser. After that, you're now locally connected to a remote ZenML. Nothing of your experience changes, except that all metadata that you produce will be tracked centrally in one place from now on.
@@ -60,10 +60,10 @@ You can always go back to the local zenml experience by using `zenml logout`
 
 To learn more about deploying ZenML, check out the following resources:
 
-- [Deploying ZenML](../../getting-started/deploying-zenml/README.md): an overview of
+- [Deploying ZenML](https://docs.zenml.io/getting-started/deploying-zenml): an overview of
   the different options for deploying ZenML and the system architecture of a
   deployed ZenML instance.
-- [Full how-to guides](../../getting-started/deploying-zenml/README.md): guides on how to
+- [Full how-to guides](https://docs.zenml.io/getting-started/deploying-zenml): guides on how to
   deploy ZenML on Docker or Hugging Face Spaces or Kubernetes or some other cloud
   provider.
 

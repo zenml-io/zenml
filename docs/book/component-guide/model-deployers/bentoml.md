@@ -6,7 +6,7 @@ description: Deploying your models locally with BentoML.
 
 BentoML is an open-source framework for machine learning model serving. it can be used to deploy models locally, in a cloud environment, or in a Kubernetes environment.
 
-The BentoML Model Deployer is one of the available flavors of the [Model Deployer](./model-deployers.md) stack component. Provided with the BentoML integration it can be used to deploy and [manage BentoML models](https://docs.bentoml.org/en/latest/guides/model-store.html#manage-models) or [Bento](https://docs.bentoml.org/en/latest/reference/stores.html#manage-bentos) on a local running HTTP server.
+The BentoML Model Deployer is one of the available flavors of the [Model Deployer](./) stack component. Provided with the BentoML integration it can be used to deploy and [manage BentoML models](https://docs.bentoml.org/en/latest/guides/model-store.html#manage-models) or [Bento](https://docs.bentoml.org/en/latest/reference/stores.html#manage-bentos) on a local running HTTP server.
 
 {% hint style="warning" %}
 The BentoML Model Deployer can be used to deploy models for local development and production use cases. There are two paths to deploy Bentos with ZenML, one as a local http server and one as a containerized service. Within the BentoML ecosystem, [Yatai](https://github.com/bentoml/Yatai) and [`bentoctl`](https://github.com/bentoml/bentoctl) are the tools responsible for deploying the Bentos into the Kubernetes cluster and Cloud Platforms. `bentoctl` is deprecated now and might not work with the latest BentoML versions.
@@ -19,9 +19,9 @@ You should use the BentoML Model Deployer to:
 * Standardize the way you deploy your models to production within your organization.
 * if you are looking to deploy your models in a simple way, while you are still able to transform your model into a production-ready solution when that time comes.
 
-If you are looking to deploy your models with other Kubernetes-based solutions, you can take a look at one of the other [Model Deployer Flavors](./model-deployers.md#model-deployers-flavors) available in ZenML.
+If you are looking to deploy your models with other Kubernetes-based solutions, you can take a look at one of the other [Model Deployer Flavors](./#model-deployers-flavors) available in ZenML.
 
-BentoML also allows you to deploy your models in a more complex production-grade setting. [Bentoctl](https://github.com/bentoml/bentoctl) is one of the tools that can help you get there. Bentoctl takes your built Bento from a ZenML pipeline and deploys it with `bentoctl` into a cloud environment such as AWS Lambda, AWS SageMaker, Google Cloud Functions, Google Cloud AI Platform, or Azure Functions. Read more about this in the [From Local to Cloud with `bentoctl` section](#from-local-to-cloud-with-bentoctl).
+BentoML also allows you to deploy your models in a more complex production-grade setting. [Bentoctl](https://github.com/bentoml/bentoctl) is one of the tools that can help you get there. Bentoctl takes your built Bento from a ZenML pipeline and deploys it with `bentoctl` into a cloud environment such as AWS Lambda, AWS SageMaker, Google Cloud Functions, Google Cloud AI Platform, or Azure Functions. Read more about this in the [From Local to Cloud with `bentoctl` section](bentoml.md#from-local-to-cloud-with-bentoctl).
 
 {% hint style="info" %}
 The `bentoctl` integration implementation is still in progress and will be available soon. The integration will allow you to deploy your models to a specific cloud provider with just a few lines of code using ZenML built-in steps.
@@ -45,7 +45,7 @@ The ZenML integration will provision a local HTTP deployment server as a daemon 
 
 ## How do you use it?
 
-The recommended flow to use the BentoML model deployer is to first [create a BentoML Service](#create-a-bentoml-service), then either build a [bento yourself](#build-your-own-bento) or [use the `bento_builder_step`](#zenml-bento-builder-step) to build the model and service into a bento bundle, and finally [deploy the bundle with the `bentoml_model_deployer_step`](#zenml-bentoml-deployer-step).
+The recommended flow to use the BentoML model deployer is to first [create a BentoML Service](bentoml.md#create-a-bentoml-service), then either build a [bento yourself](bentoml.md#build-your-own-bento) or [use the `bento_builder_step`](bentoml.md#zenml-bento-builder-step) to build the model and service into a bento bundle, and finally [deploy the bundle with the `bentoml_model_deployer_step`](bentoml.md#zenml-bentoml-deployer-step).
 
 ### Create a BentoML Service
 
@@ -144,6 +144,7 @@ bentoml.picklable_model.save_model(
 ```
 
 Now, your custom step could look something like this:
+
 ```python
 from zenml import step
 
@@ -162,6 +163,7 @@ def my_bento_builder(model) -> bento.Bento:
 	
 	return bento
 ```
+
 You can now use this bento in any way you see fit.
 
 ### ZenML Bento Builder step
@@ -196,7 +198,7 @@ The Bento Builder step can be used in any orchestration pipeline that you create
 
 ### ZenML BentoML Deployer step
 
-We have now built our bento bundle, and we can use the built-in `bentoml_model_deployer_step` to deploy the bento bundle to our local HTTP server or to a containerized service running in your local machine. 
+We have now built our bento bundle, and we can use the built-in `bentoml_model_deployer_step` to deploy the bento bundle to our local HTTP server or to a containerized service running in your local machine.
 
 {% hint style="info" %}
 The `bentoml_model_deployer_step` can only be used in a local environment. But in the case of using containerized deployment, you can use the Docker image created by the `bentoml_model_deployer_step` to deploy your model to a remote environment. It is automatically pushed to your ZenML Stack's container registry.
@@ -245,14 +247,16 @@ def bento_deployer_pipeline():
 ```
 
 This step:
-- builds a docker image for the bento and pushes it to the container registry
-- runs the docker image locally to make it ready for inference
+
+* builds a docker image for the bento and pushes it to the container registry
+* runs the docker image locally to make it ready for inference
 
 You can find the image on your machine by running:
 
 ```bash
 docker images
 ```
+
 and also the running container by running:
 
 ```bash
@@ -355,7 +359,7 @@ def predictor(
         rich_print(f"Prediction for {img} is {result}")
 ```
 
-Deploying and testing locally is a great way to get started and test your model. However, a real-world scenario will most likely require you to deploy your model to a remote environment. You can choose to deploy your model as a container image by setting the `deployment_type` to container in the deployer step and then use the image created in a remote environment. You can also use  `bentoctl` or `yatai` to deploy the bento to a cloud environment.
+Deploying and testing locally is a great way to get started and test your model. However, a real-world scenario will most likely require you to deploy your model to a remote environment. You can choose to deploy your model as a container image by setting the `deployment_type` to container in the deployer step and then use the image created in a remote environment. You can also use `bentoctl` or `yatai` to deploy the bento to a cloud environment.
 
 ### From Local to Cloud with `bentoctl`
 
@@ -377,6 +381,6 @@ The `bentoctl` CLI provides a list of operators which are plugins that interact 
 
 You can find more information about the `bentoctl` tool [on the official GitHub repository](https://github.com/bentoml/bentoctl).
 
-For more information and a full list of configurable attributes of the BentoML Model Deployer, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-bentoml/#zenml.integrations.bentoml.model_deployers.bentoml_model_deployer) .
+For more information and a full list of configurable attributes of the BentoML Model Deployer, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-bentoml.html#zenml.integrations.bentoml) .
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

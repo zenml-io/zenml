@@ -2,14 +2,14 @@
 description: Specify a configuration file
 ---
 
-# 📃 Use configuration files
+# How to configure a pipeline with a YAML
 
 {% hint style="info" %}
-All configuration that can be specified in a YAML file can also be specified in code itself.
+All configuration that can be specified in a YAML file can also be specified in code itself.\
 However, it is best practice to use a YAML file to separate config from code.
 {% endhint %}
 
-You can use the `with_options(config_path=<PATH_TO_CONFIG>)` pattern to apply your
+You can use the `with_options(config_path=<PATH_TO_CONFIG>)` pattern to apply your\
 configuration to a pipeline. Here is a minimal example of using a file based configuration yaml.
 
 ```yaml
@@ -39,8 +39,6 @@ if __name__=="__main__":
     simple_ml_pipeline.with_options(config_path=<INSERT_PATH_TO_CONFIG_YAML>)()
 ```
 
-The above would run the `simple_ml_pipeline` with cache disabled for `load_data` and the parameter
-`dataset_name` set to `best_dataset`.
+The above would run the `simple_ml_pipeline` with cache disabled for `load_data` and the parameter`dataset_name` set to `best_dataset`.
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

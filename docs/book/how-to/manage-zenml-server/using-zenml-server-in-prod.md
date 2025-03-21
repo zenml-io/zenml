@@ -1,6 +1,5 @@
 ---
-description: >
-  Learn about best practices for using ZenML server in production environments.
+description: Learn about best practices for using ZenML server in production environments.
 ---
 
 # Using ZenML server in production
@@ -8,7 +7,7 @@ description: >
 Setting up a ZenML server for testing is a quick process. However, most people have to move beyond so-called 'day zero' operations and in such cases, it helps to learn best practices around setting up your ZenML server in a production-ready way. This guide encapsulates all the tips and tricks we've learned ourselves and from working with people who use ZenML in production environments. Following are some of the best practices we recommend.
 
 {% hint style="info" %}
-If you are using ZenML Pro, you don't have to worry about any of these. We have got you covered!
+If you are using ZenML Pro, you don't have to worry about any of these. We have got you covered!\
 You can sign up for a free trial [here](https://cloud.zenml.io).
 {% endhint %}
 
@@ -20,7 +19,6 @@ How you do it depends greatly on the environment in which you have deployed your
 
 {% tabs %}
 {% tab title="Kubernetes with Helm" %}
-
 If you are using the official [ZenML Helm chart](https://artifacthub.io/packages/helm/zenml/zenml), you can take advantage of the `autoscaling.enabled` flag to enable autoscaling for your ZenML server. For example:
 
 ```yaml
@@ -32,20 +30,19 @@ autoscaling:
 ```
 
 This will create a horizontal pod autoscaler for your ZenML server that will scale the number of replicas up to 10 and down to 1 based on the CPU utilization of the pods.
-
 {% endtab %}
+
 {% tab title="ECS" %}
 For folks using AWS, [ECS](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/Welcome.html) is a popular choice for running ZenML server. ECS is a container orchestration service that allows you to run and scale your containers in a managed environment.
 
 To scale your ZenML server deployed as a service on ECS, you can follow the steps below:
 
-- Go to the ECS console, find you service pertaining to your ZenML server and click on it.
-- Click on the "Update Service" button.
-- If you scroll down, you will see the "Service auto scaling - optional" section.
-- Here you can enable autoscaling and set the minimum and maximum number of tasks to run for your service and also the ECS service metric to use for scaling.
+* Go to the ECS console, find you service pertaining to your ZenML server and click on it.
+* Click on the "Update Service" button.
+* If you scroll down, you will see the "Service auto scaling - optional" section.
+* Here you can enable autoscaling and set the minimum and maximum number of tasks to run for your service and also the ECS service metric to use for scaling.
 
 ![Image showing autoscaling settings for a service](../../.gitbook/assets/ecs_autoscaling.png)
-
 {% endtab %}
 
 {% tab title="Cloud Run" %}
@@ -55,14 +52,14 @@ In Cloud Run, each revision is automatically scaled to the number of instances n
 
 To scale your ZenML server deployed on Cloud Run, you can follow the steps below:
 
-- Go to the Cloud Run console, find you service pertaining to your ZenML server and click on it.
-- Click on the "Edit & Deploy new Revision" button.
-- Scroll down to the "Revision auto-scaling" section.
-- Here you can set the minimum and maximum number of instances to run for your service.
+* Go to the Cloud Run console, find you service pertaining to your ZenML server and click on it.
+* Click on the "Edit & Deploy new Revision" button.
+* Scroll down to the "Revision auto-scaling" section.
+* Here you can set the minimum and maximum number of instances to run for your service.
 
 ![Image showing autoscaling settings for a service](../../.gitbook/assets/cloudrun_autoscaling.png)
-
 {% endtab %}
+
 {% tab title="Docker Compose" %}
 If you use Docker Compose, you don't get autoscaling out of the box. However, you can scale your service to N number of replicas using the `scale` flag. For example:
 
@@ -71,7 +68,6 @@ docker compose up --scale zenml-server=N
 ```
 
 This will scale your ZenML server to N replicas.
-
 {% endtab %}
 {% endtabs %}
 
@@ -90,15 +86,14 @@ By default, it is set to 40. If you are using any other deployment option, you c
 
 Once this is set, you should also modify the `zenml.database.poolSize` and `zenml.database.maxOverflow` values to ensure that the ZenML server workers do not block on database connections (i.e. the sum of the pool size and max overflow should be greater than or equal to the thread pool size). If you manage your own database, ensure these values are set appropriately.
 
-
 ## Scaling the backing database
 
 An important component of the ZenML server deployment is the backing database. When you start scaling your ZenML server instances, you will also need to scale your database to avoid any bottlenecks.
 
 We would recommend starting out with a simple (single) database instance and then monitoring it to decide if it needs scaling. Some common metrics to look out for:
-- CPU Utilization: If the CPU Utilization is consistently above 50%, you may need to scale your database. Some spikes in the utlization are expected but it should not be consistently high.
-- Freeable Memory: It is natural for the freeable memory to go down with time as your database uses it for caching and buffering but if it drops below 100-200 MB, you may need to scale your database.
 
+* CPU Utilization: If the CPU Utilization is consistently above 50%, you may need to scale your database. Some spikes in the utlization are expected but it should not be consistently high.
+* Freeable Memory: It is natural for the freeable memory to go down with time as your database uses it for caching and buffering but if it drops below 100-200 MB, you may need to scale your database.
 
 ## Setting up an ingress/load balancer
 
@@ -106,7 +101,6 @@ Exposing your ZenML server to the internet securely and reliably is a must for p
 
 {% tabs %}
 {% tab title="Kubernetes with Helm" %}
-
 If you are using the official [ZenML Helm chart](https://artifacthub.io/packages/helm/zenml/zenml), you can take advantage of the `zenml.ingress.enabled` flag to enable ingress for your ZenML server. For example:
 
 ```yaml
@@ -124,12 +118,13 @@ zenml:
 
 This will create an [NGINX ingress](https://github.com/kubernetes/ingress-nginx) for your ZenML service that will create a LoadBalancer on whatever cloud provider you are using.
 {% endtab %}
+
 {% tab title="ECS" %}
-With ECS, you can use Application Load Balancers to evenly route traffic to your tasks running your ZenML server. 
+With ECS, you can use Application Load Balancers to evenly route traffic to your tasks running your ZenML server.
 
 Follow the steps in the official [AWS documentation](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/service-load-balancing.html) to learn how to set this up.
-
 {% endtab %}
+
 {% tab title="Cloud Run" %}
 With Cloud Run, you can use Cloud Load Balancing to route traffic to your service.
 
@@ -160,24 +155,22 @@ sum by(namespace) (rate(container_cpu_usage_seconds_total{namespace=~"zenml.*"}[
 This query would give you the CPU utilization of your server pods in all namespaces that start with `zenml`. The image below shows how this query would look like in Grafana.
 
 ![Image showing CPU utilization of ZenML server pods](../../.gitbook/assets/grafana_dashboard.png)
-
-
 {% endtab %}
+
 {% tab title="ECS" %}
 On ECS, you can utilize the [CloudWatch integration](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/cloudwatch-metrics.html) to monitor your ZenML server.
 
 In the "Health and metrics" section of your ECS console, you should see metrics pertaining to your ZenML service like CPU utilization and Memory utilization.
 
 ![Image showing CPU utilization ECS](../../.gitbook/assets/ecs_cpu_utilization.png)
-
 {% endtab %}
+
 {% tab title="Cloud Run" %}
 In Cloud Run, you can utilize the [Cloud Monitoring integration](https://cloud.google.com/run/docs/monitoring) to monitor your ZenML server.
 
 The "Metrics" tab in the Cloud Run console will show you metrics like Container CPU utilization, Container memory utilization, and more.
 
 ![Image showing metrics in Cloud Run](../../.gitbook/assets/cloudrun_metrics.png)
-
 {% endtab %}
 {% endtabs %}
 
@@ -187,11 +180,8 @@ The data in your ZenML server is critical as it contains your pipeline runs, sta
 
 Some common strategies include:
 
-- Setting up automated backups with a good retention period (say 30 days).
-- Periodically exporting the data to an external storage (e.g. S3, GCS, etc.).
-- Manual backups before upgrading your server to avoid any problems.
+* Setting up automated backups with a good retention period (say 30 days).
+* Periodically exporting the data to an external storage (e.g. S3, GCS, etc.).
+* Manual backups before upgrading your server to avoid any problems.
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
-
-
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

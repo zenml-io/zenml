@@ -266,7 +266,7 @@ And finally, here are some other examples and use cases for inspiration:
 
 1. [E2E Batch Inference](examples/e2e/): Feature engineering, training, and inference pipelines for tabular machine learning.
 2. [Basic NLP with BERT](examples/e2e_nlp/): Feature engineering, training, and inference focused on NLP.
-3. [LLM RAG Pipeline with Langchain and OpenAI](https://github.com/zenml-io/zenml-projects/tree/main/llm-agents): Using Langchain to create a simple RAG pipeline.
+3. [LLM RAG Pipeline with Langchain and OpenAI](https://github.com/zenml-io/zenml-projects/tree/main/zenml-support-agent): Using Langchain to create a simple RAG pipeline.
 4. [Huggingface Model to Sagemaker Endpoint](https://github.com/zenml-io/zenml-projects/tree/main/huggingface-sagemaker): Automated MLOps on Amazon Sagemaker and HuggingFace
 5. [LLMops](https://github.com/zenml-io/zenml-projects/tree/main/llm-complete-guide): Complete guide to do LLM with ZenML
 
@@ -341,8 +341,8 @@ our GitHub repo.
 ## 📚 LLM-focused Learning Resources
 
 1. [LL Complete Guide - Full RAG Pipeline](https://github.com/zenml-io/zenml-projects/tree/main/llm-complete-guide) - Document ingestion, embedding management, and query serving
-2. [LLM Fine-Tuning Pipeline](https://github.com/zenml-io/zenml-projects/tree/main/llm-finetuning) - From data prep to deployed model
-3. [LLM Agents Example](https://github.com/zenml-io/zenml-projects/tree/main/llm-agents) - Track conversation quality and tool usage
+2. [LLM Fine-Tuning Pipeline](https://github.com/zenml-io/zenml-projects/tree/main/zencoder) - From data prep to deployed model
+3. [LLM Agents Example](https://github.com/zenml-io/zenml-projects/tree/main/zenml-support-agent) - Track conversation quality and tool usage
 
 ## 🤖 AI-Friendly Documentation with llms.txt
 

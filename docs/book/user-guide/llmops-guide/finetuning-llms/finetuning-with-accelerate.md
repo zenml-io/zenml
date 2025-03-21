@@ -19,7 +19,7 @@ structured meaning representations.
 For a
 full walkthrough of how to run the LLM finetuning yourself, visit [the LLM Lora
 Finetuning
-project](https://github.com/zenml-io/zenml-projects/tree/main/llm-lora-finetuning)
+project](https://github.com/zenml-io/zenml-projects/tree/main/gamesense)
 where you'll find instructions and the code.
 {% endhint %}
 
@@ -37,7 +37,7 @@ steps:
 - **finetune**: We finetune the model on the Viggo dataset.
 - **evaluate_base**: We evaluate the base model (i.e. the model before finetuning) on the Viggo dataset.
 - **evaluate_finetuned**: We evaluate the finetuned model on the Viggo dataset.
-- **promote**: We promote the best performing model to "staging" in the [Model Control Plane](../../../how-to/model-management-metrics/model-control-plane/README.md).
+- **promote**: We promote the best performing model to "staging" in the [Model Control Plane](https://docs.zenml.io/how-to/model-management-metrics/model-control-plane).
 
 If you adapt the code to your own use case, the specific logic in each step
 might differ but the overall structure should remain the same. When you're
@@ -186,7 +186,7 @@ def finetuning_pipeline(...):
 ```
 
 This configuration ensures that your training environment has all the necessary
-components for distributed training. For more details, see the [Accelerate documentation](../../../how-to/pipeline-development/training-with-gpus/accelerate-distributed-training.md).
+components for distributed training. For more details, see the [Accelerate documentation](https://docs.zenml.io/how-to/pipeline-development/training-with-gpus/accelerate-distributed-training).
 
 ## Dataset iteration
 

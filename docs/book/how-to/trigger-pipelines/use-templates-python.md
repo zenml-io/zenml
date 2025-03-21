@@ -3,8 +3,7 @@ description: Create and run a template using the ZenML Python SDK
 ---
 
 {% hint style="success" %}
-This is a [ZenML Pro](https://zenml.io/pro)-only feature. Please
-[sign up here](https://cloud.zenml.io) to get access.
+This is a [ZenML Pro](https://zenml.io/pro)-only feature. Please [sign up here](https://cloud.zenml.io) to get access.
 {% endhint %}
 
 ## Create a template
@@ -108,7 +107,7 @@ def loads_data_and_triggers_training():
     trigger_pipeline(df)  # Will trigger the other pipeline
 ```
 
-Read more about the [PipelineRunConfiguration](https://sdkdocs.zenml.io/latest/core_code_docs/core-config/#zenml.config.pipeline_run_configuration.PipelineRunConfiguration) and [`trigger_pipeline`](https://sdkdocs.zenml.io/latest/core_code_docs/core-client/#zenml.client.Client) function object in the [SDK Docs](https://sdkdocs.zenml.io/).
+Read more about the [PipelineRunConfiguration](https://sdkdocs.zenml.io/latest/core_code_docs/core-config.html#zenml.config.pipeline_run_configuration) and [`trigger_pipeline`](https://sdkdocs.zenml.io/latest/core_code_docs/core-client.html#zenml.client.Client) function object in the [SDK Docs](https://sdkdocs.zenml.io/).
 
 Read more about Unmaterialized Artifacts [here](../data-artifact-management/complex-usecases/unmaterialized-artifacts.md).
 

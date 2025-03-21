@@ -5,13 +5,13 @@ description: Learning how to develop a custom experiment tracker.
 # Develop a custom experiment tracker
 
 {% hint style="info" %}
-Before diving into the specifics of this component type, it is beneficial to familiarize yourself with our [general guide to writing custom component flavors in ZenML](../../how-to/infrastructure-deployment/stack-deployment/implement-a-custom-stack-component.md). This guide provides an essential understanding of ZenML's component flavor concepts.
+Before diving into the specifics of this component type, it is beneficial to familiarize yourself with our [general guide to writing custom component flavors in ZenML](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/implement-a-custom-stack-component). This guide provides an essential understanding of ZenML's component flavor concepts.
 {% endhint %}
 
 {% hint style="warning" %}
 **Base abstraction in progress!**
 
-We are actively working on the base abstraction for the Experiment Tracker, which will be available soon. As a result, their extension is not recommended at the moment. When you are selecting an Experiment Tracker for your stack, you can use one of [the existing flavors](./experiment-trackers.md#experiment-tracker-flavors).
+We are actively working on the base abstraction for the Experiment Tracker, which will be available soon. As a result, their extension is not recommended at the moment. When you are selecting an Experiment Tracker for your stack, you can use one of [the existing flavors](./#experiment-tracker-flavors).
 
 If you need to implement your own Experiment Tracker flavor, you can still do so, but keep in mind that you may have to refactor it when the base abstraction is released.
 {% endhint %}
@@ -37,7 +37,7 @@ zenml experiment-tracker flavor register flavors.my_flavor.MyExperimentTrackerFl
 ```
 
 {% hint style="warning" %}
-ZenML resolves the flavor class by taking the path where you initialized zenml (via `zenml init`) as the starting point of resolution. Therefore, please ensure you follow [the best practice](../../how-to/infrastructure-deployment/infrastructure-as-code/best-practices.md) of initializing zenml at the root of your repository.
+ZenML resolves the flavor class by taking the path where you initialized zenml (via `zenml init`) as the starting point of resolution. Therefore, please ensure you follow [the best practice](https://docs.zenml.io/how-to/infrastructure-deployment/infrastructure-as-code/best-practices) of initializing zenml at the root of your repository.
 
 If ZenML does not find an initialized ZenML repository in any parent directory, it will default to the current working directory, but usually, it's better to not have to rely on this mechanism and initialize zenml at the root.
 {% endhint %}

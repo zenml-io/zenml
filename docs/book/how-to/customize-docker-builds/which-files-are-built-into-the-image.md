@@ -5,8 +5,8 @@ ZenML determines the root directory of your source files in the following order:
 * If you've initialized zenml (`zenml init`) in your current working directory or one of its parent directories, the repository root directory will be used.
 * Otherwise, the parent directory of the Python file you're executing will be the source root. For example, running `python /path/to/file.py`, the source root would be `/path/to`.
 
-You can specify how the files inside this root directory are handled using the following three attributes on the [DockerSettings](https://sdkdocs.zenml.io/latest/core_code_docs/core-config/#zenml.config.docker_settings.DockerSettings):
-* `allow_download_from_code_repository`: If this is set to `True` and your files are inside a registered [code repository](../../user-guide/production-guide/connect-code-repository.md) and the repository has no local changes, the files will be downloaded from the code repository and not included in the image.
+You can specify how the files inside this root directory are handled using the following three attributes on the [DockerSettings](https://sdkdocs.zenml.io/latest/core_code_docs/core-config.html#zenml.config.docker_settings):
+* `allow_download_from_code_repository`: If this is set to `True` and your files are inside a registered [code repository](https://docs.zenml.io/user-guides/production-guide/connect-code-repository) and the repository has no local changes, the files will be downloaded from the code repository and not included in the image.
 * `allow_download_from_artifact_store`: If the previous option is disabled or no code repository without local changes exists for the root directory, ZenML will archive and upload your code to the artifact store if this is set to `True`.
 * `allow_including_files_in_images`: If both previous options were disabled or not possible, ZenML will include your files in the Docker image if this option is enabled. This means a new Docker image has to be built each time you modify one of your code files.
 
@@ -16,7 +16,7 @@ Setting all of the above attributes to `False` is not recommended and will most 
 
 ## Control which files get downloaded
 
-When downloading files either from a code repository or the artifact store, ZenML downloads all contents of the root directory into the Docker container. To exclude files, track your code in a Git repository use a [gitignore](https://git-scm.com/docs/gitignore/en) to specify which files should be excluded.
+When downloading files either from a code repository or the artifact store, ZenML downloads all contents of the root directory into the Docker container. To exclude files, track your code in a Git repository use a gitignore to specify which files should be excluded.
 
 ## Control which files get included
 

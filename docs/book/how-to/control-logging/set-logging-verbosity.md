@@ -15,7 +15,7 @@ to whichever level you suggest.
 
 Note that setting this on the [client environment](../pipeline-development/configure-python-environments/README.md#client-environment-or-the-runner-environment) (e.g. your local machine which runs the pipeline) will **not automatically set the same logging verbosity for remote pipeline runs**. That means setting this variable locally with only effect pipelines that run locally.
 
-If you wish to control for [remote pipeline runs](../../user-guide/production-guide/cloud-orchestration.md), you can set the `ZENML_LOGGING_VERBOSITY` environment variable in your pipeline runs environment as follows:
+If you wish to control for [remote pipeline runs](https://docs.zenml.io/user-guides/production-guide/cloud-orchestration), you can set the `ZENML_LOGGING_VERBOSITY` environment variable in your pipeline runs environment as follows:
 
 ```python
 from zenml import pipeline
