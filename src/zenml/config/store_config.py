@@ -89,6 +89,37 @@ class StoreConfiguration(BaseModel):
 
         return data
 
+    @model_validator(mode="after")
+    def validate_subclass(self) -> "StoreConfiguration":
+        """Validate the store configuration.
+
+        Args:
+            data: The values of the store configuration.
+
+        Returns:
+            The values of the store configuration.
+        """
+        if type(self) is not StoreConfiguration:
+            return self
+        else:
+            if self.type == StoreType.SQL:
+                from zenml.zen_stores.sql_zen_store import (
+                    SqlZenStoreConfiguration,
+                )
+
+                return SqlZenStoreConfiguration(**self.model_dump())
+            elif self.type == StoreType.REST:
+                from zenml.zen_stores.rest_zen_store import (
+                    RestZenStoreConfiguration,
+                )
+
+                return RestZenStoreConfiguration(**self.model_dump())
+            else:
+                raise ValueError(
+                    "StoreConfiguration cannot be instantiated directly, "
+                    "use one of the subclasses based on the store type."
+                )
+
     model_config = ConfigDict(
         # Validate attributes when assigning them. We need to set this in order
         # to have a mix of mutable and immutable attributes

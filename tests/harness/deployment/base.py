@@ -337,7 +337,6 @@ class BaseTestDeployment(ABC):
                 type=store_type,
                 **store_config_dict,
             )
-
         client = Client()
 
         yield client
