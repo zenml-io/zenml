@@ -79,7 +79,7 @@ def describe_user(user_name_or_id: Optional[str] = None) -> None:
 @user.command("list")
 @list_options(UserFilter)
 @click.pass_context
-def list_users(ctx: click.Context, **kwargs: Any) -> None:
+def list_users(ctx: click.Context, /, **kwargs: Any) -> None:
     """List all users.
 
     Args:
