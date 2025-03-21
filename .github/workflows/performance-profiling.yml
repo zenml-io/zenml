@@ -3,7 +3,12 @@ name: ZenML CLI Performance Profiling
 on:
   pull_request:
     types: [opened, synchronize, ready_for_review]
+    paths: [src/zenml]
   workflow_dispatch:
+concurrency:
+  # New commit on branch cancels running workflows of the same branch
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   profile-cli-performance:
     name: Profile ZenML CLI Performance
