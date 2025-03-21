@@ -1,0 +1,40 @@
+ARG BASE_IMAGE
+
+# Select base image
+FROM node:20-slim AS build_dashboard
+
+ARG ZENML_VERSION
+ARG DASHBOARD_BRANCH
+
+# Install git
+RUN apt-get update && \
+    apt-get install -y git && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+RUN git clone --depth 1 -b ${DASHBOARD_BRANCH} https://github.com/zenml-io/zenml-dashboard.git ./
+
+ENV VITE_API_BASE_URL="/api/v1"
+ENV VITE_FRONTEND_VERSION=${ZENML_VERSION}-pro
+
+RUN corepack enable && \
+    pnpm install --frozen-lockfile && \
+    pnpm build
+
+ARG BASE_IMAGE
+
+FROM ${BASE_IMAGE}
+
+ARG COOKIE_NAME
+
+ENV ZENML_SERVER_AUTH_COOKIE_DOMAIN=".zenml.io"
+ENV ZENML_SERVER_EXTERNAL_COOKIE_NAME=${COOKIE_NAME}
+
+USER 0
+RUN rm -r /opt/venv/lib/python3.11/site-packages/zenml
+COPY ./src/zenml /opt/venv/lib/python3.11/site-packages/zenml
+COPY --from=build_dashboard /app/dist/ /opt/venv/lib/python3.11/site-packages/zenml/zen_server/dashboard
+RUN chown -R zenml:zenml /opt/venv/lib/python3.11/site-packages/zenml
+
+USER zenml
