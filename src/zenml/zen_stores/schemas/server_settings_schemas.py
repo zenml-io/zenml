@@ -104,9 +104,13 @@ class ServerSettingsSchema(SQLModel, table=True):
         Returns:
             The created `SettingsResponse`.
         """
+        import os
+
         body = ServerSettingsResponseBody(
             server_id=self.id,
-            server_name=self.server_name,
+            server_name=os.getenv(
+                "ZENML_SERVER_PRO_TENANT_NAME", "ZenML Pro Tenant"
+            ),
             logo_url=self.logo_url,
             enable_analytics=self.enable_analytics,
             display_announcements=self.display_announcements,
