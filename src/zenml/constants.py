@@ -308,6 +308,7 @@ _csp_frame_src_urls = [
 ]
 DEFAULT_ZENML_SERVER_SECURE_HEADERS_CSP = (
     "default-src 'none'; "
+    "prefetch-src 'self'; "
     f"script-src 'self' 'unsafe-inline' 'unsafe-eval' {' '.join(_csp_script_src_urls)}; "
     f"connect-src 'self' {' '.join(_csp_connect_src_urls)}; "
     f"img-src 'self' data: {' '.join(_csp_img_src_urls)}; "
