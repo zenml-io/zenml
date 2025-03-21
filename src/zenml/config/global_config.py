@@ -555,30 +555,14 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             # case, we replace the baseline store configuration with the
             # environment variables. In the second case, we only merge the
             # environment variables into the baseline store config.
+
             if "type" in env_store_config:
                 logger.debug(
                     "Using environment variables to configure the store"
                 )
-                if env_store_config["type"] == StoreType.REST:
-                    from zenml.zen_stores.rest_zen_store import (
-                        RestZenStoreConfiguration,
-                    )
-
-                    store = RestZenStoreConfiguration(
-                        **env_store_config,
-                    )
-                elif env_store_config["type"] == StoreType.SQL:
-                    from zenml.zen_stores.sql_zen_store import (
-                        SqlZenStoreConfiguration,
-                    )
-
-                    store = SqlZenStoreConfiguration(
-                        **env_store_config,
-                    )
-                else:
-                    raise ValueError(
-                        f"Invalid store type: {env_store_config['type']}"
-                    )
+                store = StoreConfiguration(
+                    **env_store_config,
+                )
             else:
                 logger.debug(
                     "Using environment variables to update the default store"
