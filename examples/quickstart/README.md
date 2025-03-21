@@ -162,7 +162,7 @@ This was just the tip of the iceberg of what ZenML can do; check out the [**docs
 more
 about the capabilities of ZenML. For example, you might want to:
 
-* Learn more about ZenML by following our [guides](https://docs.zenml.io/user-guide) or more generally our [docs](https://docs.zenml.io/)
+* Learn more about ZenML by following our [guides](https://docs.zenml.io/user-guides) or more generally our [docs](https://docs.zenml.io/)
 * Explore our [projects repository](https://github.com/zenml-io/zenml-projects) to find interesting use cases that leverage zenml
 
 ## What next?

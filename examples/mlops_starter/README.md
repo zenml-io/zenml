@@ -200,7 +200,7 @@ artifacts and stacks via the client as well as the ZenML Dashboard.
 
 If you want to learn more about ZenML as a tool, then the
 [:page_facing_up: **ZenML Docs**](https://docs.zenml.io/) are the perfect place
-to get started. In particular, the [Production Guide](https://docs.zenml.io/user-guide/production-guide/)
+to get started. In particular, the [Production Guide](https://docs.zenml.io/user-guides/production-guide/)
 goes into more detail as to how to transition these same pipelines into production on the cloud.
 
 The best way to get a production ZenML instance up and running with all batteries included is the [ZenML Pro](https://zenml.io/pro). Check it out!

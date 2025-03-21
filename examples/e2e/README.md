@@ -19,11 +19,11 @@ Settings of your project are:
 - Notifications about failures enabled
 
 > [!NOTE]
-> If you are coming from [our production guide](https://docs.zenml.io/user-guide/production-guide), 
+> If you are coming from [our production guide](https://docs.zenml.io/user-guides/production-guide), 
 > you can apply the same principles that you have seen in the guide to this project. 
-> You can [connect it to remote storage](https://docs.zenml.io/user-guide/production-guide/remote-storage),
-> [run it with a cloud orchestrator](https://docs.zenml.io/user-guide/production-guide/cloud-orchestration),
-> [attach a git repository to it](https://docs.zenml.io/user-guide/production-guide/connect-code-repository),
+> You can [connect it to remote storage](https://docs.zenml.io/user-guides/production-guide/remote-storage),
+> [run it with a cloud orchestrator](https://docs.zenml.io/user-guides/production-guide/cloud-orchestration),
+> [attach a git repository to it](https://docs.zenml.io/user-guides/production-guide/connect-code-repository),
 > and much more. If you are looking to try these steps with a simpler example,
 > feel free to take a look at [our starter template](https://github.com/zenml-io/template-starter)
 > as well.
