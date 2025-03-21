@@ -1,7 +1,7 @@
 """add secret private attr [f1d723fd723b].
 
 Revision ID: f1d723fd723b
-Revises: 41b28cae31ce
+Revises: 288f4fb6e112
 Create Date: 2025-02-21 19:40:14.596681
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "f1d723fd723b"
-down_revision = "41b28cae31ce"
+down_revision = "288f4fb6e112"
 branch_labels = None
 depends_on = None
 
