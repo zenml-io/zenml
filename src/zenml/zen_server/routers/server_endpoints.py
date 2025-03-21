@@ -138,35 +138,36 @@ def get_onboarding_state(
     return zen_store().get_onboarding_state()
 
 
+@router.get(
+    SERVER_SETTINGS,
+    responses={
+        401: error_response,
+        404: error_response,
+        422: error_response,
+    },
+)
+@handle_exceptions
+def get_settings(
+    _: AuthContext = Security(authorize),
+    hydrate: bool = True,
+) -> ServerSettingsResponse:
+    """Get settings of the server.
+
+    Args:
+        hydrate: Whether to hydrate the response.
+
+    Returns:
+        Settings of the server.
+    """
+    return zen_store().get_server_settings(hydrate=hydrate)
+
+
 # We don't have any concrete value that tells us whether a server is a cloud
 # tenant, so we use `external_server_id` as the best proxy option.
 # For cloud tenants, we don't add these endpoints as the server settings don't
 # have any effect and even allow users to disable functionality that is
 # necessary for the cloud onboarding to work.
 if server_config().external_server_id is None:
-
-    @router.get(
-        SERVER_SETTINGS,
-        responses={
-            401: error_response,
-            404: error_response,
-            422: error_response,
-        },
-    )
-    @handle_exceptions
-    def get_settings(
-        _: AuthContext = Security(authorize),
-        hydrate: bool = True,
-    ) -> ServerSettingsResponse:
-        """Get settings of the server.
-
-        Args:
-            hydrate: Whether to hydrate the response.
-
-        Returns:
-            Settings of the server.
-        """
-        return zen_store().get_server_settings(hydrate=hydrate)
 
     @router.put(
         SERVER_SETTINGS,
