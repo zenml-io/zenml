@@ -1,7 +1,7 @@
 """make tags user scoped [288f4fb6e112].
 
 Revision ID: 288f4fb6e112
-Revises: 3b1776345020
+Revises: 41b28cae31ce
 Create Date: 2025-02-19 15:16:42.954792
 
 """
@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 
 # revision identifiers, used by Alembic.
 revision = "288f4fb6e112"
-down_revision = "3b1776345020"
+down_revision = "41b28cae31ce"
 branch_labels = None
 depends_on = None
 
