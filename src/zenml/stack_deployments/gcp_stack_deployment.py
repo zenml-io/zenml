@@ -18,6 +18,10 @@ from typing import ClassVar, Dict, List
 
 from zenml.enums import StackDeploymentProvider
 from zenml.models import StackDeploymentConfig
+from zenml.stack_deployments.constants import (
+    TERRAFORM_GCP_MODULE_VERSION_SPEC,
+    TERRAFORM_PROVIDER_VERSION_SPEC,
+)
 from zenml.stack_deployments.stack_deployment import (
     STACK_DEPLOYMENT_TERRAFORM,
     ZenMLCloudStackDeployment,
@@ -267,6 +271,7 @@ GCP project and to clean up the resources created by the stack by using
         }}
         zenml = {{
             source = "zenml-io/zenml"
+            version = "{TERRAFORM_PROVIDER_VERSION_SPEC}"
         }}
     }}
 }}
@@ -283,6 +288,7 @@ provider "zenml" {{
 
 module "zenml_stack" {{
     source  = "zenml-io/zenml-stack/gcp"
+    version = "{TERRAFORM_GCP_MODULE_VERSION_SPEC}"
 
     zenml_stack_name = "{self.stack_name}"
     zenml_stack_deployment = "{self.deployment_type}"
