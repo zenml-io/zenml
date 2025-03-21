@@ -1,0 +1,7 @@
+ARG BASE_IMAGE
+
+FROM ${BASE_IMAGE}
+USER 0
+RUN rm -r /opt/venv/lib/python3.11/site-packages/zenml
+COPY . /opt/venv/lib/python3.11/site-packages/zenml
+USER zenml
