@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 """Implementation of a registry to track ZenML integrations."""
 
+import importlib
+import os
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Type
 
 from zenml.exceptions import IntegrationError
@@ -30,6 +32,7 @@ class IntegrationRegistry(object):
     def __init__(self) -> None:
         """Initializing the integration registry."""
         self._integrations: Dict[str, Type["Integration"]] = {}
+        self._initialized = False
 
     @property
     def integrations(self) -> Dict[str, Type["Integration"]]:
@@ -38,6 +41,7 @@ class IntegrationRegistry(object):
         Returns:
             A dict of integration key to type of `Integration`.
         """
+        self._initialize()
         return self._integrations
 
     @integrations.setter
@@ -68,8 +72,33 @@ class IntegrationRegistry(object):
         """
         self._integrations[key] = type_
 
+    def _initialize(self) -> None:
+        """Method to register all integrations."""
+        if self._initialized:
+            return
+        self._initialized = True
+
+        # Load all submodules in the integrations module
+        integrations_dir = os.path.dirname(__file__)
+        for file in os.listdir(integrations_dir):
+            full_path = os.path.join(integrations_dir, file)
+            # Skip anything that isn't a directory
+            if not os.path.isdir(full_path):
+                continue
+            # Skip anything that doesn't have a __init__.py file
+            if not os.path.exists(os.path.join(full_path, "__init__.py")):
+                continue
+            # Import the module
+            module_path = f"zenml.integrations.{file}"
+            try:
+                importlib.import_module(module_path)
+            except ImportError:
+                logger.exception(f"Failed to import module `{module_path}`.")
+                continue
+
     def activate_integrations(self) -> None:
         """Method to activate the integrations with are registered in the registry."""
+        self._initialize()
         for name, integration in self._integrations.items():
             if integration.check_installation():
                 logger.debug(f"Activating integration `{name}`...")
@@ -85,6 +114,7 @@ class IntegrationRegistry(object):
         Returns:
             A list of all possible integrations.
         """
+        self._initialize()
         return [name for name in self._integrations]
 
     def select_integration_requirements(
@@ -104,6 +134,7 @@ class IntegrationRegistry(object):
         Raises:
             KeyError: If the integration is not found.
         """
+        self._initialize()
         if integration_name:
             if integration_name in self.list_integration_names:
                 return self._integrations[integration_name].get_requirements(
@@ -141,6 +172,7 @@ class IntegrationRegistry(object):
         Raises:
             KeyError: If the integration is not found.
         """
+        self._initialize()
         if integration_name:
             if integration_name in self.list_integration_names:
                 return self._integrations[
@@ -173,6 +205,7 @@ class IntegrationRegistry(object):
         Raises:
             KeyError: If the integration is not found.
         """
+        self._initialize()
         if integration_name in self.list_integration_names:
             return self._integrations[integration_name].check_installation()
         elif not integration_name:
@@ -194,6 +227,7 @@ class IntegrationRegistry(object):
         Returns:
             List of installed integrations.
         """
+        self._initialize()
         return [
             name
             for name, integration in integration_registry.integrations.items()
