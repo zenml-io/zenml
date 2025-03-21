@@ -38,7 +38,7 @@ def project() -> None:
 @project.command("list")
 @list_options(ProjectFilter)
 @click.pass_context
-def list_projects(ctx: click.Context, **kwargs: Any) -> None:
+def list_projects(ctx: click.Context, /, **kwargs: Any) -> None:
     """List all projects.
 
     Args:
