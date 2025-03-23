@@ -24,7 +24,8 @@ from sqlalchemy import (
     Column,
     UniqueConstraint,
 )
-from sqlmodel import Field, Relationship
+from sqlalchemy.orm import object_session
+from sqlmodel import Field, Relationship, desc, select
 
 from zenml.enums import (
     ArtifactType,
@@ -56,6 +57,7 @@ from zenml.zen_stores.schemas.artifact_schemas import ArtifactVersionSchema
 from zenml.zen_stores.schemas.base_schemas import BaseSchema, NamedSchema
 from zenml.zen_stores.schemas.constants import MODEL_VERSION_TABLENAME
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
+from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.tag_schemas import TagSchema
@@ -64,7 +66,6 @@ from zenml.zen_stores.schemas.utils import (
     RunMetadataInterface,
     get_page_from_list,
 )
-from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import ServiceSchema, StepRunSchema
@@ -77,20 +78,20 @@ class ModelSchema(NamedSchema, table=True):
     __table_args__ = (
         UniqueConstraint(
             "name",
-            "workspace_id",
-            name="unique_model_name_in_workspace",
+            "project_id",
+            name="unique_model_name_in_project",
         ),
     )
 
-    workspace_id: UUID = build_foreign_key_field(
+    project_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target=WorkspaceSchema.__tablename__,
-        source_column="workspace_id",
+        target=ProjectSchema.__tablename__,
+        source_column="project_id",
         target_column="id",
         ondelete="CASCADE",
         nullable=False,
     )
-    workspace: "WorkspaceSchema" = Relationship(back_populates="models")
+    project: "ProjectSchema" = Relationship(back_populates="models")
 
     user_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -126,6 +127,32 @@ class ModelSchema(NamedSchema, table=True):
         sa_relationship_kwargs={"cascade": "delete"},
     )
 
+    @property
+    def latest_version(self) -> Optional["ModelVersionSchema"]:
+        """Fetch the latest version for this model.
+
+        Raises:
+            RuntimeError: If no session for the schema exists.
+
+        Returns:
+            The latest version for this model.
+        """
+        if session := object_session(self):
+            return (
+                session.execute(
+                    select(ModelVersionSchema)
+                    .where(ModelVersionSchema.model_id == self.id)
+                    .order_by(desc(ModelVersionSchema.number))
+                    .limit(1)
+                )
+                .scalars()
+                .one_or_none()
+            )
+        else:
+            raise RuntimeError(
+                "Missing DB session to fetch latest version for model."
+            )
+
     @classmethod
     def from_request(cls, model_request: ModelRequest) -> "ModelSchema":
         """Convert an `ModelRequest` to an `ModelSchema`.
@@ -138,7 +165,7 @@ class ModelSchema(NamedSchema, table=True):
         """
         return cls(
             name=model_request.name,
-            workspace_id=model_request.workspace,
+            project_id=model_request.project,
             user_id=model_request.user,
             license=model_request.license,
             description=model_request.description,
@@ -169,11 +196,9 @@ class ModelSchema(NamedSchema, table=True):
         """
         tags = [tag.to_model() for tag in self.tags]
 
-        if self.model_versions:
-            version_numbers = [mv.number for mv in self.model_versions]
-            latest_version_idx = version_numbers.index(max(version_numbers))
-            latest_version_name = self.model_versions[latest_version_idx].name
-            latest_version_id = self.model_versions[latest_version_idx].id
+        if latest_version := self.latest_version:
+            latest_version_name = latest_version.name
+            latest_version_id = latest_version.id
         else:
             latest_version_name = None
             latest_version_id = None
@@ -181,7 +206,7 @@ class ModelSchema(NamedSchema, table=True):
         metadata = None
         if include_metadata:
             metadata = ModelResponseMetadata(
-                workspace=self.workspace.to_model(),
+                project=self.project.to_model(),
                 license=self.license,
                 description=self.description,
                 audience=self.audience,
@@ -223,6 +248,9 @@ class ModelSchema(NamedSchema, table=True):
         for field, value in model_update.model_dump(
             exclude_unset=True, exclude_none=True
         ).items():
+            if field in ["add_tags", "remove_tags"]:
+                # Tags are handled separately
+                continue
             setattr(self, field, value)
         self.updated = utc_now()
         return self
@@ -257,17 +285,15 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
         ),
     )
 
-    workspace_id: UUID = build_foreign_key_field(
+    project_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target=WorkspaceSchema.__tablename__,
-        source_column="workspace_id",
+        target=ProjectSchema.__tablename__,
+        source_column="project_id",
         target_column="id",
         ondelete="CASCADE",
         nullable=False,
     )
-    workspace: "WorkspaceSchema" = Relationship(
-        back_populates="model_versions"
-    )
+    project: "ProjectSchema" = Relationship(back_populates="model_versions")
 
     user_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -372,7 +398,7 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
 
         return cls(
             id=id_,
-            workspace_id=model_version_request.workspace,
+            project_id=model_version_request.project,
             user_id=model_version_request.user,
             model_id=model_version_request.model,
             name=model_version_request.name,
@@ -440,7 +466,7 @@ class ModelVersionSchema(NamedSchema, RunMetadataInterface, table=True):
         metadata = None
         if include_metadata:
             metadata = ModelVersionResponseMetadata(
-                workspace=self.workspace.to_model(),
+                project=self.project.to_model(),
                 description=self.description,
                 run_metadata=self.fetch_metadata(),
             )
@@ -526,7 +552,7 @@ class ModelVersionArtifactSchema(BaseSchema, table=True):
     )
     artifact_version_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target=ArtifactVersionSchema.__tablename__,  # type: ignore[has-type]
+        target=ArtifactVersionSchema.__tablename__,
         source_column="artifact_version_id",
         target_column="id",
         ondelete="CASCADE",

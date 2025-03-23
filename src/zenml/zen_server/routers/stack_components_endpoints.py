@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for stack components."""
 
-from typing import List
+from typing import List, Optional, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -22,6 +22,7 @@ from zenml.constants import API, COMPONENT_TYPES, STACK_COMPONENTS, VERSION_1
 from zenml.enums import StackComponentType
 from zenml.models import (
     ComponentFilter,
+    ComponentRequest,
     ComponentResponse,
     ComponentUpdate,
     Page,
@@ -29,6 +30,7 @@ from zenml.models import (
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
+    verify_permissions_and_create_entity,
     verify_permissions_and_delete_entity,
     verify_permissions_and_get_entity,
     verify_permissions_and_list_entities,
@@ -36,6 +38,7 @@ from zenml.zen_server.rbac.endpoint_utils import (
 )
 from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import verify_permission_for_model
+from zenml.zen_server.routers.projects_endpoints import workspace_router
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
@@ -55,29 +58,88 @@ types_router = APIRouter(
 )
 
 
+@router.post(
+    "",
+    responses={401: error_response, 409: error_response, 422: error_response},
+)
+# TODO: the workspace scoped endpoint is only kept for dashboard compatibility
+# and can be removed after the migration
+@workspace_router.post(
+    "/{project_name_or_id}" + STACK_COMPONENTS,
+    responses={401: error_response, 409: error_response, 422: error_response},
+    deprecated=True,
+    tags=["stack_components"],
+)
+@handle_exceptions
+def create_stack_component(
+    component: ComponentRequest,
+    project_name_or_id: Optional[Union[str, UUID]] = None,
+    _: AuthContext = Security(authorize),
+) -> ComponentResponse:
+    """Creates a stack component.
+
+    Args:
+        component: Stack component to register.
+        project_name_or_id: Optional name or ID of the project.
+
+    Returns:
+        The created stack component.
+    """
+    if component.connector:
+        service_connector = zen_store().get_service_connector(
+            component.connector
+        )
+        verify_permission_for_model(service_connector, action=Action.READ)
+
+    from zenml.stack.utils import validate_stack_component_config
+
+    validate_stack_component_config(
+        configuration_dict=component.configuration,
+        flavor=component.flavor,
+        component_type=component.type,
+        zen_store=zen_store(),
+        # We allow custom flavors to fail import on the server side.
+        validate_custom_flavors=False,
+    )
+
+    return verify_permissions_and_create_entity(
+        request_model=component,
+        create_method=zen_store().create_stack_component,
+    )
+
+
 @router.get(
     "",
-    response_model=Page[ComponentResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
+)
+# TODO: the workspace scoped endpoint is only kept for dashboard compatibility
+# and can be removed after the migration
+@workspace_router.get(
+    "/{project_name_or_id}" + STACK_COMPONENTS,
+    responses={401: error_response, 404: error_response, 422: error_response},
+    deprecated=True,
+    tags=["stack_components"],
 )
 @handle_exceptions
 def list_stack_components(
     component_filter_model: ComponentFilter = Depends(
         make_dependable(ComponentFilter)
     ),
+    project_name_or_id: Optional[Union[str, UUID]] = None,
     hydrate: bool = False,
     _: AuthContext = Security(authorize),
 ) -> Page[ComponentResponse]:
-    """Get a list of all stack components for a specific type.
+    """Get a list of all stack components.
 
     Args:
         component_filter_model: Filter model used for pagination, sorting,
             filtering.
+        project_name_or_id: Optional name or ID of the project to filter by.
         hydrate: Flag deciding whether to hydrate the output model(s)
             by including metadata fields in the response.
 
     Returns:
-        List of stack components for a specific type.
+        List of stack components matching the filter criteria.
     """
     return verify_permissions_and_list_entities(
         filter_model=component_filter_model,
@@ -89,7 +151,6 @@ def list_stack_components(
 
 @router.get(
     "/{component_id}",
-    response_model=ComponentResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -117,7 +178,6 @@ def get_stack_component(
 
 @router.put(
     "/{component_id}",
-    response_model=ComponentResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -185,7 +245,6 @@ def deregister_stack_component(
 
 @types_router.get(
     "",
-    response_model=List[str],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions

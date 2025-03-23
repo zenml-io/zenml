@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for artifact versions."""
 
-from typing import List
+from typing import List, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
@@ -46,6 +46,7 @@ from zenml.zen_server.rbac.utils import (
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
+    set_filter_project_scope,
     zen_store,
 )
 
@@ -58,7 +59,6 @@ artifact_version_router = APIRouter(
 
 @artifact_version_router.get(
     "",
-    response_model=Page[ArtifactVersionResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -81,8 +81,14 @@ def list_artifact_versions(
     Returns:
         The artifact versions according to query filters.
     """
+    # A project scoped request must always be scoped to a specific
+    # project. This is required for the RBAC check to work.
+    set_filter_project_scope(artifact_version_filter_model)
+    assert isinstance(artifact_version_filter_model.project, UUID)
+
     allowed_artifact_ids = get_allowed_resource_ids(
-        resource_type=ResourceType.ARTIFACT
+        resource_type=ResourceType.ARTIFACT,
+        project_id=artifact_version_filter_model.project,
     )
     artifact_version_filter_model.configure_rbac(
         authenticated_user_id=auth_context.user.id,
@@ -97,7 +103,6 @@ def list_artifact_versions(
 
 @artifact_version_router.post(
     "",
-    response_model=ArtifactVersionResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -115,7 +120,6 @@ def create_artifact_version(
     """
     return verify_permissions_and_create_entity(
         request_model=artifact_version,
-        resource_type=ResourceType.ARTIFACT_VERSION,
         create_method=zen_store().create_artifact_version,
     )
 
@@ -139,14 +143,12 @@ def batch_create_artifact_version(
     """
     return verify_permissions_and_batch_create_entity(
         batch=artifact_versions,
-        resource_type=ResourceType.ARTIFACT_VERSION,
         create_method=zen_store().batch_create_artifact_versions,
     )
 
 
 @artifact_version_router.get(
     "/{artifact_version_id}",
-    response_model=ArtifactVersionResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -174,7 +176,6 @@ def get_artifact_version(
 
 @artifact_version_router.put(
     "/{artifact_version_id}",
-    response_model=ArtifactVersionResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -227,24 +228,29 @@ def delete_artifact_version(
 )
 @handle_exceptions
 def prune_artifact_versions(
+    project_name_or_id: Union[str, UUID],
     only_versions: bool = True,
     _: AuthContext = Security(authorize),
 ) -> None:
     """Prunes unused artifact versions and their artifacts.
 
     Args:
+        project_name_or_id: The project name or ID to prune artifact
+            versions for.
         only_versions: Only delete artifact versions, keeping artifacts
     """
+    project_id = zen_store().get_project(project_name_or_id).id
+
     verify_permissions_and_prune_entities(
         resource_type=ResourceType.ARTIFACT_VERSION,
         prune_method=zen_store().prune_artifact_versions,
         only_versions=only_versions,
+        project_id=project_id,
     )
 
 
 @artifact_version_router.get(
     "/{artifact_version_id}" + VISUALIZE,
-    response_model=LoadedVisualization,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions

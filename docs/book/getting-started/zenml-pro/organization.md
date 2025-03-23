@@ -2,21 +2,21 @@
 
 ZenML Pro arranges various aspects of your work experience around the concept
 of an **Organization**. This is the top-most level structure within the ZenML Cloud environment.
-Generally, an organization contains a group of users and one or more [tenants](./tenants.md).
+Generally, an organization contains a group of users and one or more [workspaces](./workspaces.md).
 
 ## Inviting Team Members to Your Organization
 
-Inviting users to your organization to work on the organization's tenants is
+Inviting users to your organization to work on the organization's workspaces is
 easy. Simply click `Add Member` in the Organization settings, and give them an
 initial Role. The user will be sent an invitation email. If a user is part of an
-organization, they can utilize their login on all tenants they have authority to
+organization, they can utilize their login on all workspaces they have authority to
 access.
 
 ![Image showing invite flow](../../.gitbook/assets/add_org_members.png)
 
 ## Manage Organization settings like billing and roles
 
-The billing information for your tenants is managed on the organization level, among other settings like the members in your organization and the roles they have. You can access the organization settings by clicking on your profile picture in the top right corner and selecting "Settings".
+The billing information for your workspaces is managed on the organization level, among other settings like the members in your organization and the roles they have. You can access the organization settings by clicking on your profile picture in the top right corner and selecting "Settings".
 
 ![Image showing the organization settings page](../../.gitbook/assets/org_settings.png)
 

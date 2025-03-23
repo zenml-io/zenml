@@ -110,3 +110,19 @@ class RunMetadataInterface:
             k: sorted(v, key=lambda x: x.created, reverse=True)[0].value
             for k, v in metadata_collection.items()
         }
+
+
+def get_resource_type_name(schema_class: Type[BaseSchema]) -> str:
+    """Get the name of a resource from a schema class.
+
+    Args:
+        schema_class: The schema class to get the name of.
+
+    Returns:
+        The name of the resource.
+    """
+    entity_name = schema_class.__tablename__
+    assert isinstance(entity_name, str)
+    # Some entities are plural, some are singular, some have multiple words
+    # in their table name connected by underscores (e.g. pipeline_run)
+    return entity_name.replace("_", " ").rstrip("s")

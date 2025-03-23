@@ -107,65 +107,38 @@ The Cloud dashboard visualizes version history for your review.
 {% endtab %}
 {% endtabs %}
 
-### Add metadata and tags to artifacts
+### Add metadata and tags 
 
-If you would like to extend your artifacts with extra metadata or tags you can do so by following the patterns demonstrated below:
+If you would like to extend your artifacts and runs with extra metadata or tags you can do so by following the patterns demonstrated below:
 
 ```python
-from zenml import step, get_step_context, ArtifactConfig
-from typing_extensions import Annotated
+from zenml import step, log_metadata, add_tags
 
 
-# below we annotate output with `ArtifactConfig` giving it a name,
-# run_metadata and tags. As a result, the created artifact
-# `artifact_name` will get configured with metadata and tags
+# In the following step, we use the utility functions `log_metadata` and `add_tags`.
+# Since we are calling these functions directly from a step, both will attach
+# the additional information to the current run.
 @step
-def annotation_approach() -> (
-    Annotated[
-        str,
-        ArtifactConfig(
-            name="artifact_name",
-            run_metadata={"metadata_key": "metadata_value"},
-            tags=["tag_name"],
-        ),
-    ]
-):
+def annotation_approach() -> str:
+    log_metadata(metadata={"metadata_key": "metadata_value"})
+    add_tags(tags=["tag_name"])
     return "string"
 
 
-# below we annotate output using functional approach with
-# run_metadata and tags. As a result, the created artifact 
-# `artifact_name` will get configured with metadata and tags
+# There are other was to attach this information to different versions of your 
+# artifacts as well. For instance, you will see a step with a single output below.
+# If you modify the call to include the `infer_artifact` flag, these functions
+# will attach this information to the artifact version instead.
 @step
-def annotation_approach() -> Annotated[str, "artifact_name"]:
-    step_context = get_step_context()
-    step_context.add_output_metadata(
-        output_name="artifact_name", metadata={"metadata_key": "metadata_value"}
-    )
-    step_context.add_output_tags(output_name="artifact_name", tags=["tag_name"])
-    return "string"
-
-
-# below we combine both approaches, so the artifact will get
-# metadata and tags from both sources
-@step
-def annotation_approach() -> (
-    Annotated[
-        str,
-        ArtifactConfig(
-            name="artifact_name",
-            run_metadata={"metadata_key": "metadata_value"},
-            tags=["tag_name"],
-        ),
-    ]
-):
-    step_context = get_step_context()
-    step_context.add_output_metadata(
-        output_name="artifact_name", metadata={"metadata_key2": "metadata_value2"}
-    )
-    step_context.add_output_tags(output_name="artifact_name", tags=["tag_name2"])
+def annotation_approach() -> str:
+    log_metadata(metadata={"metadata_key": "metadata_value"}, infer_artifact=True)
+    add_tags(tags=["tag_name"], infer_artifact=True)
     return "string"
 ```
+
+{% hint style="info" %}
+There are multiple ways to interact with tags and metadata in ZenML. If you would like to how to use this information in different scenarios please check the respective guides on [tags](../../how-to/data-artifact-management/handle-data-artifacts/tagging.md) and [metadata](../../how-to/model-management-metrics/track-metrics-metadata/README.md).
+{% endhint %}
 
 ## Comparing metadata across runs (Pro)
 

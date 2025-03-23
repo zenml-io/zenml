@@ -87,5 +87,3 @@ class EvidentlyIntegration(Integration):
 
         return [EvidentlyDataValidatorFlavor]
 
-
-EvidentlyIntegration.check_installation()

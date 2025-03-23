@@ -93,6 +93,7 @@ from zenml.utils import (
     yaml_utils,
 )
 from zenml.utils.string_utils import format_name_template
+from zenml.utils.tag_utils import Tag
 
 if TYPE_CHECKING:
     from zenml.artifacts.external_artifact import ExternalArtifact
@@ -130,7 +131,7 @@ class Pipeline:
         enable_artifact_visualization: Optional[bool] = None,
         enable_step_logs: Optional[bool] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
-        tags: Optional[List[str]] = None,
+        tags: Optional[List[Union[str, "Tag"]]] = None,
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
@@ -293,7 +294,7 @@ class Pipeline:
         enable_artifact_visualization: Optional[bool] = None,
         enable_step_logs: Optional[bool] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
-        tags: Optional[List[str]] = None,
+        tags: Optional[List[Union[str, "Tag"]]] = None,
         extra: Optional[Dict[str, Any]] = None,
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
@@ -407,17 +408,31 @@ class Pipeline:
         return self
 
     @property
-    def requires_parameters(self) -> bool:
-        """If the pipeline entrypoint requires parameters.
+    def required_parameters(self) -> List[str]:
+        """List of required parameters for the pipeline entrypoint.
 
         Returns:
-            If the pipeline entrypoint requires parameters.
+            List of required parameters for the pipeline entrypoint.
         """
         signature = inspect.signature(self.entrypoint, follow_wrapped=True)
-        return any(
-            parameter.default is inspect.Parameter.empty
+        return [
+            parameter.name
             for parameter in signature.parameters.values()
-        )
+            if parameter.default is inspect.Parameter.empty
+        ]
+
+    @property
+    def missing_parameters(self) -> List[str]:
+        """List of missing parameters for the pipeline entrypoint.
+
+        Returns:
+            List of missing parameters for the pipeline entrypoint.
+        """
+        available_parameters = set(self.configuration.parameters or {})
+        if params_from_file := self._from_config_file.get("parameters", None):
+            available_parameters.update(params_from_file)
+
+        return list(set(self.required_parameters) - available_parameters)
 
     @property
     def is_prepared(self) -> bool:
@@ -669,8 +684,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             components = Client().active_stack_model.components
             orchestrator = components[StackComponentType.ORCHESTRATOR][0]
             schedule_model = ScheduleRequest(
-                workspace=Client().active_workspace.id,
-                user=Client().active_user.id,
+                project=Client().active_project.id,
                 pipeline_id=pipeline_id,
                 orchestrator_id=orchestrator.id,
                 name=schedule_name,
@@ -743,15 +757,20 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             build=build_model,
             can_download_from_code_repository=can_download_from_code_repository,
         ):
-            code_archive = code_utils.CodeArchive(
-                root=source_utils.get_source_root()
+            source_root = source_utils.get_source_root()
+            code_archive = code_utils.CodeArchive(root=source_root)
+            logger.info(
+                "Archiving pipeline code directory: `%s`. If this is taking "
+                "longer than you expected, make sure your source root "
+                "is set correctly by running `zenml init`, and that it "
+                "does not contain unnecessarily huge files.",
+                source_root,
             )
-            logger.info("Archiving pipeline code...")
+
             code_path = code_utils.upload_code_if_necessary(code_archive)
 
         request = PipelineDeploymentRequest(
-            user=Client().active_user.id,
-            workspace=Client().active_workspace.id,
+            project=Client().active_project.id,
             stack=stack.id,
             pipeline=pipeline_id,
             build=build_id,
@@ -994,6 +1013,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             for component_type, component in stack.components.items()
         }
         return {
+            "project_id": deployment.project.id,
             "store_type": Client().zen_store.type.value,
             **stack_metadata,
             "total_steps": len(self.invocations),
@@ -1074,8 +1094,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             return _get()
         except RuntimeError:
             request = PipelineRequest(
-                workspace=client.active_workspace.id,
-                user=client.active_user.id,
+                project=client.active_project.id,
                 name=self.name,
             )
 
@@ -1214,7 +1233,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             return id_
 
         if not allow_suffix:
-            raise RuntimeError("Duplicate step ID")
+            raise RuntimeError(f"Duplicate step ID `{id_}`")
 
         for index in range(2, 10000):
             id_ = f"{base_id}_{index}"
@@ -1412,7 +1431,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         except ValidationError as e:
             raise ValueError(
                 "Invalid or missing pipeline function entrypoint arguments. "
-                "Only JSON serializable inputs are allowed as pipeline inputs."
+                "Only JSON serializable inputs are allowed as pipeline inputs. "
                 "Check out the pydantic error above for more details."
             ) from e
 
@@ -1427,15 +1446,17 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 requires parameters.
         """
         if not self.is_prepared:
-            if self.requires_parameters:
+            if missing_parameters := self.missing_parameters:
                 raise RuntimeError(
                     f"Failed while trying to prepare pipeline {self.name}. "
                     "The entrypoint function of the pipeline requires "
-                    "arguments. Please prepare the pipeline by calling "
-                    "`pipeline_instance.prepare(...)` and try again."
+                    "arguments which have not been configured yet: "
+                    f"{missing_parameters}. Please provide those parameters by "
+                    "calling `pipeline_instance.configure(parameters=...)` or "
+                    "by calling `pipeline_instance.prepare(...)` and try again."
                 )
-            else:
-                self.prepare()
+
+            self.prepare()
 
     def create_run_template(
         self, name: str, **kwargs: Any

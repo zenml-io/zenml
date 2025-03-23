@@ -44,6 +44,9 @@ class DeepchecksIntegration(Integration):
         # However, their version 0.18.0 is still not compatible with
         # pandas>=2.2.0, so we limit the version here.
         "pandas<2.2.0",
+        # ipython 9.0.0 removes the `deepchecks.core.display` module,
+        # so we need to pin the version here.
+        "ipython<9.0.0",
     ]
 
     APT_PACKAGES = ["ffmpeg", "libsm6", "libxext6"]
@@ -82,5 +85,3 @@ class DeepchecksIntegration(Integration):
 
         return [DeepchecksDataValidatorFlavor]
 
-
-DeepchecksIntegration.check_installation()

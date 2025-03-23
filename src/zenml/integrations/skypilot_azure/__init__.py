@@ -31,7 +31,7 @@ class SkypilotAzureIntegration(Integration):
     """Definition of Skypilot (Azure) Integration for ZenML."""
 
     NAME = SKYPILOT_AZURE
-    REQUIREMENTS = ["skypilot[azure]>=0.6.1"]
+    REQUIREMENTS = ["skypilot[azure]~=0.8.0"]
     APT_PACKAGES = ["openssh-client", "rsync"]
 
     @classmethod
@@ -47,4 +47,3 @@ class SkypilotAzureIntegration(Integration):
 
         return [SkypilotAzureOrchestratorFlavor]
 
-SkypilotAzureIntegration.check_installation()

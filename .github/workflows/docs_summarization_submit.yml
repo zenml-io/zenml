@@ -42,7 +42,7 @@ jobs:
           mv repomix-output.txt getting-started.txt
 
           # Merge user guide and getting started into basics
-          cat user-guide.txt getting-started.txt > repomix-outputs/basics.txt
+          cat user-guide.txt getting-started.txt > repomix-outputs/llms.txt
           rm user-guide.txt getting-started.txt
       - name: Upload repomix outputs
         uses: actions/upload-artifact@v4

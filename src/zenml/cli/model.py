@@ -91,9 +91,7 @@ def list_models(**kwargs: Any) -> None:
     Args:
         **kwargs: Keyword arguments to filter models.
     """
-    models = Client().zen_store.list_models(
-        model_filter_model=ModelFilter(**kwargs)
-    )
+    models = Client().list_models(**kwargs)
 
     if not models:
         cli_utils.declare("No models found.")
@@ -399,24 +397,18 @@ def version() -> None:
 
 
 @cli_utils.list_options(ModelVersionFilter)
-@click.option(
-    "--model-name",
-    "-n",
-    help="The name of the parent model.",
-    type=str,
-    required=False,
-)
 @version.command("list", help="List model versions with filter.")
-def list_model_versions(model_name: str, **kwargs: Any) -> None:
+@click.argument("model_name_or_id")
+def list_model_versions(model_name_or_id: str, **kwargs: Any) -> None:
     """List model versions with filter in the Model Control Plane.
 
     Args:
-        model_name: The name of the parent model.
+        model_name_or_id: The name or ID of the parent model.
         **kwargs: Keyword arguments to filter models.
     """
-    model_versions = Client().zen_store.list_model_versions(
-        model_name_or_id=model_name,
-        model_version_filter_model=ModelVersionFilter(**kwargs),
+    model_versions = Client().list_model_versions(
+        model_name_or_id=model_name_or_id,
+        **kwargs,
     )
 
     if not model_versions:

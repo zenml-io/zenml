@@ -98,16 +98,12 @@ jobs:
           python-version: ${{ inputs.python-version }}
           os: ${{ inputs.os }}
           install_integrations: ${{ inputs.install_integrations }}
-          runners_cache_access_key_id: ${{ secrets.RUNNERS_CACHE_ACCESS_KEY_ID }}
-          runners_cache_secret_access_key: ${{ secrets.RUNNERS_CACHE_SECRET_ACCESS_KEY }}
-          discord_webhook: ${{ secrets.DISCORD_WEBHOOK }}
       - name: Setup tmate session before tests
         if: ${{ inputs.enable_tmate == 'before-tests' }}
         uses: mxschmitt/action-tmate@v3.17
       - name: Lint check
         env:
           OS: ${{ inputs.os }}
-          CHANGED_FILES: ${{ steps.changed-files.outputs.all_changed_files }}
         run: |
           bash scripts/lint.sh
       - name: Setup tmate session after tests

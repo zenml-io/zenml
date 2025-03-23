@@ -20,11 +20,11 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
+from zenml.enums import ServiceState
 from zenml.login.pro.constants import ZENML_PRO_API_URL, ZENML_PRO_URL
-from zenml.login.pro.tenant.models import TenantRead, TenantStatus
+from zenml.login.pro.workspace.models import WorkspaceRead, WorkspaceStatus
 from zenml.models import ServerModel
 from zenml.models.v2.misc.server_models import ServerDeploymentType
-from zenml.services.service_status import ServiceState
 from zenml.utils.enum_utils import StrEnum
 from zenml.utils.string_utils import get_human_readable_time
 from zenml.utils.time_utils import to_local_tz, utc_now
@@ -99,8 +99,8 @@ class ServerCredentials(BaseModel):
     # Pro server attributes
     organization_name: Optional[str] = None
     organization_id: Optional[UUID] = None
-    tenant_name: Optional[str] = None
-    tenant_id: Optional[UUID] = None
+    workspace_name: Optional[str] = None
+    workspace_id: Optional[UUID] = None
     pro_api_url: Optional[str] = None
     pro_dashboard_url: Optional[str] = None
 
@@ -128,7 +128,7 @@ class ServerCredentials(BaseModel):
             return ServerType.PRO_API
         if self.url == self.pro_api_url:
             return ServerType.PRO_API
-        if self.organization_id or self.tenant_id:
+        if self.organization_id or self.workspace_id:
             return ServerType.PRO
         if urlparse(self.url).hostname in [
             "localhost",
@@ -139,9 +139,9 @@ class ServerCredentials(BaseModel):
         return ServerType.REMOTE
 
     def update_server_info(
-        self, server_info: Union[ServerModel, TenantRead]
+        self, server_info: Union[ServerModel, WorkspaceRead]
     ) -> None:
-        """Update with server information received from the server itself or from a ZenML Pro tenant descriptor.
+        """Update with server information received from the server itself or from a ZenML Pro workspace descriptor.
 
         Args:
             server_info: The server information to update with.
@@ -152,20 +152,20 @@ class ServerCredentials(BaseModel):
             # All other attributes can change during the lifetime of the server
             self.deployment_type = server_info.deployment_type
             server_name = (
-                server_info.pro_tenant_name
-                or server_info.metadata.get("tenant_name")
+                server_info.pro_workspace_name
+                or server_info.metadata.get("workspace_name")
                 or server_info.name
             )
             if server_name:
                 self.server_name = server_name
             if server_info.pro_organization_id:
                 self.organization_id = server_info.pro_organization_id
-            if server_info.pro_tenant_id:
-                self.server_id = server_info.pro_tenant_id
+            if server_info.pro_workspace_id:
+                self.server_id = server_info.pro_workspace_id
             if server_info.pro_organization_name:
                 self.organization_name = server_info.pro_organization_name
-            if server_info.pro_tenant_name:
-                self.tenant_name = server_info.pro_tenant_name
+            if server_info.pro_workspace_name:
+                self.workspace_name = server_info.pro_workspace_name
             if server_info.pro_api_url:
                 self.pro_api_url = server_info.pro_api_url
             if server_info.pro_dashboard_url:
@@ -180,8 +180,8 @@ class ServerCredentials(BaseModel):
             self.server_name = server_info.name
             self.organization_name = server_info.organization_name
             self.organization_id = server_info.organization_id
-            self.tenant_name = server_info.name
-            self.tenant_id = server_info.id
+            self.workspace_name = server_info.name
+            self.workspace_id = server_info.id
             self.status = server_info.status
             self.version = server_info.version
 
@@ -192,7 +192,7 @@ class ServerCredentials(BaseModel):
         Returns:
             True if the server is available, False otherwise.
         """
-        if self.status not in [TenantStatus.AVAILABLE, ServiceState.ACTIVE]:
+        if self.status not in [WorkspaceStatus.AVAILABLE, ServiceState.ACTIVE]:
             return False
         if (
             self.api_key
@@ -270,20 +270,19 @@ class ServerCredentials(BaseModel):
         Returns:
             The URL to the ZenML dashboard for this server.
         """
-        if self.organization_id and self.server_id:
+        if self.pro_dashboard_url and self.workspace_name:
             return (
-                (self.pro_dashboard_url or ZENML_PRO_URL)
-                + f"/organizations/{str(self.organization_id)}/tenants/{str(self.server_id)}"
-            )
+                self.pro_dashboard_url or ZENML_PRO_URL
+            ) + f"/workspaces/{str(self.workspace_name)}"
 
         return self.url
 
     @property
     def dashboard_organization_url(self) -> str:
-        """Get the URL to the ZenML Pro dashboard for this tenant's organization.
+        """Get the URL to the ZenML Pro dashboard for this workspace's organization.
 
         Returns:
-            The URL to the ZenML Pro dashboard for this tenant's organization.
+            The URL to the ZenML Pro dashboard for this workspace's organization.
         """
         if self.organization_id:
             return (
@@ -293,19 +292,19 @@ class ServerCredentials(BaseModel):
 
     @property
     def dashboard_hyperlink(self) -> str:
-        """Get the hyperlink to the ZenML dashboard for this tenant.
+        """Get the hyperlink to the ZenML dashboard for this workspace.
 
         Returns:
-            The hyperlink to the ZenML dashboard for this tenant.
+            The hyperlink to the ZenML dashboard for this workspace.
         """
         return f"[link={self.dashboard_url}]{self.dashboard_url}[/link]"
 
     @property
     def api_hyperlink(self) -> str:
-        """Get the hyperlink to the ZenML OpenAPI dashboard for this tenant.
+        """Get the hyperlink to the ZenML OpenAPI dashboard for this workspace.
 
         Returns:
-            The hyperlink to the ZenML OpenAPI dashboard for this tenant.
+            The hyperlink to the ZenML OpenAPI dashboard for this workspace.
         """
         api_url = self.url + "/docs"
         return f"[link={api_url}]{self.url}[/link]"
@@ -360,10 +359,10 @@ class ServerCredentials(BaseModel):
 
     @property
     def organization_id_hyperlink(self) -> str:
-        """Get the hyperlink to the ZenML Pro dashboard for this tenant's organization using its ID.
+        """Get the hyperlink to the ZenML Pro dashboard for this workspace's organization using its ID.
 
         Returns:
-            The hyperlink to the ZenML Pro dashboard for this tenant's
+            The hyperlink to the ZenML Pro dashboard for this workspace's
             organization using its ID.
         """
         if self.organization_id is None:

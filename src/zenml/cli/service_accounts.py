@@ -187,7 +187,7 @@ def describe_service_account(service_account_name_or_id: str) -> None:
 @service_account.command("list")
 @list_options(ServiceAccountFilter)
 @click.pass_context
-def list_service_accounts(ctx: click.Context, **kwargs: Any) -> None:
+def list_service_accounts(ctx: click.Context, /, **kwargs: Any) -> None:
     """List all users.
 
     Args:
@@ -384,7 +384,7 @@ def describe_api_key(service_account_name_or_id: str, name_or_id: str) -> None:
 @api_key.command("list", help="List all API keys.")
 @list_options(APIKeyFilter)
 @click.pass_obj
-def list_api_keys(service_account_name_or_id: str, **kwargs: Any) -> None:
+def list_api_keys(service_account_name_or_id: str, /, **kwargs: Any) -> None:
     """List all API keys.
 
     Args:
@@ -410,7 +410,6 @@ def list_api_keys(service_account_name_or_id: str, **kwargs: Any) -> None:
             exclude_columns=[
                 "created",
                 "updated",
-                "workspace",
                 "key",
                 "retain_period_minutes",
             ],

@@ -18,7 +18,7 @@ from zenml.login.credentials import ServerType
 from zenml.login.credentials_store import get_credentials_store
 from zenml.login.pro.client import ZenMLProClient
 from zenml.login.pro.constants import ZENML_PRO_API_URL
-from zenml.login.pro.tenant.models import TenantStatus
+from zenml.login.pro.workspace.models import WorkspaceStatus
 
 logger = get_logger(__name__)
 
@@ -35,6 +35,7 @@ def get_troubleshooting_instructions(url: str) -> str:
     credentials_store = get_credentials_store()
 
     credentials = credentials_store.get_credentials(url)
+    pro_api_url = None
     if credentials and credentials.type == ServerType.PRO:
         pro_api_url = credentials.pro_api_url or ZENML_PRO_API_URL
 
@@ -44,13 +45,13 @@ def get_troubleshooting_instructions(url: str) -> str:
         client = ZenMLProClient(pro_api_url)
 
         try:
-            servers = client.tenant.list(url=url, member_only=False)
+            servers = client.workspace.list(url=url, member_only=False)
         except Exception as e:
-            logger.debug(f"Failed to list tenants: {e}")
+            logger.debug(f"Failed to list workspaces: {e}")
         else:
             if servers:
                 server = servers[0]
-                if server.status == TenantStatus.AVAILABLE:
+                if server.status == WorkspaceStatus.AVAILABLE:
                     return (
                         f"The '{server.name}' ZenML Pro server that the client "
                         "is connected to is currently running but you may not "
@@ -58,9 +59,9 @@ def get_troubleshooting_instructions(url: str) -> str:
                         "contact your ZenML Pro administrator for more "
                         "information or try to manage the server members "
                         "yourself if you have the necessary permissions by "
-                        f"visiting the ZenML Pro tenant page at {server.dashboard_url}."
+                        f"visiting the ZenML Pro workspace page at {server.dashboard_url}."
                     )
-                if server.status == TenantStatus.DEACTIVATED:
+                if server.status == WorkspaceStatus.DEACTIVATED:
                     return (
                         f"The '{server.name}' ZenML Pro server that the client "
                         "is connected to has been deactivated. "
@@ -69,14 +70,14 @@ def get_troubleshooting_instructions(url: str) -> str:
                         "you have the necessary permissions by visiting the "
                         f"ZenML Pro Organization page at {server.dashboard_organization_url}."
                     )
-                if server.status == TenantStatus.PENDING:
+                if server.status == WorkspaceStatus.PENDING:
                     return (
                         f"The '{server.name}' ZenML Pro server that the client "
                         "is connected to is currently undergoing maintenance "
                         "(e.g. being deployed, upgraded or re-activated). "
                         "Please try again later or contact your ZenML Pro "
                         "administrator for more information. You can also "
-                        f"visit the ZenML Pro tenant page at {server.dashboard_url}."
+                        f"visit the ZenML Pro workspace page at {server.dashboard_url}."
                     )
                 return (
                     f"The '{server.name}' ZenML Pro server that the client "

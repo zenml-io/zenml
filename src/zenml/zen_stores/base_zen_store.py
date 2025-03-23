@@ -33,9 +33,9 @@ from zenml.config.global_config import GlobalConfiguration
 from zenml.config.server_config import ServerConfiguration
 from zenml.config.store_config import StoreConfiguration
 from zenml.constants import (
+    DEFAULT_PROJECT_NAME,
     DEFAULT_STACK_AND_COMPONENT_NAME,
-    DEFAULT_WORKSPACE_NAME,
-    ENV_ZENML_DEFAULT_WORKSPACE_NAME,
+    ENV_ZENML_DEFAULT_PROJECT_NAME,
     ENV_ZENML_SERVER,
     IS_DEBUG_ENV,
 )
@@ -46,6 +46,7 @@ from zenml.enums import (
 from zenml.exceptions import IllegalOperationError
 from zenml.logger import get_logger
 from zenml.models import (
+    ProjectResponse,
     ServerDatabaseType,
     ServerDeploymentType,
     ServerModel,
@@ -53,7 +54,6 @@ from zenml.models import (
     StackResponse,
     UserFilter,
     UserResponse,
-    WorkspaceResponse,
 )
 from zenml.utils.pydantic_utils import before_validator_handler
 from zenml.zen_stores.zen_store_interface import ZenStoreInterface
@@ -292,51 +292,55 @@ class BaseZenStore(
 
     def validate_active_config(
         self,
-        active_workspace_name_or_id: Optional[Union[str, UUID]] = None,
+        active_project_name_or_id: Optional[Union[str, UUID]] = None,
         active_stack_id: Optional[UUID] = None,
         config_name: str = "",
-    ) -> Tuple[WorkspaceResponse, StackResponse]:
+    ) -> Tuple[Optional[ProjectResponse], StackResponse]:
         """Validate the active configuration.
 
-        Call this method to validate the supplied active workspace and active
+        Call this method to validate the supplied active project and active
         stack values.
 
-        This method is guaranteed to return valid workspace ID and stack ID
-        values. If the supplied workspace and stack are not set or are not valid
-        (e.g. they do not exist or are not accessible), the default workspace and
-        default workspace stack will be returned in their stead.
+        This method returns a valid project and stack values. If the
+        supplied project and stack are not set or are not valid (e.g. they
+        do not exist or are not accessible), the default project and default
+        stack will be returned in their stead.
 
         Args:
-            active_workspace_name_or_id: The name or ID of the active workspace.
+            active_project_name_or_id: The name or ID of the active project.
             active_stack_id: The ID of the active stack.
             config_name: The name of the configuration to validate (used in the
                 displayed logs/messages).
 
         Returns:
-            A tuple containing the active workspace and active stack.
+            A tuple containing the active project and active stack.
         """
-        active_workspace: WorkspaceResponse
+        active_project: Optional[ProjectResponse] = None
 
-        if active_workspace_name_or_id:
+        if active_project_name_or_id:
             try:
-                active_workspace = self.get_workspace(
-                    active_workspace_name_or_id
-                )
-            except KeyError:
-                active_workspace = self._get_default_workspace()
-
+                active_project = self.get_project(active_project_name_or_id)
+            except (KeyError, IllegalOperationError):
+                active_project_name_or_id = None
                 logger.warning(
-                    f"The current {config_name} active workspace is no longer "
-                    f"available. Resetting the active workspace to "
-                    f"'{active_workspace.name}'."
+                    f"The current {config_name} active project is no longer "
+                    f"available."
                 )
-        else:
-            active_workspace = self._get_default_workspace()
 
-            logger.info(
-                f"Setting the {config_name} active workspace "
-                f"to '{active_workspace.name}'."
-            )
+        if active_project is None:
+            try:
+                active_project = self._get_default_project()
+            except (KeyError, IllegalOperationError):
+                logger.warning(
+                    "An active project is not set. Please set the active "
+                    "project by running `zenml project set "
+                    "<project-name>`."
+                )
+            else:
+                logger.info(
+                    f"Setting the {config_name} active project "
+                    f"to '{active_project.name}'."
+                )
 
         active_stack: StackResponse
 
@@ -351,30 +355,16 @@ class BaseZenStore(
                     "Resetting the active stack to default.",
                     config_name,
                 )
-                active_stack = self._get_default_stack(
-                    workspace_id=active_workspace.id
-                )
-            else:
-                if active_stack.workspace.id != active_workspace.id:
-                    logger.warning(
-                        "The current %s active stack is not part of the active "
-                        "workspace. Resetting the active stack to default.",
-                        config_name,
-                    )
-                    active_stack = self._get_default_stack(
-                        workspace_id=active_workspace.id
-                    )
+                active_stack = self._get_default_stack()
 
         else:
             logger.warning(
                 "Setting the %s active stack to default.",
                 config_name,
             )
-            active_stack = self._get_default_stack(
-                workspace_id=active_workspace.id
-            )
+            active_stack = self._get_default_stack()
 
-        return active_workspace, active_stack
+        return active_project, active_stack
 
     def get_store_info(self) -> ServerModel:
         """Get information about the store.
@@ -415,9 +405,9 @@ class BaseZenStore(
             store_info.pro_api_url = pro_config.api_url
             store_info.pro_dashboard_url = pro_config.dashboard_url
             store_info.pro_organization_id = pro_config.organization_id
-            store_info.pro_tenant_id = pro_config.tenant_id
-            if pro_config.tenant_name:
-                store_info.pro_tenant_name = pro_config.tenant_name
+            store_info.pro_workspace_id = pro_config.workspace_id
+            if pro_config.workspace_name:
+                store_info.pro_workspace_name = pro_config.workspace_name
             if pro_config.organization_name:
                 store_info.pro_organization_name = pro_config.organization_name
 
@@ -432,59 +422,50 @@ class BaseZenStore(
         return self.get_store_info().is_local()
 
     # -----------------------------
-    # Default workspaces and stacks
+    # Default projects and stacks
     # -----------------------------
 
     @property
-    def _default_workspace_name(self) -> str:
-        """Get the default workspace name.
+    def _default_project_name(self) -> str:
+        """Get the default project name.
 
         Returns:
-            The default workspace name.
+            The default project name.
         """
-        return os.getenv(
-            ENV_ZENML_DEFAULT_WORKSPACE_NAME, DEFAULT_WORKSPACE_NAME
-        )
+        return os.getenv(ENV_ZENML_DEFAULT_PROJECT_NAME, DEFAULT_PROJECT_NAME)
 
-    def _get_default_workspace(self) -> WorkspaceResponse:
-        """Get the default workspace.
+    def _get_default_project(self) -> ProjectResponse:
+        """Get the default project.
 
         Raises:
-            KeyError: If the default workspace doesn't exist.
+            KeyError: If the default project doesn't exist.
 
         Returns:
-            The default workspace.
+            The default project.
         """
         try:
-            return self.get_workspace(self._default_workspace_name)
+            return self.get_project(self._default_project_name)
         except KeyError:
-            raise KeyError("Unable to find default workspace.")
+            raise KeyError("Unable to find default project.")
 
     def _get_default_stack(
         self,
-        workspace_id: UUID,
     ) -> StackResponse:
-        """Get the default stack for a user in a workspace.
-
-        Args:
-            workspace_id: ID of the workspace.
+        """Get the default stack.
 
         Returns:
-            The default stack in the workspace.
+            The default stack.
 
         Raises:
-            KeyError: if the workspace or default stack doesn't exist.
+            KeyError: if the default stack doesn't exist.
         """
         default_stacks = self.list_stacks(
             StackFilter(
-                workspace_id=workspace_id,
                 name=DEFAULT_STACK_AND_COMPONENT_NAME,
             )
         )
         if default_stacks.total == 0:
-            raise KeyError(
-                f"No default stack found in workspace {workspace_id}."
-            )
+            raise KeyError("No default stack found.")
         return default_stacks.items[0]
 
     def get_external_user(self, user_id: UUID) -> UserResponse:

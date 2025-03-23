@@ -37,10 +37,10 @@ from zenml.logger import get_logger
 from zenml.login.credentials import ServerType
 from zenml.login.pro.constants import ZENML_PRO_API_URL
 from zenml.login.web_login import web_login
-from zenml.zen_server.utils import (
+from zenml.utils.dashboard_utils import show_dashboard
+from zenml.utils.server_utils import (
     connected_to_local_server,
     get_local_server,
-    show_dashboard,
 )
 
 logger = get_logger(__name__)
@@ -246,7 +246,7 @@ def connect_to_pro_server(
     """
     from zenml.login.credentials_store import get_credentials_store
     from zenml.login.pro.client import ZenMLProClient
-    from zenml.login.pro.tenant.models import TenantStatus
+    from zenml.login.pro.workspace.models import WorkspaceStatus
 
     pro_api_url = pro_api_url or ZENML_PRO_API_URL
     pro_api_url = pro_api_url.rstrip("/")
@@ -291,6 +291,11 @@ def connect_to_pro_server(
             login = True
 
     if login or refresh:
+        # If we reached this point, then we need to start a new login flow.
+        # We also need to remove all existing API tokens associated with the
+        # target ZenML Pro API, otherwise they will continue to be used after
+        # the re-login flow.
+        credentials_store.clear_all_pro_tokens()
         try:
             token = web_login(
                 pro_api_url=pro_api_url,
@@ -305,13 +310,14 @@ def connect_to_pro_server(
             "your session expires."
         )
 
-        tenant_id: Optional[str] = None
+        workspace_id: Optional[str] = None
         if token.device_metadata:
-            tenant_id = token.device_metadata.get("tenant_id")
+            # TODO: is this still correct?
+            workspace_id = token.device_metadata.get("tenant_id")
 
-        if tenant_id is None and pro_server is None:
+        if workspace_id is None and pro_server is None:
             # This is not really supposed to happen, because the implementation
-            # of the web login workflow should always return a tenant ID, but
+            # of the web login workflow should always return a workspace ID, but
             # we're handling it just in case.
             cli_utils.declare(
                 "A valid server was not selected during the login process. "
@@ -323,14 +329,14 @@ def connect_to_pro_server(
 
         # The server selected during the web login process overrides any
         # server argument passed to the command.
-        server_id = UUID(tenant_id)
+        server_id = UUID(workspace_id)
 
     client = ZenMLProClient(pro_api_url)
 
     if server_id:
-        server = client.tenant.get(server_id)
+        server = client.workspace.get(server_id)
     elif server_url:
-        servers = client.tenant.list(url=server_url, member_only=True)
+        servers = client.workspace.list(url=server_url, member_only=True)
         if not servers:
             raise AuthorizationException(
                 f"The '{server_url}' URL belongs to a ZenML Pro server, "
@@ -340,7 +346,9 @@ def connect_to_pro_server(
 
         server = servers[0]
     elif server_name:
-        servers = client.tenant.list(tenant_name=server_name, member_only=True)
+        servers = client.workspace.list(
+            workspace_name=server_name, member_only=True
+        )
         if not servers:
             raise AuthorizationException(
                 f"No ZenML Pro server with the name '{server_name}' exists "
@@ -356,15 +364,15 @@ def connect_to_pro_server(
 
     server_id = server.id
 
-    if server.status == TenantStatus.PENDING:
+    if server.status == WorkspaceStatus.PENDING:
         with console.status(
             f"Waiting for your `{server.name}` ZenML Pro server to be set up..."
         ):
             timeout = 180  # 3 minutes
             while True:
                 time.sleep(5)
-                server = client.tenant.get(server_id)
-                if server.status != TenantStatus.PENDING:
+                server = client.workspace.get(server_id)
+                if server.status != WorkspaceStatus.PENDING:
                     break
                 timeout -= 5
                 if timeout <= 0:
@@ -375,7 +383,7 @@ def connect_to_pro_server(
                         f"ZenML Pro dashboard at {server.dashboard_url}."
                     )
 
-    if server.status == TenantStatus.FAILED:
+    if server.status == WorkspaceStatus.FAILED:
         cli_utils.error(
             f"Your `{server.name}` ZenML Pro server is currently in a "
             "failed state. Please manage the server state by visiting the "
@@ -383,7 +391,7 @@ def connect_to_pro_server(
             "your server administrator."
         )
 
-    elif server.status == TenantStatus.DEACTIVATED:
+    elif server.status == WorkspaceStatus.DEACTIVATED:
         cli_utils.error(
             f"Your `{server.name}` ZenML Pro server is currently "
             "deactivated. Please manage the server state by visiting the "
@@ -391,7 +399,7 @@ def connect_to_pro_server(
             "your server administrator."
         )
 
-    elif server.status == TenantStatus.AVAILABLE:
+    elif server.status == WorkspaceStatus.AVAILABLE:
         if not server.url:
             cli_utils.error(
                 f"The ZenML Pro server '{server.name}' is not currently "
@@ -413,7 +421,7 @@ def connect_to_pro_server(
     connect_to_server(server.url, api_key=api_key, pro_server=True)
 
     # Update the stored server info with more accurate data taken from the
-    # ZenML Pro tenant object.
+    # ZenML Pro workspace object.
     credentials_store.update_server_info(server.url, server)
 
     cli_utils.declare(f"Connected to ZenML Pro server: {server.name}.")
@@ -831,7 +839,7 @@ def login(
                 pro_api_url=pro_api_url,
             )
 
-    elif current_non_local_server:
+    elif current_non_local_server and not refresh:
         # The server argument is not provided, so we default to
         # re-authenticating to the current non-local server that the client is
         # connected to.
@@ -976,6 +984,7 @@ def logout(
             )
 
         pro_api_url = pro_api_url or ZENML_PRO_API_URL
+        pro_api_url = pro_api_url.rstrip("/")
         if credentials_store.has_valid_pro_authentication(pro_api_url):
             credentials_store.clear_pro_credentials(pro_api_url)
             cli_utils.declare("Logged out from ZenML Pro.")
@@ -1042,7 +1051,7 @@ def logout(
                 credentials_store.clear_credentials(server_url=server)
             cli_utils.declare(
                 "Logged out from ZenML Pro.\n"
-                f"Hint: You can run 'zenml login {credentials.server_name}' to "
+                f"Hint: You can run `zenml login '{credentials.server_name}'` to "
                 "login again to the same ZenML Pro server or 'zenml server "
                 "list' to view other available servers that you can connect to "
                 "with 'zenml login <server-id-name-or-url>'."
@@ -1053,7 +1062,7 @@ def logout(
                 credentials_store.clear_credentials(server_url=server)
             cli_utils.declare(
                 f"Logged out from {server}."
-                f"Hint: You can run 'zenml login {server}' to log in again "
+                f"Hint: You can run `zenml login '{server}'` to log in again "
                 "to the same server or 'zenml server list' to view other available "
                 "servers that you can connect to with 'zenml login <server-url>'."
             )

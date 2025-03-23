@@ -17,6 +17,10 @@ from typing import ClassVar, Dict, List, Optional
 
 from zenml.enums import StackDeploymentProvider
 from zenml.models import StackDeploymentConfig
+from zenml.stack_deployments.constants import (
+    TERRAFORM_AWS_MODULE_VERSION_SPEC,
+    TERRAFORM_PROVIDER_VERSION_SPEC,
+)
 from zenml.stack_deployments.stack_deployment import (
     STACK_DEPLOYMENT_TERRAFORM,
     ZenMLCloudStackDeployment,
@@ -203,10 +207,6 @@ console.
         # Based on the AWS regions listed at
         # https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html
         return {
-            "US East (Ohio)": "us-east-2",
-            "US East (N. Virginia)": "us-east-1",
-            "US West (N. California)": "us-west-1",
-            "US West (Oregon)": "us-west-2",
             "Africa (Cape Town)": "af-south-1",
             "Asia Pacific (Hong Kong)": "ap-east-1",
             "Asia Pacific (Hyderabad)": "ap-south-2",
@@ -232,6 +232,10 @@ console.
             "Middle East (Bahrain)": "me-south-1",
             "Middle East (UAE)": "me-central-1",
             "South America (São Paulo)": "sa-east-1",
+            "US East (Ohio)": "us-east-2",
+            "US East (N. Virginia)": "us-east-1",
+            "US West (N. California)": "us-west-1",
+            "US West (Oregon)": "us-west-2",
         }
 
     def get_deployment_config(
@@ -287,6 +291,7 @@ console.
         }}
         zenml = {{
             source = "zenml-io/zenml"
+            version = "{TERRAFORM_PROVIDER_VERSION_SPEC}"
         }}
     }}
 }}
@@ -302,7 +307,7 @@ provider "zenml" {{
 
 module "zenml_stack" {{
     source  = "zenml-io/zenml-stack/aws"
-
+    version = "{TERRAFORM_AWS_MODULE_VERSION_SPEC}"
     zenml_stack_name = "{self.stack_name}"
     zenml_stack_deployment = "{self.deployment_type}"
 }}

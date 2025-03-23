@@ -33,12 +33,12 @@ from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.page import Page
 from zenml.models.v2.base.scoped import (
-    WorkspaceScopedFilter,
-    WorkspaceScopedRequest,
-    WorkspaceScopedResponse,
-    WorkspaceScopedResponseBody,
-    WorkspaceScopedResponseMetadata,
-    WorkspaceScopedResponseResources,
+    ProjectScopedFilter,
+    ProjectScopedRequest,
+    ProjectScopedResponse,
+    ProjectScopedResponseBody,
+    ProjectScopedResponseMetadata,
+    ProjectScopedResponseResources,
 )
 from zenml.models.v2.core.trigger_execution import TriggerExecutionResponse
 
@@ -57,7 +57,7 @@ if TYPE_CHECKING:
 # ------------------ Request Model ------------------
 
 
-class TriggerRequest(WorkspaceScopedRequest):
+class TriggerRequest(ProjectScopedRequest):
     """Model for creating a new trigger."""
 
     name: str = Field(
@@ -145,7 +145,7 @@ class TriggerUpdate(BaseUpdate):
 # ------------------ Response Model ------------------
 
 
-class TriggerResponseBody(WorkspaceScopedResponseBody):
+class TriggerResponseBody(ProjectScopedResponseBody):
     """Response body for triggers."""
 
     action_flavor: str = Field(
@@ -172,7 +172,7 @@ class TriggerResponseBody(WorkspaceScopedResponseBody):
     )
 
 
-class TriggerResponseMetadata(WorkspaceScopedResponseMetadata):
+class TriggerResponseMetadata(ProjectScopedResponseMetadata):
     """Response metadata for triggers."""
 
     description: str = Field(
@@ -192,7 +192,7 @@ class TriggerResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
-class TriggerResponseResources(WorkspaceScopedResponseResources):
+class TriggerResponseResources(ProjectScopedResponseResources):
     """Class for all resource models associated with the trigger entity."""
 
     action: "ActionResponse" = Field(
@@ -209,7 +209,7 @@ class TriggerResponseResources(WorkspaceScopedResponseResources):
 
 
 class TriggerResponse(
-    WorkspaceScopedResponse[
+    ProjectScopedResponse[
         TriggerResponseBody, TriggerResponseMetadata, TriggerResponseResources
     ]
 ):
@@ -324,11 +324,11 @@ class TriggerResponse(
 # ------------------ Filter Model ------------------
 
 
-class TriggerFilter(WorkspaceScopedFilter):
+class TriggerFilter(ProjectScopedFilter):
     """Model to enable advanced filtering of all triggers."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
+        *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
         "action_flavor",
         "action_subtype",
         "event_source_flavor",

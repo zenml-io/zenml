@@ -30,10 +30,10 @@ from uuid import UUID
 from zenml.client import Client
 from zenml.enums import StackComponentType
 from zenml.logger import get_logger
+from zenml.models.v2.misc.service import ServiceType
 from zenml.services import BaseService, ServiceConfig
 from zenml.services.service import BaseDeploymentService
 from zenml.services.service_status import ServiceState
-from zenml.services.service_type import ServiceType
 from zenml.stack import StackComponent
 from zenml.stack.flavor import Flavor
 from zenml.stack.stack_component import StackComponentConfig

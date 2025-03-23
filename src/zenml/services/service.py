@@ -34,12 +34,13 @@ from uuid import UUID
 from pydantic import ConfigDict
 
 from zenml.console import console
+from zenml.enums import ServiceState
 from zenml.logger import get_logger
 from zenml.model.model import Model
+from zenml.models.v2.misc.service import ServiceType
 from zenml.services.service_endpoint import BaseServiceEndpoint
 from zenml.services.service_monitor import HTTPEndpointHealthMonitor
-from zenml.services.service_status import ServiceState, ServiceStatus
-from zenml.services.service_type import ServiceType
+from zenml.services.service_status import ServiceStatus
 from zenml.utils import source_utils
 from zenml.utils.typed_model import BaseTypedModel
 

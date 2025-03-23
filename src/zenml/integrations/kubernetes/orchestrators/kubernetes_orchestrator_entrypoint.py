@@ -28,6 +28,7 @@ from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import
 from zenml.integrations.kubernetes.orchestrators import kube_utils
 from zenml.integrations.kubernetes.orchestrators.kubernetes_orchestrator import (
     ENV_ZENML_KUBERNETES_RUN_ID,
+    KUBERNETES_SECRET_TOKEN_KEY_NAME,
     KubernetesOrchestrator,
 )
 from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
@@ -82,6 +83,9 @@ def main() -> None:
     kube_client = orchestrator.get_kube_client(incluster=True)
     core_api = k8s_client.CoreV1Api(kube_client)
 
+    env = get_config_environment_vars()
+    env[ENV_ZENML_KUBERNETES_RUN_ID] = orchestrator_run_id
+
     def run_step_on_kubernetes(step_name: str) -> None:
         """Run a pipeline step in a separate Kubernetes pod.
 
@@ -115,9 +119,6 @@ def main() -> None:
             orchestrator_settings
         )
 
-        env = get_config_environment_vars()
-        env[ENV_ZENML_KUBERNETES_RUN_ID] = orchestrator_run_id
-
         # We set some default minimum memory resource requests for the step pod
         # here if the user has not specified any, because the step pod takes up
         # some memory resources itself and, if not specified, the pod will be
@@ -127,6 +128,23 @@ def main() -> None:
             memory="400Mi",
             pod_settings=settings.pod_settings,
         )
+
+        if orchestrator.config.pass_zenml_token_as_secret:
+            env.pop("ZENML_STORE_API_TOKEN", None)
+            secret_name = orchestrator.get_token_secret_name(
+                deployment_config.id
+            )
+            pod_settings.env.append(
+                {
+                    "name": "ZENML_STORE_API_TOKEN",
+                    "valueFrom": {
+                        "secretKeyRef": {
+                            "name": secret_name,
+                            "key": KUBERNETES_SECRET_TOKEN_KEY_NAME,
+                        }
+                    },
+                }
+            )
 
         # Define Kubernetes pod manifest.
         pod_manifest = build_pod_manifest(
@@ -166,13 +184,29 @@ def main() -> None:
     parallel_node_startup_waiting_period = (
         orchestrator.config.parallel_step_startup_waiting_period or 0.0
     )
-    ThreadedDagRunner(
-        dag=pipeline_dag,
-        run_fn=run_step_on_kubernetes,
-        parallel_node_startup_waiting_period=parallel_node_startup_waiting_period,
-    ).run()
-
-    logger.info("Orchestration pod completed.")
+    try:
+        ThreadedDagRunner(
+            dag=pipeline_dag,
+            run_fn=run_step_on_kubernetes,
+            parallel_node_startup_waiting_period=parallel_node_startup_waiting_period,
+        ).run()
+        logger.info("Orchestration pod completed.")
+    finally:
+        if (
+            orchestrator.config.pass_zenml_token_as_secret
+            and deployment_config.schedule is None
+        ):
+            secret_name = orchestrator.get_token_secret_name(
+                deployment_config.id
+            )
+            try:
+                kube_utils.delete_secret(
+                    core_api=core_api,
+                    namespace=args.kubernetes_namespace,
+                    secret_name=secret_name,
+                )
+            except k8s_client.rest.ApiException as e:
+                logger.error(f"Error cleaning up secret {secret_name}: {e}")
 
 
 if __name__ == "__main__":

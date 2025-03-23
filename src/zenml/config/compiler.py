@@ -599,7 +599,7 @@ class Compiler:
                 f"no steps. Please make sure that your steps are decorated "
                 "with `@step` and that at least one step is called within the "
                 "pipeline. For more information, see "
-                "https://docs.zenml.io/user-guide/starter-guide."
+                "https://docs.zenml.io/user-guides/starter-guide."
             )
 
         additional_spec_args: Dict[str, Any] = {

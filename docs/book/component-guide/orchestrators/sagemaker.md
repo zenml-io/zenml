@@ -167,7 +167,7 @@ Additional configuration for the Sagemaker orchestrator can be passed via `Sagem
 * `sagemaker_session`
 * `entrypoint`
 * `base_job_name`
-* `env`
+* `environment`
 
 For example, settings can be provided and applied in the following way:
 
@@ -180,6 +180,7 @@ from zenml.integrations.aws.flavors.sagemaker_orchestrator_flavor import (
 sagemaker_orchestrator_settings = SagemakerOrchestratorSettings(
     instance_type="ml.m5.large",
     volume_size_in_gb=30,
+    environment={"MY_ENV_VAR": "my_value"}
 )
 
 

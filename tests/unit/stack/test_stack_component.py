@@ -112,7 +112,6 @@ def _get_stub_orchestrator(name, repo=None, **kwargs) -> ComponentRequest:
         flavor="TEST",
         type=StackComponentType.ORCHESTRATOR,
         user=uuid4() if repo is None else repo.active_user.id,
-        workspace=uuid4() if repo is None else repo.active_workspace.id,
     )
 
 

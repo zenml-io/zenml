@@ -20,6 +20,7 @@ from uuid import uuid4
 
 import requests
 from github import Consts, Github, GithubException
+from github.Auth import Token
 from github.Repository import Repository
 
 from zenml.code_repositories import (
@@ -145,9 +146,10 @@ class GitHubCodeRepository(BaseCodeRepository):
         """
         try:
             self._github_session = Github(
-                login_or_token=self.config.token,
                 base_url=self.config.api_url or Consts.DEFAULT_BASE_URL,
+                auth=Token(self.config.token) if self.config.token else None,
             )
+
             if self.config.token:
                 user = self._github_session.get_user().login
                 logger.debug(f"Logged in as {user}")
@@ -235,12 +237,17 @@ class GitHubCodeRepository(BaseCodeRepository):
         Returns:
             Whether the remote url is correct.
         """
-        https_url = f"https://{self.config.host}/{self.config.owner}/{self.config.repository}.git"
+        host = self.config.host or "github.com"
+        host = host.rstrip("/")
+
+        https_url = (
+            f"https://{host}/{self.config.owner}/{self.config.repository}.git"
+        )
         if url == https_url:
             return True
 
         ssh_regex = re.compile(
-            f".*@{self.config.host}:{self.config.owner}/{self.config.repository}.git"
+            f".*@{host}:{self.config.owner}/{self.config.repository}.git"
         )
         if ssh_regex.fullmatch(url):
             return True

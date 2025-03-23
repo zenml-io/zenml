@@ -23,8 +23,8 @@ from zenml.config.global_config import (
     GlobalConfiguration,
 )
 from zenml.constants import (
+    ENV_ZENML_ACTIVE_PROJECT_ID,
     ENV_ZENML_ACTIVE_STACK_ID,
-    ENV_ZENML_ACTIVE_WORKSPACE_ID,
     ENV_ZENML_DISABLE_CREDENTIALS_DISK_CACHING,
     ENV_ZENML_PIPELINE_RUN_API_TOKEN_EXPIRATION,
     ENV_ZENML_SERVER,
@@ -184,7 +184,7 @@ def get_config_environment_vars(
                         "service account API key to authenticate to the ZenML "
                         "server instead of your regular user account. For more "
                         "information, see "
-                        "https://docs.zenml.io/how-to/connecting-to-zenml/connect-with-a-service-account"
+                        "https://docs.zenml.io/how-to/manage-zenml-server/connecting-to-zenml/connect-with-a-service-account"
                     )
 
                 # The schedule, pipeline run or step run credentials are scoped to
@@ -211,13 +211,13 @@ def get_config_environment_vars(
     # in the pipeline run environment
     environment_vars[ENV_ZENML_DISABLE_CREDENTIALS_DISK_CACHING] = "true"
 
-    # Make sure to use the correct active stack/workspace which might come
+    # Make sure to use the correct active stack/project which might come
     # from a .zen repository and not the global config
     environment_vars[ENV_ZENML_ACTIVE_STACK_ID] = str(
         Client().active_stack_model.id
     )
-    environment_vars[ENV_ZENML_ACTIVE_WORKSPACE_ID] = str(
-        Client().active_workspace.id
+    environment_vars[ENV_ZENML_ACTIVE_PROJECT_ID] = str(
+        Client().active_project.id
     )
 
     return environment_vars

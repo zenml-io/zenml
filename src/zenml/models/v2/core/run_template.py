@@ -33,12 +33,13 @@ from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
-    WorkspaceScopedRequest,
-    WorkspaceScopedResponse,
-    WorkspaceScopedResponseBody,
-    WorkspaceScopedResponseMetadata,
-    WorkspaceScopedResponseResources,
-    WorkspaceScopedTaggableFilter,
+    ProjectScopedFilter,
+    ProjectScopedRequest,
+    ProjectScopedResponse,
+    ProjectScopedResponseBody,
+    ProjectScopedResponseMetadata,
+    ProjectScopedResponseResources,
+    TaggableFilter,
 )
 from zenml.models.v2.core.code_reference import (
     CodeReferenceResponse,
@@ -63,7 +64,7 @@ if TYPE_CHECKING:
 # ------------------ Request Model ------------------
 
 
-class RunTemplateRequest(WorkspaceScopedRequest):
+class RunTemplateRequest(ProjectScopedRequest):
     """Request model for run templates."""
 
     name: str = Field(
@@ -111,7 +112,7 @@ class RunTemplateUpdate(BaseUpdate):
 # ------------------ Response Model ------------------
 
 
-class RunTemplateResponseBody(WorkspaceScopedResponseBody):
+class RunTemplateResponseBody(ProjectScopedResponseBody):
     """Response body for run templates."""
 
     runnable: bool = Field(
@@ -127,7 +128,7 @@ class RunTemplateResponseBody(WorkspaceScopedResponseBody):
     )
 
 
-class RunTemplateResponseMetadata(WorkspaceScopedResponseMetadata):
+class RunTemplateResponseMetadata(ProjectScopedResponseMetadata):
     """Response metadata for run templates."""
 
     description: Optional[str] = Field(
@@ -145,7 +146,7 @@ class RunTemplateResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
-class RunTemplateResponseResources(WorkspaceScopedResponseResources):
+class RunTemplateResponseResources(ProjectScopedResponseResources):
     """All resource models associated with the run template."""
 
     source_deployment: Optional[PipelineDeploymentResponse] = Field(
@@ -169,7 +170,7 @@ class RunTemplateResponseResources(WorkspaceScopedResponseResources):
 
 
 class RunTemplateResponse(
-    WorkspaceScopedResponse[
+    ProjectScopedResponse[
         RunTemplateResponseBody,
         RunTemplateResponseMetadata,
         RunTemplateResponseResources,
@@ -307,18 +308,26 @@ class RunTemplateResponse(
 # ------------------ Filter Model ------------------
 
 
-class RunTemplateFilter(WorkspaceScopedTaggableFilter):
+class RunTemplateFilter(ProjectScopedFilter, TaggableFilter):
     """Model for filtering of run templates."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *WorkspaceScopedTaggableFilter.FILTER_EXCLUDE_FIELDS,
+        *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
+        *TaggableFilter.FILTER_EXCLUDE_FIELDS,
         "code_repository_id",
         "stack_id",
         "build_id",
         "pipeline_id",
-        "user",
         "pipeline",
         "stack",
+    ]
+    CUSTOM_SORTING_OPTIONS = [
+        *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
+        *TaggableFilter.CUSTOM_SORTING_OPTIONS,
+    ]
+    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
+        *TaggableFilter.CLI_EXCLUDE_FIELDS,
     ]
 
     name: Optional[str] = Field(

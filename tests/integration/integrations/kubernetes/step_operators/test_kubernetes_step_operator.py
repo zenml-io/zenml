@@ -41,7 +41,6 @@ def _get_kubernetes_step_operator() -> KubernetesStepOperator:
         flavor="kubernetes",
         type=StackComponentType.STEP_OPERATOR,
         user=uuid4(),
-        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )

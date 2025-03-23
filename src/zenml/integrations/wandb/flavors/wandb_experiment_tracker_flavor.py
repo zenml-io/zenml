@@ -23,7 +23,7 @@ from typing import (
     cast,
 )
 
-from pydantic import field_validator, BaseModel
+from pydantic import BaseModel, field_validator
 
 from zenml.config.base_settings import BaseSettings
 from zenml.experiment_trackers.base_experiment_tracker import (
@@ -46,11 +46,13 @@ class WandbExperimentTrackerSettings(BaseSettings):
         run_name: The Wandb run name.
         tags: Tags for the Wandb run.
         settings: Settings for the Wandb run.
+        enable_weave: Whether to enable Weave integration.
     """
 
     run_name: Optional[str] = None
     tags: List[str] = []
     settings: Dict[str, Any] = {}
+    enable_weave: bool = False
 
     @field_validator("settings", mode="before")
     @classmethod
@@ -69,8 +71,8 @@ class WandbExperimentTrackerSettings(BaseSettings):
         import wandb
 
         if isinstance(value, wandb.Settings):
-            # Depending on the wandb version, either `model_dump`, 
-            # `make_static` or `to_dict` is available to convert the settings 
+            # Depending on the wandb version, either `model_dump`,
+            # `make_static` or `to_dict` is available to convert the settings
             # to a dictionary
             if isinstance(value, BaseModel):
                 return value.model_dump()

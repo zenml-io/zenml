@@ -37,6 +37,9 @@ from zenml.models import (
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.rbac.endpoint_utils import (
+    verify_permissions_and_create_entity,
+)
 from zenml.zen_server.rbac.models import Action, ResourceType
 from zenml.zen_server.rbac.utils import (
     dehydrate_page,
@@ -47,6 +50,7 @@ from zenml.zen_server.rbac.utils import (
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
+    set_filter_project_scope,
     zen_store,
 )
 
@@ -59,7 +63,6 @@ router = APIRouter(
 
 @router.get(
     "",
-    response_model=Page[StepRunResponse],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -82,8 +85,14 @@ def list_run_steps(
     Returns:
         The run steps according to query filters.
     """
+    # A project scoped request must always be scoped to a specific
+    # project. This is required for the RBAC check to work.
+    set_filter_project_scope(step_run_filter_model)
+    assert isinstance(step_run_filter_model.project, UUID)
+
     allowed_pipeline_run_ids = get_allowed_resource_ids(
-        resource_type=ResourceType.PIPELINE_RUN
+        resource_type=ResourceType.PIPELINE_RUN,
+        project_id=step_run_filter_model.project,
     )
     step_run_filter_model.configure_rbac(
         authenticated_user_id=auth_context.user.id,
@@ -98,7 +107,6 @@ def list_run_steps(
 
 @router.post(
     "",
-    response_model=StepRunResponse,
     responses={401: error_response, 409: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -110,20 +118,22 @@ def create_run_step(
 
     Args:
         step: The run step to create.
+        _: Authentication context.
 
     Returns:
         The created run step.
     """
     pipeline_run = zen_store().get_run(step.pipeline_run_id)
-    verify_permission_for_model(pipeline_run, action=Action.UPDATE)
 
-    step_response = zen_store().create_run_step(step_run=step)
-    return dehydrate_response_model(step_response)
+    return verify_permissions_and_create_entity(
+        request_model=step,
+        create_method=zen_store().create_run_step,
+        surrogate_models=[pipeline_run],
+    )
 
 
 @router.get(
     "/{step_id}",
-    response_model=StepRunResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -157,7 +167,6 @@ def get_step(
 
 @router.put(
     "/{step_id}",
-    response_model=StepRunResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -187,7 +196,6 @@ def update_step(
 
 @router.get(
     "/{step_id}" + STEP_CONFIGURATION,
-    response_model=Dict[str, Any],
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -212,7 +220,6 @@ def get_step_configuration(
 
 @router.get(
     "/{step_id}" + STATUS,
-    response_model=ExecutionStatus,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -237,7 +244,6 @@ def get_step_status(
 
 @router.get(
     "/{step_id}" + LOGS,
-    response_model=str,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions

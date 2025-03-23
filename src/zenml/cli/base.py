@@ -49,8 +49,8 @@ from zenml.integrations.registry import integration_registry
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.utils.io_utils import copy_dir, get_global_config_directory
+from zenml.utils.server_utils import get_local_server
 from zenml.utils.yaml_utils import write_yaml
-from zenml.zen_server.utils import get_local_server
 
 logger = get_logger(__name__)
 # WT_SESSION is a Windows Terminal specific environment variable. If it
@@ -264,7 +264,7 @@ def init(
         f"will only take effect when you're running ZenML from the initialized "
         f"repository root, or from a subdirectory. For more information on "
         f"repositories and configurations, please visit "
-        f"https://docs.zenml.io/user-guide/production-guide/understand-stacks."
+        f"https://docs.zenml.io/user-guides/production-guide/understand-stacks."
     )
 
 
@@ -622,7 +622,7 @@ def info(
         "python_version": environment.python_version(),
         "environment": get_environment(),
         "system_info": environment.get_system_info(),
-        "active_workspace": client.active_workspace.name,
+        "active_project": client.active_project.name,
         "active_stack": client.active_stack_model.name,
         "active_user": client.active_user.name,
         "telemetry_status": "enabled" if gc.analytics_opt_in else "disabled",
@@ -674,7 +674,7 @@ def info(
     "--skip_default_registrations",
     is_flag=True,
     default=False,
-    help="Skip registering default workspace, user and stack.",
+    help="Skip registering default project, user and stack.",
     type=bool,
 )
 def migrate_database(skip_default_registrations: bool = False) -> None:

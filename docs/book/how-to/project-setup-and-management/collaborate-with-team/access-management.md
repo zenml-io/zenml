@@ -51,7 +51,7 @@ Learn more about the best practices in managing credentials and recommended role
 The decision to upgrade your ZenML server is usually taken by your Project Owners after consulting with all the teams using the server. This is because there might be teams with conflicting requirements and moving to a new version of ZenML (that might come with upgrades to certain libraries) can break code for some users.
 
 {% hint style="info" %}
-You can choose to have different servers for different teams and that can alleviate some of the pressure to upgrade if you have multiple teams using the same server. ZenML Pro offers [multi-tenancy](../../../getting-started/zenml-pro/tenants.md) out of the box, for situations like these. Sign up for a free trial to try it yourself: https://cloud.zenml.io/
+You can choose to have different servers for different teams and that can alleviate some of the pressure to upgrade if you have multiple teams using the same server. ZenML Pro offers [multi-tenancy](../../../getting-started/zenml-pro/workspaces.md) out of the box, for situations like these. Sign up for a free trial to try it yourself: https://cloud.zenml.io/
 {% endhint %}
 
 Performing the upgrade itself is a task that typically falls on the MLOps Platform Engineers. They should:

@@ -32,7 +32,6 @@ def test_airflow_orchestrator_attributes():
         flavor="airflow",
         type=StackComponentType.ORCHESTRATOR,
         user=uuid4(),
-        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )
@@ -51,7 +50,6 @@ def test_resource_appliciation():
         flavor="airflow",
         type=StackComponentType.ORCHESTRATOR,
         user=uuid4(),
-        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )

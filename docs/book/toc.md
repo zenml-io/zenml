@@ -16,7 +16,7 @@
 * [ZenML Pro](getting-started/zenml-pro/README.md)
   * [Core Concepts](getting-started/zenml-pro/core-concepts.md)
     * [Organizations](getting-started/zenml-pro/organization.md)
-    * [Tenants](getting-started/zenml-pro/tenants.md)
+    * [Workspaces](getting-started/zenml-pro/workspaces.md)
     * [Teams](getting-started/zenml-pro/teams.md)
     * [Roles & Permissions](getting-started/zenml-pro/roles.md)
   * [Self-hosted deployment](getting-started/zenml-pro/self-hosted.md)
@@ -74,6 +74,7 @@
 * [Manage your ZenML server](how-to/manage-zenml-server/README.md)
   * [Connect to a server](how-to/manage-zenml-server/connecting-to-zenml/README.md)
     * [Connect in with your User (interactive)](how-to/manage-zenml-server/connecting-to-zenml/connect-in-with-your-user-interactive.md)
+    * [Connect with an API Token](how-to/manage-zenml-server/connecting-to-zenml/connect-with-an-api-token.md)
     * [Connect with a Service Account](how-to/manage-zenml-server/connecting-to-zenml/connect-with-a-service-account.md)
   * [Upgrade your ZenML server](how-to/manage-zenml-server/upgrade-zenml-server.md)
   * [Best practices for upgrading ZenML](how-to/manage-zenml-server/best-practices-upgrading-zenml.md)
@@ -328,6 +329,7 @@
 
 ## Reference
 
+* [llms.txt](reference/llms-txt.md)
 * [Python Client](reference/python-client.md)
 * [Global settings](reference/global-settings.md)
 * [Environment Variables](reference/environment-variables.md)

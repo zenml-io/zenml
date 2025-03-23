@@ -27,12 +27,14 @@ from zenml.cli.login import login, logout
 from zenml.client import Client
 from zenml.config.global_config import GlobalConfiguration
 from zenml.console import console
-from zenml.enums import CliCategories, StoreType
+from zenml.enums import CliCategories, ServiceState, StoreType
 from zenml.exceptions import AuthorizationException
 from zenml.logger import get_logger
 from zenml.login.credentials import ServerCredentials, ServerType
-from zenml.services.service_status import ServiceState
-from zenml.zen_server.utils import connected_to_local_server, get_local_server
+from zenml.utils.server_utils import (
+    connected_to_local_server,
+    get_local_server,
+)
 
 logger = get_logger(__name__)
 
@@ -220,7 +222,7 @@ def status() -> None:
                 )
                 if pro_credentials:
                     pro_client = ZenMLProClient(pro_credentials.url)
-                    pro_servers = pro_client.tenant.list(
+                    pro_servers = pro_client.workspace.list(
                         url=store_cfg.url, member_only=True
                     )
                     if pro_servers:
@@ -402,7 +404,7 @@ def connect(
             "filesystem and is no longer supported. The web login workflow will "
             "be used instead. An alternative for non-interactive environments "
             "is to create and use a service account API key (see "
-            "https://docs.zenml.io/how-to/connecting-to-zenml/connect-with-a-service-account "
+            "https://docs.zenml.io/how-to/manage-zenml-server/connecting-to-zenml/connect-with-a-service-account "
             "for more information)."
         )
 
@@ -575,7 +577,7 @@ def server_list(
     from zenml.login.credentials_store import get_credentials_store
     from zenml.login.pro.client import ZenMLProClient
     from zenml.login.pro.constants import ZENML_PRO_API_URL
-    from zenml.login.pro.tenant.models import TenantRead, TenantStatus
+    from zenml.login.pro.workspace.models import WorkspaceRead, WorkspaceStatus
 
     pro_api_url = pro_api_url or ZENML_PRO_API_URL
     pro_api_url = pro_api_url.rstrip("/")
@@ -601,10 +603,10 @@ def server_list(
         # that the user has never connected to (and are therefore not stored in
         # the credentials store).
 
-        accessible_pro_servers: List[TenantRead] = []
+        accessible_pro_servers: List[WorkspaceRead] = []
         try:
             client = ZenMLProClient(pro_api_url)
-            accessible_pro_servers = client.tenant.list(member_only=not all)
+            accessible_pro_servers = client.workspace.list(member_only=not all)
         except AuthorizationException as e:
             cli_utils.warning(f"ZenML Pro authorization error: {e}")
 
@@ -638,7 +640,7 @@ def server_list(
             accessible_pro_servers = [
                 s
                 for s in accessible_pro_servers
-                if s.status == TenantStatus.AVAILABLE
+                if s.status == WorkspaceStatus.AVAILABLE
             ]
 
         if not accessible_pro_servers:
