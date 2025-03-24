@@ -512,18 +512,10 @@ class SqlZenStoreConfiguration(StoreConfiguration):
 
     @model_validator(mode="after")
     def validate_certificate_files(self) -> "SqlZenStoreConfiguration":
-        """Validate the SQL URL.
-
-        The validator also moves the MySQL username, password and database
-        parameters from the URL into the other configuration arguments, if they
-        are present in the URL.
+        """Ensures that the certificate files are saved in a secure location.
 
         Returns:
-            The validated values.
-
-        Raises:
-            ValueError: If the URL is invalid or the SQL driver is not
-                supported.
+            The validated instance.
         """
         if self.driver and self.driver == SQLDatabaseDriver.MYSQL:
             # Save the certificates in a secure location on disk

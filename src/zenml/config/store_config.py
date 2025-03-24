@@ -102,37 +102,6 @@ class StoreConfiguration(BaseModel):
         return data
 
     @model_validator(mode="after")
-    def validate_subclass(self) -> "StoreConfiguration":
-        """Validate the store configuration.
-
-        Args:
-            data: The values of the store configuration.
-
-        Returns:
-            The values of the store configuration.
-        """
-        if type(self) is not StoreConfiguration:
-            return self
-        else:
-            if self.type == StoreType.SQL:
-                from zenml.zen_stores.sql_zen_store import (
-                    SqlZenStoreConfiguration,
-                )
-
-                return SqlZenStoreConfiguration(**self.model_dump())
-            elif self.type == StoreType.REST:
-                from zenml.zen_stores.rest_zen_store import (
-                    RestZenStoreConfiguration,
-                )
-
-                return RestZenStoreConfiguration(**self.model_dump())
-            else:
-                raise ValueError(
-                    "StoreConfiguration cannot be instantiated directly, "
-                    "use one of the subclasses based on the store type."
-                )
-
-    @model_validator(mode="after")
     def validate_url(self) -> "StoreConfiguration":
         """Validates the URL for different store types.
 
@@ -142,6 +111,10 @@ class StoreConfiguration(BaseModel):
 
         Returns:
             The model attribute values.
+        
+        Raises:
+            ValueError: If the URL is invalid or the SQL driver is not
+                supported.
         """
         if self.type == StoreType.SQL:
             # When running inside a container, if the URL uses localhost, the
