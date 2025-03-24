@@ -82,10 +82,17 @@ def get_stack_url(stack: StackResponse) -> Optional[str]:
     Returns:
         the URL to the stack if the dashboard is available, else None.
     """
+    cloud_url = get_cloud_dashboard_url()
+    if cloud_url:
+        # We don't have a stack detail page here, so just link to the filtered
+        # list of stacks.
+        return f"{cloud_url}{constants.STACKS}?id={stack.id}"
+
     base_url = get_server_dashboard_url()
 
     if base_url:
-        return base_url + constants.STACKS
+        # There is no filtering in OSS, we just link to the stack list.
+        return f"{base_url}{constants.STACKS}"
 
     return None
 
@@ -99,10 +106,14 @@ def get_component_url(component: ComponentResponse) -> Optional[str]:
     Returns:
         the URL to the component if the dashboard is available, else None.
     """
+    cloud_url = get_cloud_dashboard_url()
+    if cloud_url:
+        return f"{cloud_url}{constants.STACK_COMPONENTS}/{component.id}"
+
     base_url = get_server_dashboard_url()
 
     if base_url:
-        return base_url + constants.STACKS
+        return f"{base_url}{constants.STACK_COMPONENTS}/{component.id}"
 
     return None
 
