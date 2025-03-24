@@ -246,6 +246,7 @@ class StoreConfiguration(BaseModel):
                         f"format "
                         f"rules ({regexp}): {database}"
                     )
+                data["url"] = str(sql_url)
 
             return data
         elif data["type"] == StoreType.REST:
