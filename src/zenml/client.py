@@ -876,6 +876,7 @@ class Client(metaclass=ClientMetaClass):
         old_password: Optional[str] = None,
         updated_is_admin: Optional[bool] = None,
         updated_metadata: Optional[Dict[str, Any]] = None,
+        updated_default_project_id: Optional[UUID] = None,
         active: Optional[bool] = None,
     ) -> UserResponse:
         """Update a user.
@@ -891,6 +892,7 @@ class Client(metaclass=ClientMetaClass):
                 update.
             updated_is_admin: Whether the user should be an admin.
             updated_metadata: The new metadata for the user.
+            updated_default_project_id: The new default project ID for the user.
             active: Use to activate or deactivate the user.
 
         Returns:
@@ -927,6 +929,9 @@ class Client(metaclass=ClientMetaClass):
 
         if updated_metadata is not None:
             user_update.user_metadata = updated_metadata
+
+        if updated_default_project_id is not None:
+            user_update.default_project_id = updated_default_project_id
 
         return self.zen_store.update_user(
             user_id=user.id, user_update=user_update

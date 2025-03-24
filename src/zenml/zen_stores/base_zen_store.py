@@ -328,19 +328,35 @@ class BaseZenStore(
                 )
 
         if active_project is None:
-            try:
-                active_project = self._get_default_project()
-            except (KeyError, IllegalOperationError):
-                logger.warning(
-                    "An active project is not set. Please set the active "
-                    "project by running `zenml project set "
-                    "<project-name>`."
-                )
+            user = self.get_user()
+            if user.default_project_id:
+                try:
+                    active_project = self.get_project(user.default_project_id)
+                except (KeyError, IllegalOperationError):
+                    logger.warning(
+                        "The default project for the active user is no longer "
+                        "available. Please set the active project by running "
+                        "`zenml project set <project-name>`."
+                    )
+                else:
+                    logger.info(
+                        f"Setting the {config_name} active project "
+                        f"to '{active_project.name}'."
+                    )
             else:
-                logger.info(
-                    f"Setting the {config_name} active project "
-                    f"to '{active_project.name}'."
-                )
+                try:
+                    active_project = self._get_default_project()
+                except (KeyError, IllegalOperationError):
+                    logger.warning(
+                        "An active project is not set. Please set the active "
+                        "project by running `zenml project set "
+                        "<project-name>`."
+                    )
+                else:
+                    logger.info(
+                        f"Setting the {config_name} active project "
+                        f"to '{active_project.name}'."
+                    )
 
         active_stack: StackResponse
 

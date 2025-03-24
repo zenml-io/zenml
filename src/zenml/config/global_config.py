@@ -123,6 +123,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
     version: Optional[str] = None
     store: Optional[SerializeAsAny[StoreConfiguration]] = None
     active_stack_id: Optional[uuid.UUID] = None
+    active_project_id: Optional[uuid.UUID] = None
     active_project_name: Optional[str] = None
 
     _zen_store: Optional["BaseZenStore"] = None
@@ -393,14 +394,16 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         if ENV_ZENML_SERVER in os.environ:
             return
         active_project, active_stack = self.zen_store.validate_active_config(
-            self.active_project_name,
+            self.active_project_id or self.active_project_name,
             self.active_stack_id,
             config_name="global",
         )
         if active_project:
+            self.active_project_id = active_project.id
             self.active_project_name = active_project.name
             self._active_project = active_project
         else:
+            self.active_project_id = None
             self.active_project_name = None
             self._active_project = None
 
