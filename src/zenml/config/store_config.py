@@ -101,8 +101,10 @@ class StoreConfiguration(BaseModel):
 
         return data
 
-    @model_validator(mode="after")
-    def validate_url(self) -> "StoreConfiguration":
+    @model_validator(mode="before")
+    @classmethod
+    @before_validator_handler
+    def validate_url(cls, data: Dict[str, Any]) -> Dict[str, Any]:
         """Validates the URL for different store types.
 
         In case of MySQL SQL store, the validator also moves the username,
@@ -116,11 +118,11 @@ class StoreConfiguration(BaseModel):
             ValueError: If the URL is invalid or the SQL driver is not
                 supported.
         """
-        if self.type == StoreType.SQL:
+        if data["type"] == StoreType.SQL:
             # When running inside a container, if the URL uses localhost, the
             # target service will not be available. We try to replace localhost
             # with one of the special Docker or K3D internal hostnames.
-            url = replace_localhost_with_internal_hostname(self.url)
+            url = replace_localhost_with_internal_hostname(data["url"])
 
             try:
                 sql_url = make_url(url)
@@ -138,9 +140,7 @@ class StoreConfiguration(BaseModel):
                     url,
                     ", ".join(SQLDatabaseDriver.values()),
                 )
-            self.driver: Optional[SQLDatabaseDriver] = SQLDatabaseDriver(
-                sql_url.drivername
-            )
+            data["driver"] = SQLDatabaseDriver(sql_url.drivername)
 
             if sql_url.drivername == SQLDatabaseDriver.SQLITE:
                 if (
@@ -154,28 +154,26 @@ class StoreConfiguration(BaseModel):
                         "format `sqlite:///path/to/database.db`.",
                         url,
                     )
-                if getattr(self, "username", None) or getattr(
-                    self, "password", None
-                ):
+                if data.get("username", None) or data.get("password", None):
                     raise ValueError(
                         "Invalid SQLite configuration: The username and password "
                         "must not be set",
                         url,
                     )
-                self.database: Optional[str] = sql_url.database
+                data["database"] = sql_url.database
             elif sql_url.drivername == SQLDatabaseDriver.MYSQL:
                 if sql_url.username:
-                    self.username: Optional[PlainSerializedSecretStr] = (
-                        PlainSerializedSecretStr(sql_url.username)
+                    data["username"] = PlainSerializedSecretStr(
+                        sql_url.username
                     )
                     sql_url = sql_url._replace(username=None)
                 if sql_url.password:
-                    self.password: Optional[PlainSerializedSecretStr] = (
-                        PlainSerializedSecretStr(sql_url.password)
+                    data["password"] = PlainSerializedSecretStr(
+                        sql_url.password
                     )
                     sql_url = sql_url._replace(password=None)
                 if sql_url.database:
-                    self.database = sql_url.database
+                    data["database"] = sql_url.database
                     sql_url = sql_url._replace(database=None)
                 if sql_url.query:
 
@@ -200,31 +198,25 @@ class StoreConfiguration(BaseModel):
                     for k, v in sql_url.query.items():
                         if k == "ssl":
                             if r := _get_query_result(v):
-                                self.ssl = is_true_string_value(r)
+                                data["ssl"] = is_true_string_value(r)
                         elif k == "ssl_ca":
                             if r := _get_query_result(v):
-                                self.ssl_ca: Optional[
-                                    PlainSerializedSecretStr
-                                ] = PlainSerializedSecretStr(r)
-                                self.ssl = True
+                                data["ssl_ca"] = PlainSerializedSecretStr(r)
+                                data["ssl"] = True
                         elif k == "ssl_cert":
                             if r := _get_query_result(v):
-                                self.ssl_cert: Optional[
-                                    PlainSerializedSecretStr
-                                ] = PlainSerializedSecretStr(r)
-                                self.ssl = True
+                                data["ssl_cert"] = PlainSerializedSecretStr(r)
+                                data["ssl"] = True
                         elif k == "ssl_key":
                             if r := _get_query_result(v):
-                                self.ssl_key: Optional[
-                                    PlainSerializedSecretStr
-                                ] = PlainSerializedSecretStr(r)
-                                self.ssl = True
+                                data["ssl_key"] = PlainSerializedSecretStr(r)
+                                data["ssl"] = True
                         elif k == "ssl_verify_server_cert":
                             if r := _get_query_result(v):
                                 if is_true_string_value(r):
-                                    self.ssl_verify_server_cert = True
+                                    data["ssl_verify_server_cert"] = True
                                 elif is_false_string_value(r):
-                                    self.ssl_verify_server_cert = False
+                                    data["ssl_verify_server_cert"] = False
                         else:
                             raise ValueError(
                                 "Invalid MySQL URL query parameter `%s`: The "
@@ -234,8 +226,12 @@ class StoreConfiguration(BaseModel):
                             )
                     sql_url = sql_url._replace(query=immutabledict())
 
-                database = self.database
-                if not self.username or not self.password or not database:
+                database = data["database"]
+                if (
+                    not data["username"]
+                    or not data["password"]
+                    or not database
+                ):
                     raise ValueError(
                         "Invalid MySQL configuration: The username, password and "
                         "database must be set in the URL or as configuration "
@@ -251,9 +247,9 @@ class StoreConfiguration(BaseModel):
                         f"rules ({regexp}): {database}"
                     )
 
-            return self
-        elif self.type == StoreType.REST:
-            url = self.url.rstrip("/")
+            return data
+        elif data["type"] == StoreType.REST:
+            url = data["url"].rstrip("/")
             scheme = re.search("^([a-z0-9]+://)", url)
             if scheme is None or scheme.group() not in ("https://", "http://"):
                 raise ValueError(
@@ -264,10 +260,10 @@ class StoreConfiguration(BaseModel):
             # When running inside a container, if the URL uses localhost, the
             # target service will not be available. We try to replace localhost
             # with one of the special Docker or K3D internal hostnames.
-            self.url = replace_localhost_with_internal_hostname(url)
-            return self
+            data["url"] = replace_localhost_with_internal_hostname(url)
+            return data
         else:
-            raise ValueError("Invalid store type: %s" % self.type)
+            raise ValueError("Invalid store type: %s" % data["type"])
 
     model_config = ConfigDict(
         # Validate attributes when assigning them. We need to set this in order
