@@ -14,6 +14,30 @@ Before diving into specific strategies, it's important to understand the general
 2. **Medium datasets (up to tens of GB)**: Require chunking or out-of-core processing techniques.
 3. **Large datasets (hundreds of GB or more)**: Necessitate distributed processing frameworks.
 
+## ZenML's Built-in Optimizations for Collections
+
+ZenML includes several built-in optimizations for handling collections of data (lists, dictionaries, sets, tuples):
+
+### Batch Compression for Collections
+
+When materializing collections of data, ZenML now uses an optimized batch compression strategy that:
+
+1. Groups elements by type to reduce the overhead of materializer initialization and type checking
+2. Uses adaptive chunking to balance memory usage and I/O operations
+3. Compresses batches of elements using gzip to minimize storage requirements
+4. Implements efficient caching to avoid redundant reads during loading
+
+This is especially beneficial when working with cloud storage backends (S3, GCS, Azure Blob Storage) where network overhead for individual file operations can be significant.
+
+You can configure the chunk size via the `ZENML_MATERIALIZER_COLLECTION_CHUNK_SIZE` environment variable. For example:
+
+```bash
+# Configure ZenML to use larger chunks (default is 100)
+export ZENML_MATERIALIZER_COLLECTION_CHUNK_SIZE=500
+```
+
+For very large elements, ZenML will automatically adjust the chunk size downward to prevent memory issues.
+
 ## Strategies for Datasets up to a Few Gigabytes
 
 For datasets that can still fit in memory but are becoming unwieldy, consider these optimizations:
