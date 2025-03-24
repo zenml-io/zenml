@@ -111,7 +111,7 @@ class StoreConfiguration(BaseModel):
 
         Returns:
             The model attribute values.
-        
+
         Raises:
             ValueError: If the URL is invalid or the SQL driver is not
                 supported.
