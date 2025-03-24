@@ -43,7 +43,7 @@ zenml secret create <SECRET_NAME> \
     --values=@path/to/file.txt
 ```
 
-The CLI also includes commands that can be used to list, update and delete secrets. A full guide on using the CLI to create, access, update and delete secrets is available [here](https://sdkdocs.zenml.io/latest/cli/#zenml.cli--secrets-management).
+The CLI also includes commands that can be used to list, update and delete secrets. A full guide on using the CLI to create, access, update and delete secrets is available [here](https://sdkdocs.zenml.io/latest/cli.html#zenml.cli--secrets-management).
 
 **Interactively register missing secrets for your stack**
 
@@ -70,7 +70,7 @@ client.create_secret(
 )
 ```
 
-Other Client methods used for secrets management include `get_secret` to fetch a secret by name or id, `update_secret` to update an existing secret, `list_secrets` to query the secrets store using a variety of filtering and sorting criteria, and `delete_secret` to delete a secret. The full Client API reference is available [here](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-client/).
+Other Client methods used for secrets management include `get_secret` to fetch a secret by name or id, `update_secret` to update an existing secret, `list_secrets` to query the secrets store using a variety of filtering and sorting criteria, and `delete_secret` to delete a secret. The full Client API reference is available [here](https://sdkdocs.zenml.io/latest/core_code_docs/core-client.html).
 {% endtab %}
 {% endtabs %}
 

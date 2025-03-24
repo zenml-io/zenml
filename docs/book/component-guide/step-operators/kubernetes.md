@@ -2,7 +2,7 @@
 description: Executing individual steps in Kubernetes Pods.
 ---
 
-# Kubernetes Step Operator
+# Kubernetes
 
 ZenML's Kubernetes step operator allows you to submit individual steps to be run on Kubernetes pods.
 
@@ -20,23 +20,23 @@ The Kubernetes step operator requires a Kubernetes cluster in order to run. Ther
 ### How to use it
 
 To use the Kubernetes step operator, we need:
+
 *   The ZenML `kubernetes` integration installed. If you haven't done so, run
 
     ```shell
     zenml integration install kubernetes
     ```
 * A Kubernetes cluster [deployed](kubernetes.md#how-to-deploy-it)
-* Either [Docker](https://www.docker.com) installed and running or a remote [image builder](../image-builders/image-builders.md) in your stack.
-* A [remote artifact store](../artifact-stores/artifact-stores.md) as part of your stack. This is needed so that both your orchestration environment and Kubernetes Pods can read and write step artifacts. Check out the documentation page of the artifact store you want to use for more information on how to set that up and configure authentication for it.
-
+* Either [Docker](https://www.docker.com) installed and running or a remote [image builder](https://docs.zenml.io/stacks/image-builders/) in your stack.
+* A [remote artifact store](https://docs.zenml.io/stacks/artifact-stores/) as part of your stack. This is needed so that both your orchestration environment and Kubernetes Pods can read and write step artifacts. Check out the documentation page of the artifact store you want to use for more information on how to set that up and configure authentication for it.
 
 {% hint style="info" %}
-It is recommended that you set up [a Service Connector](../../how-to/infrastructure-deployment/auth-management/service-connectors-guide.md) and use it to connect the Kubernetes step operator to the Kubernetes cluster, especially if you are using a Kubernetes cluster managed by a cloud provider like AWS, GCP or Azure.
+It is recommended that you set up [a Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/service-connectors-guide) and use it to connect the Kubernetes step operator to the Kubernetes cluster, especially if you are using a Kubernetes cluster managed by a cloud provider like AWS, GCP or Azure.
 {% endhint %}
 
 We can then register the step operator and use it in our stacks. This can be done in two ways:
 
-1.  Using a Service Connector configured to access the remote Kubernetes cluster. Depending on your cloud provider, this should be either an [AWS](../../how-to/infrastructure-deployment/auth-management/aws-service-connector.md), [Azure](../../how-to/infrastructure-deployment/auth-management/azure-service-connector.md) or [GCP](../../how-to/infrastructure-deployment/auth-management/gcp-service-connector.md) service connector. If you're using a Kubernetes cluster that is not provided by any of these, you can use the generic [Kubernetes](../../how-to/infrastructure-deployment/auth-management/kubernetes-service-connector.md) service connector. You can then [connect the stack component to the Service Connector](../../how-to/infrastructure-deployment/auth-management/service-connectors-guide.md#connect-stack-components-to-resources):
+1.  Using a Service Connector configured to access the remote Kubernetes cluster. Depending on your cloud provider, this should be either an [AWS](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/aws-service-connector), [Azure](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/azure-service-connector) or [GCP](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/gcp-service-connector) service connector. If you're using a Kubernetes cluster that is not provided by any of these, you can use the generic [Kubernetes](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/kubernetes-service-connector) service connector. You can then [connect the stack component to the Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/service-connectors-guide#connect-stack-components-to-resources):
 
     ```
     $ zenml step-operator register <NAME> --flavor kubernetes
@@ -93,9 +93,8 @@ def trainer(...) -> ...:
 ```
 
 {% hint style="info" %}
-ZenML will build a Docker images which includes your code and use it to run your steps in Kubernetes. Check out [this page](../../how-to/customize-docker-builds/README.md) if you want to learn more about how ZenML builds these images and how you can customize them.
+ZenML will build a Docker images which includes your code and use it to run your steps in Kubernetes. Check out [this page](https://docs.zenml.io/how-to/customize-docker-builds/) if you want to learn more about how ZenML builds these images and how you can customize them.
 {% endhint %}
-
 
 #### Interacting with pods via kubectl
 
@@ -232,12 +231,12 @@ def my_kubernetes_step():
     ...
 ```
 
-Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-kubernetes/#zenml.integrations.kubernetes.flavors.kubernetes\_step\_operator\_flavor.KubernetesStepOperatorSettings) for a full list of available attributes and [this docs page](../../how-to/pipeline-development/use-configuration-files/runtime-configuration.md) for more information on how to specify settings.
+Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-kubernetes.html#zenml.integrations.kubernetes) for a full list of available attributes and [this docs page](https://docs.zenml.io/how-to/pipeline-development/use-configuration-files/runtime-configuration) for more information on how to specify settings.
 
-For more information and a full list of configurable attributes of the Kubernetes steop operator, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-kubernetes/#zenml.integrations.kubernetes.step\_operators.kubernetes\step\_operator.KubernetesStepOperator) .
+For more information and a full list of configurable attributes of the Kubernetes steop operator, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-kubernetes.html#zenml.integrations.kubernetes) .
 
 #### Enabling CUDA for GPU-backed hardware
 
-Note that if you wish to use this step operator to run steps on a GPU, you will need to follow [the instructions on this page](../../how-to/pipeline-development/training-with-gpus/README.md) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
+Note that if you wish to use this step operator to run steps on a GPU, you will need to follow [the instructions on this page](https://docs.zenml.io/how-to/pipeline-development/training-with-gpus/) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
