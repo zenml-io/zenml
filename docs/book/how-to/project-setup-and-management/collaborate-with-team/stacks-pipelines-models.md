@@ -11,10 +11,10 @@ about these concepts and how to best utilize them.
 
 Before we begin, here is a quick overview of the concepts we will be discussing:
 
-- **Stacks**: [Stacks](../../../user-guide/production-guide/understand-stacks.md) represent the configuration of tools and infrastructure that your pipelines can run on. A stack is built of multiple stack components like an orchestrator, a container registry, an artifact store, etc. Each of these components deal with one part of your workflow and work together to run your pipeline.
-- **Pipelines**: [Pipelines](../../../user-guide/starter-guide/create-an-ml-pipeline.md) are a series of steps that each represent a specific task in your ML workflow and are executed in a sequence that ZenML determines from your pipeline definition. Pipelines help you automate many tasks, standardize your executions, and add visibility into what your code is doing.
-- **Models**: [Models](../../model-management-metrics/model-control-plane/README.md) are entities that groups pipelines, artifacts, metadata, and other crucial business data together. You may think of a ZenML Model as a "project" or a "workspace" that spans multiple pipelines.
-- **Artifacts**: [Artifacts](../../../user-guide/starter-guide/manage-artifacts.md) are the output of a pipeline step that you want to track and reuse across multiple pipelines.
+- **Stacks**: [Stacks](https://docs.zenml.io/user-guides/production-guide/understand-stacks) represent the configuration of tools and infrastructure that your pipelines can run on. A stack is built of multiple stack components like an orchestrator, a container registry, an artifact store, etc. Each of these components deal with one part of your workflow and work together to run your pipeline.
+- **Pipelines**: [Pipelines](https://docs.zenml.io/user-guides/starter-guide/create-an-ml-pipeline) are a series of steps that each represent a specific task in your ML workflow and are executed in a sequence that ZenML determines from your pipeline definition. Pipelines help you automate many tasks, standardize your executions, and add visibility into what your code is doing.
+- **Models**: [Models](https://docs.zenml.io/how-to/model-management-metrics/model-control-plane) are entities that groups pipelines, artifacts, metadata, and other crucial business data together. You may think of a ZenML Model as a "project" or a "workspace" that spans multiple pipelines.
+- **Artifacts**: [Artifacts](https://docs.zenml.io/user-guides/starter-guide/manage-artifacts) are the output of a pipeline step that you want to track and reuse across multiple pipelines.
 
 Understanding the relationships between stacks, pipelines, models, and artifacts is crucial for effective MLOps with ZenML.
 
@@ -22,7 +22,7 @@ Understanding the relationships between stacks, pipelines, models, and artifacts
 
 A stack provides the infrastructure and tools for running pipelines. Think of a stack as a  representation of your execution environment in which your pipelines are run. This comprises both the hardware like the orchestration environment and any MLOps tools you use in your workflow. This way, Stacks allow you to seamlessly transition between different environments (e.g., local, staging, production) while keeping your pipeline code consistent.
 
-You can learn more about organizing and managing stacks in the [Managing Stacks and Components](../../infrastructure-deployment/stack-deployment/README.md) guide.
+You can learn more about organizing and managing stacks in the [Managing Stacks and Components](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment) guide.
 
 You don't need a separate stack for each pipeline; instead, you can run multiple pipelines on the same stack. A stack is meant to be created once and then reused across multiple users and pipelines. This helps in the following ways:
 
@@ -41,7 +41,7 @@ preparation, model training, and evaluation. It's a good practice to have a
 separate pipeline for different tasks like training and inference. This makes
 your pipelines more modular and easier to manage. Here's some of the benefits:
 
-- Separation of pipelines by the nature of the task allows you to [run them independently as needed](../../../how-to/pipeline-development/develop-locally/local-prod-pipeline-variants.md). For example, you might train a model in a training pipeline only once a week but run inference on new data every day.
+- Separation of pipelines by the nature of the task allows you to [run them independently as needed](https://docs.zenml.io//how-to/pipeline-development/develop-locally/local-prod-pipeline-variants). For example, you might train a model in a training pipeline only once a week but run inference on new data every day.
 - It becomes easier to manage and update your code as your project grows more complex.
 - Different people can work on the code for the pipelines without interfering with each other.
 - It helps you organize your runs better.
@@ -67,12 +67,12 @@ Let's go through a real-world example to see how we can use Stacks, Pipelines, M
 
 Here's how the workflow would look like with ZenML:
 - They create three pipelines: one for feature engineering, one for training the model, and one for producing predictions.
-- They set up a [repository for their project](../../project-setup-and-management/setting-up-a-project-repository/README.md) and start building their pipelines collaboratively. Let's assume Bob builds the feature engineering and training pipeline and Alice builds the inference pipeline.
+- They set up a [repository for their project](https://docs.zenml.io/how-to/project-setup-and-management/setting-up-a-project-repository) and start building their pipelines collaboratively. Let's assume Bob builds the feature engineering and training pipeline and Alice builds the inference pipeline.
 - To test their pipelines locally, they both have a `default` stack with a local orchestrator and a local artifact store. This allows them to quickly iterate on their code without deploying any infrastructure or incurring any costs.
 - While building the inference pipeline, Alice needs to make sure that the preprocessing step in her pipeline is the same as the one used while training. It might even involve the use of libraries that are not publicily available and she follows the [Shared Libraries and Logic for Teams](./shared-components-for-teams.md) guide to help with this.
 - Bob's training pipeline produces a model artifact, which Alice's inference pipeline requires as input. It also produces other artifacts such as metrics and a model checkpoint that are logged as artifacts in the pipeline run.
-- To allow easy access to model and data artifacts, they [use a ZenML Model](../../model-management-metrics/model-control-plane/associate-a-pipeline-with-a-model.md) which ties the pipelines, models and artifacts together. Now Alice can just [reference the right model name and find the model artifact she needs.](../../model-management-metrics/model-control-plane/load-artifacts-from-model.md)
-- It is also critical that the right model version from the training pipeline is used in the inference pipeline. The [Model Control Plane](../../model-management-metrics/model-control-plane/README.md) helps Bob to keep track of the different versions and to easily compare them. Bob can then [promote the best performing model version to the `production` stage](../../model-management-metrics/model-control-plane/promote-a-model.md) which Alice's pipeline can then consume.
+- To allow easy access to model and data artifacts, they [use a ZenML Model](https://docs.zenml.io/how-to/model-management-metrics/model-control-plane/associate-a-pipeline-with-a-model) which ties the pipelines, models and artifacts together. Now Alice can just [reference the right model name and find the model artifact she needs.](https://docs.zenml.io/how-to/model-management-metrics/model-control-plane/load-artifacts-from-model)
+- It is also critical that the right model version from the training pipeline is used in the inference pipeline. The [Model Control Plane](https://docs.zenml.io/how-to/model-management-metrics/model-control-plane) helps Bob to keep track of the different versions and to easily compare them. Bob can then [promote the best performing model version to the `production` stage](https://docs.zenml.io/how-to/model-management-metrics/model-control-plane/promote-a-model) which Alice's pipeline can then consume.
 - Alice's inference pipeline produces a new artifact, in this case a new dataset containing the predictions of the model. Results can also be added as metadata to the model version, allowing easy comparisons.
 
 This is a very simple example, but it shows how you can use ZenML to structure your ML workflow. You can use the same principles for more complex workflows. 

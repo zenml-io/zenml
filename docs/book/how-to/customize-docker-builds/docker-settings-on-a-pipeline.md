@@ -13,11 +13,11 @@ When a [pipeline is run with a remote orchestrator](../pipeline-development/conf
 
 The process described above is automated by ZenML and covers the most basic use cases. This section covers various ways to customize the Docker build process to fit your needs.
 
-For a full list of configuration options, check out [the DockerSettings object on the SDKDocs](https://sdkdocs.zenml.io/latest/core_code_docs/core-config/#zenml.config.docker_settings.DockerSettings).
+For a full list of configuration options, check out [the DockerSettings object on the SDKDocs](https://sdkdocs.zenml.io/latest/core_code_docs/core-config.html#zenml.config.docker_settings).
 
 ## How to configure settings for a pipeline
 
-Customizing the Docker builds for your pipelines and steps is done using the [DockerSettings](https://sdkdocs.zenml.io/latest/core_code_docs/core-config/#zenml.config.docker_settings.DockerSettings) class which you can import like this:
+Customizing the Docker builds for your pipelines and steps is done using the [DockerSettings](https://sdkdocs.zenml.io/latest/core_code_docs/core-config.html#zenml.config.docker_settings) class which you can import like this:
 
 ```python
 from zenml.config import DockerSettings
