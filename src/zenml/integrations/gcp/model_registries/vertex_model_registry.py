@@ -269,7 +269,6 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
                 if version:
                     model_id = self._get_model_version_id(model_id, version)
                 kwargs["model_name"] = model_id
-
         try:
             return aiplatform.Model(**kwargs)
         except Exception as e:
@@ -456,18 +455,21 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
             k: v for k, v in upload_arguments.items() if v is not None
         }
 
+        # Try to get existing parent model, but don't fail if it doesn't exist
         parent_model = self._init_vertex_model(name=name, version=version)
-        assert isinstance(parent_model, aiplatform.Model)
+        
+        # If parent model exists and has same URI, return existing version
         if parent_model and parent_model.uri == model_source_uri:
             logger.info(
                 f"Model version {version} already exists, skipping upload..."
             )
             return self._vertex_model_to_registry_version(parent_model)
-        # Always call model.upload (even if a parent model already exists), since Vertex AI
-        # expects a full upload for each version.
-        upload_arguments["parent_model"] = (
-            parent_model.resource_name if parent_model else None
-        )
+
+        # Set parent model resource name if it exists
+        if parent_model:
+            upload_arguments["parent_model"] = parent_model.resource_name
+
+        # Upload the model
         model = aiplatform.Model.upload(**upload_arguments)
         logger.info(f"Uploaded new model version with labels: {model.labels}")
 

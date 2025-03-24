@@ -219,6 +219,9 @@ class VertexDeploymentService(BaseDeploymentService):
         if "@" in model_name:
             model_name = model_name.split("@")[0]
         logger.info(f"Model name: {model_name}")
+        logger.info(f"Project ID: {self._project_id}")
+        logger.info(f"Location: {self.config.location}")
+        logger.info(f"Credentials: {self._credentials}")
         model = aiplatform.Model(
             model_name=model_name,
             project=self._project_id,
@@ -418,11 +421,6 @@ class VertexDeploymentService(BaseDeploymentService):
                 return ServiceState.INACTIVE, "No endpoint found."
 
             endpoint = endpoints[0]
-            try:
-                endpoint.reload()
-            except Exception as e:
-                logger.warning(f"Failed to reload endpoint: {e}")
-
             deployed_models = []
             if hasattr(endpoint, "list_models"):
                 try:
