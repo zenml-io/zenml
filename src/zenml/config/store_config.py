@@ -118,6 +118,21 @@ class StoreConfiguration(BaseModel):
             ValueError: If the URL is invalid or the SQL driver is not
                 supported.
         """
+        # Get default values from model fields
+        defaults = {
+            field_name: field.default
+            for field_name, field in cls.model_fields.items()
+            if field.default is not None
+        }
+
+        # Add default_factory values
+        for field_name, field in cls.model_fields.items():
+            if field.default_factory is not None:
+                defaults[field_name] = field.default_factory()
+
+        # Merge defaults with input data (input data takes precedence)
+        data = {**defaults, **data}
+
         if data["type"] == StoreType.SQL:
             # When running inside a container, if the URL uses localhost, the
             # target service will not be available. We try to replace localhost
