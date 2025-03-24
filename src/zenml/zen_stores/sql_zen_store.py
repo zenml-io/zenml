@@ -61,11 +61,9 @@ from pydantic import (
 from sqlalchemy import func
 from sqlalchemy.engine import URL, Engine, make_url
 from sqlalchemy.exc import (
-    ArgumentError,
     IntegrityError,
 )
 from sqlalchemy.orm import Mapped, noload
-from sqlalchemy.util import immutabledict
 
 # Important to note: The select function of SQLModel works slightly differently
 # from the select function of sqlalchemy. If you input only one entity on the
@@ -113,8 +111,6 @@ from zenml.constants import (
     SQL_STORE_BACKUP_DIRECTORY_NAME,
     TEXT_FIELD_MAX_LENGTH,
     handle_bool_env_var,
-    is_false_string_value,
-    is_true_string_value,
 )
 from zenml.enums import (
     AuthScheme,
@@ -125,6 +121,7 @@ from zenml.enums import (
     ModelStages,
     OnboardingStep,
     SecretsStoreType,
+    SQLDatabaseDriver,
     StackComponentType,
     StackDeploymentProvider,
     StepRunInputArtifactType,
@@ -301,10 +298,6 @@ from zenml.service_connectors.service_connector_registry import (
 from zenml.stack.flavor_registry import FlavorRegistry
 from zenml.stack_deployments.utils import get_stack_deployment_class
 from zenml.utils import tag_utils, uuid_utils
-from zenml.utils.enum_utils import StrEnum
-from zenml.utils.networking_utils import (
-    replace_localhost_with_internal_hostname,
-)
 from zenml.utils.secret_utils import PlainSerializedSecretStr
 from zenml.utils.string_utils import (
     format_name_template,
@@ -410,13 +403,6 @@ def exponential_backoff_with_jitter(
     """
     exponential_backoff = base_duration * 1.5**attempt
     return random.uniform(0, exponential_backoff)
-
-
-class SQLDatabaseDriver(StrEnum):
-    """SQL database drivers supported by the SQL ZenML store."""
-
-    MYSQL = "mysql"
-    SQLITE = "sqlite"
 
 
 class SqlZenStoreConfiguration(StoreConfiguration):
@@ -525,7 +511,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
         return self
 
     @model_validator(mode="after")
-    def _validate_url(self) -> "SqlZenStoreConfiguration":
+    def validate_certificate_files(self) -> "SqlZenStoreConfiguration":
         """Validate the SQL URL.
 
         The validator also moves the MySQL username, password and database
@@ -539,129 +525,7 @@ class SqlZenStoreConfiguration(StoreConfiguration):
             ValueError: If the URL is invalid or the SQL driver is not
                 supported.
         """
-        if self.url is None:
-            return self
-
-        # When running inside a container, if the URL uses localhost, the
-        # target service will not be available. We try to replace localhost
-        # with one of the special Docker or K3D internal hostnames.
-        url = replace_localhost_with_internal_hostname(self.url)
-
-        try:
-            sql_url = make_url(url)
-        except ArgumentError as e:
-            raise ValueError(
-                "Invalid SQL URL `%s`: %s. The URL must be in the format "
-                "`driver://[[username:password@]hostname:port]/database["
-                "?<extra-args>]`.",
-                url,
-                str(e),
-            )
-
-        if sql_url.drivername not in SQLDatabaseDriver.values():
-            raise ValueError(
-                "Invalid SQL driver value `%s`: The driver must be one of: %s.",
-                url,
-                ", ".join(SQLDatabaseDriver.values()),
-            )
-        self.driver = SQLDatabaseDriver(sql_url.drivername)
-        if sql_url.drivername == SQLDatabaseDriver.SQLITE:
-            if (
-                sql_url.username
-                or sql_url.password
-                or sql_url.query
-                or sql_url.database is None
-            ):
-                raise ValueError(
-                    "Invalid SQLite URL `%s`: The URL must be in the "
-                    "format `sqlite:///path/to/database.db`.",
-                    url,
-                )
-            if self.username or self.password:
-                raise ValueError(
-                    "Invalid SQLite configuration: The username and password "
-                    "must not be set",
-                    url,
-                )
-            self.database = sql_url.database
-        elif sql_url.drivername == SQLDatabaseDriver.MYSQL:
-            if sql_url.username:
-                self.username = PlainSerializedSecretStr(sql_url.username)
-                sql_url = sql_url._replace(username=None)
-            if sql_url.password:
-                self.password = PlainSerializedSecretStr(sql_url.password)
-                sql_url = sql_url._replace(password=None)
-            if sql_url.database:
-                self.database = sql_url.database
-                sql_url = sql_url._replace(database=None)
-            if sql_url.query:
-
-                def _get_query_result(
-                    result: Union[str, Tuple[str, ...]],
-                ) -> Optional[str]:
-                    """Returns the only or the first result of a query.
-
-                    Args:
-                        result: The result of the query.
-
-                    Returns:
-                        The only or the first result, None otherwise.
-                    """
-                    if isinstance(result, str):
-                        return result
-                    elif isinstance(result, tuple) and len(result) > 0:
-                        return result[0]
-                    else:
-                        return None
-
-                for k, v in sql_url.query.items():
-                    if k == "ssl":
-                        if r := _get_query_result(v):
-                            self.ssl = is_true_string_value(r)
-                    elif k == "ssl_ca":
-                        if r := _get_query_result(v):
-                            self.ssl_ca = PlainSerializedSecretStr(r)
-                            self.ssl = True
-                    elif k == "ssl_cert":
-                        if r := _get_query_result(v):
-                            self.ssl_cert = PlainSerializedSecretStr(r)
-                            self.ssl = True
-                    elif k == "ssl_key":
-                        if r := _get_query_result(v):
-                            self.ssl_key = PlainSerializedSecretStr(r)
-                            self.ssl = True
-                    elif k == "ssl_verify_server_cert":
-                        if r := _get_query_result(v):
-                            if is_true_string_value(r):
-                                self.ssl_verify_server_cert = True
-                            elif is_false_string_value(r):
-                                self.ssl_verify_server_cert = False
-                    else:
-                        raise ValueError(
-                            "Invalid MySQL URL query parameter `%s`: The "
-                            "parameter must be one of: ssl, ssl_ca, ssl_cert, "
-                            "ssl_key, or ssl_verify_server_cert.",
-                            k,
-                        )
-                sql_url = sql_url._replace(query=immutabledict())
-
-            database = self.database
-            if not self.username or not self.password or not database:
-                raise ValueError(
-                    "Invalid MySQL configuration: The username, password and "
-                    "database must be set in the URL or as configuration "
-                    "attributes",
-                )
-
-            regexp = r"^[^\\/?%*:|\"<>.-]{1,64}$"
-            match = re.match(regexp, database)
-            if not match:
-                raise ValueError(
-                    f"The database name does not conform to the required "
-                    f"format "
-                    f"rules ({regexp}): {database}"
-                )
-
+        if self.driver and self.driver == SQLDatabaseDriver.MYSQL:
             # Save the certificates in a secure location on disk
             secret_folder = Path(
                 GlobalConfiguration().local_stores_path,
@@ -681,7 +545,6 @@ class SqlZenStoreConfiguration(StoreConfiguration):
                         f.write(content.get_secret_value())
                     setattr(self, key, str(file_path))
 
-        self.url = str(sql_url)
         return self
 
     @staticmethod

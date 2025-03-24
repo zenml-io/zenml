@@ -14,7 +14,6 @@
 """REST Zen Store implementation."""
 
 import os
-import re
 from datetime import datetime
 from pathlib import Path
 from typing import (
@@ -309,35 +308,6 @@ class RestZenStoreConfiguration(StoreConfiguration):
         default=True, union_mode="left_to_right"
     )
     http_timeout: int = DEFAULT_HTTP_TIMEOUT
-
-    @field_validator("url")
-    @classmethod
-    def validate_url(cls, url: str) -> str:
-        """Validates that the URL is a well-formed REST store URL.
-
-        Args:
-            url: The URL to be validated.
-
-        Returns:
-            The validated URL without trailing slashes.
-
-        Raises:
-            ValueError: If the URL is not a well-formed REST store URL.
-        """
-        url = url.rstrip("/")
-        scheme = re.search("^([a-z0-9]+://)", url)
-        if scheme is None or scheme.group() not in ("https://", "http://"):
-            raise ValueError(
-                "Invalid URL for REST store: {url}. Should be in the form "
-                "https://hostname[:port] or http://hostname[:port]."
-            )
-
-        # When running inside a container, if the URL uses localhost, the
-        # target service will not be available. We try to replace localhost
-        # with one of the special Docker or K3D internal hostnames.
-        url = replace_localhost_with_internal_hostname(url)
-
-        return url
 
     @field_validator("verify_ssl")
     @classmethod

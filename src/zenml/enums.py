@@ -434,3 +434,10 @@ class ServiceState(StrEnum):
     PENDING_SHUTDOWN = "pending_shutdown"
     ERROR = "error"
     SCALED_TO_ZERO = "scaled_to_zero"
+
+
+class SQLDatabaseDriver(StrEnum):
+    """SQL database drivers supported by the SQL ZenML store."""
+
+    MYSQL = "mysql"
+    SQLITE = "sqlite"
