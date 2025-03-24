@@ -1,6 +1,6 @@
 ---
-icon: lightbulb
 description: Discovering the core concepts behind ZenML.
+icon: lightbulb
 ---
 
 # Core concepts
@@ -9,7 +9,7 @@ description: Discovering the core concepts behind ZenML.
 
 **ZenML** is an extensible, open-source MLOps framework for creating portable, production-ready **MLOps pipelines**. It's built for data scientists, ML Engineers, and MLOps Developers to collaborate as they develop to production. In order to achieve this goal, ZenML introduces various concepts for different aspects of an ML workflow and we can categorize these concepts under three different threads:
 
-<table data-view="cards"><thead><tr><th></th><th></th><th data-hidden></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><mark style="color:purple;"><strong>1. Development</strong></mark></td><td>As a developer, how do I design my machine learning workflows?</td><td></td><td><a href="core-concepts.md#1-development">1. Development</a></td></tr><tr><td><mark style="color:purple;"><strong>2. Execution</strong></mark></td><td>While executing, how do my workflows utilize the large landscape of MLOps tooling/infrastructure?</td><td></td><td><a href="core-concepts.md#2-execution">2. Execution</a></td></tr><tr><td><mark style="color:purple;"><strong>3. Management</strong></mark></td><td>How do I establish and maintain a production-grade and efficient solution?</td><td></td><td><a href="core-concepts.md#3-management">3. Management</a></td></tr></tbody></table>
+<table data-view="cards"><thead><tr><th></th><th></th><th data-hidden></th><th data-hidden data-card-target data-type="content-ref"></th><th data-hidden data-card-cover data-type="files"></th></tr></thead><tbody><tr><td><mark style="color:purple;"><strong>1. Development</strong></mark></td><td>As a developer, how do I design my machine learning workflows?</td><td></td><td><a href="core-concepts.md#1-development">#1-development</a></td><td><a href="../.gitbook/assets/development.png">development.png</a></td></tr><tr><td><mark style="color:purple;"><strong>2. Execution</strong></mark></td><td>While executing, how do my workflows utilize the large landscape of MLOps tooling/infrastructure?</td><td></td><td><a href="core-concepts.md#2-execution">#2-execution</a></td><td><a href="../.gitbook/assets/execution.png">execution.png</a></td></tr><tr><td><mark style="color:purple;"><strong>3. Management</strong></mark></td><td>How do I establish and maintain a production-grade and efficient solution?</td><td></td><td><a href="core-concepts.md#3-management">#3-management</a></td><td><a href="../.gitbook/assets/management.png">management.png</a></td></tr></tbody></table>
 
 {% embed url="https://www.youtube.com/embed/iCB4KNjl5vs" %}
 If you prefer visual learning, this short video demonstrates the key concepts covered below.
@@ -44,7 +44,7 @@ def step_2(input_one: str, input_two: str) -> str:
 
 At its core, ZenML follows a pipeline-based workflow for your projects. A **pipeline** consists of a series of **steps**, organized in any order that makes sense for your use case.
 
-![Representation of a pipeline dag.](../.gitbook/assets/01\_pipeline.png)
+![Representation of a pipeline dag.](../.gitbook/assets/01_pipeline.png)
 
 As seen in the image, a step might use the outputs from a previous step and thus must wait until the previous step is completed before starting. This is something you can keep in mind when organizing your steps.
 
@@ -100,7 +100,7 @@ When you want to execute a pipeline run with ZenML, **Stacks** come into play. A
 
 For instance, if you take a close look at the default local stack of ZenML, you will see two components that are **required** in every stack in ZenML, namely an _orchestrator_ and an _artifact store_.
 
-![ZenML running code on the Local Stack.](../.gitbook/assets/02\_pipeline\_local\_stack.png)
+![ZenML running code on the Local Stack.](../.gitbook/assets/02_pipeline_local_stack.png)
 
 {% hint style="info" %}
 Keep in mind, that each one of these components is built on top of base abstractions and is completely extensible.
@@ -134,13 +134,13 @@ In order to benefit from the aforementioned core concepts to their fullest exten
 
 #### ZenML Server
 
-To use _stack components_ that are running remotely on a cloud infrastructure, you need to deploy a [**ZenML Server**](../user-guide/production-guide/deploying-zenml.md) so it can communicate with these stack components and run your pipelines. The server is also responsible for managing ZenML business entities like pipelines, steps, models, etc.
+To use _stack components_ that are running remotely on a cloud infrastructure, you need to deploy a [**ZenML Server**](https://docs.zenml.io/user-guides/production-guide/deploying-zenml) so it can communicate with these stack components and run your pipelines. The server is also responsible for managing ZenML business entities like pipelines, steps, models, etc.
 
-![Visualization of the relationship between code and infrastructure.](../.gitbook/assets/04\_architecture.png)
+![Visualization of the relationship between code and infrastructure.](../.gitbook/assets/04_architecture.png)
 
 #### Server Deployment
 
-In order to benefit from the advantages of using a deployed ZenML server, you can either choose to use the [**ZenML Pro SaaS offering**](zenml-pro/README.md) which provides a control plane for you to create managed instances of ZenML servers, or [deploy it in your self-hosted environment](deploying-zenml/README.md).
+In order to benefit from the advantages of using a deployed ZenML server, you can either choose to use the [**ZenML Pro SaaS offering**](https://docs.zenml.io/pro) which provides a control plane for you to create managed instances of ZenML servers, or [deploy it in your self-hosted environment](deploying-zenml/).
 
 #### Metadata Tracking
 
@@ -162,7 +162,7 @@ With a deployed **ZenML Server**, users have the ability to create their own tea
 
 The **ZenML Dashboard** also communicates with **the ZenML Server** to visualize your _pipelines_, _stacks_, and _stack components_. The dashboard serves as a visual interface to showcase collaboration with ZenML. You can invite _users_, and share your stacks with them.
 
-When you start working with ZenML, you'll start with a local ZenML setup, and when you want to transition you will need to [deploy ZenML](deploying-zenml/README.md). Don't worry though, there is a one-click way to do it which we'll learn about later.
+When you start working with ZenML, you'll start with a local ZenML setup, and when you want to transition you will need to [deploy ZenML](deploying-zenml/). Don't worry though, there is a one-click way to do it which we'll learn about later.
 
 #### VS Code Extension
 

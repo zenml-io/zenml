@@ -14,7 +14,7 @@ The logging format must use the `%`-string formatting style. Check out [this pag
 
 Note that setting this on the [client environment](../pipeline-development/configure-python-environments/README.md#client-environment-or-the-runner-environment) (e.g. your local machine which runs the pipeline) will **not automatically change the log format on remote pipeline runs**. That means setting this variable locally with only effect pipelines that run locally.
 
-If you wish to configure it also for [remote pipeline runs](../../user-guide/production-guide/cloud-orchestration.md), you can set the `ZENML_LOGGING_FORMAT` environment variable in your pipeline runs environment as follows:
+If you wish to configure it also for [remote pipeline runs](https://docs.zenml.io/user-guides/production-guide/cloud-orchestration), you can set the `ZENML_LOGGING_FORMAT` environment variable in your pipeline runs environment as follows:
 
 ```python
 from zenml import pipeline

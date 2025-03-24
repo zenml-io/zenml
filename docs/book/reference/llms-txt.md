@@ -27,13 +27,13 @@ Owing to ZenML's vast documentation, we have created multiple `llms.txt` files t
 
 **Tokens**: 120k
 
-This is where you should start. It covers the [User Guides](../user-guide/starter-guide/README.md) and the [Getting Started](../getting-started/installation.md) section of the ZenML documentation, unsummarized, and can be used for answering basic questions about ZenML. This file can also be used alongside other domain-specific files in cases where you need better answers.
+This is where you should start. It covers the [User Guides](https://docs.zenml.io/user-guides/starter-guide) and the [Getting Started](../getting-started/installation.md) section of the ZenML documentation, unsummarized, and can be used for answering basic questions about ZenML. This file can also be used alongside other domain-specific files in cases where you need better answers.
 
 2. [component-guide.txt](https://zenml.io/component-guide.txt)
 
 **Tokens**: 180k
 
-This file covers all the [stack components in ZenML](../component-guide/README.md), unsummarized, and can be used when you want to find answers pertaining to all of our integrations, how to configure/use them and more.
+This file covers all the [stack components in ZenML](https://docs.zenml.io/stacks), unsummarized, and can be used when you want to find answers pertaining to all of our integrations, how to configure/use them and more.
 
 3. [how-to-guides.txt](https://zenml.io/how-to-guides.txt)
 

@@ -10,9 +10,9 @@ A code repository in ZenML refers to a remote storage location for your code. So
 
 <figure><img src="../../../.gitbook/assets/Remote_with_code_repository.png" alt=""><figcaption><p>A visual representation of how the code repository fits into the general ZenML architecture.</p></figcaption></figure>
 
-Code repositories enable ZenML to keep track of the code version that you use for your pipeline runs. Additionally, running a pipeline that is tracked in a registered code repository can [speed up the Docker image building for containerized stack components](../../../how-to/customize-docker-builds/how-to-reuse-builds.md) by eliminating the need to rebuild Docker images each time you change one of your source code files.
+Code repositories enable ZenML to keep track of the code version that you use for your pipeline runs. Additionally, running a pipeline that is tracked in a registered code repository can [speed up the Docker image building for containerized stack components](https://docs.zenml.io//how-to/customize-docker-builds/how-to-reuse-builds) by eliminating the need to rebuild Docker images each time you change one of your source code files.
 
-Learn more about how code repositories benefit development [here](../../../how-to/customize-docker-builds/how-to-reuse-builds.md).
+Learn more about how code repositories benefit development [here](https://docs.zenml.io//how-to/customize-docker-builds/how-to-reuse-builds).
 
 ## Registering a code repository
 
@@ -137,7 +137,7 @@ After registering the GitLab code repository, ZenML will automatically detect if
 
 <summary>How to get a token for GitLab</summary>
 
-1. Go to your GitLab account settings and click on [Access Tokens](https://gitlab.com/-/profile/personal\_access\_tokens).
+1. Go to your GitLab account settings and click on Access Tokens.
 2.  Name the token and select the scopes that you need (e.g. `read_repository`, `read_user`, `read_api`)
 
     ![](../../../.gitbook/assets/gitlab-generate-access-token.png)
