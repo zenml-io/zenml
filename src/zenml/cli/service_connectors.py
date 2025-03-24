@@ -982,7 +982,7 @@ def register_service_connector(
 )
 @click.pass_context
 def list_service_connectors(
-    ctx: click.Context, labels: Optional[List[str]] = None, **kwargs: Any
+    ctx: click.Context, /, labels: Optional[List[str]] = None, **kwargs: Any
 ) -> None:
     """List all service connectors.
 

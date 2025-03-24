@@ -237,12 +237,17 @@ class GitHubCodeRepository(BaseCodeRepository):
         Returns:
             Whether the remote url is correct.
         """
-        https_url = f"https://{self.config.host}/{self.config.owner}/{self.config.repository}.git"
+        host = self.config.host or "github.com"
+        host = host.rstrip("/")
+
+        https_url = (
+            f"https://{host}/{self.config.owner}/{self.config.repository}.git"
+        )
         if url == https_url:
             return True
 
         ssh_regex = re.compile(
-            f".*@{self.config.host}:{self.config.owner}/{self.config.repository}.git"
+            f".*@{host}:{self.config.owner}/{self.config.repository}.git"
         )
         if ssh_regex.fullmatch(url):
             return True
