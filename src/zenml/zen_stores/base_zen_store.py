@@ -22,7 +22,6 @@ from typing import (
     Optional,
     Tuple,
     Type,
-    Union,
 )
 from uuid import UUID
 
@@ -292,7 +291,7 @@ class BaseZenStore(
 
     def validate_active_config(
         self,
-        active_project_name_or_id: Optional[Union[str, UUID]] = None,
+        active_project_id: Optional[UUID] = None,
         active_stack_id: Optional[UUID] = None,
         config_name: str = "",
     ) -> Tuple[Optional[ProjectResponse], StackResponse]:
@@ -307,7 +306,7 @@ class BaseZenStore(
         stack will be returned in their stead.
 
         Args:
-            active_project_name_or_id: The name or ID of the active project.
+            active_project_id: The ID of the active project.
             active_stack_id: The ID of the active stack.
             config_name: The name of the configuration to validate (used in the
                 displayed logs/messages).
@@ -317,11 +316,11 @@ class BaseZenStore(
         """
         active_project: Optional[ProjectResponse] = None
 
-        if active_project_name_or_id:
+        if active_project_id:
             try:
-                active_project = self.get_project(active_project_name_or_id)
+                active_project = self.get_project(active_project_id)
             except (KeyError, IllegalOperationError):
-                active_project_name_or_id = None
+                active_project_id = None
                 logger.warning(
                     f"The current {config_name} active project is no longer "
                     f"available."
