@@ -4,11 +4,11 @@ description: Storing container images locally.
 
 # Default Container Registry
 
-The Default container registry is a [container registry](./container-registries.md) flavor that comes built-in with ZenML and allows container registry URIs of any format.
+The Default container registry is a [container registry](./) flavor that comes built-in with ZenML and allows container registry URIs of any format.
 
 ### When to use it
 
-You should use the Default container registry if you want to use a **local** container registry or when using a remote container registry that is not covered by other [container registry flavors](./container-registries.md#container-registry-flavors).
+You should use the Default container registry if you want to use a **local** container registry or when using a remote container registry that is not covered by other [container registry flavors](./#container-registry-flavors).
 
 ### Local registry URI format
 
@@ -46,9 +46,9 @@ You may also need to set up [authentication](default.md#authentication-methods) 
 
 #### Authentication Methods
 
-If you are using a private container registry, you will need to configure some form of authentication to login to the registry. If you're looking for a quick way to get started locally, you can use the _Local Authentication_ method. However, the recommended way to authenticate to a remote private container registry is through [a Docker Service Connector](../../how-to/infrastructure-deployment/auth-management/docker-service-connector.md).
+If you are using a private container registry, you will need to configure some form of authentication to login to the registry. If you're looking for a quick way to get started locally, you can use the _Local Authentication_ method. However, the recommended way to authenticate to a remote private container registry is through [a Docker Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/docker-service-connector).
 
-If your target private container registry comes from a cloud provider like AWS, GCP or Azure, you should use the [container registry flavor](./container-registries.md#container-registry-flavors) targeted at that cloud provider. For example, if you're using AWS, you should use the [AWS Container Registry](aws.md) flavor. These cloud provider flavors also use specialized cloud provider Service Connectors to authenticate to the container registry.
+If your target private container registry comes from a cloud provider like AWS, GCP or Azure, you should use the [container registry flavor](./#container-registry-flavors) targeted at that cloud provider. For example, if you're using AWS, you should use the [AWS Container Registry](aws.md) flavor. These cloud provider flavors also use specialized cloud provider Service Connectors to authenticate to the container registry.
 
 {% tabs %}
 {% tab title="Local Authentication" %}
@@ -61,12 +61,12 @@ docker login --username <USERNAME> --password-stdin <REGISTRY_URI>
 ```
 
 {% hint style="warning" %}
-Stacks using the Default Container Registry set up with local authentication are not portable across environments. To make ZenML pipelines fully portable, it is recommended to use [a Docker Service Connector](../../how-to/infrastructure-deployment/auth-management/docker-service-connector.md) to link your Default Container Registry to the remote private container registry.
+Stacks using the Default Container Registry set up with local authentication are not portable across environments. To make ZenML pipelines fully portable, it is recommended to use [a Docker Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/docker-service-connector) to link your Default Container Registry to the remote private container registry.
 {% endhint %}
 {% endtab %}
 
 {% tab title="Docker Service Connector (recommended)" %}
-To set up the Default Container Registry to authenticate to and access a private container registry, it is recommended to leverage the features provided by [the Docker Service Connector](../../how-to/infrastructure-deployment/auth-management/docker-service-connector.md) such as local login and reusing the same credentials across multiple stack components.
+To set up the Default Container Registry to authenticate to and access a private container registry, it is recommended to leverage the features provided by [the Docker Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/docker-service-connector) such as local login and reusing the same credentials across multiple stack components.
 
 If you don't already have a Docker Service Connector configured in your ZenML deployment, you can register one using the interactive CLI command:
 
@@ -147,7 +147,7 @@ zenml stack register <STACK_NAME> -c <CONTAINER_REGISTRY_NAME> ... --set
 ```
 
 {% hint style="info" %}
-Linking the Default Container Registry to a Service Connector means that your local Docker client is no longer authenticated to access the remote registry. If you need to manually interact with the remote registry via the Docker CLI, you can use the [local login Service Connector feature](../../how-to/infrastructure-deployment/auth-management/service-connectors-guide.md#configure-local-clients) to temporarily authenticate your local Docker client to the remote registry:
+Linking the Default Container Registry to a Service Connector means that your local Docker client is no longer authenticated to access the remote registry. If you need to manually interact with the remote registry via the Docker CLI, you can use the [local login Service Connector feature](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/service-connectors-guide#configure-local-clients) to temporarily authenticate your local Docker client to the remote registry:
 
 ```sh
 zenml service-connector login <CONNECTOR_NAME>
@@ -168,6 +168,6 @@ The 'dockerhub' Docker Service Connector connector was used to successfully conf
 {% endtab %}
 {% endtabs %}
 
-For more information and a full list of configurable attributes of the Default container registry, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-aws/#zenml.integrations.aws.container\_registries.default\_container\_registry.DefaultContainerRegistry) .
+For more information and a full list of configurable attributes of the Default container registry, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-aws.html#zenml.integrations.aws) .
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

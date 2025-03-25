@@ -7,7 +7,7 @@ description: Orchestrating your pipelines to run on Tekton.
 [Tekton](https://tekton.dev/) is a powerful and flexible open-source framework for creating CI/CD systems, allowing developers to build, test, and deploy across cloud providers and on-premise systems.
 
 {% hint style="warning" %}
-This component is only meant to be used within the context of a [remote ZenML deployment scenario](../../getting-started/deploying-zenml/README.md). Usage with a local ZenML deployment may lead to unexpected behavior!
+This component is only meant to be used within the context of a [remote ZenML deployment scenario](https://docs.zenml.io/getting-started/deploying-zenml/). Usage with a local ZenML deployment may lead to unexpected behavior!
 {% endhint %}
 
 ### When to use it
@@ -25,10 +25,10 @@ You'll first need to set up a Kubernetes cluster and deploy Tekton Pipelines:
 
 {% tabs %}
 {% tab title="AWS" %}
-* A remote ZenML server. See the [deployment guide](../../getting-started/deploying-zenml/README.md) for more information.
+* A remote ZenML server. See the [deployment guide](https://docs.zenml.io/getting-started/deploying-zenml/) for more information.
 * Have an existing AWS [EKS cluster](https://docs.aws.amazon.com/eks/latest/userguide/create-cluster.html) set up.
 * Make sure you have the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) set up.
-*   Download and [install](https://kubernetes.io/docs/tasks/tools/) `kubectl` and [configure](https://aws.amazon.com/premiumsupport/knowledge-center/eks-cluster-connection/) it to talk to your EKS cluster using the following command:
+*   Download and [install](https://kubernetes.io/docs/tasks/tools/) `kubectl` and configure it to talk to your EKS cluster using the following command:
 
     ```powershell
     aws eks --region REGION update-kubeconfig --name CLUSTER_NAME
@@ -37,7 +37,7 @@ You'll first need to set up a Kubernetes cluster and deploy Tekton Pipelines:
 {% endtab %}
 
 {% tab title="GCP" %}
-* A remote ZenML server. See the [deployment guide](../../getting-started/deploying-zenml/README.md) for more information.
+* A remote ZenML server. See the [deployment guide](https://docs.zenml.io/getting-started/deploying-zenml/) for more information.
 * Have an existing GCP [GKE cluster](https://cloud.google.com/kubernetes-engine/docs/quickstart) set up.
 * Make sure you have the [Google Cloud CLI](https://cloud.google.com/sdk/docs/install-sdk) set up first.
 *   Download and [install](https://kubernetes.io/docs/tasks/tools/) `kubectl` and [configure](https://cloud.google.com/kubernetes-engine/docs/how-to/cluster-access-for-kubectl) it to talk to your GKE cluster using the following command:
@@ -49,7 +49,7 @@ You'll first need to set up a Kubernetes cluster and deploy Tekton Pipelines:
 {% endtab %}
 
 {% tab title="Azure" %}
-* A remote ZenML server. See the [deployment guide](../../getting-started/deploying-zenml/README.md) for more information.
+* A remote ZenML server. See the [deployment guide](https://docs.zenml.io/getting-started/deploying-zenml/) for more information.
 * Have an existing [AKS cluster](https://azure.microsoft.com/en-in/services/kubernetes-service/#documentation) set up.
 * Make sure you have the [`az` CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli) set up first.
 *   Download and [install](https://kubernetes.io/docs/tasks/tools/) `kubectl` and it to talk to your AKS cluster using the following command:
@@ -81,17 +81,17 @@ To use the Tekton orchestrator, we need:
 * [Docker](https://www.docker.com) installed and running.
 * Tekton pipelines deployed on a remote cluster. See the [deployment section](tekton.md#how-to-deploy-it) for more information.
 * The name of your Kubernetes context which points to your remote cluster. Run `kubectl config get-contexts` to see a list of available contexts.
-* A [remote artifact store](../artifact-stores/artifact-stores.md) as part of your stack.
-* A [remote container registry](../container-registries/container-registries.md) as part of your stack.
+* A [remote artifact store](https://docs.zenml.io/stacks/artifact-stores/) as part of your stack.
+* A [remote container registry](https://docs.zenml.io/stacks/container-registries/) as part of your stack.
 * [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) installed and the name of the Kubernetes configuration context which points to the target cluster (i.e. run`kubectl config get-contexts` to see a list of available contexts). This is optional (see below).
 
 {% hint style="info" %}
-It is recommended that you set up [a Service Connector](../../how-to/infrastructure-deployment/auth-management/service-connectors-guide.md) and use it to connect ZenML Stack Components to the remote Kubernetes cluster, especially If you are using a Kubernetes cluster managed by a cloud provider like AWS, GCP or Azure, This guarantees that your Stack is fully portable on other environments and your pipelines are fully reproducible.
+It is recommended that you set up [a Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/service-connectors-guide) and use it to connect ZenML Stack Components to the remote Kubernetes cluster, especially If you are using a Kubernetes cluster managed by a cloud provider like AWS, GCP or Azure, This guarantees that your Stack is fully portable on other environments and your pipelines are fully reproducible.
 {% endhint %}
 
 We can then register the orchestrator and use it in our active stack. This can be done in two ways:
 
-1.  If you have [a Service Connector](../../how-to/infrastructure-deployment/auth-management/service-connectors-guide.md) configured to access the remote Kubernetes cluster, you no longer need to set the `kubernetes_context` attribute to a local `kubectl` context. In fact, you don't need the local Kubernetes CLI at all. You can [connect the stack component to the Service Connector](../../how-to/infrastructure-deployment/auth-management/service-connectors-guide.md#connect-stack-components-to-resources) instead:
+1.  If you have [a Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/service-connectors-guide) configured to access the remote Kubernetes cluster, you no longer need to set the `kubernetes_context` attribute to a local `kubectl` context. In fact, you don't need the local Kubernetes CLI at all. You can [connect the stack component to the Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/service-connectors-guide#connect-stack-components-to-resources) instead:
 
     ```
     $ zenml orchestrator register <ORCHESTRATOR_NAME> --flavor tekton
@@ -123,19 +123,17 @@ We can then register the orchestrator and use it in our active stack. This can b
     # Register and activate a stack with the new orchestrator
     $ zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
     ```
-2.  if you don't have a Service Connector on hand and you don't want to [register one](../../how-to/infrastructure-deployment/auth-management/service-connectors-guide.md#register-service-connectors) , the local Kubernetes `kubectl` client needs to be configured with a configuration context pointing to the remote cluster. The `kubernetes_context` stack component must also be configured with the value of that context:
+2.  if you don't have a Service Connector on hand and you don't want to [register one](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/service-connectors-guide#register-service-connectors) , the local Kubernetes `kubectl` client needs to be configured with a configuration context pointing to the remote cluster. The `kubernetes_context` stack component must also be configured with the value of that context:
 
     ```shell
-    zenml orchestrator register <ORCHESTRATOR_NAME> \
-        --flavor=tekton \
-        --kubernetes_context=<KUBERNETES_CONTEXT>
+    zenml orchestrator register <ORCHESTRATOR_NAME> --flavor=tekton --kubernetes_context=<KUBERNETES_CONTEXT>
 
     # Register and activate a stack with the new orchestrator
     zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
     ```
 
 {% hint style="info" %}
-ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your pipeline steps in Tekton. Check out [this page](../../how-to/customize-docker-builds/README.md) if you want to learn more about how ZenML builds these images and how you can customize them.
+ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your pipeline steps in Tekton. Check out [this page](https://docs.zenml.io/how-to/customize-docker-builds/) if you want to learn more about how ZenML builds these images and how you can customize them.
 {% endhint %}
 
 You can now run any ZenML pipeline using the Tekton orchestrator:
@@ -225,12 +223,12 @@ def my_step():
     ...
 ```
 
-Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-tekton/#zenml.integrations.tekton.flavors.tekton\_orchestrator\_flavor.TektonOrchestratorSettings) for a full list of available attributes and [this docs page](../../how-to/pipeline-development/use-configuration-files/runtime-configuration.md) for more information on how to specify settings.
+Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-tekton.html#zenml.integrations.tekton) for a full list of available attributes and [this docs page](https://docs.zenml.io/how-to/pipeline-development/use-configuration-files/runtime-configuration) for more information on how to specify settings.
 
-For more information and a full list of configurable attributes of the Tekton orchestrator, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-tekton/#zenml.integrations.tekton.orchestrators.tekton\_orchestrator.TektonOrchestrator) .
+For more information and a full list of configurable attributes of the Tekton orchestrator, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-tekton.html#zenml.integrations.tekton) .
 
 #### Enabling CUDA for GPU-backed hardware
 
-Note that if you wish to use this orchestrator to run steps on a GPU, you will need to follow [the instructions on this page](../../how-to/pipeline-development/training-with-gpus/README.md) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
+Note that if you wish to use this orchestrator to run steps on a GPU, you will need to follow [the instructions on this page](https://docs.zenml.io/how-to/pipeline-development/training-with-gpus/) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

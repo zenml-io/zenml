@@ -20,7 +20,7 @@ ZenML offers several types of custom components that can be shared between teams
 Custom flavors are special integrations that don't come built-in with ZenML. These can be implemented and shared as follows:
 
 1. Create the custom flavor in a shared repository.
-2. Implement the custom stack component as described in the [ZenML documentation](../../infrastructure-deployment/stack-deployment/implement-a-custom-stack-component.md#implementing-a-custom-stack-component-flavor).
+2. Implement the custom stack component as described in the [ZenML documentation](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/implement-a-custom-stack-component#implementing-a-custom-stack-component-flavor).
 3. Register the component using the ZenML CLI, for example in the case of a custom artifact store flavor:
 
 ```bash
@@ -104,7 +104,7 @@ way, for example:
 my-simple-package==0.1.0
 ```
 
-For information on using private PyPI repositories to share your code, see our [documentation on how to use a private PyPI repository](../../../how-to/customize-docker-builds/how-to-use-a-private-pypi-repository.md).
+For information on using private PyPI repositories to share your code, see our [documentation on how to use a private PyPI repository](https://docs.zenml.io//how-to/customize-docker-builds/how-to-use-a-private-pypi-repository).
 
 ## Best Practices
 

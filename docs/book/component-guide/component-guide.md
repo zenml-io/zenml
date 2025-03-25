@@ -1,34 +1,27 @@
 ---
-description: Overview of categories of MLOps components.
+description: Overview of categories of MLOps components and third-party integrations.
+icon: scroll
 ---
 
-# 📜 Overview
+# Overview
 
 If you are new to the world of MLOps, it is often daunting to be immediately faced with a sea of tools that seemingly all promise and do the same things. It is useful in this case to try to categorize tools in various groups in order to understand their value in your toolchain in a more precise manner.
 
-ZenML tackles this problem by introducing the concept of [Stacks and Stack Components](../user-guide/production-guide/understand-stacks.md). These stack components represent categories, each of which has a particular function in your MLOps pipeline. ZenML realizes these stack components as base abstractions that standardize the entire workflow for your team. In order to then realize the benefit, one can write a concrete implementation of the [abstraction](../how-to/infrastructure-deployment/stack-deployment/implement-a-custom-stack-component.md), or use one of the many built-in [integrations](README.md) that implement these abstractions for you.
+ZenML tackles this problem by introducing the concept of [**Stacks and Stack Components**](https://docs.zenml.io/user-guides/production-guide/understand-stacks). These stack components represent categories, each of which has a particular function in your MLOps pipeline. ZenML realizes these stack components as base abstractions that standardize the entire workflow for your team. In order to then realize the benefit, one can write a concrete implementation of the [abstraction](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/implement-a-custom-stack-component), or use one of the many built-in integrations that implement these abstractions for you.
+
+## Essential Components
+
+Each pipeline run that you execute with ZenML will require a **stack** and each **stack** will be required to include at least an **orchestrator** and an **artifact store**. Apart from these two, the other components are optional and to be added as your pipeline evolves in MLOps maturity.
+
+## Stack Components Guide
 
 Here is a full list of all stack components currently supported in ZenML, with a description of the role of that component in the MLOps process:
 
-| **Type of Stack Component**                                                                                                                              | **Description**                                                   |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| [Orchestrator](./orchestrators/orchestrators.md)              | Orchestrating the runs of your pipeline                           |
-| [Artifact Store](./artifact-stores/artifact-stores.md)          | Storage for the artifacts created by your pipelines               |
-| [Container Registry](./container-registries/container-registries.md) | Store for your containers                                         |
-| [Step Operator](./step-operators/step-operators.md)            | Execution of individual steps in specialized runtime environments |
-| [Model Deployer](./model-deployers/model-deployers.md)          | Services/platforms responsible for online model serving           |
-| [Feature Store](./feature-stores/feature-stores.md)            | Management of your data/features                                  |
-| [Experiment Tracker](./experiment-trackers/experiment-trackers.md)  | Tracking your ML experiments                                      |
-| [Alerter](./alerters/alerters.md)                        | Sending alerts through specified channels                         |
-| [Annotator](./annotators/annotators.md)                    | Labeling and annotating data                                      |
-| [Data Validator](./data-validators/data-validators.md)          | Data and model validation                                         |
-| [Image Builder](./image-builders/image-builders.md)            | Builds container images.                                          |
-| [Model Registry](./model-registries/model-registries.md)         | Manage and interact with ML Models                                |
-
-Each pipeline run that you execute with ZenML will require a **stack** and each **stack** will be required to include at least an orchestrator and an artifact store. Apart from these two, the other components are optional and to be added as your pipeline evolves in MLOps maturity.
+<table data-view="cards"><thead><tr><th></th><th></th><th data-hidden data-card-cover data-type="files"></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><strong>Orchestrator</strong></td><td>Orchestrating the runs of your pipeline</td><td><a href=".gitbook/assets/orchestrator.png">orchestrator.png</a></td><td><a href="orchestrators/">orchestrators</a></td></tr><tr><td><strong>Artifact Store</strong></td><td>Storage for the artifacts created by your pipelines</td><td><a href=".gitbook/assets/artifact-store.png">artifact-store.png</a></td><td><a href="artifact-stores/">artifact-stores</a></td></tr><tr><td><strong>Container Registry</strong></td><td>Store for your containers</td><td><a href=".gitbook/assets/container-registry.png">container-registry.png</a></td><td><a href="container-registries/">container-registries</a></td></tr><tr><td><strong>Data Validator</strong></td><td>Data and model validation</td><td><a href=".gitbook/assets/data-validator.png">data-validator.png</a></td><td><a href="data-validators/">data-validators</a></td></tr><tr><td><strong>Experiment Tracker</strong></td><td>Tracking your ML experiments</td><td><a href=".gitbook/assets/experiment-tracker.png">experiment-tracker.png</a></td><td><a href="experiment-trackers/">experiment-trackers</a></td></tr><tr><td><strong>Model Deployer</strong></td><td>Services/platforms responsible for online model serving</td><td><a href=".gitbook/assets/model-deployer.png">model-deployer.png</a></td><td><a href="model-deployers/">model-deployers</a></td></tr><tr><td><strong>Step Operator</strong></td><td>Execution of individual steps in specialized runtime environments</td><td><a href=".gitbook/assets/step-operator.png">step-operator.png</a></td><td><a href="step-operators/">step-operators</a></td></tr><tr><td><strong>Alerter</strong></td><td>Sending alerts through specified channels</td><td><a href=".gitbook/assets/alerter.png">alerter.png</a></td><td><a href="alerters/">alerters</a></td></tr><tr><td><strong>Image Builder</strong></td><td>Builds container images.</td><td><a href=".gitbook/assets/image-builder.png">image-builder.png</a></td><td><a href="image-builders/">image-builders</a></td></tr><tr><td><strong>Annotator</strong></td><td>Labeling and annotating data</td><td><a href=".gitbook/assets/annotator.png">annotator.png</a></td><td><a href="annotators/">annotators</a></td></tr><tr><td><strong>Model Registry</strong></td><td>Manage and interact with ML Models</td><td><a href=".gitbook/assets/model-registry.png">model-registry.png</a></td><td><a href="model-registries/">model-registries</a></td></tr><tr><td><strong>Feature Store</strong></td><td>Management of your data/features</td><td><a href=".gitbook/assets/feature-store.png">feature-store.png</a></td><td><a href="feature-stores/">feature-stores</a></td></tr></tbody></table>
 
 ## Writing custom component flavors
 
-You can take control of how ZenML behaves by creating your own components. This is done by writing custom component `flavors`. To learn more, head over to [the general guide on writing component flavors](../how-to/infrastructure-deployment/stack-deployment/implement-a-custom-stack-component.md), or read more specialized guides for specific component types (e.g. the [custom orchestrator guide](orchestrators/custom.md)).
+You can take control of how ZenML behaves by creating your own components. This is done by writing custom component `flavors`.
 
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
+<table data-card-size="large" data-view="cards"><thead><tr><th></th><th></th><th data-hidden data-card-cover data-type="files"></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><strong>Component Flavors</strong></td><td>How to write a custom stack component flavor</td><td><a href=".gitbook/assets/flavors.png">flavors.png</a></td><td><a href="https://app.gitbook.com/s/5aBlTJNbVDkrxJp7J1J9/how-to/infrastructure-deployment/stack-deployment/implement-a-custom-stack-component">Implement a custom stack component</a></td></tr><tr><td><strong>Custom orchestrator guide</strong></td><td>Learn how to develop a custom orchestrator</td><td><a href=".gitbook/assets/custom-orchestrator.png">custom-orchestrator.png</a></td><td><a href="orchestrators/custom.md">custom.md</a></td></tr></tbody></table>
+
