@@ -109,7 +109,7 @@ training_pipeline()
 ```
 
 Note that pipeline names must be unique. For more information on this feature,
-see the [documentation on naming pipeline runs](../../../how-to/pipeline-development/build-pipelines/name-your-pipeline-runs.md).
+see the [documentation on naming pipeline runs](https://docs.zenml.io//how-to/pipeline-development/build-pipelines/name-your-pipeline-runs).
 
 ## Models
 
@@ -127,7 +127,7 @@ you can use:
 zenml model delete <MODEL_NAME>
 ```
 
-See the full documentation on [how to delete models](../../model-management-metrics/model-control-plane/delete-a-model.md).
+See the full documentation on [how to delete models](https://docs.zenml.io/how-to/model-management-metrics/model-control-plane/delete-a-model).
 
 ## Artifacts
 
@@ -142,7 +142,7 @@ zenml artifact prune
 
 By default, this method deletes artifacts physically from the underlying artifact store AND also the entry in the database. You can control this behavior by using the `--only-artifact` and `--only-metadata` flags.
 
-For more information, see the [documentation for this artifact pruning feature](../../data-artifact-management/handle-data-artifacts/delete-an-artifact.md).
+For more information, see the [documentation for this artifact pruning feature](https://docs.zenml.io/how-to/data-artifact-management/handle-data-artifacts/delete-an-artifact).
 
 ## Cleaning your environment
 

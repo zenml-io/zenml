@@ -7,7 +7,7 @@ Here is how the build process looks like:
 * **No `Dockerfile` specified**: If any of the options regarding requirements, environment variables or copying files require us to build an image, ZenML will build this image. Otherwise the `parent_image` will be used to run the pipeline.
 * **`Dockerfile` specified**: ZenML will first build an image based on the specified `Dockerfile`. If any of the options regarding requirements, environment variables or copying files require an additional image built on top of that, ZenML will build a second image. If not, the image build from the specified `Dockerfile` will be used to run the pipeline.
 
-Depending on the configuration of the [`DockerSettings`](https://sdkdocs.zenml.io/latest/core_code_docs/core-config/#zenml.config.docker_settings.DockerSettings) object, requirements will be installed in the following order (each step optional): 
+Depending on the configuration of the [`DockerSettings`](https://sdkdocs.zenml.io/latest/core_code_docs/core-config.html#zenml.config.docker_settings) object, requirements will be installed in the following order (each step optional): 
 
 * The packages installed in your local Python environment.
 * The packages specified via the `requirements` attribute.

@@ -20,7 +20,7 @@ def my_step():
     step_name = step_context.step_run.name
 ```
 
-Furthermore, you can also use the `StepContext` to find out where the outputs of your current step will be stored and which [Materializer](../../data-artifact-management/handle-data-artifacts/handle-custom-data-types.md) class will be used to save them:
+Furthermore, you can also use the `StepContext` to find out where the outputs of your current step will be stored and which [Materializer](https://docs.zenml.io/how-to/data-artifact-management/handle-data-artifacts/handle-custom-data-types) class will be used to save them:
 
 ```python
 from zenml import step, get_step_context
@@ -37,7 +37,7 @@ def my_step():
 ```
 
 {% hint style="info" %}
-See the [SDK Docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-new/#zenml.steps.step\_context.StepContext) for more information on which attributes and methods the `StepContext` provides.
+See the [SDK Docs](https://sdkdocs.zenml.io/latest/index.html#zenml.steps.StepContext) for more information on which attributes and methods the `StepContext` provides.
 {% endhint %}
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

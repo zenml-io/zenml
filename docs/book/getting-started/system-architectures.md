@@ -79,7 +79,7 @@ The above components interact with other MLOps stack components, secrets, and da
 the following scenarios described below.
 
 {% hint style="info" %}
-To learn more about the core concepts for ZenML Pro, go [here](../getting-started/zenml-pro/core-concepts.md)
+To learn more about the core concepts for ZenML Pro, go [here](https://docs.zenml.io/pro/core-concepts)
 {% endhint %}
 
 ### ZenML Pro SaaS Architecture
@@ -95,7 +95,7 @@ model tracking and versioning information) is stored. All the actual ML data
 artifacts (e.g. data produced or consumed by pipeline steps, logs and
 visualizations, models) are stored on the customer cloud. This can be set up
 quite easily by configuring
-an [artifact store](../component-guide/artifact-stores/artifact-stores.md)
+an [artifact store](https://docs.zenml.io/stacks/artifact-stores)
 with your MLOps stack.
 
 Your workspace only needs permissions to read from this data to display artifacts
