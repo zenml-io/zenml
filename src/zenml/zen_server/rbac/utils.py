@@ -34,8 +34,8 @@ from zenml.models import (
     Page,
     ProjectScopedRequest,
     ProjectScopedResponse,
+    UserResponse,
     UserScopedResponse,
-    UserResponse
 )
 from zenml.zen_server.auth import get_auth_context
 from zenml.zen_server.rbac.models import Action, Resource, ResourceType

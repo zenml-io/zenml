@@ -14,7 +14,6 @@
 """Cloud RBAC implementation."""
 
 from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
-from uuid import UUID
 
 from zenml.zen_server.cloud_utils import cloud_connection
 from zenml.zen_server.rbac.models import Action, Resource

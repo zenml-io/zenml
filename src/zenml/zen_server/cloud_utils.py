@@ -7,7 +7,10 @@ import requests
 from requests.adapters import HTTPAdapter, Retry
 
 from zenml.config.server_config import ServerProConfiguration
-from zenml.exceptions import SubscriptionUpgradeRequiredError
+from zenml.exceptions import (
+    IllegalOperationError,
+    SubscriptionUpgradeRequiredError,
+)
 from zenml.utils.time_utils import utc_now
 from zenml.zen_server.utils import get_zenml_headers, server_config
 
@@ -43,6 +46,7 @@ class ZenMLCloudConnection:
         Raises:
             SubscriptionUpgradeRequiredError: If the current subscription tier
                 is insufficient for the attempted operation.
+            IllegalOperationError: If the request failed with a 403 status code.
             RuntimeError: If the request failed.
 
         Returns:
@@ -65,6 +69,8 @@ class ZenMLCloudConnection:
         except requests.HTTPError as e:
             if response.status_code == 402:
                 raise SubscriptionUpgradeRequiredError(response.json())
+            elif response.status_code == 403:
+                raise IllegalOperationError(response.json())
             else:
                 raise RuntimeError(
                     f"Failed while trying to contact the central zenml pro "

@@ -15,7 +15,6 @@
 
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
-from uuid import UUID
 
 from zenml.zen_server.rbac.models import Action, Resource
 
