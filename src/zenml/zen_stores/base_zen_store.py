@@ -45,6 +45,7 @@ from zenml.enums import (
 from zenml.exceptions import IllegalOperationError
 from zenml.logger import get_logger
 from zenml.models import (
+    ProjectFilter,
     ProjectResponse,
     ServerDatabaseType,
     ServerDeploymentType,
@@ -345,7 +346,9 @@ class BaseZenStore(
 
         if active_project is None:
             try:
-                projects = self.list_projects()
+                projects = self.list_projects(
+                    project_filter_model=ProjectFilter()
+                )
             except Exception:
                 # There was some failure, we force the user to set the active
                 # project manually
