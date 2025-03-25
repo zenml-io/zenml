@@ -230,9 +230,7 @@ class ServiceConnectorRegistry:
                     AzureServiceConnector,
                 )
             except ImportError as e:
-                logger.debug(
-                    f"Could not import Azure service connector: {e}."
-                )
+                logger.debug(f"Could not import Azure service connector: {e}.")
 
             try:
                 from zenml.integrations.kubernetes.service_connectors.kubernetes_service_connector import (  # noqa
