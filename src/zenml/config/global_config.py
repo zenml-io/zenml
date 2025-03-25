@@ -775,7 +775,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             if self.active_project_id is None:
                 raise RuntimeError(
                     "No project is currently set as active. Please set the "
-                    "active project using the `zenml project set` CLI "
+                    "active project using the `zenml project set <NAME>` CLI "
                     "command."
                 )
 

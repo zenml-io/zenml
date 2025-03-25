@@ -351,8 +351,7 @@ class BaseZenStore(
                 # project manually
                 logger.warning(
                     "An active project is not set. Please set the active "
-                    "project by running `zenml project set "
-                    "<project-name>`."
+                    "project by running `zenml project set <NAME>`."
                 )
             else:
                 if len(projects) == 0:

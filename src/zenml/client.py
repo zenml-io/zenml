@@ -235,7 +235,7 @@ class ClientConfiguration(FileSyncModel):
         else:
             raise RuntimeError(
                 "No active project is configured. Run "
-                "`zenml project set PROJECT_NAME` to set the active "
+                "`zenml project set <NAME>` to set the active "
                 "project."
             )
 
@@ -1159,7 +1159,7 @@ class Client(metaclass=ClientMetaClass):
         if not project:
             raise RuntimeError(
                 "No active project is configured. Run "
-                "`zenml project set PROJECT_NAME` to set the active "
+                "`zenml project set <NAME>` to set the active "
                 "project."
             )
 
