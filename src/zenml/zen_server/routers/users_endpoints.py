@@ -65,6 +65,11 @@ from zenml.zen_server.utils import (
 
 logger = get_logger(__name__)
 
+pass_change_limiter = RequestLimiter(
+    day_limit=server_config().login_rate_limit_day,
+    minute_limit=server_config().login_rate_limit_minute,
+)
+
 router = APIRouter(
     prefix=API + VERSION_1 + USERS,
     tags=["users"],
@@ -223,10 +228,6 @@ def get_user(
 # When the auth scheme is set to EXTERNAL, users cannot be updated via the
 # API.
 if server_config().auth_scheme != AuthScheme.EXTERNAL:
-    pass_change_limiter = RequestLimiter(
-        day_limit=server_config().login_rate_limit_day,
-        minute_limit=server_config().login_rate_limit_minute,
-    )
 
     @activation_router.put(
         "/{user_name_or_id}" + ACTIVATE,
@@ -430,7 +431,6 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
             )
 
 
-# TODO: needs pass change limiter outside of if
 @router.put(
     "/{user_name_or_id}",
     responses={
