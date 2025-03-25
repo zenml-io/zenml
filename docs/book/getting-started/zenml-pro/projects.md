@@ -21,6 +21,13 @@ Projects offer several key benefits:
 
 Before you can work with projects, you need to be logged into your workspace. If you haven't done this yet, see the [Workspaces](workspaces.md#using-the-cli) documentation for instructions on logging in.
 
+### Creating a project
+
+To create a new project using the CLI, run the following command:
+```bash
+zenml project register <NAME>
+```
+
 ### Setting an active project
 
 After initializing your ZenML repository (`zenml init`), you should set an active project. This is similar to how you set an active stack:
@@ -34,6 +41,20 @@ This command sets the "default" project as your active project. All subsequent Z
 {% hint style="warning" %}
 Best practice is to set your active project right after running `zenml init`, just like you would set an active stack. This ensures all your resources are properly organized within the project.
 {% endhint %}
+
+### Setting a default project
+
+The default project is something that each user can configure. This project will be automatically set as the active project when you connect
+your local Python client to a ZenML Pro workspace.
+
+You can set your default project either when creating a new project or when activating it:
+```bash
+# Set default project during registration
+zenml project register <NAME> --set-default
+
+# Set default project during activation
+zenml project set <NAME> --default
+```
 
 ## Creating and Managing Projects
 
