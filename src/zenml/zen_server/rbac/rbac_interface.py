@@ -14,7 +14,8 @@
 """RBAC interface definition."""
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Dict, List, Set, Tuple
+from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
+from uuid import UUID
 
 from zenml.zen_server.rbac.models import Action, Resource
 
@@ -63,7 +64,12 @@ class RBACInterface(ABC):
 
     @abstractmethod
     def update_resource_membership(
-        self, user: "UserResponse", resource: Resource, actions: List[Action]
+        self,
+        sharing_user_id: UUID,
+        resource: Resource,
+        actions: List[Action],
+        user_id: Optional[str] = None,
+        team_id: Optional[str] = None,
     ) -> None:
         """Update the resource membership of a user.
 

@@ -709,12 +709,21 @@ if server_config().rbac_enabled:
             422: error_response,
         },
     )
+    @router.post(
+        "/resource_membership",
+        responses={
+            401: error_response,
+            404: error_response,
+            422: error_response,
+        },
+    )
     @handle_exceptions
     def update_user_resource_membership(
-        user_name_or_id: Union[str, UUID],
+        user_name_or_id: Union[str, UUID, None],
         resource_type: str,
         resource_id: UUID,
         actions: List[str],
+        team_id: Optional[str] = None,
         auth_context: AuthContext = Security(authorize),
     ) -> None:
         """Updates resource memberships of a user.
@@ -734,13 +743,20 @@ if server_config().rbac_enabled:
             ValueError: If a user tries to update their own membership.
             KeyError: If no resource with the given type and ID exists.
         """
-        user = zen_store().get_user(user_name_or_id)
-        # verify_permission_for_model(user, action=Action.READ)
+        external_user_id = None
+        if user_name_or_id:
+            try:
+                user = zen_store().get_user(user_name_or_id)
+                # verify_permission_for_model(user, action=Action.READ)
+            except KeyError:
+                external_user_id = str(user_name_or_id)
+            else:
+                if user.id == auth_context.user.id:
+                    raise ValueError(
+                        "Not allowed to call endpoint with the authenticated user."
+                    )
 
-        if user.id == auth_context.user.id:
-            raise ValueError(
-                "Not allowed to call endpoint with the authenticated user."
-            )
+                external_user_id = str(user.external_user_id)
 
         resource_type = ResourceType(resource_type)
         schema_class = get_schema_for_resource_type(resource_type)
@@ -769,7 +785,9 @@ if server_config().rbac_enabled:
             verify_permission_for_model(model=model, action=Action(action))
 
         update_resource_membership(
-            user=user,
+            sharing_user_id=auth_context.user.id,
             resource=resource,
             actions=[Action(action) for action in actions],
+            user_id=external_user_id,
+            team_id=team_id,
         )

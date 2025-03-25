@@ -34,7 +34,6 @@ from zenml.models import (
     Page,
     ProjectScopedRequest,
     ProjectScopedResponse,
-    UserResponse,
     UserScopedResponse,
 )
 from zenml.zen_server.auth import get_auth_context
@@ -688,7 +687,11 @@ def get_schema_for_resource_type(
 
 
 def update_resource_membership(
-    user: UserResponse, resource: Resource, actions: List[Action]
+    sharing_user_id: UUID,
+    resource: Resource,
+    actions: List[Action],
+    user_id: Optional[str] = None,
+    team_id: Optional[str] = None,
 ) -> None:
     """Update the resource membership of a user.
 
@@ -702,7 +705,11 @@ def update_resource_membership(
         return
 
     rbac().update_resource_membership(
-        user=user, resource=resource, actions=actions
+        sharing_user_id=sharing_user_id,
+        resource=resource,
+        actions=actions,
+        user_id=user_id,
+        team_id=team_id,
     )
 
 
