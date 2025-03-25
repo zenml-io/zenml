@@ -119,7 +119,7 @@ class ZenMLCloudRBAC(RBACInterface):
 
     def update_resource_membership(
         self,
-        sharing_user_id: UUID,
+        sharing_user: "UserResponse",
         resource: Resource,
         actions: List[Action],
         user_id: Optional[str] = None,
@@ -128,15 +128,18 @@ class ZenMLCloudRBAC(RBACInterface):
         """Update the resource membership of a user.
 
         Args:
-            user: User for which the resource membership should be updated.
+            sharing_user: User that is sharing the resource.
             resource: The resource.
             actions: The actions that the user should be able to perform on the
                 resource.
+            user_id: ID of the user for which to update the membership.
+            team_id: ID of the team for which to update the membership.
         """
+        assert sharing_user.external_user_id
         data = {
             "user_id": user_id,
             "team_id": team_id,
-            "sharing_user_id": str(sharing_user_id),
+            "sharing_user_id": str(sharing_user.external_user_id),
             "resource": str(resource),
             "actions": [str(action) for action in actions],
         }
