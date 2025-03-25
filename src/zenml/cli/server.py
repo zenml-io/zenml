@@ -193,6 +193,7 @@ def status() -> None:
 
     gc = GlobalConfiguration()
     client = Client()
+    _ = client.zen_store
 
     store_cfg = gc.store_configuration
 

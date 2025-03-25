@@ -232,7 +232,6 @@ class BaseZenStore(
         Returns:
             The initialized store.
         """
-        logger.debug(f"Creating store with config '{config}'...")
         store_class = BaseZenStore.get_store_class(config.type)
         store = store_class(
             config=config,
