@@ -203,6 +203,10 @@ class UserUpdate(UserBase, BaseUpdate):
         "accounts. Required when updating the password.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
+    default_project_id: Optional[UUID] = Field(
+        default=None,
+        title="The default project ID for the user.",
+    )
 
     @model_validator(mode="after")
     def user_email_updates(self) -> "UserUpdate":
@@ -278,6 +282,10 @@ class UserResponseBody(BaseDatedResponseBody):
     )
     is_admin: bool = Field(
         title="Whether the account is an administrator.",
+    )
+    default_project_id: Optional[UUID] = Field(
+        default=None,
+        title="The default project ID for the user.",
     )
 
 
@@ -421,6 +429,15 @@ class UserResponse(
             the value of the property.
         """
         return self.get_metadata().user_metadata
+
+    @property
+    def default_project_id(self) -> Optional[UUID]:
+        """The `default_project_id` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().default_project_id
 
     # Helper methods
     @classmethod

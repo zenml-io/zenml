@@ -22,7 +22,6 @@ from typing import (
     Optional,
     Tuple,
     Type,
-    Union,
 )
 from uuid import UUID
 
@@ -46,6 +45,7 @@ from zenml.enums import (
 from zenml.exceptions import IllegalOperationError
 from zenml.logger import get_logger
 from zenml.models import (
+    ProjectFilter,
     ProjectResponse,
     ServerDatabaseType,
     ServerDeploymentType,
@@ -291,7 +291,7 @@ class BaseZenStore(
 
     def validate_active_config(
         self,
-        active_project_name_or_id: Optional[Union[str, UUID]] = None,
+        active_project_id: Optional[UUID] = None,
         active_stack_id: Optional[UUID] = None,
         config_name: str = "",
     ) -> Tuple[Optional[ProjectResponse], StackResponse]:
@@ -306,7 +306,7 @@ class BaseZenStore(
         stack will be returned in their stead.
 
         Args:
-            active_project_name_or_id: The name or ID of the active project.
+            active_project_id: The ID of the active project.
             active_stack_id: The ID of the active stack.
             config_name: The name of the configuration to validate (used in the
                 displayed logs/messages).
@@ -316,30 +316,62 @@ class BaseZenStore(
         """
         active_project: Optional[ProjectResponse] = None
 
-        if active_project_name_or_id:
+        if active_project_id:
             try:
-                active_project = self.get_project(active_project_name_or_id)
+                active_project = self.get_project(active_project_id)
             except (KeyError, IllegalOperationError):
-                active_project_name_or_id = None
+                active_project_id = None
                 logger.warning(
                     f"The current {config_name} active project is no longer "
                     f"available."
                 )
 
         if active_project is None:
+            user = self.get_user()
+            if user.default_project_id:
+                try:
+                    active_project = self.get_project(user.default_project_id)
+                except (KeyError, IllegalOperationError):
+                    logger.warning(
+                        "The default project %s for the active user is no longer "
+                        "available.",
+                        user.default_project_id,
+                    )
+                else:
+                    logger.info(
+                        f"Setting the {config_name} active project "
+                        f"to '{active_project.name}'."
+                    )
+
+        if active_project is None:
             try:
-                active_project = self._get_default_project()
-            except (KeyError, IllegalOperationError):
+                projects = self.list_projects(
+                    project_filter_model=ProjectFilter()
+                )
+            except Exception:
+                # There was some failure, we force the user to set the active
+                # project manually
                 logger.warning(
                     "An active project is not set. Please set the active "
-                    "project by running `zenml project set "
-                    "<project-name>`."
+                    "project by running `zenml project set <NAME>`."
                 )
             else:
-                logger.info(
-                    f"Setting the {config_name} active project "
-                    f"to '{active_project.name}'."
-                )
+                if len(projects) == 0:
+                    logger.warning(
+                        "No available projects. Please create a project by "
+                        "running `zenml project register <NAME> --set`."
+                    )
+                elif len(projects) == 1:
+                    active_project = projects.items[0]
+                    logger.info(
+                        f"Setting the {config_name} active project "
+                        f"to '{active_project.name}'."
+                    )
+                else:
+                    logger.warning(
+                        "Multiple projects are available. Please set the "
+                        "active project by running `zenml project set <NAME>`."
+                    )
 
         active_stack: StackResponse
 

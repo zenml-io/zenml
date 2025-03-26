@@ -113,7 +113,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
             global config.
         store: Store configuration.
         active_stack_id: The ID of the active stack.
-        active_project_name: The name of the active project.
+        active_project_id: The ID of the active project.
     """
 
     user_id: uuid.UUID = Field(default_factory=uuid.uuid4)
@@ -123,7 +123,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
     version: Optional[str] = None
     store: Optional[SerializeAsAny[StoreConfiguration]] = None
     active_stack_id: Optional[uuid.UUID] = None
-    active_project_name: Optional[str] = None
+    active_project_id: Optional[uuid.UUID] = None
 
     _zen_store: Optional["BaseZenStore"] = None
     _active_project: Optional["ProjectResponse"] = None
@@ -393,15 +393,15 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         if ENV_ZENML_SERVER in os.environ:
             return
         active_project, active_stack = self.zen_store.validate_active_config(
-            self.active_project_name,
+            self.active_project_id,
             self.active_stack_id,
             config_name="global",
         )
         if active_project:
-            self.active_project_name = active_project.name
+            self.active_project_id = active_project.id
             self._active_project = active_project
         else:
-            self.active_project_name = None
+            self.active_project_id = None
             self._active_project = None
 
         self.set_active_stack(active_stack)
@@ -730,7 +730,7 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         Returns:
             The project that was set active.
         """
-        self.active_project_name = project.name
+        self.active_project_id = project.id
         self._active_project = project
         # Sanitize the global configuration to reflect the new project
         self._sanitize_config()
@@ -751,35 +751,35 @@ class GlobalConfiguration(BaseModel, metaclass=GlobalConfigMetaClass):
         Returns:
             The model of the active project.
         """
-        project_name = self.get_active_project_name()
+        project_id = self.get_active_project_id()
 
         if self._active_project is not None:
             return self._active_project
 
         project = self.zen_store.get_project(
-            project_name_or_id=project_name,
+            project_name_or_id=project_id,
         )
         return self.set_active_project(project)
 
-    def get_active_project_name(self) -> str:
-        """Get the name of the active project.
+    def get_active_project_id(self) -> UUID:
+        """Get the ID of the active project.
 
         Returns:
-            The name of the active project.
+            The ID of the active project.
 
         Raises:
             RuntimeError: If the active project is not set.
         """
-        if self.active_project_name is None:
+        if self.active_project_id is None:
             _ = self.zen_store
-            if self.active_project_name is None:
+            if self.active_project_id is None:
                 raise RuntimeError(
                     "No project is currently set as active. Please set the "
-                    "active project using the `zenml project set` CLI "
+                    "active project using the `zenml project set <NAME>` CLI "
                     "command."
                 )
 
-        return self.active_project_name
+        return self.active_project_id
 
     def get_active_stack_id(self) -> UUID:
         """Get the ID of the active stack.
