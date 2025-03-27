@@ -32,6 +32,12 @@ steps:
   model_trainer:
     parameters:
       name: e2e_use_case
+  model_register:
+    parameters:
+      name: e2e_use_case
+  model_deployer:
+    parameters:
+      name: e2e_use_case
   promote_with_metric_compare:
     parameters:
       mlflow_model_name: e2e_use_case

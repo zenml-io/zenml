@@ -20,13 +20,10 @@ import pandas as pd
 from sklearn.base import ClassifierMixin
 from typing_extensions import Annotated
 
-from zenml import ArtifactConfig, get_step_context, step
+from zenml import ArtifactConfig, step
 from zenml.client import Client
 from zenml.integrations.mlflow.experiment_trackers import (
     MLFlowExperimentTracker,
-)
-from zenml.integrations.mlflow.steps.mlflow_registry import (
-    mlflow_register_model_step,
 )
 from zenml.logger import get_logger
 
@@ -82,7 +79,6 @@ def model_trainer(
     Returns:
         The trained model artifact.
     """
-
     ### ADD YOUR OWN CODE HERE - THIS IS JUST AN EXAMPLE ###
     # Initialize the model with the hyperparameters indicated in the step
     # parameters and train it on the training set.
@@ -92,21 +88,5 @@ def model_trainer(
         dataset_trn.drop(columns=[target]),
         dataset_trn[target],
     )
-
-    # register mlflow model
-    mlflow_register_model_step.entrypoint(
-        model,
-        name=name,
-    )
-    # keep track of mlflow version for future use
-    model_registry = Client().active_stack.model_registry
-    if model_registry:
-        version = model_registry.get_latest_model_version(
-            name=name, stage=None
-        )
-        if version:
-            model_ = get_step_context().model
-            model_.log_metadata({"model_registry_version": version.version})
-    ### YOUR CODE ENDS HERE ###
 
     return model

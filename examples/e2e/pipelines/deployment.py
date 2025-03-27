@@ -15,9 +15,10 @@
 # limitations under the License.
 #
 
-from steps import deployment_deploy, notify_on_failure, notify_on_success
+from steps import notify_on_failure, notify_on_success, model_deployer
 
 from zenml import pipeline
+from zenml.client import Client
 
 
 @pipeline(on_failure=notify_on_failure)
@@ -31,7 +32,13 @@ def e2e_use_case_deployment():
     # Link all the steps together by calling them and passing the output
     # of one step as the input of the next step.
     ########## Deployment stage ##########
-    deployment_deploy()
+    client = Client()
+    # Fetch by name alone - uses the latest version of this artifact
+    artifact = client.get_artifact_version(name_id_or_prefix="model_registry_uri")
+    model_registry_uri = artifact.load()
+    model_deployer(
+        model_registry_uri=model_registry_uri,
+    )
 
-    notify_on_success(after=["deployment_deploy"])
+    notify_on_success(after=["model_deployer"])
     ### YOUR CODE ENDS HERE ###

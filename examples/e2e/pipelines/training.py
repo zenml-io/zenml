@@ -25,6 +25,7 @@ from steps import (
     hp_tuning_select_best_model,
     hp_tuning_single_search,
     model_evaluator,
+    model_register,
     model_trainer,
     notify_on_failure,
     notify_on_success,
@@ -40,7 +41,7 @@ logger = get_logger(__name__)
 
 
 @pipeline(on_failure=notify_on_failure)
-def e2e_use_case_training(
+def e2e_use_case_training_vertex(
     model_search_space: Dict[str, Any],
     target_env: str,
     test_size: float = 0.2,
@@ -51,8 +52,7 @@ def e2e_use_case_training(
     min_test_accuracy: float = 0.0,
     fail_on_accuracy_quality_gates: bool = False,
 ):
-    """
-    Model training pipeline.
+    """Model training pipeline.
 
     This is a pipeline that loads the data, processes it and splits
     it into train and test sets, then search for best hyperparameters,
@@ -127,12 +127,15 @@ def e2e_use_case_training(
         )
     )
 
-    promote_with_metric_compare(
+    promote = promote_with_metric_compare(
         latest_metric=latest_metric,
         current_metric=current_metric,
         target_env=target_env,
     )
-    last_step = "promote_with_metric_compare"
+    model_register(
+        is_promoted=promote,
+    )
+    last_step = "model_register"
 
     notify_on_success(after=[last_step])
     ### YOUR CODE ENDS HERE ###

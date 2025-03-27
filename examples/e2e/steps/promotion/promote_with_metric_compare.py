@@ -15,7 +15,6 @@
 # limitations under the License.
 #
 
-from utils import promote_in_model_registry
 
 from zenml import Model, get_step_context, step
 from zenml.logger import get_logger
@@ -29,7 +28,7 @@ def promote_with_metric_compare(
     current_metric: float,
     mlflow_model_name: str,
     target_env: str,
-) -> None:
+) -> bool:
     """Try to promote trained model.
 
     This is an example of a model promotion step. It gets precomputed
@@ -53,7 +52,6 @@ def promote_with_metric_compare(
         latest_metric: Recently trained model metric results.
         current_metric: Previously promoted model metric results.
     """
-
     ### ADD YOUR OWN CODE HERE - THIS IS JUST AN EXAMPLE ###
     should_promote = True
 
@@ -83,37 +81,5 @@ def promote_with_metric_compare(
             )
             should_promote = False
 
-    if should_promote:
-        # Promote in Model Control Plane
-        model = get_step_context().model
-        model.set_stage(stage=target_env, force=True)
-        logger.info(f"Current model version was promoted to '{target_env}'.")
-
-        # Promote in Model Registry
-        latest_version_model_registry_number = latest_version.run_metadata[
-            "model_registry_version"
-        ]
-        if current_version_number is None:
-            current_version_model_registry_number = (
-                latest_version_model_registry_number
-            )
-        else:
-            current_version_model_registry_number = (
-                current_version.run_metadata["model_registry_version"]
-            )
-        promote_in_model_registry(
-            latest_version=latest_version_model_registry_number,
-            current_version=current_version_model_registry_number,
-            model_name=mlflow_model_name,
-            target_env=target_env.capitalize(),
-        )
-        promoted_version = latest_version_model_registry_number
-    else:
-        promoted_version = current_version.run_metadata[
-            "model_registry_version"
-        ]
-
-    logger.info(
-        f"Current model version in `{target_env}` is `{promoted_version}` registered in Model Registry"
-    )
+    return should_promote
     ### YOUR CODE ENDS HERE ###
