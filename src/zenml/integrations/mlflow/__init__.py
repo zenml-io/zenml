@@ -94,8 +94,8 @@ class MlflowIntegration(Integration):
                 "mlserver-mlflow>=1.3.3",
             ])
 
-        reqs.extend(NumpyIntegration.get_requirements(target_os=target_os))
-        reqs.extend(PandasIntegration.get_requirements(target_os=target_os))
+        reqs.extend(NumpyIntegration.get_requirements(target_os=target_os, python_version=python_version))
+        reqs.extend(PandasIntegration.get_requirements(target_os=target_os, python_version=python_version))
         return reqs
 
     @classmethod

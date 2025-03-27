@@ -50,8 +50,8 @@ class DatabricksIntegration(Integration):
         from zenml.integrations.pandas import PandasIntegration
 
         return cls.REQUIREMENTS + \
-            NumpyIntegration.get_requirements(target_os=target_os) + \
-            PandasIntegration.get_requirements(target_os=target_os)
+            NumpyIntegration.get_requirements(target_os=target_os, python_version=python_version) + \
+            PandasIntegration.get_requirements(target_os=target_os, python_version=python_version)
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
