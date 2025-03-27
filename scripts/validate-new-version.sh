@@ -40,8 +40,10 @@ IFS='.' read -r P_MAJOR P_MINOR P_PATCH <<< "$PLANNED_VERSION"
 # List PRs merged after the latest release date and filter by breaking change label
 PRS=$(gh pr list --search "is:merged merged:>$TAG_DATE label:$LABEL_BREAKING_CHANGE base:develop" --json number,title)
 
-# Check if the PRs list for breaking changes is empty
-if [ -z "$PRS" ]; then
+# Check if there are any PRs with breaking changes
+PR_COUNT=$(echo "$PRS" | jq '. | length')
+
+if [ "$PR_COUNT" -eq 0 ]; then
   IDEAL_NEW_VERSION="$MAJOR.$MINOR.$((PATCH + 1))"
 
   # Warn in case of a mismatch
@@ -61,5 +63,4 @@ else
   if [ "$PLANNED_VERSION" != "$IDEAL_NEW_VERSION" ]; then
     echo "::warning::Warning: The new planned version '$PLANNED_VERSION' is not the same as the ideal version '$IDEAL_NEW_VERSION'. Please, make sure this '$PLANNED_VERSION' is selected on purpose."
   fi
-
 fi
