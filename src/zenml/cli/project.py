@@ -50,10 +50,14 @@ def list_projects(ctx: click.Context, /, **kwargs: Any) -> None:
     with console.status("Listing projects...\n"):
         projects = client.list_projects(**kwargs)
         if projects:
+            try:
+                active_project = [client.active_project]
+            except Exception:
+                active_project = []
             cli_utils.print_pydantic_models(
                 projects,
                 exclude_columns=["id", "created", "updated"],
-                active_models=[Client().active_project],
+                active_models=active_project,
                 show_active=not is_sorted_or_filtered(ctx),
             )
         else:
