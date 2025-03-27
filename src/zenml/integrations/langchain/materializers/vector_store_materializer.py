@@ -13,15 +13,14 @@
 #  permissions and limitations under the License.
 """Implementation of the langchain vector store materializer."""
 
-import sys
-from typing import TYPE_CHECKING, Any, ClassVar, Tuple, Type
+from typing import Any, ClassVar, Tuple, Type
+
+from langchain.vectorstores.base import VectorStore
 
 from zenml.enums import ArtifactType
 from zenml.materializers.cloudpickle_materializer import (
     CloudpickleMaterializer,
 )
-
-from langchain.vectorstores.base import VectorStore
 
 
 class LangchainVectorStoreMaterializer(CloudpickleMaterializer):
