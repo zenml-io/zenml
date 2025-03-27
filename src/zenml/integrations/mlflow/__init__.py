@@ -78,11 +78,11 @@ class MlflowIntegration(Integration):
         ]
 
         if python_version:
-            version_info = version.parse(python_version)
+            version_minor = version.parse(python_version).minor
         else:
-            version_info = sys.version_info
+            version_minor = sys.version_info.minor
 
-        if version_info.minor >= 12:
+        if version_minor >= 12:
             logger.debug(
                 "The MLflow integration on Python 3.12 and above is not yet "
                 "fully supported: The extra dependencies 'mlserver' and "
