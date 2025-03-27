@@ -238,7 +238,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                         )
                     if kubernetes_context != active_context:
                         logger.warning(
-                            f"{msg}the Kubernetes context "
+                            f"{msg}the Kubernetes context "  # nosec
                             f"'{kubernetes_context}' configured for the "
                             f"Kubernetes orchestrator is not the same as the "
                             f"active context in the local Kubernetes "
