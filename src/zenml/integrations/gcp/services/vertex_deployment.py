@@ -304,6 +304,7 @@ class VertexDeploymentService(BaseDeploymentService):
         # First verify model exists
         model = self._verify_model_exists()
         logger.info(f"Found model to deploy: {model.resource_name}")
+
         # Get or create endpoint
         if self.config.existing_endpoint:
             endpoint = aiplatform.Endpoint(

@@ -457,7 +457,7 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
 
         # Try to get existing parent model, but don't fail if it doesn't exist
         parent_model = self._init_vertex_model(name=name, version=version)
-        
+
         # If parent model exists and has same URI, return existing version
         if parent_model and parent_model.uri == model_source_uri:
             logger.info(
@@ -651,13 +651,15 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
                 metadata=model.labels if model.labels else {},
             )
 
+        model_version_metadata = model.labels
+        model_version_metadata["resource_name"] = model.resource_name
         return RegistryModelVersion(
             registered_model=registered_model,
             version=model.version_id,
             model_source_uri=model.uri,
             model_format="Custom",  # Vertex AI doesn't provide format info
             description=model.description,
-            metadata=model.labels,
+            metadata=model_version_metadata,
             created_at=model.create_time,
             last_updated_at=model.update_time,
             stage=stage,
