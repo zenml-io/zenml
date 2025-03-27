@@ -1,5 +1,33 @@
 <!-- markdown-link-check-disable -->
 
+# 0.80.1
+
+## What's Changed
+* Adding `0.80.0` to the migration tests by @bcdurak in https://github.com/zenml-io/zenml/pull/3442
+* Adding the disabled flavor test back by @bcdurak in https://github.com/zenml-io/zenml/pull/3431
+* Stop CLI profiler running so much by @strickvl in https://github.com/zenml-io/zenml/pull/3449
+* Add missing fallback host for code repositories by @schustmi in https://github.com/zenml-io/zenml/pull/3434
+* Fix stack and component URL when connected to a cloud workspace by @schustmi in https://github.com/zenml-io/zenml/pull/3451
+* Fix stack validation for incluster Kubernetes orchestrator by @schustmi in https://github.com/zenml-io/zenml/pull/3450
+* Bump `click` dependency by @strickvl in https://github.com/zenml-io/zenml/pull/3445
+* Fix 0.80.0 database migration by @stefannica in https://github.com/zenml-io/zenml/pull/3453
+* Pin the ZenML Terraform provider version by @stefannica in https://github.com/zenml-io/zenml/pull/3443
+* Import integrations lazily by @stefannica in https://github.com/zenml-io/zenml/pull/3419
+* Remove Segment analytics script and scarf image load. by @htahir1 in https://github.com/zenml-io/zenml/pull/3455
+* Restructure entire docs by @htahir1 in https://github.com/zenml-io/zenml/pull/3447
+* Refactor logging to debug level for service connectors by @htahir1 in https://github.com/zenml-io/zenml/pull/3456
+* Removing redundant log messages by @bcdurak in https://github.com/zenml-io/zenml/pull/3459
+* Fix broken link in API documentation table by @htahir1 in https://github.com/zenml-io/zenml/pull/3462
+* Add the ability to store a default project for a user by @schustmi in https://github.com/zenml-io/zenml/pull/3457
+* Fixing the CLI combined with RestZenStore and filters with multiple entries by @bcdurak in https://github.com/zenml-io/zenml/pull/3464
+* Don't ask for active project when listing projects by @stefannica in https://github.com/zenml-io/zenml/pull/3466
+* Use the build python version to collect stack requirements for run templates by @stefannica in https://github.com/zenml-io/zenml/pull/3465
+* Fix version validation by @bcdurak in https://github.com/zenml-io/zenml/pull/3467
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.80.0...0.80.1
+
+
 # 0.80.0
 
 The 0.80.0 release is one of our biggest updates in a while! This version introduces a major refactoring of workspaces into projects, enhances tagging capabilities, and improves GitLab repository support. This release also features significant performance optimizations for Docker builds and CLI operations.
