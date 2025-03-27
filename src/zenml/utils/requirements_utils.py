@@ -30,6 +30,7 @@ def get_requirements_for_stack(
     Args:
         stack: The stack for which to get the requirements.
         python_version: The Python version to use for the requirements.
+
     Returns:
         Tuple of PyPI and APT requirements of the stack.
     """

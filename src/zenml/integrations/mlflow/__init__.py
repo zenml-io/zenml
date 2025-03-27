@@ -54,6 +54,7 @@ class MlflowIntegration(Integration):
         Args:
             target_os: The target operating system to get the requirements for.
             python_version: The Python version to use for the requirements.
+
         Returns:
             A list of requirements.
         """
