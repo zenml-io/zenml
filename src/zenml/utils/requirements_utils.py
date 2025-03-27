@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Requirement utils."""
 
-from typing import TYPE_CHECKING, List, Set, Tuple
+from typing import TYPE_CHECKING, List, Optional, Set, Tuple
 
 from zenml.integrations.utils import get_integration_for_module
 
@@ -23,11 +23,13 @@ if TYPE_CHECKING:
 
 def get_requirements_for_stack(
     stack: "StackResponse",
+    python_version: Optional[str] = None,
 ) -> Tuple[List[str], List[str]]:
     """Get requirements for a stack model.
 
     Args:
         stack: The stack for which to get the requirements.
+        python_version: The Python version to use for the requirements.
 
     Returns:
         Tuple of PyPI and APT requirements of the stack.
@@ -41,7 +43,10 @@ def get_requirements_for_stack(
         (
             component_pypi_requirements,
             component_apt_packages,
-        ) = get_requirements_for_component(component=component)
+        ) = get_requirements_for_component(
+            component=component,
+            python_version=python_version,
+        )
         pypi_requirements = pypi_requirements.union(
             component_pypi_requirements
         )
@@ -52,11 +57,13 @@ def get_requirements_for_stack(
 
 def get_requirements_for_component(
     component: "ComponentResponse",
+    python_version: Optional[str] = None,
 ) -> Tuple[List[str], List[str]]:
     """Get requirements for a component model.
 
     Args:
         component: The component for which to get the requirements.
+        python_version: The Python version to use for the requirements.
 
     Returns:
         Tuple of PyPI and APT requirements of the component.
@@ -66,6 +73,8 @@ def get_requirements_for_component(
     )
 
     if integration:
-        return integration.get_requirements(), integration.APT_PACKAGES
+        return integration.get_requirements(
+            python_version=python_version
+        ), integration.APT_PACKAGES
     else:
         return [], []
