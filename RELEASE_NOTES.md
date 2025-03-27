@@ -2,7 +2,7 @@
 
 # 0.80.1
 
-The `0.80.1` release focuses on bug fixes and performance improvements following the major `0.80.0` update. This release addresses several critical issues, particularly improving the CLI functionality when used with the REST API through a deployed ZenML instance. Additionally, this version introduces a completely restructured documentation architecture for improved user experience.
+The `0.80.1` release focuses on bug fixes and performance improvements following the major `0.80.0` update. This release addresses several critical issues, particularly improving the CLI functionality when used with the REST API through a deployed ZenML instance. Additionally, this version introduces [a restructured documentation architecture](https://docs.zenml.io) for improved user experience.
 
 ## Improvements
 
