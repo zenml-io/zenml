@@ -25,12 +25,8 @@
 #     from zenml.metadata.metadata_types import MetadataType
 
 
-# if TYPE_CHECKING and sys.version_info < (3, 8):
-#     Document = Any
-#     LCDocument = Any
-# else:
-#     from langchain.docstore.document import Document as LCDocument
-#     from llama_index.readers.schema.base import Document
+# from langchain.docstore.document import Document as LCDocument
+# from llama_index.readers.schema.base import Document
 
 
 # class LlamaIndexDocumentMaterializer(LangchainDocumentMaterializer):

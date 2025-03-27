@@ -21,10 +21,7 @@ from zenml.materializers.cloudpickle_materializer import (
     CloudpickleMaterializer,
 )
 
-if TYPE_CHECKING and sys.version_info < (3, 8):
-    VectorStore = Any
-else:
-    from langchain.vectorstores.base import VectorStore
+from langchain.vectorstores.base import VectorStore
 
 
 class LangchainVectorStoreMaterializer(CloudpickleMaterializer):
