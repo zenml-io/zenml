@@ -13,8 +13,10 @@
 #  permissions and limitations under the License.
 """Implementation of the MLflow model registry for ZenML."""
 
+import os
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple, cast
+from urllib.parse import unquote, urlparse
 
 import mlflow
 from mlflow import MlflowClient
@@ -45,6 +47,51 @@ from zenml.stack.stack import Stack
 from zenml.stack.stack_validator import StackValidator
 
 logger = get_logger(__name__)
+
+
+def _remove_file_scheme(uri: str) -> str:
+    """Parse a URI and remove the file:// scheme if present.
+
+    Args:
+        uri: The URI to remove the file scheme from.
+
+    Returns:
+        The decoded file path, preserving network hostnames.
+    """
+    # Parse the URI
+    parsed = urlparse(uri)
+
+    # Check if it uses the file scheme
+    if parsed.scheme == "file":
+        # Get the path and handle any URL encoding
+        path = unquote(parsed.path)
+
+        # Handle network paths with hostname
+        if parsed.netloc:
+            # Create a proper network path with the hostname
+            network_path = f"//{parsed.netloc}{path}"
+
+            # On Windows, you might want to convert to backslashes
+            if os.name == "nt":
+                network_path = network_path.replace("/", "\\")
+
+            return network_path
+
+        # Handle local paths (no hostname)
+        else:
+            # On Windows, file:///C:/path becomes /C:/path after parsing
+            if (
+                path.startswith("/")
+                and len(path) > 1
+                and path[2] == ":"
+                and path[1].isalpha()
+            ):
+                # This is a Windows path with a drive letter
+                return path[1:]  # Remove the leading slash
+            return path
+    else:
+        # Not a file URI, return the original
+        return uri
 
 
 class MLFlowModelRegistry(BaseModelRegistry):
@@ -737,7 +784,9 @@ class MLFlowModelRegistry(BaseModelRegistry):
             from mlflow.models import get_model_info
 
             model_library = (
-                get_model_info(model_uri=mlflow_model_version.source)
+                get_model_info(
+                    model_uri=_remove_file_scheme(mlflow_model_version.source)
+                )
                 .flavors.get("python_function", {})
                 .get("loader_module")
             )
