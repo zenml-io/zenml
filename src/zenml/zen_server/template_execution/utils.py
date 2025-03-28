@@ -149,11 +149,6 @@ def run_template(
     )
 
     def _task() -> None:
-        (
-            pypi_requirements,
-            apt_packages,
-        ) = requirements_utils.get_requirements_for_stack(stack=stack)
-
         if build.python_version:
             version_info = version.parse(build.python_version)
             python_version = f"{version_info.major}.{version_info.minor}"
@@ -162,6 +157,13 @@ def run_template(
                 f"{sys.version_info.major}.{sys.version_info.minor}"
             )
 
+        (
+            pypi_requirements,
+            apt_packages,
+        ) = requirements_utils.get_requirements_for_stack(
+            stack=stack, python_version=python_version
+        )
+
         dockerfile = generate_dockerfile(
             pypi_requirements=pypi_requirements,
             apt_packages=apt_packages,
@@ -169,6 +171,10 @@ def run_template(
             python_version=python_version,
         )
 
+        # building a docker image with requirements and apt packages from the
+        # stack only (no code). Ideally, only orchestrator requirements should
+        # be added to the docker image, but we have to instantiate the entire
+        # stack to get the orchestrator to run pipelines.
         image_hash = generate_image_hash(dockerfile=dockerfile)
 
         runner_image = workload_manager().build_and_push_image(
@@ -182,6 +188,9 @@ def run_template(
             workload_id=new_deployment.id,
             message="Starting pipeline run.",
         )
+
+        # could do this same thing with a step operator, but we need some
+        # minor changes to the abstract interface to support that.
         workload_manager().run(
             workload_id=new_deployment.id,
             image=runner_image,
