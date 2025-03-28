@@ -14,6 +14,8 @@
 
 """Class to run steps."""
 
+from __future__ import annotations
+
 import copy
 import inspect
 from contextlib import nullcontext
@@ -307,7 +309,7 @@ class StepRunner:
             for d in collections:
                 d[name] = d.pop(k)
 
-    def _load_step(self) -> "BaseStep":
+    def _load_step(self) -> "BaseStep[..., Any]":
         """Load the step instance.
 
         Returns:
@@ -315,7 +317,9 @@ class StepRunner:
         """
         from zenml.steps import BaseStep
 
-        step_instance = BaseStep.load_from_source(self._step.spec.source)
+        step_instance = BaseStep[Any, Any].load_from_source(
+            self._step.spec.source
+        )
         step_instance = copy.deepcopy(step_instance)
         step_instance._configuration = self._step.config
         return step_instance
