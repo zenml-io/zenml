@@ -233,8 +233,9 @@ def export_requirements(
                 "and try again."
             )
         else:
-            formatted_reqs = ' '.join([f'"{req}"' for req in requirements])
-            os.system(f"poetry add {formatted_reqs}")
+            formatted_reqs = " ".join([f'"{req}"' for req in requirements])
+            cmd = f"poetry add {formatted_reqs}"
+            os.system(cmd)
             declare(
                 f"Requirements added to `{envs[0]}` environment in Poetry."
             )
