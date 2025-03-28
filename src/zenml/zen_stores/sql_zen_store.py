@@ -8804,11 +8804,7 @@ class SqlZenStore(BaseZenStore):
             # We pass the zenml_schemas module as the globals dict to
             # _evaluate, because this is where the schema classes are
             # defined
-            if sys.version_info < (3, 9):
-                # For Python versions <3.9, leave out the third parameter to
-                # _evaluate
-                target_schema = schema_ref._evaluate(vars(zenml_schemas), {})
-            elif sys.version_info >= (3, 12, 4):
+            if sys.version_info >= (3, 12, 4):
                 target_schema = schema_ref._evaluate(
                     vars(zenml_schemas), {}, recursive_guard=frozenset()
                 )
