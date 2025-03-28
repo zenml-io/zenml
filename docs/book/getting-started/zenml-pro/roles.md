@@ -4,6 +4,11 @@ description: >-
   members in ZenML Pro.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Roles & Permissions
 
 ZenML Pro offers a robust role-based access control (RBAC) system to manage permissions across your organization, workspaces, and projects. This guide will help you understand the different roles available at each level, how to assign them, and how to create custom roles tailored to your team's needs.

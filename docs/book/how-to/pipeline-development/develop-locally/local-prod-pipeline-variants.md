@@ -2,6 +2,11 @@
 description: Create different variants of your pipeline for local development and production.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Create pipeline variants for local development and production
 
 When developing ZenML pipelines, it's often beneficial to have different variants of your pipeline for local development and production environments. This approach allows you to iterate quickly during development while maintaining a full-scale setup for production. While configuration files are one way to achieve this, you can also implement this directly in your code.

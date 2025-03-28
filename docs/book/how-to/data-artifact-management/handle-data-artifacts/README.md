@@ -6,6 +6,11 @@ description: >-
 icon: box-archive
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Understand ZenML artifacts
 
 For best results, use type annotations for your outputs. This is good coding practice for transparency, helps ZenML handle passing data between steps, and also enables ZenML to serialize and deserialize (referred to as 'materialize' in ZenML) the data.

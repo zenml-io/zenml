@@ -2,6 +2,11 @@
 description: Learn how to attach metadata to a run.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Attach Metadata to a Run
 
 In ZenML, you can log metadata directly to a pipeline run, either during or 
