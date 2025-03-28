@@ -2,6 +2,11 @@
 description: Seamlessly register a cloud stack by using existing infrastructure
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Register a cloud stack
 
 In ZenML, the [stack](https://docs.zenml.io/user-guides/production-guide/understand-stacks)\

@@ -2,6 +2,11 @@
 description: Creating a full picture of a ML model using the Model Control Plane
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Track ML models
 
 ![Walkthrough of ZenML Model Control Plane (Dashboard available only on ZenML Pro)](../../.gitbook/assets/mcp_walkthrough.gif)

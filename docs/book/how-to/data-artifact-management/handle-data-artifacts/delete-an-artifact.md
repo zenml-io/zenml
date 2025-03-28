@@ -2,6 +2,11 @@
 description: Learn how to delete artifacts.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Delete an artifact
 
 There is currently no way to delete an artifact directly, because it may lead to

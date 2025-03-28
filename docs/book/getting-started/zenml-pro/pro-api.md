@@ -2,6 +2,11 @@
 description: Learn how to use the ZenML Pro API.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Accessing the ZenML Pro API
 
 ZenML Pro offers a powerful API that allows you to interact with your ZenML resources. Whether you're using the [SaaS version](https://cloud.zenml.io) or a self-hosted ZenML Pro instance, you can leverage this API to manage workspaces, organizations, users, roles, and more.
