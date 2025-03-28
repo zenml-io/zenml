@@ -74,7 +74,7 @@ class MlflowIntegration(Integration):
             # This downgrades pydantic to v1 even though mlflow does not have
             # any issues with v2. This is why we have to pin it here so a
             # downgrade will not happen.
-            "pydantic>=2.8.0,<2.9.0",
+            "pydantic>=2.11.0,<2.12.0",
         ]
 
         if python_version:
