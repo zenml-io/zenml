@@ -27,6 +27,8 @@
   * [Upgrade your ZenML server](how-to/manage-zenml-server/upgrade-zenml-server.md)
   * [Best practices for upgrading ZenML](how-to/manage-zenml-server/best-practices-upgrading-zenml.md)
   * [Using ZenML server in production](how-to/manage-zenml-server/using-zenml-server-in-prod.md)
+  * [Use the ZenML VSCode extension](how-to/manage-zenml-server/vscode-extension.md)
+  * [Chat with your ZenML server](how-to/manage-zenml-server/mcp-chat-with-server.md)
   * [Troubleshoot your ZenML server](how-to/manage-zenml-server/troubleshoot-your-deployed-server.md)
   * [Migration guide](how-to/manage-zenml-server/migration-guide/migration-guide.md)
     * [Migration guide 0.13.2 → 0.20.0](how-to/manage-zenml-server/migration-guide/migration-zero-twenty.md)
