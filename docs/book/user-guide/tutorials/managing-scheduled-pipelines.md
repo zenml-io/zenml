@@ -61,14 +61,14 @@ The table below summarizes scheduling support across ZenML orchestrators:
 | Orchestrator | Support | Key Features | Limitations |
 |--------------|---------|--------------|------------|
 | Airflow | ✅ | Complex cron expressions, catchup/backfill, comprehensive monitoring | Requires Airflow DAG modifications for schedule changes |
-| AzureML | ✅ | Integration with Azure monitoring, authentication via service connectors | Limited schedule visibility in ZenML |
+| AzureML | ✅ | Integration with Azure monitoring, authentication via service connectors |  |
 | Databricks | ✅ | Integration with Databricks workspace | Basic scheduling capabilities only |
 | HyperAI | ✅ | Simplified scheduling | Limited frequency control options |
-| Kubeflow | ✅ | Full cron support, UI management, catchup functionality | Only supports cron expressions (no interval-based scheduling); schedules persist in Kubeflow even if deleted from ZenML |
+| Kubeflow | ✅ | Full cron support, UI management, catchup functionality | Only supports cron expressions (no interval-based scheduling) |
 | Kubernetes | ✅ | Uses Kubernetes CronJobs | Only supports cron expressions; no built-in pause/resume functionality |
 | Local | ❌ | Not applicable | No scheduling support at all |
 | Local Docker | ❌ | Not applicable | No scheduling support at all |
-| SageMaker | ✅ | AWS integration, CloudWatch monitoring | Requires AWS console for detailed management |
+| SageMaker | ✅ | AWS integration, CloudWatch monitoring |  |
 | SkypilotVM | ❌ | Not applicable | No scheduling support at all |
 | Tekton | ❌ | Not applicable | No scheduling support at all |
 | Vertex AI | ✅ | GCP integration, detailed execution logs | No explicit pause/resume functionality in ZenML |
@@ -364,26 +364,26 @@ To monitor the execution history of your scheduled pipelines, you can:
    - **Vertex AI**: Use the Google Cloud Console to view Pipeline execution history
    - **Airflow**: Check the Airflow UI for DAG run history
 
-3. Set up monitoring for your scheduled pipeline runs:
+3. Set up monitoring for your scheduled pipeline runs using hooks:
 
    ```python
-   from zenml.integrations.slack.alerters import SlackAlerter
+   from zenml.hooks import alerter_success_hook, alerter_failure_hook
+   from zenml import pipeline, step
    
-   # Example: Set up a Slack alerter for run completion
-   @pipeline(
-      settings={
-         "alerter": {
-            "slack_alerter": SlackAlerter(
-               webhook_url="https://hooks.slack.com/services/XXX/YYY/ZZZ",
-               alert_on_success=True,
-               alert_on_failure=True
-            )
-         }
-      }
-   )
+   # Define step with alerter hooks
+   @step(on_failure=alerter_failure_hook, on_success=alerter_success_hook)
+   def monitored_step():
+       # Your step logic here
+       pass
+   
+   # Your pipeline with the monitored step
+   @pipeline()
    def my_scheduled_pipeline():
-       # Pipeline steps
+       monitored_step()
+       # Other pipeline steps
    ```
+   
+   This assumes you've already registered a Slack alerter in your active stack.
 
 ### 3.2 Updating schedules
 
