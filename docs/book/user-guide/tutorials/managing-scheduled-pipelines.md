@@ -552,187 +552,730 @@ For a thorough cleanup, follow these steps:
 
 4. (Optional) Clean up any artifacts or logs associated with the scheduled runs
 
-## 4. Direct interaction with orchestrator schedules
+### 3.4 Orchestrator-specific management
 
-### 4.1 Vertex AI schedule management
+For more advanced schedule management, you'll need to interact directly with each orchestrator's native API. This section provides detailed examples for the most common orchestrators.
 
-- Using the Vertex AI SDK
-- Listing Vertex schedules
-- Updating schedule parameters
-- Complete example for Vertex schedule management:
+#### 3.4.1 Vertex AI schedule management
+
+Vertex AI provides powerful APIs for managing pipeline schedules:
 
 ```python
 from google.cloud import aiplatform
 from zenml.client import Client
 
 def manage_vertex_schedules():
+    """Comprehensive Vertex AI schedule management."""
     # Initialize clients
     zenml_client = Client()
-
+    aiplatform.init(project="your-project-id", location="your-region")
+    
     # List all ZenML schedules
     zenml_schedules = zenml_client.list_schedules()
-
+    
     # Process each ZenML schedule
     for zenml_schedule in zenml_schedules:
         # Find the corresponding Vertex AI schedule
         vertex_filter = f'display_name="{zenml_schedule.name}"'
         vertex_schedules = aiplatform.PipelineJobSchedule.list(
             filter=vertex_filter,
-            order_by='create_time desc',
-            location="your-region"
+            order_by='create_time desc'
         )
-
+        
         # Work with the Vertex schedules
         if vertex_schedules:
             for vertex_schedule in vertex_schedules:
-                # Perform operations (e.g., update or delete)
                 print(f"Found Vertex schedule: {vertex_schedule.display_name}")
-
-                # Example: Disable a schedule
-                # vertex_schedule.delete()
-
+                
+                # Example operations:
+                
+                # 1. Pause a schedule
+                # vertex_schedule.pause()
+                
+                # 2. Resume a paused schedule
+                # vertex_schedule.resume()
+                
+                # 3. Get schedule details
+                print(f"  Schedule ID: {vertex_schedule.name}")
+                print(f"  Cron: {vertex_schedule.cron}")
+                print(f"  State: {vertex_schedule.state}")
+                
+                # 4. Get execution history
+                executions = vertex_schedule.list_executions()
+                print(f"  Total executions: {len(executions)}")
 ```
 
-### 4.2 Kubeflow schedule management
+The Vertex AI PipelineJobSchedule API provides these key capabilities:
+- Pausing and resuming schedules
+- Querying execution history
+- Retrieving detailed status information
+- Modifying schedule parameters (though recreation is safer)
 
-- Using the Kubeflow Pipelines SDK
-- Listing Kubeflow schedules
-- Updating and pausing schedules
-- Complete example for Kubeflow schedule management
+#### 3.4.2 Kubeflow schedule management
 
-### 4.3 Airflow schedule management
+Kubeflow Pipelines requires the KFP SDK for schedule management:
 
-- Using the Airflow API
-- Managing DAGs and schedules
+```python
+from kfp.client import Client as KFPClient
+
+def manage_kubeflow_schedules(host="https://your-kubeflow-host", namespace="kubeflow"):
+    """Comprehensive Kubeflow schedule management."""
+    # Connect to Kubeflow
+    client = KFPClient(host=host)
+    
+    # List all experiments
+    experiments = client.list_experiments(namespace=namespace)
+    
+    for experiment in experiments.experiments:
+        print(f"Checking experiment: {experiment.name}")
+        
+        # List recurring runs for this experiment
+        recurring_runs = client.list_recurring_runs(
+            experiment_id=experiment.id,
+            page_size=100
+        )
+        
+        for run in recurring_runs.recurring_runs:
+            print(f"  Found recurring run: {run.name}")
+            
+            # Example operations:
+            
+            # 1. Enable a recurring run
+            # client.recurring_runs.enable(run.id)
+            
+            # 2. Disable a recurring run
+            # client.recurring_runs.disable(run.id)
+            
+            # 3. Get recurring run details
+            print(f"    Status: {run.status}")
+            print(f"    Cron: {run.cron_schedule}")
+            
+            # 4. List run history
+            run_history = client.list_runs(
+                experiment_id=experiment.id,
+                filter=f'pipeline_id="{run.pipeline_id}"'
+            )
+            print(f"    Total runs: {len(run_history.runs)}")
+```
+
+Kubeflow provides these management capabilities:
+- Enabling and disabling recurring runs
+- Viewing run history 
+- Accessing detailed status information
+- Managing experiment-level grouping
+
+#### 3.4.3 Airflow schedule management
+
+Airflow offers several interfaces for schedule management:
+
+**Using the Airflow CLI:**
+```bash
+# Pause a DAG
+airflow dags pause your_dag_id
+
+# Unpause a DAG
+airflow dags unpause your_dag_id
+
+# List all DAGs
+airflow dags list
+
+# Trigger a DAG run manually
+airflow dags trigger your_dag_id
+```
+
+**Using the Airflow REST API:**
+```python
+import requests
+import json
+import base64
+
+def manage_airflow_schedules(airflow_host="http://localhost:8080"):
+    """Comprehensive Airflow schedule management via REST API."""
+    # Authentication (replace with your actual auth method)
+    username = "admin"
+    password = "admin"
+    auth_header = {
+        'Authorization': f'Basic {base64.b64encode(f"{username}:{password}".encode()).decode()}'
+    }
+    
+    # List all DAGs
+    response = requests.get(
+        f"{airflow_host}/api/v1/dags",
+        headers=auth_header
+    )
+    dags = json.loads(response.text)["dags"]
+    
+    for dag in dags:
+        print(f"Found DAG: {dag['dag_id']}")
+        
+        # Example operations:
+        
+        # 1. Check if DAG is paused
+        is_paused = dag["is_paused"]
+        print(f"  Is paused: {is_paused}")
+        
+        # 2. Pause a DAG
+        if not is_paused:
+            # requests.patch(
+            #     f"{airflow_host}/api/v1/dags/{dag['dag_id']}",
+            #     json={"is_paused": True},
+            #     headers=auth_header
+            # )
+            pass
+        
+        # 3. Get DAG runs
+        runs_response = requests.get(
+            f"{airflow_host}/api/v1/dags/{dag['dag_id']}/dagRuns",
+            headers=auth_header
+        )
+        runs = json.loads(runs_response.text)["dag_runs"]
+        print(f"  Total runs: {len(runs)}")
+```
+
+Airflow provides these schedule management capabilities:
 - Pausing and unpausing DAGs
-- Complete example for Airflow schedule management
+- Viewing execution history
+- Triggering manual runs
+- Detailed logging and monitoring
 
-## 5. Cleaning up orphaned schedules
+### 3.5 Cleaning up orphaned schedules
 
-### 5.1 Identifying orphaned schedules
+One common challenge with ZenML's orchestrator-agnostic scheduling is the potential for "orphaned" schedules - schedules that exist in the orchestrator but are no longer tracked by ZenML. This section covers how to identify and clean up these orphaned schedules.
 
-- Detecting disconnects between ZenML and orchestrator
-- Audit strategies for schedule alignment
-- Schedule naming conventions for easier tracking
+#### 3.5.1 Identifying orphaned schedules
 
-### 5.2 Complete cleanup implementation
+An orphaned schedule can occur when:
+- A ZenML schedule is deleted but the orchestrator schedule remains
+- A failure occurs during schedule creation, leaving the orchestrator schedule but no ZenML record
+- ZenML database migration or restoration is performed without orchestrator synchronization
 
-- Full implementation for Vertex AI cleanup:
+To identify orphaned schedules:
+
+1. **List all ZenML schedules**:
+   ```python
+   from zenml.client import Client
+   zenml_schedules = Client().list_schedules()
+   zenml_schedule_names = [s.name for s in zenml_schedules]
+   ```
+
+2. **List all orchestrator schedules** (example for Vertex AI):
+   ```python
+   from google.cloud import aiplatform
+   
+   vertex_schedules = aiplatform.PipelineJobSchedule.list(location="your-region")
+   vertex_schedule_names = [s.display_name for s in vertex_schedules]
+   ```
+
+3. **Find orphaned schedules**:
+   ```python
+   # Schedules that exist in the orchestrator but not in ZenML
+   orphaned_schedules = [name for name in vertex_schedule_names 
+                         if name not in zenml_schedule_names]
+   print(f"Found {len(orphaned_schedules)} orphaned schedules")
+   ```
+
+#### 3.5.2 Complete cleanup implementation
+
+Here's a complete implementation for finding and cleaning up orphaned schedules in Vertex AI:
 
 ```python
 from google.cloud import aiplatform
 from zenml.client import Client
 
-def delete_all_schedules():
-    # Initialize ZenML client
+def cleanup_all_schedules(delete_zenml=True, delete_vertex=True, location="your-region"):
+    """Comprehensive schedule cleanup for both ZenML and Vertex AI.
+    
+    Args:
+        delete_zenml: Whether to delete ZenML schedules
+        delete_vertex: Whether to delete Vertex schedules
+        location: GCP region for Vertex AI
+    """
+    # Initialize clients
     zenml_client = Client()
+    aiplatform.init(location=location)
+    
     # Get all ZenML schedules
     zenml_schedules = zenml_client.list_schedules()
-
+    
     if not zenml_schedules:
-        print("No ZenML schedules to delete.")
-        return
-
-    print(f"\nFound {len(zenml_schedules)} ZenML schedules to process...\n")
-
+        print("No ZenML schedules found.")
+    else:
+        print(f"\nFound {len(zenml_schedules)} ZenML schedules\n")
+    
+    # Track successes and failures
+    succeeded = []
+    failed = []
+    
     # Process each ZenML schedule
     for zenml_schedule in zenml_schedules:
         schedule_name = zenml_schedule.name
         print(f"Processing ZenML schedule: {schedule_name}")
-
-        try:
-            # First delete the corresponding Vertex AI schedule
-            vertex_filter = f'display_name="{schedule_name}"'
-            vertex_schedules = aiplatform.PipelineJobSchedule.list(
-                filter=vertex_filter,
-                order_by='create_time desc',
-                location="your-region"
-            )
-
-            if vertex_schedules:
-                print(f"  Found {len(vertex_schedules)} matching Vertex schedules")
-                for vertex_schedule in vertex_schedules:
+        
+        # Step 1: Find and delete Vertex AI schedules if requested
+        if delete_vertex:
+            try:
+                vertex_filter = f'display_name="{schedule_name}"'
+                vertex_schedules = aiplatform.PipelineJobSchedule.list(
+                    filter=vertex_filter,
+                    order_by='create_time desc'
+                )
+                
+                if vertex_schedules:
+                    print(f"  Found {len(vertex_schedules)} matching Vertex schedules")
+                    for vertex_schedule in vertex_schedules:
+                        try:
+                            vertex_schedule.delete()
+                            print(f"  ✓ Deleted Vertex schedule: {vertex_schedule.display_name}")
+                        except Exception as e:
+                            print(f"  ✗ Failed to delete Vertex schedule: {e}")
+                            failed.append(f"{schedule_name} (Vertex)")
+                else:
+                    print(f"  No matching Vertex schedules found")
+            except Exception as e:
+                print(f"  ✗ Error accessing Vertex AI: {e}")
+                failed.append(f"{schedule_name} (Vertex API)")
+        
+        # Step 2: Delete the ZenML schedule if requested
+        if delete_zenml:
+            try:
+                zenml_client.delete_schedule(zenml_schedule.id)
+                print(f"  ✓ Deleted ZenML schedule: {schedule_name}")
+                succeeded.append(f"{schedule_name} (ZenML)")
+            except Exception as e:
+                print(f"  ✗ Failed to delete ZenML schedule: {e}")
+                failed.append(f"{schedule_name} (ZenML)")
+    
+    # Step 3: Find orphaned Vertex schedules
+    print("\nChecking for orphaned Vertex schedules...")
+    zenml_schedule_names = [s.name for s in zenml_schedules]
+    try:
+        all_vertex_schedules = aiplatform.PipelineJobSchedule.list(location=location)
+        
+        orphaned_schedules = []
+        for vs in all_vertex_schedules:
+            if vs.display_name not in zenml_schedule_names:
+                orphaned_schedules.append(vs)
+        
+        if orphaned_schedules:
+            print(f"Found {len(orphaned_schedules)} orphaned Vertex schedules")
+            
+            # Delete orphaned schedules if requested
+            if delete_vertex:
+                for vs in orphaned_schedules:
                     try:
-                        vertex_schedule.delete()
-                        print(f"  ✓ Deleted Vertex schedule: {vertex_schedule.display_name}")
+                        vs.delete()
+                        print(f"  ✓ Deleted orphaned Vertex schedule: {vs.display_name}")
+                        succeeded.append(f"{vs.display_name} (Orphaned Vertex)")
                     except Exception as e:
-                        print(f"  ✗ Failed to delete Vertex schedule {vertex_schedule.display_name}: {e}")
-            else:
-                print(f"  No matching Vertex schedules found for {schedule_name}")
-
-            # Then delete the ZenML schedule
-            zenml_client.delete_schedule(zenml_schedule.id)
-            print(f"  ✓ Deleted ZenML schedule: {schedule_name}")
-
-        except Exception as e:
-            print(f"  ✗ Failed to process {schedule_name}: {e}")
-
+                        print(f"  ✗ Failed to delete orphaned Vertex schedule: {e}")
+                        failed.append(f"{vs.display_name} (Orphaned Vertex)")
+        else:
+            print("No orphaned Vertex schedules found.")
+    except Exception as e:
+        print(f"Error checking for orphaned schedules: {e}")
+    
+    # Summary
+    print("\nCleanup Summary:")
+    print(f"  Successfully processed: {len(succeeded)}")
+    print(f"  Failed to process: {len(failed)}")
+    if failed:
+        print("\nFailed schedules:")
+        for f in failed:
+            print(f"  - {f}")
+    
     print("\nSchedule cleanup completed!")
-
 ```
 
-- Equivalent implementations for other orchestrators
-- Safety considerations when deleting schedules
-- Backup strategies before cleanup
+Similar implementations can be created for Kubeflow and Airflow, adapting to their specific APIs.
 
-## 6. Schedule management best practices
+#### Safety considerations when deleting schedules
 
-### 6.1 Naming conventions
+When cleaning up schedules, especially in production environments:
 
-- Consistent naming for easier management
-- Including environment information
-- Version identifiers in schedule names
-- Documentation practices
+1. **Backup before deletion**: Record all schedule information before deletion
+2. **Start with a dry run**: Set `delete_zenml=False, delete_vertex=False` to preview what would be deleted
+3. **Delete in phases**: Delete orchestrator schedules first, then ZenML schedules
+4. **Verify after deletion**: Confirm that schedules were actually removed
+5. **Monitor pipeline runs**: Watch for unexpected pipeline runs after cleanup
 
-### 6.2 Schedule monitoring and alerting
+## 4. Schedule management best practices
 
-- Setting up failure notifications
-- Schedule execution logs
-- Performance monitoring
-- Cost tracking for scheduled runs
+Effective management of pipeline schedules requires careful planning and standardized approaches, especially as the number of schedules grows.
 
-### 6.3 Managing schedule drift
+### 4.1 Naming conventions
 
-- Why ZenML and orchestrator schedules might diverge
-- Regular reconciliation processes
-- Automated audit scripts
-- Documentation and tracking
+Following consistent naming patterns helps tremendously with schedule organization and troubleshooting:
 
-## 7. Alternatives to native scheduling
+```python
+# Example of a well-named schedule
+schedule = Schedule(
+    name="daily-feature-engineering-prod-v2",
+    cron_expression="0 4 * * *"
+)
+```
 
-### 7.1 External schedulers
+Recommended naming components:
+- **Frequency**: Include how often the schedule runs (`hourly`, `daily`, `weekly`)
+- **Purpose**: Describe the pipeline's function (`model-training`, `data-ingest`)
+- **Environment**: Indicate the deployment context (`dev`, `staging`, `prod`)
+- **Version**: Add version information when updating schedules (`v1`, `v2`)
 
-- Using cloud scheduler services (AWS EventBridge, Cloud Scheduler)
-- Implementing cron jobs
-- Container-based schedulers
-- Implementation examples
+For example: `hourly-data-ingest-prod-v1`
 
-### 7.2 CI/CD-based scheduling
+This pattern makes it easy to:
+- Filter schedules by environment or purpose
+- Track schedule versions and changes
+- Understand the schedule's function at a glance
+- Group related schedules together
 
-- Using GitHub Actions for scheduling
-- GitLab CI scheduled pipelines
-- Jenkins scheduled jobs
-- Complete implementation example
+### 4.2 Schedule monitoring and alerting
 
-## 8. Troubleshooting schedule issues
+Successfully running scheduled pipelines requires robust monitoring to catch issues early:
 
-### 8.1 Common schedule problems
+```python
+from zenml.integrations.slack.alerters import SlackAlerter
+from zenml.integrations.discord.alerters import DiscordAlerter
 
-- Missing or duplicate executions
-- Authentication failures
-- Resource constraints
-- Configuration drift
+# Configure alerting for scheduled pipelines
+@pipeline(
+    settings={
+        "alerter": {
+            "slack_alerter": SlackAlerter(
+                webhook_url="https://hooks.slack.com/services/XXX/YYY/ZZZ",
+                alert_on_success=False,
+                alert_on_failure=True,
+                message_prefix="SCHEDULED PIPELINE ALERT: "
+            )
+        }
+    }
+)
+def my_scheduled_pipeline():
+    # Pipeline steps
+```
 
-### 8.2 Debugging strategies
+Key monitoring strategies:
+1. **Failure notifications**: Configure alerters to notify teams about failures
+2. **Execution logs**: Regularly review logs for scheduled runs
+3. **Performance tracking**: Monitor execution times and resource usage
+4. **Cost monitoring**: Track resources consumed by scheduled pipelines
+5. **Run status dashboard**: Set up a dashboard showing all schedule executions
 
-- Log analysis techniques
-- Schedule state verification
-- ZenML vs orchestrator schedule comparison
-- Reconciliation approaches
+For critical pipelines, consider implementing custom monitoring solutions:
+
+```python
+from zenml.client import Client
+import datetime
+
+def audit_scheduled_runs():
+    """Audit scheduled pipeline executions."""
+    client = Client()
+    schedules = client.list_schedules()
+    
+    # Check for each schedule
+    for schedule in schedules:
+        pipeline_name = schedule.pipeline_name
+        
+        # Get recent runs
+        runs = client.list_pipeline_runs(
+            pipeline_name_or_id=pipeline_name,
+            sort_by="created",
+            descending=True,
+            size=10
+        )
+        
+        # Check if the most recent run is older than expected
+        if runs.items and schedule.cron_expression:
+            latest_run = runs.items[0]
+            run_time = latest_run.creation_time
+            now = datetime.datetime.now(run_time.tzinfo)
+            
+            # Simple check for daily schedules (improve based on your cron pattern)
+            if "* * *" in schedule.cron_expression and (now - run_time).days > 1:
+                print(f"WARNING: Schedule {schedule.name} might have missed executions!")
+                print(f"  Last run: {run_time}")
+```
+
+### 4.3 Managing schedule drift
+
+Schedule drift occurs when the schedules tracked by ZenML no longer match those in the orchestrator. This can happen due to:
+
+- Failed deletion operations
+- Manual changes in the orchestrator
+- System failures during schedule creation/deletion
+- Database restores or migrations
+
+To prevent and manage schedule drift:
+
+1. **Regular audits**: Periodically reconcile ZenML schedules with orchestrator schedules:
+
+```python
+def audit_schedule_drift(location="your-region"):
+    """Audit for drift between ZenML and Vertex AI schedules."""
+    # Get ZenML schedules
+    from zenml.client import Client
+    zenml_schedules = Client().list_schedules()
+    zenml_names = {s.name for s in zenml_schedules}
+    
+    # Get Vertex schedules
+    from google.cloud import aiplatform
+    vertex_schedules = aiplatform.PipelineJobSchedule.list(location=location)
+    vertex_names = {vs.display_name for vs in vertex_schedules}
+    
+    # Find schedules that exist only in ZenML
+    zenml_only = zenml_names - vertex_names
+    if zenml_only:
+        print(f"Found {len(zenml_only)} schedules in ZenML but not in Vertex:")
+        for name in zenml_only:
+            print(f"  - {name}")
+    
+    # Find schedules that exist only in Vertex
+    vertex_only = vertex_names - zenml_names
+    if vertex_only:
+        print(f"Found {len(vertex_only)} schedules in Vertex but not in ZenML:")
+        for name in vertex_only:
+            print(f"  - {name}")
+    
+    # Compute drift percentage
+    total_schedules = len(zenml_names.union(vertex_names))
+    drift_count = len(zenml_only) + len(vertex_only)
+    drift_percentage = (drift_count / total_schedules) * 100 if total_schedules else 0
+    
+    print(f"Schedule drift: {drift_percentage:.1f}%")
+    
+    return zenml_only, vertex_only
+```
+
+2. **Documentation**: Maintain a registry of all schedules, including orchestrator details
+3. **Automated reconciliation**: Run recurring jobs to detect and fix drift
+4. **Centralized management**: Use the tools in section 3.5 for complete schedule lifecycle management
+
+## 5. Alternatives to native scheduling
+
+While ZenML's built-in scheduling is powerful, you may want to consider alternative approaches in certain scenarios.
+
+### 5.1 External schedulers
+
+Cloud providers offer native scheduling services that can invoke ZenML pipelines:
+
+**Google Cloud Scheduler**:
+```bash
+# Create a Cloud Scheduler job to trigger a pipeline using Cloud Run
+gcloud scheduler jobs create http daily-pipeline-trigger \
+  --schedule="0 9 * * *" \
+  --uri="https://your-endpoint/run-pipeline" \
+  --http-method=POST \
+  --headers="Authorization=Bearer $(gcloud auth print-identity-token)" \
+  --message-body='{"pipeline_name": "training_pipeline"}'
+```
+
+**AWS EventBridge**:
+```bash
+# Define an EventBridge schedule (using AWS CLI)
+aws scheduler create-schedule \
+  --name daily-pipeline-trigger \
+  --schedule-expression "cron(0 9 * * ? *)" \
+  --target '{"Arn": "arn:aws:lambda:region:account-id:function:run-zenml-pipeline", "Input": "{\"pipeline_name\": \"training_pipeline\"}"}'
+```
+
+**Simple cron job**:
+```bash
+# Schedule using traditional cron (Linux/MacOS)
+# Add to crontab:
+0 9 * * * cd /path/to/project && python -m run_pipeline.py
+```
+
+Benefits of external schedulers:
+- Separation of scheduling from pipeline logic
+- Greater control over retry policies and error handling
+- Integration with existing monitoring systems
+- Often more cost-effective for simple scheduling needs
+
+### 5.2 CI/CD-based scheduling
+
+Another popular approach is using CI/CD systems for pipeline scheduling:
+
+**GitHub Actions**:
+```yaml
+# .github/workflows/scheduled-pipeline.yml
+name: Run Daily Pipeline
+
+on:
+  schedule:
+    # Run at 9:00 UTC every day
+    - cron: '0 9 * * *'
+
+jobs:
+  run_pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install zenml
+          pip install -r requirements.txt
+          
+      - name: Run ZenML pipeline
+        run: python run_pipeline.py
+        env:
+          ZENML_SERVER_URL: ${{ secrets.ZENML_SERVER_URL }}
+          ZENML_API_KEY: ${{ secrets.ZENML_API_KEY }}
+```
+
+**GitLab CI**:
+```yaml
+# .gitlab-ci.yml
+daily_pipeline:
+  image: python:3.9
+  script:
+    - pip install zenml
+    - pip install -r requirements.txt
+    - python run_pipeline.py
+  only:
+    - schedules
+```
+
+**Jenkins**:
+```groovy
+// Jenkinsfile with scheduling
+pipeline {
+    triggers {
+        cron('0 9 * * *')
+    }
+    agent {
+        docker {
+            image 'python:3.9'
+        }
+    }
+    stages {
+        stage('Run ZenML Pipeline') {
+            steps {
+                sh 'pip install zenml'
+                sh 'pip install -r requirements.txt'
+                sh 'python run_pipeline.py'
+            }
+        }
+    }
+}
+```
+
+Benefits of CI/CD scheduling:
+- Version control integration
+- Detailed execution history
+- Integration with deployment workflows
+- Infrastructure-as-code approach to scheduling
+- Multi-environment support (different schedules for dev/staging/prod)
+
+## 6. Troubleshooting schedule issues
+
+Even with careful setup, scheduled pipelines can encounter issues. This section covers common problems and resolution strategies.
+
+### 6.1 Common schedule problems
+
+**1. Missing executions**:
+- **Symptom**: Pipeline doesn't run at the scheduled time
+- **Possible causes**:
+  - Orchestrator failure or outage
+  - Authentication expired
+  - Resource constraints 
+  - Schedule paused or disabled
+- **Resolution**:
+  - Check orchestrator logs
+  - Verify authentication credentials
+  - Ensure sufficient resources are available
+  - Check schedule status in the orchestrator
+
+**2. Authentication failures**:
+- **Symptom**: Pipeline fails with authentication errors
+- **Possible causes**:
+  - Expired service account token
+  - Missing permissions
+  - Secret store issues
+- **Resolution**:
+  - Rotate service account credentials
+  - Check IAM permissions
+  - Verify secret references
+
+**3. Resource constraints**:
+- **Symptom**: Scheduled pipelines fail during execution
+- **Possible causes**:
+  - Insufficient resources at scheduled time
+  - Resource quota limits
+  - Temporary infrastructure issues
+- **Resolution**:
+  - Increase resource quotas
+  - Stagger schedule times to spread load
+  - Configure auto-scaling where available
+
+**4. Configuration drift**:
+- **Symptom**: Pipeline runs with unexpected configuration
+- **Possible causes**:
+  - Pipeline code updated but schedule still uses old configuration
+  - Environment variable changes
+  - Dependency changes
+- **Resolution**:
+  - Update or recreate schedules when pipeline code changes
+  - Use configuration versioning
+  - Test schedule recreation regularly
+
+### 6.2 Debugging strategies
+
+When troubleshooting schedule issues, follow these steps:
+
+**1. Verify the schedule exists**:
+```bash
+# Check in ZenML
+zenml pipeline schedule list
+
+# Check in orchestrator (example for Airflow)
+airflow dags list
+```
+
+**2. Check execution logs**:
+- ZenML pipeline runs:
+  ```bash
+  zenml pipeline runs list --pipeline_name your_pipeline
+  ```
+- Orchestrator-specific logs:
+  - Vertex AI: Check Cloud Logging
+  - Kubeflow: Check Kubeflow UI
+  - Airflow: Check Airflow logs
+
+**3. Validate configuration**:
+- Ensure environment variables are set correctly
+- Check that resource settings are appropriate
+- Verify authentication is still valid
+
+**4. Test manual execution**:
+- Run the pipeline manually to confirm it works outside the schedule
+- Compare the configuration of manual vs. scheduled runs
+
+**5. Try with simplified pipeline**:
+- Create a minimal test pipeline with the same schedule
+- Use this to isolate scheduling issues from pipeline implementation issues
+
+**6. Check for orchestrator-specific issues**:
+- Vertex AI: Check quota and billing status
+- Kubeflow: Check Kubernetes cluster health
+- Airflow: Check worker status and DAG parsing errors
 
 ## Conclusion
 
-- Summary of schedule management approaches
-- Best practices recap
-- Future improvements in ZenML scheduling
-- Additional resources and references
+Effective schedule management is crucial for production ML workflows. ZenML provides a unified interface for scheduling across different orchestrators, but understanding the underlying orchestrator behavior is essential for robust schedule management.
+
+Key takeaways:
+- Use consistent naming conventions and monitor your schedules
+- Be aware of the limitations of each orchestrator's scheduling capabilities
+- Clean up orphaned schedules regularly to prevent unexpected execution
+- Consider alternative scheduling approaches for complex requirements
+- Implement proper monitoring and alerting for critical pipelines
+
+As ZenML continues to evolve, the scheduling capabilities will be enhanced with more direct control over schedule lifecycle management. Until then, the hybrid approach of using ZenML's abstraction with orchestrator-specific management provides the most complete solution.
+
+For more information, refer to the official ZenML documentation on pipeline scheduling and the documentation for your specific orchestrator.
