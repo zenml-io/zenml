@@ -142,7 +142,7 @@ You can find the URL of the Comet experiment linked to a specific ZenML run via 
 from zenml.client import Client
 
 last_run = client.get_pipeline("<PIPELINE_NAME>").last_run
-trainer_step = last_run.get_step("<STEP_NAME>")
+trainer_step = last_run.steps["<STEP_NAME>"]
 tracking_url = trainer_step.run_metadata["experiment_tracker_url"].value
 print(tracking_url)
 ```
