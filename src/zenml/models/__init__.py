@@ -419,6 +419,7 @@ from zenml.models.v2.misc.info_models import (
 # V2
 ActionResponseResources.model_rebuild()
 APIKeyResponseBody.model_rebuild()
+ArtifactResponse.model_rebuild()
 ArtifactResponseBody.model_rebuild()
 ArtifactVersionRequest.model_rebuild()
 ArtifactVersionResponseBody.model_rebuild()
