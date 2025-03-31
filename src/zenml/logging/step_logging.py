@@ -255,7 +255,9 @@ class StepLogsStorage:
         if not self.disabled:
             # Add timestamp to the message when it's received
             timestamp = utc_now().strftime("%Y-%m-%d %H:%M:%S")
-            formatted_message = f"[{timestamp} UTC] {remove_ansi_escape_codes(text)}"
+            formatted_message = (
+                f"[{timestamp} UTC] {remove_ansi_escape_codes(text)}"
+            )
             self.buffer.append(formatted_message)
             self.save_to_file()
 
