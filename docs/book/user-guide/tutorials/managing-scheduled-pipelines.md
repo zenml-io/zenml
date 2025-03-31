@@ -1676,6 +1676,7 @@ import datetime
 import json
 import sys
 import subprocess
+import os
 
 def diagnose_schedule(schedule_name_or_id):
     """Diagnose issues with a specific schedule."""
@@ -1795,6 +1796,8 @@ When scheduled pipelines fail due to authentication issues:
 
 # For Vertex AI example:
 from google.cloud import aiplatform
+import subprocess
+import json
 
 def verify_vertex_auth():
     """Verify Vertex AI authentication works."""
@@ -1864,6 +1867,8 @@ To detect and address resource-related failures:
 
 ```python
 # For Kubernetes-based orchestrators:
+import subprocess
+
 def check_cluster_resources():
     """Check Kubernetes cluster resources."""
     try:
@@ -1912,6 +1917,9 @@ def check_cluster_resources():
 Detect and fix configuration drift with a synchronization script:
 
 ```python
+from zenml.client import Client
+from zenml.config.schedule import Schedule
+
 def sync_schedule_config(schedule_name, recreate=False):
     """Synchronize schedule configuration with latest pipeline code."""
     client = Client()
@@ -1972,6 +1980,10 @@ For persistent or complex scheduling issues, implement these advanced debugging 
 Create a validation script that performs a comprehensive check of all schedules:
 
 ```python
+from zenml.client import Client
+import datetime
+from croniter import croniter
+
 def validate_all_schedules():
     """Validate all schedules and their orchestrator counterparts."""
     client = Client()
@@ -2047,12 +2059,15 @@ def validate_all_schedules():
 For testing schedule functionality across orchestrators:
 
 ```python
+import time
+import uuid
+import datetime
+from zenml.client import Client
+from zenml.config.schedule import Schedule
+from zenml import pipeline
+
 def test_schedule_creation(orchestrator_name):
     """Test schedule creation, verification, and deletion for an orchestrator."""
-    from zenml.client import Client
-    from zenml.config.schedule import Schedule
-    import time
-    import uuid
     
     # Create a unique test pipeline
     @pipeline(name=f"test_schedule_pipeline_{uuid.uuid4().hex[:8]}")
