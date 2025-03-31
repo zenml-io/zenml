@@ -85,41 +85,240 @@ Consider your monitoring needs, infrastructure, and team expertise when selectin
 
 ## 2. Creating scheduled pipelines
 
-### 2.1 Basic schedule creation
+### 2.1 Advanced Schedule Creation Options 
 
-- Creating schedules via the ZenML CLI
-- Schedule creation with the Python SDK
-- Cron expressions and schedule intervals
-- Schedule naming and management best practices
+Building on the basic scheduling approach outlined in section 1, let's explore more advanced scheduling options and patterns you can use with ZenML:
+
+#### Verifying and Managing Schedules with CLI
+
+After creating a schedule, you can manage it using the CLI:
+
+```bash
+# List all schedules
+zenml pipeline schedule list
+
+# Delete a specific schedule
+zenml pipeline schedule delete <SCHEDULE_NAME_OR_ID>
+```
+
+#### Advanced Scheduling Patterns
+
+ZenML supports several powerful scheduling patterns through its Schedule class:
+
+**1. Cron Expressions for Complex Schedules**
+
+For advanced timing needs, cron expressions provide precise scheduling control:
+
+```python
+# Run at 3:30 AM on the first day of each month
+Schedule(cron_expression="30 3 1 * *")
+
+# Run at 2:15 PM on weekdays
+Schedule(cron_expression="15 14 * * 1-5")
+
+# Run every 6 hours
+Schedule(cron_expression="0 */6 * * *")
+
+# Run at 9 AM on Mondays and Wednesdays
+Schedule(cron_expression="0 9 * * 1,3")
+```
+
+**2. Run-Once Scheduling**
+
+For one-time future execution:
+
+```python
+from datetime import datetime, timedelta
+
+# Run once at a specific time in the future
+Schedule(run_once_start_time=datetime.now() + timedelta(days=1))
+```
+
+**3. Time-Limited Scheduling**
+
+For schedules that should only run during a specific window:
+
+```python
+# Run every day at 9 AM, but only for the next 30 days
+Schedule(
+    cron_expression="0 9 * * *",
+    start_time=datetime.now(),
+    end_time=datetime.now() + timedelta(days=30)
+)
+```
+
+**4. Controlled Backfilling with Catchup**
+
+Control whether missed schedule intervals should be executed:
+
+```python
+# If schedule is paused and then resumed, this will execute all missed runs
+Schedule(
+    cron_expression="0 * * * *",  # Hourly
+    catchup=True
+)
+
+# If schedule is paused and then resumed, this will only run on the next interval
+Schedule(
+    cron_expression="0 * * * *",
+    catchup=False  # Skip any missed executions
+)
+```
+
+#### Schedule Naming and Management Best Practices
+
+1. **Use semantic naming**: Create descriptive names that indicate purpose, frequency and environment:
+   ```python
+   Schedule(
+       name="daily-model-training-prod", 
+       cron_expression="0 3 * * *"
+   )
+   ```
+
+2. **Set explicit timezones**: For teams across different locations, use timezone-aware datetime objects:
+   ```python
+   import pytz
+   
+   # Run at 9 AM UTC, regardless of local timezone
+   Schedule(
+       start_time=datetime.now(pytz.UTC),
+       interval_second=timedelta(days=1)
+   )
+   ```
+
+3. **Document your schedules**: Maintain an inventory of schedules, especially in production environments.
+
+4. **Test with shorter intervals**: Validate schedule behavior with brief intervals in development before deploying to production.
+
+5. **Clean up unused schedules**: Regularly audit and remove unused schedules to prevent clutter and unexpected runs:
+   ```bash
+   # List all schedules to find unused ones
+   zenml pipeline schedule list
+   
+   # Delete schedules you no longer need
+   zenml pipeline schedule delete <SCHEDULE_NAME_OR_ID>
+   ```
 
 ### 2.2 Orchestrator-specific schedule creation
 
-### 2.2.1 Kubeflow schedules
+Different orchestrators implement scheduling in their own way, and ZenML adapts your schedule configuration to match each orchestrator's capabilities. Here are orchestrator-specific considerations to be aware of:
 
-- Setting up Kubeflow schedules
-- Cron expression format
-- Resource configuration
-- Limitations and considerations
+#### 2.2.1 Kubeflow schedules
 
-### 2.2.2 Vertex AI schedules
+Kubeflow implements schedules as recurring runs. When you create a scheduled pipeline with Kubeflow:
 
-- Creating schedules on Vertex AI
-- Schedule configuration options
-- Authentication and permissions
-- Monitoring Vertex schedules
+```python
+from zenml.integrations.kubeflow.flavors.kubeflow_orchestrator_flavor import (
+    KubeflowOrchestratorSettings
+)
 
-### 2.2.3 Airflow schedules
+# Optional: Configure additional Kubeflow-specific settings
+kubeflow_settings = KubeflowOrchestratorSettings(
+    user_namespace="my-namespace",  # Namespace to run the schedule in
+)
 
-- Implementing Airflow schedules
-- DAG configuration
-- Schedule parameters
-- Airflow-specific features
+@pipeline(settings={"orchestrator": kubeflow_settings})
+def my_kubeflow_pipeline():
+    # Pipeline steps...
 
-### 2.2.4 Other orchestrators
+# Create schedule as usual
+schedule = Schedule(cron_expression="0 9 * * *")
+scheduled_pipeline = my_kubeflow_pipeline.with_options(schedule=schedule)
+scheduled_pipeline()
+```
 
-- Schedule support in other orchestrators
-- Limitations and workarounds
-- Future schedule support roadmap
+**Implementation details:**
+- Kubeflow handles schedule creation through its recurring run API
+- The schedule is visible in both ZenML and the Kubeflow UI
+- Schedule deletion through ZenML doesn't always completely remove the schedule from Kubeflow
+
+#### 2.2.2 Vertex AI schedules
+
+Vertex AI has robust native scheduling support. When creating a scheduled pipeline with Vertex AI:
+
+```python
+from zenml.integrations.gcp.flavors.vertex_orchestrator_flavor import (
+    VertexOrchestratorSettings
+)
+
+# Optional: Add Vertex-specific settings
+vertex_settings = VertexOrchestratorSettings(
+    labels={"environment": "production"}  # Custom labels for the job
+)
+
+@pipeline(settings={"orchestrator": vertex_settings})
+def my_vertex_pipeline():
+    # Pipeline steps...
+
+# Create a schedule with start and end times
+schedule = Schedule(
+    cron_expression="0 9 * * *",
+    start_time=datetime.now(),
+    end_time=datetime.now() + timedelta(days=30)
+)
+scheduled_pipeline = my_vertex_pipeline.with_options(schedule=schedule)
+scheduled_pipeline()
+```
+
+**Implementation details:**
+- Vertex AI schedules are created using the Vertex AI SDK's PipelineJob.create_schedule() method
+- Vertex AI supports start and end times for schedules
+- Scheduled pipelines are visible in the Google Cloud Console
+- The workload service account used by the Vertex orchestrator needs proper permissions
+
+#### 2.2.3 Airflow schedules
+
+Airflow has sophisticated scheduling capabilities but requires special attention when creating schedules:
+
+```python
+from zenml.integrations.airflow.flavors.airflow_orchestrator_flavor import (
+    AirflowOrchestratorSettings
+)
+
+# Optional: Configure Airflow-specific settings
+airflow_settings = AirflowOrchestratorSettings(
+    operator="docker"  # Use DockerOperator
+)
+
+@pipeline(settings={"orchestrator": airflow_settings})
+def my_airflow_pipeline():
+    # Pipeline steps...
+
+# Important: Start time for Airflow must be in the past
+schedule = Schedule(
+    start_time=datetime.now() - timedelta(hours=1),  # MUST be in the past
+    interval_second=timedelta(minutes=30),
+    catchup=False
+)
+scheduled_pipeline = my_airflow_pipeline.with_options(schedule=schedule)
+scheduled_pipeline()
+```
+
+**Implementation details:**
+- Airflow requires start times to be in the past
+- Schedules are implemented as native Airflow DAG schedules
+- The catchup parameter is particularly important for Airflow as it determines if missed runs should be executed
+- For local Airflow deployments, the DAG file needs to be properly deployed to the Airflow DAGs folder
+
+#### 2.2.4 Other orchestrators
+
+ZenML supports scheduling on other orchestrators as well, each with their own specific implementation:
+
+- **Kubernetes**: Uses Kubernetes CronJobs for scheduling
+- **SageMaker**: Leverages AWS EventBridge for scheduling
+- **Azure ML**: Uses the Azure ML SDK's scheduling capabilities
+- **Databricks**: Utilizes Databricks Jobs scheduling
+
+When using any of these orchestrators, the basic ZenML syntax for scheduling remains the same, but you should check the orchestrator's documentation for specific limitations or requirements.
+
+```python
+# The basic pattern works for all supported orchestrators
+schedule = Schedule(cron_expression="0 9 * * *")
+scheduled_pipeline = my_pipeline.with_options(schedule=schedule)
+scheduled_pipeline()
+```
+
+For unsupported orchestrators (like Local and LocalDocker), attempting to create a schedule will result in an error.
 
 ## 3. Managing existing schedules
 
