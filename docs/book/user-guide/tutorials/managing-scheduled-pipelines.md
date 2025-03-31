@@ -12,17 +12,76 @@ This guide covers how to implement and manage scheduled pipeline executions in Z
 
 ### 1.1 How scheduling works in ZenML
 
-- ZenML's scheduling mechanism
-- The relationship between ZenML schedules and orchestrator schedules
-- Limitations and considerations
-- Schedule representation in the ZenML dashboard
+ZenML doesn't implement its own scheduler but acts as a wrapper around the scheduling capabilities of supported orchestrators. When you create a schedule:
+
+```python
+from zenml.config.schedule import Schedule
+from zenml import pipeline
+from datetime import datetime
+
+@pipeline()
+def my_pipeline():
+    # Pipeline steps...
+
+# Option 1: Using cron expressions (recommended for precise control)
+schedule = Schedule(cron_expression="0 9 * * *")  # Run daily at 9 AM
+
+# Option 2: Using interval-based scheduling
+schedule = Schedule(
+    start_time=datetime.now(), 
+    interval_second=3600  # Run every hour
+)
+
+# Attach the schedule to your pipeline
+my_pipeline = my_pipeline.with_options(schedule=schedule)
+my_pipeline()  # Creates and registers the scheduled pipeline
+```
+
+When you execute this code, ZenML:
+1. Translates your schedule definition to the orchestrator's native format
+2. Registers the schedule with the orchestrator's scheduling system
+3. Records the schedule in the ZenML metadata store
+
+The orchestrator then takes over responsibility for executing the pipeline according to the schedule. You can view your schedules using the CLI:
+
+```bash
+zenml pipeline schedule list
+```
+
+**Important limitations to understand:**
+- ZenML only initiates schedule creation; the orchestrator manages the actual execution
+- Each time you run a pipeline with a schedule, a new schedule is created
+- Schedule updates and deletion typically require interacting directly with the orchestrator
+- Environment variables and context are captured at creation time
 
 ### 1.2 Orchestrator support for scheduling
 
-- Which orchestrators support scheduling
-- Feature comparison across orchestrators
-- Limitations of each implementation
-- Choosing the right orchestrator for scheduling needs
+The table below summarizes scheduling support across ZenML orchestrators:
+
+| Orchestrator | Support | Key Features | Limitations |
+|--------------|---------|--------------|------------|
+| Airflow | ✅ | Complex cron expressions, catchup/backfill, comprehensive monitoring | Requires Airflow knowledge for management |
+| AzureML | ✅ | Integration with Azure monitoring, authentication via service connectors | Limited schedule visibility in ZenML |
+| Databricks | ✅ | Integration with Databricks workspace | Requires Databricks account access for management |
+| HyperAI | ✅ | Simplified scheduling | Basic scheduling capabilities |
+| Kubeflow | ✅ | Full cron support, UI management, catchup functionality | Schedules persist in Kubeflow even if deleted from ZenML |
+| Kubernetes | ✅ | Uses Kubernetes CronJobs | Basic scheduling, requires Kubernetes knowledge |
+| Local | ❌ | Not applicable | No scheduling support |
+| Local Docker | ❌ | Not applicable | No scheduling support |
+| SageMaker | ✅ | AWS integration, CloudWatch monitoring | AWS-specific authentication requirements |
+| SkypilotVM | ❌ | Not applicable | No scheduling support |
+| Tekton | ❌ | Not applicable | No scheduling support |
+| Vertex AI | ✅ | GCP integration, detailed execution logs | Requires GCP console for detailed management |
+
+**Choosing the right orchestrator for scheduling:**
+
+- **For GCP users**: Vertex AI provides seamless integration with GCP services
+- **For AWS users**: SageMaker offers native AWS ecosystem integration
+- **For Azure users**: AzureML integrates well with Azure services 
+- **For complex scheduling**: Airflow offers the most powerful scheduling capabilities
+- **For Kubernetes environments**: Kubeflow or native Kubernetes orchestrator
+
+Consider your monitoring needs, infrastructure, and team expertise when selecting an orchestrator. If you need to access schedule execution logs or make schedule adjustments, you'll typically need to interact directly with the orchestrator-specific interfaces rather than through ZenML.
 
 ## 2. Creating scheduled pipelines
 
