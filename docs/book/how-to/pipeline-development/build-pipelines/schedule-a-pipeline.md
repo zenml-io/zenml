@@ -51,9 +51,19 @@ my_pipeline()
 Check out our [SDK docs](https://sdkdocs.zenml.io/latest/core_code_docs/core-config.html#zenml.config.schedule) to learn more about the different scheduling options.
 {% endhint %}
 
-### Pause/Stop a schedule
+### Update/Pause/Stop a schedule
 
 The way pipelines are scheduled depends on the orchestrator you are using. For example, if you are using Kubeflow, you can use the Kubeflow UI to stop or pause a scheduled run. However, the exact steps for stopping or pausing a scheduled run may vary depending on the orchestrator you are using. We recommend consulting the documentation for your orchestrator to learn the current method for stopping or pausing a scheduled run.
+
+The normal pattern for updating a schedule is:
+
+1. Find schedule on ZenML
+2. Match schedule on orchestrator side and delete
+3. Delete schedule on ZenML
+4. Re-run pipeline with new schedule
+
+A concrete example can be found on the [GCP Vertex orchestrator](https://docs.zenml.io/stacks/orchestrators/vertex) docs, and this pattern can be adapter for other orchestrators as well.
+
 
 {% hint style="warning" %}
 Note that ZenML only gets involved to schedule a run, but maintaining the lifecycle of the schedule (as explained above) is the responsibility of the user. If you run a pipeline containing a schedule two times, two scheduled pipelines (with different/unique names) will be created.

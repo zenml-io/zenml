@@ -230,11 +230,65 @@ The `start_time` and `end_time` timestamp parameters are both optional and are t
 
 The `cron_expression` parameter [supports timezones](https://cloud.google.com/vertex-ai/docs/reference/rest/v1beta1/projects.locations.schedules). For example, the expression `TZ=Europe/Paris 0 10 * * *` will trigger runs at 10:00 in the Europe/Paris timezone.
 
-**How to delete a scheduled pipeline**
+**How to update/delete a scheduled pipeline**
 
 Note that ZenML only gets involved to schedule a run, but maintaining the lifecycle of the schedule is the responsibility of the user.
 
-In order to cancel a scheduled Vertex pipeline, you need to manually delete the schedule in VertexAI (via the UI or the CLI).
+In order to cancel a scheduled Vertex pipeline, you need to manually delete the schedule in VertexAI (via the UI or the CLI). Here is an example (WARNING: Will delete all schedules if you run this):
+
+```python
+from google.cloud import aiplatform
+from zenml.client import Client
+
+def delete_all_schedules():
+    # Initialize ZenML client
+    zenml_client = Client()
+    # Get all ZenML schedules
+    zenml_schedules = zenml_client.list_schedules()
+    
+    if not zenml_schedules:
+        print("No ZenML schedules to delete.")
+        return
+    
+    print(f"\nFound {len(zenml_schedules)} ZenML schedules to process...\n")
+    
+    # Process each ZenML schedule
+    for zenml_schedule in zenml_schedules:
+        schedule_name = zenml_schedule.name
+        print(f"Processing ZenML schedule: {schedule_name}")
+        
+        try:
+            # First delete the corresponding Vertex AI schedule
+            vertex_filter = f'display_name="{schedule_name}"'
+            vertex_schedules = aiplatform.PipelineJobSchedule.list(
+                filter=vertex_filter,
+                order_by='create_time desc',
+                location='europe-west1'
+            )
+            
+            if vertex_schedules:
+                print(f"  Found {len(vertex_schedules)} matching Vertex schedules")
+                for vertex_schedule in vertex_schedules:
+                    try:
+                        vertex_schedule.delete()
+                        print(f"  ✓ Deleted Vertex schedule: {vertex_schedule.display_name}")
+                    except Exception as e:
+                        print(f"  ✗ Failed to delete Vertex schedule {vertex_schedule.display_name}: {e}")
+            else:
+                print(f"  No matching Vertex schedules found for {schedule_name}")
+            
+            # Then delete the ZenML schedule
+            zenml_client.delete_schedule(zenml_schedule.id)
+            print(f"  ✓ Deleted ZenML schedule: {schedule_name}")
+            
+        except Exception as e:
+            print(f"  ✗ Failed to process {schedule_name}: {e}")
+    
+    print("\nSchedule cleanup completed!")
+
+if __name__ == "__main__":
+    delete_all_schedules()
+```
 
 ### Additional configuration
 
