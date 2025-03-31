@@ -305,8 +305,6 @@ redirects:
   how-to/pipeline-development/build-pipelines/configure-logging: how-to/steps-pipelines/logging.md
   how-to/pipeline-development/build-pipelines/view-logs: how-to/steps-pipelines/logging.md
 
-  how-to/advanced-topics/control-logging/: how-to/control-logging/README.md
-
   # Redirects for the new consolidated artifacts pages
   how-to/data-artifact-management/handle-data-artifacts/: how-to/artifacts/artifacts.md
   how-to/data-artifact-management/handle-data-artifacts/artifact-versioning: how-to/artifacts/artifacts.md
