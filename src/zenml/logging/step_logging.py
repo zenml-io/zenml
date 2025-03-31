@@ -426,7 +426,6 @@ class StepLogsStorageContext:
         self.storage = StepLogsStorage(
             logs_uri=logs_uri, artifact_store=artifact_store
         )
-        self._timer = None
 
     def __enter__(self) -> "StepLogsStorageContext":
         """Enter condition of the context manager.
@@ -437,8 +436,6 @@ class StepLogsStorageContext:
         Returns:
             self
         """
-        import threading
-
         self.stdout_write = getattr(sys.stdout, "write")
         self.stdout_flush = getattr(sys.stdout, "flush")
 
@@ -450,28 +447,6 @@ class StepLogsStorageContext:
 
         setattr(sys.stderr, "write", self._wrap_write(self.stdout_write))
         setattr(sys.stderr, "flush", self._wrap_flush(self.stdout_flush))
-
-        # Start a timer that periodically checks if logs need to be saved
-        def check_and_save_logs():
-            if time.time() - self.storage.last_save_time >= self.storage.time_interval:
-                self.storage.save_to_file(force=True)
-            
-            # Reschedule the timer if we're still in the context
-            if redirected.get():
-                self._timer = threading.Timer(
-                    self.storage.time_interval / 2,  # Check twice as often as the save interval
-                    check_and_save_logs
-                )
-                self._timer.daemon = True  # Don't block program exit
-                self._timer.start()
-        
-        # Start the initial timer
-        self._timer = threading.Timer(
-            self.storage.time_interval / 2,  # Check twice as often as the save interval
-            check_and_save_logs
-        )
-        self._timer.daemon = True  # Don't block program exit
-        self._timer.start()
 
         redirected.set(True)
         return self
@@ -491,11 +466,6 @@ class StepLogsStorageContext:
 
         Restores the `write` method of both stderr and stdout.
         """
-        # Cancel the timer if it's running
-        if self._timer:
-            self._timer.cancel()
-            self._timer = None
-
         self.storage.save_to_file(force=True)
 
         setattr(sys.stdout, "write", self.stdout_write)
