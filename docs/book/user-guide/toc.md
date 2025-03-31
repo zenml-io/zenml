@@ -48,7 +48,7 @@
 
 ## Tutorials
 
-* [Managing scheduled pipelines](tutorials/managing-scheduled-pipelines.md)
+* [Managing scheduled pipelines](tutorials/managing-scheduled-pipelines-v2.md)
 
 ## Examples
 
