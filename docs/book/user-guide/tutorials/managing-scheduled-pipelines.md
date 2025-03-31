@@ -1077,6 +1077,7 @@ import os
 import sys
 import json
 from zenml.client import Client
+from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 
 def run_pipeline(pipeline_name, params=None):
     """Run a ZenML pipeline by name with optional parameters.
@@ -1090,19 +1091,19 @@ def run_pipeline(pipeline_name, params=None):
         client = Client()
         print(f"Connected to ZenML server at {client.zen_store.url}")
         
-        # Get the pipeline by name
-        pipeline = client.get_pipeline_by_name(pipeline_name)
+        # Get the pipeline by name (this returns the pipeline model)
+        pipeline = client.get_pipeline(pipeline_name)
         if not pipeline:
             raise ValueError(f"Pipeline '{pipeline_name}' not found")
         
         # Run the pipeline
         print(f"Running pipeline '{pipeline_name}'...")
-        if params:
-            pipeline_instance = pipeline(params)
-        else:
-            pipeline_instance = pipeline()
+        
+        # Create run configuration with parameters if provided
+        run_config = PipelineRunConfiguration(parameters=params) if params else None
             
-        pipeline_run = pipeline_instance.run()
+        # Trigger the pipeline with the configuration
+        pipeline_run = client.trigger_pipeline(pipeline_name, run_configuration=run_config)
         print(f"Pipeline run started: {pipeline_run.id}")
         return pipeline_run.id
         
@@ -1136,7 +1137,8 @@ if __name__ == "__main__":
 # app.py - Flask API to trigger ZenML pipeline
 from flask import Flask, request, jsonify
 import os
-from run_pipeline import run_pipeline
+from zenml.client import Client
+from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 
 app = Flask(__name__)
 
@@ -1158,7 +1160,16 @@ def trigger_pipeline():
     
     # Run the pipeline
     try:
-        run_id = run_pipeline(pipeline_name, pipeline_params)
+        # Connect to ZenML
+        client = Client()
+        
+        # Create run configuration with parameters if provided
+        run_config = PipelineRunConfiguration(parameters=pipeline_params) if pipeline_params else None
+        
+        # Trigger the pipeline with the configuration
+        pipeline_run = client.trigger_pipeline(pipeline_name, run_configuration=run_config)
+        run_id = pipeline_run.id
+        
         return jsonify({
             "status": "success", 
             "message": f"Pipeline {pipeline_name} triggered",
@@ -1209,7 +1220,8 @@ gcloud scheduler jobs create http daily-training-pipeline \
 # lambda_function.py
 import os
 import json
-from run_pipeline import run_pipeline
+from zenml.client import Client
+from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 
 def lambda_handler(event, context):
     """AWS Lambda handler to run a ZenML pipeline.
@@ -1237,8 +1249,15 @@ def lambda_handler(event, context):
                 "body": json.dumps({"error": "Missing pipeline_name"})
             }
         
-        # Run the pipeline
-        run_id = run_pipeline(pipeline_name, params)
+        # Connect to ZenML
+        client = Client()
+        
+        # Create run configuration with parameters if provided
+        run_config = PipelineRunConfiguration(parameters=params) if params else None
+        
+        # Trigger the pipeline with the configuration
+        pipeline_run = client.trigger_pipeline(pipeline_name, run_configuration=run_config)
+        run_id = pipeline_run.id
         return {
             "statusCode": 200,
             "body": json.dumps({
