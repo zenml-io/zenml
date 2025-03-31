@@ -49,7 +49,7 @@
 ## Tutorials
 
 * [Managing scheduled pipelines](tutorials/managing-scheduled-pipelines-v2.md)
-
+* [Organizing pipelines and models](tutorials/organizing-pipelines-and-models.md)
 ## Examples
 
 * [Quickstart](https://github.com/zenml-io/zenml/blob/main/examples/quickstart)
