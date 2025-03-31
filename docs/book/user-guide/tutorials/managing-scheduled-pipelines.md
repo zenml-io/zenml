@@ -60,18 +60,20 @@ The table below summarizes scheduling support across ZenML orchestrators:
 
 | Orchestrator | Support | Key Features | Limitations |
 |--------------|---------|--------------|------------|
-| Airflow | ✅ | Complex cron expressions, catchup/backfill, comprehensive monitoring | Cannot update schedules through ZenML directly; requires Airflow DAG modifications |
-| AzureML | ✅ | Integration with Azure monitoring, authentication via service connectors | Limited schedule visibility in ZenML; no pause/resume API in ZenML |
-| Databricks | ✅ | Integration with Databricks workspace | Limited schedule management capabilities through ZenML; no ability to update existing schedules |
-| HyperAI | ✅ | Simplified scheduling | Basic scheduling capabilities; limited frequency control |
+| Airflow | ✅ | Complex cron expressions, catchup/backfill, comprehensive monitoring | Requires Airflow DAG modifications for schedule changes |
+| AzureML | ✅ | Integration with Azure monitoring, authentication via service connectors | Limited schedule visibility in ZenML |
+| Databricks | ✅ | Integration with Databricks workspace | Basic scheduling capabilities only |
+| HyperAI | ✅ | Simplified scheduling | Limited frequency control options |
 | Kubeflow | ✅ | Full cron support, UI management, catchup functionality | Only supports cron expressions (no interval-based scheduling); schedules persist in Kubeflow even if deleted from ZenML |
-| Kubernetes | ✅ | Uses Kubernetes CronJobs | Only supports cron expressions; no built-in pause/resume functionality; no built-in support for updating schedules |
+| Kubernetes | ✅ | Uses Kubernetes CronJobs | Only supports cron expressions; no built-in pause/resume functionality |
 | Local | ❌ | Not applicable | No scheduling support at all |
 | Local Docker | ❌ | Not applicable | No scheduling support at all |
-| SageMaker | ✅ | AWS integration, CloudWatch monitoring | Limited schedule management through ZenML; requires AWS console for detailed management |
+| SageMaker | ✅ | AWS integration, CloudWatch monitoring | Requires AWS console for detailed management |
 | SkypilotVM | ❌ | Not applicable | No scheduling support at all |
 | Tekton | ❌ | Not applicable | No scheduling support at all |
-| Vertex AI | ✅ | GCP integration, detailed execution logs | No explicit pause/resume functionality in ZenML; no clear support for updating existing schedules |
+| Vertex AI | ✅ | GCP integration, detailed execution logs | No explicit pause/resume functionality in ZenML |
+
+**Note:** ZenML doesn't currently support updating or deleting orchestrator schedules directly through its API - these operations typically require interacting with the orchestrator's native tools. See section 3 for details on managing existing schedules.
 
 **Choosing the right orchestrator for scheduling:**
 
