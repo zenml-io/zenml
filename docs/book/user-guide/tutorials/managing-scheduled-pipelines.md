@@ -322,26 +322,235 @@ For unsupported orchestrators (like Local and LocalDocker), attempting to create
 
 ## 3. Managing existing schedules
 
+Once you've created pipeline schedules, ongoing management becomes crucial - especially in production environments. This section covers how to view, monitor, update, and delete your schedules across different orchestrators.
+
 ### 3.1 Viewing and monitoring schedules
 
-- Listing schedules with ZenML CLI
-- Viewing schedules in the dashboard
-- Checking schedule status
-- Monitoring schedule execution history
+#### Listing schedules with ZenML CLI
+
+The primary way to view your schedules is through the ZenML CLI:
+
+```bash
+# List all schedules
+zenml pipeline schedule list
+
+# Filter schedules by pipeline name
+zenml pipeline schedule list --pipeline_id my_pipeline_id
+```
+
+The CLI output shows basic information about each schedule, including:
+- Schedule name
+- Pipeline name
+- Cron expression or interval
+- Start time
+- End time
+- Catchup status
+
+#### Checking schedule status and history
+
+To monitor the execution history of your scheduled pipelines, you can:
+
+1. View the pipeline runs associated with the schedule:
+
+   ```bash
+   # List pipeline runs, which will include scheduled runs
+   zenml pipeline runs list --pipeline_name my_pipeline
+   ```
+
+2. Check the orchestrator's native UI for detailed execution information:
+   - **Kubeflow**: Check the Kubeflow Pipelines UI under the Recurring Runs section
+   - **Vertex AI**: Use the Google Cloud Console to view Pipeline execution history
+   - **Airflow**: Check the Airflow UI for DAG run history
+
+3. Set up monitoring for your scheduled pipeline runs:
+
+   ```python
+   from zenml.integrations.slack.alerters import SlackAlerter
+   
+   # Example: Set up a Slack alerter for run completion
+   @pipeline(
+      settings={
+         "alerter": {
+            "slack_alerter": SlackAlerter(
+               webhook_url="https://hooks.slack.com/services/XXX/YYY/ZZZ",
+               alert_on_success=True,
+               alert_on_failure=True
+            )
+         }
+      }
+   )
+   def my_scheduled_pipeline():
+       # Pipeline steps
+   ```
 
 ### 3.2 Updating schedules
 
-- The challenge with schedule updates
-- Why direct orchestrator interaction is often needed
-- Update patterns for different orchestrators
-- Best practices for schedule maintenance
+#### The challenge with schedule updates
+
+One important limitation of ZenML's scheduling system is that **schedules cannot be directly updated after creation**. This is because schedules are implemented at the orchestrator level, and each orchestrator has different capabilities for updating schedules.
+
+The current recommended workflow for "updating" a schedule is:
+
+1. Delete the existing schedule
+2. Create a new schedule with the desired configuration
+
+```python
+# Delete the existing schedule
+from zenml.client import Client
+Client().delete_schedule("my-schedule")
+
+# Create a new schedule with updated parameters
+from zenml.config.schedule import Schedule
+updated_schedule = Schedule(
+    name="my-schedule",  # Use the same name for continuity
+    cron_expression="0 9 * * *"  # Updated schedule parameters
+)
+my_pipeline = my_pipeline.with_options(schedule=updated_schedule)
+my_pipeline()
+```
+
+#### Why direct orchestrator interaction is often needed
+
+For more advanced schedule management, you'll often need to interact directly with the orchestrator:
+
+1. **Schedule pausing**: ZenML doesn't provide a way to pause schedules - you need to use the orchestrator's native tools
+2. **Complex updates**: Some orchestrators allow updating schedules without recreating them
+3. **Schedule monitoring**: Detailed execution information is available in the orchestrator's UI
+
+#### Update patterns for different orchestrators
+
+**Kubeflow**:
+```python
+from kfp.client import Client as KFPClient
+
+# Connect to Kubeflow
+client = KFPClient(host="https://your-kubeflow-host")
+
+# Get the recurring run ID (you'll need to query this based on name)
+recurring_run_id = "your-recurring-run-id"
+
+# Enable or disable the recurring run
+client.recurring_runs.enable(recurring_run_id)
+client.recurring_runs.disable(recurring_run_id)
+```
+
+**Vertex AI**:
+```python
+from google.cloud import aiplatform
+
+# List schedules
+vertex_schedules = aiplatform.PipelineJobSchedule.list(
+    filter=f'display_name="your-schedule-name"',
+    location="your-region"
+)
+
+# Pause/unpause schedule
+if vertex_schedules:
+    schedule = vertex_schedules[0]
+    schedule.pause()  # or schedule.resume()
+```
+
+**Airflow**:
+```bash
+# Using the Airflow CLI
+airflow dags pause your_dag_id
+airflow dags unpause your_dag_id
+```
 
 ### 3.3 Deleting schedules
 
-- ZenML schedule deletion
-- Why orchestrator schedules may remain
-- Direct deletion from orchestratorsoh sorry
-- Complete cleanup process
+#### ZenML schedule deletion
+
+To delete a schedule using the ZenML CLI:
+
+```bash
+# List schedules to find the name or ID
+zenml pipeline schedule list
+
+# Delete a schedule by name or ID
+zenml pipeline schedule delete your-schedule-name
+```
+
+Using the Python SDK:
+
+```python
+from zenml.client import Client
+
+# Delete by name or ID
+Client().delete_schedule("your-schedule-name")
+```
+
+#### Why orchestrator schedules may remain
+
+When you delete a schedule through ZenML, the database record is removed, but the underlying orchestrator schedule might persist depending on the implementation. This is because:
+
+1. Some orchestrators don't provide APIs for deleting schedules
+2. ZenML prioritizes a unified interface over orchestrator-specific cleanup
+3. Connection or permission issues may prevent orchestrator-level deletion
+
+This can lead to "orphaned" schedules that continue to run in the orchestrator but are no longer tracked by ZenML.
+
+#### Direct deletion from orchestrators
+
+To ensure complete cleanup, you should delete schedules both from ZenML and directly from the orchestrator:
+
+**Kubeflow**:
+```python
+from kfp.client import Client as KFPClient
+
+# Connect to Kubeflow
+client = KFPClient(host="https://your-kubeflow-host")
+
+# List all recurring runs matching a name pattern
+recurring_runs = client.list_recurring_runs(
+    experiment_id="your-experiment-id",
+    page_size=100
+)
+
+# Delete matching recurring runs
+for run in recurring_runs:
+    if run.name == "your-schedule-name":
+        client.delete_recurring_run(run.id)
+```
+
+**Vertex AI**:
+```python
+from google.cloud import aiplatform
+
+# List schedules
+vertex_schedules = aiplatform.PipelineJobSchedule.list(
+    filter=f'display_name="your-schedule-name"',
+    location="your-region"
+)
+
+# Delete schedules
+for schedule in vertex_schedules:
+    schedule.delete()
+```
+
+**Airflow**:
+You can delete the generated DAG file from the Airflow DAGs directory, or you may need to use the Airflow API to delete the DAG depending on your Airflow setup.
+
+#### Complete cleanup process
+
+For a thorough cleanup, follow these steps:
+
+1. Delete the schedule from ZenML:
+   ```bash
+   zenml pipeline schedule delete your-schedule-name
+   ```
+
+2. Delete the schedule from the orchestrator using the appropriate method
+
+3. Verify deletion by checking both ZenML and the orchestrator:
+   ```bash
+   # Check ZenML
+   zenml pipeline schedule list
+   
+   # Check the orchestrator using its native tools
+   ```
+
+4. (Optional) Clean up any artifacts or logs associated with the scheduled runs
 
 ## 4. Direct interaction with orchestrator schedules
 
