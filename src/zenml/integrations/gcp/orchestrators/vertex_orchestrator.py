@@ -736,6 +736,9 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                         "Waiting for the Vertex AI Pipelines job to finish..."
                     )
                     run.wait()
+                    logger.info(
+                        "Vertex AI Pipelines job completed successfully."
+                    )
 
         except google_exceptions.ClientError as e:
             logger.error("Failed to create the Vertex AI Pipelines job: %s", e)
