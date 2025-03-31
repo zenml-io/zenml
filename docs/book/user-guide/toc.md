@@ -1,7 +1,6 @@
 # Table of contents
 
 * [Learn ZenML](README.md)
-* [Testing](README.md)
 * [Starter guide](starter-guide/README.md)
   * [Create an ML pipeline](starter-guide/create-an-ml-pipeline.md)
   * [Cache previous executions](starter-guide/cache-previous-executions.md)
@@ -46,6 +45,7 @@
     * [Evaluation for finetuning](llmops-guide/finetuning-llms/evaluation-for-finetuning.md)
     * [Deploying finetuned models](llmops-guide/finetuning-llms/deploying-finetuned-models.md)
     * [Next steps](llmops-guide/finetuning-llms/next-steps.md)
+* [Tutorials](tutorials/managing-scheduled-pipelines.md)
 
 ## Examples
 
