@@ -264,164 +264,164 @@ redirects:
   how-to/advanced-topics/control-logging/disable-rich-traceback: how-to/control-logging/disable-rich-traceback.md
   how-to/advanced-topics/control-logging/disable-colorful-logging: how-to/control-logging/disable-colorful-logging.md
 
-  # Redirects for the Steps and Pipelines section
-  how-to/build-pipelines/step-dependencies: how-to/steps-pipelines/steps_and_pipelines.md
-  how-to/build-pipelines/pipelines-abstraction: how-to/steps-pipelines/steps_and_pipelines.md
-  how-to/build-pipelines/steps-abstraction: how-to/steps-pipelines/steps_and_pipelines.md
-  how-to/build-pipelines/create-a-pipeline: how-to/steps-pipelines/steps_and_pipelines.md
-  how-to/build-pipelines/create-steps: how-to/steps-pipelines/steps_and_pipelines.md
-  how-to/build-pipelines/using-inputs-and-outputs: how-to/steps-pipelines/steps_and_pipelines.md
+  # # Redirects for the Steps and Pipelines section
+  # how-to/build-pipelines/step-dependencies: how-to/steps-pipelines/steps_and_pipelines.md
+  # how-to/build-pipelines/pipelines-abstraction: how-to/steps-pipelines/steps_and_pipelines.md
+  # how-to/build-pipelines/steps-abstraction: how-to/steps-pipelines/steps_and_pipelines.md
+  # how-to/build-pipelines/create-a-pipeline: how-to/steps-pipelines/steps_and_pipelines.md
+  # how-to/build-pipelines/create-steps: how-to/steps-pipelines/steps_and_pipelines.md
+  # how-to/build-pipelines/using-inputs-and-outputs: how-to/steps-pipelines/steps_and_pipelines.md
   
-  how-to/pipeline-development/build-pipelines/step-dependencies: how-to/steps-pipelines/steps_and_pipelines.md
-  how-to/pipeline-development/build-pipelines/pipelines-abstraction: how-to/steps-pipelines/steps_and_pipelines.md
-  how-to/pipeline-development/build-pipelines/steps-abstraction: how-to/steps-pipelines/steps_and_pipelines.md
-  how-to/pipeline-development/build-pipelines/create-a-pipeline: how-to/steps-pipelines/steps_and_pipelines.md
-  how-to/pipeline-development/build-pipelines/create-steps: how-to/steps-pipelines/steps_and_pipelines.md
-  how-to/pipeline-development/build-pipelines/using-inputs-and-outputs: how-to/steps-pipelines/steps_and_pipelines.md
+  # how-to/pipeline-development/build-pipelines/step-dependencies: how-to/steps-pipelines/steps_and_pipelines.md
+  # how-to/pipeline-development/build-pipelines/pipelines-abstraction: how-to/steps-pipelines/steps_and_pipelines.md
+  # how-to/pipeline-development/build-pipelines/steps-abstraction: how-to/steps-pipelines/steps_and_pipelines.md
+  # how-to/pipeline-development/build-pipelines/create-a-pipeline: how-to/steps-pipelines/steps_and_pipelines.md
+  # how-to/pipeline-development/build-pipelines/create-steps: how-to/steps-pipelines/steps_and_pipelines.md
+  # how-to/pipeline-development/build-pipelines/using-inputs-and-outputs: how-to/steps-pipelines/steps_and_pipelines.md
   
-  how-to/build-pipelines/configuring-steps: how-to/steps-pipelines/configuration_settings.md
-  how-to/build-pipelines/configuring-pipelines: how-to/steps-pipelines/configuration_settings.md
-  how-to/build-pipelines/pipeline-settings: how-to/steps-pipelines/configuration_settings.md
-  how-to/build-pipelines/step-settings: how-to/steps-pipelines/configuration_settings.md
+  # how-to/build-pipelines/configuring-steps: how-to/steps-pipelines/configuration_settings.md
+  # how-to/build-pipelines/configuring-pipelines: how-to/steps-pipelines/configuration_settings.md
+  # how-to/build-pipelines/pipeline-settings: how-to/steps-pipelines/configuration_settings.md
+  # how-to/build-pipelines/step-settings: how-to/steps-pipelines/configuration_settings.md
   
-  how-to/pipeline-development/build-pipelines/configuring-steps: how-to/steps-pipelines/configuration_settings.md
-  how-to/pipeline-development/build-pipelines/configuring-pipelines: how-to/steps-pipelines/configuration_settings.md
-  how-to/pipeline-development/build-pipelines/pipeline-settings: how-to/steps-pipelines/configuration_settings.md
-  how-to/pipeline-development/build-pipelines/step-settings: how-to/steps-pipelines/configuration_settings.md
+  # how-to/pipeline-development/build-pipelines/configuring-steps: how-to/steps-pipelines/configuration_settings.md
+  # how-to/pipeline-development/build-pipelines/configuring-pipelines: how-to/steps-pipelines/configuration_settings.md
+  # how-to/pipeline-development/build-pipelines/pipeline-settings: how-to/steps-pipelines/configuration_settings.md
+  # how-to/pipeline-development/build-pipelines/step-settings: how-to/steps-pipelines/configuration_settings.md
   
-  how-to/build-pipelines/pipeline-parameters: how-to/steps-pipelines/execution_parameters.md
-  how-to/build-pipelines/step-parameters: how-to/steps-pipelines/execution_parameters.md
-  how-to/build-pipelines/passing-parameters: how-to/steps-pipelines/execution_parameters.md
+  # how-to/build-pipelines/pipeline-parameters: how-to/steps-pipelines/execution_parameters.md
+  # how-to/build-pipelines/step-parameters: how-to/steps-pipelines/execution_parameters.md
+  # how-to/build-pipelines/passing-parameters: how-to/steps-pipelines/execution_parameters.md
   
-  how-to/pipeline-development/build-pipelines/pipeline-parameters: how-to/steps-pipelines/execution_parameters.md
-  how-to/pipeline-development/build-pipelines/step-parameters: how-to/steps-pipelines/execution_parameters.md
-  how-to/pipeline-development/build-pipelines/passing-parameters: how-to/steps-pipelines/execution_parameters.md
+  # how-to/pipeline-development/build-pipelines/pipeline-parameters: how-to/steps-pipelines/execution_parameters.md
+  # how-to/pipeline-development/build-pipelines/step-parameters: how-to/steps-pipelines/execution_parameters.md
+  # how-to/pipeline-development/build-pipelines/passing-parameters: how-to/steps-pipelines/execution_parameters.md
   
-  how-to/build-pipelines/logging-in-steps: how-to/steps-pipelines/logging.md
-  how-to/build-pipelines/configure-logging: how-to/steps-pipelines/logging.md
-  how-to/build-pipelines/view-logs: how-to/steps-pipelines/logging.md
+  # how-to/build-pipelines/logging-in-steps: how-to/steps-pipelines/logging.md
+  # how-to/build-pipelines/configure-logging: how-to/steps-pipelines/logging.md
+  # how-to/build-pipelines/view-logs: how-to/steps-pipelines/logging.md
   
-  how-to/pipeline-development/build-pipelines/logging-in-steps: how-to/steps-pipelines/logging.md
-  how-to/pipeline-development/build-pipelines/configure-logging: how-to/steps-pipelines/logging.md
-  how-to/pipeline-development/build-pipelines/view-logs: how-to/steps-pipelines/logging.md
+  # how-to/pipeline-development/build-pipelines/logging-in-steps: how-to/steps-pipelines/logging.md
+  # how-to/pipeline-development/build-pipelines/configure-logging: how-to/steps-pipelines/logging.md
+  # how-to/pipeline-development/build-pipelines/view-logs: how-to/steps-pipelines/logging.md
 
-  # Redirects for the new consolidated artifacts pages
-  how-to/data-artifact-management/handle-data-artifacts/: how-to/artifacts/artifacts.md
-  how-to/data-artifact-management/handle-data-artifacts/artifact-versioning: how-to/artifacts/artifacts.md
-  how-to/data-artifact-management/handle-data-artifacts/return-multiple-outputs-from-a-step: how-to/artifacts/artifacts.md
-  how-to/data-artifact-management/handle-data-artifacts/delete-an-artifact: how-to/artifacts/artifacts.md
-  how-to/data-artifact-management/handle-data-artifacts/tagging: how-to/artifacts/artifacts.md
-  how-to/data-artifact-management/handle-data-artifacts/get-arbitrary-artifacts-in-a-step: how-to/artifacts/artifacts.md
-  how-to/data-artifact-management/handle-data-artifacts/handle-custom-data-types: how-to/artifacts/artifacts.md
-  how-to/data-artifact-management/handle-data-artifacts/load-artifacts-into-memory: how-to/artifacts/artifacts.md
+  # # Redirects for the new consolidated artifacts pages
+  # how-to/data-artifact-management/handle-data-artifacts/: how-to/artifacts/artifacts.md
+  # how-to/data-artifact-management/handle-data-artifacts/artifact-versioning: how-to/artifacts/artifacts.md
+  # how-to/data-artifact-management/handle-data-artifacts/return-multiple-outputs-from-a-step: how-to/artifacts/artifacts.md
+  # how-to/data-artifact-management/handle-data-artifacts/delete-an-artifact: how-to/artifacts/artifacts.md
+  # how-to/data-artifact-management/handle-data-artifacts/tagging: how-to/artifacts/artifacts.md
+  # how-to/data-artifact-management/handle-data-artifacts/get-arbitrary-artifacts-in-a-step: how-to/artifacts/artifacts.md
+  # how-to/data-artifact-management/handle-data-artifacts/handle-custom-data-types: how-to/artifacts/artifacts.md
+  # how-to/data-artifact-management/handle-data-artifacts/load-artifacts-into-memory: how-to/artifacts/artifacts.md
   
-  how-to/data-artifact-management/visualize-artifacts/: how-to/artifacts/visualizations.md
-  how-to/data-artifact-management/visualize-artifacts/types-of-visualizations: how-to/artifacts/visualizations.md
-  how-to/data-artifact-management/visualize-artifacts/creating-custom-visualizations: how-to/artifacts/visualizations.md
-  how-to/data-artifact-management/visualize-artifacts/visualizations-in-dashboard: how-to/artifacts/visualizations.md
-  how-to/data-artifact-management/visualize-artifacts/disabling-visualizations: how-to/artifacts/visualizations.md
+  # how-to/data-artifact-management/visualize-artifacts/: how-to/artifacts/visualizations.md
+  # how-to/data-artifact-management/visualize-artifacts/types-of-visualizations: how-to/artifacts/visualizations.md
+  # how-to/data-artifact-management/visualize-artifacts/creating-custom-visualizations: how-to/artifacts/visualizations.md
+  # how-to/data-artifact-management/visualize-artifacts/visualizations-in-dashboard: how-to/artifacts/visualizations.md
+  # how-to/data-artifact-management/visualize-artifacts/disabling-visualizations: how-to/artifacts/visualizations.md
   
-  how-to/data-artifact-management/complex-usecases/: how-to/artifacts/complex_use_cases.md
-  how-to/data-artifact-management/complex-usecases/datasets: how-to/artifacts/complex_use_cases.md
-  how-to/data-artifact-management/complex-usecases/manage-big-data: how-to/artifacts/complex_use_cases.md
-  how-to/data-artifact-management/complex-usecases/unmaterialized-artifacts: how-to/artifacts/complex_use_cases.md
-  how-to/data-artifact-management/complex-usecases/passing-artifacts-between-pipelines: how-to/artifacts/complex_use_cases.md
-  how-to/data-artifact-management/complex-usecases/registering-existing-data: how-to/artifacts/complex_use_cases.md
+  # how-to/data-artifact-management/complex-usecases/: how-to/artifacts/complex_use_cases.md
+  # how-to/data-artifact-management/complex-usecases/datasets: how-to/artifacts/complex_use_cases.md
+  # how-to/data-artifact-management/complex-usecases/manage-big-data: how-to/artifacts/complex_use_cases.md
+  # how-to/data-artifact-management/complex-usecases/unmaterialized-artifacts: how-to/artifacts/complex_use_cases.md
+  # how-to/data-artifact-management/complex-usecases/passing-artifacts-between-pipelines: how-to/artifacts/complex_use_cases.md
+  # how-to/data-artifact-management/complex-usecases/registering-existing-data: how-to/artifacts/complex_use_cases.md
 
-  # Redirects for Tags
-  how-to/data-artifact-management/handle-data-artifacts/tagging: how-to/tags/tags.md
-  how-to/handle-data-artifacts/tagging: how-to/tags/tags.md
+  # # Redirects for Tags
+  # how-to/data-artifact-management/handle-data-artifacts/tagging: how-to/tags/tags.md
+  # how-to/handle-data-artifacts/tagging: how-to/tags/tags.md
 
-  # Redirects for Metadata
-  how-to/model-management-metrics/track-metrics-metadata/: how-to/metadata/metadata.md
-  how-to/model-management-metrics/track-metrics-metadata/attach-metadata-to-a-step: how-to/metadata/metadata.md
-  how-to/model-management-metrics/track-metrics-metadata/attach-metadata-to-a-run: how-to/metadata/metadata.md
-  how-to/model-management-metrics/track-metrics-metadata/attach-metadata-to-an-artifact: how-to/metadata/metadata.md
-  how-to/model-management-metrics/track-metrics-metadata/attach-metadata-to-a-model: how-to/metadata/metadata.md
-  how-to/model-management-metrics/track-metrics-metadata/grouping-metadata: how-to/metadata/metadata.md
-  how-to/model-management-metrics/track-metrics-metadata/logging-metadata: how-to/metadata/metadata.md
-  how-to/model-management-metrics/track-metrics-metadata/fetch-metadata-within-steps: how-to/metadata/metadata.md
-  how-to/model-management-metrics/track-metrics-metadata/fetch-metadata-within-pipeline: how-to/metadata/metadata.md
-  how-to/track-metrics-metadata/: how-to/metadata/metadata.md
-  how-to/track-metrics-metadata/attach-metadata-to-a-step: how-to/metadata/metadata.md
-  how-to/track-metrics-metadata/attach-metadata-to-a-run: how-to/metadata/metadata.md
-  how-to/track-metrics-metadata/attach-metadata-to-an-artifact: how-to/metadata/metadata.md
-  how-to/track-metrics-metadata/attach-metadata-to-a-model: how-to/metadata/metadata.md
-  how-to/track-metrics-metadata/grouping-metadata: how-to/metadata/metadata.md
-  how-to/track-metrics-metadata/logging-metadata: how-to/metadata/metadata.md
-  how-to/track-metrics-metadata/fetch-metadata-within-steps: how-to/metadata/metadata.md
-  how-to/track-metrics-metadata/fetch-metadata-within-pipeline: how-to/metadata/metadata.md
+  # # Redirects for Metadata
+  # how-to/model-management-metrics/track-metrics-metadata/: how-to/metadata/metadata.md
+  # how-to/model-management-metrics/track-metrics-metadata/attach-metadata-to-a-step: how-to/metadata/metadata.md
+  # how-to/model-management-metrics/track-metrics-metadata/attach-metadata-to-a-run: how-to/metadata/metadata.md
+  # how-to/model-management-metrics/track-metrics-metadata/attach-metadata-to-an-artifact: how-to/metadata/metadata.md
+  # how-to/model-management-metrics/track-metrics-metadata/attach-metadata-to-a-model: how-to/metadata/metadata.md
+  # how-to/model-management-metrics/track-metrics-metadata/grouping-metadata: how-to/metadata/metadata.md
+  # how-to/model-management-metrics/track-metrics-metadata/logging-metadata: how-to/metadata/metadata.md
+  # how-to/model-management-metrics/track-metrics-metadata/fetch-metadata-within-steps: how-to/metadata/metadata.md
+  # how-to/model-management-metrics/track-metrics-metadata/fetch-metadata-within-pipeline: how-to/metadata/metadata.md
+  # how-to/track-metrics-metadata/: how-to/metadata/metadata.md
+  # how-to/track-metrics-metadata/attach-metadata-to-a-step: how-to/metadata/metadata.md
+  # how-to/track-metrics-metadata/attach-metadata-to-a-run: how-to/metadata/metadata.md
+  # how-to/track-metrics-metadata/attach-metadata-to-an-artifact: how-to/metadata/metadata.md
+  # how-to/track-metrics-metadata/attach-metadata-to-a-model: how-to/metadata/metadata.md
+  # how-to/track-metrics-metadata/grouping-metadata: how-to/metadata/metadata.md
+  # how-to/track-metrics-metadata/logging-metadata: how-to/metadata/metadata.md
+  # how-to/track-metrics-metadata/fetch-metadata-within-steps: how-to/metadata/metadata.md
+  # how-to/track-metrics-metadata/fetch-metadata-within-pipeline: how-to/metadata/metadata.md
 
-  # Templates redirects
-  how-to/trigger-pipelines/: how-to/templates/templates.md
-  how-to/trigger-pipelines/use-templates-python: how-to/templates/templates.md
-  how-to/trigger-pipelines/use-templates-cli: how-to/templates/templates.md
-  how-to/trigger-pipelines/use-templates-dashboard: how-to/templates/templates.md
-  how-to/trigger-pipelines/use-templates-rest-api: how-to/templates/templates.md
-  how-to/pipeline-development/trigger-pipelines/: how-to/templates/templates.md
-  how-to/pipeline-development/trigger-pipelines/use-templates-python: how-to/templates/templates.md
-  how-to/pipeline-development/trigger-pipelines/use-templates-cli: how-to/templates/templates.md
-  how-to/pipeline-development/trigger-pipelines/use-templates-dashboard: how-to/templates/templates.md
-  how-to/pipeline-development/trigger-pipelines/use-templates-rest-api: how-to/templates/templates.md
+  # # Templates redirects
+  # how-to/trigger-pipelines/: how-to/templates/templates.md
+  # how-to/trigger-pipelines/use-templates-python: how-to/templates/templates.md
+  # how-to/trigger-pipelines/use-templates-cli: how-to/templates/templates.md
+  # how-to/trigger-pipelines/use-templates-dashboard: how-to/templates/templates.md
+  # how-to/trigger-pipelines/use-templates-rest-api: how-to/templates/templates.md
+  # how-to/pipeline-development/trigger-pipelines/: how-to/templates/templates.md
+  # how-to/pipeline-development/trigger-pipelines/use-templates-python: how-to/templates/templates.md
+  # how-to/pipeline-development/trigger-pipelines/use-templates-cli: how-to/templates/templates.md
+  # how-to/pipeline-development/trigger-pipelines/use-templates-dashboard: how-to/templates/templates.md
+  # how-to/pipeline-development/trigger-pipelines/use-templates-rest-api: how-to/templates/templates.md
   
-  # Builds redirects
-  how-to/customize-docker-builds/: how-to/builds/builds.md
-  how-to/customize-docker-builds/docker-settings-on-a-pipeline: how-to/builds/builds.md
-  how-to/customize-docker-builds/docker-settings-on-a-step: how-to/builds/builds.md
-  how-to/customize-docker-builds/use-a-prebuilt-image: how-to/builds/builds.md
-  how-to/customize-docker-builds/specify-pip-dependencies-and-apt-packages: how-to/builds/builds.md
-  how-to/customize-docker-builds/how-to-use-a-private-pypi-repository: how-to/builds/builds.md
-  how-to/customize-docker-builds/use-your-own-docker-files: how-to/builds/builds.md
-  how-to/customize-docker-builds/which-files-are-built-into-the-image: how-to/builds/builds.md
-  how-to/customize-docker-builds/how-to-reuse-builds: how-to/builds/builds.md
-  how-to/customize-docker-builds/define-where-an-image-is-built: how-to/builds/builds.md
-  how-to/infrastructure-deployment/customize-docker-builds/: how-to/builds/builds.md
-  how-to/infrastructure-deployment/customize-docker-builds/docker-settings-on-a-pipeline: how-to/builds/builds.md
-  how-to/infrastructure-deployment/customize-docker-builds/docker-settings-on-a-step: how-to/builds/builds.md
-  how-to/infrastructure-deployment/customize-docker-builds/use-a-prebuilt-image: how-to/builds/builds.md
-  how-to/infrastructure-deployment/customize-docker-builds/specify-pip-dependencies-and-apt-packages: how-to/builds/builds.md
-  how-to/infrastructure-deployment/customize-docker-builds/how-to-use-a-private-pypi-repository: how-to/builds/builds.md
-  how-to/infrastructure-deployment/customize-docker-builds/use-your-own-docker-files: how-to/builds/builds.md
-  how-to/infrastructure-deployment/customize-docker-builds/which-files-are-built-into-the-image: how-to/builds/builds.md
-  how-to/infrastructure-deployment/customize-docker-builds/how-to-reuse-builds: how-to/builds/builds.md
-  how-to/infrastructure-deployment/customize-docker-builds/define-where-an-image-is-built: how-to/builds/builds.md
+  # # Builds redirects
+  # how-to/customize-docker-builds/: how-to/builds/builds.md
+  # how-to/customize-docker-builds/docker-settings-on-a-pipeline: how-to/builds/builds.md
+  # how-to/customize-docker-builds/docker-settings-on-a-step: how-to/builds/builds.md
+  # how-to/customize-docker-builds/use-a-prebuilt-image: how-to/builds/builds.md
+  # how-to/customize-docker-builds/specify-pip-dependencies-and-apt-packages: how-to/builds/builds.md
+  # how-to/customize-docker-builds/how-to-use-a-private-pypi-repository: how-to/builds/builds.md
+  # how-to/customize-docker-builds/use-your-own-docker-files: how-to/builds/builds.md
+  # how-to/customize-docker-builds/which-files-are-built-into-the-image: how-to/builds/builds.md
+  # how-to/customize-docker-builds/how-to-reuse-builds: how-to/builds/builds.md
+  # how-to/customize-docker-builds/define-where-an-image-is-built: how-to/builds/builds.md
+  # how-to/infrastructure-deployment/customize-docker-builds/: how-to/builds/builds.md
+  # how-to/infrastructure-deployment/customize-docker-builds/docker-settings-on-a-pipeline: how-to/builds/builds.md
+  # how-to/infrastructure-deployment/customize-docker-builds/docker-settings-on-a-step: how-to/builds/builds.md
+  # how-to/infrastructure-deployment/customize-docker-builds/use-a-prebuilt-image: how-to/builds/builds.md
+  # how-to/infrastructure-deployment/customize-docker-builds/specify-pip-dependencies-and-apt-packages: how-to/builds/builds.md
+  # how-to/infrastructure-deployment/customize-docker-builds/how-to-use-a-private-pypi-repository: how-to/builds/builds.md
+  # how-to/infrastructure-deployment/customize-docker-builds/use-your-own-docker-files: how-to/builds/builds.md
+  # how-to/infrastructure-deployment/customize-docker-builds/which-files-are-built-into-the-image: how-to/builds/builds.md
+  # how-to/infrastructure-deployment/customize-docker-builds/how-to-reuse-builds: how-to/builds/builds.md
+  # how-to/infrastructure-deployment/customize-docker-builds/define-where-an-image-is-built: how-to/builds/builds.md
   
-  # Models redirects
-  how-to/model-management-metrics/model-control-plane/: how-to/models/models.md
-  how-to/model-management-metrics/model-control-plane/register-a-model: how-to/models/models.md
-  how-to/model-management-metrics/model-control-plane/delete-a-model: how-to/models/models.md
-  how-to/model-management-metrics/model-control-plane/associate-a-pipeline-with-a-model: how-to/models/models.md
-  how-to/model-management-metrics/model-control-plane/connecting-artifacts-via-a-model: how-to/models/models.md
-  how-to/model-management-metrics/model-control-plane/model-versions: how-to/models/models.md
-  how-to/model-management-metrics/model-control-plane/load-a-model-in-code: how-to/models/models.md
-  how-to/model-management-metrics/model-control-plane/promote-a-model: how-to/models/models.md
-  how-to/model-management-metrics/model-control-plane/linking-model-binaries-data-to-models: how-to/models/models.md
-  how-to/model-management-metrics/model-control-plane/load-artifacts-from-model: how-to/models/models.md
-  how-to/use-the-model-control-plane/: how-to/models/models.md
-  how-to/use-the-model-control-plane/register-a-model: how-to/models/models.md
-  how-to/use-the-model-control-plane/delete-a-model: how-to/models/models.md
-  how-to/use-the-model-control-plane/associate-a-pipeline-with-a-model: how-to/models/models.md
-  how-to/use-the-model-control-plane/connecting-artifacts-via-a-model: how-to/models/models.md
-  how-to/use-the-model-control-plane/model-versions: how-to/models/models.md
-  how-to/use-the-model-control-plane/load-a-model-in-code: how-to/models/models.md
-  how-to/use-the-model-control-plane/promote-a-model: how-to/models/models.md
-  how-to/use-the-model-control-plane/linking-model-binaries-data-to-models: how-to/models/models.md
-  how-to/use-the-model-control-plane/load-artifacts-from-model: how-to/models/models.md
+  # # Models redirects
+  # how-to/model-management-metrics/model-control-plane/: how-to/models/models.md
+  # how-to/model-management-metrics/model-control-plane/register-a-model: how-to/models/models.md
+  # how-to/model-management-metrics/model-control-plane/delete-a-model: how-to/models/models.md
+  # how-to/model-management-metrics/model-control-plane/associate-a-pipeline-with-a-model: how-to/models/models.md
+  # how-to/model-management-metrics/model-control-plane/connecting-artifacts-via-a-model: how-to/models/models.md
+  # how-to/model-management-metrics/model-control-plane/model-versions: how-to/models/models.md
+  # how-to/model-management-metrics/model-control-plane/load-a-model-in-code: how-to/models/models.md
+  # how-to/model-management-metrics/model-control-plane/promote-a-model: how-to/models/models.md
+  # how-to/model-management-metrics/model-control-plane/linking-model-binaries-data-to-models: how-to/models/models.md
+  # how-to/model-management-metrics/model-control-plane/load-artifacts-from-model: how-to/models/models.md
+  # how-to/use-the-model-control-plane/: how-to/models/models.md
+  # how-to/use-the-model-control-plane/register-a-model: how-to/models/models.md
+  # how-to/use-the-model-control-plane/delete-a-model: how-to/models/models.md
+  # how-to/use-the-model-control-plane/associate-a-pipeline-with-a-model: how-to/models/models.md
+  # how-to/use-the-model-control-plane/connecting-artifacts-via-a-model: how-to/models/models.md
+  # how-to/use-the-model-control-plane/model-versions: how-to/models/models.md
+  # how-to/use-the-model-control-plane/load-a-model-in-code: how-to/models/models.md
+  # how-to/use-the-model-control-plane/promote-a-model: how-to/models/models.md
+  # how-to/use-the-model-control-plane/linking-model-binaries-data-to-models: how-to/models/models.md
+  # how-to/use-the-model-control-plane/load-artifacts-from-model: how-to/models/models.md
   
-  # FAQ redirects
-  reference/how-do-i: reference/faq.md
+  # # FAQ redirects
+  # reference/how-do-i: reference/faq.md
   
-  # Client redirects
-  reference/python-client: how-to/client/client.md
-  docs/reference/python-client: how-to/client/client.md
+  # # Client redirects
+  # reference/python-client: how-to/client/client.md
+  # docs/reference/python-client: how-to/client/client.md
   
-  # Stack & Components redirects
-  how-to/infrastructure-deployment/stack-deployment/: how-to/stack-components/stack_components.md
-  how-to/infrastructure-deployment/auth-management/: how-to/stack-components/service_connectors.md
-  how-to/infrastructure-deployment/auth-management/service-connectors-guide: how-to/stack-components/service_connectors.md
-  how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack: how-to/stack-components/deployment.md
-  how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform: how-to/stack-components/deployment.md
-  how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack: how-to/stack-components/deployment.md
-  how-to/popular-integrations/aws-guide: how-to/stack-components/aws.md
-  how-to/popular-integrations/azure-guide: how-to/stack-components/azure.md
-  how-to/popular-integrations/gcp-guide: how-to/stack-components/gcp.md
+  # # Stack & Components redirects
+  # how-to/infrastructure-deployment/stack-deployment/: how-to/stack-components/stack_components.md
+  # how-to/infrastructure-deployment/auth-management/: how-to/stack-components/service_connectors.md
+  # how-to/infrastructure-deployment/auth-management/service-connectors-guide: how-to/stack-components/service_connectors.md
+  # how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack: how-to/stack-components/deployment.md
+  # how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform: how-to/stack-components/deployment.md
+  # how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack: how-to/stack-components/deployment.md
+  # how-to/popular-integrations/aws-guide: how-to/stack-components/aws.md
+  # how-to/popular-integrations/azure-guide: how-to/stack-components/azure.md
+  # how-to/popular-integrations/gcp-guide: how-to/stack-components/gcp.md
