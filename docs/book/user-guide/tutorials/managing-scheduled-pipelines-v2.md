@@ -117,8 +117,8 @@ Using the CLI to verify:
 # List all schedules
 zenml pipeline schedule list
 
-# Get details of a specific schedule
-zenml pipeline schedule get daily-data-processing
+# Filter schedules by pipeline name
+zenml pipeline schedule list --pipeline_id my_pipeline_id
 ```
 
 ## Step 4: Update the Schedule
@@ -148,6 +148,8 @@ Using the CLI to delete a schedule:
 # Delete a specific schedule
 zenml pipeline schedule delete daily-data-processing
 ```
+
+> **Important**: When updating schedules, you should also delete the corresponding schedule in your orchestrator (Vertex AI in this example). You can do this through the Google Cloud Console or using the orchestrator's API. ZenML's delete command may not always completely remove the underlying orchestrator schedule.
 
 ## Step 5: Monitor Schedule Execution
 
@@ -208,71 +210,96 @@ else:
     print("Schedule still exists!")
 ```
 
-## Advanced Scheduling Patterns
+## Troubleshooting: Quick Fixes for Common Issues
 
-ZenML supports several powerful scheduling patterns:
+Here are some practical fixes for issues you might encounter with your scheduled pipelines:
 
-### Running at Specific Times
+### Issue: Schedule Doesn't Run at the Expected Time
+
+If your pipeline doesn't run when scheduled:
 
 ```python
-# Run at 3:30 AM on the first day of each month
-Schedule(cron_expression="30 3 1 * *")
+# Verify the cron expression with the croniter library
+import datetime
+from croniter import croniter
 
-# Run at 2:15 PM on weekdays
-Schedule(cron_expression="15 14 * * 1-5")
+# Check if expression is valid
+cron_expression = "0 9 * * *"
+is_valid = croniter.is_valid(cron_expression)
+print(f"Is cron expression valid? {is_valid}")
 
-# Run every 6 hours
-Schedule(cron_expression="0 */6 * * *")
+# Calculate the next run times to verify
+base = datetime.datetime.now()
+iter = croniter(cron_expression, base)
+next_runs = [iter.get_next(datetime.datetime) for _ in range(3)]
+print("Next 3 scheduled runs:")
+for run_time in next_runs:
+    print(f"  {run_time}")
 ```
 
-### Time-Limited Scheduling
+For Vertex AI specifically, verify that your service account has the required permissions:
+```bash
+# Check permissions on your service account
+gcloud projects get-iam-policy your-project-id \
+  --filter="bindings.members:serviceAccount:your-service-account@your-project-id.iam.gserviceaccount.com"
+```
+
+### Issue: Orphaned Schedules in the Orchestrator
+
+To clean up orphaned Vertex AI schedules:
 
 ```python
-# Run every day at 9 AM, but only for the next 30 days
-Schedule(
-    cron_expression="0 9 * * *",
-    start_time=datetime.now(),
-    end_time=datetime.now() + timedelta(days=30)
+from google.cloud import aiplatform
+
+# List all Vertex schedules
+vertex_schedules = aiplatform.PipelineJobSchedule.list(
+    filter='display_name="daily-data-processing"',
+    location="us-central1" # insert your location here
 )
+
+# Delete orphaned schedules
+for schedule in vertex_schedules:
+    print(f"Deleting Vertex schedule: {schedule.display_name}")
+    schedule.delete()
 ```
 
-### Run-Once Scheduling 
+### Issue: Finding Failing Scheduled Runs
+
+When scheduled runs fail silently:
 
 ```python
-# Run once at a specific time in the future
-Schedule(run_once_start_time=datetime.now() + timedelta(days=1))
+# Find failed runs in the last 24 hours
+from zenml.client import Client
+import datetime
+
+client = Client()
+yesterday = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=1)
+
+# Get recent runs with status filtering
+failed_runs = client.list_pipeline_runs(
+    pipeline_name_or_id="daily_data_pipeline",
+    sort_by="created",
+    descending=True,
+    size=10
+)
+
+# Print failed runs
+print("Recent failed runs:")
+for run in failed_runs.items:
+    if run.status == "failed" and run.creation_time > yesterday:
+        print(f"Run ID: {run.id}")
+        print(f"Created at: {run.creation_time}")
+        print(f"Status: {run.status}")
+        print("---")
 ```
-
-## Common Issues and Solutions
-
-While working with scheduled pipelines, you might encounter these common issues:
-
-1. **Schedule not running at expected time**
-   - Check if the cron expression is correct
-   - Verify the orchestrator's timezone settings
-   - Ensure the orchestrator service is running
-
-2. **Authentication errors**
-   - Verify your orchestrator credentials
-   - Check service account permissions
-   - Ensure API keys are valid
-
-3. **Resource constraints**
-   - Monitor orchestrator resource usage
-   - Check for quota limits
-   - Verify resource allocation
-
-4. **Orphaned schedules**
-   - Schedules might remain in the orchestrator when deleted from ZenML
-   - Clean up schedules from both ZenML and the orchestrator directly
 
 ## Next Steps
 
 Now that you understand the basics of managing scheduled pipelines, you can:
 
-1. Create more complex schedules using different cron expressions
-2. Set up monitoring and alerting for your scheduled pipelines
-3. Implement error handling and retry logic
-4. Add parameters to your scheduled pipelines
+1. Create more complex schedules with various cron expressions for different business needs
+2. Set up monitoring and alerting to be notified when scheduled runs fail
+3. Optimize resource allocation for your scheduled pipelines
+4. Implement data-dependent scheduling where pipelines trigger based on data availability
 
-For more information, check out the [ZenML documentation](https://docs.zenml.io) and your orchestrator's specific documentation.
+For more advanced schedule management and monitoring techniques, check out the [ZenML documentation](https://docs.zenml.io).
