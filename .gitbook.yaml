@@ -264,7 +264,6 @@ redirects:
   how-to/advanced-topics/control-logging/disable-rich-traceback: how-to/control-logging/disable-rich-traceback.md
   how-to/advanced-topics/control-logging/disable-colorful-logging: how-to/control-logging/disable-colorful-logging.md
 
-
   # Redirects for the Steps and Pipelines section
   how-to/build-pipelines/step-dependencies: how-to/steps-pipelines/steps_and_pipelines.md
   how-to/build-pipelines/pipelines-abstraction: how-to/steps-pipelines/steps_and_pipelines.md
@@ -411,40 +410,6 @@ redirects:
   how-to/use-the-model-control-plane/linking-model-binaries-data-to-models: how-to/models/models.md
   how-to/use-the-model-control-plane/load-artifacts-from-model: how-to/models/models.md
   
-  # Templates redirects
-  how-to/trigger-pipelines/: how-to/templates/templates.md
-  how-to/trigger-pipelines/use-templates-python: how-to/templates/templates.md
-  how-to/trigger-pipelines/use-templates-cli: how-to/templates/templates.md
-  how-to/trigger-pipelines/use-templates-dashboard: how-to/templates/templates.md
-  how-to/trigger-pipelines/use-templates-rest-api: how-to/templates/templates.md
-  how-to/pipeline-development/trigger-pipelines/: how-to/templates/templates.md
-  how-to/pipeline-development/trigger-pipelines/use-templates-python: how-to/templates/templates.md
-  how-to/pipeline-development/trigger-pipelines/use-templates-cli: how-to/templates/templates.md
-  how-to/pipeline-development/trigger-pipelines/use-templates-dashboard: how-to/templates/templates.md
-  how-to/pipeline-development/trigger-pipelines/use-templates-rest-api: how-to/templates/templates.md
-  
-  # Builds redirects
-  how-to/customize-docker-builds/: how-to/builds/builds.md
-  how-to/customize-docker-builds/docker-settings-on-a-pipeline: how-to/builds/builds.md
-  how-to/customize-docker-builds/docker-settings-on-a-step: how-to/builds/builds.md
-  how-to/customize-docker-builds/use-a-prebuilt-image: how-to/builds/builds.md
-  how-to/customize-docker-builds/specify-pip-dependencies-and-apt-packages: how-to/builds/builds.md
-  how-to/customize-docker-builds/how-to-use-a-private-pypi-repository: how-to/builds/builds.md
-  how-to/customize-docker-builds/use-your-own-docker-files: how-to/builds/builds.md
-  how-to/customize-docker-builds/which-files-are-built-into-the-image: how-to/builds/builds.md
-  how-to/customize-docker-builds/how-to-reuse-builds: how-to/builds/builds.md
-  how-to/customize-docker-builds/define-where-an-image-is-built: how-to/builds/builds.md
-  how-to/infrastructure-deployment/customize-docker-builds/: how-to/builds/builds.md
-  how-to/infrastructure-deployment/customize-docker-builds/docker-settings-on-a-pipeline: how-to/builds/builds.md
-  how-to/infrastructure-deployment/customize-docker-builds/docker-settings-on-a-step: how-to/builds/builds.md
-  how-to/infrastructure-deployment/customize-docker-builds/use-a-prebuilt-image: how-to/builds/builds.md
-  how-to/infrastructure-deployment/customize-docker-builds/specify-pip-dependencies-and-apt-packages: how-to/builds/builds.md
-  how-to/infrastructure-deployment/customize-docker-builds/how-to-use-a-private-pypi-repository: how-to/builds/builds.md
-  how-to/infrastructure-deployment/customize-docker-builds/use-your-own-docker-files: how-to/builds/builds.md
-  how-to/infrastructure-deployment/customize-docker-builds/which-files-are-built-into-the-image: how-to/builds/builds.md
-  how-to/infrastructure-deployment/customize-docker-builds/how-to-reuse-builds: how-to/builds/builds.md
-  how-to/infrastructure-deployment/customize-docker-builds/define-where-an-image-is-built: how-to/builds/builds.md
-
   # FAQ redirects
   reference/how-do-i: reference/faq.md
   
