@@ -129,7 +129,40 @@ zenml pipeline schedule list
 
 # Filter schedules by pipeline name
 zenml pipeline schedule list --pipeline_id my_pipeline_id
+
+## Step 3.1: Verify Schedule on GCP
+
+To ensure the schedule was properly created in Vertex AI, we can verify it using the Google Cloud SDK:
+
+```python
+from google.cloud import aiplatform
+
+# List all Vertex schedules
+vertex_schedules = aiplatform.PipelineJobSchedule.list(
+    filter=f'display_name="{schedule.name}"',
+    location="us-central1"  # Replace with your Vertex AI region
+)
+
+our_vertex_schedule = next(
+    (s for s in vertex_schedules if s.display_name == schedule_name), None
+)
+
+if our_vertex_schedule:
+    print(
+        f"Vertex AI schedule '{our_vertex_schedule.display_name}' created successfully!"
+    )
+    print(f"State: {our_vertex_schedule.state}")
+    print(f"Cron expression: {our_vertex_schedule.cron}")
+    print(
+        f"Max concurrent run count: {our_vertex_schedule.max_concurrent_run_count}"
+    )
+else:
+    print("Schedule not found in Vertex AI!")
 ```
+
+{% hint style="warning" %}
+Make sure to replace `us-central1` with your actual Vertex AI region. You can find your region in the Vertex AI settings or by checking the `location` parameter in your Vertex orchestrator configuration.
+{% endhint %}
 
 ## Step 4: Update the Schedule
 
