@@ -124,13 +124,16 @@ configured_pipeline()
 
 ```python
 from zenml.client import Client
+from rich import print
 
 client = Client()
-fraud_pipelines = client.list_pipelines(tags=["fraud-detection"])
+fraud_pipelines = client.list_pipeline_runs(tags=["fraud-detection"])
 
-print(f"Found {len(fraud_pipelines.items)} fraud detection pipelines:")
+print(f"Found {len(fraud_pipelines.items)} fraud detection pipeline runs:")
 for pipeline in fraud_pipelines.items:
-    print(f"  - {pipeline.name} (tags: {', '.join(pipeline.tags)})")
+    tag_names = [tag.name for tag in pipeline.tags]
+    print(f"  - {pipeline.name} (tags: {', '.join(tag_names)})")
+
 ```
 
 ## Part 2: Organizing Artifacts with Tags
@@ -144,18 +147,24 @@ from zenml import step, ArtifactConfig
 from typing import Annotated
 
 @step
-def load_data() -> Annotated[pd.DataFrame, 
-                            ArtifactConfig(name="transaction_data", 
-                                          tags=["raw", "financial", "daily"])]:
+def load_data() -> Annotated[
+    pd.DataFrame,
+    ArtifactConfig(
+        name="transaction_data", tags=["raw", "financial", "daily"]
+    ),
+]:
     """Load transaction data with tags applied to the artifact."""
     # Implementation same as before
     # ...
     return data
 
 @step
-def feature_engineering(data: pd.DataFrame) -> Annotated[pd.DataFrame, 
-                                                       ArtifactConfig(name="feature_data", 
-                                                                     tags=["processed", "financial"])]:
+def feature_engineering(data: pd.DataFrame) -> Annotated[
+    pd.DataFrame,
+    ArtifactConfig(
+        name="feature_data", tags=["processed", "financial"]
+    ),
+]:
     """Create features for fraud detection."""
     # Add some features
     data['amount_squared'] = data['amount'] ** 2
@@ -169,16 +178,23 @@ def feature_engineering(data: pd.DataFrame) -> Annotated[pd.DataFrame,
 from zenml import add_tags
 
 @step
-def evaluate_data_quality(data: pd.DataFrame) -> None:
+def evaluate_data_quality(data: pd.DataFrame) -> Annotated[
+    float,
+    ArtifactConfig(
+        name="data_quality", tags=["evaluation"]
+    ),
+]:
     """Evaluate data quality and tag the input artifact accordingly."""
     # Check for missing values
     missing_percentage = data.isnull().mean().mean() * 100
     
     # Tag based on quality assessment
     if missing_percentage == 0:
-        add_tags(tags=["complete-data"], artifact_name="transaction_data", infer_artifact=True)
+        add_tags(tags=["complete-data"], artifact_name="data_quality", infer_artifact=True)
     else:
-        add_tags(tags=["incomplete-data"], artifact_name="transaction_data", infer_artifact=True)
+        add_tags(tags=["incomplete-data"], artifact_name="data_quality", infer_artifact=True)
+    
+    return missing_percentage
 ```
 
 ### Finding Tagged Artifacts
@@ -197,7 +213,7 @@ print(f"Found {len(raw_financial_data.items)} raw financial data artifacts")
 ### Creating and Tagging Models
 
 ```python
-from zenml.models import Model
+from zenml import Model
 from zenml import pipeline
 
 # Create a model with tags
@@ -218,27 +234,6 @@ def model_training_pipeline():
     tag_model_with_metrics(accuracy)  # Tag with performance metrics
 ```
 
-### Tagging Models by Performance
-
-```python
-@step
-def tag_model_with_metrics(accuracy: float):
-    """Tag model with performance metrics."""
-    # Create an accuracy tag (e.g., "accuracy-95.5")
-    accuracy_pct = round(accuracy * 100, 2)
-    accuracy_tag = f"accuracy-{accuracy_pct}"
-    
-    # Tag based on performance thresholds
-    add_tags(tags=[accuracy_tag], model_name="fraud_detector", model_version="1.0.0")
-    
-    if accuracy >= 0.95:
-        add_tags(tags=["high-performance"], model_name="fraud_detector", model_version="1.0.0")
-    elif accuracy >= 0.90:
-        add_tags(tags=["medium-performance"], model_name="fraud_detector", model_version="1.0.0")
-    else:
-        add_tags(tags=["low-performance"], model_name="fraud_detector", model_version="1.0.0")
-```
-
 ## Part 4: Advanced Tagging Techniques
 
 ### Exclusive Tags for Production Tracking
@@ -247,31 +242,35 @@ def tag_model_with_metrics(accuracy: float):
 from zenml import pipeline, Tag
 
 # Only one pipeline can have this tag at a time
-@pipeline(tags=[Tag("production", exclusive=True)])
+@pipeline(tags=[Tag(name="production", exclusive=True)])
 def production_fraud_pipeline():
     # Pipeline implementation
     # ...
 ```
 
+Read more about exclusive tags [here](https://docs.zenml.io/how-to/data-artifact-management/handle-data-artifacts/tagging#exclusive-tags).
+
 ### Cascade Tags for Automatic Artifact Tagging
 
 ```python
 # Tag propagates to all artifacts created during pipeline execution
-@pipeline(tags=[Tag("financial-domain", cascade=True)])
+@pipeline(tags=[Tag(name="financial-domain", cascade=True)])
 def domain_tagged_pipeline():
     # Pipeline implementation
     # ...
 ```
 
+Read more about cascade tags [here](https://docs.zenml.io/how-to/data-artifact-management/handle-data-artifacts/tagging#cascade-tags).
+
 ### Advanced Tag Filtering
 
 ```python
 # Find models with accuracy above 90%
-high_accuracy_models = client.list_model_versions(
+high_accuracy_models = client.list_models(
     tags=["startswith:accuracy-9", "random-forest"]
 )
 
-# Find all processed financial artifacts
+# Find all processed financial artifact versions
 financial_processed = client.list_artifact_versions(
     tags=["financial", "contains:process"]
 )
@@ -355,12 +354,14 @@ def pipeline_with_consistent_tags():
 ### Find and Fix Orphaned Resources
 
 ```python
+from zenml.client import Client
+
 def find_untagged_resources():
     """Find resources without organization tags."""
     client = Client()
     
     # Check for models without environment tags
-    all_models = client.list_model_versions().items
+    all_models = client.list_models().items
     untagged_models = []
     
     env_tags = ["environment-development", "environment-staging", "environment-production"]
