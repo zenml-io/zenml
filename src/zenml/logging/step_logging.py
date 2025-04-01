@@ -496,24 +496,28 @@ class StepLogsStorageContext:
 
         def wrapped_write(*args: Any, **kwargs: Any) -> Any:
             message = args[0]
-            
+
             # Try to get step context if not available yet
             step_context = None
             try:
                 step_context = get_step_context()
             except Exception:
                 pass
-            
+
             # Add step name prefix for console output only
             if step_context and message != "\n":
-                output = method(f"[{step_context.step_name}] {message}", *args[1:], **kwargs)
+                output = method(
+                    f"[{step_context.step_name}] {message}",
+                    *args[1:],
+                    **kwargs,
+                )
             else:
                 output = method(*args, **kwargs)
-                
+
             # Save the original message without step name prefix to storage
             if args:
                 self.storage.write(message)
-                
+
             return output
 
         return wrapped_write
