@@ -325,27 +325,29 @@ def credit_card_fraud_pipeline():
 
 ```python
 # tag_registry.py
-class TagRegistry:
-    """Centralized tag registry for consistent naming."""
-    
-    # Environments
-    ENV_DEV = "environment-development"
-    ENV_STAGING = "environment-staging" 
-    ENV_PRODUCTION = "environment-production"
-    
-    # Domains
-    DOMAIN_CREDIT_CARD = "domain-credit-card"
-    DOMAIN_WIRE_TRANSFER = "domain-wire-transfer"
-    
-    # Status
-    STATUS_EXPERIMENTAL = "status-experimental"
-    STATUS_VALIDATED = "status-validated"
-    STATUS_PRODUCTION = "status-production"
+from enum import Enum
+
+class Environment(Enum):
+    """Environment tags."""
+    DEV = "environment-development"
+    STAGING = "environment-staging"
+    PRODUCTION = "environment-production"
+
+class Domain(Enum):
+    """Domain tags."""
+    CREDIT_CARD = "domain-credit-card"
+    WIRE_TRANSFER = "domain-wire-transfer"
+
+class Status(Enum):
+    """Status tags."""
+    EXPERIMENTAL = "status-experimental"
+    VALIDATED = "status-validated"
+    PRODUCTION = "status-production"
 
 # Usage
-from tag_registry import TagRegistry
+from tag_registry import Environment, Domain, Status
 
-@pipeline(tags=[TagRegistry.ENV_DEV, TagRegistry.DOMAIN_CREDIT_CARD])
+@pipeline(tags=[Environment.DEV.value, Domain.CREDIT_CARD.value])
 def pipeline_with_consistent_tags():
     # Implementation
     pass
