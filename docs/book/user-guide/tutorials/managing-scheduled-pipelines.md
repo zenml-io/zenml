@@ -259,7 +259,7 @@ def monitored_pipeline():
     # Other steps
 ```
 
-This assumes you've registered an alerter (like Slack or Discord) in your active stack.
+This assumes you've [registered an alerter](https://docs.zenml.io/stacks/alerters) (like Slack or Discord) in your active stack.
 
 ## Step 6: Clean Up
 
