@@ -75,9 +75,12 @@ scheduled_pipeline = daily_data_pipeline.with_options(schedule=schedule)
 scheduled_pipeline()
 ```
 
-### Best Practice: Use Descriptive Schedule Names
+Running the pipeline will create the schedule in the ZenML metadata store. as
+well as the scheduled run in the orchestrator.
 
 {% hint style="info" %}
+**Best Practice: Use Descriptive Schedule Names**
+
 When creating schedules, follow a consistent naming pattern to better organize them:
 
 ```python
