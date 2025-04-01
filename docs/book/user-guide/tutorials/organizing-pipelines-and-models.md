@@ -11,7 +11,16 @@ This cookbook demonstrates how to effectively organize your machine learning ass
 As ML projects grow, effective organization becomes critical. ZenML provides two powerful organization mechanisms:
 
 1. **Tags**: Flexible labels that can be applied to various entities (pipelines, runs, artifacts, models)
-2. **Projects** (ZenML Pro): Namespace-based isolation for logical separation between initiatives or teams
+2. **Projects** (ZenML Pro): Namespace-based isolation for logical separation
+   between initiatives or teams
+
+{% hint style="info" %}
+For our full reference documentation on things covered in this tutorial, see the
+[Tagging](https://docs.zenml.io/how-to/data-artifact-management/handle-data-artifacts/tagging)
+page, the [Projects](https://docs.zenml.io/pro/core-concepts/projects)
+page, and the [Model Control Plane](https://docs.zenml.io/how-to/model-management-metrics/model-control-plane) page.
+{% endhint %}
+
 
 ## Prerequisites
 
