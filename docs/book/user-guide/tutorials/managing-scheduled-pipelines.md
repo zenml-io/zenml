@@ -96,6 +96,10 @@ Include the frequency, purpose, environment, and version in your schedule names.
 
 ## Step 3: Verify the Schedule
 
+After creating a schedule, it's important to verify that it exists in both ZenML and the orchestrator. This verification helps ensure your pipeline will run as expected.
+
+### Step 3.1: Verify the Schedule in ZenML
+
 Let's check if our schedule was created successfully using both Python and the CLI:
 
 ```python
@@ -135,7 +139,7 @@ Here's an example of what the CLI output might look like:
 
 ![Output of `zenml pipeline schedule list`](../../.gitbook/assets/pipeline-schedules-list.png)
 
-## Step 3.1: Verify Schedule on GCP
+### Step 3.2: Verify the Schedule in the Orchestrator
 
 To ensure the schedule was properly created in Vertex AI, we can verify it using the Google Cloud SDK:
 
@@ -171,51 +175,32 @@ Make sure to replace `us-central1` with your actual Vertex AI region. You can fi
 
 ## Step 4: Update the Schedule
 
-Sometimes we need to modify an existing schedule. Since ZenML doesn't support direct schedule updates, we'll need to delete the old schedule and create a new one.
+Sometimes we need to modify an existing schedule. Since ZenML doesn't support direct schedule updates, we'll need to delete the old schedule and create a new one. This is a two-step process:
+
+1. Delete the existing schedules (both from ZenML and the orchestrator)
+2. Create a new schedule with the updated configuration
+
+### Step 4.1: Delete the Existing Schedule
+
+First, delete the schedule from ZenML:
 
 ```python
-# First, delete the existing schedule
+# Delete from ZenML
 client.delete_schedule("daily-data-processing")
-
-# Create a new schedule with updated parameters
-new_schedule = Schedule(
-    name="daily-data-processing",
-    cron_expression="0 10 * * *"  # Changed to 10 AM
-)
-
-# Attach the new schedule to our pipeline
-updated_pipeline = daily_data_pipeline.with_options(schedule=new_schedule)
-
-# Run the pipeline to create the new schedule
-updated_pipeline()
 ```
 
-Using the CLI to delete a schedule:
+Using the CLI:
 
 ```bash
 # Delete a specific schedule
 zenml pipeline schedule delete daily-data-processing
-
-# rerun the pipeline to create the new schedule
-python run.py # or whatever you named your script
 ```
 
-> **Important**: When updating schedules, you should also delete the
-> corresponding schedule in your orchestrator (Vertex AI in this example). You
-> can do this through the Google Cloud Console or using the orchestrator's API
-> (see below for code example).
-> ZenML's delete command never removes the underlying
-> orchestrator schedule.
-
-## Step 4.1: Handling Orchestrator Schedules When Updating
-
-When updating schedules, remember that you need to handle both the ZenML schedule and the orchestrator schedule. The complete cleanup process is detailed in [Step 6: Clean Up](#step-6-clean-up).
-
-For Vertex AI specifically, you need to delete the old schedule from the orchestrator before (or after) creating a new one. Otherwise, you'll end up with multiple active schedules.
-
 {% hint style="warning" %}
-**Important**: The code below is provided for convenience during updates. For a complete guide on proper schedule deletion (which is always required), see [Step 6.2: Delete the Schedule from the Orchestrator](#step-62-delete-the-schedule-from-the-orchestrator-required).
+**Important**: You must also delete the schedule from the orchestrator. ZenML's delete command never removes the underlying orchestrator schedule.
 {% endhint %}
+
+For Vertex AI, you need to delete the orchestrator schedule:
 
 ```python
 from google.cloud import aiplatform
@@ -230,6 +215,31 @@ vertex_schedules = aiplatform.PipelineJobSchedule.list(
 for schedule_to_delete in vertex_schedules:
     schedule_to_delete.delete()
     print(f"Schedule '{schedule_to_delete.display_name}' deleted from Vertex AI!")
+```
+
+### Step 4.2: Create the Updated Schedule
+
+Now, create a new schedule with the updated parameters:
+
+```python
+# Create a new schedule with updated parameters
+new_schedule = Schedule(
+    name="daily-data-processing",
+    cron_expression="0 10 * * *"  # Changed to 10 AM
+)
+
+# Attach the new schedule to our pipeline
+updated_pipeline = daily_data_pipeline.with_options(schedule=new_schedule)
+
+# Run the pipeline to create the new schedule
+updated_pipeline()
+```
+
+Or using a script:
+
+```bash
+# After deleting the old schedule, rerun the pipeline to create the new one
+python run.py # or whatever you named your script
 ```
 
 
@@ -278,7 +288,7 @@ This assumes you've [registered an alerter](https://docs.zenml.io/stacks/alerter
 
 ## Step 6: Clean Up
 
-When deleting scheduled pipelines, you **must perform two separate deletion operations**:
+When you're done with a scheduled pipeline, proper cleanup is essential to prevent unexpected executions. You **must perform two separate deletion operations**:
 
 1. Delete the schedule from ZenML's database
 2. Delete the schedule from the underlying orchestrator (Vertex AI in this example)
