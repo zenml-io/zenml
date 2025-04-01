@@ -18,7 +18,7 @@ The orchestrator then takes over responsibility for executing the pipeline
 according to the schedule.
 
 {% hint style="info" %}
-For our full reference documentation on schedules, see the [Schedules](https://docs.zenml.io/how-to/pipeline-development/build-pipelines/schedule-a-pipeline) page.
+For our full reference documentation on schedules, see the [Schedule a Pipeline](https://docs.zenml.io/how-to/pipeline-development/build-pipelines/schedule-a-pipeline) page.
 {% endhint %}
 
 ## Prerequisites
@@ -26,7 +26,7 @@ For our full reference documentation on schedules, see the [Schedules](https://d
 Before starting this tutorial, make sure you have:
 
 1. ZenML installed and configured
-2. A supported orchestrator (we'll use Vertex AI in this example)
+2. A supported orchestrator (we'll use [Vertex AI](https://docs.zenml.io/stacks/orchestrators/vertex) in this example)
 3. Basic understanding of ZenML pipelines and steps
 
 ## Step 1: Create a Simple Pipeline
@@ -154,7 +154,12 @@ Using the CLI to delete a schedule:
 zenml pipeline schedule delete daily-data-processing
 ```
 
-> **Important**: When updating schedules, you should also delete the corresponding schedule in your orchestrator (Vertex AI in this example). You can do this through the Google Cloud Console or using the orchestrator's API. ZenML's delete command may not always completely remove the underlying orchestrator schedule.
+> **Important**: When updating schedules, you should also delete the
+> corresponding schedule in your orchestrator (Vertex AI in this example). You
+> can do this through the Google Cloud Console or using the orchestrator's API
+> (see below for code example).
+> ZenML's delete command may not always completely remove the underlying
+> orchestrator schedule.
 
 ## Step 5: Monitor Schedule Execution
 
@@ -179,7 +184,7 @@ for run in runs.items:
 
 ### Monitoring with Alerters
 
-For critical pipelines, add alerting to notify you of failures:
+For critical pipelines, [add alerting](https://docs.zenml.io/stacks/alerters) to notify you of failures:
 
 ```python
 from zenml.hooks import alerter_failure_hook
