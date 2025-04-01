@@ -28,6 +28,7 @@ from zenml.artifacts.utils import (
     _load_artifact_store,
     _load_file_from_artifact_store,
 )
+from zenml.constants import ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS
 from zenml.exceptions import DoesNotExistException
 from zenml.logger import get_logger
 from zenml.logging import (
@@ -36,6 +37,7 @@ from zenml.logging import (
     STEP_LOGS_STORAGE_MERGE_INTERVAL_SECONDS,
 )
 from zenml.utils.time_utils import utc_now
+from zenml.constants import handle_bool_env_var
 from zenml.zen_stores.base_zen_store import BaseZenStore
 
 # Get the logger
@@ -496,28 +498,27 @@ class StepLogsStorageContext:
 
         def wrapped_write(*args: Any, **kwargs: Any) -> Any:
             message = args[0]
-
-            # Try to get step context if not available yet
-            step_context = None
-            try:
-                step_context = get_step_context()
-            except Exception:
-                pass
-
-            # Add step name prefix for console output only
-            if step_context and message != "\n":
-                output = method(
-                    f"[{step_context.step_name}] {message}",
-                    *args[1:],
-                    **kwargs,
-                )
+            
+            # Check if step names in logs are disabled via env var
+            step_names_disabled = handle_bool_env_var(ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS, default=False)
+            
+            if not step_names_disabled and message != "\n":
+                # Try to get step context if not available yet
+                try:
+                    step_context = get_step_context()
+                    # Add step name prefix for console output only
+                    output = method(f"[{step_context.step_name}] {message}", *args[1:], **kwargs)
+                except Exception:
+                    # No step context available
+                    output = method(*args, **kwargs)
             else:
+                # Step names disabled or newline message
                 output = method(*args, **kwargs)
-
+                
             # Save the original message without step name prefix to storage
             if args:
                 self.storage.write(message)
-
+                
             return output
 
         return wrapped_write
