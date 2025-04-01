@@ -2,9 +2,9 @@
 description: A step-by-step tutorial on how to create, update, and delete scheduled pipelines in ZenML
 ---
 
-# Managing Scheduled Pipelines in ZenML: A Cookbook
+# Managing Scheduled Pipelines in ZenML
 
-This cookbook demonstrates how to work with scheduled pipelines in ZenML through a practical example. We'll create a simple data processing pipeline that runs on a schedule, update its configuration, and finally clean up by deleting the schedule.
+This tutorial demonstrates how to work with scheduled pipelines in ZenML through a practical example. We'll create a simple data processing pipeline that runs on a schedule, update its configuration, and finally clean up by deleting the schedule.
 
 ## How Scheduling Works in ZenML
 
