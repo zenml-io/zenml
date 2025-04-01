@@ -123,7 +123,7 @@ During pipeline run a model can be also implicitly created (if not exists), in s
 {% endhint %}
 
 ```python
-from zenml.models import Model
+from zenml import Model
 
 # Create a model version with tags
 model = Model(
@@ -141,7 +141,7 @@ def my_pipeline(...):
 You can also assign tags when creating or updating models with the Python SDK:
 
 ```python
-from zenml.models import Model
+from zenml import Model
 from zenml.client import Client
 
 # Create or register a new model with tags
