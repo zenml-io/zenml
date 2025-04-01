@@ -215,7 +215,7 @@ python run.py # or whatever you named your script
 > corresponding schedule in your orchestrator (Vertex AI in this example). You
 > can do this through the Google Cloud Console or using the orchestrator's API
 > (see below for code example).
-> ZenML's delete command may not always completely remove the underlying
+> ZenML's delete command never removes the underlying
 > orchestrator schedule.
 
 ## Step 4.1: Delete Schedule on GCP
@@ -321,6 +321,48 @@ for schedule in vertex_schedules:
 ## Troubleshooting: Quick Fixes for Common Issues
 
 Here are some practical fixes for issues you might encounter with your scheduled pipelines:
+
+### Issue: Timezone Confusion with Scheduled Runs
+
+A common issue with scheduled pipelines is timezone confusion. Here's how ZenML handles timezone information:
+
+1. **If you provide a timezone-aware datetime**, ZenML will use it as is
+2. **If you provide a datetime without timezone information**, ZenML assumes it's in your local timezone and converts it to UTC for storage and communication with orchestrators
+
+For cloud orchestrators like Vertex AI, Kubeflow, and Airflow, schedules typically run in the orchestrator's timezone, which is usually UTC. This can lead to confusion if you expect a schedule to run at 9 AM in your local timezone but it runs at 9 AM UTC instead.
+
+To ensure your schedule runs at the expected time:
+
+```python
+from datetime import datetime, timezone
+import pytz
+from zenml.config.schedule import Schedule
+
+# Option 1: Explicitly use your local timezone (recommended)
+local_tz = pytz.timezone('America/Los_Angeles')  # Replace with your timezone
+local_time = local_tz.localize(datetime(2025, 1, 1, 9, 0))  # 9 AM in your timezone
+schedule = Schedule(
+    name="local-time-schedule",
+    cron_expression="0 9 * * *",
+    start_time=local_time  # ZenML will convert to UTC internally
+)
+
+# Option 2: Use UTC explicitly for clarity
+utc_time = datetime(2025, 1, 1, 17, 0, tzinfo=timezone.utc)  # 5 PM UTC = 9 AM PST
+schedule = Schedule(
+    name="utc-time-schedule",
+    cron_expression="0 17 * * *",  # Using UTC time in cron expression
+    start_time=utc_time
+)
+
+# To verify how ZenML interprets your times:
+from zenml.utils.time_utils import to_utc_timezone, to_local_tz
+print(f"Schedule will start at: {schedule.start_time} (as stored by ZenML)")
+print(f"In UTC that's: {to_utc_timezone(schedule.start_time)}")
+print(f"In your local time that's: {to_local_tz(schedule.start_time)}")
+```
+
+Remember that cron expressions themselves don't have timezone information - they're interpreted in the timezone of the system executing them (which for cloud orchestrators is usually UTC).
 
 ### Issue: Schedule Doesn't Run at the Expected Time
 
