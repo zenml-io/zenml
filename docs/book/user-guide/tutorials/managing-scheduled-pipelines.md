@@ -448,9 +448,9 @@ for run in failed_runs.items:
 Now that you understand the basics of managing scheduled pipelines, you can:
 
 1. Create more complex schedules with various cron expressions for different business needs
-2. Set up monitoring and alerting to be notified when scheduled runs fail
+2. Set up [monitoring and alerting](https://docs.zenml.io/stacks/alerters) to be notified when scheduled runs fail
 3. Optimize resource allocation for your scheduled pipelines
-4. Implement data-dependent scheduling where pipelines trigger based on data availability
+4. Implement data-dependent scheduling where [pipelines trigger](https://docs.zenml.io/how-to/trigger-pipelines) based on data availability
 
 For more advanced schedule management and monitoring techniques, check out the
 [ZenML documentation](https://docs.zenml.io).
