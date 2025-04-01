@@ -28,7 +28,7 @@ Before starting this tutorial, make sure you have:
 
 1. ZenML installed and configured
 2. Basic understanding of ZenML pipelines and steps
-3. ZenML Pro account (for the Projects section only)
+3. [ZenML Pro](https://cloud.zenml.io) account (for the Projects section only)
 
 ## Part 1: Basic Pipeline Organization with Tags
 
@@ -387,4 +387,4 @@ Now that you understand how to organize your ML assets, consider exploring:
 
 1. [Managing scheduled pipelines](managing-scheduled-pipelines-v2.md) to automate your ML workflows
 2. Integrating your tagging strategy with CI/CD pipelines
-3. Creating dashboards and visualizations based on your tags
+3. Ways to trigger pipelines
