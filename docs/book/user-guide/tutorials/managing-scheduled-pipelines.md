@@ -218,6 +218,32 @@ python run.py # or whatever you named your script
 > ZenML's delete command may not always completely remove the underlying
 > orchestrator schedule.
 
+## Step 4.1: Delete Schedule on GCP
+
+To delete the schedule from Vertex AI, we can use the Google Cloud SDK:
+
+```python
+from google.cloud import aiplatform
+
+# List all Vertex schedules
+vertex_schedules = aiplatform.PipelineJobSchedule.list(
+    filter=f'display_name="{schedule.name}"',
+    location="us-central1"  # Replace with your Vertex AI region
+)
+
+# Find the schedule to delete
+schedule_to_delete = next(
+    (s for s in vertex_schedules if s.display_name == schedule.name), None
+)
+
+if schedule_to_delete:
+    schedule_to_delete.delete()
+    print(f"Schedule '{schedule.name}' deleted successfully from Vertex AI!")
+else:
+    print("Schedule not found in Vertex AI!")
+```
+
+
 ## Step 5: Monitor Schedule Execution
 
 Let's check the execution history of our scheduled pipeline:
@@ -266,7 +292,6 @@ This assumes you've [registered an alerter](https://docs.zenml.io/stacks/alerter
 Finally, let's clean up by deleting our schedule:
 
 ```python
-# Delete the schedule from ZenML
 client.delete_schedule("daily-data-processing")
 
 # Verify deletion
