@@ -15,10 +15,7 @@ As ML projects grow, effective organization becomes critical. ZenML provides two
    between initiatives or teams
 
 {% hint style="info" %}
-For our full reference documentation on things covered in this tutorial, see the
-[Tagging](https://docs.zenml.io/how-to/data-artifact-management/handle-data-artifacts/tagging)
-page, the [Projects](https://docs.zenml.io/pro/core-concepts/projects)
-page, and the [Model Control Plane](https://docs.zenml.io/how-to/model-management-metrics/model-control-plane) page.
+For our full reference documentation on things covered in this tutorial, see the [Tagging](https://docs.zenml.io/how-to/data-artifact-management/handle-data-artifacts/tagging) page, the [Projects](https://docs.zenml.io/pro/core-concepts/projects) page, and the [Model Control Plane](https://docs.zenml.io/how-to/model-management-metrics/model-control-plane) page.
 {% endhint %}
 
 
