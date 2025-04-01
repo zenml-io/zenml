@@ -34,6 +34,8 @@ Before starting this tutorial, make sure you have:
 Let's create a basic fraud detection pipeline with tags:
 
 ```python
+from typing import Tuple
+
 from zenml import pipeline, step
 import pandas as pd
 import numpy as np
@@ -58,11 +60,15 @@ def load_data() -> pd.DataFrame:
     return data
 
 @step
-def prepare_data(data: pd.DataFrame) -> tuple:
+def prepare_data(
+    data: pd.DataFrame,
+) -> Tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
     """Prepare data for training."""
-    X = data.drop('is_fraud', axis=1)
-    y = data['is_fraud']
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    X = data.drop("is_fraud", axis=1)
+    y = data["is_fraud"]
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
     return X_train, X_test, y_train, y_test
 
 @step
