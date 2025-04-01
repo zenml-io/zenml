@@ -1,6 +1,7 @@
 ---
 description: >-
-  A step-by-step tutorial on how to create, update, and delete scheduled pipelines in ZenML
+  A step-by-step tutorial on how to create, update, and delete scheduled
+  pipelines in ZenML
 icon: calendar-star
 ---
 
@@ -139,7 +140,7 @@ zenml pipeline schedule list --pipeline_id my_pipeline_id
 
 Here's an example of what the CLI output might look like:
 
-![Output of zenml pipeline schedule list](../../.gitbook/assets/pipeline-schedules-list.png)
+![Output of zenml pipeline schedule list](../.gitbook/assets/pipeline-schedules-list.png)
 
 ### Step 3.2: Verify the Schedule in the Orchestrator
 

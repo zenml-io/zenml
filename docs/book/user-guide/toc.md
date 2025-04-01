@@ -45,12 +45,8 @@
     * [Evaluation for finetuning](llmops-guide/finetuning-llms/evaluation-for-finetuning.md)
     * [Deploying finetuned models](llmops-guide/finetuning-llms/deploying-finetuned-models.md)
     * [Next steps](llmops-guide/finetuning-llms/next-steps.md)
-
-## Tutorials
-
-* [test](tutorials/test.md)
-* [Managing scheduled pipelines](tutorials/managing-scheduled-pipelines.md)
-* [Organizing pipelines and models](tutorials/organizing-pipelines-and-models.md)
+* [Managing scheduled pipelines](managing-scheduled-pipelines.md)
+* [Organizing pipelines and models](organizing-pipelines-and-models.md)
 
 ## Examples
 
