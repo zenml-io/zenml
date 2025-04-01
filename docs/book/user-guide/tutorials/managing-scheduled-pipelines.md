@@ -129,6 +129,22 @@ zenml pipeline schedule list
 
 # Filter schedules by pipeline name
 zenml pipeline schedule list --pipeline_id my_pipeline_id
+```
+
+Here's an example of what the CLI output might look like:
+
+```shell
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━┯━━━━━━━━━━━━━━━━━┯━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━┓
+┃              ID               │ NAME                          │ ACTIVE │ CRON_EXPRESSION │ START_TIME          │ END_TIME │ INTERVAL_SECOND │ CATCHUP │ RUN_ONCE_START_TIME ┃
+┠───────────────────────────────┼───────────────────────────────┼────────┼─────────────────┼─────────────────────┼──────────┼─────────────────┼─────────┼─────────────────────┨
+┃ 12345678-9abc-def0-1234-5678 │ daily-data-processing-2024_0  │ True   │ 0 9 * * *       │ None                │ None     │ None            │ False   │ None                ┃
+┃            9abcdef0            │ 3_01-09_00_00_000000          │        │                 │                     │          │                 │         │                     ┃
+┠───────────────────────────────┼───────────────────────────────┼────────┼─────────────────┼─────────────────────┼──────────┼─────────────────┼─────────┼─────────────────────┨
+┃ 23456789-0abc-def1-2345-6789 │ hourly-data-sync-2024_03_01-  │ True   │ 0 * * * *       │ None                │ None     │ None            │ False   │ None                ┃
+┃            0abcdef1            │ 10_00_00_000000               │        │                 │                     │          │                 │         │                     ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━┷━━━━━━━━━━━━━━━━━┷━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━┛
+Page `(1/1)`, `2` items found for the applied filters.
+```
 
 ## Step 3.1: Verify Schedule on GCP
 
@@ -257,114 +273,3 @@ if not any(s.name == "daily-data-processing" for s in schedules):
 else:
     print("Schedule still exists in ZenML!")
 ```
-
-> **Important**: You should also delete the schedule from the Vertex AI orchestrator to fully stop the scheduled runs. Here's how to delete Vertex AI schedules:
-
-```python
-from google.cloud import aiplatform
-
-# List all Vertex schedules
-vertex_schedules = aiplatform.PipelineJobSchedule.list(
-    filter='display_name="daily-data-processing"',
-    location="us-central1" # insert your location here
-)
-
-# Delete matching schedules
-for schedule in vertex_schedules:
-    print(f"Deleting Vertex schedule: {schedule.display_name}")
-    schedule.delete()
-```
-
-## Troubleshooting: Quick Fixes for Common Issues
-
-Here are some practical fixes for issues you might encounter with your scheduled pipelines:
-
-### Issue: Schedule Doesn't Run at the Expected Time
-
-If your pipeline doesn't run when scheduled:
-
-```python
-# Verify the cron expression with the croniter library
-import datetime
-from croniter import croniter
-
-# Check if expression is valid
-cron_expression = "0 9 * * *"
-is_valid = croniter.is_valid(cron_expression)
-print(f"Is cron expression valid? {is_valid}")
-
-# Calculate the next run times to verify
-base = datetime.datetime.now()
-iter = croniter(cron_expression, base)
-next_runs = [iter.get_next(datetime.datetime) for _ in range(3)]
-print("Next 3 scheduled runs:")
-for run_time in next_runs:
-    print(f"  {run_time}")
-```
-
-For Vertex AI specifically, verify that your service account has the required permissions:
-```bash
-# Check permissions on your service account
-gcloud projects get-iam-policy your-project-id \
-  --filter="bindings.members:serviceAccount:your-service-account@your-project-id.iam.gserviceaccount.com"
-```
-
-### Issue: Orphaned Schedules in the Orchestrator
-
-To clean up orphaned Vertex AI schedules:
-
-```python
-from google.cloud import aiplatform
-
-# List all Vertex schedules
-vertex_schedules = aiplatform.PipelineJobSchedule.list(
-    filter='display_name="daily-data-processing"',
-    location="us-central1" # insert your location here
-)
-
-# Delete orphaned schedules
-for schedule in vertex_schedules:
-    print(f"Deleting Vertex schedule: {schedule.display_name}")
-    schedule.delete()
-```
-
-### Issue: Finding Failing Scheduled Runs
-
-When scheduled runs fail silently:
-
-```python
-# Find failed runs in the last 24 hours
-from zenml.client import Client
-import datetime
-
-client = Client()
-yesterday = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(days=1)
-
-# Get recent runs with status filtering
-failed_runs = client.list_pipeline_runs(
-    pipeline_name_or_id="daily_data_pipeline",
-    sort_by="created",
-    descending=True,
-    size=10
-)
-
-# Print failed runs
-print("Recent failed runs:")
-for run in failed_runs.items:
-    if run.status == "failed" and run.creation_time > yesterday:
-        print(f"Run ID: {run.id}")
-        print(f"Created at: {run.creation_time}")
-        print(f"Status: {run.status}")
-        print("---")
-```
-
-## Next Steps
-
-Now that you understand the basics of managing scheduled pipelines, you can:
-
-1. Create more complex schedules with various cron expressions for different business needs
-2. Set up monitoring and alerting to be notified when scheduled runs fail
-3. Optimize resource allocation for your scheduled pipelines
-4. Implement data-dependent scheduling where pipelines trigger based on data availability
-
-For more advanced schedule management and monitoring techniques, check out the [ZenML documentation](https://docs.zenml.io).
