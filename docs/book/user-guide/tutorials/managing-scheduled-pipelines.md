@@ -27,7 +27,7 @@ Before starting this tutorial, make sure you have:
 
 1. ZenML installed and configured
 2. A supported orchestrator (we'll use [Vertex AI](https://docs.zenml.io/stacks/orchestrators/vertex) in this example)
-3. Basic understanding of ZenML pipelines and steps
+3. Basic understanding of [ZenML pipelines and steps](https://docs.zenml.io/getting-started/core-concepts)
 
 ## Step 1: Create a Simple Pipeline
 
@@ -75,7 +75,8 @@ scheduled_pipeline = daily_data_pipeline.with_options(schedule=schedule)
 scheduled_pipeline()
 ```
 
-### Best Practice: Use Descriptive Schedule Names
+{% hint style="info" %}
+**Best Practice: Use Descriptive Schedule Names**
 
 When creating schedules, follow a consistent naming pattern to better organize them:
 
@@ -88,6 +89,7 @@ schedule = Schedule(
 ```
 
 Include the frequency, purpose, environment, and version in your schedule names.
+{% endhint %}
 
 ## Step 3: Verify the Schedule
 
