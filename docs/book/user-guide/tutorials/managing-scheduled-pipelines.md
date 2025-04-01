@@ -1,8 +1,11 @@
 ---
-description: A step-by-step tutorial on how to create, update, and delete scheduled pipelines in ZenML
+description: >-
+  A step-by-step tutorial on how to create, update, and delete scheduled
+  pipelines in ZenML
+icon: calendar-star
 ---
 
-# Managing Scheduled Pipelines in ZenML
+# Managing scheduled pipelines
 
 This tutorial demonstrates how to work with scheduled pipelines in ZenML through a practical example. We'll create a simple data processing pipeline that runs on a schedule, update its configuration, and finally clean up by deleting the schedule.
 
@@ -14,7 +17,7 @@ ZenML doesn't implement its own scheduler but acts as a wrapper around the sched
 2. Registers the schedule with the orchestrator's scheduling system
 3. Records the schedule in the ZenML metadata store
 
-The orchestrator then takes over responsibility for executing the pipeline
+The orchestrator then takes over responsibility for executing the pipeline\
 according to the schedule.
 
 {% hint style="info" %}
@@ -75,7 +78,7 @@ scheduled_pipeline = daily_data_pipeline.with_options(schedule=schedule)
 scheduled_pipeline()
 ```
 
-Running the pipeline will create the schedule in the ZenML metadata store. as
+Running the pipeline will create the schedule in the ZenML metadata store. as\
 well as the scheduled run in the orchestrator.
 
 {% hint style="info" %}
@@ -137,7 +140,7 @@ zenml pipeline schedule list --pipeline_id my_pipeline_id
 
 Here's an example of what the CLI output might look like:
 
-![Output of `zenml pipeline schedule list`](../../.gitbook/assets/pipeline-schedules-list.png)
+![Output of zenml pipeline schedule list](../../.gitbook/assets/pipeline-schedules-list.png)
 
 ### Step 3.2: Verify the Schedule in the Orchestrator
 
@@ -241,7 +244,6 @@ Or using a script:
 # After deleting the old schedule, rerun the pipeline to create the new one
 python run.py # or whatever you named your script
 ```
-
 
 ## Step 5: Monitor Schedule Execution
 
@@ -413,6 +415,7 @@ for run_time in next_runs:
 ```
 
 For Vertex AI specifically, verify that your service account has the required permissions:
+
 ```bash
 # Check permissions on your service account
 gcloud projects get-iam-policy your-project-id \
@@ -477,5 +480,4 @@ Now that you understand the basics of managing scheduled pipelines, you can:
 3. Optimize resource allocation for your scheduled pipelines
 4. Implement data-dependent scheduling where [pipelines trigger](https://docs.zenml.io/how-to/trigger-pipelines) based on data availability
 
-For more advanced schedule management and monitoring techniques, check out the
-[ZenML documentation](https://docs.zenml.io).
+For more advanced schedule management and monitoring techniques, check out the[ZenML documentation](https://docs.zenml.io).
