@@ -267,7 +267,7 @@ class MigrationUtils(BaseModel):
                             # table creation statement.
                             continue
 
-                        index_create = str(CreateIndex(index)).strip()  # type: ignore[no-untyped-call]
+                        index_create = str(CreateIndex(index)).strip()
                         index_create = index_create.replace(
                             f"CREATE INDEX {index.name}",
                             f"CREATE INDEX `{index.name}`",

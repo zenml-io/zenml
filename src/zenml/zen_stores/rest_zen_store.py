@@ -4369,8 +4369,6 @@ class RestZenStore(BaseZenStore):
             CredentialsNotValid: if the request fails due to invalid
                 client credentials.
         """
-        params = {k: str(v) for k, v in params.items()} if params else {}
-
         self.session.headers.update(
             {source_context.name: source_context.get().value}
         )
@@ -4396,7 +4394,7 @@ class RestZenStore(BaseZenStore):
                     self.session.request(
                         method,
                         url,
-                        params=params,
+                        params=params if params else {},
                         verify=self.config.verify_ssl,
                         timeout=timeout or self.config.http_timeout,
                         **kwargs,
