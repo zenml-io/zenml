@@ -207,29 +207,29 @@ python run.py # or whatever you named your script
 > ZenML's delete command never removes the underlying
 > orchestrator schedule.
 
-## Step 4.1: Delete Schedule on GCP
+## Step 4.1: Handling Orchestrator Schedules When Updating
 
-To delete the schedule from Vertex AI, we can use the Google Cloud SDK:
+When updating schedules, remember that you need to handle both the ZenML schedule and the orchestrator schedule. The complete cleanup process is detailed in [Step 6: Clean Up](#step-6-clean-up).
+
+For Vertex AI specifically, you need to delete the old schedule from the orchestrator before (or after) creating a new one. Otherwise, you'll end up with multiple active schedules.
+
+{% hint style="warning" %}
+**Important**: The code below is provided for convenience during updates. For a complete guide on proper schedule deletion (which is always required), see [Step 6.2: Delete the Schedule from the Orchestrator](#step-62-delete-the-schedule-from-the-orchestrator-required).
+{% endhint %}
 
 ```python
 from google.cloud import aiplatform
 
-# List all Vertex schedules
+# List all Vertex schedules matching our schedule name
 vertex_schedules = aiplatform.PipelineJobSchedule.list(
     filter=f'display_name="{schedule.name}"',
     location="us-central1"  # Replace with your Vertex AI region
 )
 
-# Find the schedule to delete
-schedule_to_delete = next(
-    (s for s in vertex_schedules if s.display_name == schedule.name), None
-)
-
-if schedule_to_delete:
+# Delete matching schedules (necessary before creating a new one)
+for schedule_to_delete in vertex_schedules:
     schedule_to_delete.delete()
-    print(f"Schedule '{schedule.name}' deleted successfully from Vertex AI!")
-else:
-    print("Schedule not found in Vertex AI!")
+    print(f"Schedule '{schedule_to_delete.display_name}' deleted from Vertex AI!")
 ```
 
 
@@ -278,12 +278,19 @@ This assumes you've [registered an alerter](https://docs.zenml.io/stacks/alerter
 
 ## Step 6: Clean Up
 
-Finally, let's clean up by deleting our schedule:
+When deleting scheduled pipelines, you **must perform two separate deletion operations**:
+
+1. Delete the schedule from ZenML's database
+2. Delete the schedule from the underlying orchestrator (Vertex AI in this example)
+
+### Step 6.1: Delete the Schedule from ZenML
+
+First, let's delete the schedule from ZenML:
 
 ```python
 client.delete_schedule("daily-data-processing")
 
-# Verify deletion
+# Verify deletion from ZenML
 schedules = client.list_schedules()
 if not any(s.name == "daily-data-processing" for s in schedules):
     print("Schedule deleted successfully from ZenML!")
@@ -291,11 +298,18 @@ else:
     print("Schedule still exists in ZenML!")
 ```
 
-> **Important**: You should also delete the schedule from the Vertex AI orchestrator to fully stop the scheduled runs. Here's how to delete Vertex AI schedules:
+### Step 6.2: Delete the Schedule from the Orchestrator (Required)
+
+{% hint style="warning" %}
+**CRITICAL**: Deleting a schedule from ZenML does NOT delete it from the orchestrator. If you only perform Step 6.1, your pipeline will continue to run on schedule in the orchestrator!
+{% endhint %}
+
+Here's how to delete the schedule from Vertex AI:
 
 ```python
 from google.cloud import aiplatform
 
+# List all Vertex schedules matching our schedule name
 vertex_schedules = aiplatform.PipelineJobSchedule.list(
     filter='display_name="daily-data-processing"',
     location="us-central1" # insert your location here
@@ -305,7 +319,19 @@ vertex_schedules = aiplatform.PipelineJobSchedule.list(
 for schedule in vertex_schedules:
     print(f"Deleting Vertex schedule: {schedule.display_name}")
     schedule.delete()
+    
+# Verify deletion from Vertex
+remaining_schedules = aiplatform.PipelineJobSchedule.list(
+    filter='display_name="daily-data-processing"',
+    location="us-central1"
+)
+if not list(remaining_schedules):
+    print("Schedule successfully deleted from Vertex AI!")
+else:
+    print("Warning: Schedule still exists in Vertex AI!")
 ```
+
+The procedure for deleting schedules varies by orchestrator. Always check your orchestrator's documentation for the correct deletion method.
 
 ## Troubleshooting: Quick Fixes for Common Issues
 
