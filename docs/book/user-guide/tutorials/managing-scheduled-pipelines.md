@@ -75,9 +75,9 @@ scheduled_pipeline = daily_data_pipeline.with_options(schedule=schedule)
 scheduled_pipeline()
 ```
 
-{% hint style="info" %}
-**Best Practice: Use Descriptive Schedule Names**
+### Best Practice: Use Descriptive Schedule Names
 
+{% hint style="info" %}
 When creating schedules, follow a consistent naming pattern to better organize them:
 
 ```python
