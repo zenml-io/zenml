@@ -1,42 +1,25 @@
 # Deployment Options for finetuned LLMs
 
-Deploying your finetuned LLM is a critical step in bringing your custom
-finetuned model into a place where it can be used as part of a real-world use
-case. This process involves careful planning and consideration of various
-factors to ensure optimal performance, reliability, and cost-effectiveness. In
-this section, we'll explore the key aspects of LLM deployment and discuss
-different options available to you.
+Deploying your finetuned LLM is a critical step in bringing your custom finetuned model into a place where it can be used as part of a real-world use case. This process involves careful planning and consideration of various factors to ensure optimal performance, reliability, and cost-effectiveness. In
+this section, we'll explore the key aspects of LLM deployment and discuss different options available to you.
 
 ## Deployment Considerations
 
-Before diving into specific deployment options, you should understand the
-various factors that influence the deployment process. One of the primary
-considerations is the memory and machine requirements for your finetuned model.
-LLMs
-are typically resource-intensive, requiring substantial RAM, processing power
-and specialized hardware. This choice of hardware can significantly impact both
-performance and cost, so it's crucial to strike the right balance based on your
-specific use case.
+Before diving into specific deployment options, you should understand the various factors that influence the deployment process. One of the primary considerations is the memory and machine requirements for your finetuned model.LLMs
+are typically resource-intensive, requiring substantial RAM, processing power and specialized hardware. This choice of hardware can significantly impact both
+performance and cost, so it's crucial to strike the right balance based on your specific use case.
 
-Real-time considerations play a vital role in deployment planning, especially
-for applications that require immediate responses. This includes preparing for
-potential failover scenarios if your finetuned model encounters issues,
-conducting thorough benchmarks and load testing, and modeling expected user
-load and usage patterns. Additionally, you'll need to decide between streaming
-and non-streaming approaches, each with its own set of trade-offs in terms of
-latency and resource utilization.
+Real-time considerations play a vital role in deployment planning, especially for applications that require immediate responses. This includes preparing for potential failover scenarios if your finetuned model encounters issues,
+conducting thorough benchmarks and load testing, and modeling expected user load and usage patterns. Additionally, you'll need to decide between streaming
+and non-streaming approaches, each with its own set of trade-offs in terms of latency and resource utilization.
 
-Optimization techniques, such as quantization, can help reduce the resource
-footprint of your model. However, these Optimizations often come with additional
-steps in your workflow and require careful evaluation to ensure they don't
-negatively impact model performance. [Rigorous evaluation](./evaluation-for-finetuning.md)
-becomes crucial in quantifying the extent to which you can optimize without
-compromising accuracy or functionality.
+Optimization techniques, such as quantization, can help reduce the resource footprint of your model. However, these Optimizations often come with additional
+steps in your workflow and require careful evaluation to ensure they don't negatively impact model performance. [Rigorous evaluation](./evaluation-for-finetuning.md)
+becomes crucial in quantifying the extent to which you can optimize without compromising accuracy or functionality.
 
 ## Deployment Options and Trade-offs
 
-When it comes to deploying your finetuned LLM, several options are available,
-each with its own set of advantages and challenges:
+When it comes to deploying your finetuned LLM, several options are available, each with its own set of advantages and challenges:
 
 1. **Roll Your Own**: This approach involves setting up and managing your own
    infrastructure. While it offers the most control and customization, it also
@@ -52,21 +35,16 @@ each with its own set of advantages and challenges:
    and ready to serve requests. While this approach minimizes latency, it can be
    more costly as you're paying for resources even during idle periods.
 4. **Fully Managed Solutions**: Many cloud providers and AI platforms offer
-   managed services for deploying LLMs. These solutions can simplify the
-   deployment process but may come with less flexibility and potentially higher
-   costs.
+   managed services for deploying LLMs. These solutions can simplify the deployment process but may come with less flexibility and potentially higher costs.
 
-When choosing a deployment option, consider factors such as your team's
-expertise, budget constraints, expected load patterns, and specific use case
-requirements like speed, throughput, and accuracy needs.
+When choosing a deployment option, consider factors such as your team's expertise, budget constraints, expected load patterns, and specific use case requirements like speed, throughput, and accuracy needs.
 
 ## Deployment with vLLM and ZenML
 
 [vLLM](https://github.com/vllm-project/vllm) is a fast and easy-to-use library
 for running large language models (LLMs) at high throughputs and low latency.
 ZenML comes with a [vLLM integration](https://docs.zenml.io/stacks/model-deployers/vllm)
-that makes it easy to deploy your finetuned model using vLLM. You can use a
-pre-built step that exposes a `VLLMDeploymentService` that can be used as part of
+that makes it easy to deploy your finetuned model using vLLM. You can use a pre-built step that exposes a `VLLMDeploymentService` that can be used as part of
 your deployment pipeline.
 
 ```python

@@ -1,3 +1,8 @@
+---
+icon: building
+description: Manage organizations in ZenML
+---
+
 # Organizations
 
 ZenML Pro arranges various aspects of your work experience around the concept

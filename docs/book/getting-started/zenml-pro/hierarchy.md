@@ -1,3 +1,8 @@
+---
+description: Understanding ZenML's hierarchical structure
+icon: chart-hierarchy
+---
+
 # Hierarchy
 
 In ZenML Pro, there is a slightly different entity hierarchy as compared to the open-source ZenML\

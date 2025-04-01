@@ -1,4 +1,5 @@
 ---
+icons: users
 description: >-
   Learn about Teams in ZenML Pro and how they can be used to manage groups of
   users across your organization and workspaces.

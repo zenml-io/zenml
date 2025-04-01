@@ -1,5 +1,6 @@
 ---
 description: Learn how to use workspaces in ZenML Pro.
+icon: briefcase
 ---
 
 # Workspaces

@@ -1,4 +1,5 @@
 ---
+icon: lock
 description: >-
   Learn about the different roles and permissions you can assign to your team
   members in ZenML Pro.

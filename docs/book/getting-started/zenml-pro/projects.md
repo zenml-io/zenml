@@ -1,5 +1,6 @@
 ---
-description: Learn how to use projects in ZenML Pro.
+icon: clipboard-list
+description: Managing projects in ZenML
 ---
 
 # Projects
