@@ -14,7 +14,12 @@ ZenML doesn't implement its own scheduler but acts as a wrapper around the sched
 2. Registers the schedule with the orchestrator's scheduling system
 3. Records the schedule in the ZenML metadata store
 
-The orchestrator then takes over responsibility for executing the pipeline according to the schedule.
+The orchestrator then takes over responsibility for executing the pipeline
+according to the schedule.
+
+{% hint style="info" %}
+For our full reference documentation on schedules, see the [Schedules](https://docs.zenml.io/how-to/pipeline-development/build-pipelines/schedule-a-pipeline) page.
+{% endhint %}
 
 ## Prerequisites
 
