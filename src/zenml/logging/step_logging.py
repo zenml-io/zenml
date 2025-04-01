@@ -253,7 +253,12 @@ class StepLogsStorage:
             return
 
         if not self.disabled:
-            self.buffer.append(text)
+            # Add timestamp to the message when it's received
+            timestamp = utc_now().strftime("%Y-%m-%d %H:%M:%S")
+            formatted_message = (
+                f"[{timestamp} UTC] {remove_ansi_escape_codes(text)}"
+            )
+            self.buffer.append(formatted_message)
             self.save_to_file()
 
     @property
@@ -325,23 +330,13 @@ class StepLogsStorage:
                             "w",
                         ) as file:
                             for message in self.buffer:
-                                timestamp = utc_now().strftime(
-                                    "%Y-%m-%d %H:%M:%S"
-                                )
-                                file.write(
-                                    f"[{timestamp} UTC] {remove_ansi_escape_codes(message)}\n"
-                                )
+                                file.write(f"{message}\n")
                     else:
                         with self.artifact_store.open(
                             self.logs_uri, "a"
                         ) as file:
                             for message in self.buffer:
-                                timestamp = utc_now().strftime(
-                                    "%Y-%m-%d %H:%M:%S"
-                                )
-                                file.write(
-                                    f"[{timestamp} UTC] {remove_ansi_escape_codes(message)}\n"
-                                )
+                                file.write(f"{message}\n")
                         self.artifact_store._remove_previous_file_versions(
                             self.logs_uri
                         )
