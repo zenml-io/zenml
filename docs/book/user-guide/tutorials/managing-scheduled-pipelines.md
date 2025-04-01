@@ -133,18 +133,7 @@ zenml pipeline schedule list --pipeline_id my_pipeline_id
 
 Here's an example of what the CLI output might look like:
 
-```shell
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━┯━━━━━━━━━━━━━━━━━┯━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━┓
-┃              ID               │ NAME                          │ ACTIVE │ CRON_EXPRESSION │ START_TIME          │ END_TIME │ INTERVAL_SECOND │ CATCHUP │ RUN_ONCE_START_TIME ┃
-┠───────────────────────────────┼───────────────────────────────┼────────┼─────────────────┼─────────────────────┼──────────┼─────────────────┼─────────┼─────────────────────┨
-┃ 12345678-9abc-def0-1234-5678 │ daily-data-processing-2024_0  │ True   │ 0 9 * * *       │ None                │ None     │ None            │ False   │ None                ┃
-┃            9abcdef0            │ 3_01-09_00_00_000000          │        │                 │                     │          │                 │         │                     ┃
-┠───────────────────────────────┼───────────────────────────────┼────────┼─────────────────┼─────────────────────┼──────────┼─────────────────┼─────────┼─────────────────────┨
-┃ 23456789-0abc-def1-2345-6789 │ hourly-data-sync-2024_03_01-  │ True   │ 0 * * * *       │ None                │ None     │ None            │ False   │ None                ┃
-┃            0abcdef1            │ 10_00_00_000000               │        │                 │                     │          │                 │         │                     ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━┷━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━┷━━━━━━━━━━━━━━━━━┷━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━┛
-Page `(1/1)`, `2` items found for the applied filters.
-```
+![Output of `zenml pipeline schedule list`](../../.gitbook/assets/pipeline-schedules-list.png)
 
 ## Step 3.1: Verify Schedule on GCP
 
