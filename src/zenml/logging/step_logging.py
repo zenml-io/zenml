@@ -22,6 +22,7 @@ from types import TracebackType
 from typing import Any, Callable, List, Optional, Type, Union
 from uuid import UUID, uuid4
 
+from zenml import get_step_context
 from zenml.artifact_stores import BaseArtifactStore
 from zenml.artifacts.utils import (
     _load_artifact_store,
@@ -447,8 +448,8 @@ class StepLogsStorageContext:
         setattr(sys.stdout, "write", self._wrap_write(self.stdout_write))
         setattr(sys.stdout, "flush", self._wrap_flush(self.stdout_flush))
 
-        setattr(sys.stderr, "write", self._wrap_write(self.stdout_write))
-        setattr(sys.stderr, "flush", self._wrap_flush(self.stdout_flush))
+        setattr(sys.stderr, "write", self._wrap_write(self.stderr_write))
+        setattr(sys.stderr, "flush", self._wrap_flush(self.stderr_flush))
 
         redirected.set(True)
         return self
@@ -494,9 +495,25 @@ class StepLogsStorageContext:
         """
 
         def wrapped_write(*args: Any, **kwargs: Any) -> Any:
-            output = method(*args, **kwargs)
+            message = args[0]
+            
+            # Try to get step context if not available yet
+            step_context = None
+            try:
+                step_context = get_step_context()
+            except Exception:
+                pass
+            
+            # Add step name prefix for console output only
+            if step_context and message != "\n":
+                output = method(f"[{step_context.step_name}] {message}", *args[1:], **kwargs)
+            else:
+                output = method(*args, **kwargs)
+                
+            # Save the original message without step name prefix to storage
             if args:
-                self.storage.write(args[0])
+                self.storage.write(message)
+                
             return output
 
         return wrapped_write
