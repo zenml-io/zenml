@@ -1,7 +1,6 @@
 ---
 description: >-
-  A step-by-step tutorial on how to create, update, and delete scheduled
-  pipelines in ZenML
+  A step-by-step tutorial on how to create, update, and delete scheduled pipelines in ZenML
 icon: calendar-star
 ---
 

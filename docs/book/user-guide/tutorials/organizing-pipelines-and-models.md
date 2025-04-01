@@ -1,7 +1,6 @@
 ---
 description: >-
-  A step-by-step tutorial on effectively organizing your ML assets in ZenML
-  using tags and projects
+  A step-by-step tutorial on effectively organizing your ML assets in ZenML using tags and projects
 icon: inbox-full
 ---
 
