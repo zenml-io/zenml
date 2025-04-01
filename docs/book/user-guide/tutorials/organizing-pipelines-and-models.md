@@ -389,6 +389,6 @@ A well-designed tagging strategy helps maintain organization as your ML project 
 
 Now that you understand how to organize your ML assets, consider exploring:
 
-1. [Managing scheduled pipelines](managing-scheduled-pipelines-v2.md) to automate your ML workflows
+1. [Managing scheduled pipelines](managing-scheduled-pipelines.md) to automate your ML workflows
 2. Integrating your tagging strategy with CI/CD pipelines
 3. Ways to trigger pipelines
