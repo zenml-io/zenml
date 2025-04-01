@@ -206,6 +206,9 @@ Using the CLI to delete a schedule:
 ```bash
 # Delete a specific schedule
 zenml pipeline schedule delete daily-data-processing
+
+# rerun the pipeline to create the new schedule
+python run.py # or whatever you named your script
 ```
 
 > **Important**: When updating schedules, you should also delete the
