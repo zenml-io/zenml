@@ -51,6 +51,7 @@
 * [Managing scheduled pipelines](tutorials/managing-scheduled-pipelines.md)
 * [Organizing pipelines and models](tutorials/organizing-pipelines-and-models.md)
 * [Trigger pipelines from external systems](tutorials/trigger-pipelines-from-external-systems.md)
+* [Continuous integration and deployment](tutorials/continuous-integration-and-deployment.md)
 
 ## Examples
 
