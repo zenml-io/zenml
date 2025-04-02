@@ -38,10 +38,3 @@ class BasetenIntegration(Integration):
             List of flavors.
         """
         return [BasetenModelDeployerFlavor]
-
-__all__ = [
-    "BasetenIntegration",
-    "BasetenModelDeployerConfig",
-    "BasetenModelDeployerFlavor",
-    "BASETEN_MODEL_DEPLOYER_FLAVOR",
-]

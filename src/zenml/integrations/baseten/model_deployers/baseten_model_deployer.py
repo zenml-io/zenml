@@ -4,7 +4,6 @@ import os
 import subprocess
 import time
 import traceback
-import random
 from typing import Any, ClassVar, Dict, List, Optional, Type, Union, cast
 from uuid import UUID, uuid4
 
@@ -25,13 +24,13 @@ from zenml.integrations.baseten.services.baseten_deployment import (
 )
 from zenml.logger import get_logger
 from zenml.model_deployers import BaseModelDeployer, BaseModelDeployerFlavor
+from zenml.models import ServiceRequest, ServiceResponse
 from zenml.services import (
     BaseService,
     ServiceState,
     ServiceStatus,
     ServiceType,
 )
-from zenml.models import ServiceRequest, ServiceResponse
 
 logger = get_logger(__name__)
 
@@ -111,7 +110,7 @@ remote_url = {api_host}
         # Update config with model ID and deployment ID
         config.baseten_id = model_id
         config.baseten_deployment_id = deployment_id
-        
+
         # Ensure service_name is set
         if not config.service_name:
             config.service_name = f"zenml-baseten-{config.name}"
@@ -159,20 +158,20 @@ remote_url = {api_host}
         # Use the API base URL, not the app URL
         api_host = "https://api.baseten.co"
         headers = {"Authorization": f"Api-Key {api_key}"}
-        
+
         # Get all models
         url = f"{api_host}/v1/models"
-        
+
         try:
             response = requests.get(url, headers=headers, timeout=30)
             response.raise_for_status()
             models = response.json().get("models", [])
-            
+
             # Find the model with the matching name
             for model in models:
                 if model.get("name") == model_name:
                     return model
-                    
+
             return None
         except Exception as e:
             raise RuntimeError(f"Failed to get model by name: {str(e)}")
@@ -196,10 +195,10 @@ remote_url = {api_host}
         # Use the API base URL, not the app URL
         api_host = "https://api.baseten.co"
         headers = {"Authorization": f"Api-Key {api_key}"}
-        
+
         # Get the model by ID
         url = f"{api_host}/v1/models/{model_id}"
-        
+
         try:
             response = requests.get(url, headers=headers, timeout=30)
             response.raise_for_status()
@@ -207,7 +206,9 @@ remote_url = {api_host}
         except Exception as e:
             raise RuntimeError(f"Failed to get model by ID: {str(e)}")
 
-    def _get_model_deployment_url(self, model_id: str, environment: str = "development") -> str:
+    def _get_model_deployment_url(
+        self, model_id: str, environment: str = "development"
+    ) -> str:
         """Get the deployment URL for a model.
 
         Args:
@@ -224,25 +225,31 @@ remote_url = {api_host}
         # Format: https://model-{model_id}.api.baseten.co/{environment}
         # The endpoint config will add the /predict path
         if environment not in ["development", "production"]:
-            logger.warning(f"Invalid environment: {environment}, using 'development'")
+            logger.warning(
+                f"Invalid environment: {environment}, using 'development'"
+            )
             environment = "development"
-        
+
         return f"https://model-{model_id}.api.baseten.co/{environment}"
-        
-    def _register_service(self, service: BasetenDeploymentService) -> ServiceResponse:
+
+    def _register_service(
+        self, service: BasetenDeploymentService
+    ) -> ServiceResponse:
         """Register a service with ZenML.
-        
+
         Args:
             service: The service to register.
-            
+
         Returns:
             The service response.
         """
         # Register the service in ZenML
         client = Client()
-        
+
         # Create a ServiceRequest with the service_source directly
-        service_source = f"{service.__class__.__module__}.{service.__class__.__name__}"
+        service_source = (
+            f"{service.__class__.__module__}.{service.__class__.__name__}"
+        )
         service_request = ServiceRequest(
             name=service.config.service_name,
             service_type=self.SERVICE_TYPE,
@@ -250,14 +257,16 @@ remote_url = {api_host}
             config=service.config.model_dump(),
             admin_state=service.admin_state,
             status=service.status.model_dump() if service.status else None,
-            endpoint=service.endpoint.model_dump() if service.endpoint else None,
+            endpoint=service.endpoint.model_dump()
+            if service.endpoint
+            else None,
             prediction_url=service.get_prediction_url(),
             health_check_url=service.get_healthcheck_url(),
             # Add required user and workspace fields
             user=client.active_user.id,
             workspace=client.active_workspace.id,
         )
-        
+
         # Create the service
         return client.zen_store.create_service(service_request)
 
@@ -374,30 +383,34 @@ remote_url = {api_host}
         try:
             # Import the Truss SDK
             import truss as truss_sdk
-            
+
             # Set up authentication
             truss_sdk.login(api_key=baseten_api_key)
-            
+
             # Build deployment options
             push_kwargs = {
                 "target_directory": truss_dir,
                 "model_name": config.name,
                 "remote": remote,  # Use the remote from config
             }
-            
+
             # Deploy the model
-            logger.info(f"Deploying model to Baseten with options: {push_kwargs}")
-            
+            logger.info(
+                f"Deploying model to Baseten with options: {push_kwargs}"
+            )
+
             try:
                 # Deploy the model using the SDK
                 deployment = truss_sdk.push(**push_kwargs)
-                
+
                 # Extract model and deployment IDs
                 model_id = deployment.model_id
                 deployment_id = deployment.model_deployment_id
-                
-                logger.info(f"Model deployed with ID: {model_id}, deployment ID: {deployment_id}")
-                
+
+                logger.info(
+                    f"Model deployed with ID: {model_id}, deployment ID: {deployment_id}"
+                )
+
                 # Wait for deployment to be active with a timeout
                 # Note: The SDK's wait_for_active() method has its own timeout which might be shorter
                 # than what we want, so we'll handle timeouts gracefully
@@ -405,18 +418,26 @@ remote_url = {api_host}
                 try:
                     is_active = deployment.wait_for_active()
                     if not is_active:
-                        logger.warning("Deployment did not become active within SDK timeout, but will continue")
+                        logger.warning(
+                            "Deployment did not become active within SDK timeout, but will continue"
+                        )
                 except Exception as wait_error:
                     # If the wait times out or fails for any reason, we'll still continue
                     # since the model might still be deploying and could become active later
-                    logger.warning(f"Error while waiting for deployment to be active: {wait_error}")
-                    logger.warning("Continuing with deployment process despite wait error")
-                
+                    logger.warning(
+                        f"Error while waiting for deployment to be active: {wait_error}"
+                    )
+                    logger.warning(
+                        "Continuing with deployment process despite wait error"
+                    )
+
                 # Get the deployment URL
                 environment = getattr(config, "environment", "development")
-                endpoint_url = self._get_model_deployment_url(model_id, environment)
+                endpoint_url = self._get_model_deployment_url(
+                    model_id, environment
+                )
                 logger.info(f"Deployment URL: {endpoint_url}")
-                
+
                 # Create service with the extracted info
                 service = self._create_deployment_service(
                     id=id,
@@ -425,22 +446,22 @@ remote_url = {api_host}
                     deployment_id=deployment_id,  # Pass the deployment_id separately
                     endpoint_url=endpoint_url,
                 )
-                
+
                 # Register the service in ZenML using the helper method
                 service_response = self._register_service(service)
-                
+
                 # Update service with the database-assigned UUID
                 service.uuid = service_response.id
-                
+
                 # Check the actual status using our own method which uses the Baseten API directly
                 logger.info("Checking deployment status via Baseten API...")
                 max_retries = timeout // 10  # Check every 10 seconds
                 retry_delay = 10
-                
+
                 for attempt in range(max_retries):
                     try:
                         state, error = service.check_status()
-                        
+
                         if state == ServiceState.ACTIVE:
                             logger.info("Deployment is ready and active")
                             service._update_status(state, "")
@@ -468,26 +489,34 @@ remote_url = {api_host}
                             )
                             time.sleep(retry_delay)
                         else:
-                            logger.warning(f"Failed to verify deployment status: {str(e)}")
+                            logger.warning(
+                                f"Failed to verify deployment status: {str(e)}"
+                            )
                             # Don't raise an exception, as the model might still be usable
-                
+
                 # Update the service in ZenML with the latest status
                 # Create a new client instance to avoid scope issues
                 update_client = Client()
                 update_client.update_service(
                     id=service_response.id,
-                    status=service.status.model_dump() if service.status else None,
-                    endpoint=service.endpoint.model_dump() if service.endpoint else None,
+                    status=service.status.model_dump()
+                    if service.status
+                    else None,
+                    endpoint=service.endpoint.model_dump()
+                    if service.endpoint
+                    else None,
                     prediction_url=service.get_prediction_url(),
                     health_check_url=service.get_healthcheck_url(),
                 )
-                
+
                 return service
-                
+
             except Exception as e:
                 # If the SDK approach fails, fall back to the CLI approach
-                logger.warning(f"SDK deployment failed: {str(e)}, falling back to CLI approach")
-                
+                logger.warning(
+                    f"SDK deployment failed: {str(e)}, falling back to CLI approach"
+                )
+
                 # Deploy to Baseten with CLI command
                 cmd = [
                     "truss",
@@ -499,37 +528,40 @@ remote_url = {api_host}
                     "--remote",  # Explicitly specify the remote
                     remote,  # Use the remote from config
                 ]
-                
+
                 # Add optional parameters if provided in deployer config
                 if self.config.gpu:
                     cmd.extend(["--gpu", self.config.gpu])
-                
+
                 if self.config.cpu:
                     cmd.extend(["--cpu", self.config.cpu])
-                
+
                 if self.config.memory:
                     cmd.extend(["--memory", self.config.memory])
-                
+
                 if self.config.replicas:
                     cmd.extend(["--replicas", str(self.config.replicas)])
-                
+
                 # Add environment variables if specified
                 if self.config.environment_variables:
-                    for key, value in self.config.environment_variables.items():
+                    for (
+                        key,
+                        value,
+                    ) in self.config.environment_variables.items():
                         cmd.extend(["--env", f"{key}={value}"])
-                
+
                 # Log the command, but hide the API key for security
                 logger.info(f"Running command: {' '.join(cmd)}")
-                
+
                 proc = subprocess.run(cmd, capture_output=True, text=True)
                 logger.debug(f"Command stdout: {proc.stdout}")
                 logger.debug(f"Command stderr: {proc.stderr}")
-                
+
                 if proc.returncode != 0:
                     raise RuntimeError(
                         f"Failed to deploy to Baseten:\nStdout: {proc.stdout}\nStderr: {proc.stderr}"
                     )
-                
+
                 # Parse the output to extract the model ID and deployment ID
                 model_id = None
                 deployment_id = None
@@ -538,22 +570,30 @@ remote_url = {api_host}
                         model_id = line.split("Model ID:")[1].strip()
                     if "Deployment ID:" in line:
                         deployment_id = line.split("Deployment ID:")[1].strip()
-                
+
                 if not model_id:
-                    raise RuntimeError("Failed to extract model ID from deployment output")
-                
+                    raise RuntimeError(
+                        "Failed to extract model ID from deployment output"
+                    )
+
                 # For CLI approach, if deployment_id isn't found, we'll use model_id as a fallback
                 if not deployment_id:
-                    logger.warning("Deployment ID not found in output, using model ID as fallback")
+                    logger.warning(
+                        "Deployment ID not found in output, using model ID as fallback"
+                    )
                     deployment_id = model_id
-                
-                logger.info(f"Extracted model ID: {model_id}, deployment ID: {deployment_id}")
-                
+
+                logger.info(
+                    f"Extracted model ID: {model_id}, deployment ID: {deployment_id}"
+                )
+
                 # Get the deployment URL
                 environment = getattr(config, "environment", "development")
-                endpoint_url = self._get_model_deployment_url(model_id, environment)
+                endpoint_url = self._get_model_deployment_url(
+                    model_id, environment
+                )
                 logger.info(f"Deployment URL: {endpoint_url}")
-                
+
                 # Create service with the extracted info
                 service = self._create_deployment_service(
                     id=id,
@@ -562,20 +602,20 @@ remote_url = {api_host}
                     deployment_id=deployment_id,
                     endpoint_url=endpoint_url,
                 )
-                
+
                 # Wait for deployment to be ready with improved error handling
                 logger.info("Waiting for deployment to be ready...")
                 max_retries = timeout // 10  # Check every 10 seconds
                 retry_delay = 10
                 last_state = None
                 last_error = None
-                
+
                 for attempt in range(max_retries):
                     try:
                         state, error = service.check_status()
                         last_state = state
                         last_error = error
-                        
+
                         if state == ServiceState.ACTIVE:
                             logger.info("Deployment is ready")
                             service._update_status(state, "")
@@ -603,12 +643,14 @@ remote_url = {api_host}
                             )
                             time.sleep(retry_delay)
                         else:
-                            logger.warning(f"Failed to verify deployment status: {str(e)}")
+                            logger.warning(
+                                f"Failed to verify deployment status: {str(e)}"
+                            )
                             # Don't raise an exception, as the model might still be usable
-                
+
                 # Register the service in ZenML
                 client = Client()
-                
+
                 # Create a ServiceRequest with the service_source directly
                 service_source = f"{service.__class__.__module__}.{service.__class__.__name__}"
                 service_request = ServiceRequest(
@@ -617,18 +659,24 @@ remote_url = {api_host}
                     service_source=service_source,  # Set service_source explicitly
                     config=service.config.model_dump(),
                     admin_state=service.admin_state,
-                    status=service.status.model_dump() if service.status else None,
-                    endpoint=service.endpoint.model_dump() if service.endpoint else None,
+                    status=service.status.model_dump()
+                    if service.status
+                    else None,
+                    endpoint=service.endpoint.model_dump()
+                    if service.endpoint
+                    else None,
                     prediction_url=service.get_prediction_url(),
                     health_check_url=service.get_healthcheck_url(),
                 )
-                
+
                 # Create the service
-                service_response = client.zen_store.create_service(service_request)
-                
+                service_response = client.zen_store.create_service(
+                    service_request
+                )
+
                 # Update service with the database-assigned UUID
                 service.uuid = service_response.id
-                
+
                 return service
 
         except Exception as e:
@@ -638,7 +686,7 @@ remote_url = {api_host}
 
             # Try to clean up any partial deployment if possible
             try:
-                if 'model_id' in locals() and model_id:
+                if "model_id" in locals() and model_id:
                     logger.warning(
                         f"Attempting to clean up failed deployment for model {model_id}"
                     )
@@ -669,10 +717,10 @@ remote_url = {api_host}
         # Use the API base URL, not the app URL
         api_host = "https://api.baseten.co"
         headers = {"Authorization": f"Api-Key {api_key}"}
-        
+
         # Delete the model
         url = f"{api_host}/v1/models/{model_id}"
-        
+
         try:
             response = requests.delete(url, headers=headers, timeout=30)
             response.raise_for_status()
@@ -820,7 +868,9 @@ remote_url = {api_host}
 
                 # Check if service matches criteria
                 if service_uuid:
-                    logger.debug(f"Comparing service.id {service.id} with requested UUID {service_uuid}")
+                    logger.debug(
+                        f"Comparing service.id {service.id} with requested UUID {service_uuid}"
+                    )
                     if str(service.id) != str(service_uuid):
                         continue
 

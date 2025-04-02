@@ -223,10 +223,12 @@ class BasetenDeploymentService(BaseService):
         except Exception as e:
             logger.warning(f"Failed to check service status: {e}")
             return False
-            
-    def _update_status(self, state: ServiceState, error_message: str = "") -> None:
+
+    def _update_status(
+        self, state: ServiceState, error_message: str = ""
+    ) -> None:
         """Update the service status.
-        
+
         Args:
             state: The new state of the service.
             error_message: An optional error message.
@@ -423,7 +425,9 @@ class BasetenDeploymentService(BaseService):
             raise RuntimeError("No Baseten model/deployment ID available")
 
         # Update status to PENDING_STARTUP while we're starting
-        self._update_status(ServiceState.PENDING_STARTUP, "Activating deployment...")
+        self._update_status(
+            ServiceState.PENDING_STARTUP, "Activating deployment..."
+        )
 
         try:
             # Call Baseten API to activate the deployment
@@ -575,11 +579,13 @@ class BasetenDeploymentService(BaseService):
             return
 
         # Update status to show we're deleting
-        self._update_status(ServiceState.PENDING_SHUTDOWN, "Deleting deployment...")
+        self._update_status(
+            ServiceState.PENDING_SHUTDOWN, "Deleting deployment..."
+        )
 
         # Always force the deletion to proceed, even if deactivation fails
         force = True  # Override the parameter to always force deletion
-        
+
         try:
             # Try to deactivate the deployment to avoid deletion errors, but continue even if it fails
             current_state, _ = self.check_status()
@@ -588,61 +594,88 @@ class BasetenDeploymentService(BaseService):
                 try:
                     # Attempt to deactivate but with a shorter timeout (30 seconds max)
                     deactivate_timeout = min(30, timeout // 2)
-                    
+
                     # Call Baseten API directly to deactivate the deployment instead of using stop()
                     # since stop() may get stuck in a polling loop
                     api_key = self._get_api_key()
                     api_host = "https://api.baseten.co"
                     headers = {"Authorization": f"Api-Key {api_key}"}
                     url = f"{api_host}/v1/models/{self.config.baseten_id}/deployments/{self.config.baseten_deployment_id}/deactivate"
-                    
-                    logger.info("Sending deactivation request directly to Baseten API")
-                    deactivate_response = requests.post(url, headers=headers, timeout=30)
+
+                    logger.info(
+                        "Sending deactivation request directly to Baseten API"
+                    )
+                    deactivate_response = requests.post(
+                        url, headers=headers, timeout=30
+                    )
                     deactivate_response.raise_for_status()
                     logger.info("Deactivation request sent successfully")
-                    
+
                     # Wait a short time for deactivation to take effect, but don't wait long
                     wait_time = min(5, deactivate_timeout)
-                    logger.info(f"Waiting {wait_time} seconds for deactivation to process...")
+                    logger.info(
+                        f"Waiting {wait_time} seconds for deactivation to process..."
+                    )
                     time.sleep(wait_time)
                 except Exception as e:
                     logger.warning(
                         f"Failed to deactivate deployment before deletion: {str(e)}. Will proceed with forced deletion."
                     )
             else:
-                logger.info(f"Deployment is already in state {current_state}, proceeding with deletion")
+                logger.info(
+                    f"Deployment is already in state {current_state}, proceeding with deletion"
+                )
 
             # Call Baseten API to delete the model (not just the deployment)
             # This ensures all associated deployments are also removed
             api_key = self._get_api_key()
             api_host = "https://api.baseten.co"  # Use the API base URL
             headers = {"Authorization": f"Api-Key {api_key}"}
-            
+
             # First try to delete the specific deployment
             try:
-                logger.info(f"Attempting to delete deployment {self.config.baseten_deployment_id}")
+                logger.info(
+                    f"Attempting to delete deployment {self.config.baseten_deployment_id}"
+                )
                 deploy_url = f"{api_host}/v1/models/{self.config.baseten_id}/deployments/{self.config.baseten_deployment_id}"
-                deploy_response = requests.delete(deploy_url, headers=headers, timeout=30)
+                deploy_response = requests.delete(
+                    deploy_url, headers=headers, timeout=30
+                )
                 deploy_response.raise_for_status()
-                logger.info(f"Successfully deleted deployment {self.config.baseten_deployment_id}")
+                logger.info(
+                    f"Successfully deleted deployment {self.config.baseten_deployment_id}"
+                )
             except Exception as deploy_error:
-                logger.warning(f"Failed to delete deployment: {str(deploy_error)}. Will try to delete the whole model.")
-            
+                logger.warning(
+                    f"Failed to delete deployment: {str(deploy_error)}. Will try to delete the whole model."
+                )
+
             # Regardless of deployment deletion result, also try to delete the model
             try:
-                logger.info(f"Attempting to delete model {self.config.baseten_id}")
+                logger.info(
+                    f"Attempting to delete model {self.config.baseten_id}"
+                )
                 model_url = f"{api_host}/v1/models/{self.config.baseten_id}"
-                model_response = requests.delete(model_url, headers=headers, timeout=30)
+                model_response = requests.delete(
+                    model_url, headers=headers, timeout=30
+                )
                 model_response.raise_for_status()
-                logger.info(f"Successfully deleted model {self.config.baseten_id}")
+                logger.info(
+                    f"Successfully deleted model {self.config.baseten_id}"
+                )
             except Exception as model_error:
                 logger.warning(f"Failed to delete model: {str(model_error)}")
                 # If both deletion attempts failed and force is False, this would be an error
                 if not force:
-                    raise RuntimeError(f"Failed to delete model: {str(model_error)}")
+                    raise RuntimeError(
+                        f"Failed to delete model: {str(model_error)}"
+                    )
 
             # Update service status to inactive regardless of success
-            self._update_status(ServiceState.INACTIVE, "Service marked as inactive after deletion attempt")
+            self._update_status(
+                ServiceState.INACTIVE,
+                "Service marked as inactive after deletion attempt",
+            )
 
             # Remove from ZenML services registry
             try:
@@ -670,9 +703,7 @@ class BasetenDeploymentService(BaseService):
 
                 client = Client()
                 client.delete_service(self.uuid)
-                logger.info(
-                    f"Removed service {self.uuid} from ZenML registry"
-                )
+                logger.info(f"Removed service {self.uuid} from ZenML registry")
             except Exception as registry_error:
                 logger.warning(
                     f"Failed to remove service from ZenML registry: {str(registry_error)}"
@@ -692,12 +723,14 @@ class BasetenDeploymentService(BaseService):
         """
         # First check if the model and deployment IDs are available
         if not self.config.baseten_id or not self.config.baseten_deployment_id:
-            raise RuntimeError("No Baseten model/deployment ID available - service may have been deleted")
-            
+            raise RuntimeError(
+                "No Baseten model/deployment ID available - service may have been deleted"
+            )
+
         # Check if service is active and refresh status if needed
         try:
             state, error = self.check_status()
-            
+
             if state != ServiceState.ACTIVE:
                 # If not active, try to start the service
                 logger.info(
@@ -708,10 +741,14 @@ class BasetenDeploymentService(BaseService):
                     # Re-check status after starting
                     state, error = self.check_status()
                 except Exception as start_error:
-                    logger.error(f"Failed to start service: {str(start_error)}")
+                    logger.error(
+                        f"Failed to start service: {str(start_error)}"
+                    )
                     # Continue with checking if it's running, maybe it started despite the error
         except Exception as status_error:
-            logger.error(f"Failed to check service status: {str(status_error)}")
+            logger.error(
+                f"Failed to check service status: {str(status_error)}"
+            )
             # The service might still be usable, so continue with caution
 
         # Double-check that service is running
@@ -721,8 +758,12 @@ class BasetenDeploymentService(BaseService):
                     f"Service is not running (state: {self.status.state if self.status else 'unknown'})"
                 )
         except Exception as running_error:
-            logger.error(f"Error checking if service is running: {str(running_error)}")
-            raise RuntimeError(f"Service is not available: {str(running_error)}")
+            logger.error(
+                f"Error checking if service is running: {str(running_error)}"
+            )
+            raise RuntimeError(
+                f"Service is not available: {str(running_error)}"
+            )
 
         prediction_url = self.prediction_url
         if not prediction_url:
@@ -733,22 +774,21 @@ class BasetenDeploymentService(BaseService):
             max_retries = 3
             retry_delay = 1  # starting delay in seconds
             last_exception = None
-            
+
             # Get the API key for authentication
             try:
                 api_key = self._get_api_key()
                 headers = {"Authorization": f"Api-Key {api_key}"}
                 logger.info(f"Making prediction request to: {prediction_url}")
             except Exception as auth_error:
-                raise RuntimeError(f"Failed to get API key for prediction: {str(auth_error)}")
+                raise RuntimeError(
+                    f"Failed to get API key for prediction: {str(auth_error)}"
+                )
 
             for retry in range(max_retries):
                 try:
                     response = requests.post(
-                        prediction_url, 
-                        headers=headers,
-                        json=data, 
-                        timeout=60
+                        prediction_url, headers=headers, json=data, timeout=60
                     )
                     response.raise_for_status()
                     return response.json()
@@ -840,8 +880,8 @@ class BasetenDeploymentService(BaseService):
             if model.endpoint and model.prediction_url:
                 # Extract base URL from prediction URL by removing the /predict part
                 base_url = model.prediction_url
-                if base_url.endswith('/predict'):
-                    base_url = base_url[:-len('/predict')]
+                if base_url.endswith("/predict"):
+                    base_url = base_url[: -len("/predict")]
                 endpoint.prepare_for_deployment(base_url)
             elif (
                 model.endpoint
