@@ -2653,7 +2653,7 @@ class RestZenStore(BaseZenStore):
             connectors have access to.
         """
         response_body = self.get(
-            SERVICE_CONNECTOR_RESOURCES,
+            SERVICE_CONNECTORS + SERVICE_CONNECTOR_RESOURCES,
             params=filter_model.model_dump(exclude_none=True),
             timeout=max(
                 self.config.http_timeout,
