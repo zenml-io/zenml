@@ -254,14 +254,22 @@ curl -X 'POST' \
   -H 'Content-Type: application/json' \
   -H 'Authorization: Bearer <YOUR_TOKEN>' \
   -d '{
-    "pipeline_parameters": {
-      "data_url": "s3://production-bucket/latest-data.csv",
-      "model_type": "gradient_boosting"
+    "steps": {
+      "load_data": {
+        "parameters": {
+          "data_url": "s3://production-bucket/latest-data.csv"
+        }
+      },
+      "train_model": {
+        "parameters": {
+          "model_type": "gradient_boosting"
+        }
+      }
     }
   }'
 ```
 
-> Note: The REST API uses `pipeline_parameters` for simplicity, but internally ZenML maps these to step parameters.
+> Note: When using the REST API, you need to specify parameters at the step level, not at the pipeline level. This matches how parameters are configured in the Python client.
 
 ### Security Considerations for API Tokens
 
