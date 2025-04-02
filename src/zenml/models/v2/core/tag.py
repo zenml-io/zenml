@@ -14,69 +14,133 @@
 """Models representing tags."""
 
 import random
-from typing import Optional
+from typing import TYPE_CHECKING, ClassVar, List, Optional, Type, TypeVar
 
-from pydantic import BaseModel, Field
+from pydantic import Field, field_validator
 
 from zenml.constants import STR_FIELD_MAX_LENGTH
-from zenml.enums import ColorVariants
-from zenml.models.v2.base.base import (
-    BaseDatedResponseBody,
-    BaseIdentifiedResponse,
-    BaseRequest,
-    BaseResponseMetadata,
-    BaseResponseResources,
+from zenml.enums import ColorVariants, TaggableResourceTypes
+from zenml.models.v2.base.base import BaseUpdate
+from zenml.models.v2.base.scoped import (
+    UserScopedFilter,
+    UserScopedRequest,
+    UserScopedResponse,
+    UserScopedResponseBody,
+    UserScopedResponseMetadata,
+    UserScopedResponseResources,
 )
-from zenml.models.v2.base.filter import BaseFilter
+from zenml.utils.uuid_utils import is_valid_uuid
+
+if TYPE_CHECKING:
+    from sqlalchemy.sql.elements import ColumnElement
+
+    from zenml.zen_stores.schemas import BaseSchema
+
+    AnySchema = TypeVar("AnySchema", bound="BaseSchema")
 
 # ------------------ Request Model ------------------
 
 
-class TagRequest(BaseRequest):
+class TagRequest(UserScopedRequest):
     """Request model for tags."""
 
     name: str = Field(
         description="The unique title of the tag.",
         max_length=STR_FIELD_MAX_LENGTH,
     )
+    exclusive: bool = Field(
+        description="The flag signifying whether the tag is an exclusive tag.",
+        default=False,
+    )
     color: ColorVariants = Field(
         description="The color variant assigned to the tag.",
         default_factory=lambda: random.choice(list(ColorVariants)),
     )
 
+    @field_validator("name")
+    @classmethod
+    def validate_name_not_uuid(cls, value: str) -> str:
+        """Validates that the tag name is not a UUID.
+
+        Args:
+            value: The tag name to validate.
+
+        Returns:
+            The validated tag name.
+
+        Raises:
+            ValueError: If the tag name can be converted
+                to a UUID.
+        """
+        if is_valid_uuid(value):
+            raise ValueError(
+                "Tag names cannot be UUIDs or strings that "
+                "can be converted to UUIDs."
+            )
+        return value
+
 
 # ------------------ Update Model ------------------
 
 
-class TagUpdate(BaseModel):
+class TagUpdate(BaseUpdate):
     """Update model for tags."""
 
     name: Optional[str] = None
+    exclusive: Optional[bool] = None
     color: Optional[ColorVariants] = None
+
+    @field_validator("name")
+    @classmethod
+    def validate_name_not_uuid(cls, value: Optional[str]) -> Optional[str]:
+        """Validates that the tag name is not a UUID.
+
+        Args:
+            value: The tag name to validate.
+
+        Returns:
+            The validated tag name.
+
+        Raises:
+            ValueError: If the tag name can be converted to a UUID.
+        """
+        if value is not None and is_valid_uuid(value):
+            raise ValueError(
+                "Tag names cannot be UUIDs or strings that "
+                "can be converted to UUIDs."
+            )
+        return value
 
 
 # ------------------ Response Model ------------------
 
 
-class TagResponseBody(BaseDatedResponseBody):
+class TagResponseBody(UserScopedResponseBody):
     """Response body for tags."""
 
     color: ColorVariants = Field(
         description="The color variant assigned to the tag.",
         default_factory=lambda: random.choice(list(ColorVariants)),
     )
+    exclusive: bool = Field(
+        description="The flag signifying whether the tag is an exclusive tag."
+    )
     tagged_count: int = Field(
         description="The count of resources tagged with this tag."
     )
 
 
-class TagResponseResources(BaseResponseResources):
+class TagResponseMetadata(UserScopedResponseMetadata):
+    """Response metadata for tags."""
+
+
+class TagResponseResources(UserScopedResponseResources):
     """Class for all resource models associated with the tag entity."""
 
 
 class TagResponse(
-    BaseIdentifiedResponse[
-        TagResponseBody, BaseResponseMetadata, TagResponseResources
+    UserScopedResponse[
+        TagResponseBody, TagResponseMetadata, TagResponseResources
     ]
 ):
     """Response model for tags."""
@@ -106,6 +170,15 @@ class TagResponse(
         return self.get_body().color
 
     @property
+    def exclusive(self) -> bool:
+        """The `exclusive` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().exclusive
+
+    @property
     def tagged_count(self) -> int:
         """The `tagged_count` property.
 
@@ -118,8 +191,13 @@ class TagResponse(
 # ------------------ Filter Model ------------------
 
 
-class TagFilter(BaseFilter):
+class TagFilter(UserScopedFilter):
     """Model to enable advanced filtering of all tags."""
+
+    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *UserScopedFilter.FILTER_EXCLUDE_FIELDS,
+        "resource_type",
+    ]
 
     name: Optional[str] = Field(
         description="The unique title of the tag.", default=None
@@ -127,3 +205,44 @@ class TagFilter(BaseFilter):
     color: Optional[ColorVariants] = Field(
         description="The color variant assigned to the tag.", default=None
     )
+    exclusive: Optional[bool] = Field(
+        description="The flag signifying whether the tag is an exclusive tag.",
+        default=None,
+    )
+    resource_type: Optional[TaggableResourceTypes] = Field(
+        description="Filter tags associated with a specific resource type.",
+        default=None,
+    )
+
+    def get_custom_filters(
+        self, table: Type["AnySchema"]
+    ) -> List["ColumnElement[bool]"]:
+        """Get custom filters.
+
+        Args:
+            table: The query table.
+
+        Returns:
+            A list of custom filters.
+        """
+        custom_filters = super().get_custom_filters(table)
+
+        from sqlmodel import exists, select
+
+        from zenml.zen_stores.schemas import (
+            TagResourceSchema,
+            TagSchema,
+        )
+
+        if self.resource_type:
+            # Filter for tags that have at least one association with the specified resource type
+            resource_type_filter = exists(
+                select(TagResourceSchema).where(
+                    TagResourceSchema.tag_id == TagSchema.id,
+                    TagResourceSchema.resource_type
+                    == self.resource_type.value,
+                )
+            )
+            custom_filters.append(resource_type_filter)
+
+        return custom_filters

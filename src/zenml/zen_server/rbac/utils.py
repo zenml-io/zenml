@@ -32,6 +32,8 @@ from zenml.exceptions import IllegalOperationError
 from zenml.models import (
     BaseIdentifiedResponse,
     Page,
+    ProjectScopedRequest,
+    ProjectScopedResponse,
     UserResponse,
     UserScopedResponse,
 )
@@ -55,24 +57,39 @@ def dehydrate_page(page: Page[AnyResponse]) -> Page[AnyResponse]:
     Returns:
         The page with (potentially) dehydrated items.
     """
+    new_items = dehydrate_response_model_batch(page.items)
+    return page.model_copy(update={"items": new_items})
+
+
+def dehydrate_response_model_batch(
+    batch: List[AnyResponse],
+) -> List[AnyResponse]:
+    """Dehydrate all items of a batch.
+
+    Args:
+        batch: The batch to dehydrate.
+
+    Returns:
+        The batch with (potentially) dehydrated items.
+    """
     if not server_config().rbac_enabled:
-        return page
+        return batch
 
     auth_context = get_auth_context()
     assert auth_context
 
-    resource_list = [get_subresources_for_model(item) for item in page.items]
+    resource_list = [get_subresources_for_model(item) for item in batch]
     resources = set.union(*resource_list) if resource_list else set()
     permissions = rbac().check_permissions(
         user=auth_context.user, resources=resources, action=Action.READ
     )
 
-    new_items = [
+    new_batch = [
         dehydrate_response_model(item, permissions=permissions)
-        for item in page.items
+        for item in batch
     ]
 
-    return page.model_copy(update={"items": new_items})
+    return new_batch
 
 
 def dehydrate_response_model(
@@ -161,7 +178,7 @@ def _dehydrate_value(
         return value
 
 
-def has_permissions_for_model(model: AnyResponse, action: Action) -> bool:
+def has_permissions_for_model(model: AnyModel, action: Action) -> bool:
     """If the active user has permissions to perform the action on the model.
 
     Args:
@@ -201,7 +218,7 @@ def get_permission_denied_model(model: AnyResponse) -> AnyResponse:
 
 
 def batch_verify_permissions_for_models(
-    models: Sequence[AnyResponse],
+    models: Sequence[AnyModel],
     action: Action,
 ) -> None:
     """Batch permission verification for models.
@@ -229,7 +246,7 @@ def batch_verify_permissions_for_models(
     batch_verify_permissions(resources=resources, action=action)
 
 
-def verify_permission_for_model(model: AnyResponse, action: Action) -> None:
+def verify_permission_for_model(model: AnyModel, action: Action) -> None:
     """Verifies if a user has permission to perform an action on a model.
 
     Args:
@@ -283,6 +300,7 @@ def verify_permission(
     resource_type: str,
     action: Action,
     resource_id: Optional[UUID] = None,
+    project_id: Optional[UUID] = None,
 ) -> None:
     """Verifies if a user has permission to perform an action on a resource.
 
@@ -291,20 +309,27 @@ def verify_permission(
             action on.
         action: The action the user wants to perform.
         resource_id: ID of the resource the user wants to perform the action on.
+        project_id: ID of the project the user wants to perform the action
+            on. Only used for project scoped resources.
     """
-    resource = Resource(type=resource_type, id=resource_id)
+    resource = Resource(
+        type=resource_type, id=resource_id, project_id=project_id
+    )
     batch_verify_permissions(resources={resource}, action=action)
 
 
 def get_allowed_resource_ids(
     resource_type: str,
     action: Action = Action.READ,
+    project_id: Optional[UUID] = None,
 ) -> Optional[Set[UUID]]:
     """Get all resource IDs of a resource type that a user can access.
 
     Args:
         resource_type: The resource type.
         action: The action the user wants to perform on the resource.
+        project_id: Optional project ID to filter the resources by.
+            Required for project scoped resources.
 
     Returns:
         A list of resource IDs or `None` if the user has full access to the
@@ -321,7 +346,7 @@ def get_allowed_resource_ids(
         allowed_ids,
     ) = rbac().list_allowed_resource_ids(
         user=auth_context.user,
-        resource=Resource(type=resource_type),
+        resource=Resource(type=resource_type, project_id=project_id),
         action=action,
     )
 
@@ -331,7 +356,7 @@ def get_allowed_resource_ids(
     return {UUID(id) for id in allowed_ids}
 
 
-def get_resource_for_model(model: AnyResponse) -> Optional[Resource]:
+def get_resource_for_model(model: AnyModel) -> Optional[Resource]:
     """Get the resource associated with a model object.
 
     Args:
@@ -346,12 +371,24 @@ def get_resource_for_model(model: AnyResponse) -> Optional[Resource]:
         # This model is not tied to any RBAC resource type
         return None
 
-    return Resource(type=resource_type, id=model.id)
+    project_id: Optional[UUID] = None
+    if isinstance(model, ProjectScopedResponse):
+        # A project scoped response is always scoped to a specific project
+        project_id = model.project.id
+    elif isinstance(model, ProjectScopedRequest):
+        # A project scoped request is always scoped to a specific project
+        project_id = model.project
+
+    resource_id: Optional[UUID] = None
+    if isinstance(model, BaseIdentifiedResponse):
+        resource_id = model.id
+
+    return Resource(type=resource_type, id=resource_id, project_id=project_id)
 
 
 def get_surrogate_permission_model_for_model(
-    model: AnyResponse, action: str
-) -> BaseIdentifiedResponse[Any, Any, Any]:
+    model: BaseModel, action: str
+) -> BaseModel:
     """Get a surrogate permission model for a model.
 
     In some cases a different model instead of the original model is used to
@@ -379,7 +416,7 @@ def get_surrogate_permission_model_for_model(
 
 
 def get_resource_type_for_model(
-    model: AnyResponse,
+    model: AnyModel,
 ) -> Optional[ResourceType]:
     """Get the resource type associated with a model object.
 
@@ -391,27 +428,52 @@ def get_resource_type_for_model(
         is not associated with any resource type.
     """
     from zenml.models import (
+        ActionRequest,
         ActionResponse,
+        ArtifactRequest,
         ArtifactResponse,
+        ArtifactVersionRequest,
         ArtifactVersionResponse,
+        CodeRepositoryRequest,
         CodeRepositoryResponse,
+        ComponentRequest,
         ComponentResponse,
+        EventSourceRequest,
         EventSourceResponse,
+        FlavorRequest,
         FlavorResponse,
+        ModelRequest,
         ModelResponse,
+        ModelVersionRequest,
         ModelVersionResponse,
+        PipelineBuildRequest,
         PipelineBuildResponse,
+        PipelineDeploymentRequest,
         PipelineDeploymentResponse,
+        PipelineRequest,
         PipelineResponse,
+        PipelineRunRequest,
         PipelineRunResponse,
+        ProjectRequest,
+        ProjectResponse,
+        RunMetadataRequest,
+        RunTemplateRequest,
         RunTemplateResponse,
+        SecretRequest,
         SecretResponse,
+        ServiceAccountRequest,
         ServiceAccountResponse,
+        ServiceConnectorRequest,
         ServiceConnectorResponse,
+        ServiceRequest,
         ServiceResponse,
+        StackRequest,
         StackResponse,
+        TagRequest,
         TagResponse,
+        TriggerExecutionRequest,
         TriggerExecutionResponse,
+        TriggerRequest,
         TriggerResponse,
     )
 
@@ -419,36 +481,60 @@ def get_resource_type_for_model(
         Any,
         ResourceType,
     ] = {
+        ActionRequest: ResourceType.ACTION,
         ActionResponse: ResourceType.ACTION,
-        EventSourceResponse: ResourceType.EVENT_SOURCE,
-        FlavorResponse: ResourceType.FLAVOR,
-        ServiceConnectorResponse: ResourceType.SERVICE_CONNECTOR,
-        ComponentResponse: ResourceType.STACK_COMPONENT,
-        StackResponse: ResourceType.STACK,
-        PipelineResponse: ResourceType.PIPELINE,
-        CodeRepositoryResponse: ResourceType.CODE_REPOSITORY,
-        SecretResponse: ResourceType.SECRET,
-        ModelResponse: ResourceType.MODEL,
-        ModelVersionResponse: ResourceType.MODEL_VERSION,
+        ArtifactRequest: ResourceType.ARTIFACT,
         ArtifactResponse: ResourceType.ARTIFACT,
+        ArtifactVersionRequest: ResourceType.ARTIFACT_VERSION,
         ArtifactVersionResponse: ResourceType.ARTIFACT_VERSION,
-        # WorkspaceResponse: ResourceType.WORKSPACE,
-        # UserResponse: ResourceType.USER,
-        PipelineDeploymentResponse: ResourceType.PIPELINE_DEPLOYMENT,
+        CodeRepositoryRequest: ResourceType.CODE_REPOSITORY,
+        CodeRepositoryResponse: ResourceType.CODE_REPOSITORY,
+        ComponentRequest: ResourceType.STACK_COMPONENT,
+        ComponentResponse: ResourceType.STACK_COMPONENT,
+        EventSourceRequest: ResourceType.EVENT_SOURCE,
+        EventSourceResponse: ResourceType.EVENT_SOURCE,
+        FlavorRequest: ResourceType.FLAVOR,
+        FlavorResponse: ResourceType.FLAVOR,
+        ModelRequest: ResourceType.MODEL,
+        ModelResponse: ResourceType.MODEL,
+        ModelVersionRequest: ResourceType.MODEL_VERSION,
+        ModelVersionResponse: ResourceType.MODEL_VERSION,
+        PipelineBuildRequest: ResourceType.PIPELINE_BUILD,
         PipelineBuildResponse: ResourceType.PIPELINE_BUILD,
+        PipelineDeploymentRequest: ResourceType.PIPELINE_DEPLOYMENT,
+        PipelineDeploymentResponse: ResourceType.PIPELINE_DEPLOYMENT,
+        PipelineRequest: ResourceType.PIPELINE,
+        PipelineResponse: ResourceType.PIPELINE,
+        PipelineRunRequest: ResourceType.PIPELINE_RUN,
         PipelineRunResponse: ResourceType.PIPELINE_RUN,
+        RunMetadataRequest: ResourceType.RUN_METADATA,
+        RunTemplateRequest: ResourceType.RUN_TEMPLATE,
         RunTemplateResponse: ResourceType.RUN_TEMPLATE,
-        TagResponse: ResourceType.TAG,
-        TriggerResponse: ResourceType.TRIGGER,
-        TriggerExecutionResponse: ResourceType.TRIGGER_EXECUTION,
+        SecretRequest: ResourceType.SECRET,
+        SecretResponse: ResourceType.SECRET,
+        ServiceAccountRequest: ResourceType.SERVICE_ACCOUNT,
         ServiceAccountResponse: ResourceType.SERVICE_ACCOUNT,
+        ServiceConnectorRequest: ResourceType.SERVICE_CONNECTOR,
+        ServiceConnectorResponse: ResourceType.SERVICE_CONNECTOR,
+        ServiceRequest: ResourceType.SERVICE,
         ServiceResponse: ResourceType.SERVICE,
+        StackRequest: ResourceType.STACK,
+        StackResponse: ResourceType.STACK,
+        TagRequest: ResourceType.TAG,
+        TagResponse: ResourceType.TAG,
+        TriggerRequest: ResourceType.TRIGGER,
+        TriggerResponse: ResourceType.TRIGGER,
+        TriggerExecutionRequest: ResourceType.TRIGGER_EXECUTION,
+        TriggerExecutionResponse: ResourceType.TRIGGER_EXECUTION,
+        ProjectResponse: ResourceType.PROJECT,
+        ProjectRequest: ResourceType.PROJECT,
+        # UserResponse: ResourceType.USER,
     }
 
     return mapping.get(type(model))
 
 
-def is_owned_by_authenticated_user(model: AnyResponse) -> bool:
+def is_owned_by_authenticated_user(model: AnyModel) -> bool:
     """Returns whether the currently authenticated user owns the model.
 
     Args:
@@ -585,7 +671,7 @@ def get_schema_for_resource_type(
         ResourceType.SERVICE: ServiceSchema,
         ResourceType.TAG: TagSchema,
         ResourceType.SERVICE_ACCOUNT: UserSchema,
-        # ResourceType.WORKSPACE: WorkspaceSchema,
+        # ResourceType.PROJECT: ProjectSchema,
         ResourceType.PIPELINE_RUN: PipelineRunSchema,
         ResourceType.PIPELINE_DEPLOYMENT: PipelineDeploymentSchema,
         ResourceType.PIPELINE_BUILD: PipelineBuildSchema,
@@ -618,3 +704,42 @@ def update_resource_membership(
     rbac().update_resource_membership(
         user=user, resource=resource, actions=actions
     )
+
+
+def delete_model_resource(model: AnyModel) -> None:
+    """Delete resource membership information for a model.
+
+    Args:
+        model: The model for which to delete the resource membership information.
+    """
+    delete_model_resources(models=[model])
+
+
+def delete_model_resources(models: List[AnyModel]) -> None:
+    """Delete resource membership information for a list of models.
+
+    Args:
+        models: The models for which to delete the resource membership information.
+    """
+    if not server_config().rbac_enabled:
+        return
+
+    resources = set()
+    for model in models:
+        if resource := get_resource_for_model(model):
+            resources.add(resource)
+
+    delete_resources(resources=list(resources))
+
+
+def delete_resources(resources: List[Resource]) -> None:
+    """Delete resource membership information for a list of resources.
+
+    Args:
+        resources: The resources for which to delete the resource membership
+            information.
+    """
+    if not server_config().rbac_enabled:
+        return
+
+    rbac().delete_resources(resources=resources)

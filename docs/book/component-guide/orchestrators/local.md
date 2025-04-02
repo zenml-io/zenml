@@ -4,7 +4,7 @@ description: Orchestrating your pipelines to run locally.
 
 # Local Orchestrator
 
-The local orchestrator is an [orchestrator](./orchestrators.md) flavor that comes built-in with ZenML and runs your pipelines locally.
+The local orchestrator is an [orchestrator](./) flavor that comes built-in with ZenML and runs your pipelines locally.
 
 ### When to use it
 
@@ -36,6 +36,6 @@ You can now run any ZenML pipeline using the local orchestrator:
 python file_that_runs_a_zenml_pipeline.py
 ```
 
-For more information and a full list of configurable attributes of the local orchestrator, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-orchestrators/#zenml.orchestrators.local.local\_orchestrator.LocalOrchestrator) .
+For more information and a full list of configurable attributes of the local orchestrator, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/core_code_docs/core-orchestrators.html#zenml.orchestrators.local) .
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

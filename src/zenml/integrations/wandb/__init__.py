@@ -30,7 +30,7 @@ class WandbIntegration(Integration):
     """Definition of Plotly integration for ZenML."""
 
     NAME = WANDB
-    REQUIREMENTS = ["wandb>=0.12.12", "Pillow>=9.1.0"]
+    REQUIREMENTS = ["wandb>=0.12.12,<1.0.0", "Pillow>=9.1.0", "weave>=0.51.33,<1.0.0"]
     REQUIREMENTS_IGNORED_ON_UNINSTALL = ["Pillow"]
 
     @classmethod
@@ -47,4 +47,3 @@ class WandbIntegration(Integration):
         return [WandbExperimentTrackerFlavor]
 
 
-WandbIntegration.check_installation()

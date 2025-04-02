@@ -53,11 +53,13 @@ class SeldonIntegration(Integration):
         return [SeldonModelDeployerFlavor]
 
     @classmethod
-    def get_requirements(cls, target_os: Optional[str] = None) -> List[str]:
+    def get_requirements(cls, target_os: Optional[str] = None, python_version: Optional[str] = None
+    ) -> List[str]:
         """Method to get the requirements for the integration.
 
         Args:
             target_os: The target operating system to get the requirements for.
+            python_version: The Python version to use for the requirements.
 
         Returns:
             A list of requirements.
@@ -65,7 +67,5 @@ class SeldonIntegration(Integration):
         from zenml.integrations.numpy import NumpyIntegration
 
         return cls.REQUIREMENTS + \
-            NumpyIntegration.get_requirements(target_os=target_os)
+            NumpyIntegration.get_requirements(target_os=target_os, python_version=python_version)
 
-
-SeldonIntegration.check_installation()

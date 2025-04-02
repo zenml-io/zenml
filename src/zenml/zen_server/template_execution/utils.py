@@ -18,8 +18,8 @@ from zenml.config.pipeline_run_configuration import (
 )
 from zenml.config.step_configurations import Step, StepConfiguration
 from zenml.constants import (
+    ENV_ZENML_ACTIVE_PROJECT_ID,
     ENV_ZENML_ACTIVE_STACK_ID,
-    ENV_ZENML_ACTIVE_WORKSPACE_ID,
 )
 from zenml.enums import ExecutionStatus, StackComponentType, StoreType
 from zenml.logger import get_logger
@@ -134,7 +134,7 @@ def run_template(
     ).access_token
 
     environment = {
-        ENV_ZENML_ACTIVE_WORKSPACE_ID: str(new_deployment.workspace.id),
+        ENV_ZENML_ACTIVE_PROJECT_ID: str(new_deployment.project.id),
         ENV_ZENML_ACTIVE_STACK_ID: str(stack.id),
         "ZENML_VERSION": zenml_version,
         "ZENML_STORE_URL": server_url,
@@ -149,10 +149,6 @@ def run_template(
     )
 
     def _task() -> None:
-        pypi_requirements, apt_packages = (
-            requirements_utils.get_requirements_for_stack(stack=stack)
-        )
-
         if build.python_version:
             version_info = version.parse(build.python_version)
             python_version = f"{version_info.major}.{version_info.minor}"
@@ -161,6 +157,13 @@ def run_template(
                 f"{sys.version_info.major}.{sys.version_info.minor}"
             )
 
+        (
+            pypi_requirements,
+            apt_packages,
+        ) = requirements_utils.get_requirements_for_stack(
+            stack=stack, python_version=python_version
+        )
+
         dockerfile = generate_dockerfile(
             pypi_requirements=pypi_requirements,
             apt_packages=apt_packages,
@@ -168,6 +171,10 @@ def run_template(
             python_version=python_version,
         )
 
+        # building a docker image with requirements and apt packages from the
+        # stack only (no code). Ideally, only orchestrator requirements should
+        # be added to the docker image, but we have to instantiate the entire
+        # stack to get the orchestrator to run pipelines.
         image_hash = generate_image_hash(dockerfile=dockerfile)
 
         runner_image = workload_manager().build_and_push_image(
@@ -181,6 +188,9 @@ def run_template(
             workload_id=new_deployment.id,
             message="Starting pipeline run.",
         )
+
+        # could do this same thing with a step operator, but we need some
+        # minor changes to the abstract interface to support that.
         workload_manager().run(
             workload_id=new_deployment.id,
             image=runner_image,
@@ -406,8 +416,7 @@ def deployment_request_from_template(
     assert deployment.stack
     assert deployment.build
     deployment_request = PipelineDeploymentRequest(
-        user=user_id,
-        workspace=deployment.workspace.id,
+        project=deployment.project.id,
         run_name_template=config.run_name
         or get_default_run_name(pipeline_name=pipeline_configuration.name),
         pipeline_configuration=pipeline_configuration,
@@ -463,6 +472,7 @@ def get_pipeline_run_analytics_metadata(
     }
 
     return {
+        "project_id": deployment.project.id,
         "store_type": "rest",  # This method is called from within a REST endpoint
         **stack_metadata,
         "total_steps": len(deployment.step_configurations),

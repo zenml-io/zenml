@@ -355,7 +355,7 @@ Resources:
                     send_response(event, context, 'SUCCESS', {'Message': 'Resource updated successfully'})
                     return
 
-                url = os.environ['ZENML_SERVER_URL'].lstrip('/')+'/api/v1/workspaces/default/stacks'
+                url = os.environ['ZENML_SERVER_URL'].lstrip('/')+'/api/v1/stacks'
                 api_token = os.environ['ZENML_SERVER_API_TOKEN']
                 payload = event['ResourceProperties']['Payload']
 

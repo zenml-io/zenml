@@ -18,7 +18,6 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from zenml.enums import SecretScope
 from zenml.event_sources.base_event import (
     BaseEvent,
 )
@@ -335,9 +334,7 @@ class BitbucketWebhookEventSourceHandler(BaseWebhookEventSourceHandler):
         webhook_secret = SecretRequest(
             name=f"event_source-{str(event_source.id)}-{random_str(4)}".lower(),
             values={"webhook_secret": secret_key_value},
-            workspace=event_source.workspace.id,
-            user=event_source.user.id,
-            scope=SecretScope.WORKSPACE,
+            private=False,
         )
         secret = self.zen_store.create_secret(webhook_secret)
 

@@ -53,7 +53,6 @@ from zenml.models import (
     ServiceConnectorTypedResourcesModel,
     ServiceConnectorTypeModel,
     UserResponse,
-    WorkspaceResponse,
 )
 from zenml.utils.time_utils import utc_now
 
@@ -706,8 +705,6 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
 
     def to_model(
         self,
-        user: UUID,
-        workspace: UUID,
         name: Optional[str] = None,
         description: str = "",
         labels: Optional[Dict[str, str]] = None,
@@ -716,8 +713,6 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
 
         Args:
             name: The name of the connector.
-            user: The ID of the user that created the connector.
-            workspace: The ID of the workspace that the connector belongs to.
             description: The description of the connector.
             labels: The labels of the connector.
 
@@ -740,8 +735,6 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
             connector_type=spec.connector_type,
             name=name,
             description=description,
-            user=user,
-            workspace=workspace,
             auth_method=self.auth_method,
             expires_at=self.expires_at,
             expires_skew_tolerance=self.expires_skew_tolerance,
@@ -762,7 +755,6 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
 
     def to_response_model(
         self,
-        workspace: WorkspaceResponse,
         user: Optional[UserResponse] = None,
         name: Optional[str] = None,
         id: Optional[UUID] = None,
@@ -772,7 +764,6 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
         """Convert the connector instance to a service connector response model.
 
         Args:
-            workspace: The workspace that the connector belongs to.
             user: The user that created the connector.
             name: The name of the connector.
             id: The ID of the connector.
@@ -810,7 +801,6 @@ class ServiceConnector(BaseModel, metaclass=ServiceConnectorMeta):
                 expires_skew_tolerance=self.expires_skew_tolerance,
             ),
             metadata=ServiceConnectorResponseMetadata(
-                workspace=workspace,
                 expiration_seconds=self.expiration_seconds,
                 labels=labels or {},
             ),

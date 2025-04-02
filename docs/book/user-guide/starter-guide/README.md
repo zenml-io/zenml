@@ -20,4 +20,8 @@ Before jumping in, make sure you have a Python environment ready and `virtualenv
 
 Let this guide be not only your introduction to ZenML but also a foundational asset in your MLOps toolkit. Prepare your development environment, and let's get started!
 
+{% hint style="info" %}
+Throughout this guide, we will be referencing internal ZenML functions and classes, which are more easily discoverable in the [SDK Docs](https://sdkdocs.zenml.io/). Consult the SDK docs if you're ever stuck!
+{% endhint %}
+
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

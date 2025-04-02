@@ -90,7 +90,7 @@ Containerized orchestrators and step operators load your complete project files 
 
 #### Dockerfile (optional)
 
-By default, ZenML uses the official [zenml Docker image](https://hub.docker.com/r/zenmldocker/zenml) as a base for all pipeline and step builds. You can use your own `Dockerfile` to overwrite this behavior. Learn more [here](../../../how-to/customize-docker-builds/README.md).
+By default, ZenML uses the official [zenml Docker image](https://hub.docker.com/r/zenmldocker/zenml) as a base for all pipeline and step builds. You can use your own `Dockerfile` to overwrite this behavior. Learn more [here](https://docs.zenml.io//how-to/customize-docker-builds).
 
 #### Notebooks
 
@@ -98,14 +98,13 @@ Collect all your notebooks in one place.
 
 #### .zen
 
-By running `zenml init` at the root of your project, you define the project scope for ZenML. In ZenML terms, this will be called your "source's root". This will be used to resolve import paths and store configurations.
-
-Although this is optional, it is recommended that you do this for all of your
-projects. This is especially important if you are using Jupyter noteeboks in
-your project as these require you to have initialized a `.zen` file.
+By running `zenml init` at the root of your project, you define the project scope for ZenML. In ZenML terms, this will be called your "source root". This will be used to resolve import paths and store configurations.
+- When running Jupyter notebooks, it is required that you have a `.zen` directory initialized in one of the parent directories of your notebook.
+- When running regular Python scripts, it is still **highly** recommended that you have a `.zen` directory initialized in the root of your project. If that is not the case,
+ZenML will look for a `.zen` directory in the parent directories, which might cause issues if one is found (The import paths will not be relative to the source root anymore for example). If no `.zen` directory is found, the parent directory of the Python file that you're executing will be used as the implicit source root.
 
 {% hint style="warning" %}
-All of your import paths should be relative to the source's root.
+All of your import paths should be relative to the source root.
 {% endhint %}
 
 #### run.py

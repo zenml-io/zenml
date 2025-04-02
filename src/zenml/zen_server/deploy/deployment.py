@@ -17,8 +17,7 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
 
-from zenml.enums import ServerProviderType
-from zenml.services.service_status import ServiceState
+from zenml.enums import ServerProviderType, ServiceState
 
 
 class LocalServerDeploymentConfig(BaseModel):

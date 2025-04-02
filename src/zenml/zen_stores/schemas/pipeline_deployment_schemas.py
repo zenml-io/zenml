@@ -38,11 +38,11 @@ from zenml.zen_stores.schemas.code_repository_schemas import (
 )
 from zenml.zen_stores.schemas.pipeline_build_schemas import PipelineBuildSchema
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
+from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.stack_schemas import StackSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
-from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
@@ -95,10 +95,10 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    workspace_id: UUID = build_foreign_key_field(
+    project_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target=WorkspaceSchema.__tablename__,
-        source_column="workspace_id",
+        target=ProjectSchema.__tablename__,
+        source_column="project_id",
         target_column="id",
         ondelete="CASCADE",
         nullable=False,
@@ -148,8 +148,10 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
     template_id: Optional[UUID] = None
 
     # SQLModel Relationships
-    user: Optional["UserSchema"] = Relationship()
-    workspace: "WorkspaceSchema" = Relationship()
+    user: Optional["UserSchema"] = Relationship(
+        back_populates="deployments",
+    )
+    project: "ProjectSchema" = Relationship()
     stack: Optional["StackSchema"] = Relationship()
     pipeline: Optional["PipelineSchema"] = Relationship()
     schedule: Optional["ScheduleSchema"] = Relationship()
@@ -185,7 +187,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
         """
         return cls(
             stack_id=request.stack,
-            workspace_id=request.workspace,
+            project_id=request.project,
             pipeline_id=request.pipeline,
             build_id=request.build,
             user_id=request.user,
@@ -243,7 +245,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
                 step_configurations[s] = Step.model_validate(c)
 
             metadata = PipelineDeploymentResponseMetadata(
-                workspace=self.workspace.to_model(),
+                project=self.project.to_model(),
                 run_name_template=self.run_name_template,
                 pipeline_configuration=pipeline_configuration,
                 step_configurations=step_configurations,

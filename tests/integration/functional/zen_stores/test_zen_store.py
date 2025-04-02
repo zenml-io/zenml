@@ -47,7 +47,7 @@ from tests.integration.functional.zen_stores.utils import (
 from tests.unit.pipelines.test_build_utils import (
     StubLocalRepositoryContext,
 )
-from zenml import Model, log_metadata, pipeline, step
+from zenml import Model, Tag, add_tags, log_metadata, pipeline, step
 from zenml.artifacts.utils import (
     _load_artifact_store,
 )
@@ -59,9 +59,9 @@ from zenml.config.step_configurations import Step, StepConfiguration, StepSpec
 from zenml.constants import (
     ACTIVATE,
     DEACTIVATE,
+    DEFAULT_PROJECT_NAME,
     DEFAULT_STACK_AND_COMPONENT_NAME,
     DEFAULT_USERNAME,
-    DEFAULT_WORKSPACE_NAME,
     USERS,
 )
 from zenml.enums import (
@@ -80,7 +80,6 @@ from zenml.exceptions import (
     DoesNotExistException,
     EntityExistsError,
     IllegalOperationError,
-    StackExistsError,
 )
 from zenml.logging.step_logging import fetch_logs, prepare_logs_uri
 from zenml.metadata.metadata_types import MetadataTypeEnum
@@ -104,6 +103,8 @@ from zenml.models import (
     PipelineRequest,
     PipelineRunFilter,
     PipelineRunResponse,
+    ProjectFilter,
+    ProjectUpdate,
     RunMetadataResource,
     ScheduleRequest,
     ServiceAccountFilter,
@@ -116,15 +117,10 @@ from zenml.models import (
     StackUpdate,
     StepRunFilter,
     StepRunUpdate,
-    TagFilter,
-    TagRequest,
     TagResourceRequest,
-    TagUpdate,
     UserRequest,
     UserResponse,
     UserUpdate,
-    WorkspaceFilter,
-    WorkspaceUpdate,
 )
 from zenml.models.v2.core.artifact import ArtifactRequest
 from zenml.models.v2.core.component import ComponentRequest
@@ -334,7 +330,7 @@ def test_updating_nonexisting_entity_raises_error(
 def test_deleting_nonexistent_entity_raises_error(
     crud_test_config: CrudTestConfig,
 ):
-    """Tests deleting a nonexistent workspace raises an error."""
+    """Tests deleting a nonexistent resource raises an error."""
     zs = Client().zen_store
 
     if not isinstance(zs, tuple(crud_test_config.supported_zen_stores)):
@@ -348,41 +344,40 @@ def test_deleting_nonexistent_entity_raises_error(
 
 
 # .----------.
-# | WORKSPACES |
+# | PROJECTS |
 # '----------'
 
 
-def test_only_one_default_workspace_present():
-    """Tests that one and only one default workspace is present."""
+def test_only_one_default_project_present():
+    """Tests that one and only one default project is present."""
     client = Client()
     assert (
-        len(client.zen_store.list_workspaces(WorkspaceFilter(name="default")))
-        == 1
+        len(client.zen_store.list_projects(ProjectFilter(name="default"))) == 1
     )
 
 
-def test_updating_default_workspace_fails():
-    """Tests updating the default workspace."""
+def test_updating_default_project_fails():
+    """Tests updating the default project."""
     client = Client()
 
-    default_workspace = client.zen_store.get_workspace(DEFAULT_WORKSPACE_NAME)
-    assert default_workspace.name == DEFAULT_WORKSPACE_NAME
-    workspace_update = WorkspaceUpdate(
-        name="aria_workspace",
-        description="Aria has taken possession of this workspace.",
+    default_project = client.zen_store.get_project(DEFAULT_PROJECT_NAME)
+    assert default_project.name == DEFAULT_PROJECT_NAME
+    project_update = ProjectUpdate(
+        name="aria_project",
+        description="Aria has taken possession of this project.",
     )
     with pytest.raises(IllegalOperationError):
-        client.zen_store.update_workspace(
-            workspace_id=default_workspace.id,
-            workspace_update=workspace_update,
+        client.zen_store.update_project(
+            project_id=default_project.id,
+            project_update=project_update,
         )
 
 
-def test_deleting_default_workspace_fails():
-    """Tests deleting the default workspace."""
+def test_deleting_default_project_fails():
+    """Tests deleting the default project."""
     client = Client()
     with pytest.raises(IllegalOperationError):
-        client.zen_store.delete_workspace(DEFAULT_NAME)
+        client.zen_store.delete_project(DEFAULT_NAME)
 
 
 #  .------.
@@ -791,14 +786,14 @@ def test_delete_user_with_resources_fails():
     """Tests deleting a user with resources fails."""
     zen_store = Client().zen_store
 
-    login = zen_store.type == StoreType.REST
+    if Client().zen_store.type == StoreType.SQL:
+        pytest.skip("SQL ZenStore does not support switching users.")
 
-    with UserContext(delete=False, login=login) as user:
+    with UserContext(delete=False, login=True) as user:
         component_context = ComponentContext(
             c_type=StackComponentType.ORCHESTRATOR,
             flavor="local",
             config={},
-            user_id=user.id,
             delete=False,
         )
         with component_context as orchestrator:
@@ -815,19 +810,17 @@ def test_delete_user_with_resources_fails():
     with does_not_raise():
         zen_store.delete_user(user.id)
 
-    with UserContext(delete=False, login=login) as user:
+    with UserContext(delete=False, login=True) as user:
         orchestrator_context = ComponentContext(
             c_type=StackComponentType.ORCHESTRATOR,
             flavor="local",
             config={},
-            user_id=user.id,
             delete=False,
         )
         artifact_store_context = ComponentContext(
             c_type=StackComponentType.ARTIFACT_STORE,
             flavor="local",
             config={},
-            user_id=user.id,
             delete=False,
         )
 
@@ -842,9 +835,7 @@ def test_delete_user_with_resources_fails():
             StackComponentType.ORCHESTRATOR: [orchestrator.id],
             StackComponentType.ARTIFACT_STORE: [artifact_store.id],
         }
-        stack_context = StackContext(
-            components=components, user_id=user.id, delete=False
-        )
+        stack_context = StackContext(components=components, delete=False)
         with stack_context:
             # We only use the context as a shortcut to create the resource
             pass
@@ -861,8 +852,8 @@ def test_delete_user_with_resources_fails():
     with does_not_raise():
         zen_store.delete_user(user.id)
 
-    with UserContext(delete=False, login=login) as user:
-        secret_context = SecretContext(user_id=user.id, delete=False)
+    with UserContext(delete=False, login=True) as user:
+        secret_context = SecretContext(delete=False)
         with secret_context:
             # We only use the context as a shortcut to create the resource
             pass
@@ -877,10 +868,8 @@ def test_delete_user_with_resources_fails():
     with does_not_raise():
         zen_store.delete_user(user.id)
 
-    with UserContext(delete=False, login=login) as user:
-        code_repo_context = CodeRepositoryContext(
-            user_id=user.id, delete=False
-        )
+    with UserContext(delete=False, login=True) as user:
+        code_repo_context = CodeRepositoryContext(delete=False)
         with code_repo_context:
             # We only use the context as a shortcut to create the resource
             pass
@@ -895,7 +884,7 @@ def test_delete_user_with_resources_fails():
     with does_not_raise():
         zen_store.delete_user(user.id)
 
-    with UserContext(delete=False, login=login) as user:
+    with UserContext(delete=False, login=True) as user:
         service_connector_context = ServiceConnectorContext(
             connector_type="cat'o'matic",
             auth_method="paw-print",
@@ -905,7 +894,6 @@ def test_delete_user_with_resources_fails():
                 "language": "meow",
                 "foods": "tuna",
             },
-            user_id=user.id,
             delete=False,
         )
         with service_connector_context:
@@ -922,10 +910,8 @@ def test_delete_user_with_resources_fails():
     with does_not_raise():
         zen_store.delete_user(user.id)
 
-    with UserContext(delete=False, login=login) as user:
-        model_context = ModelContext(
-            create_version=True, user_id=user.id, delete=False
-        )
+    with UserContext(delete=False, login=True) as user:
+        model_context = ModelContext(create_version=True, delete=False)
         with model_context:
             # We only use the context as a shortcut to create the resource
             pass
@@ -1122,14 +1108,14 @@ def test_delete_service_account_with_resources_fails():
     """Tests deleting a service account with resources fails."""
     zen_store = Client().zen_store
 
-    login = zen_store.type == StoreType.REST
+    if Client().zen_store.type == StoreType.SQL:
+        pytest.skip("SQL ZenStore does not support switching users.")
 
-    with ServiceAccountContext(delete=False, login=login) as service_account:
+    with ServiceAccountContext(delete=False, login=True) as service_account:
         component_context = ComponentContext(
             c_type=StackComponentType.ORCHESTRATOR,
             flavor="local",
             config={},
-            user_id=service_account.id,
             delete=False,
         )
         with component_context as orchestrator:
@@ -1146,19 +1132,17 @@ def test_delete_service_account_with_resources_fails():
     with does_not_raise():
         zen_store.delete_service_account(service_account.id)
 
-    with ServiceAccountContext(delete=False, login=login) as service_account:
+    with ServiceAccountContext(delete=False, login=True) as service_account:
         orchestrator_context = ComponentContext(
             c_type=StackComponentType.ORCHESTRATOR,
             flavor="local",
             config={},
-            user_id=service_account.id,
             delete=False,
         )
         artifact_store_context = ComponentContext(
             c_type=StackComponentType.ARTIFACT_STORE,
             flavor="local",
             config={},
-            user_id=service_account.id,
             delete=False,
         )
 
@@ -1173,9 +1157,7 @@ def test_delete_service_account_with_resources_fails():
             StackComponentType.ORCHESTRATOR: [orchestrator.id],
             StackComponentType.ARTIFACT_STORE: [artifact_store.id],
         }
-        stack_context = StackContext(
-            components=components, user_id=service_account.id, delete=False
-        )
+        stack_context = StackContext(components=components, delete=False)
         with stack_context:
             # We only use the context as a shortcut to create the resource
             pass
@@ -1192,10 +1174,8 @@ def test_delete_service_account_with_resources_fails():
     with does_not_raise():
         zen_store.delete_service_account(service_account.id)
 
-    with ServiceAccountContext(delete=False, login=login) as service_account:
-        secret_context = SecretContext(
-            user_id=service_account.id, delete=False
-        )
+    with ServiceAccountContext(delete=False, login=True) as service_account:
+        secret_context = SecretContext(delete=False)
         with secret_context:
             # We only use the context as a shortcut to create the resource
             pass
@@ -1210,10 +1190,8 @@ def test_delete_service_account_with_resources_fails():
     with does_not_raise():
         zen_store.delete_service_account(service_account.id)
 
-    with ServiceAccountContext(delete=False, login=login) as service_account:
-        code_repo_context = CodeRepositoryContext(
-            user_id=service_account.id, delete=False
-        )
+    with ServiceAccountContext(delete=False, login=True) as service_account:
+        code_repo_context = CodeRepositoryContext(delete=False)
         with code_repo_context:
             # We only use the context as a shortcut to create the resource
             pass
@@ -1228,7 +1206,7 @@ def test_delete_service_account_with_resources_fails():
     with does_not_raise():
         zen_store.delete_service_account(service_account.id)
 
-    with ServiceAccountContext(delete=False, login=login) as service_account:
+    with ServiceAccountContext(delete=False, login=True) as service_account:
         service_connector_context = ServiceConnectorContext(
             connector_type="cat'o'matic",
             auth_method="paw-print",
@@ -1238,7 +1216,6 @@ def test_delete_service_account_with_resources_fails():
                 "language": "meow",
                 "foods": "tuna",
             },
-            user_id=service_account.id,
             delete=False,
         )
         with service_connector_context:
@@ -1255,10 +1232,8 @@ def test_delete_service_account_with_resources_fails():
     with does_not_raise():
         zen_store.delete_service_account(service_account.id)
 
-    with ServiceAccountContext(delete=False, login=login) as service_account:
-        model_context = ModelContext(
-            create_version=True, user_id=service_account.id, delete=False
-        )
+    with ServiceAccountContext(delete=False, login=True) as service_account:
+        model_context = ModelContext(create_version=True, delete=False)
         with model_context:
             # We only use the context as a shortcut to create the resource
             pass
@@ -2431,7 +2406,6 @@ def test_update_default_stack_component_fails():
     store = client.zen_store
     default_artifact_store = store.list_stack_components(
         ComponentFilter(
-            workspace_id=client.active_workspace.id,
             type=StackComponentType.ARTIFACT_STORE,
             name=DEFAULT_STACK_AND_COMPONENT_NAME,
         )
@@ -2439,7 +2413,6 @@ def test_update_default_stack_component_fails():
 
     default_orchestrator = store.list_stack_components(
         ComponentFilter(
-            workspace_id=client.active_workspace.id,
             type=StackComponentType.ORCHESTRATOR,
             name=DEFAULT_STACK_AND_COMPONENT_NAME,
         )
@@ -2466,7 +2439,6 @@ def test_delete_default_stack_component_fails():
     store = client.zen_store
     default_artifact_store = store.list_stack_components(
         ComponentFilter(
-            workspace_id=client.active_workspace.id,
             type=StackComponentType.ARTIFACT_STORE,
             name=DEFAULT_STACK_AND_COMPONENT_NAME,
         )
@@ -2474,7 +2446,6 @@ def test_delete_default_stack_component_fails():
 
     default_orchestrator = store.list_stack_components(
         ComponentFilter(
-            workspace_id=client.active_workspace.id,
             type=StackComponentType.ORCHESTRATOR,
             name=DEFAULT_STACK_AND_COMPONENT_NAME,
         )
@@ -2493,8 +2464,7 @@ def test_count_stack_components():
     store = client.zen_store
     if not isinstance(store, SqlZenStore):
         pytest.skip("Test only applies to SQL store")
-    active_workspace = client.active_workspace
-    filter_model = ComponentFilter(scope_workspace=active_workspace.id)
+    filter_model = ComponentFilter()
     count_before = store.list_stack_components(filter_model).total
 
     assert store.count_stack_components(filter_model) == count_before
@@ -2512,8 +2482,6 @@ def test_stack_component_create_fails_with_invalid_name():
     with pytest.raises(ValueError):
         store.create_stack_component(
             ComponentRequest(
-                user=client.active_user.id,
-                workspace=client.active_workspace.id,
                 name="I will fail\n",
                 type=StackComponentType.ORCHESTRATOR,
                 configuration={},
@@ -2603,8 +2571,6 @@ def test_crud_on_stack_succeeds():
             new_stack = StackRequest(
                 name=stack_name,
                 components=components,
-                workspace=client.active_workspace.id,
-                user=client.active_user.id,
             )
             created_stack = store.create_stack(stack=new_stack)
 
@@ -2649,11 +2615,8 @@ def test_register_stack_fails_when_stack_exists():
                 new_stack = StackRequest(
                     name=stack.name,
                     components=components,
-                    workspace=client.active_workspace.id,
-                    user=client.active_user.id,
                 )
-                with pytest.raises(StackExistsError):
-                    # TODO: [server] inject user and workspace into stack as well
+                with pytest.raises(EntityExistsError):
                     store.create_stack(
                         stack=new_stack,
                     )
@@ -2678,8 +2641,6 @@ def test_register_stack_fails_with_invalid_name():
                     StackRequest(
                         name="I will fail\n",
                         components=components,
-                        workspace=client.active_workspace.id,
-                        user=client.active_user.id,
                     )
                 )
 
@@ -2793,25 +2754,22 @@ def test_stacks_are_accessible_by_other_users():
     if store.type == StoreType.SQL:
         pytest.skip("SQL Zen Stores do not support stack scoping")
 
-    default_user_id = client.active_user.id
     with ComponentContext(
         c_type=StackComponentType.ORCHESTRATOR,
         flavor="local",
         config={},
-        user_id=default_user_id,
     ) as orchestrator:
         with ComponentContext(
             c_type=StackComponentType.ARTIFACT_STORE,
             flavor="local",
             config={},
-            user_id=default_user_id,
         ) as artifact_store:
             components = {
                 StackComponentType.ORCHESTRATOR: [orchestrator.id],
                 StackComponentType.ARTIFACT_STORE: [artifact_store.id],
             }
             with StackContext(
-                components=components, user_id=default_user_id
+                components=components,
             ) as stack:
                 with UserContext(login=True):
                     #  Client() needs to be instantiated here with the new
@@ -2857,8 +2815,8 @@ def test_count_runs():
     store = client.zen_store
     if not isinstance(store, SqlZenStore):
         pytest.skip("Test only applies to SQL store")
-    active_workspace = client.active_workspace
-    filter_model = PipelineRunFilter(scope_workspace=active_workspace.id)
+    active_project = client.active_project
+    filter_model = PipelineRunFilter(project=active_project.id)
     num_runs = store.list_runs(filter_model).total
 
     # At baseline this should be the same
@@ -2868,7 +2826,7 @@ def test_count_runs():
         assert (
             store.count_runs(filter_model)
             == store.list_runs(
-                PipelineRunFilter(scope_workspace=active_workspace.id)
+                PipelineRunFilter(project=active_project.id)
             ).total
         )
         assert store.count_runs(filter_model) == num_runs + 5
@@ -2915,16 +2873,21 @@ def test_deleting_run_deletes_steps():
 
 @step
 def step_to_log_metadata(metadata: Union[str, int, bool]) -> int:
-    log_metadata(metadata={"blupus": metadata})
+    log_metadata(metadata={"blupus": metadata}, infer_artifact=True)
     return 42
 
 
-@pipeline(name="aria", model=Model(name="axl"), tags=["cats", "squirrels"])
+@pipeline(
+    name="aria",
+    model=Model(name="axl"),
+    tags=["cats", "squirrels"],
+    enable_cache=False,
+)
 def pipeline_to_log_metadata(metadata):
     step_to_log_metadata(metadata)
 
 
-def test_pipeline_run_filters_with_oneof(clean_client):
+def test_filters_with_oneof_tags_and_run_metadata(clean_client):
     store = clean_client.zen_store
 
     metadata_values = [3, 25, 100, "random_string", True]
@@ -2956,6 +2919,23 @@ def test_pipeline_run_filters_with_oneof(clean_client):
     runs = store.list_runs(runs_filter_model=runs_filter)
     assert len(runs) == 0  # No runs
 
+    # Test oneof: run_metadata filtering
+    artifact_version_filter = ArtifactVersionFilter(
+        run_metadata=["blupus:startswith:r"]
+    )
+    artifact_versions = store.list_artifact_versions(
+        artifact_version_filter_model=artifact_version_filter
+    )
+    assert len(artifact_versions) == 1  # The run with "random_string"
+
+    artifact_version_filter = ArtifactVersionFilter(
+        run_metadata=["blupus:random_string"]
+    )
+    artifact_versions = store.list_artifact_versions(
+        artifact_version_filter_model=artifact_version_filter
+    )
+    assert len(artifact_versions) == 1  # The run with "random_string"
+
     # Test oneof: formatting
     with pytest.raises(ValidationError):
         PipelineRunFilter(name="oneof:random_value")
@@ -2970,38 +2950,38 @@ def test_run_metadata_filtering(clean_client):
         pipeline_to_log_metadata(v)
 
     # Test run metadata filtering with string value
-    runs_filter = StepRunFilter(run_metadata={"blupus": "random_string"})
-    runs = store.list_run_steps(step_run_filter_model=runs_filter)
-    assert len(runs.items) == 1
+    av_filter = ArtifactVersionFilter(run_metadata=["blupus:random_string"])
+    avs = store.list_artifact_versions(artifact_version_filter_model=av_filter)
+    assert len(avs.items) == 1
 
     # Test run metadata filtering with boolean value
-    runs_filter = StepRunFilter(run_metadata={"blupus": True})
-    runs = store.list_run_steps(step_run_filter_model=runs_filter)
-    assert len(runs.items) == 1
+    av_filter = ArtifactVersionFilter(run_metadata=["blupus:true"])
+    avs = store.list_artifact_versions(artifact_version_filter_model=av_filter)
+    assert len(avs.items) == 1
 
     # Test run metadata filtering with int value
-    runs_filter = StepRunFilter(run_metadata={"blupus": 3})
-    runs = store.list_run_steps(step_run_filter_model=runs_filter)
-    assert len(runs.items) == 1
+    av_filter = ArtifactVersionFilter(run_metadata=["blupus:3"])
+    avs = store.list_artifact_versions(artifact_version_filter_model=av_filter)
+    assert len(avs.items) == 1
 
     # Test run metadata filtering for a non-existent key
-    runs_filter = StepRunFilter(run_metadata={"non-existent": 3})
-    runs = store.list_run_steps(step_run_filter_model=runs_filter)
-    assert len(runs) == 0
+    av_filter = ArtifactVersionFilter(run_metadata=["non-existent:3"])
+    avs = store.list_artifact_versions(artifact_version_filter_model=av_filter)
+    assert len(avs.items) == 0
 
     # Test run metadata filtering with non-existent value
-    runs_filter = StepRunFilter(run_metadata={"blupus": "non-existent"})
-    runs = store.list_run_steps(step_run_filter_model=runs_filter)
-    assert len(runs.items) == 0
+    av_filter = ArtifactVersionFilter(run_metadata=["blupus:non-existent"])
+    avs = store.list_artifact_versions(artifact_version_filter_model=av_filter)
+    assert len(avs.items) == 0
 
     # Test run metadata filtering with operator value
-    runs_filter = StepRunFilter(run_metadata={"blupus": "lt:30"})
-    runs = store.list_run_steps(step_run_filter_model=runs_filter)
-    assert len(runs) == 2  # The run with 3 and 25
+    av_filter = ArtifactVersionFilter(run_metadata=["blupus:lt:30"])
+    avs = store.list_artifact_versions(artifact_version_filter_model=av_filter)
+    assert len(avs.items) == 2  # The run with 3 and 25
 
-    for r in runs:
-        assert isinstance(r.run_metadata["blupus"], int)
-        assert r.run_metadata["blupus"] < 30
+    for av in avs.items:
+        assert isinstance(av.run_metadata["blupus"], int)
+        assert av.run_metadata["blupus"] < 30
 
 
 # .--------------------.
@@ -3076,7 +3056,7 @@ def test_list_custom_named_artifacts():
     ).total
     num_matching_named_before = store.list_artifact_versions(
         ArtifactVersionFilter(
-            has_custom_name=True, name="contains:test_step_output"
+            has_custom_name=True, artifact="contains:test_step_output"
         )
     ).total
     num_runs = 1
@@ -3092,7 +3072,7 @@ def test_list_custom_named_artifacts():
 
         artifact_versions = store.list_artifact_versions(
             ArtifactVersionFilter(
-                has_custom_name=True, name="contains:test_step_output"
+                has_custom_name=True, artifact="contains:test_step_output"
             )
         )
         assert (
@@ -3125,7 +3105,12 @@ def test_artifact_create_fails_with_invalid_name(clean_client: "Client"):
     """Tests that artifact creation fails with an invalid name."""
     store = clean_client.zen_store
     with pytest.raises(Exception):
-        store.create_artifact(ArtifactRequest(name="I will fail\n"))
+        store.create_artifact(
+            ArtifactRequest(
+                name="I will fail\n",
+                project=clean_client.active_project.id,
+            ),
+        )
 
 
 def test_artifact_fetch_works_with_invalid_name(clean_client: "Client"):
@@ -3136,7 +3121,8 @@ def test_artifact_fetch_works_with_invalid_name(clean_client: "Client"):
     """
     store = clean_client.zen_store
     ar = ArtifactRequest(
-        name="I should fail\n But hacky `validate_name` protects me from it"
+        name="I should fail\n But hacky `validate_name` protects me from it",
+        project=clean_client.active_project.id,
     )
     with patch(
         "zenml.zen_stores.sql_zen_store.validate_name", return_value=None
@@ -4202,8 +4188,7 @@ class TestModel:
             for name in ["great one", "yet another one"]:
                 mv = zs.create_model_version(
                     ModelVersionRequest(
-                        user=created_model.user.id,
-                        workspace=created_model.workspace.id,
+                        project=created_model.project.id,
                         model=created_model.id,
                         name=name,
                     )
@@ -4238,17 +4223,17 @@ class TestModel:
         with ModelContext():
             zs = clean_client.zen_store
 
-            ms = zs.list_models(model_filter_model=ModelFilter(tag=""))
+            ms = zs.list_models(model_filter_model=ModelFilter(tags=[""]))
+            assert len(ms) == 0
+
+            ms = zs.list_models(model_filter_model=ModelFilter(tags=["foo"]))
             assert len(ms) == 1
 
-            ms = zs.list_models(model_filter_model=ModelFilter(tag="foo"))
-            assert len(ms) == 1
-
-            ms = zs.list_models(model_filter_model=ModelFilter(tag="bar"))
+            ms = zs.list_models(model_filter_model=ModelFilter(tags=["bar"]))
             assert len(ms) == 1
 
             ms = zs.list_models(
-                model_filter_model=ModelFilter(tag="non_existent_tag")
+                model_filter_model=ModelFilter(tags=["non_existent_tag"])
             )
             assert len(ms) == 0
 
@@ -4259,8 +4244,7 @@ class TestModel:
         with pytest.raises(ValueError):
             zs.create_model(
                 ModelRequest(
-                    user=c.active_user.id,
-                    workspace=c.active_workspace.id,
+                    project=c.active_project.id,
                     name="I will fail\n",
                 )
             )
@@ -4273,8 +4257,7 @@ class TestModelVersion:
             zs = Client().zen_store
             zs.create_model_version(
                 ModelVersionRequest(
-                    user=model.user.id,
-                    workspace=model.workspace.id,
+                    project=model.project.id,
                     model=model.id,
                     name="great one",
                 )
@@ -4287,8 +4270,7 @@ class TestModelVersion:
             with pytest.raises(ValueError):
                 zs.create_model_version(
                     ModelVersionRequest(
-                        user=model.user.id,
-                        workspace=model.workspace.id,
+                        project=model.project.id,
                         model=model.id,
                         name="I will fail\n",
                     )
@@ -4300,8 +4282,7 @@ class TestModelVersion:
             zs = Client().zen_store
             zs.create_model_version(
                 ModelVersionRequest(
-                    user=model.user.id,
-                    workspace=model.workspace.id,
+                    project=model.project.id,
                     model=model.id,
                     name="great one",
                 )
@@ -4309,8 +4290,7 @@ class TestModelVersion:
             with pytest.raises(EntityExistsError):
                 zs.create_model_version(
                     ModelVersionRequest(
-                        user=model.user.id,
-                        workspace=model.workspace.id,
+                        project=model.project.id,
                         model=model.id,
                         name="great one",
                     )
@@ -4323,8 +4303,7 @@ class TestModelVersion:
             with pytest.raises(KeyError):
                 zs.create_model_version(
                     ModelVersionRequest(
-                        user=model.user.id,
-                        workspace=model.workspace.id,
+                        project=model.project.id,
                         model=uuid4(),
                         name="great one",
                     )
@@ -4345,16 +4324,14 @@ class TestModelVersion:
             zs = Client().zen_store
             mv1 = zs.create_model_version(
                 ModelVersionRequest(
-                    user=model.user.id,
-                    workspace=model.workspace.id,
+                    project=model.project.id,
                     model=model.id,
                     name="great one",
                 )
             )
             mv2 = zs.list_model_versions(
-                model_name_or_id=model.id,
                 model_version_filter_model=ModelVersionFilter(
-                    name="great one"
+                    model=model.id, name="great one"
                 ),
             ).items[0]
             assert mv1.id == mv2.id
@@ -4364,8 +4341,9 @@ class TestModelVersion:
         with ModelContext() as model:
             zs = Client().zen_store
             mvs = zs.list_model_versions(
-                model_name_or_id=model.id,
-                model_version_filter_model=ModelVersionFilter(),
+                model_version_filter_model=ModelVersionFilter(
+                    model=model.id,
+                ),
             )
             assert len(mvs) == 0
 
@@ -4375,84 +4353,78 @@ class TestModelVersion:
             zs = Client().zen_store
             mv1 = zs.create_model_version(
                 ModelVersionRequest(
-                    user=model.user.id,
-                    workspace=model.workspace.id,
+                    project=model.project.id,
                     model=model.id,
                     name="great one",
                 )
             )
             mv2 = zs.create_model_version(
                 ModelVersionRequest(
-                    user=model.user.id,
-                    workspace=model.workspace.id,
+                    project=model.project.id,
                     model=model.id,
                     name="and yet another one",
                 )
             )
             mvs = zs.list_model_versions(
-                model_name_or_id=model.id,
-                model_version_filter_model=ModelVersionFilter(),
+                model_version_filter_model=ModelVersionFilter(
+                    model=model.id,
+                ),
             )
             assert len(mvs) == 2
             assert mv1 in mvs
             assert mv2 in mvs
 
-    def test_list_by_tags(self):
+    def test_list_by_tags(self, clean_client: "Client"):
         """Test list using tag filter."""
         with ModelContext() as model:
-            zs = Client().zen_store
-            mv1 = zs.create_model_version(
+            mv1 = clean_client.zen_store.create_model_version(
                 ModelVersionRequest(
-                    user=model.user.id,
-                    workspace=model.workspace.id,
+                    project=model.project.id,
                     model=model.id,
                     name="great one",
                     tags=["tag1", "tag2"],
                 )
             )
-            mv2 = zs.create_model_version(
+            mv2 = clean_client.zen_store.create_model_version(
                 ModelVersionRequest(
-                    user=model.user.id,
-                    workspace=model.workspace.id,
+                    project=model.project.id,
                     model=model.id,
                     name="and yet another one",
                     tags=["tag3", "tag2"],
                 )
             )
-            mvs = zs.list_model_versions(
-                model_name_or_id=model.id,
-                model_version_filter_model=ModelVersionFilter(tag=""),
-            )
-            assert len(mvs) == 2
-            assert mv1 in mvs
-            assert mv2 in mvs
-
-            mvs = zs.list_model_versions(
-                model_name_or_id=model.id,
-                model_version_filter_model=ModelVersionFilter(tag="tag2"),
-            )
-            assert len(mvs) == 2
-            assert mv1 in mvs
-            assert mv2 in mvs
-
-            mvs = zs.list_model_versions(
-                model_name_or_id=model.id,
-                model_version_filter_model=ModelVersionFilter(tag="tag1"),
-            )
-            assert len(mvs) == 1
-            assert mv1 in mvs
-
-            mvs = zs.list_model_versions(
-                model_name_or_id=model.id,
-                model_version_filter_model=ModelVersionFilter(tag="tag3"),
-            )
-            assert len(mvs) == 1
-            assert mv2 in mvs
-
-            mvs = zs.list_model_versions(
-                model_name_or_id=model.id,
+            mvs = clean_client.zen_store.list_model_versions(
                 model_version_filter_model=ModelVersionFilter(
-                    tag="non_existent_tag"
+                    tag="tag1",
+                    model=model.id,
+                ),
+            )
+            assert len(mvs) == 1
+            assert mv1 in mvs
+
+            mvs = clean_client.zen_store.list_model_versions(
+                model_version_filter_model=ModelVersionFilter(
+                    tag="tag2",
+                    model=model.id,
+                ),
+            )
+            assert len(mvs) == 2
+            assert mv1 in mvs
+            assert mv2 in mvs
+
+            mvs = clean_client.zen_store.list_model_versions(
+                model_version_filter_model=ModelVersionFilter(
+                    tag="tag3",
+                    model=model.id,
+                ),
+            )
+            assert len(mvs) == 1
+            assert mv2 in mvs
+
+            mvs = clean_client.zen_store.list_model_versions(
+                model_version_filter_model=ModelVersionFilter(
+                    tag="non_existent_tag",
+                    model=model.id,
                 ),
             )
             assert len(mvs) == 0
@@ -4472,8 +4444,7 @@ class TestModelVersion:
             zs = Client().zen_store
             mv = zs.create_model_version(
                 ModelVersionRequest(
-                    user=model.user.id,
-                    workspace=model.workspace.id,
+                    project=model.project.id,
                     model=model.id,
                     name="great one",
                 )
@@ -4482,22 +4453,21 @@ class TestModelVersion:
                 model_version_id=mv.id,
             )
             mvl = zs.list_model_versions(
-                model_name_or_id=model.id,
                 model_version_filter_model=ModelVersionFilter(
-                    name="great one"
+                    name="great one",
+                    model=model.id,
                 ),
             ).items
             assert len(mvl) == 0
 
     def test_update_not_found(self):
         """Test that update fails if not found."""
-        with ModelContext() as model:
+        with ModelContext():
             zs = Client().zen_store
             with pytest.raises(KeyError):
                 zs.update_model_version(
                     model_version_id=uuid4(),
                     model_version_update_model=ModelVersionUpdate(
-                        model=model.id,
                         stage="staging",
                         force=False,
                     ),
@@ -4509,16 +4479,14 @@ class TestModelVersion:
             zs = Client().zen_store
             mv1 = zs.create_model_version(
                 ModelVersionRequest(
-                    user=model.user.id,
-                    workspace=model.workspace.id,
+                    project=model.project.id,
                     model=model.id,
                     name="great one",
                 )
             )
             mv2 = zs.create_model_version(
                 ModelVersionRequest(
-                    user=model.user.id,
-                    workspace=model.workspace.id,
+                    project=model.project.id,
                     model=model.id,
                     name="yet another one",
                 )
@@ -4526,20 +4494,21 @@ class TestModelVersion:
             zs.update_model_version(
                 model_version_id=mv1.id,
                 model_version_update_model=ModelVersionUpdate(
-                    model=model.id,
                     stage="staging",
                     force=False,
                 ),
             )
             mv2 = zs.list_model_versions(
-                model_name_or_id=model.id,
-                model_version_filter_model=ModelVersionFilter(stage="staging"),
+                model_version_filter_model=ModelVersionFilter(
+                    stage="staging",
+                    model=model.id,
+                ),
             ).items[0]
             assert mv1.id == mv2.id
             mv3 = zs.list_model_versions(
-                model_name_or_id=model.id,
                 model_version_filter_model=ModelVersionFilter(
-                    stage=ModelStages.STAGING
+                    stage=ModelStages.STAGING,
+                    model=model.id,
                 ),
             ).items[0]
             assert mv1.id == mv3.id
@@ -4550,8 +4519,7 @@ class TestModelVersion:
             zs = clean_client.zen_store
             mv1 = zs.create_model_version(
                 ModelVersionRequest(
-                    user=model.user.id,
-                    workspace=model.workspace.id,
+                    project=model.project.id,
                     model=model.id,
                     name="great one",
                     description="this is great",
@@ -4564,7 +4532,6 @@ class TestModelVersion:
             zs.update_model_version(
                 model_version_id=mv1.id,
                 model_version_update_model=ModelVersionUpdate(
-                    model=mv1.model.id,
                     name="and yet another one",
                     description="this is great and better",
                 ),
@@ -4579,17 +4546,16 @@ class TestModelVersion:
             zs = Client().zen_store
             zs.create_model_version(
                 ModelVersionRequest(
-                    user=model.user.id,
-                    workspace=model.workspace.id,
+                    project=model.project.id,
                     model=model.id,
                     name="great one",
                 )
             )
 
             mvl = zs.list_model_versions(
-                model_name_or_id=model.id,
                 model_version_filter_model=ModelVersionFilter(
-                    stage=ModelStages.STAGING
+                    stage=ModelStages.STAGING,
+                    model=model.id,
                 ),
             ).items
 
@@ -4601,8 +4567,7 @@ class TestModelVersion:
             zs = Client().zen_store
             zs.create_model_version(
                 ModelVersionRequest(
-                    user=model.user.id,
-                    workspace=model.workspace.id,
+                    project=model.project.id,
                     model=model.id,
                     name="great one",
                 )
@@ -4610,8 +4575,7 @@ class TestModelVersion:
             time.sleep(1)  # thanks to MySQL way of storing datetimes
             latest = zs.create_model_version(
                 ModelVersionRequest(
-                    user=model.user.id,
-                    workspace=model.workspace.id,
+                    project=model.project.id,
                     model=model.id,
                     name="yet another one",
                 )
@@ -4627,16 +4591,14 @@ class TestModelVersion:
             zs = Client().zen_store
             mv1 = zs.create_model_version(
                 ModelVersionRequest(
-                    user=model.user.id,
-                    workspace=model.workspace.id,
+                    project=model.project.id,
                     model=model.id,
                     name="great one",
                 )
             )
             mv2 = zs.create_model_version(
                 ModelVersionRequest(
-                    user=model.user.id,
-                    workspace=model.workspace.id,
+                    project=model.project.id,
                     model=model.id,
                     name="yet another one",
                 )
@@ -4644,7 +4606,6 @@ class TestModelVersion:
             zs.update_model_version(
                 model_version_id=mv1.id,
                 model_version_update_model=ModelVersionUpdate(
-                    model=model.id,
                     stage="staging",
                     force=False,
                 ),
@@ -4658,7 +4619,6 @@ class TestModelVersion:
             zs.update_model_version(
                 model_version_id=mv2.id,
                 model_version_update_model=ModelVersionUpdate(
-                    model=model.id,
                     stage="staging",
                     force=True,
                     name="I changed that...",
@@ -4690,8 +4650,7 @@ class TestModelVersion:
             zs = Client().zen_store
             mv1 = zs.create_model_version(
                 ModelVersionRequest(
-                    user=model.user.id,
-                    workspace=model.workspace.id,
+                    project=model.project.id,
                     model=model.id,
                 )
             )
@@ -4718,8 +4677,7 @@ class TestModelVersion:
             zs = Client().zen_store
             mv1 = zs.create_model_version(
                 ModelVersionRequest(
-                    user=model.user.id,
-                    workspace=model.workspace.id,
+                    project=model.project.id,
                     model=model.id,
                     name="great one",
                 )
@@ -4731,11 +4689,11 @@ class TestModelVersion:
     def test_model_bad_stage(self):
         """Test that update fails on bad stage value."""
         with pytest.raises(ValueError):
-            ModelVersionUpdate(model=uuid4(), stage="my_super_stage")
+            ModelVersionUpdate(stage="my_super_stage")
 
     def test_model_ok_stage(self):
         """Test that update works on valid stage value."""
-        mvum = ModelVersionUpdate(model=uuid4(), stage="staging")
+        mvum = ModelVersionUpdate(stage="staging")
         assert mvum.stage == "staging"
 
     def test_increments_version_number(self):
@@ -4744,8 +4702,7 @@ class TestModelVersion:
             zs = Client().zen_store
             zs.create_model_version(
                 ModelVersionRequest(
-                    user=model.user.id,
-                    workspace=model.workspace.id,
+                    project=model.project.id,
                     model=model.id,
                     name="great one",
                 )
@@ -4753,16 +4710,16 @@ class TestModelVersion:
             time.sleep(1)  # thanks MySQL again!
             zs.create_model_version(
                 ModelVersionRequest(
-                    user=model.user.id,
-                    workspace=model.workspace.id,
+                    project=model.project.id,
                     model=model.id,
                     name="great second",
                 )
             )
 
             model_versions = zs.list_model_versions(
-                model_name_or_id=model.id,
-                model_version_filter_model=ModelVersionFilter(),
+                model_version_filter_model=ModelVersionFilter(
+                    model=model.id,
+                ),
             )
             assert len(model_versions) == 2
             assert model_versions[0].name == "great one"
@@ -4775,8 +4732,10 @@ class TestModelVersion:
         with ModelContext(create_version=True) as model_version:
             zs = Client().zen_store
             found = zs.list_model_versions(
-                model_name_or_id=model_version.model.id,
-                model_version_filter_model=ModelVersionFilter(number=1),
+                model_version_filter_model=ModelVersionFilter(
+                    number=1,
+                    model=model_version.model.id,
+                ),
             ).items[0]
             assert found.id == model_version.id
             assert found.number == 1
@@ -4788,8 +4747,10 @@ class TestModelVersion:
             zs = Client().zen_store
 
             found = zs.list_model_versions(
-                model_name_or_id=model_version.model.id,
-                model_version_filter_model=ModelVersionFilter(number=2),
+                model_version_filter_model=ModelVersionFilter(
+                    number=2,
+                    model=model_version.model.id,
+                ),
             ).items
 
             assert len(found) == 0
@@ -5172,34 +5133,34 @@ class TestModelVersionPipelineRunLinks:
 class TestTag:
     def test_create_pass(self, clean_client: "Client"):
         """Tests that tag creation passes."""
-        tag = clean_client.create_tag(TagRequest(name="foo"))
+        tag = clean_client.create_tag(name="foo")
         assert tag.name == "foo"
         assert tag.color is not None
-        tag = clean_client.create_tag(TagRequest(name="bar", color="yellow"))
+        tag = clean_client.create_tag(name="bar", color="yellow")
         assert tag.name == "bar"
         assert tag.color == ColorVariants.YELLOW.name.lower()
-        with pytest.raises(ValueError):
-            clean_client.create_tag(TagRequest(color="yellow"))
+        with pytest.raises(TypeError):
+            clean_client.create_tag(color="yellow")
 
     def test_create_bad_input(self, clean_client: "Client"):
         """Tests that tag creation fails without a name."""
-        with pytest.raises(ValueError):
-            clean_client.create_tag(TagRequest(color="yellow"))
+        with pytest.raises(TypeError):
+            clean_client.create_tag(color="yellow")
 
     def test_create_fails_with_invalid_name(self, clean_client: "Client"):
         """Tests that tag creation fails with invalid name."""
         with pytest.raises(ValueError):
-            clean_client.create_tag(TagRequest(name="I will fail\n"))
+            clean_client.create_tag(name="I will fail\n")
 
     def test_create_duplicate(self, clean_client: "Client"):
         """Tests that tag creation fails on duplicate."""
-        clean_client.create_tag(TagRequest(name="foo"))
+        clean_client.create_tag(name="foo")
         with pytest.raises(EntityExistsError):
-            clean_client.create_tag(TagRequest(name="foo", color="yellow"))
+            clean_client.create_tag(name="foo", color="yellow")
 
     def test_get_tag_found(self, clean_client: "Client"):
         """Tests that tag get pass if found."""
-        clean_client.create_tag(TagRequest(name="foo"))
+        clean_client.create_tag(name="foo")
         tag = clean_client.get_tag("foo")
         assert tag.name == "foo"
         assert tag.color is not None
@@ -5211,37 +5172,37 @@ class TestTag:
 
     def test_list_tags(self, clean_client: "Client"):
         """Tests various list scenarios."""
-        tags = clean_client.list_tags(TagFilter())
+        tags = clean_client.list_tags()
         assert len(tags) == 0
-        clean_client.create_tag(TagRequest(name="foo", color="red"))
-        clean_client.create_tag(TagRequest(name="bar", color="green"))
+        clean_client.create_tag(name="foo", color="red")
+        clean_client.create_tag(name="bar", color="green")
 
-        tags = clean_client.list_tags(TagFilter())
+        tags = clean_client.list_tags()
         assert len(tags) == 2
         assert {t.name for t in tags} == {"foo", "bar"}
         assert {t.color for t in tags} == {"red", "green"}
 
-        tags = clean_client.list_tags(TagFilter(name="foo"))
+        tags = clean_client.list_tags(name="foo")
         assert len(tags) == 1
         assert tags[0].name == "foo"
         assert tags[0].color == "red"
 
-        tags = clean_client.list_tags(TagFilter(color="green"))
+        tags = clean_client.list_tags(color="green")
         assert len(tags) == 1
         assert tags[0].name == "bar"
         assert tags[0].color == "green"
 
     def test_update_tag(self, clean_client: "Client"):
         """Tests various update scenarios."""
-        clean_client.create_tag(TagRequest(name="foo", color="red"))
-        tag = clean_client.create_tag(TagRequest(name="bar", color="green"))
+        clean_client.create_tag(name="foo", color="red")
+        tag = clean_client.create_tag(name="bar", color="green")
 
-        clean_client.update_tag("foo", TagUpdate(name="foo2"))
+        clean_client.update_tag("foo", name="foo2")
         assert clean_client.get_tag("foo2").color == "red"
         with pytest.raises(KeyError):
             clean_client.get_tag("foo")
 
-        clean_client.update_tag(tag.id, TagUpdate(color="yellow"))
+        clean_client.update_tag(tag.id, color="yellow")
         assert clean_client.get_tag(tag.id).color == "yellow"
         assert clean_client.get_tag("bar").color == "yellow"
 
@@ -5249,140 +5210,184 @@ class TestTag:
 class TestTagResource:
     def test_create_tag_resource_pass(self, clean_client: "Client"):
         """Tests creating tag<>resource mapping pass."""
-        if clean_client.zen_store.type != StoreType.SQL:
-            pytest.skip("Only SQL Zen Stores support tagging resources")
-        tag = clean_client.create_tag(TagRequest(name="foo", color="red"))
+        tag = clean_client.create_tag(name="foo", color="red")
+        model = clean_client.create_model(name="bar")
         mapping = clean_client.zen_store.create_tag_resource(
             TagResourceRequest(
                 tag_id=tag.id,
-                resource_id=uuid4(),
+                resource_id=model.id,
                 resource_type=TaggableResourceTypes.MODEL,
             )
         )
         assert isinstance(mapping.tag_id, UUID)
         assert isinstance(mapping.resource_id, UUID)
 
-    def test_create_tag_resource_fails_on_duplicate(
+    def test_create_tag_resource_pass_on_duplicate(
         self, clean_client: "Client"
     ):
         """Tests creating tag<>resource mapping fails on duplicate."""
-        if clean_client.zen_store.type != StoreType.SQL:
-            pytest.skip("Only SQL Zen Stores support tagging resources")
-        tag = clean_client.create_tag(TagRequest(name="foo", color="red"))
+        tag = clean_client.create_tag(name="foo", color="red")
+        model = clean_client.create_model(name="bar")
         mapping = clean_client.zen_store.create_tag_resource(
             TagResourceRequest(
                 tag_id=tag.id,
-                resource_id=uuid4(),
+                resource_id=model.id,
                 resource_type=TaggableResourceTypes.MODEL,
             )
         )
 
-        with pytest.raises(EntityExistsError):
-            clean_client.zen_store.create_tag_resource(
-                TagResourceRequest(
-                    tag_id=mapping.tag_id,
-                    resource_id=mapping.resource_id,
-                    resource_type=TaggableResourceTypes.MODEL,
-                )
+        # Creating a duplicate tag resource should not raise an error
+        clean_client.zen_store.create_tag_resource(
+            TagResourceRequest(
+                tag_id=mapping.tag_id,
+                resource_id=mapping.resource_id,
+                resource_type=TaggableResourceTypes.MODEL,
             )
+        )
+
+    def test_batch_create_tag_resource_pass(self, clean_client: "Client"):
+        """Tests batch creating tag<>resource mapping pass."""
+        tag1 = clean_client.create_tag(name="foo1", color="red")
+        tag2 = clean_client.create_tag(name="foo2", color="green")
+        model1 = clean_client.create_model(name="bar1")
+        model2 = clean_client.create_model(name="bar2")
+        clean_client.zen_store.batch_create_tag_resource(
+            [
+                TagResourceRequest(
+                    tag_id=tag1.id,
+                    resource_id=model1.id,
+                    resource_type=TaggableResourceTypes.MODEL,
+                ),
+                TagResourceRequest(
+                    tag_id=tag2.id,
+                    resource_id=model2.id,
+                    resource_type=TaggableResourceTypes.MODEL,
+                ),
+            ]
+        )
 
     def test_delete_tag_resource_pass(self, clean_client: "Client"):
         """Tests deleting tag<>resource mapping pass."""
         if clean_client.zen_store.type != StoreType.SQL:
             pytest.skip("Only SQL Zen Stores support tagging resources")
-        tag = clean_client.create_tag(TagRequest(name="foo", color="red"))
-        resource_id = uuid4()
+        tag = clean_client.create_tag(name="foo", color="red")
+        model = clean_client.create_model(name="bar")
+
         clean_client.zen_store.create_tag_resource(
             TagResourceRequest(
                 tag_id=tag.id,
-                resource_id=resource_id,
+                resource_id=model.id,
                 resource_type=TaggableResourceTypes.MODEL,
             )
         )
         clean_client.zen_store.delete_tag_resource(
-            tag_id=tag.id,
-            resource_id=resource_id,
-            resource_type=TaggableResourceTypes.MODEL,
-        )
-        with pytest.raises(KeyError):
-            clean_client.zen_store.delete_tag_resource(
+            TagResourceRequest(
                 tag_id=tag.id,
-                resource_id=resource_id,
+                resource_id=model.id,
                 resource_type=TaggableResourceTypes.MODEL,
             )
+        )
+
+    def test_delete_tag_resource_pass_on_non_existing(
+        self, clean_client: "Client"
+    ):
+        """Tests deleting tag<>resource mapping pass on non-existing resource."""
+        tag = clean_client.create_tag(name="foo", color="red")
+        model = clean_client.create_model(name="bar")
+
+        clean_client.zen_store.delete_tag_resource(
+            TagResourceRequest(
+                tag_id=tag.id,
+                resource_id=model.id,
+                resource_type=TaggableResourceTypes.MODEL,
+            )
+        )
+        # Removing a non-existing tag resource should not raise an error
+        clean_client.zen_store.delete_tag_resource(
+            TagResourceRequest(
+                tag_id=tag.id,
+                resource_id=model.id,
+                resource_type=TaggableResourceTypes.MODEL,
+            )
+        )
+
+    def test_batch_delete_tag_resource_pass(self, clean_client: "Client"):
+        """Tests batch deleting tag<>resource mapping pass."""
+        tag1 = clean_client.create_tag(name="foo1", color="red")
+        tag2 = clean_client.create_tag(name="foo2", color="green")
+        model1 = clean_client.create_model(name="bar1")
+        model2 = clean_client.create_model(name="bar2")
+        clean_client.zen_store.batch_create_tag_resource(
+            [
+                TagResourceRequest(
+                    tag_id=tag1.id,
+                    resource_id=model1.id,
+                    resource_type=TaggableResourceTypes.MODEL,
+                ),
+                TagResourceRequest(
+                    tag_id=tag2.id,
+                    resource_id=model2.id,
+                    resource_type=TaggableResourceTypes.MODEL,
+                ),
+            ]
+        )
+        clean_client.zen_store.batch_delete_tag_resource(
+            [
+                TagResourceRequest(
+                    tag_id=tag1.id,
+                    resource_id=model1.id,
+                    resource_type=TaggableResourceTypes.MODEL,
+                ),
+                TagResourceRequest(
+                    tag_id=tag2.id,
+                    resource_id=model2.id,
+                    resource_type=TaggableResourceTypes.MODEL,
+                ),
+            ]
+        )
 
     def test_delete_tag_resource_mismatch(self, clean_client: "Client"):
         """Tests deleting tag<>resource mapping pass."""
-        if clean_client.zen_store.type != StoreType.SQL:
-            pytest.skip("Only SQL Zen Stores support tagging resources")
 
         class MockTaggableResourceTypes(StrEnum):
             APPLE = "apple"
 
-        tag = clean_client.create_tag(TagRequest(name="foo", color="red"))
-        resource_id = uuid4()
+        tag = clean_client.create_tag(name="foo", color="red")
+        model = clean_client.create_model(name="bar")
         clean_client.zen_store.create_tag_resource(
             TagResourceRequest(
                 tag_id=tag.id,
-                resource_id=resource_id,
+                resource_id=model.id,
                 resource_type=TaggableResourceTypes.MODEL,
             )
         )
-        with pytest.raises(KeyError):
+        with pytest.raises(ValueError):
             clean_client.zen_store.delete_tag_resource(
-                tag_id=tag.id,
-                resource_id=resource_id,
-                resource_type=MockTaggableResourceTypes.APPLE,
+                TagResourceRequest(
+                    tag_id=tag.id,
+                    resource_id=model.id,
+                    resource_type=MockTaggableResourceTypes.APPLE,
+                )
             )
 
-    @pytest.mark.parametrize(
-        "use_model,use_tag",
-        [[True, False], [False, True]],
-        ids=["delete_model", "delete_tag"],
-    )
-    def test_cascade_deletion(
-        self, use_model, use_tag, clean_client: "Client"
-    ):
+    def test_cascade_deletion(self, clean_client: "Client"):
         """Test that link is deleted on tag deletion."""
-        if clean_client.zen_store.type != StoreType.SQL:
-            pytest.skip("Only SQL Zen Stores support tagging resources")
-        with ModelContext() as model:
-            tag = clean_client.create_tag(
-                TagRequest(name="test_cascade_deletion", color="red")
-            )
-            fake_model_id = uuid4() if not use_model else model.id
-            clean_client.zen_store.create_tag_resource(
-                TagResourceRequest(
-                    tag_id=tag.id,
-                    resource_id=fake_model_id,
-                    resource_type=TaggableResourceTypes.MODEL,
-                )
-            )
+        tag = clean_client.create_tag(
+            name="test_cascade_deletion", color="red"
+        )
+        model = clean_client.create_model(name="bar")
 
-            # duplicate
-            with pytest.raises(EntityExistsError):
-                clean_client.zen_store.create_tag_resource(
-                    TagResourceRequest(
-                        tag_id=tag.id,
-                        resource_id=fake_model_id,
-                        resource_type=TaggableResourceTypes.MODEL,
-                    )
-                )
-            if use_tag:
-                clean_client.delete_tag(tag.id)
-                tag = clean_client.create_tag(
-                    TagRequest(name="test_cascade_deletion", color="red")
-                )
-            else:
-                clean_client.delete_model(model.id)
-            # should pass
-            clean_client.zen_store.create_tag_resource(
-                TagResourceRequest(
-                    tag_id=tag.id,
-                    resource_id=fake_model_id,
-                    resource_type=TaggableResourceTypes.MODEL,
-                )
+        clean_client.zen_store.create_tag_resource(
+            TagResourceRequest(
+                tag_id=tag.id,
+                resource_id=model.id,
+                resource_type=TaggableResourceTypes.MODEL,
             )
+        )
+
+        clean_client.delete_tag(tag.id)
+        updated_model = clean_client.get_model(model.id)
+        assert tag.name not in [t.names for t in updated_model.tags]
 
 
 class TestRunMetadata:
@@ -5399,8 +5404,6 @@ class TestRunMetadata:
 
         sc = client.zen_store.create_stack_component(
             ComponentRequest(
-                user=client.active_user.id,
-                workspace=client.active_workspace.id,
                 name=sample_name("foo"),
                 type=StackComponentType.ORCHESTRATOR,
                 flavor="local",
@@ -5413,13 +5416,13 @@ class TestRunMetadata:
                 ArtifactRequest(
                     name=sample_name("foo"),
                     has_custom_name=True,
+                    project=client.active_project.id,
                 )
             )
             resource = client.zen_store.create_artifact_version(
                 ArtifactVersionRequest(
                     artifact_id=artifact.id,
-                    user=client.active_user.id,
-                    workspace=client.active_workspace.id,
+                    project=client.active_project.id,
                     version="1",
                     type=ArtifactType.DATA,
                     uri=sample_name("foo"),
@@ -5445,8 +5448,7 @@ class TestRunMetadata:
             step_name = sample_name("foo")
             deployment = client.zen_store.create_deployment(
                 PipelineDeploymentRequest(
-                    user=client.active_user.id,
-                    workspace=client.active_workspace.id,
+                    project=client.active_project.id,
                     run_name_template=sample_name("foo"),
                     pipeline_configuration=PipelineConfiguration(
                         name=sample_name("foo")
@@ -5468,10 +5470,9 @@ class TestRunMetadata:
                     },
                 )
             )
-            pr = client.zen_store.create_run(
+            pr, _ = client.zen_store.get_or_create_run(
                 PipelineRunRequest(
-                    user=client.active_user.id,
-                    workspace=client.active_workspace.id,
+                    project=client.active_project.id,
                     id=uuid4(),
                     name=sample_name("foo"),
                     deployment=deployment.id,
@@ -5480,8 +5481,7 @@ class TestRunMetadata:
             )
             sr = client.zen_store.create_run_step(
                 StepRunRequest(
-                    user=client.active_user.id,
-                    workspace=client.active_workspace.id,
+                    project=client.active_project.id,
                     name=step_name,
                     status=ExecutionStatus.RUNNING,
                     pipeline_run_id=pr.id,
@@ -5497,16 +5497,14 @@ class TestRunMetadata:
             new_pipeline = client.zen_store.create_pipeline(
                 pipeline=PipelineRequest(
                     name="foo",
-                    user=client.active_user.id,
-                    workspace=client.active_workspace.id,
+                    project=client.active_project.id,
                 )
             )
             resource = client.zen_store.create_schedule(
                 ScheduleRequest(
                     name="foo",
                     cron_expression="*/5 * * * *",
-                    user=client.active_user.id,
-                    workspace=client.active_workspace.id,
+                    project=client.active_project.id,
                     orchestrator_id=client.active_stack.orchestrator.id,
                     active=False,
                     pipeline_id=new_pipeline.id,
@@ -5514,8 +5512,7 @@ class TestRunMetadata:
             )
             deployment = client.zen_store.create_deployment(
                 PipelineDeploymentRequest(
-                    user=client.active_user.id,
-                    workspace=client.active_workspace.id,
+                    project=client.active_project.id,
                     run_name_template=sample_name("foo"),
                     pipeline_configuration=PipelineConfiguration(
                         name=sample_name("foo")
@@ -5543,8 +5540,7 @@ class TestRunMetadata:
 
         client.zen_store.create_run_metadata(
             RunMetadataRequest(
-                user=client.active_user.id,
-                workspace=client.active_workspace.id,
+                project=client.active_project.id,
                 resources=[RunMetadataResource(id=resource.id, type=type_)],
                 values={"foo": "bar"},
                 types={"foo": MetadataTypeEnum.STRING},
@@ -5604,3 +5600,55 @@ def test_updating_the_pipeline_run_status(step_status, expected_run_status):
         )
         run_status = Client().get_pipeline_run(run_context.runs[-1].id).status
         assert run_status == expected_run_status
+
+
+@step
+def produce_artifact() -> int:
+    """Produces an artifact and tags it."""
+    add_tags(tags=["tag2"], infer_artifact=True)
+    return 42
+
+
+@pipeline(tags=["tag3", Tag(name="tag4", cascade=True)])
+def tag_filter_test_pipeline():
+    """Pipeline that produces an artifact and tags it."""
+    _ = produce_artifact()
+
+
+def test_tag_filter_with_resource_type(clean_client: "Client"):
+    """Tests that tags can be filtered by resource type."""
+    # Create some tags to use
+    _ = clean_client.create_tag(name="tag1", color="red")
+
+    # Run the pipeline
+    tag_filter_test_pipeline()
+
+    # Test filtering tags by pipeline run resource type
+    tags = clean_client.list_tags(
+        resource_type=TaggableResourceTypes.PIPELINE_RUN
+    )
+    assert len(tags) == 2
+    assert {t.name for t in tags} == {"tag3", "tag4"}
+
+    # Test filtering tags by artifact version resource type
+    tags = clean_client.list_tags(
+        resource_type=TaggableResourceTypes.ARTIFACT_VERSION
+    )
+    assert len(tags) == 2
+    assert {t.name for t in tags} == {"tag2", "tag4"}
+
+    # Test default behavior (no resource type filter)
+    tags = clean_client.list_tags()
+    assert len(tags) == 4
+    assert {t.name for t in tags} == {"tag1", "tag2", "tag3", "tag4"}
+
+    # Test combining resource type filter with name filter
+    tags = clean_client.list_tags(
+        resource_type=TaggableResourceTypes.ARTIFACT_VERSION, name="tag2"
+    )
+    assert len(tags) == 1
+    assert tags[0].name == "tag2"
+
+    # Test filtering for a resource type that doesn't have tags
+    tags = clean_client.list_tags(resource_type=TaggableResourceTypes.MODEL)
+    assert len(tags) == 0

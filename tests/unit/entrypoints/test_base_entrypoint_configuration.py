@@ -48,7 +48,7 @@ def test_loading_the_deployment(clean_client):
     """Tests loading the deployment by ID."""
     request = PipelineDeploymentRequest(
         user=clean_client.active_user.id,
-        workspace=clean_client.active_workspace.id,
+        project=clean_client.active_project.id,
         run_name_template="",
         pipeline_configuration={"name": "pipeline"},
         stack=clean_client.active_stack.id,

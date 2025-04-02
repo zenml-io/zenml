@@ -81,7 +81,6 @@ def list_flavors(
 
 @plugin_router.get(
     "/{name}",
-    response_model=BasePluginFlavorResponse,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions

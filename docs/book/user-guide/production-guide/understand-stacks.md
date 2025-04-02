@@ -87,9 +87,9 @@ The **artifact store** is responsible for persisting the step outputs. As we lea
 
 ### Other stack components
 
-There are many more components that you can add to your stacks, like experiment trackers, model deployers, and more. You can see all supported stack component types in a single table view [here](../../component-guide/README.md)
+There are many more components that you can add to your stacks, like experiment trackers, model deployers, and more. You can see all supported stack component types in a single table view [here](https://docs.zenml.io/stacks)
 
-Perhaps the most important stack component after the orchestrator and the artifact store is the [container registry](../../component-guide/container-registries/container-registries.md). A container registry stores all your containerized images, which hold all your code and the environment needed to execute them. We will learn more about them in the next section!
+Perhaps the most important stack component after the orchestrator and the artifact store is the [container registry](https://docs.zenml.io/stacks/container-registries). A container registry stores all your containerized images, which hold all your code and the environment needed to execute them. We will learn more about them in the next section!
 
 ## Registering a stack
 
@@ -220,5 +220,9 @@ To run a pipeline using the new stack:
     ```
 
 Keep this code handy as we'll be using it in the next chapters!
+
+{% hint style="info" %}
+If you ever want to learn more about individual ZenML functions or classes, check out the [SDK Docs](https://sdkdocs.zenml.io/)
+{% endhint %}
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

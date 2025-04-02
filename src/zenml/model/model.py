@@ -532,9 +532,11 @@ class Model(BaseModel):
             )
             model = mv.model
         else:
+            # TODO: This whole thing needs to be refactored as a get_or_create
+            # REST API call.
             try:
-                model = zenml_client.zen_store.get_model(
-                    model_name_or_id=self.name
+                model = zenml_client.get_model(
+                    model_name_or_id=self.name, bypass_lazy_loader=True
                 )
             except KeyError:
                 model_request = ModelRequest(
@@ -546,8 +548,7 @@ class Model(BaseModel):
                     limitations=self.limitations,
                     trade_offs=self.trade_offs,
                     ethics=self.ethics,
-                    user=zenml_client.active_user.id,
-                    workspace=zenml_client.active_workspace.id,
+                    project=zenml_client.active_project.id,
                     save_models_to_registry=self.save_models_to_registry,
                 )
                 model_request = ModelRequest.model_validate(model_request)
@@ -559,8 +560,8 @@ class Model(BaseModel):
                         f"New model `{self.name}` was created implicitly."
                     )
                 except EntityExistsError:
-                    model = zenml_client.zen_store.get_model(
-                        model_name_or_id=self.name
+                    model = zenml_client.get_model(
+                        model_name_or_id=self.name, bypass_lazy_loader=True
                     )
 
         self._model_id = model.id
@@ -686,7 +687,7 @@ class Model(BaseModel):
                     "model version in given stage exists. It might be missing, if "
                     "the pipeline promoting model version to this stage failed,"
                     " as an example. You can explore model versions using "
-                    f"`zenml model version list -n {self.name}` CLI command."
+                    f"`zenml model version list {self.name}` CLI command."
                 )
             if str(self.version).isnumeric():
                 raise RuntimeError(
@@ -696,13 +697,12 @@ class Model(BaseModel):
                     "model version with given number exists. It might be missing, if "
                     "the pipeline creating model version failed,"
                     " as an example. You can explore model versions using "
-                    f"`zenml model version list -n {self.name}` CLI command."
+                    f"`zenml model version list {self.name}` CLI command."
                 )
 
             client = Client()
             model_version_request = ModelVersionRequest(
-                user=client.active_user.id,
-                workspace=client.active_workspace.id,
+                project=client.active_project.id,
                 name=str(self.version) if self.version else None,
                 description=self.description,
                 model=model.id,

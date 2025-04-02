@@ -15,14 +15,12 @@
 
 import os
 
-import pytest
 from click.testing import CliRunner
 
 from tests.integration.functional.cli.utils import cleanup_secrets
 from tests.integration.functional.utils import sample_name
 from zenml.cli.cli import cli
 from zenml.client import Client
-from zenml.enums import SecretScope
 
 secret_create_command = cli.commands["secret"].commands["create"]
 secret_list_command = cli.commands["secret"].commands["list"]
@@ -49,38 +47,24 @@ def test_create_secret():
         assert created_secret.values["test_value2"].get_secret_value() == "axl"
 
 
-def test_create_secret_with_scope():
-    """Tests creating a secret with a scope."""
+def test_create_private_secret():
+    """Test creating private secrets."""
     runner = CliRunner()
     with cleanup_secrets() as secret_name:
         result = runner.invoke(
             secret_create_command,
-            [secret_name, "--test_value=aria", f"--scope={SecretScope.USER}"],
+            [secret_name, "--test_value=aria", "--private"],
         )
         assert result.exit_code == 0
         client = Client()
         created_secret = client.get_secret(secret_name)
         assert created_secret is not None
         assert created_secret.values["test_value"].get_secret_value() == "aria"
-        assert created_secret.scope == SecretScope.USER
-
-
-def test_create_fails_with_bad_scope():
-    """Tests that creating a secret with a bad scope fails."""
-    runner = CliRunner()
-    with cleanup_secrets() as secret_name:
-        result = runner.invoke(
-            secret_create_command,
-            [secret_name, "--test_value=aria", "--scope=axl_scope"],
-        )
-        assert result.exit_code != 0
-        client = Client()
-        with pytest.raises(KeyError):
-            client.get_secret(secret_name)
+        assert created_secret.private is True
 
 
 def test_create_secret_with_values():
-    """Tests creating a secret with a scope."""
+    """Tests creating a secret with values."""
     runner = CliRunner()
     with cleanup_secrets() as secret_name:
         result = runner.invoke(
@@ -175,13 +159,27 @@ def test_get_secret_with_prefix_works():
         assert "test_value2" in result2.output
 
 
-def test_get_secret_with_scope_works():
-    """Test that the secret get command works with a scope."""
+def test_get_private_secret():
+    """Test that the secret get command works with a private secret."""
     runner = CliRunner()
     with cleanup_secrets() as secret_name:
         result1 = runner.invoke(
             secret_get_command,
-            [secret_name, f"--scope={SecretScope.USER}"],
+            [secret_name],
+        )
+        assert result1.exit_code != 0
+        assert "Could not find a secret" in result1.output
+
+        result1 = runner.invoke(
+            secret_get_command,
+            [secret_name, "--private", "true"],
+        )
+        assert result1.exit_code != 0
+        assert "Could not find a secret" in result1.output
+
+        result1 = runner.invoke(
+            secret_get_command,
+            [secret_name, "--private", "false"],
         )
         assert result1.exit_code != 0
         assert "Could not find a secret" in result1.output
@@ -192,13 +190,21 @@ def test_get_secret_with_scope_works():
                 secret_name,
                 "--test_value=aria",
                 "--test_value2=axl",
-                "--scope=user",
+                "--private",
             ],
         )
 
         result2 = runner.invoke(
             secret_get_command,
-            [secret_name, f"--scope={SecretScope.USER}"],
+            [secret_name],
+        )
+        assert result2.exit_code == 0
+        assert "test_value" in result2.output
+        assert "test_value2" in result2.output
+
+        result2 = runner.invoke(
+            secret_get_command,
+            [secret_name, "--private", "true"],
         )
         assert result2.exit_code == 0
         assert "test_value" in result2.output
@@ -206,7 +212,7 @@ def test_get_secret_with_scope_works():
 
         result3 = runner.invoke(
             secret_get_command,
-            [secret_name, f"--scope={SecretScope.WORKSPACE}"],
+            [secret_name, "--private", "false"],
         )
         assert result3.exit_code != 0
         assert "Could not find a secret" in result3.output
@@ -342,13 +348,13 @@ def test_update_secret_works():
 
         result5 = runner.invoke(
             secret_update_command,
-            [secret_name, "-s", "user"],
+            [secret_name, "--private", "true"],
         )
         assert result5.exit_code == 0
         assert "updated" in result5.output
         final_updated_secret = client.get_secret(secret_name)
         assert final_updated_secret is not None
-        assert final_updated_secret.scope == SecretScope.USER
+        assert final_updated_secret.private is True
 
 
 def test_export_import_secret():

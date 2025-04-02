@@ -52,6 +52,7 @@ class GcpIntegration(Integration):
         "google-cloud-storage>=2.9.0",
         "google-cloud-aiplatform>=1.34.0",  # includes shapely pin fix
         "google-cloud-build>=3.11.0",
+        "google-cloud-pipeline-components>=2.19.0",
         "kubernetes",
     ]
     REQUIREMENTS_IGNORED_ON_UNINSTALL = ["kubernetes","kfp"]
@@ -83,6 +84,3 @@ class GcpIntegration(Integration):
             VertexOrchestratorFlavor,
             VertexStepOperatorFlavor,
         ]
-
-
-GcpIntegration.check_installation()

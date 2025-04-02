@@ -22,7 +22,7 @@ class TestModelRegistryModelMetadata:
     def test_custom_attributes(self):
         metadata = ModelRegistryModelMetadata(
             zenml_version="1.0",
-            zenml_workspace="test_workspace",
+            zenml_project="test_project",
             custom_attr_1="foo",
             custom_attr_2="bar",
         )
@@ -33,13 +33,13 @@ class TestModelRegistryModelMetadata:
         metadata = ModelRegistryModelMetadata(
             zenml_version="1.55",
             custom_attr_1="foo",
-            zenml_workspace="test_workspace",
+            zenml_project="test_project",
             custom_attr_2=None,
         )
         expected = {
             "zenml_version": "1.55",
             "custom_attr_1": "foo",
-            "zenml_workspace": "test_workspace",
+            "zenml_project": "test_project",
         }
         assert isinstance(metadata.model_dump()["zenml_version"], str)
         assert metadata.model_dump() == expected
@@ -48,7 +48,7 @@ class TestModelRegistryModelMetadata:
         metadata = ModelRegistryModelMetadata(
             zenml_version="1.55",
             custom_attr_1="foo",
-            zenml_workspace="test_workspace",
+            zenml_project="test_project",
             custom_attr_2=None,
             zenml_pipeline_name=None,
         )
@@ -61,7 +61,7 @@ class TestModelRegistryModelMetadata:
             "zenml_pipeline_uuid": None,
             "zenml_pipeline_run_uuid": None,
             "zenml_step_name": None,
-            "zenml_workspace": "test_workspace",
+            "zenml_project": "test_project",
             "custom_attr_1": "foo",
             "custom_attr_2": None,
         }
@@ -73,7 +73,7 @@ class TestModelRegistryModelMetadata:
         # Test exclude_unset and exclude_none both True
         expected = {
             "zenml_version": "1.55",
-            "zenml_workspace": "test_workspace",
+            "zenml_project": "test_project",
             "custom_attr_1": "foo",
         }
         assert (
@@ -84,7 +84,7 @@ class TestModelRegistryModelMetadata:
         # Test exclude_unset False and exclude_none True
         expected = {
             "zenml_version": "1.55",
-            "zenml_workspace": "test_workspace",
+            "zenml_project": "test_project",
             "custom_attr_1": "foo",
         }
         assert (
@@ -96,7 +96,7 @@ class TestModelRegistryModelMetadata:
         expected = {
             "zenml_version": "1.55",
             "zenml_pipeline_name": None,
-            "zenml_workspace": "test_workspace",
+            "zenml_project": "test_project",
             "custom_attr_1": "foo",
             "custom_attr_2": None,
         }

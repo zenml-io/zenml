@@ -31,10 +31,10 @@ from zenml.models import (
 from zenml.utils.json_utils import pydantic_encoder
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
+from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.stack_schemas import StackSchema
 from zenml.zen_stores.schemas.user_schemas import UserSchema
-from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 
 class PipelineBuildSchema(BaseSchema, table=True):
@@ -52,15 +52,15 @@ class PipelineBuildSchema(BaseSchema, table=True):
     )
     user: Optional["UserSchema"] = Relationship(back_populates="builds")
 
-    workspace_id: UUID = build_foreign_key_field(
+    project_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target=WorkspaceSchema.__tablename__,
-        source_column="workspace_id",
+        target=ProjectSchema.__tablename__,
+        source_column="project_id",
         target_column="id",
         ondelete="CASCADE",
         nullable=False,
     )
-    workspace: "WorkspaceSchema" = Relationship(back_populates="builds")
+    project: "ProjectSchema" = Relationship(back_populates="builds")
 
     stack_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -100,6 +100,8 @@ class PipelineBuildSchema(BaseSchema, table=True):
     python_version: Optional[str]
     checksum: Optional[str]
     stack_checksum: Optional[str]
+    # Build duration in seconds
+    duration: Optional[int] = None
 
     @classmethod
     def from_request(
@@ -115,7 +117,7 @@ class PipelineBuildSchema(BaseSchema, table=True):
         """
         return cls(
             stack_id=request.stack,
-            workspace_id=request.workspace,
+            project_id=request.project,
             user_id=request.user,
             pipeline_id=request.pipeline,
             images=json.dumps(request.images, default=pydantic_encoder),
@@ -125,6 +127,7 @@ class PipelineBuildSchema(BaseSchema, table=True):
             python_version=request.python_version,
             checksum=request.checksum,
             stack_checksum=request.stack_checksum,
+            duration=request.duration,
         )
 
     def to_model(
@@ -152,7 +155,7 @@ class PipelineBuildSchema(BaseSchema, table=True):
         metadata = None
         if include_metadata:
             metadata = PipelineBuildResponseMetadata(
-                workspace=self.workspace.to_model(),
+                project=self.project.to_model(),
                 pipeline=self.pipeline.to_model() if self.pipeline else None,
                 stack=self.stack.to_model() if self.stack else None,
                 images=json.loads(self.images),
@@ -162,6 +165,7 @@ class PipelineBuildSchema(BaseSchema, table=True):
                 stack_checksum=self.stack_checksum,
                 is_local=self.is_local,
                 contains_code=self.contains_code,
+                duration=self.duration,
             )
         return PipelineBuildResponse(
             id=self.id,

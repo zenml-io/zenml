@@ -34,13 +34,13 @@ from zenml.constants import (
 from zenml.enums import ExecutionStatus
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
+    ProjectScopedFilter,
+    ProjectScopedRequest,
+    ProjectScopedResponse,
+    ProjectScopedResponseBody,
+    ProjectScopedResponseMetadata,
+    ProjectScopedResponseResources,
     TaggableFilter,
-    WorkspaceScopedFilter,
-    WorkspaceScopedRequest,
-    WorkspaceScopedResponse,
-    WorkspaceScopedResponseBody,
-    WorkspaceScopedResponseMetadata,
-    WorkspaceScopedResponseResources,
 )
 from zenml.models.v2.core.tag import TagResponse
 
@@ -55,7 +55,7 @@ AnyQuery = TypeVar("AnyQuery", bound=Any)
 # ------------------ Request Model ------------------
 
 
-class PipelineRequest(WorkspaceScopedRequest):
+class PipelineRequest(ProjectScopedRequest):
     """Request model for pipelines."""
 
     name: str = Field(
@@ -95,7 +95,7 @@ class PipelineUpdate(BaseUpdate):
 # ------------------ Response Model ------------------
 
 
-class PipelineResponseBody(WorkspaceScopedResponseBody):
+class PipelineResponseBody(ProjectScopedResponseBody):
     """Response body for pipelines."""
 
     latest_run_id: Optional[UUID] = Field(
@@ -108,7 +108,7 @@ class PipelineResponseBody(WorkspaceScopedResponseBody):
     )
 
 
-class PipelineResponseMetadata(WorkspaceScopedResponseMetadata):
+class PipelineResponseMetadata(ProjectScopedResponseMetadata):
     """Response metadata for pipelines."""
 
     description: Optional[str] = Field(
@@ -117,7 +117,7 @@ class PipelineResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
-class PipelineResponseResources(WorkspaceScopedResponseResources):
+class PipelineResponseResources(ProjectScopedResponseResources):
     """Class for all resource models associated with the pipeline entity."""
 
     latest_run_user: Optional["UserResponse"] = Field(
@@ -130,7 +130,7 @@ class PipelineResponseResources(WorkspaceScopedResponseResources):
 
 
 class PipelineResponse(
-    WorkspaceScopedResponse[
+    ProjectScopedResponse[
         PipelineResponseBody,
         PipelineResponseMetadata,
         PipelineResponseResources,
@@ -257,21 +257,21 @@ class PipelineResponse(
 # ------------------ Filter Model ------------------
 
 
-class PipelineFilter(WorkspaceScopedFilter, TaggableFilter):
+class PipelineFilter(ProjectScopedFilter, TaggableFilter):
     """Pipeline filter model."""
 
     CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
-        *WorkspaceScopedFilter.CUSTOM_SORTING_OPTIONS,
+        *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
         *TaggableFilter.CUSTOM_SORTING_OPTIONS,
         SORT_PIPELINES_BY_LATEST_RUN_KEY,
     ]
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
+        *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
         *TaggableFilter.FILTER_EXCLUDE_FIELDS,
         "latest_run_status",
     ]
-    CLI_EXCLUDE_FIELDS = [
-        *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
+    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
         *TaggableFilter.CLI_EXCLUDE_FIELDS,
     ]
 

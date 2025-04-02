@@ -668,7 +668,6 @@ def register_service_connector(
         else:
             auto_configure = False
 
-        auth_method = None
         connector_model: Optional[
             Union[ServiceConnectorRequest, ServiceConnectorResponse]
         ] = None
@@ -685,6 +684,7 @@ def register_service_connector(
                         description=description or "",
                         connector_type=connector_type,
                         resource_type=resource_type,
+                        auth_method=auth_method,
                         expires_skew_tolerance=expires_skew_tolerance,
                         auto_configure=True,
                         verify=True,
@@ -982,7 +982,7 @@ def register_service_connector(
 )
 @click.pass_context
 def list_service_connectors(
-    ctx: click.Context, labels: Optional[List[str]] = None, **kwargs: Any
+    ctx: click.Context, /, labels: Optional[List[str]] = None, **kwargs: Any
 ) -> None:
     """List all service connectors.
 
@@ -1131,7 +1131,6 @@ def describe_service_connector(
             )
 
         connector = connector_client.to_response_model(
-            workspace=client.active_workspace,
             user=client.active_user,
         )
     else:
@@ -1903,29 +1902,28 @@ def login_service_connector(
     "list-resources",
     help="""List all resources accessible by service connectors.
 
-This command can be used to list all resources that can be accessed by service
-connectors configured in your workspace. You can filter the list by connector
+This command can be used to list all resources that can be accessed by the
+currently registered service connectors. You can filter the list by connector
 type and/or resource type.
 
 Use this command to answer questions like:
 
 - show a list of all Kubernetes clusters that can be accessed by way of service
-connectors configured in my workspace
-- show a list of all connectors configured for my workspace along with all the
-resources they can access or the error state they are in, if any
+connectors
+- show a list of all connectors along with all the resources they can access or
+the error state they are in, if any
 
-NOTE: since this command exercises all service connectors in your workspace, it
-may take a while to complete.
+NOTE: since this command exercises all service connectors currently registered
+with ZenML, it may take a while to complete.
 
 Examples:
 
-- show a list of all S3 buckets that can be accessed by service connectors
-configured in your workspace:
+- show a list of all S3 buckets that can be accessed by service connectors:
 
     $ zenml service-connector list-resources --resource-type s3-bucket
 
-- show a list of all resources that the AWS connectors in your workspace can
-access:
+- show a list of all resources that the AWS connectors currently registered
+with ZenML can access:
 
     $ zenml service-connector list-resources --connector-type aws
     
@@ -1983,10 +1981,10 @@ def list_service_connector_resources(
     if not resource_type and not resource_id:
         cli_utils.warning(
             "Fetching all service connector resources can take a long time, "
-            "depending on the number of connectors configured in your "
-            "workspace. Consider using the '--connector-type', "
-            "'--resource-type' and '--resource-id' options to narrow down the "
-            "list of resources to fetch."
+            "depending on the number of connectors currently registered with "
+            "ZenML. Consider using the '--connector-type', '--resource-type' "
+            "and '--resource-id' options to narrow down the list of resources "
+            "to fetch."
         )
 
     with console.status(
@@ -2031,7 +2029,7 @@ def list_service_connector_resources(
 
     click.echo(
         f"The {resource_str} can be accessed by"
-        f"{connector_str} service connectors configured in your workspace:"
+        f"{connector_str} service connectors:"
     )
 
     cli_utils.print_service_connector_resource_table(

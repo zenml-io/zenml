@@ -53,8 +53,7 @@ Client/REST API. Think of them as blueprints for your pipeline runs, ready
 to be customized on the fly.
 
 {% hint style="success" %}
-This is a [ZenML Pro](https://zenml.io/pro)-only feature. Please
-[sign up here](https://cloud.zenml.io) to get access.
+This is a [ZenML Pro](https://zenml.io/pro)-only feature. Please [sign up here](https://cloud.zenml.io) to get access.
 {% endhint %}
 
 ![Working with Templates](../../../.gitbook/assets/run-templates.gif)

@@ -16,7 +16,6 @@
 from datetime import datetime
 from typing import (
     TYPE_CHECKING,
-    Any,
     ClassVar,
     Dict,
     List,
@@ -27,19 +26,21 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import ConfigDict, Field
 
 from zenml.config.step_configurations import StepConfiguration, StepSpec
 from zenml.constants import STR_FIELD_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
 from zenml.enums import ExecutionStatus, StepRunInputArtifactType
 from zenml.metadata.metadata_types import MetadataType
+from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
-    WorkspaceScopedFilter,
-    WorkspaceScopedRequest,
-    WorkspaceScopedResponse,
-    WorkspaceScopedResponseBody,
-    WorkspaceScopedResponseMetadata,
-    WorkspaceScopedResponseResources,
+    ProjectScopedFilter,
+    ProjectScopedRequest,
+    ProjectScopedResponse,
+    ProjectScopedResponseBody,
+    ProjectScopedResponseMetadata,
+    ProjectScopedResponseResources,
+    RunMetadataFilterMixin,
 )
 from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
 from zenml.models.v2.core.model_version import ModelVersionResponse
@@ -78,7 +79,7 @@ class StepRunInputResponse(ArtifactVersionResponse):
 # ------------------ Request Model ------------------
 
 
-class StepRunRequest(WorkspaceScopedRequest):
+class StepRunRequest(ProjectScopedRequest):
     """Request model for step runs."""
 
     name: str = Field(
@@ -137,14 +138,6 @@ class StepRunRequest(WorkspaceScopedRequest):
         title="Logs associated with this step run.",
         default=None,
     )
-    deployment: UUID = Field(
-        title="The deployment associated with the step run."
-    )
-    model_version_id: Optional[UUID] = Field(
-        title="The ID of the model version that was "
-        "configured by this step run explicitly.",
-        default=None,
-    )
 
     model_config = ConfigDict(protected_namespaces=())
 
@@ -152,7 +145,7 @@ class StepRunRequest(WorkspaceScopedRequest):
 # ------------------ Update Model ------------------
 
 
-class StepRunUpdate(BaseModel):
+class StepRunUpdate(BaseUpdate):
     """Update model for step runs."""
 
     outputs: Dict[str, List[UUID]] = Field(
@@ -171,16 +164,11 @@ class StepRunUpdate(BaseModel):
         title="The end time of the step run.",
         default=None,
     )
-    model_version_id: Optional[UUID] = Field(
-        title="The ID of the model version that was "
-        "configured by this step run explicitly.",
-        default=None,
-    )
     model_config = ConfigDict(protected_namespaces=())
 
 
 # ------------------ Response Model ------------------
-class StepRunResponseBody(WorkspaceScopedResponseBody):
+class StepRunResponseBody(ProjectScopedResponseBody):
     """Response body for step runs."""
 
     status: ExecutionStatus = Field(title="The status of the step.")
@@ -208,7 +196,7 @@ class StepRunResponseBody(WorkspaceScopedResponseBody):
     model_config = ConfigDict(protected_namespaces=())
 
 
-class StepRunResponseMetadata(WorkspaceScopedResponseMetadata):
+class StepRunResponseMetadata(ProjectScopedResponseMetadata):
     """Response metadata for step runs."""
 
     # Configuration
@@ -262,7 +250,7 @@ class StepRunResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
-class StepRunResponseResources(WorkspaceScopedResponseResources):
+class StepRunResponseResources(ProjectScopedResponseResources):
     """Class for all resource models associated with the step run entity."""
 
     model_version: Optional[ModelVersionResponse] = None
@@ -277,7 +265,7 @@ class StepRunResponseResources(WorkspaceScopedResponseResources):
 
 
 class StepRunResponse(
-    WorkspaceScopedResponse[
+    ProjectScopedResponse[
         StepRunResponseBody, StepRunResponseMetadata, StepRunResponseResources
     ]
 ):
@@ -516,13 +504,25 @@ class StepRunResponse(
 # ------------------ Filter Model ------------------
 
 
-class StepRunFilter(WorkspaceScopedFilter):
+class StepRunFilter(ProjectScopedFilter, RunMetadataFilterMixin):
     """Model to enable advanced filtering of step runs."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
+        *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
+        *RunMetadataFilterMixin.FILTER_EXCLUDE_FIELDS,
         "model",
-        "run_metadata",
+    ]
+    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
+        *RunMetadataFilterMixin.CLI_EXCLUDE_FIELDS,
+    ]
+    CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
+        *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
+        *RunMetadataFilterMixin.CUSTOM_SORTING_OPTIONS,
+    ]
+    API_MULTI_INPUT_PARAMS: ClassVar[List[str]] = [
+        *ProjectScopedFilter.API_MULTI_INPUT_PARAMS,
+        *RunMetadataFilterMixin.API_MULTI_INPUT_PARAMS,
     ]
 
     name: Optional[str] = Field(
@@ -575,10 +575,6 @@ class StepRunFilter(WorkspaceScopedFilter):
         default=None,
         description="Name/ID of the model associated with the step run.",
     )
-    run_metadata: Optional[Dict[str, Any]] = Field(
-        default=None,
-        description="The run_metadata to filter the step runs by.",
-    )
     model_config = ConfigDict(protected_namespaces=())
 
     def get_custom_filters(
@@ -599,8 +595,6 @@ class StepRunFilter(WorkspaceScopedFilter):
         from zenml.zen_stores.schemas import (
             ModelSchema,
             ModelVersionSchema,
-            RunMetadataResourceSchema,
-            RunMetadataSchema,
             StepRunSchema,
         )
 
@@ -613,28 +607,5 @@ class StepRunFilter(WorkspaceScopedFilter):
                 ),
             )
             custom_filters.append(model_filter)
-        if self.run_metadata is not None:
-            from zenml.enums import MetadataResourceTypes
-
-            for key, value in self.run_metadata.items():
-                additional_filter = and_(
-                    RunMetadataResourceSchema.resource_id == StepRunSchema.id,
-                    RunMetadataResourceSchema.resource_type
-                    == MetadataResourceTypes.STEP_RUN.value,
-                    RunMetadataResourceSchema.run_metadata_id
-                    == RunMetadataSchema.id,
-                    self.generate_custom_query_conditions_for_column(
-                        value=key,
-                        table=RunMetadataSchema,
-                        column="key",
-                    ),
-                    self.generate_custom_query_conditions_for_column(
-                        value=value,
-                        table=RunMetadataSchema,
-                        column="value",
-                        json_encode_value=True,
-                    ),
-                )
-                custom_filters.append(additional_filter)
 
         return custom_filters

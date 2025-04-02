@@ -23,7 +23,6 @@ from typing import (
     Optional,
     Type,
 )
-from uuid import uuid4
 
 from pydantic import Field, model_validator
 
@@ -133,8 +132,6 @@ class ServiceConnectorSecretsStore(BaseSecretsStore):
                 name="secrets-store",
                 connector_type=self.SERVICE_CONNECTOR_TYPE,
                 resource_types=[self.SERVICE_CONNECTOR_RESOURCE_TYPE],
-                user=uuid4(),  # Use a fake user ID
-                workspace=uuid4(),  # Use a fake workspace ID
                 auth_method=self.config.auth_method,
                 configuration=self.config.auth_config,
             )

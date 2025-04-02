@@ -118,6 +118,7 @@ venv.bak/
 
 # mkdocs documentation
 /site
+docs/site/
 
 # mypy
 .mypy_cache/
@@ -168,8 +169,10 @@ zenml_examples/
 # GitHub Folder YAML files not to be ignored
 !.github/ISSUE_TEMPLATE/**
 
-# VS Code gunk
+# VS Code and Cursor gunk
 .vscode/
+design/
+CLAUDE.md
 
 # pyenv local version file
 .python-version

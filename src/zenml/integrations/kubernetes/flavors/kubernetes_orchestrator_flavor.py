@@ -85,6 +85,9 @@ class KubernetesOrchestratorConfig(
         parallel_step_startup_waiting_period: How long to wait in between
             starting parallel steps. This can be used to distribute server
             load when running pipelines with a huge amount of parallel steps.
+        pass_zenml_token_as_secret: If `True`, the ZenML token will be passed
+            as a Kubernetes secret to the pods. For this to work, the Kubernetes
+            client must have permissions to create secrets in the namespace.
     """
 
     incluster: bool = False
@@ -93,6 +96,7 @@ class KubernetesOrchestratorConfig(
     local: bool = False
     skip_local_validations: bool = False
     parallel_step_startup_waiting_period: Optional[float] = None
+    pass_zenml_token_as_secret: bool = False
 
     @property
     def is_remote(self) -> bool:

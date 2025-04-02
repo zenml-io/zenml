@@ -28,5 +28,3 @@ class ScipyIntegration(Integration):
         """Activates the integration."""
         from zenml.integrations.scipy import materializers  # noqa
 
-
-ScipyIntegration.check_installation()

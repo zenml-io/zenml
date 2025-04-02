@@ -25,20 +25,27 @@ from zenml.constants import (
     LOAD_INFO,
     ONBOARDING_STATE,
     SERVER_SETTINGS,
+    STATISTICS,
     VERSION_1,
 )
 from zenml.enums import AuthScheme
 from zenml.exceptions import IllegalOperationError
 from zenml.models import (
+    ComponentFilter,
+    ProjectFilter,
     ServerActivationRequest,
     ServerLoadInfo,
     ServerModel,
     ServerSettingsResponse,
     ServerSettingsUpdate,
+    ServerStatistics,
+    StackFilter,
     UserResponse,
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.rbac.models import ResourceType
+from zenml.zen_server.rbac.utils import get_allowed_resource_ids
 from zenml.zen_server.utils import handle_exceptions, server_config, zen_store
 
 router = APIRouter(
@@ -60,7 +67,6 @@ def version() -> str:
 
 @router.get(
     INFO,
-    response_model=ServerModel,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
@@ -139,8 +145,8 @@ def get_onboarding_state(
 
 
 # We don't have any concrete value that tells us whether a server is a cloud
-# tenant, so we use `external_server_id` as the best proxy option.
-# For cloud tenants, we don't add these endpoints as the server settings don't
+# workspace, so we use `external_server_id` as the best proxy option.
+# For cloud workspaces, we don't add these endpoints as the server settings don't
 # have any effect and even allow users to disable functionality that is
 # necessary for the cloud onboarding to work.
 if server_config().external_server_id is None:
@@ -234,3 +240,49 @@ if server_config().auth_scheme != AuthScheme.EXTERNAL:
             The default admin user that was created during activation, if any.
         """
         return zen_store().activate_server(activate_request)
+
+
+@router.get(
+    STATISTICS,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def get_server_statistics(
+    auth_context: AuthContext = Security(authorize),
+) -> ServerStatistics:
+    """Gets server statistics.
+
+    Args:
+        auth_context: Authentication context.
+
+    Returns:
+        Statistics of the server.
+    """
+    user_id = auth_context.user.id
+    component_filter = ComponentFilter()
+    component_filter.configure_rbac(
+        authenticated_user_id=user_id,
+        id=get_allowed_resource_ids(
+            resource_type=ResourceType.STACK_COMPONENT
+        ),
+    )
+
+    project_filter = ProjectFilter()
+    project_filter.configure_rbac(
+        authenticated_user_id=user_id,
+        id=get_allowed_resource_ids(resource_type=ResourceType.PROJECT),
+    )
+
+    stack_filter = StackFilter()
+    stack_filter.configure_rbac(
+        authenticated_user_id=user_id,
+        id=get_allowed_resource_ids(resource_type=ResourceType.STACK),
+    )
+
+    return ServerStatistics(
+        stacks=zen_store().count_stacks(filter_model=stack_filter),
+        components=zen_store().count_stack_components(
+            filter_model=component_filter
+        ),
+        projects=zen_store().count_projects(filter_model=project_filter),
+    )

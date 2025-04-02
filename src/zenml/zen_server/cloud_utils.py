@@ -130,6 +130,27 @@ class ZenMLCloudConnection:
             method="PATCH", endpoint=endpoint, params=params, data=data
         )
 
+    def delete(
+        self,
+        endpoint: str,
+        params: Optional[Dict[str, Any]] = None,
+        data: Optional[Dict[str, Any]] = None,
+    ) -> requests.Response:
+        """Send a DELETE request using the active session.
+
+        Args:
+            endpoint: The endpoint to send the request to. This will be appended
+                to the base URL.
+            params: Parameters to include in the request.
+            data: Data to include in the request.
+
+        Returns:
+            The response.
+        """
+        return self.request(
+            method="DELETE", endpoint=endpoint, params=params, data=data
+        )
+
     @property
     def session(self) -> requests.Session:
         """Authenticate to the ZenML Pro Management Plane.
@@ -246,6 +267,6 @@ def cloud_connection() -> ZenMLCloudConnection:
     return _cloud_connection
 
 
-def send_pro_tenant_status_update() -> None:
-    """Send a tenant status update to the Cloud API."""
-    cloud_connection().patch("/tenant_status")
+def send_pro_workspace_status_update() -> None:
+    """Send a workspace status update to the Cloud API."""
+    cloud_connection().patch("/workspace_status")

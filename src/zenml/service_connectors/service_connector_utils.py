@@ -184,8 +184,6 @@ def get_resources_options_from_resource_model_for_full_stack(
     else:
         resource_model = zen_store.verify_service_connector_config(
             service_connector=ServiceConnectorRequest(
-                user=client.active_user.id,
-                workspace=client.active_workspace.id,
                 name="fake",
                 connector_type=connector_details.type,
                 auth_method=connector_details.auth_method,

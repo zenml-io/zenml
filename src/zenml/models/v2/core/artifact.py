@@ -25,17 +25,19 @@ from typing import (
 )
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import Field
 
 from zenml.constants import SORT_BY_LATEST_VERSION_KEY, STR_FIELD_MAX_LENGTH
-from zenml.models.v2.base.base import (
-    BaseDatedResponseBody,
-    BaseIdentifiedResponse,
-    BaseRequest,
-    BaseResponseMetadata,
-    BaseResponseResources,
+from zenml.models.v2.base.base import BaseUpdate
+from zenml.models.v2.base.scoped import (
+    ProjectScopedFilter,
+    ProjectScopedRequest,
+    ProjectScopedResponse,
+    ProjectScopedResponseBody,
+    ProjectScopedResponseMetadata,
+    ProjectScopedResponseResources,
+    TaggableFilter,
 )
-from zenml.models.v2.base.scoped import TaggableFilter
 from zenml.models.v2.core.tag import TagResponse
 
 if TYPE_CHECKING:
@@ -49,7 +51,7 @@ AnyQuery = TypeVar("AnyQuery", bound=Any)
 # ------------------ Request Model ------------------
 
 
-class ArtifactRequest(BaseRequest):
+class ArtifactRequest(ProjectScopedRequest):
     """Artifact request model."""
 
     name: str = Field(
@@ -70,7 +72,7 @@ class ArtifactRequest(BaseRequest):
 # ------------------ Update Model ------------------
 
 
-class ArtifactUpdate(BaseModel):
+class ArtifactUpdate(BaseUpdate):
     """Artifact update model."""
 
     name: Optional[str] = None
@@ -82,7 +84,7 @@ class ArtifactUpdate(BaseModel):
 # ------------------ Response Model ------------------
 
 
-class ArtifactResponseBody(BaseDatedResponseBody):
+class ArtifactResponseBody(ProjectScopedResponseBody):
     """Response body for artifacts."""
 
     tags: List[TagResponse] = Field(
@@ -92,7 +94,7 @@ class ArtifactResponseBody(BaseDatedResponseBody):
     latest_version_id: Optional[UUID] = None
 
 
-class ArtifactResponseMetadata(BaseResponseMetadata):
+class ArtifactResponseMetadata(ProjectScopedResponseMetadata):
     """Response metadata for artifacts."""
 
     has_custom_name: bool = Field(
@@ -101,12 +103,12 @@ class ArtifactResponseMetadata(BaseResponseMetadata):
     )
 
 
-class ArtifactResponseResources(BaseResponseResources):
+class ArtifactResponseResources(ProjectScopedResponseResources):
     """Class for all resource models associated with the Artifact Entity."""
 
 
 class ArtifactResponse(
-    BaseIdentifiedResponse[
+    ProjectScopedResponse[
         ArtifactResponseBody,
         ArtifactResponseMetadata,
         ArtifactResponseResources,
@@ -176,23 +178,34 @@ class ArtifactResponse(
         """
         from zenml.client import Client
 
-        responses = Client().list_artifact_versions(name=self.name)
+        responses = Client().list_artifact_versions(artifact=self.name)
         return {str(response.version): response for response in responses}
 
 
 # ------------------ Filter Model ------------------
 
 
-class ArtifactFilter(TaggableFilter):
+class ArtifactFilter(ProjectScopedFilter, TaggableFilter):
     """Model to enable advanced filtering of artifacts."""
 
-    name: Optional[str] = None
-    has_custom_name: Optional[bool] = None
+    FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
+        *TaggableFilter.FILTER_EXCLUDE_FIELDS,
+    ]
 
     CUSTOM_SORTING_OPTIONS: ClassVar[List[str]] = [
+        *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
         *TaggableFilter.CUSTOM_SORTING_OPTIONS,
         SORT_BY_LATEST_VERSION_KEY,
     ]
+
+    CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
+        *ProjectScopedFilter.CLI_EXCLUDE_FIELDS,
+        *TaggableFilter.CLI_EXCLUDE_FIELDS,
+    ]
+
+    name: Optional[str] = None
+    has_custom_name: Optional[bool] = None
 
     def apply_sorting(
         self,
