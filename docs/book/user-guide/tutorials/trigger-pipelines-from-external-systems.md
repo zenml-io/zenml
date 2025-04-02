@@ -35,15 +35,13 @@ Before starting this tutorial, make sure you have:
 First, let's create a basic pipeline that we'll use throughout this tutorial. This pipeline takes a dataset URL and model type as inputs, then performs a simple training operation:
 
 ```python
-from typing import Dict, Any
+from typing import Dict, Any, Union
 from zenml import pipeline, step
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
-import json
-import os
 
 @step
 def load_data(data_url: str) -> pd.DataFrame:
@@ -83,7 +81,7 @@ def preprocess(data: pd.DataFrame) -> Dict[str, Any]:
 def train_model(
     datasets: Dict[str, Any], 
     model_type: str = "random_forest"
-) -> Dict[str, Any]:
+) -> Union[RandomForestClassifier, GradientBoostingClassifier]:
     """Train a model based on the specified type."""
     X_train = datasets['X_train']
     y_train = datasets['y_train']
@@ -97,14 +95,16 @@ def train_model(
     
     print(f"Training a {model_type} model...")
     model.fit(X_train, y_train)
-    return {'model': model}
+    return model
 
 @step
-def evaluate(datasets: Dict[str, Any], model_output: Dict[str, Any]) -> Dict[str, float]:
+def evaluate(
+    datasets: Dict[str, Any], 
+    model: Union[RandomForestClassifier, GradientBoostingClassifier]
+) -> Dict[str, float]:
     """Evaluate the model and return metrics."""
     X_test = datasets['X_test']
     y_test = datasets['y_test']
-    model = model_output['model']
     
     y_pred = model.predict(X_test)
     accuracy = accuracy_score(y_test, y_pred)
@@ -112,28 +112,17 @@ def evaluate(datasets: Dict[str, Any], model_output: Dict[str, Any]) -> Dict[str
     print(f"Model accuracy: {accuracy:.4f}")
     return {'accuracy': float(accuracy)}
 
-@step
-def save_results(metrics: Dict[str, float], output_path: str) -> None:
-    """Save the evaluation results to a file."""
-    os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    
-    with open(output_path, 'w') as f:
-        json.dump(metrics, f, indent=2)
-    
-    print(f"Results saved to: {output_path}")
 
 @pipeline
 def training_pipeline(
     data_url: str = "s3://example-bucket/data.csv",
-    model_type: str = "random_forest",
-    output_path: str = "results/metrics.json"
+    model_type: str = "random_forest"
 ):
     """A configurable training pipeline that can be triggered externally."""
     data = load_data(data_url)
     datasets = preprocess(data)
-    model_output = train_model(datasets, model_type)
-    metrics = evaluate(datasets, model_output)
-    save_results(metrics, output_path)
+    model = train_model(datasets, model_type)
+    metrics = evaluate(datasets, model)
 
 # For local execution during development
 if __name__ == "__main__":
@@ -144,7 +133,6 @@ if __name__ == "__main__":
 This pipeline is designed to be configurable with parameters that might change between runs:
 - `data_url`: Where to find the input data
 - `model_type`: Which algorithm to use
-- `output_path`: Where to save the results
 
 These parameters make it an ideal candidate for external triggering scenarios where we want to run the same pipeline with different configurations.
 
@@ -211,8 +199,7 @@ curl -X 'POST' \
   -d '{
     "pipeline_parameters": {
       "data_url": "s3://production-bucket/latest-data.csv",
-      "model_type": "gradient_boosting",
-      "output_path": "production/metrics-latest.json"
+      "model_type": "gradient_boosting"
     }
   }'
 ```
