@@ -153,16 +153,27 @@ First, we need to create a template based on our pipeline. This requires having 
 ```python
 from zenml.client import Client
 
-# Assuming you've already run the pipeline once with a remote stack
-run = Client().get_pipeline_run("training_pipeline")
+# First get the pipeline by name
+pipeline = Client().get_pipeline("training_pipeline")
 
-# Create a template from this run
-template = Client().create_run_template(
-    name="production-training-template", 
-    deployment_id=run.deployment_id
+# Get the most recent runs for this pipeline
+runs = Client().list_pipeline_runs(
+    pipeline_id=pipeline.id, 
+    sort_by="desc:created", 
+    size=1
 )
 
-print(f"Created template: {template.name} with ID: {template.id}")
+if runs:
+    # Use the most recent run
+    latest_run = runs[0]
+    
+    # Create a template from this run
+    template = Client().create_run_template(
+        name="production-training-template", 
+        deployment_id=latest_run.deployment_id
+    )
+    
+    print(f"Created template: {template.name} with ID: {template.id}")
 ```
 
 #### Using CLI:
@@ -173,9 +184,55 @@ zenml pipeline create-run-template training_pipeline \
     --name=production-training-template
 ```
 
-### Triggering Using the REST API
+### Triggering a Template
 
-Now that we have a template, we can trigger it using the REST API, which is ideal for external system integration:
+Once you have created a template, there are multiple ways to trigger it, either programmatically with the Python client or via REST API for external systems.
+
+#### Using the Python Client:
+
+```python
+from zenml.client import Client
+
+# Find templates for a specific pipeline
+pipeline = Client().get_pipeline("training_pipeline")
+templates = Client().list_run_templates()
+templates = [t for t in templates if t.pipeline.id == pipeline.id]
+
+if templates:
+    # Use the first matching template
+    template = templates[0]
+    print(f"Using template: {template.name} (ID: {template.id})")
+    
+    # Get the template's configuration
+    config = template.config_template
+    
+    # Update the configuration with step parameters
+    # Note: Parameters must be set at the step level rather than pipeline level
+    config["steps"] = {
+        "load_data": {
+            "parameters": {
+                "data_url": "s3://test-bucket/latest-data.csv",
+            }
+        },
+        "train_model": {
+            "parameters": {
+                "model_type": "gradient_boosting",
+            }
+        }
+    }
+    
+    # Trigger the pipeline with the updated configuration
+    run = Client().trigger_pipeline(
+        template_id=template.id,
+        run_configuration=config,
+    )
+    
+    print(f"Triggered pipeline run with ID: {run.id}")
+```
+
+#### Using the REST API:
+
+The REST API is ideal for external system integration, allowing you to trigger pipelines from non-Python environments:
 
 ```bash
 # Step 1: Get the pipeline ID
@@ -203,6 +260,8 @@ curl -X 'POST' \
     }
   }'
 ```
+
+> Note: The REST API uses `pipeline_parameters` for simplicity, but internally ZenML maps these to step parameters.
 
 ### Security Considerations for API Tokens
 
