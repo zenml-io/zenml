@@ -6,7 +6,7 @@ description: A step-by-step tutorial on setting up CI/CD for your ML pipelines w
 
 This tutorial demonstrates how to implement Continuous Integration and Continuous Deployment (CI/CD) workflows for your ML pipelines using ZenML. You'll learn how to automate testing, validation, and deployment of your ML pipelines through a practical example using GitHub Actions.
 
-## Introduction: Why CI/CD for ML Pipelines?
+## Understanding CI/CD for ML Pipelines
 
 In traditional software development, CI/CD helps ensure code quality and automate deployments. For ML, these practices extend beyond just code testing - we need to validate data quality, model performance, and ensure reproducibility across environments.
 
@@ -24,7 +24,7 @@ Before starting this tutorial, you should have:
 2. A GitHub repository containing a ZenML pipeline
 3. Basic familiarity with GitHub Actions
 
-## Step 1: Creating a Simple ML Pipeline for CI/CD
+## Creating a Simple ML Pipeline for CI/CD
 
 Let's start with a basic ML pipeline that we'll use throughout this tutorial. Create a file named `pipelines.py`:
 
@@ -82,7 +82,7 @@ def training_pipeline():
 
 This pipeline is intentionally simple but demonstrates the core components of an ML workflow: data loading, preprocessing, training, and evaluation. We'll extend this pipeline for CI/CD in the following steps.
 
-## Step 2: Setting Up ML-Specific CI/CD Environments
+## Setting Up ML-Specific CI/CD Environments
 
 ### Creating Development and Production Stacks
 
@@ -149,7 +149,7 @@ To add secrets in GitHub:
 
 ![Adding GitHub Secrets](../../.gitbook/assets/github_secrets_example.png)
 
-## Step 3: Extending the Pipeline for CI Testing
+## Building a CI Workflow with Quality Checks
 
 Let's enhance our pipeline with quality verification for CI testing. Create a file named `ci_pipeline.py`:
 
@@ -198,7 +198,7 @@ if __name__ == "__main__":
         production_pipeline()
 ```
 
-## Step 4: Setting Up CI with GitHub Actions
+### Automating CI with GitHub Actions
 
 Create a file `.github/workflows/ml-pipeline-ci.yml` in your repository:
 
@@ -250,7 +250,7 @@ This workflow will:
 3. Set the development stack for testing
 4. Run the CI pipeline with a quality threshold of 0.8
 
-## Step 5: Creating a Production Pipeline
+## Implementing CD for Model Deployment
 
 Now, let's create a production pipeline that includes model deployment logic. Create a file `production_pipeline.py`:
 
@@ -314,7 +314,7 @@ if experiment_tracker and experiment_tracker.flavor == "mlflow":
 ```
 {% endhint %}
 
-## Step 6: Setting Up CD with GitHub Actions
+### Automating Deployment with GitHub Actions
 
 Create a file `.github/workflows/ml-pipeline-cd.yml` in your repository:
 
@@ -384,7 +384,7 @@ This workflow will:
 If your MLflow tracking server requires authentication, you should add the credentials as GitHub secrets and include them in the environment variables.
 {% endhint %}
 
-## Step 7: Using Run Templates for Standardized Deployments (Pro Feature)
+## Standardizing Deployments with Run Templates (Pro Feature)
 
 {% hint style="success" %}
 This section covers ZenML Pro features that streamline deployment
@@ -430,7 +430,7 @@ Client().trigger_pipeline(
 
 You can integrate this into your CD workflow to ensure consistent pipeline execution.
 
-## Step 8: Complete CI/CD Workflow
+## Putting It All Together: The Complete CI/CD Workflow
 
 The complete workflow now looks like this:
 
