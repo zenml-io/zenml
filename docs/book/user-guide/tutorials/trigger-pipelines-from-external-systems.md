@@ -651,7 +651,7 @@ training_pipeline(
 To securely store your ZenML credentials, set up GitHub Secrets in your repository:
 
 1. Go to your GitHub repository
-2. Click on Settings ’ Secrets and variables ’ Actions
+2. Click on Settings ï¿½ Secrets and variables ï¿½ Actions
 3. Add the following secrets:
    - `ZENML_SERVER_URL`: URL of your ZenML server
    - `ZENML_USERNAME`: Your ZenML username
@@ -947,4 +947,5 @@ Now that you understand how to trigger ZenML pipelines from external systems, co
 
 1. [Managing scheduled pipelines](managing-scheduled-pipelines.md) for time-based execution
 2. Implementing [comprehensive CI/CD](https://docs.zenml.io/user-guides/production-guide/ci-cd) for your ML workflows
-3. Setting up [monitoring and alerting](https://docs.zenml.io/stacks/alerters) for pipeline failures
+3. Setting up [monitoring and alerting](https://docs.zenml.io/stacks/alerters)
+   for pipeline failures
