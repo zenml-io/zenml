@@ -237,7 +237,21 @@ def validate_run_config_is_runnable_from_server(
     """
     if run_configuration.parameters:
         raise ValueError(
-            "Can't set parameters when running pipeline via Rest API."
+            "Can't set pipeline parameters when running pipeline via Rest API. "
+            "Please set step parameters instead e.g. rather then: "
+            "```yaml "
+            "parameters: "
+            "  param1: 1 "
+            "  param2: 2 "
+            "``` "
+            "do: "
+            "```yaml "
+            "steps: "
+            "  step1: "
+            "    parameters: "
+            "      param1: 1 "
+            "      param2: 2 "
+            "``` "
         )
 
     if run_configuration.build:
