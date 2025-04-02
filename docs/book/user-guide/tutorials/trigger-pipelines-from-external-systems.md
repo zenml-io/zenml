@@ -30,7 +30,7 @@ Before starting this tutorial, make sure you have:
 2. Basic understanding of [ZenML pipelines and steps](https://docs.zenml.io/getting-started/core-concepts)
 3. A simple pipeline to use for triggering examples
 
-## Step 1: Create a Sample Pipeline
+## Creating a Sample Pipeline for External Triggering
 
 First, let's create a basic pipeline that we'll use throughout this tutorial. This pipeline takes a dataset URL and model type as inputs, then performs a simple training operation:
 
@@ -148,7 +148,7 @@ This pipeline is designed to be configurable with parameters that might change b
 
 These parameters make it an ideal candidate for external triggering scenarios where we want to run the same pipeline with different configurations.
 
-## Step 2: Method 1 - Run Templates (ZenML Pro)
+## Method 1: Using Run Templates (ZenML Pro)
 
 {% hint style="success" %}
 This is a [ZenML Pro](https://zenml.io/pro)-only feature. Please [sign up here](https://cloud.zenml.io) to get access.
@@ -156,7 +156,7 @@ This is a [ZenML Pro](https://zenml.io/pro)-only feature. Please [sign up here](
 
 Run Templates are the most straightforward way to trigger pipelines externally in ZenML. They provide a pre-defined, parameterized configuration that can be executed via multiple interfaces.
 
-### Step 2.1: Create a Run Template
+### Creating a Run Template
 
 First, we need to create a template based on our pipeline. This requires having a remote stack with at least a remote orchestrator, artifact store, and container registry.
 
@@ -185,7 +185,7 @@ zenml pipeline create-run-template training_pipeline \
     --name=production-training-template
 ```
 
-### Step 2.2: Trigger Using the REST API
+### Triggering Using the REST API
 
 Now that we have a template, we can trigger it using the REST API, which is ideal for external system integration:
 
@@ -217,7 +217,7 @@ curl -X 'POST' \
   }'
 ```
 
-### Step 2.3: Security Considerations for API Tokens
+### Security Considerations for API Tokens
 
 When using the REST API for external systems, proper token management is critical:
 
@@ -243,11 +243,11 @@ print(f"Store this token securely: {token.token}")
 
 Use this token in your API calls, and store it securely in your external system (e.g., as a GitHub Secret, AWS Secret, or environment variable).
 
-## Step 3: Method 2 - Custom Trigger API (Open Source)
+## Method 2: Building a Custom Trigger API (Open Source)
 
 If you're using the open-source version of ZenML or prefer a customized solution, you can create your own API wrapper around pipeline execution.
 
-### Step 3.1: Creating a FastAPI Wrapper
+### Creating a FastAPI Wrapper
 
 Create a file called `pipeline_api.py`:
 
@@ -334,7 +334,7 @@ if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
 ```
 
-### Step 3.2: Deploying Your Custom API
+### Deploying Your Custom API
 
 Deploy the API service to make it accessible to external systems:
 
@@ -374,7 +374,7 @@ EXPOSE 8000
 CMD ["python", "pipeline_api.py"]
 ```
 
-### Step 3.3: Triggering Your Pipeline via the Custom API
+### Triggering Your Pipeline via the Custom API
 
 Now you can trigger your pipeline from any system that can make HTTP requests:
 
@@ -393,11 +393,11 @@ curl -X 'POST' \
   }'
 ```
 
-## Step 4: Method 3 - Serverless Functions
+## Method 3: Leveraging Serverless Functions
 
 Cloud functions provide a serverless way to trigger pipelines without maintaining a dedicated API service.
 
-### Step 4.1: AWS Lambda Implementation
+### AWS Lambda Implementation
 
 Create a file called `lambda_function.py`:
 
@@ -482,7 +482,7 @@ def lambda_handler(event, context):
         }
 ```
 
-### Step 4.2: Deploying the Lambda Function
+### Deploying the Lambda Function
 
 1. Package your code and dependencies:
 
@@ -544,7 +544,7 @@ aws apigateway put-integration --rest-api-id $API_ID --resource-id $RESOURCE_ID 
   --uri arn:aws:apigateway:$REGION:lambda:path/2015-03-31/functions/arn:aws:lambda:$REGION:$ACCOUNT_ID:function:zenml-pipeline-trigger/invocations
 ```
 
-### Step 4.3: Triggering via the Lambda Function
+### Triggering via the Lambda Function
 
 Now you can trigger your pipeline by calling the API Gateway endpoint:
 
@@ -562,11 +562,11 @@ curl -X POST \
   }'
 ```
 
-## Step 5: Method 4 - GitHub Actions Integration
+## Method 4: Integrating with GitHub Actions
 
 GitHub Actions provides a way to trigger pipelines based on events or schedules, which is perfect for CI/CD integration.
 
-### Step 5.1: Setting Up a GitHub Action for Scheduled Runs
+### Setting Up a GitHub Action for Scheduled Runs
 
 Create a file `.github/workflows/scheduled-training.yml`:
 
@@ -646,7 +646,7 @@ training_pipeline(
           fi
 ```
 
-### Step 5.2: Setting Up GitHub Secrets
+### Setting Up GitHub Secrets
 
 To securely store your ZenML credentials, set up GitHub Secrets in your repository:
 
@@ -658,7 +658,7 @@ To securely store your ZenML credentials, set up GitHub Secrets in your reposito
    - `ZENML_PASSWORD`: Your ZenML password
    - `ZENML_STACK_NAME`: Name of your ZenML stack
 
-### Step 5.3: Event-Driven Triggers
+### Implementing Event-Driven Triggers
 
 You can also trigger the pipeline based on GitHub events, such as when new data is pushed to a specific branch:
 
@@ -703,11 +703,11 @@ training_pipeline(
 "
 ```
 
-## Step 6: Pipeline-to-Pipeline Triggering
+## Method 5: Pipeline-to-Pipeline Triggering
 
 Sometimes you need one ZenML pipeline to trigger another, such as when a data processing pipeline should trigger a training pipeline upon completion.
 
-### Step 6.1: Implementing Pipeline-to-Pipeline Triggers
+### Basic Pipeline-to-Pipeline Triggers
 
 ```python
 from zenml import pipeline, step
@@ -748,7 +748,7 @@ def data_processing_pipeline():
     trigger_training_pipeline(data_url)
 ```
 
-### Step 6.2: Passing Artifacts Between Pipelines
+### Advanced: Passing Artifacts Between Pipelines
 
 For more complex scenarios, you can pass artifact IDs between pipelines:
 
@@ -820,7 +820,7 @@ def training_with_artifact_pipeline():
     train_with_artifact(dataset)
 ```
 
-## Step 7: Best Practices & Troubleshooting
+## Best Practices & Troubleshooting
 
 ### Security Best Practices
 
