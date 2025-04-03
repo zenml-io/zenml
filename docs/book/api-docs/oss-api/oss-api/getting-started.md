@@ -1,4 +1,8 @@
-# OSS API
+---
+icon: person-from-portal
+---
+
+# Getting Started
 
 The ZenML OSS server is a FastAPI application, therefore the OpenAPI-compliant docs are available at `/docs` or `/redoc` of your ZenML server:
 

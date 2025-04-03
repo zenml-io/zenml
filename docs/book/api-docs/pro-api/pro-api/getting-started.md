@@ -1,10 +1,14 @@
-# Pro API
+---
+icon: person-from-portal
+---
+
+# Getting Started
 
 The ZenML Pro API extends the open-source API with additional features designed for enterprise users, including:
 
-- Enhanced team collaboration features
-- Advanced role-based access control
-- Enterprise-grade security features
+* Enhanced team collaboration features
+* Advanced role-based access control
+* Enterprise-grade security features
 
 Whether you're using the [SaaS version](https://cloud.zenml.io) or a self-hosted ZenML Pro instance, you can leverage the API to manage workspaces, organizations, users, roles, and more.
 
@@ -12,8 +16,7 @@ Whether you're using the [SaaS version](https://cloud.zenml.io) or a self-hosted
 
 ZenML Pro includes two distinct APIs:
 
-1. **Workspace API**: This is similar to the [OSS API](../../oss-api/oss-api/README.md) but includes additional endpoints like Run Templates. Each workspace in ZenML Pro has its own API.
-
+1. **Workspace API**: This is similar to the [OSS API](../../oss-api/oss-api/) but includes additional endpoints like Run Templates. Each workspace in ZenML Pro has its own API.
 2. **ZenML Pro API**: This is the management API for ZenML Pro and handles organization-level resources like workspaces, users, and roles.
 
 ### Server URLs
@@ -45,7 +48,7 @@ For example, for the SaaS variant, you can access the docs here: [https://clouda
 
 ### Programmatic access with API tokens
 
-Similar to [short-lived tokens for OSS and Workspace servers](../../oss-api/oss-api/README.md#using-a-short-lived-api-token), API tokens provide a way to authenticate with the ZenML Pro API for temporary automation tasks. These tokens are scoped to your user account and are valid for 1 hour by default. You can use the generated API tokens for programmatic access to the ZenML Pro REST API.
+Similar to [short-lived tokens for OSS and Workspace servers](../../oss-api/oss-api/#using-a-short-lived-api-token), API tokens provide a way to authenticate with the ZenML Pro API for temporary automation tasks. These tokens are scoped to your user account and are valid for 1 hour by default. You can use the generated API tokens for programmatic access to the ZenML Pro REST API.
 
 To generate a new API token for the ZenML Pro API:
 
@@ -93,8 +96,8 @@ Programmatic access to the ZenML Pro workspace API is achieved essentially the s
 
 You can use one of these two methods to authenticate with your workspace API:
 
-* [Generate and use temporary API tokens](../../oss-api/oss-api/README.md#using-a-short-lived-api-token)
-* [Create a service account and use its API key](../../oss-api/oss-api/README.md#using-a-service-account-and-an-api-key)
+* [Generate and use temporary API tokens](../../oss-api/oss-api/#using-a-short-lived-api-token)
+* [Create a service account and use its API key](../../oss-api/oss-api/#using-a-service-account-and-an-api-key)
 
 When making requests to the Workspace API, make sure to use your workspace URL as the base URL. This is different from the ZenML Pro API URL (cloudapi.zenml.io), which is used for organization-level operations.
 
@@ -147,7 +150,7 @@ The Workspace API includes all OSS API endpoints plus some additional Pro-specif
 * Get run template details: `GET /run_templates/{template_id}`
 * Update a run template: `PATCH /run_templates/{template_id}`
 
-For a complete list of API endpoints available in the Workspace API, refer to the [OSS API documentation](../../oss-api/oss-api/README.md).
+For a complete list of API endpoints available in the Workspace API, refer to the [OSS API documentation](../../oss-api/oss-api/).
 
 ## Error Handling
 
