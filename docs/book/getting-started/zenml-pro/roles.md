@@ -216,3 +216,31 @@ For example, you might create a custom "Pipeline Operator" role that can run and
 By leveraging ZenML Pro's comprehensive role-based access control, you can ensure that your team members have the right level of access to resources while maintaining security and enabling collaboration across your MLOps projects.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
+
+## Team-Based Role Assignments
+
+In addition to assigning roles to individual users, ZenML Pro allows you to assign roles to [teams](teams.md). A team is a collection of users that acts as a single entity, making permission management more efficient.
+
+### How Team Roles Work
+
+When you assign a role to a team:
+
+* All members of that team inherit the permissions associated with that role
+* Changes to team membership automatically update permissions for all affected users
+* Users can have different permissions from multiple teams they belong to
+* Team roles can be assigned at all levels: organization, workspace, and project
+* Individual user roles and team roles are cumulative - users get the highest permission level from either source
+
+For more information on creating and managing teams, see the [Teams](teams.md) documentation.
+
+## Best Practices
+
+1. **Least Privilege**: Assign the minimum necessary permissions to each role.
+2. **Regular Audits**: Periodically review and update role assignments and permissions.
+3. **Role Hierarchy**: Consider the relationship between organization, workspace, and project roles when assigning permissions.
+4. **Team-Based Access**: Use teams to manage access control more efficiently across all levels.
+5. **Documentation**: Maintain clear documentation about role assignments and their purposes.
+6. **Regular Reviews**: Periodically audit role assignments to ensure they align with current needs.
+7. **Organization Member Role**: Use the Organization Member role for users who should only see specific workspaces.
+
+By leveraging ZenML Pro's comprehensive role-based access control, you can ensure that your team members have the right level of access to resources while maintaining security and enabling collaboration across your MLOps projects.
