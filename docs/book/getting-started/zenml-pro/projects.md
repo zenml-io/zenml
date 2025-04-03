@@ -46,8 +46,7 @@ Best practice is to set your active project right after running `zenml init`, ju
 
 ### Setting a default project
 
-The default project is something that each user can configure. This project will be automatically set as the active project when you connect\
-your local Python client to a ZenML Pro workspace.
+The default project is something that each user can configure. This project will be automatically set as the active project when you connect your local Python client to a ZenML Pro workspace.
 
 You can set your default project either when creating a new project or when activating it:
 

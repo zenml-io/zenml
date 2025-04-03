@@ -60,7 +60,6 @@ Here's a list of the top-level functions in the ZenML Client, along with links t
 * [`Client.delete_user`](https://sdkdocs.zenml.io/latest/core_code_docs/core-client.html#zenml.client.Client.delete_user)
 * [`Client.delete_workspace`](https://sdkdocs.zenml.io/latest/core_code_docs/core-client.html#zenml.client.Client.delete_workspace)
 * [`Client.find_repository`](https://sdkdocs.zenml.io/latest/core_code_docs/core-client.html#zenml.client.Client.find_repository)
-* [`Client.get_action`](https://sdkdocs.zenml.io/latest/core_code_docs/core-client.html#zenml.client.Client.get_action)
 * [`Client.get_api_key`](https://sdkdocs.zenml.io/latest/core_code_docs/core-client.html#zenml.client.Client.get_api_key)
 * [`Client.get_artifact`](https://sdkdocs.zenml.io/latest/core_code_docs/core-client.html#zenml.client.Client.get_artifact)
 * [`Client.get_artifact_version`](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-client.html#zenml.client)

@@ -1,7 +1,6 @@
 # OSS API
 
-The ZenML OSS server is a FastAPI application, therefore the OpenAPI-compliant docs are available at `/docs` or `/redoc`\
-of your ZenML server:
+The ZenML OSS server is a FastAPI application, therefore the OpenAPI-compliant docs are available at `/docs` or `/redoc` of your ZenML server:
 
 {% hint style="info" %}
 In the local case (i.e. using `zenml login --local`, the docs are available on `http://127.0.0.1:8237/docs`)
@@ -136,38 +135,3 @@ This will return a response like this:
 * For security reasons, you should handle API tokens carefully and never share them
 * If your API key is compromised, you can rotate it using the ZenML dashboard or by running the `zenml service-account api-key <SERVICE_ACCOUNT_NAME> rotate` command
 {% endhint %}
-
-## Getting Started
-
-To begin using the ZenML Server API, follow these simple steps:
-
-{% stepper %}
-{% step %}
-#### Setup
-
-Ensure you have an active ZenML server or workspace configured.
-{% endstep %}
-
-{% step %}
-#### Authentication
-
-Obtain an API token from your service account, as detailed in our core documentation.
-
-{% tabs %}
-{% tab title="OSS API" %}
-* Obtain an API token from your service account
-* Include the token in the authorization header: `Authorization: Bearer YOUR_API_TOKEN`
-{% endtab %}
-
-{% tab title="Pro API" %}
-Use your Pro API key in the authorization header: `Authorization: Bearer YOUR_API_KEY`
-{% endtab %}
-{% endtabs %}
-{% endstep %}
-
-{% step %}
-#### **API Access**
-
-Use the token to authenticate and start interacting with the API endpoints.
-{% endstep %}
-{% endstepper %}

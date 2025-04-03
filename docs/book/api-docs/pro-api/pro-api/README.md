@@ -8,6 +8,25 @@ The ZenML Pro API extends the open-source API with additional features designed 
 
 Whether you're using the [SaaS version](https://cloud.zenml.io) or a self-hosted ZenML Pro instance, you can leverage the API to manage workspaces, organizations, users, roles, and more.
 
+## Understanding the Two APIs in ZenML Pro
+
+ZenML Pro includes two distinct APIs:
+
+1. **Workspace API**: This is similar to the [OSS API](../../oss-api/oss-api/README.md) but includes additional endpoints like Run Templates. Each workspace in ZenML Pro has its own API.
+
+2. **ZenML Pro API**: This is the management API for ZenML Pro and handles organization-level resources like workspaces, users, and roles.
+
+### Server URLs
+
+* **For OSS users**: The `server_url` is the root URL of your ZenML server deployment.
+* **For Pro users**: The `server_url` for the Workspace API is the URL of your workspace, which can be found in the ZenML Pro dashboard:
+
+{% hint style="info" %}
+**Note:** The workspace URL can be found in the ZenML Pro dashboard and typically looks like `https://1bfe8d94-zenml.cloudinfra.zenml.io`.
+
+![ZenML workspace URL](../../.gitbook/assets/workspace_url.png)
+{% endhint %}
+
 The SaaS version of ZenML Pro API is hosted at [https://cloudapi.zenml.io](https://cloudapi.zenml.io).
 
 ## API Overview
@@ -22,14 +41,13 @@ The ZenML Pro API is a RESTful API that follows OpenAPI 3.1.0 specifications. It
 
 ## Authentication
 
-To use the ZenML Pro API, you need to authenticate your requests. If you are logged in to your ZenML Pro account,\
-you can use the same browser window to authenticate requests to your ZenML Pro API, directly in the OpenAPI docs.
+To use the ZenML Pro API, you need to authenticate your requests. If you are logged in to your ZenML Pro account, you can use the same browser window to authenticate requests to your ZenML Pro API, directly in the OpenAPI docs.
 
 For example, for the SaaS variant, you can access the docs here: [https://cloudapi.zenml.io](https://cloudapi.zenml.io). You can make requests by being logged into ZenML Pro at [https://cloud.zenml.io](https://cloud.zenml.io).
 
 ### Programmatic access with API tokens
 
-API tokens provide a way to authenticate with the ZenML Pro API for temporary automation tasks. These tokens are scoped to your user account and are valid for 1 hour by default. You can use the generated API tokens for programmatic access to the ZenML Pro REST API.
+Similar to [short-lived tokens for OSS and Workspace servers](../../oss-api/oss-api/README.md#using-a-short-lived-api-token), API tokens provide a way to authenticate with the ZenML Pro API for temporary automation tasks. These tokens are scoped to your user account and are valid for 1 hour by default. You can use the generated API tokens for programmatic access to the ZenML Pro REST API.
 
 To generate a new API token for the ZenML Pro API:
 
@@ -68,46 +86,70 @@ To generate a new API token for the ZenML Pro API:
 
 * API tokens expire after 1 hour and cannot be retrieved after initial generation
 * Tokens are scoped to your user account and inherit your permissions
+* Currently, there is no "service account" concept for the ZenML Pro API.
 {% endhint %}
 
 ### Workspace programmatic access
 
-Programmatic access to the ZenML Pro workspace API is achieved essentially the same way as the ZenML OSS server API. You can use one of these two methods:
+Programmatic access to the ZenML Pro workspace API is achieved essentially the same way as the ZenML OSS server API. This is because the Workspace API in ZenML Pro is an extension of the OSS API with some additional endpoints like Run Templates.
 
-* [Generate and use temporary API tokens](https://docs.zenml.io/api-reference/oss-api/oss-api#using-a-short-lived-api-token)
-* [Create a service account and use its API key](https://docs.zenml.io/api-reference/oss-api/oss-api#using-a-service-account-and-an-api-key)
+You can use one of these two methods to authenticate with your workspace API:
+
+* [Generate and use temporary API tokens](../../oss-api/oss-api/README.md#using-a-short-lived-api-token)
+* [Create a service account and use its API key](../../oss-api/oss-api/README.md#using-a-service-account-and-an-api-key)
+
+When making requests to the Workspace API, make sure to use your workspace URL as the base URL. This is different from the ZenML Pro API URL (cloudapi.zenml.io), which is used for organization-level operations.
 
 Please consult the indicated sections for more information.
 
 ## Key API Endpoints
 
-Here are some important endpoints you can use with the ZenML Pro API:
+Here are some important endpoints you can use with ZenML Pro:
 
-### Workspace Management
+### ZenML Pro API Endpoints
 
-* List workspaces: `GET /workspaces`
-* Create a workspace: `POST /workspaces`
-* Get workspace details: `GET /workspaces/{workspace_id}`
-* Update a workspace: `PATCH /workspaces/{workspace_id}`
+These endpoints are available at the ZenML Pro API (e.g., https://cloudapi.zenml.io):
 
-### Organization Management
+#### Organization Management
 
 * List organizations: `GET /organizations`
 * Create an organization: `POST /organizations`
 * Get organization details: `GET /organizations/{organization_id}`
 * Update an organization: `PATCH /organizations/{organization_id}`
 
-### User Management
+#### Workspace Management
+
+* List workspaces: `GET /workspaces`
+* Create a workspace: `POST /workspaces`
+* Get workspace details: `GET /workspaces/{workspace_id}`
+* Update a workspace: `PATCH /workspaces/{workspace_id}`
+
+#### User Management
 
 * List users: `GET /users`
 * Get current user: `GET /users/me`
 * Update user: `PATCH /users/{user_id}`
 
-### Role-Based Access Control
+#### Role-Based Access Control
 
 * Create a role: `POST /roles`
 * Assign a role: `POST /roles/{role_id}/assignments`
 * Check permissions: `GET /permissions`
+
+Remember to refer to the complete API documentation available at [https://cloudapi.zenml.io](https://cloudapi.zenml.io) for detailed information about all available endpoints, request/response schemas, and additional features.
+
+### Workspace API Endpoints
+
+The Workspace API includes all OSS API endpoints plus some additional Pro-specific endpoints. These are available at your workspace URL at the `/docs` path (e.g., https://1bfe8d94-zenml.cloudinfra.zenml.io/docs):
+
+#### Run Templates (Pro-specific)
+
+* List run templates: `GET /run_templates`
+* Create a run template: `POST /run_templates`
+* Get run template details: `GET /run_templates/{template_id}`
+* Update a run template: `PATCH /run_templates/{template_id}`
+
+For a complete list of API endpoints available in the Workspace API, refer to the [OSS API documentation](../../oss-api/oss-api/README.md).
 
 ## Error Handling
 
@@ -116,5 +158,3 @@ The API uses standard HTTP status codes to indicate the success or failure of re
 ## Rate Limiting
 
 Be aware that the ZenML Pro API may have rate limiting in place to ensure fair usage. If you exceed the rate limit, you may receive a 429 (Too Many Requests) status code. Implement appropriate backoff and retry logic in your applications to handle this scenario.
-
-Remember to refer to the complete API documentation available at [https://cloudapi.zenml.io](https://cloudapi.zenml.io) for detailed information about all available endpoints, request/response schemas, and additional features.
