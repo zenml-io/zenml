@@ -11,7 +11,14 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
-"""Materializer for Pandas."""
+"""Materializer for Pandas.
+
+This materializer handles pandas DataFrame and Series objects.
+
+Environment Variables:
+    ZENML_PANDAS_SAMPLE_ROWS: Controls the number of sample rows to include in
+        visualizations. Defaults to 10 if not set.
+"""
 
 import os
 from typing import Any, ClassVar, Dict, Optional, Tuple, Type, Union
@@ -30,6 +37,9 @@ PARQUET_FILENAME = "df.parquet.gzip"
 COMPRESSION_TYPE = "gzip"
 
 CSV_FILENAME = "df.csv"
+
+# Default number of sample rows to display in visualizations
+DEFAULT_SAMPLE_ROWS = 10
 
 
 class PandasMaterializer(BaseMaterializer):
@@ -142,6 +152,14 @@ class PandasMaterializer(BaseMaterializer):
     ) -> Dict[str, VisualizationType]:
         """Save visualizations of the given pandas dataframe or series.
 
+        Creates two visualizations:
+        1. A statistical description of the data (using df.describe())
+        2. A sample of the data (first N rows controlled by ZENML_PANDAS_SAMPLE_ROWS)
+
+        Note:
+            The number of sample rows shown can be controlled with the
+            ZENML_PANDAS_SAMPLE_ROWS environment variable.
+
         Args:
             df: The pandas dataframe or series to visualize.
 
@@ -155,11 +173,16 @@ class PandasMaterializer(BaseMaterializer):
             df.describe().to_csv(f)
         visualizations[describe_uri] = VisualizationType.CSV
 
-        # Add our sample visualization (first 10 rows)
+        # Get the number of sample rows from environment variable or use default
+        sample_rows = int(
+            os.environ.get("ZENML_PANDAS_SAMPLE_ROWS", DEFAULT_SAMPLE_ROWS)
+        )
+
+        # Add our sample visualization (with configurable number of rows)
         if isinstance(df, pd.Series):
-            sample_df = df.head(10).to_frame()
+            sample_df = df.head(sample_rows).to_frame()
         else:
-            sample_df = df.head(10)
+            sample_df = df.head(sample_rows)
 
         sample_uri = os.path.join(self.uri, "sample.csv")
         sample_uri = sample_uri.replace("\\", "/")
