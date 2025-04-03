@@ -127,3 +127,17 @@ def get_cached_step_run(cache_key: str) -> Optional["StepRunResponse"]:
     if cache_candidates:
         return cache_candidates[0]
     return None
+
+
+def is_valid_cached_step_run(
+    step_run: "StepRunResponse", cache_key: str
+) -> bool:
+    """Check if a given step run is a valid cache candidate.
+
+    A step run is a valid cache candidate if it has the same cache key and is successful.
+    """
+    return (
+        step_run.cache_key == cache_key
+        and step_run.status == ExecutionStatus.COMPLETED
+        and step_run.workspace.id == Client().active_workspace.id
+    )
