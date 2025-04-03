@@ -1213,7 +1213,6 @@ class Client(metaclass=ClientMetaClass):
             name=name,
             components=stack_components,
             stack_spec_path=stack_spec_file,
-            project=self.active_project.id,
             labels=labels,
         )
 
@@ -1339,7 +1338,6 @@ class Client(metaclass=ClientMetaClass):
 
         # Create the update model
         update_model = StackUpdate(
-            project=self.active_project.id,
             stack_spec_path=stack_spec_file,
         )
 
@@ -2027,7 +2025,6 @@ class Client(metaclass=ClientMetaClass):
             type=component_type,
             flavor=flavor,
             configuration=configuration,
-            project=self.active_project.id,
             labels=labels,
         )
 
@@ -2075,9 +2072,7 @@ class Client(metaclass=ClientMetaClass):
             allow_name_prefix_match=False,
         )
 
-        update_model = ComponentUpdate(
-            project=self.active_project.id,
-        )
+        update_model = ComponentUpdate()
 
         if name is not None:
             existing_components = self.list_stack_components(
