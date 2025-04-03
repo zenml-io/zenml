@@ -148,11 +148,27 @@ class PandasMaterializer(BaseMaterializer):
         Returns:
             A dictionary of visualization URIs and their types.
         """
+        visualizations = {}
         describe_uri = os.path.join(self.uri, "describe.csv")
         describe_uri = describe_uri.replace("\\", "/")
         with self.artifact_store.open(describe_uri, mode="wb") as f:
             df.describe().to_csv(f)
-        return {describe_uri: VisualizationType.CSV}
+        visualizations[describe_uri] = VisualizationType.CSV
+
+        # Add our sample visualization (first 10 rows)
+        if isinstance(df, pd.Series):
+            sample_df = df.head(10).to_frame()
+        else:
+            sample_df = df.head(10)
+
+        sample_uri = os.path.join(self.uri, "sample.csv")
+        sample_uri = sample_uri.replace("\\", "/")
+        with self.artifact_store.open(sample_uri, mode="wb") as f:
+            sample_df.to_csv(f)
+
+        visualizations[sample_uri] = VisualizationType.CSV
+
+        return visualizations
 
     def extract_metadata(
         self, df: Union[pd.DataFrame, pd.Series]
