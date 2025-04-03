@@ -1,3 +1,7 @@
+---
+icon: plug
+---
+
 # Client
 
 ## Top-Level Functions in ZenML Client
@@ -62,4 +66,4 @@ Here's a list of the top-level functions in the ZenML Client, along with links t
 * [`Client.find_repository`](https://sdkdocs.zenml.io/latest/core_code_docs/core-client.html#zenml.client.Client.find_repository)
 * [`Client.get_api_key`](https://sdkdocs.zenml.io/latest/core_code_docs/core-client.html#zenml.client.Client.get_api_key)
 * [`Client.get_artifact`](https://sdkdocs.zenml.io/latest/core_code_docs/core-client.html#zenml.client.Client.get_artifact)
-* [`Client.get_artifact_version`](https://sdkdocs.zenml.io/latest/core\_code\_docs/core-client.html#zenml.client)
+* [`Client.get_artifact_version`](https://sdkdocs.zenml.io/latest/core_code_docs/core-client.html#zenml.client)
