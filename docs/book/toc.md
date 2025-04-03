@@ -170,6 +170,7 @@
   * [Set logging format](how-to/control-logging/set-logging-format.md)
   * [Disable rich traceback output](how-to/control-logging/disable-rich-traceback.md)
   * [Disable colorful logging](how-to/control-logging/disable-colorful-logging.md)
+  * [Disable step names in logs](how-to/control-logging/disable-step-names-in-logs.md)
 * [Popular integrations](how-to/popular-integrations/README.md)
   * [Run on AWS](how-to/popular-integrations/aws-guide.md)
   * [Run on GCP](how-to/popular-integrations/gcp-guide.md)
