@@ -42,6 +42,7 @@ from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
 from zenml.logging.step_logging import StepLogsStorageContext, redirected
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.models import ArtifactVersionResponse
 from zenml.models.v2.core.step_run import StepRunInputResponse
 from zenml.orchestrators.publish_utils import (
     publish_step_run_metadata,
@@ -545,12 +546,24 @@ class StepRunner:
                 if is_union(get_origin(output_type)):
                     output_type = get_args(output_type)
 
-                if not isinstance(return_value, output_type):
-                    raise StepInterfaceError(
-                        f"Wrong type for output '{output_name}' of step "
-                        f"'{step_name}' (expected type: {output_type}, "
-                        f"actual type: {type(return_value)})."
+                if isinstance(return_value, ArtifactVersionResponse):
+                    artifact_data_type = source_utils.load(
+                        return_value.data_type
                     )
+                    if not issubclass(artifact_data_type, output_type):
+                        raise StepInterfaceError(
+                            f"Wrong type for artifact returned for output "
+                            f"'{output_name}' of step '{step_name}' (expected "
+                            f"type: {output_type}, actual type: "
+                            f"{artifact_data_type})."
+                        )
+                else:
+                    if not isinstance(return_value, output_type):
+                        raise StepInterfaceError(
+                            f"Wrong type for output '{output_name}' of step "
+                            f"'{step_name}' (expected type: {output_type}, "
+                            f"actual type: {type(return_value)})."
+                        )
             validated_outputs[output_name] = return_value
         return validated_outputs
 
@@ -580,9 +593,15 @@ class StepRunner:
             The IDs of the published output artifacts.
         """
         step_context = get_step_context()
-        artifact_requests = []
+        artifact_requests = {}
+
+        artifacts = {}
 
         for output_name, return_value in output_data.items():
+            if isinstance(return_value, ArtifactVersionResponse):
+                artifacts[output_name] = return_value
+                continue
+
             data_type = type(return_value)
             materializer_classes = output_materializers[output_name]
             if materializer_classes:
@@ -661,12 +680,13 @@ class StepRunner:
                 save_type=ArtifactSaveType.STEP_OUTPUT,
                 metadata=user_metadata,
             )
-            artifact_requests.append(artifact_request)
+            artifact_requests[output_name] = artifact_request
 
         responses = Client().zen_store.batch_create_artifact_versions(
-            artifact_requests
+            list(artifact_requests.values())
         )
-        return dict(zip(output_data.keys(), responses))
+        artifacts.update(dict(zip(artifact_requests.keys(), responses)))
+        return artifacts
 
     def load_and_run_hook(
         self,
