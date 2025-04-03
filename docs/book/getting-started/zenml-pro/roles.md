@@ -11,6 +11,26 @@ ZenML Pro offers a robust role-based access control (RBAC) system to manage perm
 
 Please note that roles can be assigned to both individual users and [teams](teams.md).
 
+## Resource Ownership and Permissions
+
+ZenML Pro implements a resource ownership model where users have full CRUDS (Create, Read, Update, Delete, Share) permissions on resources they create. This applies across all levels of the system:
+
+* Users can always manage resources they've created themselves
+* The specific level of access to resources created by others depends on the user's role
+* This ownership model ensures that creators maintain control over their resources while still enabling collaboration
+
+## Resource Sharing and Implicit Membership
+
+ZenML Pro allows for flexible resource sharing across the platform:
+
+* Users can share resources (like stacks) with other users who aren't yet members of a workspace
+* When a resource is shared with a non-member user:
+  * That user automatically gains limited access to the workspace (implicit membership)
+  * They can see the workspace in their dashboard and access the shared resource
+  * However, they don't appear in the standard members list for the workspace
+* If a user with shared resources is later added as a full member of a workspace and then removed:
+  * They will lose access to all resources, including those explicitly shared with them
+
 ## Organization-Level Roles
 
 At the organization level, ZenML Pro provides the following predefined roles:
@@ -161,43 +181,27 @@ Projects have their own set of roles that provide fine-grained control over proj
 
 Note that project-level roles do not grant any permissions to stacks, as stacks are managed at the workspace level.
 
-## Resource Ownership and Permissions
+## Custom Roles
 
-ZenML Pro implements a resource ownership model where users have full CRUDS (Create, Read, Update, Delete, Share) permissions on resources they create. This applies across all levels of the system:
+ZenML Pro allows you to create custom roles with fine-grained permissions to meet your specific team requirements:
 
-* Users can always manage resources they've created themselves
-* The specific level of access to resources created by others depends on the user's role
-* This ownership model ensures that creators maintain control over their resources while still enabling collaboration
+* **Organization Level**: Currently, you cannot create custom organization roles via the ZenML Pro dashboard. However, this is possible via the [ZenML Pro API](https://cloudapi.zenml.io/).
 
-## Resource Sharing and Implicit Membership
+* **Workspace Level**: You can create custom workspace roles via the Workspace Settings page. This allows you to define specific combinations of permissions tailored to your team's workflow.
 
-ZenML Pro allows for flexible resource sharing across the platform:
+* **Project Level**: Custom project roles can be created through the Project Settings page, enabling precise control over project-specific permissions.
 
-* Users can share resources (like stacks) with other users who aren't yet members of a workspace
-* When a resource is shared with a non-member user:
-  * That user automatically gains limited access to the workspace (implicit membership)
-  * They can see the workspace in their dashboard and access the shared resource
-  * However, they don't appear in the standard members list for the workspace
-* If a user with shared resources is later added as a full member of a workspace and then removed:
-  * They will lose access to all resources, including those explicitly shared with them
+### When to Use Custom Roles
 
-## Managing Roles
+Custom roles are particularly useful in the following scenarios:
 
-To manage roles at any level:
+* When predefined roles are either too permissive or too restrictive for your use case
+* When you need to separate responsibilities more precisely within your team
+* For implementing principle of least privilege by granting only the exact permissions needed
+* When you have specialized team members who need access to specific resources without full admin privileges
+* For creating role-based workflows that match your organization's processes
 
-{% stepper %}
-{% step %}
-Navigate to the appropriate settings page (Organization, Workspace, or Project)
-{% endstep %}
-
-{% step %}
-Select the **Members** tab
-{% endstep %}
-
-{% step %}
-Use **Add Member** or modify existing member roles
-{% endstep %}
-{% endstepper %}
+For example, you might create a custom "Pipeline Operator" role that can run and monitor pipelines but cannot create or modify them, or a "Model Reviewer" role that can access model artifacts and evaluation results but cannot modify pipeline configurations.
 
 ## Best Practices
 
