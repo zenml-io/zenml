@@ -91,28 +91,6 @@ After creating the project, you can configure additional settings such as:
 {% endstep %}
 {% endstepper %}
 
-## Project-Level Roles
-
-Projects have their own role-based access control (RBAC) system, scoped to the project level. The default project roles include:
-
-1. **Project Admin**
-   * Full permissions to any project resource
-   * Can manage project members and their roles
-   * Can configure project settings
-   * Has complete control over all project resources
-2. **Project Developer**
-   * Permissions to create and view resources in the project
-   * Can work with pipelines, artifacts, and models
-   * Cannot modify project settings or member roles
-3. **Project Contributor**
-   * Permissions to create resources in the project
-   * Can add new pipelines, artifacts, and models
-   * Cannot modify existing resources or settings
-4. **Project Viewer**
-   * Permissions to view resources in the project
-   * Read-only access to all project resources
-   * Cannot create or modify any resources
-
 ## Managing Project Resources
 
 Projects provide isolation for various MLOps resources:
