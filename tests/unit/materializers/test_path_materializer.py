@@ -46,7 +46,7 @@ def test_path_materializer():
             step_output_type=Path,
             materializer_class=PathMaterializer,
             step_output=test_path,
-            expected_metadata_size=5,  # path, file_count, directory_count, total_size_bytes, file_extensions
+            expected_metadata_size=6,  # path, file_count, directory_count, total_size_bytes, file_extensions, storage_size
         )
 
         # Verify the result is a Path
