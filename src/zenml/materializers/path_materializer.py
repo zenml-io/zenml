@@ -266,45 +266,54 @@ class PathMaterializer(BaseMaterializer):
         # Create file rows with direct download links
         file_rows = ""
         for file_info in files_data:
-            # Create a direct download link
+            # Create a direct download link with appropriate MIME type
+            mime_type = self._get_mime_type(file_info['path'])
+            # Text files work better with text/plain MIME type for downloads
+            download_mime_type = "text/plain" if file_info["is_text"] else mime_type
             download_button = f"""
-            <a href="data:application/octet-stream;base64,{file_info['data']}" 
+            <a href="data:{download_mime_type};base64,{file_info['data']}" 
                download="{file_info['filename']}" 
                class="download-btn">Download</a>"""
 
             # Add preview button if it's a text file
             preview_button = ""
             if file_info["is_text"]:
-                # Escape any quotes in the preview content to avoid breaking the JavaScript
-                safe_preview = (
-                    file_info["preview"]
-                    .replace('"', '\\"')
-                    .replace("\n", "\\n")
-                )
-                preview_button = f"""
-                <button onclick="showPreview('{file_info['path']}', `{safe_preview}`)" 
-                        class="preview-btn">Preview</button>"""
+                # Use Base64 encoding for the content
+                try:
+                    content_b64 = base64.b64encode(file_info["preview"].encode("utf-8")).decode("utf-8")
+                    # Create preview button with HTML attributes
+                    path_attr = file_info["path"].replace('"', '&quot;')
+                    preview_button = '<button data-path="' + path_attr + '" '
+                    preview_button += 'data-content-b64="' + content_b64 + '" '
+                    preview_button += 'onclick="showPreviewFromData(this)" '
+                    preview_button += 'class="preview-btn">Preview</button>'
+                except Exception:
+                    # Fallback to simpler preview button if encoding fails
+                    preview_button = '<button class="preview-btn" disabled>Preview (Failed)</button>'
 
-            file_rows += f"""
-            <tr>
-                <td>{file_info['path']}</td>
-                <td>{file_info['size']}</td>
-                <td>
-                    {download_button}
-                    {preview_button}
-                </td>
-            </tr>"""
+            # Build row HTML using string concatenation instead of f-string
+            row_html = '<tr>'
+            row_html += '<td>' + file_info['path'] + '</td>'
+            row_html += '<td>' + file_info['size'] + '</td>'
+            row_html += '<td>'
+            row_html += download_button
+            row_html += preview_button
+            row_html += '</td>'
+            row_html += '</tr>'
+            
+            file_rows += row_html
 
         return f"""<!DOCTYPE html>
 <html>
 <head>
     <title>Directory Contents</title>
     <style>
-        body {{ font-family: Arial, sans-serif; margin: 20px; }}
-        h1 {{ color: #333; }}
-        .file-list {{ margin-top: 20px; border: 1px solid #ddd; border-radius: 5px; overflow: hidden; width: 100%; }}
+        body {{ font-family: Arial, sans-serif; margin: 20px; min-height: 95vh; }}
+        h1 {{ color: #333; margin-bottom: 10px; }}
+        .container {{ display: flex; flex-direction: column; height: 90vh; }}
+        .file-list {{ margin-top: 10px; border: 1px solid #ddd; border-radius: 5px; overflow: auto; width: 100%; flex: 1; min-height: 400px; }}
         .file-list table {{ border-collapse: collapse; width: 100%; }}
-        .file-list th {{ background-color: #f2f2f2; text-align: left; padding: 12px; border-bottom: 1px solid #ddd; }}
+        .file-list th {{ background-color: #f2f2f2; text-align: left; padding: 12px; border-bottom: 1px solid #ddd; position: sticky; top: 0; z-index: 1; }}
         .file-list td {{ padding: 12px; border-bottom: 1px solid #ddd; }}
         .file-list tr:hover {{ background-color: #f5f5f5; }}
         .download-btn {{ display: inline-block; padding: 8px 12px; background-color: #008CBA; color: white; 
@@ -312,50 +321,72 @@ class PathMaterializer(BaseMaterializer):
         .preview-btn {{ padding: 8px 12px; background-color: #4CAF50; color: white; 
                      border: none; border-radius: 4px; cursor: pointer; margin-left: 5px; }}
         .preview-container {{ display: none; margin-top: 20px; padding: 15px; border: 1px solid #ddd; 
-                          border-radius: 5px; max-height: 500px; overflow: auto; }}
+                          border-radius: 5px; max-height: 50vh; min-height: 300px; overflow: auto; }}
         .preview-container pre {{ white-space: pre-wrap; font-family: monospace; margin: 0; }}
         .close-btn {{ float: right; background-color: #f44336; color: white; 
                    border: none; border-radius: 4px; padding: 5px 10px; cursor: pointer; }}
+        p {{ margin-top: 5px; margin-bottom: 10px; }}
     </style>
 </head>
 <body>
-    <h1>Directory Contents</h1>
-    <p>Click on a download button to save a file to your computer.</p>
-    
-    <div class="file-list">
-        <table>
-            <tr>
-                <th>File</th>
-                <th>Size</th>
-                <th>Actions</th>
-            </tr>
-            {file_rows}
-        </table>
-    </div>
-    
-    <div id="previewContainer" class="preview-container">
-        <button onclick="closePreview()" class="close-btn">Close</button>
-        <h3 id="previewTitle">File Preview</h3>
-        <pre id="previewContent"></pre>
+    <div class="container">
+        <h1>Directory Contents</h1>
+        <p>Click on a download button to save a file to your computer.</p>
+        
+        <div class="file-list">
+            <table>
+                <tr>
+                    <th>File</th>
+                    <th>Size</th>
+                    <th>Actions</th>
+                </tr>
+                {file_rows}
+            </table>
+        </div>
+        
+        <div id="previewContainer" class="preview-container">
+            <button onclick="closePreview()" class="close-btn">Close</button>
+            <h3 id="previewTitle">File Preview</h3>
+            <pre id="previewContent"></pre>
+        </div>
     </div>
     
     <script>
-        // Function to show preview for text files
-        function showPreview(path, content) {{
+        /* Function to decode Base64 string */
+        function decodeBase64(str) {{
+            /* Convert Base64 to raw binary data held in a string */
+            const decoded = atob(str);
+            /* Convert raw binary to UTF-8 text */
+            return decodeURIComponent(
+                Array.from(decoded)
+                    .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+                    .join('')
+            );
+        }}
+        
+        /* Function to show preview from data attributes */
+        function showPreviewFromData(button) {{
+            const path = button.getAttribute('data-path');
+            const contentB64 = button.getAttribute('data-content-b64');
+            
             const previewContainer = document.getElementById('previewContainer');
             const previewTitle = document.getElementById('previewTitle');
             const previewContent = document.getElementById('previewContent');
             
-            // Set preview title and content
+            /* Set preview title and content */
             previewTitle.textContent = 'Preview: ' + path;
+            
+            /* Decode the Base64 content */
+            const content = decodeBase64(contentB64);
             previewContent.textContent = content;
+            
             previewContainer.style.display = 'block';
             
-            // Scroll to the preview
+            /* Scroll to the preview */
             previewContainer.scrollIntoView({{ behavior: 'smooth' }});
         }}
         
-        // Function to close the preview
+        /* Function to close the preview */
         function closePreview() {{
             document.getElementById('previewContainer').style.display = 'none';
         }}
@@ -404,3 +435,42 @@ class PathMaterializer(BaseMaterializer):
             "total_size_bytes": total_size,
             "file_extensions": file_extensions,
         }
+
+    def _get_mime_type(self, file_path: str) -> str:
+        """Get the MIME type for a given file path.
+
+        Args:
+            file_path: The file path to get the MIME type for.
+
+        Returns:
+            The MIME type for the given file path.
+        """
+        # Map of common file extensions to MIME types
+        mime_types = {
+            ".txt": "text/plain",
+            ".log": "text/plain",
+            ".md": "text/markdown",
+            ".csv": "text/csv",
+            ".json": "application/json",
+            ".yaml": "text/yaml",
+            ".yml": "text/yaml",
+            ".html": "text/html",
+            ".htm": "text/html",
+            ".css": "text/css",
+            ".js": "application/javascript",
+            ".py": "text/x-python",
+            ".diff": "text/plain",
+            ".patch": "text/plain",
+            ".xml": "application/xml",
+            ".png": "image/png",
+            ".jpg": "image/jpeg",
+            ".jpeg": "image/jpeg",
+            ".gif": "image/gif",
+            ".pdf": "application/pdf",
+        }
+        
+        # Get file extension and convert to lowercase
+        ext = Path(file_path).suffix.lower()
+        
+        # Return the corresponding MIME type or default to octet-stream
+        return mime_types.get(ext, "application/octet-stream")
