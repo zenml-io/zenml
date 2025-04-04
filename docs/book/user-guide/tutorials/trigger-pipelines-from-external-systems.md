@@ -1,6 +1,6 @@
 # Triggering Pipelines from External Systems
 
-This tutorial demonstrates practical approaches to triggering ZenML pipelines from external systems. We'll explore multiple methods, from ZenML Pro's Run Templates to open-source alternatives using custom APIs, serverless functions, and GitHub Actions.
+This tutorial demonstrates practical approaches to triggering ZenML pipelines from external systems. We'll explore multiple methods, from ZenML Pro's [Run Templates](https://docs.zenml.io/how-to/trigger-pipelines) to open-source alternatives using custom APIs, serverless functions, and GitHub Actions.
 
 ## Introduction: The Pipeline Triggering Challenge
 
@@ -138,7 +138,7 @@ These parameters make it an ideal candidate for external triggering scenarios wh
 This is a [ZenML Pro](https://zenml.io/pro)-only feature. Please [sign up here](https://cloud.zenml.io) to get access.
 {% endhint %}
 
-Run Templates are the most straightforward way to trigger pipelines externally in ZenML. They provide a pre-defined, parameterized configuration that can be executed via multiple interfaces.
+[Run Templates](https://docs.zenml.io/how-to/trigger-pipelines) are the most straightforward way to trigger pipelines externally in ZenML. They provide a pre-defined, parameterized configuration that can be executed via multiple interfaces.
 
 ### Creating a Run Template
 
@@ -182,7 +182,7 @@ zenml pipeline create-run-template training_pipeline \
 
 ### Triggering a Template
 
-Once you have created a template, there are multiple ways to trigger it, either programmatically with the Python client or via REST API for external systems.
+Once you have created a template, there are [multiple ways](https://docs.zenml.io/how-to/trigger-pipelines) to trigger it, either programmatically with the Python client or via REST API for external systems.
 
 #### Using the Python Client:
 
@@ -345,6 +345,7 @@ async def trigger_pipeline(
     """Trigger a ZenML pipeline with the given parameters."""
     try:
         # Dynamically import the pipeline
+        # your custom code here to load the source code of the pipeline
         pipeline_func = import_pipeline(request.pipeline_name)
         
         # Configure the pipeline
@@ -451,7 +452,7 @@ CMD ["python", "pipeline_api.py"]
 
 ### Triggering Your Pipeline via the Custom API
 
-You can trigger pipelines in two ways through the custom API:
+You can [trigger pipelines](https://docs.zenml.io/how-to/trigger-pipelines) in two ways through the custom API:
 
 #### 1. Direct Pipeline Execution
 
@@ -481,6 +482,10 @@ curl -X 'POST' \
 ```
 
 #### 2. Run Template Execution
+
+{% hint style="success" %}
+This is a [ZenML Pro](https://zenml.io/pro)-only feature. Please [sign up here](https://cloud.zenml.io) to get access.
+{% endhint %}
 
 This method uses a pre-configured run template, which is ideal for production scenarios:
 
