@@ -8,11 +8,10 @@ from typing import Any, ClassVar, Dict, Tuple, Type
 from zenml.enums import ArtifactType, VisualizationType
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.types import HTMLString
 
 
 class PathMaterializer(BaseMaterializer):
-    """Materializer for Path objects that provides downloadable file visualizations."""
+    """Materializer for Path objects with direct download links."""
     
     ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (Path,)
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
@@ -76,7 +75,7 @@ class PathMaterializer(BaseMaterializer):
         os.remove(archive_path)
     
     def save_visualizations(self, data: Path) -> Dict[str, VisualizationType]:
-        """Create HTML visualizations for each file with download buttons.
+        """Create HTML visualization with direct download links.
         
         Args:
             data: The Path object to visualize.
@@ -93,58 +92,62 @@ class PathMaterializer(BaseMaterializer):
             else:
                 directory_path = self.load(Path)
             
-            # Create individual HTML files for each file
+            # Prepare file data
+            files_data = []
             for file_path in sorted(directory_path.glob('**/*')):
                 if file_path.is_file():
                     rel_path = str(file_path.relative_to(directory_path))
-                    try:
-                        # Read file content
-                        with open(file_path, 'rb') as f:
-                            file_content = f.read()
-                        
-                        # Create base64 encoded data for download
-                        file_base64 = base64.b64encode(file_content).decode('utf-8')
-                        
-                        # Create simple HTML with download button
-                        filename = os.path.basename(rel_path)
-                        html_content = self._create_download_html(filename, file_base64)
-                        
-                        # Save HTML visualization
-                        vis_uri = os.path.join(self.uri, f"{rel_path}.html")
-                        with self.artifact_store.open(vis_uri, "w") as f:
-                            f.write(html_content)
-                        visualizations[vis_uri] = VisualizationType.HTML
-                        
-                        # For common text formats, also add their native visualization
-                        if self._is_text_file(file_path):
-                            text_content = file_content.decode('utf-8', errors='replace')
-                            if file_path.suffix.lower() in ('.md', '.markdown'):
-                                md_uri = os.path.join(self.uri, f"{rel_path}.md")
-                                with self.artifact_store.open(md_uri, "w") as f:
-                                    f.write(text_content)
-                                visualizations[md_uri] = VisualizationType.MARKDOWN
-                            
-                            elif file_path.suffix.lower() in ('.csv'):
-                                csv_uri = os.path.join(self.uri, f"{rel_path}.csv")
-                                with self.artifact_store.open(csv_uri, "w") as f:
-                                    f.write(text_content)
-                                visualizations[csv_uri] = VisualizationType.CSV
-                            
-                            elif file_path.suffix.lower() in ('.json'):
-                                json_uri = os.path.join(self.uri, f"{rel_path}.json")
-                                with self.artifact_store.open(json_uri, "w") as f:
-                                    f.write(text_content)
-                                visualizations[json_uri] = VisualizationType.JSON
+                    size_bytes = file_path.stat().st_size
                     
-                    except Exception as e:
-                        print(f"Error processing {rel_path}: {str(e)}")
+                    # Read the file content
+                    with open(file_path, 'rb') as f:
+                        content_bytes = f.read()
+                    content_b64 = base64.b64encode(content_bytes).decode('utf-8')
+                    
+                    # For text files, also get preview content
+                    is_text = self._is_text_file(file_path)
+                    preview_content = ""
+                    if is_text:
+                        preview_content = content_bytes.decode('utf-8', errors='replace')
+                    
+                    files_data.append({
+                        'path': rel_path,
+                        'filename': os.path.basename(rel_path),
+                        'size': self._format_size(size_bytes),
+                        'size_bytes': size_bytes,
+                        'data': content_b64,
+                        'is_text': is_text,
+                        'preview': preview_content if is_text else ""
+                    })
+            
+            # Create an HTML page with direct download links
+            html_content = self._create_direct_download_html(files_data)
+            html_uri = os.path.join(self.uri, "files_direct.html")
+            with self.artifact_store.open(html_uri, "w") as f:
+                f.write(html_content)
+            
+            visualizations[html_uri] = VisualizationType.HTML
             
         except Exception as e:
             # If something goes wrong, create a simple error visualization
-            error_uri = os.path.join(self.uri, "error.md")
+            error_uri = os.path.join(self.uri, "error.html")
+            error_html = f"""<!DOCTYPE html>
+<html>
+<head>
+    <title>Error</title>
+    <style>
+        body {{ font-family: Arial, sans-serif; margin: 20px; }}
+        .error {{ color: red; background-color: #fee; padding: 10px; border-radius: 5px; }}
+    </style>
+</head>
+<body>
+    <h1>Error Creating Visualization</h1>
+    <div class="error">{str(e)}</div>
+</body>
+</html>"""
             with self.artifact_store.open(error_uri, "w") as f:
-                f.write(f"# Error Creating Visualization\n\n{str(e)}")
-            visualizations[error_uri] = VisualizationType.MARKDOWN
+                f.write(error_html)
+            visualizations[error_uri] = VisualizationType.HTML
         
         return visualizations
     
@@ -177,56 +180,130 @@ class PathMaterializer(BaseMaterializer):
         except (UnicodeDecodeError, IOError):
             return False
     
-    def _create_download_html(self, filename: str, file_base64: str) -> str:
-        """Create a simple HTML page with a download button.
+    def _format_size(self, size_bytes: int) -> str:
+        """Format file size in a human-readable way.
         
         Args:
-            filename: Name of the file
-            file_base64: Base64 encoded file content
+            size_bytes: Size in bytes
             
         Returns:
-            HTML content
+            Formatted size string (e.g., "1.23 MB")
         """
+        units = ['B', 'KB', 'MB', 'GB', 'TB']
+        size = float(size_bytes)
+        unit_index = 0
+        
+        while size >= 1024.0 and unit_index < len(units) - 1:
+            size /= 1024.0
+            unit_index += 1
+            
+        return f"{size:.1f} {units[unit_index]}"
+    
+    def _create_direct_download_html(self, files_data: list) -> str:
+        """Create an HTML page with direct download links.
+        
+        Instead of using JavaScript to create downloads, this approach
+        uses direct data URIs in anchor tags, which should be more compatible
+        with the ZenML dashboard environment.
+        
+        Args:
+            files_data: List of dictionaries with file information
+            
+        Returns:
+            HTML content as a string
+        """
+        # Create file rows with direct download links
+        file_rows = ""
+        for file_info in files_data:
+            # Create a direct download link
+            download_button = f"""
+            <a href="data:application/octet-stream;base64,{file_info['data']}" 
+               download="{file_info['filename']}" 
+               class="download-btn">Download</a>"""
+            
+            # Add preview button if it's a text file
+            preview_button = ""
+            if file_info['is_text']:
+                # Escape any quotes in the preview content to avoid breaking the JavaScript
+                safe_preview = file_info['preview'].replace('"', '\\"').replace('\n', '\\n')
+                preview_button = f"""
+                <button onclick="showPreview('{file_info['path']}', `{safe_preview}`)" 
+                        class="preview-btn">Preview</button>"""
+            
+            file_rows += f"""
+            <tr>
+                <td>{file_info['path']}</td>
+                <td>{file_info['size']}</td>
+                <td>
+                    {download_button}
+                    {preview_button}
+                </td>
+            </tr>"""
+        
         return f"""<!DOCTYPE html>
 <html>
 <head>
-    <title>Download {filename}</title>
+    <title>Directory Contents</title>
     <style>
-        body {{ font-family: Arial, sans-serif; margin: 20px; text-align: center; }}
-        .download-btn {{ 
-            display: inline-block;
-            background-color: #4CAF50;
-            color: white;
-            padding: 15px 25px;
-            font-size: 16px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-top: 20px;
-        }}
-        .download-btn:hover {{ background-color: #45a049; }}
+        body {{ font-family: Arial, sans-serif; margin: 20px; }}
         h1 {{ color: #333; }}
+        .file-list {{ margin-top: 20px; border: 1px solid #ddd; border-radius: 5px; overflow: hidden; width: 100%; }}
+        .file-list table {{ border-collapse: collapse; width: 100%; }}
+        .file-list th {{ background-color: #f2f2f2; text-align: left; padding: 12px; border-bottom: 1px solid #ddd; }}
+        .file-list td {{ padding: 12px; border-bottom: 1px solid #ddd; }}
+        .file-list tr:hover {{ background-color: #f5f5f5; }}
+        .download-btn {{ display: inline-block; padding: 8px 12px; background-color: #008CBA; color: white; 
+                      border: none; border-radius: 4px; text-decoration: none; cursor: pointer; }}
+        .preview-btn {{ padding: 8px 12px; background-color: #4CAF50; color: white; 
+                     border: none; border-radius: 4px; cursor: pointer; margin-left: 5px; }}
+        .preview-container {{ display: none; margin-top: 20px; padding: 15px; border: 1px solid #ddd; 
+                          border-radius: 5px; max-height: 500px; overflow: auto; }}
+        .preview-container pre {{ white-space: pre-wrap; font-family: monospace; margin: 0; }}
+        .close-btn {{ float: right; background-color: #f44336; color: white; 
+                   border: none; border-radius: 4px; padding: 5px 10px; cursor: pointer; }}
     </style>
 </head>
 <body>
-    <h1>Download File: {filename}</h1>
-    <button class="download-btn" onclick="downloadFile()">Download {filename}</button>
+    <h1>Directory Contents</h1>
+    <p>Click on a download button to save a file to your computer.</p>
+    
+    <div class="file-list">
+        <table>
+            <tr>
+                <th>File</th>
+                <th>Size</th>
+                <th>Actions</th>
+            </tr>
+            {file_rows}
+        </table>
+    </div>
+    
+    <div id="previewContainer" class="preview-container">
+        <button onclick="closePreview()" class="close-btn">Close</button>
+        <h3 id="previewTitle">File Preview</h3>
+        <pre id="previewContent"></pre>
+    </div>
     
     <script>
-        function downloadFile() {{
-            const a = document.createElement('a');
-            a.href = 'data:application/octet-stream;base64,{file_base64}';
-            a.download = '{filename}';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+        // Function to show preview for text files
+        function showPreview(path, content) {{
+            const previewContainer = document.getElementById('previewContainer');
+            const previewTitle = document.getElementById('previewTitle');
+            const previewContent = document.getElementById('previewContent');
+            
+            // Set preview title and content
+            previewTitle.textContent = 'Preview: ' + path;
+            previewContent.textContent = content;
+            previewContainer.style.display = 'block';
+            
+            // Scroll to the preview
+            previewContainer.scrollIntoView({{ behavior: 'smooth' }});
         }}
         
-        // Auto-trigger download when page loads
-        window.onload = function() {{
-            // Uncomment the next line to auto-download when page is opened
-            // downloadFile();
-        }};
+        // Function to close the preview
+        function closePreview() {{
+            document.getElementById('previewContainer').style.display = 'none';
+        }}
     </script>
 </body>
 </html>"""
