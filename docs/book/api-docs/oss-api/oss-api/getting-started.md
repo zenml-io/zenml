@@ -12,6 +12,14 @@ In the local case (i.e. using `zenml login --local`, the docs are available on `
 
 ![ZenML API docs](../../../.gitbook/assets/zenml_api_docs.png)
 
+{% hint style="info" %}
+**Difference between OpenAPI docs and ReDoc**
+
+The OpenAPI docs (`/docs`) provide an interactive interface where you can try out the API endpoints directly from the browser. It is useful for testing and exploring the API functionalities.
+
+ReDoc (`/redoc`), on the other hand, offers a more static and visually appealing documentation. It is designed for better readability and is ideal for understanding the API structure and reference.
+{% endhint %}
+
 ![ZenML API Redoc](../../../.gitbook/assets/zenml_api_redoc.png)
 
 ## Accessing the ZenML OSS API
