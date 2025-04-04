@@ -81,7 +81,7 @@ class Model(BaseModel):
     # technical attributes
     model_version_id: Optional[UUID] = None
     suppress_class_validation_warnings: bool = False
-    _model_id: UUID = PrivateAttr(None)
+    _model_id: Optional[UUID] = PrivateAttr(None)
     _number: Optional[int] = PrivateAttr(None)
     _created_model_version: bool = PrivateAttr(False)
 
@@ -130,6 +130,8 @@ class Model(BaseModel):
         """
         if self._model_id is None:
             self._get_or_create_model()
+
+        assert self._model_id is not None
         return self._model_id
 
     @property

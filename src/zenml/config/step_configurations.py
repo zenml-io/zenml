@@ -118,8 +118,9 @@ class ArtifactConfiguration(PartialArtifactConfiguration):
     @field_validator("materializer_source", mode="before")
     @classmethod
     def _convert_source(
-        cls, value: Union[Source, Dict[str, Any], str, Tuple[Source, ...]]
-    ) -> Tuple[Source, ...]:
+        cls,
+        value: Union[None, Source, Dict[str, Any], str, Tuple[Source, ...]],
+    ) -> Optional[Tuple[Source, ...]]:
         """Converts old source strings to tuples of source objects.
 
         Args:
