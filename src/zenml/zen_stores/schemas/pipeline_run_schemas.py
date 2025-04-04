@@ -401,6 +401,7 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 else None,
                 is_templatable=is_templatable,
                 step_substitutions=step_substitutions,
+                logs=self.logs.to_model() if self.logs else None,
             )
 
         resources = None

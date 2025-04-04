@@ -5022,6 +5022,24 @@ class SqlZenStore(BaseZenStore):
         new_run = PipelineRunSchema.from_request(pipeline_run)
 
         session.add(new_run)
+
+        # Add logs entry for the run if exists
+        if pipeline_run.logs is not None:
+            self._get_reference_schema_by_id(
+                resource=pipeline_run,
+                reference_schema=StackComponentSchema,
+                reference_id=pipeline_run.logs.artifact_store_id,
+                session=session,
+                reference_type="logs artifact store",
+            )
+
+            log_entry = LogsSchema(
+                uri=pipeline_run.logs.uri,
+                pipeline_run_id=new_run.id,
+                artifact_store_id=pipeline_run.logs.artifact_store_id,
+            )
+            session.add(log_entry)
+
         try:
             session.commit()
         except IntegrityError:
