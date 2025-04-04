@@ -15,10 +15,9 @@ When using a stack with remote storage, nothing changes except the fact that the
 {% hint style="info" %}
 Would you like to skip ahead and deploy a full ZenML cloud stack already?
 
-Check out the
-[in-browser stack deployment wizard](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack),
-the [stack registration wizard](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack),
-or [the ZenML Terraform modules](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform)
+Check out the[in-browser stack deployment wizard](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack),\
+the [stack registration wizard](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack),\
+or [the ZenML Terraform modules](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform)\
 for a shortcut on how to deploy & register a cloud stack.
 {% endhint %}
 
@@ -117,13 +116,12 @@ Having trouble with setting up infrastructure? Join the [ZenML community](https:
 
 While you can go ahead and [run your pipeline on your stack](remote-storage.md#running-a-pipeline-on-a-cloud-stack) if your local client is configured to access it, it is best practice to use a [service connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management) for this purpose. Service connectors are quite a complicated concept (We have a whole [docs section](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management) on them) - but we're going to be starting with a very basic approach.
 
-First, let's understand what a service connector does. In simple words, a
-service connector contains credentials that grant stack components access to
-cloud infrastructure. These credentials are stored in the form of a
-[secret](https://docs.zenml.io/how-to/project-setup-and-management/interact-with-secrets),
-and are available to the ZenML server to use. Using these credentials, the
-service connector brokers a short-lived token and grants temporary permissions
-to the stack component to access that infrastructure. This diagram represents
+First, let's understand what a service connector does. In simple words, a\
+service connector contains credentials that grant stack components access to\
+cloud infrastructure. These credentials are stored in the form of a[secret](https://docs.zenml.io/how-to/project-setup-and-management/interact-with-secrets),\
+and are available to the ZenML server to use. Using these credentials, the\
+service connector brokers a short-lived token and grants temporary permissions\
+to the stack component to access that infrastructure. This diagram represents\
 this process:
 
 <figure><img src="../../.gitbook/assets/ConnectorsDiagram.png" alt=""><figcaption><p>Service Connectors abstract away complexity and implement security best practices</p></figcaption></figure>
@@ -174,7 +172,7 @@ zenml stack register local_with_remote_storage -o default -a cloud_artifact_stor
 {% endtab %}
 
 {% tab title="Dashboard" %}
-<figure><img src="../../.gitbook/assets/CreateStack.png" alt=""><figcaption><p>Register a new stack.</p></figcaption></figure>
+<figure><img src="https://github.com/zenml-io/zenml/blob/develop/docs/book/.gitbook/assets/CreateStack.png" alt=""><figcaption><p>Register a new stack.</p></figcaption></figure>
 {% endtab %}
 {% endtabs %}
 

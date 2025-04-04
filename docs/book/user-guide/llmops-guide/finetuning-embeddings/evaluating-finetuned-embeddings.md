@@ -56,7 +56,7 @@ We log the results for our core Matryoshka dimensions as model metadata to ZenML
 
 ### Visualizing results
 
-It's possible to visualize results in a few different ways in ZenML, but one easy option is just to output your chart as an `PIL.Image` object. (See our[documentation on more ways to visualize your results](../../../how-to/data-artifact-management/visualize-artifacts/).) The rest the implementation of our `visualize_results` step is just simple `matplotlib` code to plot out the base model evaluation against the finetuned model evaluation. We represent the results as percentage values and horizontally stack the two sets to make comparison a little easier.
+It's possible to visualize results in a few different ways in ZenML, but one easy option is just to output your chart as an `PIL.Image` object. (See our[documentation on more ways to visualize your results](https://github.com/zenml-io/zenml/blob/develop/docs/book/how-to/data-artifact-management/visualize-artifacts/README.md).) The rest the implementation of our `visualize_results` step is just simple `matplotlib` code to plot out the base model evaluation against the finetuned model evaluation. We represent the results as percentage values and horizontally stack the two sets to make comparison a little easier.
 
 ![Visualizing finetuned embeddings evaluation
 results](../../../.gitbook/assets/finetuning-embeddings-visualization.png)
