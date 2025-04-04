@@ -1,6 +1,5 @@
 ---
 description: Overview of categories of MLOps components and third-party integrations.
-icon: scroll
 ---
 
 # Overview

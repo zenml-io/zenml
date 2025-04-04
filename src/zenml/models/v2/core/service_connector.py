@@ -784,21 +784,15 @@ class ServiceConnectorFilter(UserScopedFilter):
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *UserScopedFilter.FILTER_EXCLUDE_FIELDS,
-        "scope_type",
         "resource_type",
         "labels_str",
         "labels",
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
         *UserScopedFilter.CLI_EXCLUDE_FIELDS,
-        "scope_type",
         "labels_str",
         "labels",
     ]
-    scope_type: Optional[str] = Field(
-        default=None,
-        description="The type to scope this query to.",
-    )
     name: Optional[str] = Field(
         default=None,
         description="The name to filter by",

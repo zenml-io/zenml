@@ -1,5 +1,6 @@
 ---
 description: Guide for installing ZenML Pro self-hosted in a Kubernetes cluster.
+icon: box
 ---
 
 # Self-hosted deployment
