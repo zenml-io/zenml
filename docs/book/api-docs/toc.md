@@ -1,9 +1,10 @@
 # Table of contents
 
-* [API Reference](README.md)
+* [Overview](README.md)
 
 ## OSS API
 
+* [Getting Started](oss-api/oss-api/getting-started.md)
 * [OSS API](oss-api/oss-api/README.md)
   * [Artifacts](oss-api-docs/v1/artifacts.md)
   * [Artifact versions](oss-api-docs/v1/artifact-versions/README.md)
@@ -55,6 +56,7 @@
 
 ## Pro API
 
+* [Getting Started](pro-api/pro-api/getting-started.md)
 * [Pro API](pro-api/pro-api/README.md)
   * [Tenants](pro-api-docs/api-reference/tenants/README.md)
     * [Deploy](pro-api-docs/api-reference/tenants/deploy.md)

@@ -3,9 +3,6 @@
 ## Getting Started
 
 * [Welcome to ZenML](introduction.md)
-  * [For MLOps Platform Engineers](getting-started/introduction/for-mlops-platform-engineers.md)
-  * [For Data Scientists](getting-started/introduction/for-data-scientists.md)
-  * [For ML Engineers](getting-started/introduction/for-ml-engineers.md)
 * [Installation](getting-started/installation.md)
 * [Core concepts](getting-started/core-concepts.md)
 * [System Architecture](getting-started/system-architectures.md)
@@ -170,6 +167,7 @@
   * [Set logging format](how-to/control-logging/set-logging-format.md)
   * [Disable rich traceback output](how-to/control-logging/disable-rich-traceback.md)
   * [Disable colorful logging](how-to/control-logging/disable-colorful-logging.md)
+  * [Disable step names in logs](how-to/control-logging/disable-step-names-in-logs.md)
 * [Popular integrations](how-to/popular-integrations/README.md)
   * [Run on AWS](how-to/popular-integrations/aws-guide.md)
   * [Run on GCP](how-to/popular-integrations/gcp-guide.md)

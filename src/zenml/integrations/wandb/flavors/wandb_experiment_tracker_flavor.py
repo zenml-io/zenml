@@ -75,7 +75,7 @@ class WandbExperimentTrackerSettings(BaseSettings):
             # `make_static` or `to_dict` is available to convert the settings
             # to a dictionary
             if isinstance(value, BaseModel):
-                return value.model_dump()
+                return value.model_dump()  # type: ignore[no-untyped-call]
             elif hasattr(value, "make_static"):
                 return cast(Dict[str, Any], value.make_static())
             elif hasattr(value, "to_dict"):
