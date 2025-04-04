@@ -15,6 +15,8 @@
 
 import argparse
 import socket
+from typing import Any, Dict
+from uuid import UUID
 
 from kubernetes import client as k8s_client
 
@@ -22,6 +24,7 @@ from zenml.client import Client
 from zenml.entrypoints.step_entrypoint_configuration import (
     StepEntrypointConfiguration,
 )
+from zenml.enums import ExecutionStatus
 from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import (
     KubernetesOrchestratorSettings,
 )
@@ -35,6 +38,7 @@ from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
     build_pod_manifest,
 )
 from zenml.logger import get_logger
+from zenml.orchestrators import publish_utils
 from zenml.orchestrators.dag_runner import ThreadedDagRunner
 from zenml.orchestrators.utils import get_config_environment_vars
 
@@ -51,6 +55,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--run_name", type=str, required=True)
     parser.add_argument("--deployment_id", type=str, required=True)
     parser.add_argument("--kubernetes_namespace", type=str, required=True)
+    parser.add_argument("--run_id", type=str, required=False)
     return parser.parse_args()
 
 
@@ -64,7 +69,9 @@ def main() -> None:
 
     orchestrator_run_id = socket.gethostname()
 
-    deployment_config = Client().get_deployment(args.deployment_id)
+    client = Client()
+
+    deployment_config = client.get_deployment(args.deployment_id)
 
     pipeline_dag = {
         step_name: step.spec.upstream_steps
@@ -72,7 +79,7 @@ def main() -> None:
     }
     step_command = StepEntrypointConfiguration.get_entrypoint_command()
 
-    active_stack = Client().active_stack
+    active_stack = client.active_stack
     mount_local_stores = active_stack.orchestrator.config.is_local
 
     # Get a Kubernetes client from the active Kubernetes orchestrator, but
@@ -162,24 +169,65 @@ def main() -> None:
             mount_local_stores=mount_local_stores,
         )
 
-        # Create and run pod.
-        core_api.create_namespaced_pod(
-            namespace=args.kubernetes_namespace,
-            body=pod_manifest,
-        )
+        try:
+            try:
+                # Create and run pod.
+                core_api.create_namespaced_pod(
+                    namespace=args.kubernetes_namespace,
+                    body=pod_manifest,
+                )
+            except Exception:
+                logger.error(
+                    f"Failed to create pod for step `{step_name}`. Exiting."
+                )
 
-        # Wait for pod to finish.
-        logger.info(f"Waiting for pod of step `{step_name}` to start...")
-        kube_utils.wait_pod(
-            kube_client_fn=lambda: orchestrator.get_kube_client(
-                incluster=True
-            ),
-            pod_name=pod_name,
-            namespace=args.kubernetes_namespace,
-            exit_condition_lambda=kube_utils.pod_is_done,
-            stream_logs=True,
-        )
-        logger.info(f"Pod of step `{step_name}` completed.")
+                raise
+
+            # Wait for pod to finish.
+            logger.info(f"Waiting for pod of step `{step_name}` to start...")
+            kube_utils.wait_pod(
+                kube_client_fn=lambda: orchestrator.get_kube_client(
+                    incluster=True
+                ),
+                pod_name=pod_name,
+                namespace=args.kubernetes_namespace,
+                exit_condition_lambda=kube_utils.pod_is_done,
+                stream_logs=True,
+            )
+
+            logger.info(f"Pod of step `{step_name}` completed.")
+
+        except Exception:
+            # If running the step failed for any reason, we need to mark the
+            # step run as failed, if it wasn't already, otherwise the pipeline
+            # will be shown as running indefinitely.
+
+            list_args: Dict[str, Any] = {}
+            if args.run_id:
+                # For a run triggered outside of a schedule, we can use the
+                # placeholder run ID to find the pipeline run.
+                list_args = dict(id=UUID(args.run_id))
+            else:
+                # For a run triggered by a schedule, we can only use the
+                # orchestrator run ID to find the pipeline run.
+                list_args = dict(orchestrator_run_id=args.run_name)
+
+            pipeline_runs = client.list_pipeline_runs(
+                project=deployment_config.project.id,
+                deployment_id=deployment_config.id,
+                **list_args,
+            )
+            if len(pipeline_runs):
+                pipeline_run = pipeline_runs[0]
+                step_run = pipeline_run.steps.get(step_name)
+
+                if step_run and step_run.status in {
+                    ExecutionStatus.INITIALIZING,
+                    ExecutionStatus.RUNNING,
+                }:
+                    publish_utils.publish_failed_step_run(step_run.id)
+
+            raise
 
     parallel_node_startup_waiting_period = (
         orchestrator.config.parallel_step_startup_waiting_period or 0.0

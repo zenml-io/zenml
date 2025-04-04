@@ -16,7 +16,7 @@ ZenML aims to enable orchestration with any orchestration tool. This is where th
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Type
 
-from zenml.models import PipelineDeploymentResponseModel
+from zenml.models import PipelineDeploymentResponseModel, PipelineRunResponse
 from zenml.enums import StackComponentType
 from zenml.stack import StackComponent, StackComponentConfig, Stack, Flavor
 
@@ -34,6 +34,7 @@ class BaseOrchestrator(StackComponent, ABC):
         deployment: PipelineDeploymentResponseModel,
         stack: Stack,
         environment: Dict[str, str],
+        placeholder_run: Optional[PipelineRunResponse] = None,
     ) -> Any:
         """Prepares and runs the pipeline outright or returns an intermediate
         pipeline representation that gets deployed.
