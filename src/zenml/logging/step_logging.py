@@ -65,14 +65,14 @@ def remove_ansi_escape_codes(text: str) -> str:
 
 def prepare_logs_uri(
     artifact_store: "BaseArtifactStore",
-    step_name: str,
+    step_name: Optional[str] = None,
     log_key: Optional[str] = None,
 ) -> str:
     """Generates and prepares a URI for the log file or folder for a step.
 
     Args:
         artifact_store: The artifact store on which the artifact will be stored.
-        step_name: Name of the step.
+        step_name: Name of the step. Skipped for global pipeline run logs.
         log_key: The unique identification key of the log file.
 
     Returns:
@@ -80,6 +80,9 @@ def prepare_logs_uri(
     """
     if log_key is None:
         log_key = str(uuid4())
+
+    if step_name is None:
+        step_name = "pipeline_runs"
 
     logs_base_uri = os.path.join(
         artifact_store.path,

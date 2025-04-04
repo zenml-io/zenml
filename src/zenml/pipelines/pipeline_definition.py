@@ -16,7 +16,7 @@
 import copy
 import hashlib
 import inspect
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
@@ -56,8 +56,10 @@ from zenml.enums import StackComponentType
 from zenml.exceptions import EntityExistsError
 from zenml.hooks.hook_validators import resolve_and_validate_hook
 from zenml.logger import get_logger
+from zenml.logging.step_logging import StepLogsStorageContext, prepare_logs_uri
 from zenml.models import (
     CodeReferenceRequest,
+    LogsRequest,
     PipelineBuildBase,
     PipelineBuildResponse,
     PipelineDeploymentBase,
@@ -806,31 +808,65 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
         with track_handler(AnalyticsEvent.RUN_PIPELINE) as analytics_handler:
             stack = Client().active_stack
-            deployment = self._create_deployment(**self._run_args)
 
-            self.log_pipeline_deployment_metadata(deployment)
-            run = create_placeholder_run(deployment=deployment)
+            logging_enabled = True
+            # Enable or disable pipeline run logs storage
+            # if constants.handle_bool_env_var(constants.ENV_ZENML_DISABLE_STEP_LOGS_STORAGE, False):
+            #     logging_enabled = False
+            # else:
+            #     logging_enabled = deployment.pipeline_configuration.enable_step_logs
 
-            analytics_handler.metadata = self._get_pipeline_analytics_metadata(
-                deployment=deployment,
-                stack=stack,
-                run_id=run.id if run else None,
-            )
+            logs_context = nullcontext()
+            logs_model = None
 
-            if run:
-                run_url = dashboard_utils.get_run_url(run)
-                if run_url:
-                    logger.info(f"Dashboard URL for Pipeline Run: {run_url}")
-                else:
-                    logger.info(
-                        "You can visualize your pipeline runs in the `ZenML "
-                        "Dashboard`. In order to try it locally, please run "
-                        "`zenml login --local`."
+            if logging_enabled:
+                # Configure the logs
+                logs_uri = prepare_logs_uri(
+                    stack.artifact_store,
+                )
+
+                logs_context = StepLogsStorageContext(
+                    logs_uri=logs_uri, artifact_store=stack.artifact_store
+                )  # type: ignore[assignment]
+
+                logs_model = LogsRequest(
+                    uri=logs_uri,
+                    artifact_store_id=stack.artifact_store.id,
+                )
+
+            with logs_context:
+                deployment = self._create_deployment(**self._run_args)
+
+                self.log_pipeline_deployment_metadata(deployment)
+                run = create_placeholder_run(
+                    deployment=deployment, logs=logs_model
+                )
+
+                analytics_handler.metadata = (
+                    self._get_pipeline_analytics_metadata(
+                        deployment=deployment,
+                        stack=stack,
+                        run_id=run.id if run else None,
                     )
+                )
 
-            deploy_pipeline(
-                deployment=deployment, stack=stack, placeholder_run=run
-            )
+                if run:
+                    run_url = dashboard_utils.get_run_url(run)
+                    if run_url:
+                        logger.info(
+                            f"Dashboard URL for Pipeline Run: {run_url}"
+                        )
+                    else:
+                        logger.info(
+                            "You can visualize your pipeline runs in the `ZenML "
+                            "Dashboard`. In order to try it locally, please run "
+                            "`zenml login --local`."
+                        )
+
+                deploy_pipeline(
+                    deployment=deployment, stack=stack, placeholder_run=run
+                )
+
             if run:
                 return Client().get_pipeline_run(run.id)
             return None
