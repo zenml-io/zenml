@@ -98,6 +98,9 @@ def main() -> None:
 
         Args:
             step_name: Name of the step.
+
+        Raises:
+            Exception: If the pod fails to start.
         """
         # Define Kubernetes pod name.
         pod_name = f"{orchestrator_run_id}-{step_name}"
