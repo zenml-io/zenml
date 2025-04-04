@@ -1,7 +1,3 @@
----
-description: A step-by-step tutorial on how to reliably trigger ML pipelines from external systems using various methods
----
-
 # Triggering Pipelines from External Systems
 
 This tutorial demonstrates practical approaches to triggering ZenML pipelines from external systems. We'll explore multiple methods, from ZenML Pro's Run Templates to open-source alternatives using custom APIs, serverless functions, and GitHub Actions.
@@ -299,7 +295,7 @@ Use this token in your API calls, and store it securely in your external system 
 
 ## Method 2: Building a Custom Trigger API (Open Source)
 
-If you're using the open-source version of ZenML or prefer a customized solution, you can create your own API wrapper around pipeline execution.
+If you're using the open-source version of ZenML or prefer a customized solution, you can create your own API wrapper around pipeline execution. This API can support both direct pipeline execution and run template triggering.
 
 ### Creating a FastAPI Wrapper
 
@@ -311,8 +307,10 @@ from fastapi.security import APIKeyHeader
 from pydantic import BaseModel
 import os
 import sys
-import importlib.util
 from typing import Dict, Any, Optional
+from uuid import UUID
+from zenml.client import Client
+from zenml.config.pipeline_run_configuration import PipelineRunConfiguration
 
 # Setup FastAPI app
 app = FastAPI(title="ZenML Pipeline Trigger API")
@@ -326,34 +324,18 @@ async def get_api_key(api_key: str = Security(api_key_header)):
         raise HTTPException(status_code=401, detail="Invalid API key")
     return api_key
 
-# Request model for pipeline parameters
+# Request models for parameters
+class StepParameter(BaseModel):
+    parameters: Dict[str, Any]
+
 class PipelineRequest(BaseModel):
     pipeline_name: str
-    parameters: Dict[str, Any]
+    steps: Dict[str, StepParameter]
     config_path: Optional[str] = None
 
-# Import a pipeline dynamically
-def import_pipeline(pipeline_name):
-    """Import a pipeline function from available modules."""
-    # This is a simplified example - in production you should limit which
-    # modules can be imported for security reasons
-    
-    # For this example, assume pipelines are in the 'pipelines' module
-    try:
-        spec = importlib.util.find_spec(f"pipelines")
-        if spec is None:
-            raise ImportError(f"Module 'pipelines' not found")
-        
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        
-        # Get the pipeline function
-        if not hasattr(module, pipeline_name):
-            raise AttributeError(f"Pipeline '{pipeline_name}' not found in module")
-        
-        return getattr(module, pipeline_name)
-    except Exception as e:
-        raise HTTPException(status_code=404, detail=f"Pipeline not found: {str(e)}")
+class TemplateRunRequest(BaseModel):
+    template_id: UUID
+    steps: Dict[str, StepParameter] = {}
 
 @app.post("/trigger")
 async def trigger_pipeline(
@@ -371,8 +353,14 @@ async def trigger_pipeline(
         else:
             configured_pipeline = pipeline_func
         
+        # Extract parameters from steps
+        step_parameters = {}
+        for step_name, step_config in request.steps.items():
+            if step_config.parameters:
+                step_parameters.update(step_config.parameters)
+        
         # Run the pipeline with the provided parameters
-        run = configured_pipeline(**request.parameters)
+        run = configured_pipeline(**step_parameters)
         
         return {
             "status": "success", 
@@ -382,10 +370,43 @@ async def trigger_pipeline(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to trigger pipeline: {str(e)}")
 
-# Run the API server
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+@app.post("/trigger-template")
+async def trigger_template(
+    request: TemplateRunRequest,
+    api_key: str = Depends(get_api_key)
+):
+    """Trigger a pipeline using a run template."""
+    try:
+        # Get the template
+        template = Client().get_run_template(request.template_id)
+        
+        # Get the template's configuration
+        config = template.config_template or {}
+        
+        # Update the configuration with step parameters
+        config["steps"] = {
+            step_name: {"parameters": step_config.parameters}
+            for step_name, step_config in request.steps.items()
+        }
+        
+        # Trigger the pipeline with the updated configuration
+        run = Client().trigger_pipeline(
+            template_id=template.id,
+            run_configuration=PipelineRunConfiguration(**config),
+        )
+        
+        return {
+            "status": "success",
+            "message": f"Pipeline triggered successfully from template '{template.name}'",
+            "run_id": run.id,
+            "template_id": template.id,
+            "template_name": template.name
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to trigger template: {str(e)}"
+        )
 ```
 
 ### Deploying Your Custom API
@@ -430,7 +451,11 @@ CMD ["python", "pipeline_api.py"]
 
 ### Triggering Your Pipeline via the Custom API
 
-Now you can trigger your pipeline from any system that can make HTTP requests:
+You can trigger pipelines in two ways through the custom API:
+
+#### 1. Direct Pipeline Execution
+
+This method runs the pipeline directly with the specified parameters:
 
 ```bash
 curl -X 'POST' \
@@ -440,12 +465,53 @@ curl -X 'POST' \
   -H 'Content-Type: application/json' \
   -d '{
     "pipeline_name": "training_pipeline",
-    "parameters": {
-      "data_url": "s3://some-bucket/new-data.csv",
-      "model_type": "gradient_boosting"
+    "steps": {
+      "load_data": {
+        "parameters": {
+          "data_url": "s3://some-bucket/new-data.csv"
+        }
+      },
+      "train_model": {
+        "parameters": {
+          "model_type": "gradient_boosting"
+        }
+      }
     }
   }'
 ```
+
+#### 2. Run Template Execution
+
+This method uses a pre-configured run template, which is ideal for production scenarios:
+
+```bash
+curl -X 'POST' \
+  'http://your-api-server:8000/trigger-template' \
+  -H 'accept: application/json' \
+  -H 'X-API-Key: your-secure-api-key-here' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "template_id": "YOUR_TEMPLATE_ID",
+    "steps": {
+      "load_data": {
+        "parameters": {
+          "data_url": "s3://some-bucket/new-data.csv"
+        }
+      },
+      "train_model": {
+        "parameters": {
+          "model_type": "gradient_boosting"
+        }
+      }
+    }
+  }'
+```
+
+The template-based approach offers several advantages:
+- Consistent pipeline configuration across runs
+- Pre-configured stack and environment settings
+- Centralized management of pipeline versions
+- Better control over production deployments
 
 ## Best Practices & Troubleshooting
 
