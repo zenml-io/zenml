@@ -28,8 +28,7 @@ ZenML Pro allows for flexible resource sharing across the platform:
   * That user automatically gains limited access to the workspace (implicit membership)
   * They can see the workspace in their dashboard and access the shared resource
   * However, they don't appear in the standard members list for the workspace
-* If a user with shared resources is later added as a full member of a workspace and then removed:
-  * They will lose access to all resources, including those explicitly shared with them
+* If a user with shared resources is later added as a full member of a workspace and then removed, they will lose access to all resources, including those explicitly shared with them
 
 ## Organization-Level Roles
 

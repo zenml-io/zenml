@@ -62,7 +62,7 @@ The normal pattern for updating a schedule is:
 3. Delete schedule on ZenML
 4. Re-run pipeline with new schedule
 
-A concrete example can be found on the [GCP Vertex orchestrator](https://docs.zenml.io/stacks/orchestrators/vertex) docs, and this pattern can be adapter for other orchestrators as well.
+A concrete example can be found on the [GCP Vertex orchestrator](https://docs.zenml.io/stacks/orchestrators/vertex) docs, and this pattern can be adapted for other orchestrators as well.
 
 
 {% hint style="warning" %}

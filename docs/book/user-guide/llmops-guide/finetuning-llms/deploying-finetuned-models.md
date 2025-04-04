@@ -1,7 +1,6 @@
 # Deployment Options for finetuned LLMs
 
-Deploying your finetuned LLM is a critical step in bringing your custom finetuned model into a place where it can be used as part of a real-world use case. This process involves careful planning and consideration of various factors to ensure optimal performance, reliability, and cost-effectiveness. In
-this section, we'll explore the key aspects of LLM deployment and discuss different options available to you.
+Deploying your finetuned LLM is a critical step in bringing your custom finetuned model into a place where it can be used as part of a real-world use case. This process involves careful planning and consideration of various factors to ensure optimal performance, reliability, and cost-effectiveness. In this section, we'll explore the key aspects of LLM deployment and discuss different options available to you.
 
 ## Deployment Considerations
 

@@ -24,17 +24,17 @@ You can generate a short-lived (1 hour) API token from your ZenML dashboard. Thi
 
 1. Generate a short-lived API token through the API Tokens page under your ZenML dashboard server settings, as documented in the [Using an API token](../../../how-to/manage-zenml-server/connecting-to-zenml/connect-with-an-api-token.md) guide.
 2. Use the API token as the bearer token in your HTTP requests. For example, you can use the following command to check your current user:
-   *   using curl:
+   *   using `curl`:
 
        ```bash
        curl -H "Authorization: Bearer YOUR_API_TOKEN" https://your-zenml-server/api/v1/current-user
        ```
-   *   using wget:
+   *   using `wget`:
 
        ```bash
        wget -qO- --header="Authorization: Bearer YOUR_API_TOKEN" https://your-zenml-server/api/v1/current-user
        ```
-   *   using python:
+   *   using Python:
 
        ```python
        import requests
@@ -51,7 +51,7 @@ You can generate a short-lived (1 hour) API token from your ZenML dashboard. Thi
 
 * API tokens expire after 1 hour and cannot be retrieved after the initial generation
 * Tokens are scoped to your user account and inherit your permissions
-* For long-term programmatic access, it is recommended to [set up a service account and an API key](./#using-a-service-account-and-an-api-key) instead
+* For long-term programmatic access, it is instead recommended to [set up a service account and an API key](./#using-a-service-account-and-an-api-key)
 {% endhint %}
 
 ### Using a service account and an API key

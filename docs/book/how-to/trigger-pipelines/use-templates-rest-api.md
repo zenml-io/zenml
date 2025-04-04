@@ -22,7 +22,7 @@ REST API:
 ## A working example
 
 {% hint style="info" %}
-Learn how to get a bearer token for the curl commands [here](https://docs.zenml.io/api-reference/oss-api/oss-api).
+Learn how to get a bearer token for the `curl` commands [here](https://docs.zenml.io/api-reference/oss-api/oss-api).
 {% endhint %}
 
 Here is an example. Let's say would we like to re-run a pipeline called `training`. We first query the `/pipelines` endpoint:
