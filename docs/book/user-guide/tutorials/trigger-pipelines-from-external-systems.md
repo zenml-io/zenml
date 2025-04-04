@@ -164,11 +164,20 @@ if runs:
     # assumes this run was run on a remote stack
     latest_run = runs[0]
     
+    config = {
+        "steps": {
+            "load_data": {
+                "parameters": {
+                    "data_url": "s3://production-bucket/latest-data.csv"
+                }
+            }
+        }
+    }
     # Create a template from this run
-    # you can pass a default config that sets up the default parameters
-    template = Client().create_run_template(
-        name="production-training-template", 
-        deployment_id=latest_run.deployment_id
+    template = latest_run.create_run_template(
+        name="production-training-template",
+        deployment_id=latest_run.deployment_id,
+        config=config
     )
     
     print(f"Created template: {template.name} with ID: {template.id}")
@@ -185,6 +194,12 @@ zenml pipeline create-run-template training_pipeline \
 You can even pass a config file and specify a stack when using the `create-run-template` command:
 
 ```bash
+# Create a config file
+echo "steps:
+  load_data:
+    parameters:
+      data_url: s3://production-bucket/latest-data.csv" > config.yaml
+
 zenml pipeline create-run-template <PIPELINE_SOURCE_PATH> \
     --name=<TEMPLATE_NAME> \
     --config=<PATH_TO_CONFIG_YAML> \
