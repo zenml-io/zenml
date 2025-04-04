@@ -161,9 +161,11 @@ runs = Client().list_pipeline_runs(
 
 if runs:
     # Use the most recent run
+    # assumes this run was run on a remote stack
     latest_run = runs[0]
     
     # Create a template from this run
+    # you can pass a default config that sets up the default parameters
     template = Client().create_run_template(
         name="production-training-template", 
         deployment_id=latest_run.deployment_id
@@ -178,6 +180,15 @@ if runs:
 # The source path is the module path to your pipeline
 zenml pipeline create-run-template training_pipeline \
     --name=production-training-template
+```
+
+You can even pass a config file and specify a stack when using the `create-run-template` command:
+
+```bash
+zenml pipeline create-run-template <PIPELINE_SOURCE_PATH> \
+    --name=<TEMPLATE_NAME> \
+    --config=<PATH_TO_CONFIG_YAML> \
+    --stack=<STACK_ID_OR_NAME>
 ```
 
 ### Triggering a Template
@@ -291,11 +302,20 @@ print(f"Store this token securely: {token.token}")
 # Make sure to save this token value securely
 ```
 
-Use this token in your API calls, and store it securely in your external system (e.g., as a GitHub Secret, AWS Secret, or environment variable).
+Use this token in your API calls, and store it securely in your external system
+(e.g., as a GitHub Secret, AWS Secret, or environment variable). Read more
+about [service accounts and tokens](https://docs.zenml.io/api-reference/oss-api/getting-started#using-a-service-account-and-an-api-key).
 
-## Method 2: Building a Custom Trigger API (Open Source)
+## Method 2: Building a Custom Trigger API
 
-If you're using the open-source version of ZenML or prefer a customized solution, you can create your own API wrapper around pipeline execution. This API can support both direct pipeline execution and run template triggering.
+If you're using the open-source version of ZenML or prefer a customized
+solution, you can create your own API wrapper around pipeline execution. This
+API can support both direct pipeline execution and run template triggering.
+
+The wrapper presented below is a simple example. Note that you need to have
+ZenML installed for it to work but also the requirements of the precise stack
+you're using (unless you're only triggering a run template, in which case
+`zenml` on its own is sufficient).
 
 ### Creating a FastAPI Wrapper
 
@@ -450,6 +470,9 @@ EXPOSE 8000
 CMD ["python", "pipeline_api.py"]
 ```
 
+This assumes you have a `requirements.txt` file that includes `zenml` and the
+other dependencies you need.
+
 ### Triggering Your Pipeline via the Custom API
 
 You can [trigger pipelines](https://docs.zenml.io/how-to/trigger-pipelines) in two ways through the custom API:
@@ -519,6 +542,30 @@ The template-based approach offers several advantages:
 - Better control over production deployments
 
 ## Best Practices & Troubleshooting
+
+### Tag Run Templates
+
+You should tag your run templates to make them easier to find and manage. It is
+currently only possible using the Python SDK:
+
+```python
+from zenml import add_tags
+
+add_tags(tags=["my_tag"], run_template="run_template_name_or_id")
+```
+
+### Parameter Stability Best Practices
+
+When triggering pipelines externally, it's crucial to maintain parameter stability to prevent unexpected behavior:
+
+1. **Document Parameter Changes**: Keep a changelog of parameter modifications and their impact on pipeline behavior
+2. **Version Control Parameters**: Store parameter configurations in version-controlled files (e.g., YAML) alongside your pipeline code
+3. **Validate Parameter Changes**: Consider implementing validation checks to ensure new parameter values are compatible with existing pipeline steps
+4. **Consider Upstream Impact**: Before modifying step parameters, analyze how changes might affect:
+   - Downstream steps that depend on the step's output
+   - Cached artifacts that might become invalid
+   - Other pipelines that might be using this step
+5. **Use Parameter Templates**: Create parameter templates for different scenarios (e.g., development, staging, production) to maintain consistency
 
 ### Security Best Practices
 
