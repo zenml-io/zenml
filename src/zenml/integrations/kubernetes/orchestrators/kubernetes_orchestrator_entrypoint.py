@@ -39,7 +39,7 @@ from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
 )
 from zenml.logger import get_logger
 from zenml.orchestrators import publish_utils
-from zenml.orchestrators.dag_runner import ThreadedDagRunner
+from zenml.orchestrators.dag_runner import NodeStatus, ThreadedDagRunner
 from zenml.orchestrators.utils import get_config_environment_vars
 
 logger = get_logger(__name__)
@@ -170,21 +170,21 @@ def main() -> None:
         )
 
         try:
-            try:
-                # Create and run pod.
-                core_api.create_namespaced_pod(
-                    namespace=args.kubernetes_namespace,
-                    body=pod_manifest,
-                )
-            except Exception:
-                logger.error(
-                    f"Failed to create pod for step `{step_name}`. Exiting."
-                )
+            # Create and run pod.
+            core_api.create_namespaced_pod(
+                namespace=args.kubernetes_namespace,
+                body=pod_manifest,
+            )
+        except Exception:
+            logger.error(
+                f"Failed to create pod for step `{step_name}`. Exiting."
+            )
 
-                raise
+            raise
 
-            # Wait for pod to finish.
-            logger.info(f"Waiting for pod of step `{step_name}` to start...")
+        # Wait for pod to finish.
+        logger.info(f"Waiting for pod of step `{step_name}` to start...")
+        try:
             kube_utils.wait_pod(
                 kube_client_fn=lambda: orchestrator.get_kube_client(
                     incluster=True
@@ -195,39 +195,70 @@ def main() -> None:
                 stream_logs=True,
             )
 
-            logger.info(f"Pod of step `{step_name}` completed.")
-
+            logger.info(f"Pod for step `{step_name}` completed.")
         except Exception:
-            # If running the step failed for any reason, we need to mark the
-            # step run as failed, if it wasn't already, otherwise the pipeline
-            # will be shown as running indefinitely.
-
-            list_args: Dict[str, Any] = {}
-            if args.run_id:
-                # For a run triggered outside of a schedule, we can use the
-                # placeholder run ID to find the pipeline run.
-                list_args = dict(id=UUID(args.run_id))
-            else:
-                # For a run triggered by a schedule, we can only use the
-                # orchestrator run ID to find the pipeline run.
-                list_args = dict(orchestrator_run_id=args.run_name)
-
-            pipeline_runs = client.list_pipeline_runs(
-                project=deployment_config.project.id,
-                deployment_id=deployment_config.id,
-                **list_args,
-            )
-            if len(pipeline_runs):
-                pipeline_run = pipeline_runs[0]
-                step_run = pipeline_run.steps.get(step_name)
-
-                if step_run and step_run.status in {
-                    ExecutionStatus.INITIALIZING,
-                    ExecutionStatus.RUNNING,
-                }:
-                    publish_utils.publish_failed_step_run(step_run.id)
+            logger.error(f"Pod for step `{step_name}` failed.")
 
             raise
+
+    def finalize_run(node_states: Dict[str, NodeStatus]) -> None:
+        """Finalize the run.
+
+        Args:
+            node_states: The states of the nodes.
+        """
+        # Some steps may have failed because the pods could not be created.
+        # We need to check for this and mark the step run as failed if so.
+
+        # Fetch the pipeline run using any means possible.
+        list_args: Dict[str, Any] = {}
+        if args.run_id:
+            # For a run triggered outside of a schedule, we can use the
+            # placeholder run ID to find the pipeline run.
+            list_args = dict(id=UUID(args.run_id))
+        else:
+            # For a run triggered by a schedule, we can only use the
+            # orchestrator run ID to find the pipeline run.
+            list_args = dict(orchestrator_run_id=args.run_name)
+
+        pipeline_runs = client.list_pipeline_runs(
+            project=deployment_config.project.id,
+            deployment_id=deployment_config.id,
+            **list_args,
+        )
+        if not len(pipeline_runs):
+            # No pipeline run found, so we can't mark any step runs as failed.
+            return
+
+        pipeline_run = pipeline_runs[0]
+        pipeline_failed = False
+
+        for step_name, node_state in node_states.items():
+            if node_state != NodeStatus.FAILED:
+                continue
+
+            pipeline_failed = True
+
+            # If steps failed for any reason, we need to mark the step run as
+            # failed, if it exists and it wasn't already in a final state.
+
+            step_run = pipeline_run.steps.get(step_name)
+
+            # Try to update the step run status, if it exists and is in
+            # a transient state.
+            if step_run and step_run.status in {
+                ExecutionStatus.INITIALIZING,
+                ExecutionStatus.RUNNING,
+            }:
+                publish_utils.publish_failed_step_run(step_run.id)
+
+        # If any steps failed and the pipeline run is still in a transient
+        # state, we need to mark it as failed.
+        if pipeline_failed and pipeline_run.status in {
+            ExecutionStatus.INITIALIZING,
+            ExecutionStatus.RUNNING,
+        }:
+            publish_utils.publish_failed_pipeline_run(pipeline_run.id)
 
     parallel_node_startup_waiting_period = (
         orchestrator.config.parallel_step_startup_waiting_period or 0.0
@@ -236,6 +267,7 @@ def main() -> None:
         ThreadedDagRunner(
             dag=pipeline_dag,
             run_fn=run_step_on_kubernetes,
+            finalize_fn=finalize_run,
             parallel_node_startup_waiting_period=parallel_node_startup_waiting_period,
         ).run()
         logger.info("Orchestration pod completed.")

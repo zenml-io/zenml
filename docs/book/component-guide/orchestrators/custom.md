@@ -151,7 +151,7 @@ There are some additional optional features that your orchestrator can implement
 from typing import Dict
 
 from zenml.entrypoints import StepEntrypointConfiguration
-from zenml.models import PipelineDeploymentResponseModel
+from zenml.models import PipelineDeploymentResponseModel, PipelineRunResponse
 from zenml.orchestrators import ContainerizedOrchestrator
 from zenml.stack import Stack
 
@@ -170,6 +170,7 @@ class MyOrchestrator(ContainerizedOrchestrator):
         deployment: "PipelineDeploymentResponseModel",
         stack: "Stack",
         environment: Dict[str, str],
+        placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> None:
         # If your orchestrator supports scheduling, you should handle the schedule
         # configured by the user. Otherwise you might raise an exception or log a warning
