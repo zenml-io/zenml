@@ -51,7 +51,11 @@ if TYPE_CHECKING:
         DagConfiguration,
         TaskConfiguration,
     )
-    from zenml.models import PipelineDeploymentResponse, ScheduleResponse
+    from zenml.models import (
+        PipelineDeploymentResponse,
+        PipelineRunResponse,
+        ScheduleResponse,
+    )
     from zenml.stack import Stack
 
 logger = get_logger(__name__)
@@ -192,6 +196,7 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         environment: Dict[str, str],
+        placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Any:
         """Creates and writes an Airflow DAG zip file.
 
@@ -200,7 +205,7 @@ class AirflowOrchestrator(ContainerizedOrchestrator):
             stack: The stack the pipeline will run on.
             environment: Environment variables to set in the orchestration
                 environment.
-
+            placeholder_run: An optional placeholder run for the deployment.
         """
         pipeline_settings = cast(
             AirflowOrchestratorSettings, self.get_settings(deployment)

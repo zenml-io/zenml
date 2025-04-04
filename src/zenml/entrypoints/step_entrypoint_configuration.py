@@ -75,6 +75,8 @@ class StepEntrypointConfiguration(BaseEntrypointConfiguration):
             self,
             deployment: "PipelineDeployment",
             stack: "Stack",
+            environment: Dict[str, str],
+            placeholder_run: Optional["PipelineRunResponse"] = None,
         ) -> Any:
             ...
 

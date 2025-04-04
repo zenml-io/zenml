@@ -20,8 +20,14 @@ from zenml.orchestrators.dag_runner import ThreadedDagRunner, reverse_dag
 
 def test_reverse_dag():
     """Test `dag_runner.reverse_dag()`."""
-    dag = {1: [7], 2: [], 3: [2, 5], 5: [1, 7], 7: []}
-    assert reverse_dag(dag) == {1: [5], 2: [3], 3: [], 5: [3], 7: [1, 5]}
+    dag = {"1": ["7"], "2": [], "3": ["2", "5"], "5": ["1", "7"], "7": []}
+    assert reverse_dag(dag) == {
+        "1": ["5"],
+        "2": ["3"],
+        "3": [],
+        "5": ["3"],
+        "7": ["1", "5"],
+    }
 
 
 class MockRunFn:
@@ -49,22 +55,22 @@ def test_dag_runner_empty():  # {}
 
 def test_dag_runner_single():  # 42
     """Test running a DAG with a single node."""
-    _test_runner(dag={42: []}, correct_results=[42])
+    _test_runner(dag={"42": []}, correct_results=[42])
 
 
 def test_dag_runner_linear():  # 5->2->7
-    """Test running a linear DAG."""
-    _test_runner(dag={2: [5], 5: [], 7: [2]}, correct_results=[91])
+    """Test running a DAG with a linear DAG."""
+    _test_runner(dag={"2": ["5"], "5": [], "7": ["2"]}, correct_results=[91])
 
 
 def test_dag_runner_multi_path():  # 3->(2, 5)->1
     """Test running a DAG will multiple paths."""
     _test_runner(
-        dag={1: [2, 5], 2: [3], 3: [], 5: [3]},
+        dag={"1": ["2", "5"], "2": ["3"], "3": [], "5": ["3"]},
         correct_results=[43, 46],  # 3->5->2->1 or 3->2->5->1
     )
 
 
 def test_dag_runner_cyclic():
     """Test that nothing happens for cyclic graphs, and no error is raised."""
-    _test_runner({1: [2], 2: [1]}, correct_results=[0])
+    _test_runner({"1": ["2"], "2": ["1"]}, correct_results=[0])

@@ -67,7 +67,7 @@ from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
 
 if TYPE_CHECKING:
-    from zenml.models import PipelineDeploymentResponse
+    from zenml.models import PipelineDeploymentResponse, PipelineRunResponse
     from zenml.stack import Stack
 
 logger = get_logger(__name__)
@@ -393,6 +393,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         environment: Dict[str, str],
+        placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Any:
         """Runs the pipeline in Kubernetes.
 
@@ -401,6 +402,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             stack: The stack the pipeline will run on.
             environment: Environment variables to set in the orchestration
                 environment.
+            placeholder_run: An optional placeholder run for the deployment.
 
         Raises:
             RuntimeError: If the Kubernetes orchestrator is not configured.
@@ -450,6 +452,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             run_name=orchestrator_run_name,
             deployment_id=deployment.id,
             kubernetes_namespace=self.config.kubernetes_namespace,
+            run_id=placeholder_run.id if placeholder_run else None,
         )
 
         settings = cast(
