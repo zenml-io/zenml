@@ -267,12 +267,14 @@ class PathMaterializer(BaseMaterializer):
         file_rows = ""
         for file_info in files_data:
             # Create a direct download link with appropriate MIME type
-            mime_type = self._get_mime_type(file_info['path'])
+            mime_type = self._get_mime_type(file_info["path"])
             # Text files work better with text/plain MIME type for downloads
-            download_mime_type = "text/plain" if file_info["is_text"] else mime_type
+            download_mime_type = (
+                "text/plain" if file_info["is_text"] else mime_type
+            )
             download_button = f"""
-            <a href="data:{download_mime_type};base64,{file_info['data']}" 
-               download="{file_info['filename']}" 
+            <a href="data:{download_mime_type};base64,{file_info["data"]}" 
+               download="{file_info["filename"]}" 
                class="download-btn">Download</a>"""
 
             # Add preview button if it's a text file
@@ -280,9 +282,11 @@ class PathMaterializer(BaseMaterializer):
             if file_info["is_text"]:
                 # Use Base64 encoding for the content
                 try:
-                    content_b64 = base64.b64encode(file_info["preview"].encode("utf-8")).decode("utf-8")
+                    content_b64 = base64.b64encode(
+                        file_info["preview"].encode("utf-8")
+                    ).decode("utf-8")
                     # Create preview button with HTML attributes
-                    path_attr = file_info["path"].replace('"', '&quot;')
+                    path_attr = file_info["path"].replace('"', "&quot;")
                     preview_button = '<button data-path="' + path_attr + '" '
                     preview_button += 'data-content-b64="' + content_b64 + '" '
                     preview_button += 'onclick="showPreviewFromData(this)" '
@@ -292,15 +296,15 @@ class PathMaterializer(BaseMaterializer):
                     preview_button = '<button class="preview-btn" disabled>Preview (Failed)</button>'
 
             # Build row HTML using string concatenation instead of f-string
-            row_html = '<tr>'
-            row_html += '<td>' + file_info['path'] + '</td>'
-            row_html += '<td>' + file_info['size'] + '</td>'
-            row_html += '<td>'
+            row_html = "<tr>"
+            row_html += "<td>" + file_info["path"] + "</td>"
+            row_html += "<td>" + file_info["size"] + "</td>"
+            row_html += "<td>"
             row_html += download_button
             row_html += preview_button
-            row_html += '</td>'
-            row_html += '</tr>'
-            
+            row_html += "</td>"
+            row_html += "</tr>"
+
             file_rows += row_html
 
         return f"""<!DOCTYPE html>
@@ -468,9 +472,9 @@ class PathMaterializer(BaseMaterializer):
             ".gif": "image/gif",
             ".pdf": "application/pdf",
         }
-        
+
         # Get file extension and convert to lowercase
         ext = Path(file_path).suffix.lower()
-        
+
         # Return the corresponding MIME type or default to octet-stream
         return mime_types.get(ext, "application/octet-stream")
