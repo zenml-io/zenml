@@ -121,6 +121,7 @@ Under the hood, the Path Materializer:
 The Path Materializer extracts the following metadata:
 
 ### For Directories:
+
 - `path`: Original path of the directory
 - `file_count`: Total number of files in the directory (including subdirectories)
 - `directory_count`: Number of subdirectories
