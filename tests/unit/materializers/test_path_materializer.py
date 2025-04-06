@@ -67,6 +67,61 @@ def test_path_materializer():
         ).read_text() == "print('Hello, world!')"
 
 
+def test_path_materializer_with_file():
+    """Test the Path materializer with a single file."""
+    # Create a temporary file
+    with tempfile.TemporaryDirectory() as temp_dir:
+        # Create a test file
+        test_file = Path(temp_dir) / "single_file.txt"
+        test_file.write_text("This is a single file test")
+
+        # Test the materializer
+        result = _test_materializer(
+            step_output_type=Path,
+            materializer_class=PathMaterializer,
+            step_output=test_file,
+            expected_metadata_size=6,  # path, file_size_bytes, file_name, file_extension, is_text, storage_size
+        )
+
+        # Verify the result is a Path
+        assert isinstance(result, Path)
+
+        # Verify it's a file, not a directory
+        assert result.is_file()
+
+        # Check file content
+        assert result.read_text() == "This is a single file test"
+
+
+def test_path_materializer_with_binary_file():
+    """Test the Path materializer with a binary file."""
+    # Create a temporary binary file
+    with tempfile.TemporaryDirectory() as temp_dir:
+        # Create a test binary file
+        test_file = Path(temp_dir) / "binary_file.bin"
+        with open(test_file, "wb") as f:
+            f.write(b"\x00\x01\x02\x03\xff\xfe")
+
+        # Test the materializer
+        result = _test_materializer(
+            step_output_type=Path,
+            materializer_class=PathMaterializer,
+            step_output=test_file,
+            expected_metadata_size=6,  # path, file_size_bytes, file_name, file_extension, is_text, storage_size
+        )
+
+        # Verify the result is a Path
+        assert isinstance(result, Path)
+
+        # Verify it's a file, not a directory
+        assert result.is_file()
+
+        # Check file content
+        with open(result, "rb") as f:
+            content = f.read()
+        assert content == b"\x00\x01\x02\x03\xff\xfe"
+
+
 def test_path_materializer_metadata():
     """Test the metadata extraction of the Path materializer."""
     # Create a temporary directory with some test files
@@ -105,6 +160,26 @@ def test_path_materializer_metadata():
             f.stat().st_size for f in [test_file_1, test_file_2, test_file_3]
         )
         assert metadata["total_size_bytes"] == expected_size
+
+
+def test_file_metadata():
+    """Test the metadata extraction for a single file."""
+    # Create a temporary file
+    with tempfile.TemporaryDirectory() as temp_dir:
+        # Create a test file
+        test_file = Path(temp_dir) / "metadata_file.txt"
+        test_file.write_text("This is a test for file metadata")
+
+        # Create a materializer and extract metadata
+        materializer = PathMaterializer("test_uri")
+        metadata = materializer.extract_metadata(test_file)
+
+        # Verify file metadata
+        assert metadata["path"] == str(test_file)
+        assert metadata["file_name"] == "metadata_file.txt"
+        assert metadata["file_extension"] == ".txt"
+        assert metadata["is_text"] is True
+        assert metadata["file_size_bytes"] == test_file.stat().st_size
 
 
 def test_is_text_file():

@@ -29,7 +29,8 @@ class PathMaterializer(BaseMaterializer):
     """Materializer for Path objects with direct download links.
 
     This materializer handles `pathlib.Path` objects by storing their contents
-    in a compressed tar archive within the artifact store. It also provides
+    in a compressed tar archive within the artifact store if it's a directory,
+    or directly copying the file if it's a single file. It also provides
     visualizations with direct download links for viewing and downloading
     the contents of the Path.
     """
@@ -37,63 +38,89 @@ class PathMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES: ClassVar[Tuple[Type[Any], ...]] = (Path,)
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
     ARCHIVE_NAME: ClassVar[str] = "data.tar.gz"
+    FILE_NAME: ClassVar[str] = "file_data"
 
     def load(self, data_type: Type[Any]) -> Any:
-        """Copy the artifact files to a local temp directory.
+        """Copy the artifact files to a local temp directory or file.
 
         Args:
             data_type: Unused.
 
         Returns:
-            Path to the local directory that contains the artifact files.
+            Path to the local directory or file that contains the artifact.
+
+        Raises:
+            FileNotFoundError: If the artifact is not found in the artifact store.
         """
         directory = mkdtemp(prefix="zenml-artifact")
+
+        # Check if we're loading a file or directory by looking for the archive
         archive_path_remote = os.path.join(self.uri, self.ARCHIVE_NAME)
-        archive_path_local = os.path.join(directory, self.ARCHIVE_NAME)
+        file_path_remote = os.path.join(self.uri, self.FILE_NAME)
 
-        fileio.copy(archive_path_remote, archive_path_local)
+        if fileio.exists(archive_path_remote):
+            # This is a directory artifact
+            archive_path_local = os.path.join(directory, self.ARCHIVE_NAME)
+            fileio.copy(archive_path_remote, archive_path_local)
 
-        # Extract the archive to the temporary directory
-        with tarfile.open(archive_path_local, "r:gz") as tar:
-            tar.extractall(path=directory)
+            # Extract the archive to the temporary directory
+            with tarfile.open(archive_path_local, "r:gz") as tar:
+                tar.extractall(path=directory)
 
-        # Clean up the archive file
-        os.remove(archive_path_local)
-
-        return Path(directory)
+            # Clean up the archive file
+            os.remove(archive_path_local)
+            return Path(directory)
+        elif fileio.exists(file_path_remote):
+            # This is a single file artifact
+            file_path_local = os.path.join(
+                directory, os.path.basename(file_path_remote)
+            )
+            fileio.copy(file_path_remote, file_path_local)
+            return Path(file_path_local)
+        else:
+            raise FileNotFoundError(
+                f"Could not find artifact at {archive_path_remote} or {file_path_remote}"
+            )
 
     def save(self, data: Any) -> None:
-        """Store the directory in the artifact store.
+        """Store the directory or file in the artifact store.
 
         Args:
-            data: Path to a local directory to store.
+            data: Path to a local directory or file to store.
         """
         assert isinstance(data, Path)
 
-        # Ensure the destination directory exists
-        directory = mkdtemp(prefix="zenml-artifact")
-        archive_path = os.path.join(directory, self.ARCHIVE_NAME)
+        if data.is_dir():
+            # Handle directory artifact
+            directory = mkdtemp(prefix="zenml-artifact")
+            archive_path = os.path.join(directory, self.ARCHIVE_NAME)
 
-        # Create a compressed tar archive
-        with tarfile.open(archive_path, "w:gz") as tar:
-            # Get the current working directory
-            original_dir = os.getcwd()
-            try:
-                # Change to the source directory to preserve relative paths
-                os.chdir(str(data))
+            # Create a compressed tar archive
+            with tarfile.open(archive_path, "w:gz") as tar:
+                # Get the current working directory
+                original_dir = os.getcwd()
+                try:
+                    # Change to the source directory to preserve relative paths
+                    os.chdir(str(data))
 
-                # Add all files and directories
-                for item in os.listdir("."):
-                    tar.add(item)
-            finally:
-                # Restore the original working directory
-                os.chdir(original_dir)
+                    # Add all files and directories
+                    for item in os.listdir("."):
+                        tar.add(item)
+                finally:
+                    # Restore the original working directory
+                    os.chdir(original_dir)
 
-        # Copy the archive to the artifact store
-        fileio.copy(archive_path, os.path.join(self.uri, self.ARCHIVE_NAME))
+            # Copy the archive to the artifact store
+            fileio.copy(
+                archive_path, os.path.join(self.uri, self.ARCHIVE_NAME)
+            )
 
-        # Clean up the temporary archive
-        os.remove(archive_path)
+            # Clean up the temporary archive
+            os.remove(archive_path)
+        else:
+            # Handle single file artifact
+            file_path_remote = os.path.join(self.uri, self.FILE_NAME)
+            fileio.copy(str(data), file_path_remote)
 
     def save_visualizations(self, data: Path) -> Dict[str, VisualizationType]:
         """Create HTML visualization with direct download links.
@@ -107,6 +134,24 @@ class PathMaterializer(BaseMaterializer):
         visualizations = {}
 
         try:
+            # Determine if it's a file or directory
+            if data.is_file() or not os.path.exists(str(data)):
+                # Either it's an original file or we need to load from artifact store
+                if os.path.exists(str(data)) and data.is_file():
+                    file_path = data
+                else:
+                    file_path = self.load(Path)
+
+                # Create a direct file visualization
+                html_content = self._create_single_file_html(file_path)
+                html_uri = os.path.join(self.uri, "file_direct.html")
+                with self.artifact_store.open(html_uri, "w") as f:
+                    f.write(html_content)
+
+                visualizations[html_uri] = VisualizationType.HTML
+                return visualizations
+
+            # Handle directory visualization (existing code)
             # Load the directory (either from original data or from artifact store)
             if os.path.exists(str(data)):
                 directory_path = data
@@ -177,6 +222,166 @@ class PathMaterializer(BaseMaterializer):
             visualizations[error_uri] = VisualizationType.HTML
 
         return visualizations
+
+    def _create_single_file_html(self, file_path: Path) -> str:
+        """Create an HTML page for a single file.
+
+        Args:
+            file_path: Path to the file to visualize
+
+        Returns:
+            HTML content as a string
+        """
+        try:
+            # Get file info
+            file_name = file_path.name
+            size_bytes = file_path.stat().st_size
+            size_str = self._format_size(size_bytes)
+
+            # Read file content
+            with open(file_path, "rb") as f:
+                content_bytes = f.read()
+            content_b64 = base64.b64encode(content_bytes).decode("utf-8")
+
+            # Determine MIME type
+            mime_type = self._get_mime_type(str(file_path))
+
+            # For text files, create a preview
+            is_text = self._is_text_file(file_path)
+            preview_html = ""
+            if is_text:
+                preview_content = content_bytes.decode(
+                    "utf-8", errors="replace"
+                )
+                preview_html = f"""
+                <div class="preview-container">
+                    <h3>File Preview</h3>
+                    <pre id="previewContent">{preview_content}</pre>
+                </div>
+                """
+
+            # Create download link
+            download_mime_type = "text/plain" if is_text else mime_type
+
+            return f"""<!DOCTYPE html>
+<html>
+<head>
+    <title>File: {file_name}</title>
+    <style>
+        body {{ font-family: Arial, sans-serif; margin: 20px; }}
+        h1 {{ color: #333; margin-bottom: 10px; }}
+        .file-info {{ margin: 20px 0; }}
+        .download-btn {{ display: inline-block; padding: 10px 15px; background-color: #008CBA; color: white; 
+                       border: none; border-radius: 4px; text-decoration: none; font-size: 16px; }}
+        .preview-container {{ 
+            margin-top: 20px; 
+            padding: 15px; 
+            border: 1px solid #ddd; 
+            border-radius: 5px; 
+            min-height: 200px;
+            height: auto;
+            width: 100%;
+            overflow-y: visible;
+        }}
+        .preview-container pre {{ 
+            white-space: pre-wrap; 
+            font-family: monospace; 
+            margin: 0; 
+            width: 100%;
+            overflow-wrap: break-word;
+            word-wrap: break-word;
+        }}
+    </style>
+</head>
+<body>
+    <h1>File: {file_name}</h1>
+    
+    <div class="file-info">
+        <p><strong>Size:</strong> {size_str}</p>
+        <p><strong>Type:</strong> {mime_type}</p>
+    </div>
+    
+    <a href="data:{download_mime_type};base64,{content_b64}" download="{file_name}" class="download-btn">Download File</a>
+    
+    {preview_html}
+</body>
+</html>"""
+        except Exception as e:
+            return f"""<!DOCTYPE html>
+<html>
+<head>
+    <title>Error: {file_path.name}</title>
+    <style>
+        body {{ font-family: Arial, sans-serif; margin: 20px; }}
+        .error {{ color: red; background-color: #fee; padding: 10px; border-radius: 5px; }}
+    </style>
+</head>
+<body>
+    <h1>Error Visualizing File</h1>
+    <div class="error">{str(e)}</div>
+</body>
+</html>"""
+
+    def extract_metadata(self, data: Path) -> Dict[str, Any]:
+        """Extract metadata from the given directory or file.
+
+        Args:
+            data: The Path object to extract metadata from.
+
+        Returns:
+            A dictionary of metadata.
+        """
+        # Check if it's a file or directory
+        if data.is_file() or not os.path.exists(str(data)):
+            # Either it's an original file or we need to load from artifact store
+            if os.path.exists(str(data)) and data.is_file():
+                file_path = data
+            else:
+                file_path = self.load(Path)
+
+            # Extract file metadata
+            size = file_path.stat().st_size
+            return {
+                "path": str(file_path),
+                "file_size_bytes": size,
+                "file_name": file_path.name,
+                "file_extension": file_path.suffix.lower(),
+                "is_text": self._is_text_file(file_path),
+            }
+
+        # Handle directory metadata (existing code)
+        # Either use the original path or load it from the artifact store
+        if os.path.exists(str(data)):
+            directory_path = data
+        else:
+            # If we're extracting metadata from an already saved artifact
+            directory_path = self.load(Path)
+
+        # Count files and directories
+        file_count = sum(1 for _ in directory_path.glob("**/*") if _.is_file())
+        dir_count = sum(1 for _ in directory_path.glob("**/*") if _.is_dir())
+
+        # Get total size
+        total_size = sum(
+            item.stat().st_size
+            for item in directory_path.glob("**/*")
+            if item.is_file()
+        )
+
+        # Get file extensions
+        file_extensions: Dict[str, int] = {}
+        for item in directory_path.glob("**/*"):
+            if item.is_file() and item.suffix:
+                ext = item.suffix.lower()
+                file_extensions[ext] = file_extensions.get(ext, 0) + 1
+
+        return {
+            "path": str(data),
+            "file_count": file_count,
+            "directory_count": dir_count,
+            "total_size_bytes": total_size,
+            "file_extensions": file_extensions,
+        }
 
     def _is_text_file(self, file_path: Path) -> bool:
         """Check if a file is likely a text file based on extension or content.
@@ -397,48 +602,6 @@ class PathMaterializer(BaseMaterializer):
     </script>
 </body>
 </html>"""
-
-    def extract_metadata(self, data: Path) -> Dict[str, Any]:
-        """Extract metadata from the given directory.
-
-        Args:
-            data: The Path object to extract metadata from.
-
-        Returns:
-            A dictionary of metadata.
-        """
-        # Either use the original path or load it from the artifact store
-        if os.path.exists(str(data)):
-            directory_path = data
-        else:
-            # If we're extracting metadata from an already saved artifact
-            directory_path = self.load(Path)
-
-        # Count files and directories
-        file_count = sum(1 for _ in directory_path.glob("**/*") if _.is_file())
-        dir_count = sum(1 for _ in directory_path.glob("**/*") if _.is_dir())
-
-        # Get total size
-        total_size = sum(
-            item.stat().st_size
-            for item in directory_path.glob("**/*")
-            if item.is_file()
-        )
-
-        # Get file extensions
-        file_extensions: Dict[str, int] = {}
-        for item in directory_path.glob("**/*"):
-            if item.is_file() and item.suffix:
-                ext = item.suffix.lower()
-                file_extensions[ext] = file_extensions.get(ext, 0) + 1
-
-        return {
-            "path": str(data),
-            "file_count": file_count,
-            "directory_count": dir_count,
-            "total_size_bytes": total_size,
-            "file_extensions": file_extensions,
-        }
 
     def _get_mime_type(self, file_path: str) -> str:
         """Get the MIME type for a given file path.
