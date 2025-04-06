@@ -129,6 +129,7 @@ The Path Materializer extracts the following metadata:
 - `file_extensions`: Dictionary of file extensions and their frequencies
 
 ### For Files:
+
 - `path`: Original path of the file
 - `file_name`: Name of the file
 - `file_extension`: Extension of the file
