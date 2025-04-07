@@ -3643,6 +3643,7 @@ class Client(metaclass=ClientMetaClass):
         name_id_or_prefix: Union[str, UUID],
         name: Optional[str] = None,
         description: Optional[str] = None,
+        hidden: Optional[bool] = None,
         add_tags: Optional[List[str]] = None,
         remove_tags: Optional[List[str]] = None,
         project: Optional[Union[str, UUID]] = None,
@@ -3653,6 +3654,7 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix: Name/ID/ID prefix of the template to update.
             name: The new name of the run template.
             description: The new description of the run template.
+            hidden: The new hidden status of the run template.
             add_tags: Tags to add to the run template.
             remove_tags: Tags to remove from the run template.
             project: The project name/ID to filter by.
@@ -3678,6 +3680,7 @@ class Client(metaclass=ClientMetaClass):
             template_update=RunTemplateUpdate(
                 name=name,
                 description=description,
+                hidden=hidden,
                 add_tags=add_tags,
                 remove_tags=remove_tags,
             ),

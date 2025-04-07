@@ -341,6 +341,7 @@ class RunTemplateFilter(ProjectScopedFilter, TaggableFilter):
         "pipeline_id",
         "pipeline",
         "stack",
+        "hidden",
     ]
     CUSTOM_SORTING_OPTIONS = [
         *ProjectScopedFilter.CUSTOM_SORTING_OPTIONS,
@@ -356,7 +357,7 @@ class RunTemplateFilter(ProjectScopedFilter, TaggableFilter):
         description="Name of the run template.",
     )
     hidden: Optional[bool] = Field(
-        default=False,
+        default=None,
         description="Whether the run template is hidden.",
     )
     pipeline_id: Optional[Union[UUID, str]] = Field(
@@ -401,7 +402,7 @@ class RunTemplateFilter(ProjectScopedFilter, TaggableFilter):
         """
         custom_filters = super().get_custom_filters(table)
 
-        from sqlmodel import and_
+        from sqlmodel import and_, col
 
         from zenml.zen_stores.schemas import (
             CodeReferenceSchema,
@@ -410,6 +411,11 @@ class RunTemplateFilter(ProjectScopedFilter, TaggableFilter):
             RunTemplateSchema,
             StackSchema,
         )
+
+        if self.hidden is not None:
+            custom_filters.append(
+                col(RunTemplateSchema.hidden).is_(self.hidden)
+            )
 
         if self.code_repository_id:
             code_repo_filter = and_(
