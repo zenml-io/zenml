@@ -2,17 +2,18 @@
 description: >-
   Tracking your code and avoiding unnecessary Docker builds by connecting your
   git repo.
+icon: code-compare
 ---
 
-# Connect your git repository
+# Code Repositories
 
 A code repository in ZenML refers to a remote storage location for your code. Some commonly known code repository platforms include [GitHub](https://github.com/) and [GitLab](https://gitlab.com/).
 
 <figure><img src="../../../.gitbook/assets/Remote_with_code_repository.png" alt=""><figcaption><p>A visual representation of how the code repository fits into the general ZenML architecture.</p></figcaption></figure>
 
-Code repositories enable ZenML to keep track of the code version that you use for your pipeline runs. Additionally, running a pipeline that is tracked in a registered code repository can [speed up the Docker image building for containerized stack components](https://docs.zenml.io//how-to/customize-docker-builds/how-to-reuse-builds) by eliminating the need to rebuild Docker images each time you change one of your source code files.
+Code repositories enable ZenML to keep track of the code version that you use for your pipeline runs. Additionally, running a pipeline that is tracked in a registered code repository can [speed up the Docker image building for containerized stack components](https://docs.zenml.io/how-to/customize-docker-builds/how-to-reuse-builds) by eliminating the need to rebuild Docker images each time you change one of your source code files.
 
-Learn more about how code repositories benefit development [here](https://docs.zenml.io//how-to/customize-docker-builds/how-to-reuse-builds).
+Learn more about how code repositories benefit development [here](https://docs.zenml.io/how-to/customize-docker-builds/how-to-reuse-builds).
 
 ## Registering a code repository
 
@@ -54,10 +55,10 @@ zenml code-repository register <NAME> --type=github \
 
 where `<REPOSITORY>` is the name of the code repository you are registering, `<OWNER>` is the owner of the repository, `<NAME>` is the name of the repository and `<GITHUB_TOKEN>` is your GitHub Personal Access Token.
 
-If you're using a self-hosted GitHub Enterprise instance, you'll need to also pass the `--api_url=<API_URL>` and `--host=<HOST>` options. `<API_URL>` should point to where the GitHub API is reachable (defaults to `https://api.github.com/`) and `<HOST>` should be the [hostname of your GitHub instance](https://docs.github.com/en/enterprise-server@3.10/admin/configuring-settings/configuring-network-settings/configuring-the-hostname-for-your-instance?learn=deploy_an_instance&learnProduct=admin).
+If you're using a self-hosted GitHub Enterprise instance, you'll need to also pass the `--api_url=<API_URL>` and `--host=<HOST>` options. `<API_URL>` should point to where the GitHub API is reachable (defaults to `https://api.github.com/`) and `<HOST>` should be the [hostname of your GitHub instance](https://docs.github.com/en/enterprise-server@3.10/admin/configuring-settings/configuring-network-settings/configuring-the-hostname-for-your-instance?learn=deploy_an_instance\&learnProduct=admin).
 
 {% hint style="warning" %}
-Please refer to the section on using secrets for stack configuration in order to securely store your GitHub 
+Please refer to the section on using secrets for stack configuration in order to securely store your GitHub\
 Personal Access Token.
 
 ```shell
@@ -115,9 +116,8 @@ where `<NAME>` is the name of the code repository you are registering, `<GROUP>`
 
 If you're using a self-hosted GitLab instance, you'll need to also pass the `--instance_url=<INSTANCE_URL>` and `--host=<HOST>` options. `<INSTANCE_URL>` should point to your GitLab instance (defaults to `https://gitlab.com/`) and `<HOST>` should be the hostname of your GitLab instance (defaults to `gitlab.com`).
 
-
 {% hint style="warning" %}
-Please refer to the section on using secrets for stack configuration in order to securely store your GitLab
+Please refer to the section on using secrets for stack configuration in order to securely store your GitLab\
 Personal Access Token.
 
 ```shell

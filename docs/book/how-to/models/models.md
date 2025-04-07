@@ -1,5 +1,6 @@
 ---
 description: Managing ML models throughout their lifecycle with ZenML
+icon: rectangle-history
 ---
 
 # Models
@@ -14,9 +15,9 @@ This guide covers all aspects of working with models in ZenML, from basic concep
 
 A ZenML Model is an entity that groups together related resources:
 
-- Pipelines that train, evaluate, or deploy the model
-- Artifacts like datasets, model weights, and predictions
-- Metadata including metrics, parameters, and business information
+* Pipelines that train, evaluate, or deploy the model
+* Artifacts like datasets, model weights, and predictions
+* Metadata including metrics, parameters, and business information
 
 Think of a ZenML Model as a container that organizes all the components related to a specific ML use case or business problem. This extends beyond just the model weights or parameters - it represents the entire ML product.
 
@@ -28,11 +29,11 @@ A ZenML Model is different from a "technical model" (the actual ML model files w
 
 The Model Control Plane is ZenML's unified interface for managing models throughout their lifecycle. It allows you to:
 
-- Register and version models
-- Associate pipelines and artifacts with models
-- Track lineage and dependencies
-- Manage model promotions through stages (staging, production, etc.)
-- Exchange data between pipelines using models
+* Register and version models
+* Associate pipelines and artifacts with models
+* Track lineage and dependencies
+* Manage model promotions through stages (staging, production, etc.)
+* Exchange data between pipelines using models
 
 ![Model Control Plane Overview](../../.gitbook/assets/mcp_walkthrough.gif)
 
@@ -149,10 +150,10 @@ def trainer(
 
 Model stages represent the progression of models through their lifecycle. ZenML supports the following stages:
 
-- `staging`: Ready for final validation before production
-- `production`: Currently deployed in a production environment
-- `latest`: The most recent version (virtual stage)
-- `archived`: No longer in use
+* `staging`: Ready for final validation before production
+* `production`: Currently deployed in a production environment
+* `latest`: The most recent version (virtual stage)
+* `archived`: No longer in use
 
 You can promote models to different stages:
 
@@ -292,11 +293,11 @@ Client().delete_model_version("model_version_id")
 
 ## Best Practices
 
-- **Consistent Naming**: Use consistent naming conventions for models and versions
-- **Rich Metadata**: Log comprehensive metadata to provide context for each model version
-- **Promotion Strategy**: Develop a clear strategy for promoting models through stages
-- **Model Association**: Associate pipelines with models to maintain lineage and enable artifact sharing
-- **Versioning Strategy**: Choose between explicit versioning and template-based versioning based on your needs
+* **Consistent Naming**: Use consistent naming conventions for models and versions
+* **Rich Metadata**: Log comprehensive metadata to provide context for each model version
+* **Promotion Strategy**: Develop a clear strategy for promoting models through stages
+* **Model Association**: Associate pipelines with models to maintain lineage and enable artifact sharing
+* **Versioning Strategy**: Choose between explicit versioning and template-based versioning based on your needs
 
 ## Conclusion
 
@@ -304,4 +305,4 @@ The Model Control Plane in ZenML provides a comprehensive solution for managing 
 
 Whether you're working on a simple classification model or a complex production ML system, ZenML's model management capabilities help you organize your resources and maintain clarity in your ML processes.
 
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure> 
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

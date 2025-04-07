@@ -1,8 +1,11 @@
 ---
-description: Customize Docker builds to run your pipelines in isolated, well-defined environments.
+description: >-
+  Customize Docker builds to run your pipelines in isolated, well-defined
+  environments.
+icon: docker
 ---
 
-# Docker Builds
+# Containerization
 
 ZenML executes pipeline steps sequentially in the active Python environment when running locally. However, with remote [orchestrators](https://docs.zenml.io/stacks/orchestrators) or [step operators](https://docs.zenml.io/stacks/step-operators), ZenML builds [Docker](https://www.docker.com/) images to run your pipeline in an isolated, well-defined environment.
 
@@ -113,6 +116,7 @@ For the default local image builder, these options are passed to the [`docker bu
 
 {% hint style="info" %}
 If you're running your pipelines on MacOS with ARM architecture, the local Docker caching does not work unless you specify the target platform of the image:
+
 ```python
 docker_settings = DockerSettings(
     build_config={"build_options": {"platform": "linux/amd64"}}
@@ -139,6 +143,7 @@ def my_pipeline(...):
 ```
 
 ZenML will use this image as the base and still perform the following steps:
+
 1. Install additional pip dependencies
 2. Copy source files (if configured)
 3. Set environment variables
@@ -164,6 +169,7 @@ def my_pipeline(...):
 
 {% hint style="warning" %}
 This is an advanced feature and may cause unintended behavior when running your pipelines. If you use this, ensure your image contains everything necessary to run your pipeline:
+
 1. Your stack requirements
 2. Integration requirements
 3. Project-specific requirements
@@ -202,42 +208,43 @@ ZenML offers several ways to specify dependencies for your Docker containers:
 
 ### Python Dependencies
 
-1. **Replicate Local Environment**:
-   ```python
-   # Use pip freeze
-   docker_settings = DockerSettings(replicate_local_python_environment="pip_freeze")
-   
-   # Or use poetry
-   docker_settings = DockerSettings(replicate_local_python_environment="poetry_export")
-   
-   # Use custom command
-   docker_settings = DockerSettings(replicate_local_python_environment=[
-       "poetry", "export", "--extras=train", "--format=requirements.txt"
-   ])
-   ```
+1.  **Replicate Local Environment**:
 
-2. **Specify Requirements Directly**:
-   ```python
-   docker_settings = DockerSettings(requirements=["torch==1.12.0", "torchvision"])
-   ```
+    ```python
+    # Use pip freeze
+    docker_settings = DockerSettings(replicate_local_python_environment="pip_freeze")
 
-3. **Use Requirements File**:
-   ```python
-   docker_settings = DockerSettings(requirements="/path/to/requirements.txt")
-   ```
+    # Or use poetry
+    docker_settings = DockerSettings(replicate_local_python_environment="poetry_export")
 
-4. **Specify ZenML Integrations**:
-   ```python
-   from zenml.integrations.constants import PYTORCH, EVIDENTLY
-   
-   docker_settings = DockerSettings(required_integrations=[PYTORCH, EVIDENTLY])
-   ```
+    # Use custom command
+    docker_settings = DockerSettings(replicate_local_python_environment=[
+        "poetry", "export", "--extras=train", "--format=requirements.txt"
+    ])
+    ```
+2.  **Specify Requirements Directly**:
 
-5. **Control Stack Requirements**:
-   By default, ZenML installs the requirements needed by your active stack. You can disable this behavior if needed:
-   ```python
-   docker_settings = DockerSettings(install_stack_requirements=False)
-   ```
+    ```python
+    docker_settings = DockerSettings(requirements=["torch==1.12.0", "torchvision"])
+    ```
+3.  **Use Requirements File**:
+
+    ```python
+    docker_settings = DockerSettings(requirements="/path/to/requirements.txt")
+    ```
+4.  **Specify ZenML Integrations**:
+
+    ```python
+    from zenml.integrations.constants import PYTORCH, EVIDENTLY
+
+    docker_settings = DockerSettings(required_integrations=[PYTORCH, EVIDENTLY])
+    ```
+5.  **Control Stack Requirements**:\
+    By default, ZenML installs the requirements needed by your active stack. You can disable this behavior if needed:
+
+    ```python
+    docker_settings = DockerSettings(install_stack_requirements=False)
+    ```
 
 {% hint style="info" %}
 You can combine these methods but do make sure that your list of requirements does not overlap with ones specified explicitly in the Docker settings to avoid version conflicts.
@@ -324,13 +331,14 @@ Setting all of the above attributes to `False` is not recommended and will most 
 
 ### Controlling Included Files
 
-- When downloading files from a code repository, use a `.gitignore` file to exclude files.
-- When including files in the image, use a `.dockerignore` file to exclude files and keep the image smaller:
-  ```python
-  # Have a file called .dockerignore in your source root directory
-  # Or explicitly specify a .dockerignore file to use:
-  docker_settings = DockerSettings(build_config={"dockerignore": "/path/to/.dockerignore"})
-  ```
+* When downloading files from a code repository, use a `.gitignore` file to exclude files.
+*   When including files in the image, use a `.dockerignore` file to exclude files and keep the image smaller:
+
+    ```python
+    # Have a file called .dockerignore in your source root directory
+    # Or explicitly specify a .dockerignore file to use:
+    docker_settings = DockerSettings(build_config={"dockerignore": "/path/to/.dockerignore"})
+    ```
 
 ## Environment Variables
 
@@ -409,7 +417,7 @@ Once you have registered one or more code repositories, ZenML will check whether
 
 #### Tracking code versions for pipeline runs
 
-If a local code repository checkout is detected when running a pipeline, ZenML will store a reference to the current commit for the pipeline run, so you'll be able to know exactly which code was used. 
+If a local code repository checkout is detected when running a pipeline, ZenML will store a reference to the current commit for the pipeline run, so you'll be able to know exactly which code was used.
 
 Note that this reference is only tracked if your local checkout is clean (i.e. it does not contain any untracked or uncommitted files). This is to ensure that your pipeline is actually running with the exact code stored at the specific code repository commit.
 
@@ -428,23 +436,14 @@ You don't need to directly interact with any image builder in your code. As long
 ## Best Practices
 
 1. **Use code repositories** to speed up builds and enable team collaboration. This approach is highly recommended for production environments.
-
 2. **Keep dependencies minimal** to reduce build times. Only include packages you actually need.
-
 3. **Use fine-grained Docker settings** at the step level for conflicting requirements. This prevents dependency conflicts and reduces image sizes.
-
 4. **Use pre-built images** for common environments. This can significantly speed up your workflow.
-
 5. **Configure dockerignore files** to reduce image size. Large Docker images take longer to build, push, and pull.
-
 6. **Leverage build caching** by structuring your Dockerfiles and build processes to maximize cache hits.
-
 7. **Use environment variables** for configuration instead of hardcoding values in your images.
-
 8. **Test your Docker builds locally** before using them in production pipelines.
-
 9. **Keep your repository clean** (no uncommitted changes) when running pipelines to ensure ZenML can correctly track code versions.
-
 10. **Use metadata and labels** to help identify and manage your Docker images.
 
-By following these practices, you can optimize your Docker builds in ZenML and create a more efficient workflow. 
+By following these practices, you can optimize your Docker builds in ZenML and create a more efficient workflow.

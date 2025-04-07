@@ -1,9 +1,11 @@
 ---
 description: >-
-  Learn how ZenML manages data artifacts, tracks versioning and lineage, and enables effective data flow between steps.
+  Learn how ZenML manages data artifacts, tracks versioning and lineage, and
+  enables effective data flow between steps.
+icon: binary
 ---
 
-# Artifacts in ZenML
+# Artifacts
 
 Artifacts are a cornerstone of ZenML's ML pipeline management system, enabling versioning, lineage tracking, and reproducibility. This guide explains how artifacts work in ZenML and how to use them effectively in your pipelines.
 
@@ -11,11 +13,11 @@ Artifacts are a cornerstone of ZenML's ML pipeline management system, enabling v
 
 In ZenML, artifacts are data objects that:
 
-- Are produced by steps (outputs)
-- Are consumed by steps (inputs)
-- Are automatically versioned and tracked
-- Have their lineage recorded
-- Can be stored, retrieved, and visualized
+* Are produced by steps (outputs)
+* Are consumed by steps (inputs)
+* Are automatically versioned and tracked
+* Have their lineage recorded
+* Can be stored, retrieved, and visualized
 
 Artifacts are the data that flows between steps in your pipelines, and they form the backbone of ZenML's data management capabilities.
 
@@ -55,6 +57,7 @@ simple_pipeline()
 ```
 
 When this pipeline runs:
+
 1. `create_data()` executes and returns a DataFrame
 2. ZenML saves this DataFrame as an artifact in the artifact store
 3. `process_data()` receives this artifact as an input
@@ -63,6 +66,7 @@ When this pipeline runs:
 ### How ZenML Stores Artifacts
 
 When a step produces an output, ZenML:
+
 1. Creates a unique directory in the artifact store
 2. Uses a materializer to serialize the data
 3. Stores the serialized data in that directory
@@ -86,18 +90,18 @@ artifacts/
 
 Materializers are a key concept in ZenML's artifact system. They handle:
 
-- **Serializing data** when saving artifacts to storage
-- **Deserializing data** when loading artifacts from storage
-- **Generating visualizations** for the dashboard
-- **Extracting metadata** for tracking and searching
+* **Serializing data** when saving artifacts to storage
+* **Deserializing data** when loading artifacts from storage
+* **Generating visualizations** for the dashboard
+* **Extracting metadata** for tracking and searching
 
 When a step produces an output, ZenML automatically selects the appropriate materializer based on the data type (using type annotations). ZenML includes built-in materializers for common data types like:
 
-- Primitive types (`int`, `float`, `str`, `bool`)
-- Container types (`dict`, `list`, `tuple`)
-- NumPy arrays
-- Pandas DataFrames
-- Many ML model formats (through integrations)
+* Primitive types (`int`, `float`, `str`, `bool`)
+* Container types (`dict`, `list`, `tuple`)
+* NumPy arrays
+* Pandas DataFrames
+* Many ML model formats (through integrations)
 
 Here's how materializers work in practice:
 
@@ -110,16 +114,16 @@ def train_model(X_train, y_train) -> sklearn.linear_model.LinearRegression:
     return model  # ZenML uses a specific materializer for scikit-learn models
 ```
 
-For custom data types, you can create your own materializers. See the [Materializers](./materializers.md) guide for details.
+For custom data types, you can create your own materializers. See the [Materializers](materializers.md) guide for details.
 
 ### Lineage and Caching
 
 ZenML automatically tracks the complete lineage of each artifact:
 
-- Which step produced it
-- Which pipeline run it belongs to
-- Which other artifacts it depends on
-- Which steps have consumed it
+* Which step produced it
+* Which pipeline run it belongs to
+* Which other artifacts it depends on
+* Which steps have consumed it
 
 This lineage tracking enables powerful caching capabilities. When you run a pipeline, ZenML checks if any steps have been run before with the same inputs, code, and configuration. If so, it reuses the cached outputs instead of rerunning the step:
 
@@ -166,8 +170,9 @@ When you specify a return type like `-> np.ndarray`, ZenML uses this information
 ### Naming Your Artifacts
 
 By default, artifacts are named based on their position or variable name:
-- Single outputs are named `output`
-- Multiple outputs are named `output_0`, `output_1`, etc.
+
+* Single outputs are named `output`
+* Multiple outputs are named `output_0`, `output_1`, etc.
 
 You can give your artifacts more meaningful names using the `Annotated` type:
 
@@ -210,9 +215,10 @@ def data_pipeline():
 ```
 
 ZenML supports these placeholders:
-- `{date}`: Current date (e.g., "2023_06_15")
-- `{time}`: Current time (e.g., "14_30_45_123456")
-- Custom placeholders can be defined using `substitutions`
+
+* `{date}`: Current date (e.g., "2023\_06\_15")
+* `{time}`: Current time (e.g., "14\_30\_45\_123456")
+* Custom placeholders can be defined using `substitutions`
 
 ### Returning Multiple Outputs
 
@@ -241,8 +247,9 @@ def split_data(
 ```
 
 ZenML differentiates between:
-- A step with multiple outputs: `return a, b` or `return (a, b)`
-- A step with a single tuple output: `return some_tuple`
+
+* A step with multiple outputs: `return a, b` or `return (a, b)`
+* A step with a single tuple output: `return some_tuple`
 
 ### Accessing Artifacts
 
@@ -302,8 +309,9 @@ def evaluate_against_previous(model, X_test, y_test) -> float:
 ### Artifact vs. Parameter Inputs
 
 When calling a step, inputs can be either:
-- **Artifacts**: Outputs from other steps, tracked and versioned by ZenML
-- **Parameters**: Literal values provided directly to the step
+
+* **Artifacts**: Outputs from other steps, tracked and versioned by ZenML
+* **Parameters**: Literal values provided directly to the step
 
 ```python
 @pipeline
@@ -331,7 +339,7 @@ artifact = Client().get_artifact_version("<ARTIFACT_NAME>")
 artifact.visualize()
 ```
 
-For detailed information on visualizations, see [Visualizations](./visualizations.md).
+For detailed information on visualizations, see [Visualizations](visualizations.md).
 
 ### Deleting Artifacts
 
@@ -342,9 +350,10 @@ zenml artifact prune
 ```
 
 This deletes artifacts that are no longer referenced by any pipeline run. You can control this behavior with flags:
-- `--only-artifact`: Only delete the physical files, keep database entries
-- `--only-metadata`: Only delete database entries, keep files
-- `--ignore-errors`: Continue pruning even if some artifacts can't be deleted
+
+* `--only-artifact`: Only delete the physical files, keep database entries
+* `--only-metadata`: Only delete database entries, keep files
+* `--ignore-errors`: Continue pruning even if some artifacts can't be deleted
 
 ### Exchanging Artifacts Between Pipelines
 
@@ -376,14 +385,16 @@ This allows you to build modular pipelines that can work together as part of a l
 ## Conclusion
 
 Artifacts are a central part of ZenML's approach to ML pipelines. They provide:
-- Automatic versioning and lineage tracking
-- Efficient storage and caching
-- Type-safe data handling
-- Visualization capabilities
-- Cross-pipeline data sharing
+
+* Automatic versioning and lineage tracking
+* Efficient storage and caching
+* Type-safe data handling
+* Visualization capabilities
+* Cross-pipeline data sharing
 
 By understanding how artifacts work, you can build more effective, maintainable, and reproducible ML pipelines.
 
 For more information on specific aspects of artifacts, see:
-- [Materializers](./materializers.md): Creating custom serializers for your data types
-- [Visualizations](./visualizations.md): Customizing artifact visualizations 
+
+* [Materializers](materializers.md): Creating custom serializers for your data types
+* [Visualizations](visualizations.md): Customizing artifact visualizations

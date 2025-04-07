@@ -1,9 +1,9 @@
 ---
-icon: user-secret
 description: Registering and using secrets.
+icon: user-secret
 ---
 
-# Interact with secrets
+# Secrets
 
 ## What is a ZenML secret?
 
@@ -47,7 +47,7 @@ The CLI also includes commands that can be used to list, update and delete secre
 
 **Interactively register missing secrets for your stack**
 
-If you're using components with [secret references](interact-with-secrets.md#reference-secrets-in-stack-component-attributes-and-settings) in your stack, you need to make sure that all the referenced secrets exist. To make this process easier, you can use the following CLI command to interactively register all secrets for a stack:
+If you're using components with [secret references](secrets.md#reference-secrets-in-stack-component-attributes-and-settings) in your stack, you need to make sure that all the referenced secrets exist. To make this process easier, you can use the following CLI command to interactively register all secrets for a stack:
 
 ```shell
 zenml stack register-secrets [<STACK_NAME>]
@@ -131,7 +131,7 @@ You can use the environment variable `ZENML_SECRET_VALIDATION_LEVEL` to disable 
 
 ### Fetch secret values in a step
 
-If you are using [centralized secrets management](interact-with-secrets.md), you can access secrets directly from within your steps through the ZenML `Client` API. This allows you to use your secrets for querying APIs from within your step without hard-coding your access keys:
+If you are using [centralized secrets management](secrets.md), you can access secrets directly from within your steps through the ZenML `Client` API. This allows you to use your secrets for querying APIs from within your step without hard-coding your access keys:
 
 ```python
 from zenml import step

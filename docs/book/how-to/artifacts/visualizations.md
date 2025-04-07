@@ -1,9 +1,8 @@
 ---
-description: >-
-  Learn how to visualize the data artifacts produced by your ZenML pipelines.
+description: Learn how to visualize the data artifacts produced by your ZenML pipelines.
 ---
 
-# Visualizing Artifacts
+# Visualizations
 
 Data visualization is a powerful tool for understanding your ML pipeline outputs. ZenML provides built-in capabilities to visualize artifacts, helping you gain insights into your data, model performance, and pipeline execution.
 
@@ -61,9 +60,10 @@ def create_dataframe() -> pd.DataFrame:
 ### NumPy Arrays
 
 NumPy arrays are visualized based on their dimensionality:
-- 1D arrays: Histograms or line plots
-- 2D arrays: Heatmaps or scatter plots
-- 3D arrays: Multiple 2D visualizations or interactive 3D plots
+
+* 1D arrays: Histograms or line plots
+* 2D arrays: Heatmaps or scatter plots
+* 3D arrays: Multiple 2D visualizations or interactive 3D plots
 
 ### Images
 
@@ -126,10 +126,10 @@ def create_drift_report(
 
 #### Other Integrations
 
-- [WhyLogs](https://docs.zenml.io/stacks/data-validators/whylogs) profiles
-- [Great Expectations](https://docs.zenml.io/stacks/data-validators/great-expectations) validation results
-- Confusion matrices and performance metrics
-- And many more!
+* [WhyLogs](https://docs.zenml.io/stacks/data-validators/whylogs) profiles
+* [Great Expectations](https://docs.zenml.io/stacks/data-validators/great-expectations) validation results
+* Confusion matrices and performance metrics
+* And many more!
 
 ## Creating Custom Visualizations
 
@@ -181,11 +181,11 @@ def register_my_visualizers():
 
 ZenML supports several visualization formats:
 
-- **Image**: PNG, JPEG, or other image formats
-- **HTML**: Interactive HTML elements
-- **Markdown**: Formatted text with markup
-- **JSON**: Structured data for custom rendering
-- **Text**: Plain text outputs
+* **Image**: PNG, JPEG, or other image formats
+* **HTML**: Interactive HTML elements
+* **Markdown**: Formatted text with markup
+* **JSON**: Structured data for custom rendering
+* **Text**: Plain text outputs
 
 ## Controlling Visualizations
 
@@ -244,4 +244,4 @@ Visualizing artifacts is a powerful way to gain insights from your ML pipelines.
 
 By leveraging these visualization tools, you can better understand your ML workflows, debug problems more effectively, and make more informed decisions about your models.
 
-For more advanced artifact management patterns, see [Complex Use Cases](./complex_use_cases.md). 
+For more advanced artifact management patterns, see [Complex Use Cases](broken-reference).

@@ -22,8 +22,8 @@
   * [Configuration with YAML](how-to/steps-pipelines/configuration_with_yaml.md)
   * [Logging](how-to/steps-pipelines/logging.md)
 * [Artifacts](how-to/artifacts/artifacts.md)
-    * [Materializers](how-to/artifacts/materializers.md)
-    * [Visualizations](how-to/artifacts/visualizations.md)
+  * [Materializers](how-to/artifacts/materializers.md)
+  * [Visualizations](how-to/artifacts/visualizations.md)
 * [Tags](how-to/tags/tags.md)
 * [Metadata](how-to/metadata/metadata.md)
 * [Code Repositories](how-to/code-repositories/code-repositories.md)
@@ -33,13 +33,14 @@
   * [AWS](how-to/stack-components/aws.md)
   * [Azure](how-to/stack-components/azure.md)
   * [GCP](how-to/stack-components/gcp.md)
-* [Builds](how-to/containerization/containerization.md)
+* [Containerization](how-to/containerization/containerization.md)
 * [Secrets](how-to/secrets/secrets.md)
 * [Models](how-to/models/models.md)
 * [Templates](how-to/templates/templates.md)
+
 ## Reference
 
 * [Community & content](reference/community-and-content.md)
 * [FAQ](reference/faq.md)
 * [Global settings](reference/global-settings.md)
-* [Legacy docs](reference/legacy-docs.md) 
+* [Legacy docs](reference/legacy-docs.md)

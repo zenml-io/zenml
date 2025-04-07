@@ -1,8 +1,9 @@
 ---
 description: Create and run pipeline templates in ZenML to standardize execution.
+icon: print
 ---
 
-# Pipeline Templates
+# Templates
 
 In ZenML, pipeline templates (also known as "Run Templates") are pre-defined, parameterized configurations for your pipelines that can be easily executed from various interfaces - including the Python SDK, CLI, ZenML dashboard, or REST API. Think of them as blueprints for your pipeline runs, ready to be customized on the fly.
 
@@ -16,11 +17,11 @@ Pipeline Templates are a [ZenML Pro](https://zenml.io/pro)-only feature. Please 
 
 While the simplest way to execute a ZenML pipeline is to directly call your pipeline function, pipeline templates offer several advantages for more complex workflows:
 
-- **Standardization**: Ensure all pipeline runs follow a consistent configuration pattern
-- **Parameterization**: Easily modify inputs and settings without changing code
-- **Remote Execution**: Trigger pipelines through the dashboard or API without code access
-- **Team Collaboration**: Share ready-to-use pipeline configurations with team members
-- **Automation**: Integrate with CI/CD systems or other automated processes
+* **Standardization**: Ensure all pipeline runs follow a consistent configuration pattern
+* **Parameterization**: Easily modify inputs and settings without changing code
+* **Remote Execution**: Trigger pipelines through the dashboard or API without code access
+* **Team Collaboration**: Share ready-to-use pipeline configurations with team members
+* **Automation**: Integrate with CI/CD systems or other automated processes
 
 Pipeline templates are particularly useful when working with remote stacks (having at least a remote orchestrator, artifact store, and container registry).
 
@@ -113,8 +114,8 @@ To run a template from the dashboard:
 
 1. Either click `Run a Pipeline` on the main `Pipelines` page, or navigate to a specific template and click `Run Template`
 2. On the `Run Details` page, you can:
-   - Upload a `.yaml` configuration file
-   - Modify the configuration using the built-in editor
+   * Upload a `.yaml` configuration file
+   * Modify the configuration using the built-in editor
 3. Click `Run` to execute the template
 
 ![Run Details](../../../.gitbook/assets/run-templates-run-1.png)
@@ -126,6 +127,7 @@ Once you run the template, a new run will be executed on the same stack as the o
 To run a template through the REST API, you need to make a series of calls:
 
 1. First, get the pipeline ID:
+
 ```bash
 curl -X 'GET' \
   '<YOUR_ZENML_SERVER_URL>/api/v1/pipelines?hydrate=false&name=<PIPELINE_NAME>' \
@@ -134,6 +136,7 @@ curl -X 'GET' \
 ```
 
 2. Using the pipeline ID, get the template ID:
+
 ```bash
 curl -X 'GET' \
   '<YOUR_ZENML_SERVER_URL>/api/v1/run_templates?hydrate=false&logical_operator=and&page=1&size=20&pipeline_id=<PIPELINE_ID>' \
@@ -142,6 +145,7 @@ curl -X 'GET' \
 ```
 
 3. Finally, trigger the pipeline with the template ID:
+
 ```bash
 curl -X 'POST' \
   '<YOUR_ZENML_SERVER_URL>/api/v1/run_templates/<TEMPLATE_ID>/runs' \
@@ -204,15 +208,17 @@ def loads_data_and_triggers_training():
 ```
 
 This pattern is useful for:
-- Creating pipeline dependencies
-- Implementing dynamic workflow orchestration
-- Building multi-stage ML pipelines where different steps require different resources
-- Separating data preparation from model training
+
+* Creating pipeline dependencies
+* Implementing dynamic workflow orchestration
+* Building multi-stage ML pipelines where different steps require different resources
+* Separating data preparation from model training
 
 Read more about:
-- [PipelineRunConfiguration](https://sdkdocs.zenml.io/latest/core_code_docs/core-config.html#zenml.config.pipeline_run_configuration)
-- [trigger_pipeline API](https://sdkdocs.zenml.io/latest/core_code_docs/core-client.html#zenml.client.Client)
-- [Unmaterialized Artifacts](https://docs.zenml.io/how-to/artifacts/complex_use_cases#unmaterialized-artifacts)
+
+* [PipelineRunConfiguration](https://sdkdocs.zenml.io/latest/core_code_docs/core-config.html#zenml.config.pipeline_run_configuration)
+* [trigger\_pipeline API](https://sdkdocs.zenml.io/latest/core_code_docs/core-client.html#zenml.client.Client)
+* [Unmaterialized Artifacts](https://docs.zenml.io/how-to/artifacts/complex_use_cases#unmaterialized-artifacts)
 
 ## Best Practices
 
@@ -224,4 +230,4 @@ Read more about:
 6. **Implement access controls** to manage who can run specific templates
 7. **Monitor template usage** to understand how your team is using them
 
-By using pipeline templates effectively, you can standardize ML workflows, improve team collaboration, and simplify the process of running pipelines in production environments. 
+By using pipeline templates effectively, you can standardize ML workflows, improve team collaboration, and simplify the process of running pipelines in production environments.

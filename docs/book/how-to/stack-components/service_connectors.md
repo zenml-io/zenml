@@ -1,5 +1,8 @@
 ---
-description: Managing authentication to cloud services and resources with Service Connectors
+description: >-
+  Managing authentication to cloud services and resources with Service
+  Connectors
+icon: link
 ---
 
 # Service Connectors
@@ -11,7 +14,7 @@ Service Connectors in ZenML provide a unified way to authenticate and connect to
 A service connector is an entity that:
 
 1. Stores credentials and authentication configuration
-2. Provides access to specific resources through those credentials 
+2. Provides access to specific resources through those credentials
 3. Can be shared across multiple stack components
 4. Manages permissions and access scopes
 
@@ -53,12 +56,12 @@ zenml service-connector list-resources my-aws-connector --resource-type s3-bucke
 
 Service connectors support multiple authentication methods for each service type. Common authentication methods include:
 
-- **API keys and secrets**
-- **OAuth tokens**
-- **Client credentials (ID/secret pairs)**
-- **Service accounts**
-- **Managed identities (on cloud platforms)**
-- **Temporary credentials and tokens**
+* **API keys and secrets**
+* **OAuth tokens**
+* **Client credentials (ID/secret pairs)**
+* **Service accounts**
+* **Managed identities (on cloud platforms)**
+* **Temporary credentials and tokens**
 
 ## Working with Service Connectors
 
@@ -115,32 +118,32 @@ zenml artifact-store update s3-store --connector aws-dev
 
 ZenML supports service connectors for various cloud providers and services, including:
 
-- **AWS**: For Amazon Web Services (S3, ECR, etc.)
-- **GCP**: For Google Cloud Platform (GCS, GCR, etc.)
-- **Azure**: For Microsoft Azure (Blob Storage, ACR, etc.)
-- **Kubernetes**: For Kubernetes clusters
-- **Docker**: For Docker registries
-- **GitHub**: For GitHub repositories
-- **Generic** and **HTTP** for other services
+* **AWS**: For Amazon Web Services (S3, ECR, etc.)
+* **GCP**: For Google Cloud Platform (GCS, GCR, etc.)
+* **Azure**: For Microsoft Azure (Blob Storage, ACR, etc.)
+* **Kubernetes**: For Kubernetes clusters
+* **Docker**: For Docker registries
+* **GitHub**: For GitHub repositories
+* **Generic** and **HTTP** for other services
 
 Each connector type has specific resource types it can access and authentication methods it supports.
 
 ## Best Practices
 
-- **Use descriptive names** for connectors that indicate their purpose or environment
-- **Limit permissions** to only what's necessary for each connector
-- **Rotate credentials** regularly for improved security
-- **Use environment-specific connectors** for isolation between development and production
-- **Document your connectors** for team collaboration
+* **Use descriptive names** for connectors that indicate their purpose or environment
+* **Limit permissions** to only what's necessary for each connector
+* **Rotate credentials** regularly for improved security
+* **Use environment-specific connectors** for isolation between development and production
+* **Document your connectors** for team collaboration
 
 ## Troubleshooting
 
 Common issues with service connectors include:
 
-- **Authentication failures**: Check that credentials are valid and have not expired
-- **Permission errors**: Ensure the connector has the necessary permissions for the resources
-- **Resource not found**: Verify that resource names/paths are correct and accessible
-- **Connector type mismatch**: Confirm the connector type matches the resource type you're trying to access
+* **Authentication failures**: Check that credentials are valid and have not expired
+* **Permission errors**: Ensure the connector has the necessary permissions for the resources
+* **Resource not found**: Verify that resource names/paths are correct and accessible
+* **Connector type mismatch**: Confirm the connector type matches the resource type you're trying to access
 
 Use the `verify` command to check if a connector is working correctly:
 
@@ -150,7 +153,7 @@ zenml service-connector verify CONNECTOR_NAME
 
 ## Next Steps
 
-- Learn about [AWS integrations](aws.md)
-- Explore [Azure integrations](azure.md) 
-- Discover [GCP integrations](gcp.md)
-- Understand how to [deploy your stack](deployment.md) across different environments 
+* Learn about [AWS integrations](aws.md)
+* Explore [Azure integrations](azure.md)
+* Discover [GCP integrations](gcp.md)
+* Understand how to [deploy your stack](deployment.md) across different environments

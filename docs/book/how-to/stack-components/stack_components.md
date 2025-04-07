@@ -1,5 +1,6 @@
 ---
 description: Understanding and working with ZenML Stacks and Stack Components
+icon: cubes
 ---
 
 # Stack & Components
@@ -9,17 +10,19 @@ description: Understanding and working with ZenML Stacks and Stack Components
 A ZenML stack is a collection of components that together form an MLOps infrastructure to run your ML pipelines. Stacks allow you to seamlessly transition from local development to production environments without changing your pipeline code.
 
 Each stack must include at least one:
-- **Orchestrator**: The component that executes your pipeline steps
-- **Artifact Store**: The component that stores and versions your pipeline artifacts
+
+* **Orchestrator**: The component that executes your pipeline steps
+* **Artifact Store**: The component that stores and versions your pipeline artifacts
 
 Additionally, stacks may include optional components such as:
-- **Container Registry**: To store Docker images for your pipeline steps
-- **Step Operator**: To run specific steps on specialized infrastructure
-- **Model Deployer**: To deploy models as prediction services
-- **Experiment Tracker**: To track metrics and parameters
-- **Feature Store**: To manage and serve ML features
-- **Alerter**: To notify you about pipeline events
-- **Annotator**: To manage data labeling workflows
+
+* **Container Registry**: To store Docker images for your pipeline steps
+* **Step Operator**: To run specific steps on specialized infrastructure
+* **Model Deployer**: To deploy models as prediction services
+* **Experiment Tracker**: To track metrics and parameters
+* **Feature Store**: To manage and serve ML features
+* **Alerter**: To notify you about pipeline events
+* **Annotator**: To manage data labeling workflows
 
 ## Stack Components
 
@@ -31,29 +34,29 @@ Stack components are modular building blocks that provide specific functionality
 
 Orchestrators are responsible for executing pipeline steps according to their dependencies. They determine where and how your code runs. Examples include:
 
-- **Local**: Runs steps sequentially on your local machine
-- **Kubernetes**: Orchestrates steps as Kubernetes jobs
-- **Kubeflow**: Uses Kubeflow Pipelines to run steps
-- **Vertex**: Runs pipelines on Google Cloud Vertex AI
-- **AzureML**: Executes pipelines on Azure Machine Learning
+* **Local**: Runs steps sequentially on your local machine
+* **Kubernetes**: Orchestrates steps as Kubernetes jobs
+* **Kubeflow**: Uses Kubeflow Pipelines to run steps
+* **Vertex**: Runs pipelines on Google Cloud Vertex AI
+* **AzureML**: Executes pipelines on Azure Machine Learning
 
 #### Artifact Stores
 
 Artifact stores manage the data produced and consumed by pipeline steps. They handle storage, versioning, and retrieval of artifacts. Examples include:
 
-- **Local**: Stores artifacts on your local filesystem
-- **S3**: Uses Amazon S3 buckets for artifacts
-- **GCS**: Stores artifacts in Google Cloud Storage
-- **Azure Blob**: Uses Azure Blob Storage for artifacts
+* **Local**: Stores artifacts on your local filesystem
+* **S3**: Uses Amazon S3 buckets for artifacts
+* **GCS**: Stores artifacts in Google Cloud Storage
+* **Azure Blob**: Uses Azure Blob Storage for artifacts
 
 #### Container Registries
 
 Container registries store Docker images that encapsulate the environment for your pipeline steps. They ensure reproducibility and portability. Examples include:
 
-- **Docker Hub**: The public Docker registry
-- **ECR**: Amazon Elastic Container Registry
-- **GCR**: Google Container Registry
-- **ACR**: Azure Container Registry
+* **Docker Hub**: The public Docker registry
+* **ECR**: Amazon Elastic Container Registry
+* **GCR**: Google Container Registry
+* **ACR**: Azure Container Registry
 
 ## Working with Stacks
 
@@ -114,6 +117,6 @@ Service connectors can be attached to stack components to authenticate with the 
 
 ## Next Steps
 
-- Learn about [Service Connectors](service_connectors.md) for authenticating with cloud providers
-- Understand how to [deploy stacks](deployment.md) on cloud platforms
-- Explore specific cloud providers: [AWS](aws.md), [Azure](azure.md), [GCP](gcp.md) 
+* Learn about [Service Connectors](service_connectors.md) for authenticating with cloud providers
+* Understand how to [deploy stacks](deployment.md) on cloud platforms
+* Explore specific cloud providers: [AWS](aws.md), [Azure](azure.md), [GCP](gcp.md)

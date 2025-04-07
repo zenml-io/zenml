@@ -7,11 +7,9 @@ icon: cauldron
 
 ## Install ZenML
 
-
-
 {% stepper %}
 {% step %}
-### Install ZenML
+#### Install ZenML
 
 {% tabs %}
 {% tab title="Direct (pip)" %}
@@ -61,7 +59,7 @@ pip install zenml-nightly
 {% endstep %}
 
 {% step %}
-### Verifying Installations
+#### Verifying Installations
 
 Once the installation is completed, you can check whether the installation was successful either through Bash or Python:
 
@@ -82,8 +80,6 @@ print(zenml.__version__)
 {% endtabs %}
 
 If you would like to learn more about the current release, please visit our [PyPi package page.](https://pypi.org/project/zenml)
-
-
 {% endstep %}
 {% endstepper %}
 

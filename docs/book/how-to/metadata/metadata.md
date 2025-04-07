@@ -1,8 +1,9 @@
 ---
 description: Enrich your ML workflow with contextual information using ZenML metadata.
+icon: square-info
 ---
 
-# Metadata in ZenML
+# Metadata
 
 ![Metadata in the dashboard](../../.gitbook/assets/metadata-in-dashboard.png)
 
@@ -12,10 +13,10 @@ Metadata in ZenML provides critical context to your ML workflows, allowing you t
 
 Metadata is any additional contextual information you want to associate with your ML workflow components. In ZenML, you can attach metadata to:
 
-- **Steps**: Log evaluation metrics, execution details, or configuration information
-- **Pipeline Runs**: Track overall run characteristics like environment variables or git information
-- **Artifacts**: Document data characteristics, source information, or processing details
-- **Models**: Capture evaluation results, hyperparameters, or deployment information
+* **Steps**: Log evaluation metrics, execution details, or configuration information
+* **Pipeline Runs**: Track overall run characteristics like environment variables or git information
+* **Artifacts**: Document data characteristics, source information, or processing details
+* **Models**: Capture evaluation results, hyperparameters, or deployment information
 
 ZenML makes it easy to log and retrieve this information through a simple interface, and visualizes it in the dashboard for quick analysis.
 
@@ -242,7 +243,7 @@ log_metadata(
 )
 ```
 
-In the ZenML dashboard, "model_metrics" and "data_details" will appear as separate cards, each containing their respective key-value pairs, making it easier to navigate and interpret the metadata.
+In the ZenML dashboard, "model\_metrics" and "data\_details" will appear as separate cards, each containing their respective key-value pairs, making it easier to navigate and interpret the metadata.
 
 ## Fetching Metadata
 
@@ -345,4 +346,4 @@ To make the most of ZenML's metadata capabilities:
 
 ## Conclusion
 
-Metadata in ZenML provides a powerful way to enhance your ML workflows with contextual information. By tracking additional details about your steps, runs, artifacts, and models, you can gain deeper insights into your experiments, make more informed decisions, and ensure reproducibility of your ML pipelines. 
+Metadata in ZenML provides a powerful way to enhance your ML workflows with contextual information. By tracking additional details about your steps, runs, artifacts, and models, you can gain deeper insights into your experiments, make more informed decisions, and ensure reproducibility of your ML pipelines.

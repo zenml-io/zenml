@@ -1,12 +1,13 @@
 ---
 description: Use tags to organize tags in ZenML.
+icon: tag
 ---
 
-# Organizing data with tags
+# Tags
 
-Organizing and categorizing your machine learning artifacts and models can
-streamline your workflow and enhance discoverability. ZenML enables the use of
-tags as a flexible tool to classify and filter your ML assets. 
+Organizing and categorizing your machine learning artifacts and models can\
+streamline your workflow and enhance discoverability. ZenML enables the use of\
+tags as a flexible tool to classify and filter your ML assets.
 
 ![Tags are visible in the ZenML Dashboard](../../../.gitbook/assets/tags-in-dashboard.png)
 
@@ -30,7 +31,7 @@ zenml artifacts update my_artifact -t my_tag
 
 ### Assigning tags to artifact versions
 
-In order to tag an artifact through the Python SDK, you can use either use
+In order to tag an artifact through the Python SDK, you can use either use\
 the `ArtifactConfig` object:
 
 ```python
@@ -69,7 +70,7 @@ zenml artifacts versions update iris_dataset raw_2023 -t sklearn
 ```
 
 {% hint style="info" %}
-In the upcoming chapters, you will also learn how to use [an cascade tag](#cascade-tags) to tag an artifact version as well.
+In the upcoming chapters, you will also learn how to use [an cascade tag](tags.md#cascade-tags) to tag an artifact version as well.
 {% endhint %}
 
 ### Assigning tags to pipelines
@@ -93,7 +94,7 @@ from zenml import add_tags
 add_tags(tags=["my_tag"], run="run_name_or_id")
 ```
 
-Alternatively, you can use the same function within a step without 
+Alternatively, you can use the same function within a step without\
 specifying any arguments, which will automatically tag the run:
 
 ```python
@@ -186,9 +187,9 @@ ZenML provides several advanced tagging features to help you better organize and
 
 Exclusive tags are special tags that can be associated with only one instance of a specific entity type within a certain scope at a time. When you apply an exclusive tag to a new entity, it's automatically removed from any previous entity of the same type that had this tag. Exclusive tags can be used with:
 
-- One pipeline run per pipeline
-- One run template per pipeline
-- One artifact version per artifact
+* One pipeline run per pipeline
+* One run template per pipeline
+* One artifact version per artifact
 
 The recommended way to create exclusive tags is using the `Tag` object:
 
@@ -218,7 +219,7 @@ The `exclusive` parameter belongs to the configuration of the tag and this infor
 
 ### Cascade Tags
 
-Cascade tags allow you to associate a tag from a pipeline with all artifact versions created during its execution. 
+Cascade tags allow you to associate a tag from a pipeline with all artifact versions created during its execution.
 
 ```python
 from zenml import pipeline, Tag

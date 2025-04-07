@@ -1,5 +1,6 @@
 ---
 description: Steps and Pipelines are the core building blocks of ZenML
+icon: arrow-progress
 ---
 
 # Steps & Pipelines
@@ -36,9 +37,10 @@ def train_model(data: dict) -> None:
 ### Type Annotations
 
 While optional, type annotations are highly recommended and provide several benefits:
-- **Artifact handling**: ZenML uses type annotations to determine how to serialize, store, and load artifacts. The type information guides ZenML to select the appropriate materializer for saving and loading step outputs.
-- **Type validation**: ZenML validates inputs against type annotations at runtime to catch errors early.
-- **Code documentation**: Types make your code more self-documenting and easier to understand.
+
+* **Artifact handling**: ZenML uses type annotations to determine how to serialize, store, and load artifacts. The type information guides ZenML to select the appropriate materializer for saving and loading step outputs.
+* **Type validation**: ZenML validates inputs against type annotations at runtime to catch errors early.
+* **Code documentation**: Types make your code more self-documenting and easier to understand.
 
 ```python
 from typing import Tuple
@@ -95,8 +97,9 @@ def train_classifier(X_train, y_train) -> Tuple[
 ```
 
 ZenML uses the following convention to differentiate between a single output of type `Tuple` and multiple outputs:
-- When the `return` statement is followed by a tuple literal (e.g., `return 1, 2` or `return (value_1, value_2)`), it's treated as a step with multiple outputs
-- All other cases are treated as a step with a single output of type `Tuple`
+
+* When the `return` statement is followed by a tuple literal (e.g., `return 1, 2` or `return (value_1, value_2)`), it's treated as a step with multiple outputs
+* All other cases are treated as a step with a single output of type `Tuple`
 
 ## Creating Pipelines
 
@@ -124,8 +127,9 @@ The run is automatically logged to the ZenML dashboard where you can view the DA
 ## Pipeline and Step Parameters
 
 When calling a step in a pipeline, inputs can be either:
-- **Artifacts**: Outputs from other steps in the same pipeline. These are tracked, versioned, and stored in the artifact store.
-- **Parameters**: Values provided explicitly when invoking a step. These are typically simple values that are directly passed to the step function.
+
+* **Artifacts**: Outputs from other steps in the same pipeline. These are tracked, versioned, and stored in the artifact store.
+* **Parameters**: Values provided explicitly when invoking a step. These are typically simple values that are directly passed to the step function.
 
 ```python
 @pipeline
@@ -136,8 +140,9 @@ def my_pipeline():
 ```
 
 In this example:
-- `input_1` is an artifact because it comes from another step
-- `input_2` is a parameter because it's a literal value (42) provided directly
+
+* `input_1` is an artifact because it comes from another step
+* `input_2` is a parameter because it's a literal value (42) provided directly
 
 Artifacts are automatically tracked and versioned by ZenML, while parameters are simply passed through to the step function. This distinction affects how you should design your steps and what types of values you can use.
 
@@ -204,4 +209,4 @@ def training_pipeline(learning_rate: float):
 
 Steps and Pipelines provide a flexible, powerful way to build machine learning workflows in ZenML. This guide covered the basic concepts of creating steps and pipelines, managing inputs and outputs, and working with parameters.
 
-For more advanced features, check out the [Advanced Features](./advanced_features.md) guide. For configuration using YAML files, see [Configuration with YAML](./configuration_with_yaml.md). 
+For more advanced features, check out the [Advanced Features](advanced_features.md) guide. For configuration using YAML files, see [Configuration with YAML](configuration_with_yaml.md).

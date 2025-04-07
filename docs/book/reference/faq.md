@@ -3,7 +3,7 @@ description: Find answers to the most frequently asked questions about ZenML.
 icon: circle-question
 ---
 
-# Frequently Asked Questions
+# FAQ
 
 This page addresses common questions about ZenML, including general information about the project and how to accomplish specific tasks.
 
@@ -33,9 +33,9 @@ ZenML is distributed under the terms of the Apache License Version 2.0. A comple
 
 #### Do you support Windows?
 
-ZenML officially supports Windows if you're using WSL. Much of ZenML will also
-work on Windows outside a WSL environment, but we don't officially support it
-and some features don't work (notably anything that requires spinning up a
+ZenML officially supports Windows if you're using WSL. Much of ZenML will also\
+work on Windows outside a WSL environment, but we don't officially support it\
+and some features don't work (notably anything that requires spinning up a\
 server process).
 
 #### Do you support Macs running on Apple Silicon?
@@ -46,14 +46,14 @@ Yes, ZenML does support Macs running on Apple Silicon. You just need to make sur
 export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
 ```
 
-This is a known issue with how forking works on Macs running on Apple Silicon
+This is a known issue with how forking works on Macs running on Apple Silicon\
 and it will enable you to use ZenML and the server. This environment variable is needed if you are working with a local server on your Mac, but if you're just using ZenML as a client / CLI and connecting to a deployed server then you don't need to set it.
 
 ## Common Use Cases and How-To's
 
 #### How do I contribute to ZenML's open-source codebase?
 
-We develop ZenML together with our community! To get involved, the best way to get started is to select any issue from the [`good-first-issue` label](https://github.com/zenml-io/zenml/labels/good%20first%20issue). 
+We develop ZenML together with our community! To get involved, the best way to get started is to select any issue from the [`good-first-issue` label](https://github.com/zenml-io/zenml/labels/good%20first%20issue).
 
 Please read [our Contribution guide](https://github.com/zenml-io/zenml/blob/main/CONTRIBUTING.md) for more information. For small features and bug fixes, please open a pull request as described in the guide. For anything bigger, it is worth [posting a message in Slack](https://zenml.io/slack/) or [creating an issue](https://github.com/zenml-io/zenml/issues/new/choose) so we can best discuss and support your plans.
 
@@ -73,7 +73,7 @@ ZenML is designed to be stack-agnostic, so you can use it with any cloud infrast
 
 #### How do I deploy ZenML on my internal company cluster?
 
-Read [the documentation on self-hosted ZenML deployments](../getting-started/deploying-zenml/README.md) in which several options are presented.
+Read [the documentation on self-hosted ZenML deployments](../getting-started/deploying-zenml/) in which several options are presented.
 
 #### How do I implement hyperparameter tuning?
 
@@ -89,7 +89,7 @@ Please read our [general information on how to compose steps + pipelines togethe
 
 #### How do I use templates and starter code with ZenML?
 
-[Project templates](../how-to/project-setup-and-management/collaborate-with-team/project-templates/README.md) allow you to get going quickly with ZenML. We recommend the Starter template (`starter`) for most use cases which gives you a basic scaffold and structure around which you can write your own code. You can also build templates for others inside a Git repository and use them with ZenML's templates functionality.
+[Project templates](broken-reference) allow you to get going quickly with ZenML. We recommend the Starter template (`starter`) for most use cases which gives you a basic scaffold and structure around which you can write your own code. You can also build templates for others inside a Git repository and use them with ZenML's templates functionality.
 
 #### How do I upgrade my ZenML client and/or server?
 
