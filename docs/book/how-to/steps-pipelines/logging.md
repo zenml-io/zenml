@@ -127,6 +127,45 @@ To disable colorful logging output:
 export ZENML_DISABLE_COLOR=True
 ```
 
+### Disabling Step Names in Logs
+
+By default, ZenML displays the current step name as a prefix in logs during pipeline execution to help you identify which step is currently running. For example:
+
+```
+[data_loader] Loading data from source...
+[data_loader] Data loaded successfully.
+[model_trainer] Training model with parameters...
+```
+
+These step name prefixes are only added to the console output and are not stored in the actual log files that ZenML saves. The stored logs will always be clean without the step name prefixes.
+
+If you wish to disable this feature and have logs without step name prefixes, you can do so by setting the following environment variable:
+
+```bash
+export ZENML_DISABLE_STEP_NAMES_IN_LOGS=true
+```
+
+This is particularly useful when you have multiple pipeline steps running simultaneously, as the step prefixes can sometimes make the logs harder to read when steps are interleaved.
+
+To disable step names in logs for remote pipeline runs, you can set the environment variable in your pipeline's Docker container:
+
+```python
+from zenml import pipeline
+from zenml.config import DockerSettings
+
+docker_settings = DockerSettings(environment={"ZENML_DISABLE_STEP_NAMES_IN_LOGS": "true"})
+
+# Either add it to the decorator
+@pipeline(settings={"docker": docker_settings})
+def my_pipeline() -> None:
+    my_step()
+
+# Or configure the pipeline's options
+my_pipeline = my_pipeline.with_options(
+    settings={"docker": docker_settings}
+)
+```
+
 ## Logging in Steps
 
 ### Basic Logging
@@ -240,5 +279,5 @@ By configuring logging appropriately and following best practices, you can gain 
 
 See also:
 - [Steps & Pipelines](./steps_and_pipelines.md) - Core building blocks
-- [Configuration & Settings](./configuration_settings.md) - YAML configuration
-- [Execution Parameters](./execution_parameters.md) - Runtime parameters 
+- [Configuration with YAML](./configuration_with_yaml.md) - YAML configuration
+- [Advanced Features](./advanced_features.md) - Advanced pipeline features 
