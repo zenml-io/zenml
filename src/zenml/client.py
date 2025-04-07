@@ -3574,6 +3574,7 @@ class Client(metaclass=ClientMetaClass):
         updated: Optional[Union[datetime, str]] = None,
         id: Optional[Union[UUID, str]] = None,
         name: Optional[str] = None,
+        hidden: Optional[bool] = False,
         tag: Optional[str] = None,
         project: Optional[Union[str, UUID]] = None,
         pipeline_id: Optional[Union[str, UUID]] = None,
@@ -3596,6 +3597,7 @@ class Client(metaclass=ClientMetaClass):
             updated: Filter by the last updated date.
             id: Filter by run template ID.
             name: Filter by run template name.
+            hidden: Filter by run template hidden status.
             tag: Filter by run template tags.
             project: Filter by project name/ID.
             pipeline_id: Filter by pipeline ID.
@@ -3620,6 +3622,7 @@ class Client(metaclass=ClientMetaClass):
             updated=updated,
             id=id,
             name=name,
+            hidden=hidden,
             tag=tag,
             project=project,
             pipeline_id=pipeline_id,

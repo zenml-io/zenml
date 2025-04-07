@@ -79,6 +79,10 @@ class RunTemplateRequest(ProjectScopedRequest):
     source_deployment_id: UUID = Field(
         title="The deployment that should be the base of the created template."
     )
+    hidden: bool = Field(
+        default=False,
+        title="Whether the run template is hidden.",
+    )
     tags: Optional[List[str]] = Field(
         default=None,
         title="Tags of the run template.",
@@ -101,6 +105,10 @@ class RunTemplateUpdate(BaseUpdate):
         title="The description of the run template.",
         max_length=TEXT_FIELD_MAX_LENGTH,
     )
+    hidden: Optional[bool] = Field(
+        default=None,
+        title="Whether the run template is hidden.",
+    )
     add_tags: Optional[List[str]] = Field(
         default=None, title="New tags to add to the run template."
     )
@@ -117,6 +125,10 @@ class RunTemplateResponseBody(ProjectScopedResponseBody):
 
     runnable: bool = Field(
         title="If a run can be started from the template.",
+    )
+    hidden: bool = Field(
+        default=False,
+        title="Whether the run template is hidden.",
     )
     latest_run_id: Optional[UUID] = Field(
         default=None,
@@ -204,6 +216,15 @@ class RunTemplateResponse(
             the value of the property.
         """
         return self.get_body().runnable
+
+    @property
+    def hidden(self) -> bool:
+        """The `hidden` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_body().hidden
 
     @property
     def latest_run_id(self) -> Optional[UUID]:
@@ -333,6 +354,10 @@ class RunTemplateFilter(ProjectScopedFilter, TaggableFilter):
     name: Optional[str] = Field(
         default=None,
         description="Name of the run template.",
+    )
+    hidden: Optional[bool] = Field(
+        default=False,
+        description="Whether the run template is hidden.",
     )
     pipeline_id: Optional[Union[UUID, str]] = Field(
         default=None,
