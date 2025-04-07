@@ -15,6 +15,7 @@
 
 import argparse
 import socket
+import time
 from typing import Any, Dict
 from uuid import UUID
 
@@ -172,18 +173,34 @@ def main() -> None:
             mount_local_stores=mount_local_stores,
         )
 
-        try:
-            # Create and run pod.
-            core_api.create_namespaced_pod(
-                namespace=args.kubernetes_namespace,
-                body=pod_manifest,
-            )
-        except Exception:
-            logger.error(
-                f"Failed to create pod for step `{step_name}`. Exiting."
-            )
+        retries = 0
+        max_retries = settings.pod_failure_max_retries
+        delay = settings.pod_failure_retry_delay
+        backoff = settings.pod_failure_backoff
 
-            raise
+        while retries < max_retries:
+            try:
+                # Create and run pod.
+                core_api.create_namespaced_pod(
+                    namespace=args.kubernetes_namespace,
+                    body=pod_manifest,
+                )
+                break
+            except Exception:
+                retries += 1
+                if retries < max_retries:
+                    logger.error(
+                        f"Failed to run step `{step_name}`. Retrying in "
+                        f"{delay} seconds..."
+                    )
+                    time.sleep(delay)
+                    delay *= backoff
+                else:
+                    logger.error(
+                        f"Failed to run step `{step_name}` after {max_retries} "
+                        "retries. Exiting."
+                    )
+                    raise
 
         # Wait for pod to finish.
         logger.info(f"Waiting for pod of step `{step_name}` to start...")

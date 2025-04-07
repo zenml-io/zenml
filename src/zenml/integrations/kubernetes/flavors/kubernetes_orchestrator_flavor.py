@@ -47,6 +47,11 @@ class KubernetesOrchestratorSettings(BaseSettings):
         pod_settings: Pod settings to apply to pods executing the steps.
         orchestrator_pod_settings: Pod settings to apply to the pod which is
             launching the actual steps.
+        pod_failure_max_retries: The maximum number of times to retry a step
+            pod if the step Kubernetes pod fails to start
+        pod_failure_retry_delay: The delay in seconds between pod
+            failure retries.
+        pod_failure_backoff: The backoff factor for pod failure retries.
     """
 
     synchronous: bool = True
@@ -56,6 +61,9 @@ class KubernetesOrchestratorSettings(BaseSettings):
     privileged: bool = False
     pod_settings: Optional[KubernetesPodSettings] = None
     orchestrator_pod_settings: Optional[KubernetesPodSettings] = None
+    pod_failure_max_retries: int = 3
+    pod_failure_retry_delay: int = 10
+    pod_failure_backoff: int = 1
 
 
 class KubernetesOrchestratorConfig(
