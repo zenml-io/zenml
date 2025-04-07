@@ -222,7 +222,7 @@ def main() -> None:
         else:
             # For a run triggered by a schedule, we can only use the
             # orchestrator run ID to find the pipeline run.
-            list_args = dict(orchestrator_run_id=args.run_name)
+            list_args = dict(orchestrator_run_id=orchestrator_run_id)
 
         pipeline_runs = client.list_pipeline_runs(
             project=deployment_config.project.id,
