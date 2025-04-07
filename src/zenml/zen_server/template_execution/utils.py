@@ -20,6 +20,7 @@ from zenml.config.step_configurations import Step, StepConfiguration
 from zenml.constants import (
     ENV_ZENML_ACTIVE_PROJECT_ID,
     ENV_ZENML_ACTIVE_STACK_ID,
+    handle_bool_env_var,
 )
 from zenml.enums import ExecutionStatus, StackComponentType, StoreType
 from zenml.logger import get_logger
@@ -323,10 +324,17 @@ def generate_dockerfile(
         pypi_requirements_string = " ".join(
             [f"'{r}'" for r in pypi_requirements]
         )
-        lines.append("RUN pip install uv")
-        lines.append(
-            f"RUN uv pip install --no-cache-dir {pypi_requirements_string}"
-        )
+
+        if handle_bool_env_var("ZENML_RUNNER_IMAGE_DISABLE_UV", False):
+            lines.append(
+                f"RUN pip install --default-timeout=60 --no-cache-dir "
+                f"{pypi_requirements_string}"
+            )
+        else:
+            lines.append("RUN pip install uv")
+            lines.append(
+                f"RUN uv pip install --no-cache-dir {pypi_requirements_string}"
+            )
 
     return "\n".join(lines)
 
