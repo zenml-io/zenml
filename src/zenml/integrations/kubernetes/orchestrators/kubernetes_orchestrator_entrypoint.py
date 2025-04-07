@@ -102,6 +102,8 @@ def main() -> None:
 
         Raises:
             Exception: If the pod fails to start.
+            TimeoutError: If the pod is still in a pending state after the
+                maximum wait time has elapsed.
         """
         # Define Kubernetes pod name.
         pod_name = f"{orchestrator_run_id}-{step_name}"
@@ -189,8 +191,11 @@ def main() -> None:
             except Exception as e:
                 retries += 1
                 if retries < max_retries:
+                    logger.debug(
+                        f"Pod for step `{step_name}` failed to start: {e}"
+                    )
                     logger.error(
-                        f"Failed to create pod for step `{step_name}`: {e}"
+                        f"Failed to create pod for step `{step_name}`."
                         f"Retrying in {delay} seconds..."
                     )
                     time.sleep(delay)
@@ -223,7 +228,7 @@ def main() -> None:
                 except Exception:
                     pass
                 raise TimeoutError(
-                    f"Pending pod for step `{step_name}` failed to start "
+                    f"Pod for step `{step_name}` is still in a pending state "
                     f"after {total_wait} seconds. Exiting."
                 )
 
