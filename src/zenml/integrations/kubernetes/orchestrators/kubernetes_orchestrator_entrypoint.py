@@ -186,24 +186,55 @@ def main() -> None:
                     body=pod_manifest,
                 )
                 break
-            except Exception:
+            except Exception as e:
                 retries += 1
                 if retries < max_retries:
                     logger.error(
-                        f"Failed to run step `{step_name}`. Retrying in "
-                        f"{delay} seconds..."
+                        f"Failed to create pod for step `{step_name}`: {e}"
+                        f"Retrying in {delay} seconds..."
                     )
                     time.sleep(delay)
                     delay *= backoff
                 else:
                     logger.error(
-                        f"Failed to run step `{step_name}` after {max_retries} "
-                        "retries. Exiting."
+                        f"Failed to create pod for step `{step_name}` after "
+                        f"{max_retries} retries. Exiting."
                     )
                     raise
 
+        # Wait for pod to start
+        max_wait = settings.pod_startup_timeout
+        total_wait = 0
+        delay = settings.pod_failure_retry_delay
+        while True:
+            pod = kube_utils.get_pod(
+                core_api, pod_name, args.kubernetes_namespace
+            )
+            if not pod or kube_utils.pod_is_not_pending(pod):
+                break
+            if total_wait >= max_wait:
+                # Have to delete the pending pod so it doesn't start running
+                # later on.
+                try:
+                    core_api.delete_namespaced_pod(
+                        name=pod_name,
+                        namespace=args.kubernetes_namespace,
+                    )
+                except Exception:
+                    pass
+                raise TimeoutError(
+                    f"Pending pod for step `{step_name}` failed to start "
+                    f"after {total_wait} seconds. Exiting."
+                )
+
+            if total_wait + delay > max_wait:
+                delay = max_wait - total_wait
+            total_wait += delay
+            time.sleep(delay)
+            delay *= backoff
+
         # Wait for pod to finish.
-        logger.info(f"Waiting for pod of step `{step_name}` to start...")
+        logger.info(f"Waiting for pod of step `{step_name}` to finish...")
         try:
             kube_utils.wait_pod(
                 kube_client_fn=lambda: orchestrator.get_kube_client(
