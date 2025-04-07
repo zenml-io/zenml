@@ -33,11 +33,10 @@
   * [AWS](how-to/stack-components/aws.md)
   * [Azure](how-to/stack-components/azure.md)
   * [GCP](how-to/stack-components/gcp.md)
-* [Models](how-to/models/models.md)
-* [Builds](how-to/builds/builds.md)
-* [Templates](how-to/templates/templates.md)
+* [Builds](how-to/containerization/containerization.md)
 * [Secrets](how-to/secrets/secrets.md)
-
+* [Models](how-to/models/models.md)
+* [Templates](how-to/templates/templates.md)
 ## Reference
 
 * [Community & content](reference/community-and-content.md)
