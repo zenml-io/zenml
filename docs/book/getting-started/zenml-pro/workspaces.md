@@ -1,5 +1,6 @@
 ---
 description: Learn how to use workspaces in ZenML Pro.
+icon: briefcase
 ---
 
 # Workspaces
@@ -9,8 +10,6 @@ description: Learn how to use workspaces in ZenML Pro.
 {% endhint %}
 
 Workspaces are individual, isolated deployments of the ZenML server. Each workspace has its own set of users, roles, projects, and resources. Essentially, everything you do in ZenML Pro revolves around a workspace: all of your projects, pipelines, stacks, runs, connectors and so on are scoped to a workspace.
-
-
 
 ![Image showing the workspace page](<.gitbook/assets/Workspace - Home.png>)
 
@@ -59,21 +58,19 @@ A workspace is a crucial part of your Organization and serves as a container for
 
 {% stepper %}
 {% step %}
-### Go to your organization page
+#### Go to your organization page
 
 ![Image showing the create workspace page](<.gitbook/assets/Organization - Home.png>)
-
-
 {% endstep %}
 
 {% step %}
-### Click on the "New Workspace" button
+#### Click on the "New Workspace" button
 
 <figure><img src=".gitbook/assets/image (1).png" alt=""><figcaption><p>Image showing the "New Workspace" button</p></figcaption></figure>
 {% endstep %}
 
 {% step %}
-### Add a name and id
+#### Add a name and id
 
 Give your workspace a name, an id, and click on the "**Create Workspace**" button.
 
@@ -82,12 +79,10 @@ Give your workspace a name, an id, and click on the "**Create Workspace**" butto
 {% endhint %}
 
 <figure><img src=".gitbook/assets/New Workspace.png" alt="" width="375"><figcaption></figcaption></figure>
-
-
 {% endstep %}
 
 {% step %}
-### Your workspace is ready!
+#### Your workspace is ready!
 
 The workspace will then be created and added to your organization. In the meantime, you can already get started with setting up your environment for the onboarding experience.
 

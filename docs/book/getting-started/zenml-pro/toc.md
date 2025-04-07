@@ -5,7 +5,6 @@
 ## Deployments
 
 * [Self-hosted deployment](self-hosted.md)
-* [Accessing the ZenML Pro API](pro-api.md)
 
 ## Core Concepts
 

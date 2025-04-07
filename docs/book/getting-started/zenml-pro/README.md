@@ -1,6 +1,5 @@
 ---
 description: Learn about the ZenML Pro features and deployment scenarios.
-icon: star
 cover: .gitbook/assets/pro-cover.png
 coverY: 0
 layout:
