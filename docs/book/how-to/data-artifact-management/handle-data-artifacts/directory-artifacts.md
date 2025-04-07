@@ -10,10 +10,6 @@ The Path Materializer is designed to handle `pathlib.Path` objects, allowing you
 
 - **Flexible Path Handling**: Works with both individual files and complete directory structures
 - **Directory Preservation**: Stores complete directory structures, including subdirectories and files
-- **Interactive Visualization**: Provides an HTML visualization with file content or directory listing
-- **Direct Download Links**: Allows downloading files directly from the visualization
-- **Text File Preview**: Enables previewing text-based files within the visualization
-- **Detailed Metadata**: Extracts useful metadata like size, file type, or directory statistics
 
 ## Example Usage
 
@@ -109,29 +105,7 @@ Under the hood, the Path Materializer:
 1. **For Directories**:
    - **Saving**: Compresses the directory into a `.tar.gz` archive and stores it in the artifact store
    - **Loading**: Extracts the archive to a temporary directory and returns a Path object pointing to it
-   - **Visualization**: Creates an HTML page with the directory structure and file contents for interactive browsing
 
 2. **For Files**:
    - **Saving**: Directly stores the file in the artifact store
-   - **Loading**: Copies the file to a temporary location and returns a Path object pointing to it
-   - **Visualization**: Creates an HTML page with file information, download option, and content preview for text files
-
-## Metadata
-
-The Path Materializer extracts the following metadata:
-
-### For Directories:
-
-- `path`: Original path of the directory
-- `file_count`: Total number of files in the directory (including subdirectories)
-- `directory_count`: Number of subdirectories
-- `total_size_bytes`: Total size of all files in bytes
-- `file_extensions`: Dictionary of file extensions and their frequencies
-
-### For Files:
-
-- `path`: Original path of the file
-- `file_name`: Name of the file
-- `file_extension`: Extension of the file
-- `file_size_bytes`: Size of the file in bytes
-- `is_text`: Boolean indicating whether the file is a text file 
+   - **Loading**: Copies the file to a temporary location and returns a Path object pointing to it 
