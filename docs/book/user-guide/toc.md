@@ -46,9 +46,9 @@
     * [Deploying finetuned models](llmops-guide/finetuning-llms/deploying-finetuned-models.md)
     * [Next steps](llmops-guide/finetuning-llms/next-steps.md)
 
-## Tutorials
+## Tutorials <a href="#tutorial" id="tutorial"></a>
 
-* [Organizing pipelines and models](tutorials/organizing-pipelines-and-models.md)
+* [Organizing pipelines and models](tutorial/organizing-pipelines-and-models.md)
 
 ***
 

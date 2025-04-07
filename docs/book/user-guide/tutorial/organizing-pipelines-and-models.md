@@ -1,6 +1,7 @@
 ---
 description: >-
-  A step-by-step tutorial on effectively organizing your ML assets in ZenML using tags and projects
+  A step-by-step tutorial on effectively organizing your ML assets in ZenML
+  using tags and projects
 icon: inbox-full
 ---
 
@@ -392,6 +393,6 @@ A well-designed tagging strategy helps maintain organization as your ML project 
 
 Now that you understand how to organize your ML assets, consider exploring:
 
-1. [Managing scheduled pipelines](./managing-scheduled-pipelines.md) to automate your ML workflows
+1. [Managing scheduled pipelines](../tutorials/managing-scheduled-pipelines.md) to automate your ML workflows
 2. Integrating your tagging strategy with [CI/CD pipelines](https://docs.zenml.io/user-guides/production-guide/ci-cd)
 3. [Ways to trigger pipelines](https://docs.zenml.io/how-to/trigger-pipelines)
