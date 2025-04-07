@@ -195,7 +195,7 @@ def main() -> None:
                         f"Pod for step `{step_name}` failed to start: {e}"
                     )
                     logger.error(
-                        f"Failed to create pod for step `{step_name}`."
+                        f"Failed to create pod for step `{step_name}`. "
                         f"Retrying in {delay} seconds..."
                     )
                     time.sleep(delay)
