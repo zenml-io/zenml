@@ -36,17 +36,7 @@
 * [Models](how-to/models/models.md)
 * [Builds](how-to/builds/builds.md)
 * [Templates](how-to/templates/templates.md)
-* [Workspaces & Projects](how-to/project-setup-and-management/README.md)
-  * [Set up a ZenML project](how-to/project-setup-and-management/setting-up-a-project-repository/README.md)
-    * [Set up a repository](how-to/project-setup-and-management/setting-up-a-project-repository/set-up-repository.md)
-    * [Connect your git repository](how-to/project-setup-and-management/setting-up-a-project-repository/connect-your-git-repository.md)
-  * [Collaborate with your team](how-to/project-setup-and-management/collaborate-with-team/README.md)
-    * [Project templates](how-to/project-setup-and-management/collaborate-with-team/project-templates/README.md)
-      * [Create your own template](how-to/project-setup-and-management/collaborate-with-team/project-templates/create-your-own-template.md)
-    * [Shared components for teams](how-to/project-setup-and-management/collaborate-with-team/shared-components-for-teams.md)
-    * [Setting up Stacks, pipelines and models](how-to/project-setup-and-management/collaborate-with-team/stacks-pipelines-models.md)
-    * [Access management](how-to/project-setup-and-management/collaborate-with-team/access-management.md)
-  * [Interact with secrets](how-to/project-setup-and-management/interact-with-secrets.md)
+* [Secrets](how-to/secrets/secrets.md)
 
 ## Reference
 
