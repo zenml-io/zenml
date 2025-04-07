@@ -1,12 +1,17 @@
 ---
-description: A step-by-step tutorial on how to create, update, and delete scheduled pipelines in ZenML
+description: >-
+  A step-by-step tutorial on how to create, update, and delete scheduled  
+  pipelines in ZenML
+icon: calendar
 ---
 
-# Managing Scheduled Pipelines in ZenML
+# Managing scheduled pipelines
+
+## Managing scheduled pipelines
 
 This tutorial demonstrates how to work with scheduled pipelines in ZenML through a practical example. We'll create a simple data processing pipeline that runs on a schedule, update its configuration, and finally clean up by deleting the schedule.
 
-## How Scheduling Works in ZenML
+### How Scheduling Works in ZenML
 
 ZenML doesn't implement its own scheduler but acts as a wrapper around the scheduling capabilities of supported orchestrators like Vertex AI, Airflow, Kubeflow, and others. When you create a schedule, ZenML:
 
@@ -14,14 +19,14 @@ ZenML doesn't implement its own scheduler but acts as a wrapper around the sched
 2. Registers the schedule with the orchestrator's scheduling system
 3. Records the schedule in the ZenML metadata store
 
-The orchestrator then takes over responsibility for executing the pipeline
+The orchestrator then takes over responsibility for executing the pipeline\
 according to the schedule.
 
 {% hint style="info" %}
 For our full reference documentation on schedules, see the [Schedule a Pipeline](https://docs.zenml.io/how-to/pipeline-development/build-pipelines/schedule-a-pipeline) page.
 {% endhint %}
 
-## Prerequisites
+### Prerequisites
 
 Before starting this tutorial, make sure you have:
 
@@ -29,7 +34,7 @@ Before starting this tutorial, make sure you have:
 2. A supported orchestrator (we'll use [Vertex AI](https://docs.zenml.io/stacks/orchestrators/vertex) in this example)
 3. Basic understanding of [ZenML pipelines and steps](https://docs.zenml.io/getting-started/core-concepts)
 
-## Step 1: Create a Simple Pipeline
+### Step 1: Create a Simple Pipeline
 
 First, let's create a basic pipeline that we'll schedule. This pipeline will simulate a daily data processing task.
 
@@ -54,7 +59,7 @@ def daily_data_pipeline():
     save_results(data)
 ```
 
-## Step 2: Create a Schedule
+### Step 2: Create a Schedule
 
 Now, let's create a schedule for our pipeline. We'll set it to run daily at 9 AM.
 
@@ -75,7 +80,7 @@ scheduled_pipeline = daily_data_pipeline.with_options(schedule=schedule)
 scheduled_pipeline()
 ```
 
-Running the pipeline will create the schedule in the ZenML metadata store. as
+Running the pipeline will create the schedule in the ZenML metadata store. as\
 well as the scheduled run in the orchestrator.
 
 {% hint style="info" %}
@@ -94,11 +99,11 @@ schedule = Schedule(
 Include the frequency, purpose, environment, and version in your schedule names.
 {% endhint %}
 
-## Step 3: Verify the Schedule
+### Step 3: Verify the Schedule
 
 After creating a schedule, it's important to verify that it exists in both ZenML and the orchestrator. This verification helps ensure your pipeline will run as expected.
 
-### Step 3.1: Verify the Schedule in ZenML
+#### Step 3.1: Verify the Schedule in ZenML
 
 Let's check if our schedule was created successfully using both Python and the CLI:
 
@@ -137,9 +142,9 @@ zenml pipeline schedule list --pipeline_id my_pipeline_id
 
 Here's an example of what the CLI output might look like:
 
-![Output of `zenml pipeline schedule list`](../../.gitbook/assets/pipeline-schedules-list.png)
+![Schedules list CLI](../.gitbook/assets/pipeline-schedules-list.png)
 
-### Step 3.2: Verify the Schedule in the Orchestrator
+#### Step 3.2: Verify the Schedule in the Orchestrator
 
 To ensure the schedule was properly created in Vertex AI, we can verify it using the Google Cloud SDK:
 
@@ -173,14 +178,14 @@ else:
 Make sure to replace `us-central1` with your actual Vertex AI region. You can find your region in the Vertex AI settings or by checking the `location` parameter in your Vertex orchestrator configuration.
 {% endhint %}
 
-## Step 4: Update the Schedule
+### Step 4: Update the Schedule
 
 Sometimes we need to modify an existing schedule. Since ZenML doesn't support direct schedule updates, we'll need to delete the old schedule and create a new one. This is a two-step process:
 
 1. Delete the existing schedules (both from ZenML and the orchestrator)
 2. Create a new schedule with the updated configuration
 
-### Step 4.1: Delete the Existing Schedule
+#### Step 4.1: Delete the Existing Schedule
 
 First, delete the schedule from ZenML:
 
@@ -217,7 +222,7 @@ for schedule_to_delete in vertex_schedules:
     print(f"Schedule '{schedule_to_delete.display_name}' deleted from Vertex AI!")
 ```
 
-### Step 4.2: Create the Updated Schedule
+#### Step 4.2: Create the Updated Schedule
 
 Now, create a new schedule with the updated parameters:
 
@@ -242,8 +247,7 @@ Or using a script:
 python run.py # or whatever you named your script
 ```
 
-
-## Step 5: Monitor Schedule Execution
+### Step 5: Monitor Schedule Execution
 
 Let's check the execution history of our scheduled pipeline:
 
@@ -264,7 +268,7 @@ for run in runs.items:
     print("---")
 ```
 
-### Monitoring with Alerters
+#### Monitoring with Alerters
 
 For critical pipelines, [add alerting](https://docs.zenml.io/stacks/alerters) to notify you of failures:
 
@@ -286,14 +290,14 @@ def monitored_pipeline():
 
 This assumes you've [registered an alerter](https://docs.zenml.io/stacks/alerters) (like Slack or Discord) in your active stack.
 
-## Step 6: Clean Up
+### Step 6: Clean Up
 
 When you're done with a scheduled pipeline, proper cleanup is essential to prevent unexpected executions. You **must perform two separate deletion operations**:
 
 1. Delete the schedule from ZenML's database
 2. Delete the schedule from the underlying orchestrator (Vertex AI in this example)
 
-### Step 6.1: Delete the Schedule from ZenML
+#### Step 6.1: Delete the Schedule from ZenML
 
 First, let's delete the schedule from ZenML:
 
@@ -308,7 +312,7 @@ else:
     print("Schedule still exists in ZenML!")
 ```
 
-### Step 6.2: Delete the Schedule from the Orchestrator (Required)
+#### Step 6.2: Delete the Schedule from the Orchestrator (Required)
 
 {% hint style="warning" %}
 **CRITICAL**: Deleting a schedule from ZenML does NOT delete it from the orchestrator. If you only perform Step 6.1, your pipeline will continue to run on schedule in the orchestrator!
@@ -343,11 +347,11 @@ else:
 
 The procedure for deleting schedules varies by orchestrator. Always check your orchestrator's documentation for the correct deletion method.
 
-## Troubleshooting: Quick Fixes for Common Issues
+### Troubleshooting: Quick Fixes for Common Issues
 
 Here are some practical fixes for issues you might encounter with your scheduled pipelines:
 
-### Issue: Timezone Confusion with Scheduled Runs
+#### Issue: Timezone Confusion with Scheduled Runs
 
 A common issue with scheduled pipelines is timezone confusion. Here's how ZenML handles timezone information:
 
@@ -389,7 +393,7 @@ print(f"In your local time that's: {to_local_tz(schedule.start_time)}")
 
 Remember that cron expressions themselves don't have timezone information - they're interpreted in the timezone of the system executing them (which for cloud orchestrators is usually UTC).
 
-### Issue: Schedule Doesn't Run at the Expected Time
+#### Issue: Schedule Doesn't Run at the Expected Time
 
 If your pipeline doesn't run when scheduled:
 
@@ -413,13 +417,14 @@ for run_time in next_runs:
 ```
 
 For Vertex AI specifically, verify that your service account has the required permissions:
+
 ```bash
 # Check permissions on your service account
 gcloud projects get-iam-policy your-project-id \
   --filter="bindings.members:serviceAccount:your-service-account@your-project-id.iam.gserviceaccount.com"
 ```
 
-### Issue: Orphaned Schedules in the Orchestrator
+#### Issue: Orphaned Schedules in the Orchestrator
 
 To clean up orphaned Vertex AI schedules:
 
@@ -438,7 +443,7 @@ for schedule in vertex_schedules:
     schedule.delete()
 ```
 
-### Issue: Finding Failing Scheduled Runs
+#### Issue: Finding Failing Scheduled Runs
 
 When scheduled runs fail silently:
 
@@ -468,7 +473,7 @@ for run in failed_runs.items:
         print("---")
 ```
 
-## Next Steps
+### Next Steps
 
 Now that you understand the basics of managing scheduled pipelines, you can:
 
@@ -477,5 +482,4 @@ Now that you understand the basics of managing scheduled pipelines, you can:
 3. Optimize resource allocation for your scheduled pipelines
 4. Implement data-dependent scheduling where [pipelines trigger](https://docs.zenml.io/how-to/trigger-pipelines) based on data availability
 
-For more advanced schedule management and monitoring techniques, check out the
-[ZenML documentation](https://docs.zenml.io).
+For more advanced schedule management and monitoring techniques, check out the[ZenML documentation](https://docs.zenml.io).
