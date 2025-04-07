@@ -1,20 +1,21 @@
 ---
 description: >-
-  Learn how to configure ZenML pipelines using YAML configuration files and runtime settings.
+  Learn how to configure ZenML pipelines using YAML configuration files.
 ---
 
-# Configuration & Settings
+# Configuration with YAML
 
-ZenML provides powerful configuration capabilities that allow you to customize pipeline and step behavior without changing your code. This is particularly useful for:
+ZenML provides powerful configuration capabilities through YAML files that allow you to customize pipeline and step behavior without changing your code. This is particularly useful for:
 
-- Separating configuration from code
-- Experimenting with different parameters
-- Managing environment-specific settings (dev/prod)
-- Setting up consistent configurations across a team
+- Separating configuration from code (following the [12-factor app](https://12factor.net/) methodology)
+- Experimenting with different parameters across multiple pipeline runs
+- Managing environment-specific settings (development, staging, production)
+- Setting up consistent configurations across a team of data scientists
+- Enabling reproducibility by storing configuration alongside run history
 
-## Configuration with YAML Files
+## Using YAML Configuration Files
 
-You can configure pipelines and steps using YAML files, which can be specified when running a pipeline:
+You can apply a YAML configuration file when running a pipeline:
 
 ```python
 my_pipeline.with_options(config_path="config.yaml")()
@@ -57,11 +58,11 @@ When this configuration is applied, ZenML will:
 2. Apply step-specific overrides for the `train_model` step
 3. Use these settings during pipeline execution
 
-## What Can Be Configured
+## What Can Be Configured in YAML
 
 ### Pipeline and Step Parameters
 
-You can specify parameters for pipelines and steps, allowing you to modify behavior without changing code:
+You can specify parameters for pipelines and steps:
 
 ```yaml
 # Pipeline parameters
@@ -83,29 +84,6 @@ steps:
       learning_rate: 0.001  # Override the pipeline parameter
       optimizer: "adam"
 ```
-
-This corresponds to code that looks like:
-
-```python
-@step
-def preprocessing(normalize: bool, fill_missing: str):
-    # Use parameters to control preprocessing behavior
-    pass
-
-@step
-def train_model(learning_rate: float, optimizer: str):
-    # Use parameters to configure model training
-    pass
-
-@pipeline
-def my_pipeline(dataset_name: str, learning_rate: float, batch_size: int, epochs: int):
-    # Use pipeline parameters
-    data = load_data(dataset_name)
-    processed_data = preprocessing(normalize=True, fill_missing="mean")
-    train_model(learning_rate=learning_rate, optimizer="adam")
-```
-
-Parameters defined in YAML files override default values in the code, giving you flexibility to change behavior without modifying code.
 
 ### Enable Flags
 
@@ -133,7 +111,7 @@ These flags are particularly useful for:
 
 ### Docker Settings
 
-Configure Docker container settings for pipeline execution, controlling the environment where your steps run:
+Configure Docker container settings for pipeline execution:
 
 ```yaml
 settings:
@@ -164,11 +142,9 @@ settings:
     skip_build: False
 ```
 
-Docker settings give you fine-grained control over the execution environment, ensuring consistent dependencies and resources across different machines and environments.
-
 ### Resource Settings
 
-Configure compute resources for pipeline or step execution, particularly important for resource-intensive workloads:
+Configure compute resources for pipeline or step execution:
 
 ```yaml
 # Pipeline-level resource settings
@@ -189,16 +165,9 @@ steps:
         memory: "16Gb"
 ```
 
-Resource settings are especially important for:
-- **Training steps**: Allocate more GPUs and memory for model training
-- **Preprocessing steps**: Allocate more CPUs for data-parallel processing
-- **Inference steps**: Balance resources based on throughput requirements
-
-These settings are interpreted differently depending on the orchestrator (Kubernetes, Vertex AI, etc.) and can help optimize resource utilization.
-
 ### Stack Component Settings
 
-Configure specific stack components for steps, allowing different steps to use different infrastructure:
+Configure specific stack components for steps:
 
 ```yaml
 steps:
@@ -221,14 +190,9 @@ steps:
         nested: True
 ```
 
-This allows you to:
-- Use different experiment trackers for different steps
-- Route compute-intensive steps to specialized hardware
-- Configure component-specific behavior for each step
-
 ### Model Configuration
 
-Link a pipeline to a ZenML Model to integrate with the ZenML Model Control Plane:
+Link a pipeline to a ZenML Model:
 
 ```yaml
 model:
@@ -247,28 +211,17 @@ model:
         name: "classification_model"  # Step-specific model link
 ```
 
-This configuration allows you to:
-- Track which pipelines produce which models
-- Link specific artifacts to model versions
-- Manage model metadata and lineage
-- Compare model versions across multiple runs
-
 ### Run Name
 
-Set a custom name for the pipeline run for easier identification and tracking:
+Set a custom name for the pipeline run:
 
 ```yaml
 run_name: "training_run_cifar10_resnet50_lr0.001"
 ```
 
-Descriptive run names help you:
-- Identify specific runs in the UI or dashboard
-- Understand the purpose of a run without digging into details
-- Organize runs for different experiments or purposes
-
 ### Scheduling
 
-Configure pipeline scheduling when using an orchestrator that supports it (like Airflow or Kubeflow):
+Configure pipeline scheduling when using an orchestrator that supports it:
 
 ```yaml
 schedule:
@@ -285,20 +238,11 @@ schedule:
   end_time: "2023-12-31T23:59:59Z"
 ```
 
-Scheduling allows you to:
-- Automate recurring workflows (daily data processing, weekly model retraining)
-- Set up consistent evaluation or monitoring jobs
-- Coordinate with other data pipelines in your organization
-
 ## Configuration Hierarchy and Resolution
 
-ZenML follows a specific hierarchy when resolving configuration, using a clear precedence order:
+ZenML follows a specific hierarchy when resolving configuration:
 
 1. **Runtime Python code** - Highest precedence
-   ```python
-   my_pipeline(learning_rate=0.01)  # Highest precedence
-   ```
-
 2. **Step-level YAML configuration**
    ```yaml
    steps:
@@ -306,30 +250,16 @@ ZenML follows a specific hierarchy when resolving configuration, using a clear p
        parameters:
          learning_rate: 0.001  # Overrides pipeline-level setting
    ```
-
 3. **Pipeline-level YAML configuration**
    ```yaml
    parameters:
      learning_rate: 0.01  # Lower precedence than step-level
    ```
-
 4. **Default values in code** - Lowest precedence
-   ```python
-   @step
-   def train_model(learning_rate: float = 0.1):  # Lowest precedence
-       pass
-   ```
-
-This resolution strategy gives you flexibility to:
-- Set sensible defaults in code
-- Override defaults in configuration files
-- Make quick changes at runtime
-
-Understanding this hierarchy helps you manage configurations more effectively and avoid unexpected behavior.
 
 ## Autogenerating Template YAML Files
 
-ZenML provides a command to generate a template configuration file based on your pipeline definition:
+ZenML provides a command to generate a template configuration file:
 
 ```bash
 zenml pipeline build-configuration my_pipeline > config.yaml
@@ -340,11 +270,9 @@ This generates a YAML file with:
 - All step parameters with their default values
 - All possible configuration options (enable flags, settings, etc.)
 
-You can then customize this template for your specific needs, saving time and reducing errors.
-
 ## Environment Variables in Configuration
 
-You can reference environment variables in your YAML configuration, which is useful for sensitive information or environment-specific settings:
+You can reference environment variables in your YAML configuration:
 
 ```yaml
 settings:
@@ -354,11 +282,6 @@ settings:
       API_KEY: ${MY_API_KEY}
       DATABASE_URL: ${DB_CONNECTION_STRING}
 ```
-
-This approach allows you to:
-- Keep sensitive information out of your configuration files
-- Switch configurations based on environment variables
-- Integrate with secrets management systems
 
 If an environment variable is not found, ZenML will raise an error during pipeline execution.
 
@@ -410,15 +333,9 @@ my_pipeline.with_options(config_path="configs/dev.yaml")()
 my_pipeline.with_options(config_path="configs/prod.yaml")()
 ```
 
-This approach allows you to:
-- Use different resources in different environments
-- Apply different caching strategies
-- Use smaller datasets for rapid development
-- Apply stricter settings in production
-
 ## Finding Which Configuration Was Used for a Run
 
-To determine which configuration was used for a specific run, you can access it programmatically:
+To access the configuration that was used for a specific run:
 
 ```python
 from zenml.client import Client
@@ -428,32 +345,12 @@ run = Client().get_pipeline_run("<RUN_ID>")
 
 # Access the configuration
 config = run.config
-
-# Print specific configuration values
-print(f"Learning rate: {config.parameters.get('learning_rate')}")
-print(f"Cache enabled: {config.enable_cache}")
-
-# Access step-specific configuration
-train_step_config = config.steps.get("train_model", {})
-print(f"Train step learning rate: {train_step_config.parameters.get('learning_rate')}")
 ```
-
-This allows you to:
-- Reproduce the exact configuration used for a specific run
-- Compare configurations across different runs
-- Audit runs for compliance or debugging
 
 ## Conclusion
 
-Configuration and settings in ZenML provide a powerful way to customize pipeline behavior without changing your code. By leveraging YAML configuration files, you can separate configuration from implementation, making your ML workflows more flexible, maintainable, and reproducible.
-
-The right configuration approach allows you to:
-- Iterate quickly during development
-- Ensure consistency in production
-- Share workflows with team members
-- Track and reproduce experiments
+YAML configuration in ZenML provides a powerful way to customize pipeline behavior without changing your code. By leveraging configuration files, you can separate configuration from implementation, making your ML workflows more flexible, maintainable, and reproducible.
 
 See also:
 - [Steps & Pipelines](./steps_and_pipelines.md) - Core building blocks
-- [Execution Parameters](./execution_parameters.md) - Runtime parameters
-- [Logging](./logging.md) - Logging configuration 
+- [Advanced Features](./advanced_features.md) - Advanced pipeline features 

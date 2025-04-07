@@ -121,16 +121,45 @@ The run is automatically logged to the ZenML dashboard where you can view the DA
 
 ## Pipeline and Step Parameters
 
-Steps and pipelines can be parameterized like regular Python functions:
+Both pipelines and steps can be parameterized like regular Python functions:
 
 ```python
 @step
-def my_step(input_1: int, input_2: int) -> None:
-    pass
+def train_model(data: dict, learning_rate: float = 0.01, epochs: int = 10) -> None:
+    # Use learning_rate and epochs parameters
+    print(f"Training with learning rate: {learning_rate} for {epochs} epochs")
 
 @pipeline
-def my_pipeline(environment: str):
-    my_step(input_1=42, input_2=43)
+def training_pipeline(dataset_name: str = "default_dataset"):
+    data = load_data(dataset_name=dataset_name)
+    train_model(data=data, learning_rate=0.005, epochs=20)
+```
+
+You can then run the pipeline with specific parameters:
+
+```python
+training_pipeline(dataset_name="custom_dataset")
+```
+
+### Parameter Types
+
+ZenML step parameters can be:
+
+1. **Primitive types**: `int`, `float`, `str`, `bool`
+2. **Container types**: `list`, `dict`, `tuple` (containing primitives)
+3. **Custom types**: As long as they can be serialized to JSON using Pydantic
+
+Parameters that cannot be serialized to JSON should be passed as artifacts rather than parameters.
+
+### Default Values
+
+You can provide default values for parameters:
+
+```python
+@step
+def preprocess_data(normalize: bool = True, drop_nulls: bool = False):
+    # Use parameters with defaults
+    pass
 ```
 
 ### Parameter vs. Artifact Inputs
@@ -147,252 +176,48 @@ def my_pipeline():
     my_step(input_1=int_artifact, input_2=42)
 ```
 
-## Advanced Pipeline Features
+### Dynamic Parameters
 
-### Caching
-
-Steps are automatically cached based on their inputs. When a step runs, ZenML computes a hash of the inputs and checks if a previous run with the same inputs exists. If found, ZenML reuses the outputs instead of re-executing the step.
-
-You can control caching behavior at the step level:
-
-```python
-@step(enable_cache=False)
-def non_cached_step():
-    pass
-```
-
-You can also configure caching at the pipeline level:
-
-```python
-@pipeline(enable_cache=False)
-def my_pipeline():
-    ...
-```
-
-Or modify it after definition:
-
-```python
-my_step.configure(enable_cache=False)
-my_pipeline.configure(enable_cache=False)
-```
-
-Cache invalidation happens automatically when:
-- Step inputs change
-- Step code changes
-- Step configuration changes (parameters, settings, etc.)
-
-### Running Individual Steps
-
-You can run a single step directly:
-
-```python
-model, accuracy = train_classifier(X_train=X_train, y_train=y_train)
-```
-
-This creates an unlisted pipeline run with just that step. If you want to bypass ZenML completely and run the underlying function directly:
-
-```python
-model, accuracy = train_classifier.entrypoint(X_train=X_train, y_train=y_train)
-```
-
-You can make this the default behavior by setting the `ZENML_RUN_SINGLE_STEPS_WITHOUT_STACK` environment variable to `True`.
-
-### Step Execution Order
-
-By default, ZenML determines step execution order based on data dependencies. When a step requires output from another step, it automatically creates a dependency.
-
-You can explicitly control execution order with the `after` parameter:
-
-```python
-@pipeline
-def my_pipeline():
-    step_a_output = step_a()
-    step_b_output = step_b()
-    
-    # step_c will only run after both step_a and step_b complete, even if
-    # it doesn't use their outputs directly
-    step_c(after=[step_a_output, step_b_output])
-    
-    # You can also specify dependencies using the step invocation ID
-    step_d(after="step_c")
-```
-
-This is particularly useful for steps with side effects (like data loading or model deployment) where the data dependency is not explicit.
-
-### Pipeline Composition
-
-You can compose pipelines from other pipelines to create modular, reusable workflows:
-
-```python
-@pipeline
-def data_pipeline(mode: str):
-    if mode == "train":
-        data = training_data_loader_step()
-    else:
-        data = test_data_loader_step()
-    
-    processed_data = preprocessing_step(data)
-    return processed_data
-
-@pipeline
-def training_pipeline():
-    # Use another pipeline inside this pipeline
-    training_data = data_pipeline(mode="train")
-    model = train_model(data=training_data)
-    test_data = data_pipeline(mode="test")
-    evaluate_model(model=model, data=test_data)
-```
-
-Pipeline composition allows you to build complex workflows from simpler, well-tested components.
-
-### Automatic Step Retries
-
-For steps that may encounter transient failures (like network issues or resource limitations), you can configure automatic retries:
-
-```python
-from zenml.config.retry_config import StepRetryConfig
-
-@step(
-    retry=StepRetryConfig(
-        max_retries=3,  # Maximum number of retry attempts
-        delay=10,       # Initial delay in seconds before first retry
-        backoff=2       # Factor by which delay increases after each retry
-    )
-)
-def unreliable_step():
-    # This step might fail due to transient issues
-    ...
-```
-
-With this configuration, if the step fails, ZenML will:
-1. Wait 10 seconds before the first retry
-2. Wait 20 seconds (10 × 2) before the second retry
-3. Wait 40 seconds (20 × 2) before the third retry
-4. Fail the pipeline if all retries are exhausted
-
-This is particularly useful for steps that interact with external services or resources.
-
-### Pipeline and Step Hooks
-
-Hooks allow you to execute custom code at specific points in the pipeline or step lifecycle:
-
-```python
-def success_hook(step_name, step_output):
-    print(f"Step {step_name} completed successfully with output: {step_output}")
-
-def failure_hook(exception: BaseException):
-    print(f"Step failed with error: {str(exception)}")
-
-@step(on_success=success_hook, on_failure=failure_hook)
-def my_step():
-    return 42
-```
-
-You can also define hooks at the pipeline level to apply to all steps:
-
-```python
-@pipeline(on_failure=failure_hook, on_success=success_hook)
-def my_pipeline():
-    ...
-```
-
-Step-level hooks take precedence over pipeline-level hooks. Hooks are particularly useful for:
-- Sending notifications when steps fail or succeed
-- Logging detailed information about runs
-- Triggering external workflows based on pipeline state
-
-### Accessing Step Context in Hooks
-
-You can access detailed information about the current run using the step context:
-
-```python
-from zenml import step, get_step_context
-
-def on_failure(exception: BaseException):
-    context = get_step_context()
-    print(f"Failed step: {context.step_run.name}")
-    print(f"Parameters: {context.step_run.config.parameters}")
-    print(f"Exception: {type(exception).__name__}: {str(exception)}")
-    
-    # Access pipeline information
-    print(f"Pipeline: {context.pipeline_run.name}")
-
-@step(on_failure=on_failure)
-def my_step(some_parameter: int = 1):
-    raise ValueError("My exception")
-```
-
-### Using Alerter in Hooks
-
-You can use the Alerter stack component to send notifications when steps fail or succeed:
-
-```python
-from zenml import get_step_context
-from zenml.client import Client
-
-def on_failure():
-    step_name = get_step_context().step_run.name
-    Client().active_stack.alerter.post(f"{step_name} just failed!")
-```
-
-ZenML provides built-in alerter hooks for common scenarios:
-
-```python
-from zenml.hooks import alerter_success_hook, alerter_failure_hook
-
-@step(on_failure=alerter_failure_hook, on_success=alerter_success_hook)
-def my_step():
-    ...
-```
-
-### Fan-in and Fan-out
-
-You can implement parallel processing patterns for data-parallel workloads:
-
-```python
-@pipeline
-def fan_pipeline():
-    # Fan-out: Process data chunks in parallel
-    results = []
-    for i in range(5):
-        results.append(process_chunk(i))
-    
-    # Fan-in: Combine all results
-    final_result = combine_results(results)
-```
-
-When run on an orchestrator that supports parallelism (like Kubeflow), the `process_chunk` steps can run in parallel, improving performance for data-parallel workloads.
-
-### Custom Step Invocation IDs
-
-By default, ZenML uses the function name as the step invocation ID. For steps used multiple times, you should specify a custom ID:
-
-```python
-@pipeline
-def my_pipeline():
-    # Custom invocation ID "first_step"
-    first_output = my_step(step_name="first_step")
-    # Custom invocation ID "second_step"
-    second_output = my_step(step_name="second_step")
-```
-
-This makes the pipeline easier to understand and helps with debugging and monitoring.
-
-### Named Pipeline Runs
-
-You can give your pipeline runs descriptive names to make them easier to identify:
+You can use dynamic expressions for parameters:
 
 ```python
 from datetime import datetime
 
-run_name = f"training_run_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-my_pipeline.with_options(run_name=run_name)()
+@pipeline
+def my_pipeline():
+    run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+    my_step(run_id=run_id)
 ```
 
-This is especially useful in production environments where you need to track and monitor specific runs.
+### Passing Parameters Between Steps
+
+You can pass parameters between steps in several ways:
+
+**Via Artifacts**
+
+```python
+@step
+def generate_params() -> dict:
+    return {"learning_rate": 0.01, "epochs": 10}
+
+@step
+def train_model(params: dict):
+    learning_rate = params["learning_rate"]
+    epochs = params["epochs"]
+    # Use parameters
+```
+
+**Via Pipeline Parameters**
+
+```python
+@pipeline
+def training_pipeline(learning_rate: float):
+    data = load_data()
+    train_model(data=data, learning_rate=learning_rate)
+```
 
 ## Conclusion
 
-Steps and Pipelines provide a flexible, powerful way to build machine learning workflows in ZenML. By combining steps into pipelines, you can create complex ML processes that are versioned, reproducible, and easily monitored through the ZenML dashboard.
+Steps and Pipelines provide a flexible, powerful way to build machine learning workflows in ZenML. This guide covered the basic concepts of creating steps and pipelines, managing inputs and outputs, and working with parameters.
 
-For more advanced configuration options, check out the [Configuration & Settings](./configuration_settings.md) and [Execution Parameters](./execution_parameters.md) guides. 
+For more advanced features, check out the [Advanced Features](./advanced_features.md) guide. For configuration using YAML files, see [Configuration with YAML](./configuration_with_yaml.md). 

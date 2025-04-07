@@ -18,8 +18,8 @@
 ## How-To
 
 * [Steps & Pipelines](how-to/steps-pipelines/steps_and_pipelines.md)
-  * [Configuration & Settings](how-to/steps-pipelines/configuration_settings.md)
-  * [Execution Parameters](how-to/steps-pipelines/execution_parameters.md)
+  * [Configuration with YAML](how-to/steps-pipelines/configuration_with_yaml.md)
+  * [Advanced Features](how-to/steps-pipelines/advanced_features.md)
   * [Logging](how-to/steps-pipelines/logging.md)
 * [Artifacts](how-to/artifacts/artifacts.md)
     * [Visualizations](how-to/artifacts/visualizations.md)
