@@ -49,6 +49,7 @@ At the organization level, ZenML Pro provides the following predefined roles:
 
 3. **Organization Viewer**
    * Permissions to view resources in the organization
+   * Can connect to a workspace and view default stack and components.
    * Read-only access to organization resources
    * Can see all workspaces in the organization, but cannot access their contents without explicit roles
 
@@ -89,14 +90,14 @@ Some points to note:
 
 * In addition to adding organization roles, you might also want to add workspace or project roles for people who you want to have access to specific resources.
 * However, organization viewers and members cannot add themselves to existing workspaces that they are not a part of.
-* Currently, you cannot create custom organization roles via the ZenML Pro dashboard. However, this is possible via the [ZenML Pro API](https://cloudapi.zenml.io/).
+* Currently, you cannot create custom organization roles.
 
 ### Organization Role Inheritance
 
 Understanding how roles inherit access across organization, workspace, and project levels is important for proper permission management:
 
 * **Organization Admin**: Automatically has admin-level access to all workspaces and projects
-* **Organization Viewer**: Can see all workspaces in the organization list but cannot access their contents without explicit roles
+* **Organization Viewer**: Can see all workspaces in the organization list but cannot access their contents without explicit roles. They can also connect to the workspace, which means they can also view things like the default stacks and components.
 * **Organization Member**: Can only see workspaces they've been explicitly granted access to
 * **Organization Manager/Billing Admin**: Do not automatically get access to workspaces
 
@@ -201,20 +202,6 @@ Custom roles are particularly useful in the following scenarios:
 * For creating role-based workflows that match your organization's processes
 
 For example, you might create a custom "Pipeline Operator" role that can run and monitor pipelines but cannot create or modify them, or a "Model Reviewer" role that can access model artifacts and evaluation results but cannot modify pipeline configurations.
-
-## Best Practices
-
-1. **Least Privilege**: Assign the minimum necessary permissions to each role.
-2. **Regular Audits**: Periodically review and update role assignments and permissions.
-3. **Role Hierarchy**: Consider the relationship between organization, workspace, and project roles when assigning permissions.
-4. **Team-Based Access**: Use teams to manage access control more efficiently across all levels.
-5. **Documentation**: Maintain clear documentation about role assignments and their purposes.
-6. **Regular Reviews**: Periodically audit role assignments to ensure they align with current needs.
-7. **Organization Member Role**: Use the Organization Member role for users who should only see specific workspaces.
-
-By leveraging ZenML Pro's comprehensive role-based access control, you can ensure that your team members have the right level of access to resources while maintaining security and enabling collaboration across your MLOps projects.
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
 
 ## Team-Based Role Assignments
 
