@@ -47,8 +47,8 @@ class KubernetesOrchestratorSettings(BaseSettings):
         pod_settings: Pod settings to apply to pods executing the steps.
         orchestrator_pod_settings: Pod settings to apply to the pod which is
             launching the actual steps.
-        pod_startup_timeout: The maximum time to wait for a step pod to start
-            (in seconds).
+        pod_startup_timeout: The maximum time to wait for a pending step pod to
+            start (in seconds).
         pod_failure_max_retries: The maximum number of times to retry a step
             pod if the step Kubernetes pod fails to start
         pod_failure_retry_delay: The delay in seconds between pod

@@ -175,7 +175,7 @@ def main() -> None:
 
         retries = 0
         max_retries = settings.pod_failure_max_retries
-        delay = settings.pod_failure_retry_delay
+        delay: float = settings.pod_failure_retry_delay
         backoff = settings.pod_failure_backoff
 
         while retries < max_retries:
@@ -204,7 +204,7 @@ def main() -> None:
 
         # Wait for pod to start
         max_wait = settings.pod_startup_timeout
-        total_wait = 0
+        total_wait: float = 0
         delay = settings.pod_failure_retry_delay
         while True:
             pod = kube_utils.get_pod(
