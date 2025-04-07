@@ -10,7 +10,7 @@ We now have a dataset that we can use to finetune our embeddings. You can[inspec
 
 Our pipeline for finetuning the embeddings is relatively simple. We'll do the following:
 
-* load our data either from Hugging Face or [from Argilla via the ZenML annotation integration](https://github.com/zenml-io/zenml/blob/develop/docs/book/component-guide/annotators/argilla.md)
+* load our data either from Hugging Face or [from Argilla via the ZenML annotation integration](https://docs.zenml.io/stacks/annotators/argilla)
 * finetune our model using the [Sentence Transformers](https://www.sbert.net/) library
 * evaluate the base and finetuned embeddings
 * visualize the results of the evaluation
