@@ -27,6 +27,7 @@
 * [Tags](how-to/tags/tags.md)
 * [Metadata](how-to/metadata/metadata.md)
 * [Client](how-to/client/client.md)
+* [Code Repositories](how-to/code-repositories/code-repositories.md)
 * [Stack & Components](how-to/stack-components/stack_components.md)
   * [Service Connectors](how-to/stack-components/service_connectors.md)
   * [Deployment](how-to/stack-components/deployment.md)
