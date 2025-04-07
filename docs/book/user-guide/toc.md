@@ -49,10 +49,7 @@
 ## Tutorials <a href="#tutorial" id="tutorial"></a>
 
 * [Organizing pipelines and models](tutorial/organizing-pipelines-and-models.md)
-
-***
-
-* [Managing scheduled pipelines](managing-scheduled-pipelines.md)
+* [Managing scheduled pipelines](tutorial/managing-scheduled-pipelines.md)
 
 ## Examples
 
