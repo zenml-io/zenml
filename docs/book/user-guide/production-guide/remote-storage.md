@@ -214,5 +214,3 @@ zenml artifact version list --created="gte:$(date -v-15M '+%Y-%m-%d %H:%M:%S')"
 You will notice above that some artifacts are stored locally, while others are stored in a remote storage location.
 
 By connecting remote storage, you're taking a significant step towards building a collaborative and scalable MLOps workflow. Your artifacts are no longer tied to a single machine but are now part of a cloud-based ecosystem, ready to be shared and built upon.
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
