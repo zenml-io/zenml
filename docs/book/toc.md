@@ -4,6 +4,7 @@
 
 * [Welcome to ZenML](introduction.md)
 * [Installation](getting-started/installation.md)
+* [Hello World](getting-started/hello-world.md)
 * [Core concepts](getting-started/core-concepts.md)
 * [System Architecture](getting-started/system-architectures.md)
 * [Deploying ZenML](getting-started/deploying-zenml/README.md)
