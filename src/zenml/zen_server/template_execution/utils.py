@@ -148,35 +148,36 @@ def run_template(
         deployment_id=new_deployment.id
     )
 
+    if build.python_version:
+        version_info = version.parse(build.python_version)
+        python_version = f"{version_info.major}.{version_info.minor}"
+    else:
+        python_version = f"{sys.version_info.major}.{sys.version_info.minor}"
+
+    (
+        pypi_requirements,
+        apt_packages,
+    ) = requirements_utils.get_requirements_for_stack(
+        stack=stack, python_version=python_version
+    )
+
+    dockerfile = generate_dockerfile(
+        pypi_requirements=pypi_requirements,
+        apt_packages=apt_packages,
+        zenml_version=zenml_version,
+        python_version=python_version,
+    )
+
+    # Building a docker image with requirements and apt packages from the
+    # stack only (no code). Ideally, only orchestrator requirements should
+    # be added to the docker image, but we have to instantiate the entire
+    # stack to get the orchestrator to run pipelines.
+    image_hash = generate_image_hash(dockerfile=dockerfile)
+    logger.info(
+        "Building runner image %s for dockerfile:\n%s", image_hash, dockerfile
+    )
+
     def _task() -> None:
-        if build.python_version:
-            version_info = version.parse(build.python_version)
-            python_version = f"{version_info.major}.{version_info.minor}"
-        else:
-            python_version = (
-                f"{sys.version_info.major}.{sys.version_info.minor}"
-            )
-
-        (
-            pypi_requirements,
-            apt_packages,
-        ) = requirements_utils.get_requirements_for_stack(
-            stack=stack, python_version=python_version
-        )
-
-        dockerfile = generate_dockerfile(
-            pypi_requirements=pypi_requirements,
-            apt_packages=apt_packages,
-            zenml_version=zenml_version,
-            python_version=python_version,
-        )
-
-        # building a docker image with requirements and apt packages from the
-        # stack only (no code). Ideally, only orchestrator requirements should
-        # be added to the docker image, but we have to instantiate the entire
-        # stack to get the orchestrator to run pipelines.
-        image_hash = generate_image_hash(dockerfile=dockerfile)
-
         runner_image = workload_manager().build_and_push_image(
             workload_id=new_deployment.id,
             dockerfile=dockerfile,
@@ -322,9 +323,9 @@ def generate_dockerfile(
         pypi_requirements_string = " ".join(
             [f"'{r}'" for r in pypi_requirements]
         )
+        lines.append("RUN pip install uv")
         lines.append(
-            f"RUN pip install --default-timeout=60 --no-cache-dir "
-            f"{pypi_requirements_string}"
+            f"RUN uv pip install --no-cache-dir {pypi_requirements_string}"
         )
 
     return "\n".join(lines)
