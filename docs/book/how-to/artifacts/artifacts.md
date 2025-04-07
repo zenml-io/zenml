@@ -67,13 +67,47 @@ In this example:
 2. The artifact is passed to `process_data()`
 3. `process_data()` returns a new artifact
 
+### Materializers: The Core of Artifact Handling
+
+One of the most important concepts in ZenML's artifact system is the **materializer**. Materializers are responsible for:
+
+- **Serializing** data when saving artifacts to storage
+- **Deserializing** data when loading artifacts from storage
+- **Generating visualizations** for artifacts in the dashboard
+- **Extracting metadata** for tracking and searching
+
+ZenML includes built-in materializers for common data types like:
+- Primitive types (`int`, `float`, `str`, `bool`)
+- Container types (`dict`, `list`, `tuple`)
+- NumPy arrays
+- Pandas DataFrames
+- Various ML model formats
+
+When a step produces an output, ZenML automatically:
+1. Identifies the appropriate materializer based on the data type (using type annotations)
+2. Uses that materializer to save the data to the artifact store
+3. Records metadata about the artifact
+
+Here's how this works in practice:
+
+```python
+@step
+def create_model() -> sklearn.linear_model.LinearRegression:
+    """Creates a model that becomes an artifact."""
+    model = LinearRegression()
+    model.fit(X_train, y_train)
+    return model  # ZenML uses an appropriate materializer for scikit-learn models
+```
+
+For custom data types, you can create your own materializers. See the [Materializers](./materializers.md) guide for details.
+
 ### Artifact Storage Mechanism
 
 ZenML handles artifact storage through this process:
 
 1. When a step produces an output, ZenML:
    - Creates a unique directory in the artifact store
-   - Uses a "materializer" to serialize the data
+   - Uses a materializer to serialize the data
    - Stores metadata about the artifact
    - Returns a reference to the artifact
 
@@ -246,24 +280,13 @@ zenml artifact prune
 
 This command deletes artifacts that are no longer referenced by any pipeline runs.
 
-## Advanced Artifact Usage
+## Advanced Topics
 
-For complex scenarios, ZenML offers advanced artifact management features:
+For more advanced topics related to artifacts, see:
 
-- **Custom data types**: Define your own data classes with custom materializers
-- **Large datasets**: Handle datasets that don't fit in memory
-- **Custom dataset classes**: Create abstractions for various data sources
-- **Data passing between pipelines**: Share artifacts across different pipelines
-
-For detailed guidance on these topics, see [Complex Use Cases](./complex_use_cases.md).
+- [Materializers](./materializers.md): Learn how to handle custom data types with materializers
+- [Visualizations](./visualizations.md): Customize artifact visualizations
 
 ## Conclusion
 
-Artifacts are a fundamental concept in ZenML that enable effective ML pipeline management. By understanding how artifacts work and following best practices for their usage, you can create reproducible, traceable, and efficient ML workflows.
-
-Key takeaways:
-- Artifacts allow automatic versioning and lineage tracking
-- Type annotations are essential for proper artifact handling
-- Materializers handle serialization/deserialization of different data types
-- Caching leverages artifacts to speed up pipeline execution
-- Complex data scenarios can be handled with custom patterns 
+Artifacts are a fundamental part of ZenML's pipeline architecture, providing versioning, lineage tracking, and reproducibility. By understanding how artifacts work, you can build more effective and maintainable ML pipelines. 

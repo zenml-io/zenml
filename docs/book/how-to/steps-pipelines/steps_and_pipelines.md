@@ -35,10 +35,11 @@ def train_model(data: dict) -> None:
 
 ### Type Annotations
 
-While optional, type annotations provide several benefits:
-- Type validation for step inputs
-- Better serialization via appropriate materializers
-- Clearer code documentation
+While optional, type annotations are highly recommended and provide several benefits:
+- **Artifact handling**: ZenML uses type annotations to determine how to serialize, store, and load artifacts. The type information guides ZenML to select the appropriate materializer for saving and loading step outputs.
+- **Type validation**: ZenML validates inputs against type annotations at runtime to catch errors early.
+- **Better serialization**: Types help ZenML choose the most appropriate materializer for efficient storage.
+- **Code documentation**: Types make your code more self-documenting and easier to understand.
 
 ```python
 from typing import Tuple
@@ -51,6 +52,8 @@ def square_root(number: int) -> float:
 def divide(a: int, b: int) -> Tuple[int, int]:
     return a // b, a % b
 ```
+
+When you specify a return type like `-> float` or `-> Tuple[int, int]`, ZenML uses this information to determine how to store the step's output in the artifact store. For instance, a step returning a pandas DataFrame with the annotation `-> pd.DataFrame` will use the pandas-specific materializer for efficient storage.
 
 If you want to enforce type annotations for all steps, set the environment variable `ZENML_ENFORCE_TYPE_ANNOTATIONS` to `True`.
 
