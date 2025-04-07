@@ -123,10 +123,6 @@ The run is automatically logged to the ZenML dashboard where you can view the DA
 
 ## Pipeline and Step Parameters
 
-Steps and pipelines in ZenML can accept inputs in two different ways: as artifacts or as parameters. Understanding this distinction is crucial before diving into parameter types and usage.
-
-### Parameter vs. Artifact Inputs
-
 When calling a step in a pipeline, inputs can be either:
 - **Artifacts**: Outputs from other steps in the same pipeline. These are tracked, versioned, and stored in the artifact store.
 - **Parameters**: Values provided explicitly when invoking a step. These are typically simple values that are directly passed to the step function.
@@ -155,17 +151,6 @@ Now that we understand the difference between artifacts and parameters, let's lo
 
 Parameters that cannot be serialized to JSON should be passed as artifacts rather than parameters.
 
-### Default Values
-
-You can provide default values for parameters:
-
-```python
-@step
-def preprocess_data(normalize: bool = True, drop_nulls: bool = False):
-    # Use parameters with defaults
-    pass
-```
-
 ### Parameterizing Steps and Pipelines
 
 Both pipelines and steps can be parameterized like regular Python functions:
@@ -188,9 +173,9 @@ You can then run the pipeline with specific parameters:
 training_pipeline(dataset_name="custom_dataset")
 ```
 
-### Passing Parameters Between Steps
+### Passing Between Steps
 
-You can pass parameters between steps in several ways:
+You can pass parameters to a step in several ways:
 
 **Via Artifacts**
 
