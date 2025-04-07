@@ -13,20 +13,16 @@
 #  permissions and limitations under the License.
 """Implementation of the Langchain OpenAI embedding materializer."""
 
-import sys
-from typing import TYPE_CHECKING, Any, ClassVar, Tuple, Type
+from typing import Any, ClassVar, Tuple, Type
+
+from langchain_community.embeddings import (
+    OpenAIEmbeddings,
+)
 
 from zenml.enums import ArtifactType
 from zenml.materializers.cloudpickle_materializer import (
     CloudpickleMaterializer,
 )
-
-if TYPE_CHECKING and sys.version_info < (3, 8):
-    OpenAIEmbeddings = Any
-else:
-    from langchain_community.embeddings import (
-        OpenAIEmbeddings,
-    )
 
 
 class LangchainOpenaiEmbeddingMaterializer(CloudpickleMaterializer):

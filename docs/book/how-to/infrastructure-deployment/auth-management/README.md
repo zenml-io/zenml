@@ -23,7 +23,7 @@ The hard-to-swallow truth is there is no single standard that unifies all authen
 
 The range of features covered by Service Connectors is extensive and going through the entire [Service Connector Guide](service-connectors-guide.md) can be overwhelming. If all you want is to get a quick overview of how Service Connectors work and what they can do for you, this section is for you.
 
-This is a representative example of how you would use a Service Connector to connect ZenML to a cloud service. This example uses [the AWS Service Connector](aws-service-connector.md) to connect ZenML to an AWS S3 bucket and then link [an S3 Artifact Store Stack Component](../../../component-guide/artifact-stores/s3.md) to it.
+This is a representative example of how you would use a Service Connector to connect ZenML to a cloud service. This example uses [the AWS Service Connector](aws-service-connector.md) to connect ZenML to an AWS S3 bucket and then link [an S3 Artifact Store Stack Component](https://docs.zenml.io/stacks/artifact-stores/s3) to it.
 
 Some details about the current alternatives to using Service Connectors and their drawbacks are provided below. Feel free to skip them if you are already familiar with them or just want to get to the good part.
 
@@ -38,7 +38,7 @@ There are quicker alternatives to using a Service Connector to link an S3 Artifa
     ```shell
     zenml artifact-store register s3 --flavor s3 --path=s3://BUCKET_NAME --key=AWS_ACCESS_KEY --secret=AWS_SECRET_KEY
     ```
-2.  [a ZenML secret](../../../getting-started/deploying-zenml/secret-management.md) can hold the AWS credentials and then be referenced in the S3 Artifact Store configuration attributes:
+2.  [a ZenML secret](https://docs.zenml.io/getting-started/deploying-zenml/secret-management) can hold the AWS credentials and then be referenced in the S3 Artifact Store configuration attributes:
 
     ```shell
     zenml secret create aws --aws_access_key_id=AWS_ACCESS_KEY --aws_secret_access_key=AWS_SECRET_KEY
@@ -423,7 +423,7 @@ Service connector 'aws-s3' of type 'aws' with id '96a92154-4ec7-4722-bc18-21eeea
 ```
 {% endcode %}
 
-The AWS Service Connector discovered and lifted the AWS Secret Key that was configured on the local machine and securely stored it in the [Secrets Store](../../../getting-started/deploying-zenml/secret-management.md).
+The AWS Service Connector discovered and lifted the AWS Secret Key that was configured on the local machine and securely stored it in the [Secrets Store](https://docs.zenml.io/getting-started/deploying-zenml/secret-management).
 
 Moreover, the following security best practice is automatically enforced by the AWS connector: the AWS Secret Key will be kept hidden on the ZenML Server and the clients will never use it directly to gain access to any AWS resources. Instead, the AWS Service Connector will generate short-lived security tokens and distribute those to clients. It will also take care of issuing new tokens when those expire. This is identifiable from the `session-token` authentication method and the session duration configuration attributes.
 

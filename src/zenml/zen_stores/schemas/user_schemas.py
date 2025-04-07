@@ -34,6 +34,7 @@ from zenml.models import (
 )
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
+from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
@@ -82,6 +83,15 @@ class UserSchema(NamedSchema, table=True):
     external_user_id: Optional[UUID] = Field(nullable=True)
     is_admin: bool = Field(default=False)
     user_metadata: Optional[str] = Field(nullable=True)
+
+    default_project_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target="project",
+        source_column="default_project_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
 
     stacks: List["StackSchema"] = Relationship(back_populates="user")
     components: List["StackComponentSchema"] = Relationship(
@@ -299,6 +309,7 @@ class UserSchema(NamedSchema, table=True):
                 created=self.created,
                 updated=self.updated,
                 is_admin=self.is_admin,
+                default_project_id=self.default_project_id,
             ),
             metadata=metadata,
         )

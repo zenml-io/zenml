@@ -4,7 +4,7 @@ description: Managing MLFlow logged models and artifacts
 
 # MLflow Model Registry
 
-[MLflow](https://www.mlflow.org/docs/latest/tracking.html) is a popular tool that helps you track experiments, manage models and even deploy them to different environments. ZenML already provides a [MLflow Experiment Tracker](../experiment-trackers/mlflow.md) that you can use to track your experiments, and an [MLflow Model Deployer](../model-deployers/mlflow.md) that you can use to deploy your models locally.
+[MLflow](https://www.mlflow.org/docs/latest/tracking.html) is a popular tool that helps you track experiments, manage models and even deploy them to different environments. ZenML already provides a [MLflow Experiment Tracker](https://docs.zenml.io/stacks/experiment-trackers/mlflow) that you can use to track your experiments, and an [MLflow Model Deployer](https://docs.zenml.io/stacks/model-deployers/mlflow) that you can use to deploy your models locally.
 
 The MLflow model registry uses [the MLflow model registry service](https://mlflow.org/docs/latest/model-registry.html) to manage and track ML models and their artifacts and provides a user interface to browse them:
 
@@ -23,7 +23,7 @@ This is particularly useful in the following scenarios:
 
 ## How do you deploy it?
 
-The MLflow Experiment Tracker flavor is provided by the MLflow ZenML integration, so you need to install it on your local machine to be able to register an MLflow model registry component. Note that the MLFlow model registry requires [MLFlow Experiment Tracker](../experiment-trackers/mlflow.md) to be present in the stack.
+The MLflow Experiment Tracker flavor is provided by the MLflow ZenML integration, so you need to install it on your local machine to be able to register an MLflow model registry component. Note that the MLFlow model registry requires [MLFlow Experiment Tracker](https://docs.zenml.io/stacks/experiment-trackers/mlflow) to be present in the stack.
 
 ```shell
 zenml integration install mlflow -y
@@ -70,7 +70,7 @@ def mlflow_registry_training_pipeline():
 ```
 
 {% hint style="warning" %}
-The `mlflow_register_model_step` expects that the `model` it receives has already been logged to MLflow in a previous step. E.g., for a scikit-learn model, you would need to have used `mlflow.sklearn.autolog()` or `mlflow.sklearn.log_model(model)` in a previous step. See the [MLflow experiment tracker documentation](../experiment-trackers/mlflow.md) for more information on how to log models to MLflow from your ZenML steps.
+The `mlflow_register_model_step` expects that the `model` it receives has already been logged to MLflow in a previous step. E.g., for a scikit-learn model, you would need to have used `mlflow.sklearn.autolog()` or `mlflow.sklearn.log_model(model)` in a previous step. See the [MLflow experiment tracker documentation](https://docs.zenml.io/stacks/experiment-trackers/mlflow) for more information on how to log models to MLflow from your ZenML steps.
 {% endhint %}
 
 #### List of available parameters
@@ -114,7 +114,7 @@ zenml model-registry models register-version Tensorflow-model \
 
 ### Deploy a registered model
 
-After you have registered a model in the MLflow model registry, you can also easily deploy it as a prediction service. Checkout the [MLflow model deployer documentation](../model-deployers/mlflow.md#deploy-from-model-registry) for more information on how to do that.
+After you have registered a model in the MLflow model registry, you can also easily deploy it as a prediction service. Checkout the [MLflow model deployer documentation](https://docs.zenml.io/stacks/model-deployers/mlflow#deploy-from-model-registry) for more information on how to do that.
 
 ### Interact with registered models
 
@@ -179,6 +179,6 @@ $ zenml model-registry models get-version tensorflow-mnist-model -v 1
 
 Finally, to delete a registered model or a specific model version, you can use the `zenml model-registry models delete REGISTERED_MODEL_NAME` and `zenml model-registry models delete-version REGISTERED_MODEL_NAME -v VERSION` commands respectively.
 
-Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-mlflow/#zenml.integrations.mlflow.model\_registry.MLFlowModelRegistry) to see more about the interface and implementation.
+Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-mlflow.html#zenml.integrations.mlflow) to see more about the interface and implementation.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

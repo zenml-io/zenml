@@ -88,13 +88,13 @@ Generalized evals and frameworks provide a structured approach to evaluating you
 When using Generalized evals, it's important to consider their limitations and caveats. While they provide valuable insights, they should be complemented with custom evals tailored to your specific use case. Some possible options for you to check out include:
 
 - [prodigy-evaluate](https://github.com/explosion/prodigy-evaluate?tab=readme-ov-file)
-- [ragas](https://docs.ragas.io/en/stable/getstarted/monitoring.html)
+- [ragas](https://docs.ragas.io/en/stable/getstarted/)
 - [giskard](https://docs.giskard.ai/en/stable/getting_started/quickstart/quickstart_llm.html)
 - [langcheck](https://github.com/citadel-ai/langcheck)
 - [nervaluate](https://github.com/MantisAI/nervaluate) (for NER)
 
 It's easy to build in one of these frameworks into your ZenML pipeline. The
-implementation of evaluation in [the `llm-lora-finetuning` project](https://github.com/zenml-io/zenml-projects/tree/main/llm-lora-finetuning) is a good
+implementation of evaluation in [the `llm-lora-finetuning` project](https://github.com/zenml-io/zenml-projects/tree/main/gamesense) is a good
 example of how to do this. We used the `evaluate` library for ROUGE evaluation,
 but you could easily swap this out for another framework if you prefer. See [the previous section](finetuning-with-accelerate.md#implementation-details) for more details.
 

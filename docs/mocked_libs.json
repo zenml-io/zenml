@@ -263,5 +263,13 @@
     "modal.cli",
     "modal.cli.run",
     "modal_proto",
-    "lightning_sdk"
+    "lightning_sdk",
+    "IPython.display", 
+    "github.Auth", 
+    "google_cloud_pipeline_components", 
+    "google_cloud_pipeline_components.v1", 
+    "google_cloud_pipeline_components.v1.custom_job", 
+    "google_cloud_pipeline_components.v1.custom_job.utils", 
+    "kfp.dsl", 
+    "kfp.dsl.base_component"
 ]
