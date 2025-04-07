@@ -48,7 +48,7 @@
 
 ## Tutorial
 
-* [Scheduled pipelines](tutorials/scheduled-pipelines.md)
+* [Scheduled pipelines](tutorials/managing-scheduled-pipelines.md)
 * [Organizing pipelines and models](tutorials/organizing-pipelines-and-models.md)
 
 ## Examples
