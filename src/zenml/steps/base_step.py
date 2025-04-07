@@ -605,9 +605,9 @@ class BaseStep:
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
         model: Optional["Model"] = None,
-        merge: bool = True,
         retry: Optional[StepRetryConfig] = None,
         substitutions: Optional[Dict[str, str]] = None,
+        merge: bool = True,
     ) -> T:
         """Configures the step.
 
@@ -643,14 +643,14 @@ class BaseStep:
             on_success: Callback function in event of success of the step. Can
                 be a function with no arguments, or a source path to such a
                 function (e.g. `module.my_function`).
-            model: configuration of the model version in the Model Control Plane.
+            model: Model to use for this step.
+            retry: Configuration for retrying the step in case of failure.
+            substitutions: Extra placeholders to use in the name template.
             merge: If `True`, will merge the given dictionary configurations
                 like `parameters` and `settings` with existing
                 configurations. If `False` the given configurations will
                 overwrite all existing ones. See the general description of this
                 method for an example.
-            retry: Configuration for retrying the step in case of failure.
-            substitutions: Extra placeholders to use in the name template.
 
         Returns:
             The step instance that this method was called on.
@@ -739,8 +739,9 @@ class BaseStep:
         on_failure: Optional["HookSpecification"] = None,
         on_success: Optional["HookSpecification"] = None,
         model: Optional["Model"] = None,
-        merge: bool = True,
+        retry: Optional[StepRetryConfig] = None,
         substitutions: Optional[Dict[str, str]] = None,
+        merge: bool = True,
     ) -> "BaseStep":
         """Copies the step and applies the given configurations.
 
@@ -766,13 +767,14 @@ class BaseStep:
             on_success: Callback function in event of success of the step. Can
                 be a function with no arguments, or a source path to such a
                 function (e.g. `module.my_function`).
-            model: configuration of the model version in the Model Control Plane.
+            model: Model to use for this step.
+            retry: Configuration for retrying the step in case of failure.
+            substitutions: Extra placeholders for the step name.
             merge: If `True`, will merge the given dictionary configurations
                 like `parameters` and `settings` with existing
                 configurations. If `False` the given configurations will
                 overwrite all existing ones. See the general description of this
                 method for an example.
-            substitutions: Extra placeholders for the step name.
 
         Returns:
             The copied step instance.
@@ -792,8 +794,9 @@ class BaseStep:
             on_failure=on_failure,
             on_success=on_success,
             model=model,
-            merge=merge,
+            retry=retry,
             substitutions=substitutions,
+            merge=merge,
         )
         return step_copy
 
