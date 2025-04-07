@@ -1,5 +1,56 @@
 <!-- markdown-link-check-disable -->
 
+# 0.80.1
+
+The `0.80.1` release focuses on bug fixes and performance improvements following the major `0.80.0` update. This release addresses several critical issues, particularly improving the CLI functionality when used with the REST API through a deployed ZenML instance. Additionally, this version introduces [a restructured documentation architecture](https://docs.zenml.io) for improved user experience.
+
+## Improvements
+
+- Import integrations lazily for better performance
+- Added ability to store a default project for users
+
+## Fixes
+
+- Fixed CLI combined with RestZenStore and filters with multiple entries
+- Fixed stack validation for incluster Kubernetes orchestrator
+- Fixed stack and component URL when connected to a cloud workspace
+- Fixed code repository host fallback
+- Fixed version validation
+- Various other minor bugfixes
+
+## Documentation
+
+- Restructured entire documentation for better organization
+- Fixed broken links in API documentation
+- Refined logging to debug level for service connectors
+- Removed redundant log messages
+
+## What's Changed
+* Adding `0.80.0` to the migration tests by @bcdurak in https://github.com/zenml-io/zenml/pull/3442
+* Adding the disabled flavor test back by @bcdurak in https://github.com/zenml-io/zenml/pull/3431
+* Stop CLI profiler running so much by @strickvl in https://github.com/zenml-io/zenml/pull/3449
+* Add missing fallback host for code repositories by @schustmi in https://github.com/zenml-io/zenml/pull/3434
+* Fix stack and component URL when connected to a cloud workspace by @schustmi in https://github.com/zenml-io/zenml/pull/3451
+* Fix stack validation for incluster Kubernetes orchestrator by @schustmi in https://github.com/zenml-io/zenml/pull/3450
+* Bump `click` dependency by @strickvl in https://github.com/zenml-io/zenml/pull/3445
+* Fix 0.80.0 database migration by @stefannica in https://github.com/zenml-io/zenml/pull/3453
+* Pin the ZenML Terraform provider version by @stefannica in https://github.com/zenml-io/zenml/pull/3443
+* Import integrations lazily by @stefannica in https://github.com/zenml-io/zenml/pull/3419
+* Remove Segment analytics script and scarf image load. by @htahir1 in https://github.com/zenml-io/zenml/pull/3455
+* Restructure entire docs by @htahir1 in https://github.com/zenml-io/zenml/pull/3447
+* Refactor logging to debug level for service connectors by @htahir1 in https://github.com/zenml-io/zenml/pull/3456
+* Removing redundant log messages by @bcdurak in https://github.com/zenml-io/zenml/pull/3459
+* Fix broken link in API documentation table by @htahir1 in https://github.com/zenml-io/zenml/pull/3462
+* Add the ability to store a default project for a user by @schustmi in https://github.com/zenml-io/zenml/pull/3457
+* Fixing the CLI combined with RestZenStore and filters with multiple entries by @bcdurak in https://github.com/zenml-io/zenml/pull/3464
+* Don't ask for active project when listing projects by @stefannica in https://github.com/zenml-io/zenml/pull/3466
+* Use the build python version to collect stack requirements for run templates by @stefannica in https://github.com/zenml-io/zenml/pull/3465
+* Fix version validation by @bcdurak in https://github.com/zenml-io/zenml/pull/3467
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.80.0...0.80.1
+
+
 # 0.80.0
 
 The 0.80.0 release is one of our biggest updates in a while! This version introduces a major refactoring of workspaces into projects, enhances tagging capabilities, and improves GitLab repository support. This release also features significant performance optimizations for Docker builds and CLI operations.
@@ -285,6 +336,32 @@ multi-domain ZenML Pro installations.
 
 ## What's Changed
 
+* Fix some docs by @htahir1 in https://github.com/zenml-io/zenml/pull/3302
+* Replace deprecated `datetime.utcnow()` with `datetime.now(timezone.utc)`  by @aiakide in https://github.com/zenml-io/zenml/pull/3265
+* Adding the missing VertexAI experiment tracker docs by @bcdurak in https://github.com/zenml-io/zenml/pull/3308
+* Create Sagemaker pipeline schedules if specified by @htahir1 in https://github.com/zenml-io/zenml/pull/3271
+* Formatting by @schustmi in https://github.com/zenml-io/zenml/pull/3307
+* Remove trailing slashes from zenml login URLs by @stefannica in https://github.com/zenml-io/zenml/pull/3312
+* Fix Kubernetes service connector by @stefannica in https://github.com/zenml-io/zenml/pull/3313
+* Add notes on missing features for on-prem ZenML Pro deployments by @stefannica in https://github.com/zenml-io/zenml/pull/3301
+* Fix wrong warning log when directly connecting to MySQL DB by @schustmi in https://github.com/zenml-io/zenml/pull/3311
+* Fix typo by @schustmi in https://github.com/zenml-io/zenml/pull/3316
+* Minor fix for Sagemaker by @bcdurak in https://github.com/zenml-io/zenml/pull/3318
+* Rework timestamp utilization for timezone consistency by @stefannica in https://github.com/zenml-io/zenml/pull/3314
+* Add broken links checker by @htahir1 in https://github.com/zenml-io/zenml/pull/3305
+* Schedule timezone fixes by @schustmi in https://github.com/zenml-io/zenml/pull/3315
+* Misc code repository improvements by @schustmi in https://github.com/zenml-io/zenml/pull/3306
+* Add core concepts video by @htahir1 in https://github.com/zenml-io/zenml/pull/3324
+* Fix code download for custom flavor components by @schustmi in https://github.com/zenml-io/zenml/pull/3323
+* Allow passing run configuration as dict when triggering pipelines by @schustmi in https://github.com/zenml-io/zenml/pull/3326
+* Fix sorting by columns with potentially empty values by @schustmi in https://github.com/zenml-io/zenml/pull/3325
+* Allow custom log formats by @schustmi in https://github.com/zenml-io/zenml/pull/3288
+* Add vertex persistent resource to settings for step operator by @htahir1 in https://github.com/zenml-io/zenml/pull/3304
+* Fix use of config file in vLLM pipelines by @wjayesh in https://github.com/zenml-io/zenml/pull/3322
+* Fixing the CI with the new `huggingface-hub` version by @bcdurak in https://github.com/zenml-io/zenml/pull/3329
+* Handling string values as SecretStrs in store configurations by @bcdurak in https://github.com/zenml-io/zenml/pull/3319
+* More code repository improvements by @schustmi in https://github.com/zenml-io/zenml/pull/3327
+* Fix materializer for new pytorch version by @schustmi in https://github.com/zenml-io/zenml/pull/3331
 * On-prem Pro tenants: secure enrollment, CSRF tokens and cross-domain authorization flow by @stefannica in https://github.com/zenml-io/zenml/pull/3264
 * Fix the misc release actions by @schustmi in https://github.com/zenml-io/zenml/pull/3286
 * Add 0.72.0 to the migration tests by @schustmi in https://github.com/zenml-io/zenml/pull/3285

@@ -123,7 +123,7 @@ During pipeline run a model can be also implicitly created (if not exists), in s
 {% endhint %}
 
 ```python
-from zenml.models import Model
+from zenml import Model
 
 # Create a model version with tags
 model = Model(
@@ -141,7 +141,7 @@ def my_pipeline(...):
 You can also assign tags when creating or updating models with the Python SDK:
 
 ```python
-from zenml.models import Model
+from zenml import Model
 from zenml.client import Client
 
 # Create or register a new model with tags
@@ -195,7 +195,7 @@ The recommended way to create exclusive tags is using the `Tag` object:
 ```python
 from zenml import pipeline, Tag
 
-@pipeline(tags=["not_an_exclusive_tag", Tag("an_exclusive_tag", exclusive=True)])
+@pipeline(tags=["not_an_exclusive_tag", Tag(name="an_exclusive_tag", exclusive=True)])
 def my_pipeline():
     ...
 ```
@@ -223,7 +223,7 @@ Cascade tags allow you to associate a tag from a pipeline with all artifact vers
 ```python
 from zenml import pipeline, Tag
 
-@pipeline(tags=["normal_tag", Tag("cascade_tag", cascade=True)])
+@pipeline(tags=["normal_tag", Tag(name="cascade_tag", cascade=True)])
 def my_pipeline():
     ...
 ```

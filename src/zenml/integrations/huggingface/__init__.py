@@ -37,11 +37,13 @@ class HuggingfaceIntegration(Integration):
         from zenml.integrations.huggingface import services
 
     @classmethod
-    def get_requirements(cls, target_os: Optional[str] = None) -> List[str]:
+    def get_requirements(cls, target_os: Optional[str] = None, python_version: Optional[str] = None
+    ) -> List[str]:
         """Defines platform specific requirements for the integration.
 
         Args:
             target_os: The target operating system.
+            python_version: The Python version to use for the requirements.
 
         Returns:
             A list of requirements.
@@ -59,7 +61,7 @@ class HuggingfaceIntegration(Integration):
         from zenml.integrations.pandas import PandasIntegration
 
         return requirements + \
-            PandasIntegration.get_requirements(target_os=target_os)
+            PandasIntegration.get_requirements(target_os=target_os, python_version=python_version)
 
     @classmethod
     def flavors(cls) -> List[Type[Flavor]]:
