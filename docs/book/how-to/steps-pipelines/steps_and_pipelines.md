@@ -176,19 +176,6 @@ def my_pipeline():
     my_step(input_1=int_artifact, input_2=42)
 ```
 
-### Dynamic Parameters
-
-You can use dynamic expressions for parameters:
-
-```python
-from datetime import datetime
-
-@pipeline
-def my_pipeline():
-    run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
-    my_step(run_id=run_id)
-```
-
 ### Passing Parameters Between Steps
 
 You can pass parameters between steps in several ways:

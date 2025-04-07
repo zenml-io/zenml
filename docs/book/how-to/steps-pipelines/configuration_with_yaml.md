@@ -7,7 +7,7 @@ description: >-
 
 ZenML provides powerful configuration capabilities through YAML files that allow you to customize pipeline and step behavior without changing your code. This is particularly useful for:
 
-- Separating configuration from code (following the [12-factor app](https://12factor.net/) methodology)
+- Separating configuration from code
 - Experimenting with different parameters across multiple pipeline runs
 - Managing environment-specific settings (development, staging, production)
 - Setting up consistent configurations across a team of data scientists
