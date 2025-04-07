@@ -16,7 +16,6 @@
 import os
 import tarfile
 from pathlib import Path
-from tempfile import mkdtemp
 from typing import Any, ClassVar, Tuple, Type
 
 from zenml.enums import ArtifactType
@@ -49,35 +48,35 @@ class PathMaterializer(BaseMaterializer):
         Raises:
             FileNotFoundError: If the artifact is not found in the artifact store.
         """
-        directory = mkdtemp(prefix="zenml-artifact")
+        # Create a temporary directory that will persist until step execution ends
+        with self.get_temporary_directory(delete_at_exit=False) as directory:
+            # Check if we're loading a file or directory by looking for the archive
+            archive_path_remote = os.path.join(self.uri, self.ARCHIVE_NAME)
+            file_path_remote = os.path.join(self.uri, self.FILE_NAME)
 
-        # Check if we're loading a file or directory by looking for the archive
-        archive_path_remote = os.path.join(self.uri, self.ARCHIVE_NAME)
-        file_path_remote = os.path.join(self.uri, self.FILE_NAME)
+            if fileio.exists(archive_path_remote):
+                # This is a directory artifact
+                archive_path_local = os.path.join(directory, self.ARCHIVE_NAME)
+                fileio.copy(archive_path_remote, archive_path_local)
 
-        if fileio.exists(archive_path_remote):
-            # This is a directory artifact
-            archive_path_local = os.path.join(directory, self.ARCHIVE_NAME)
-            fileio.copy(archive_path_remote, archive_path_local)
+                # Extract the archive to the temporary directory
+                with tarfile.open(archive_path_local, "r:gz") as tar:
+                    tar.extractall(path=directory)
 
-            # Extract the archive to the temporary directory
-            with tarfile.open(archive_path_local, "r:gz") as tar:
-                tar.extractall(path=directory)
-
-            # Clean up the archive file
-            os.remove(archive_path_local)
-            return Path(directory)
-        elif fileio.exists(file_path_remote):
-            # This is a single file artifact
-            file_path_local = os.path.join(
-                directory, os.path.basename(file_path_remote)
-            )
-            fileio.copy(file_path_remote, file_path_local)
-            return Path(file_path_local)
-        else:
-            raise FileNotFoundError(
-                f"Could not find artifact at {archive_path_remote} or {file_path_remote}"
-            )
+                # Clean up the archive file
+                os.remove(archive_path_local)
+                return Path(directory)
+            elif fileio.exists(file_path_remote):
+                # This is a single file artifact
+                file_path_local = os.path.join(
+                    directory, os.path.basename(file_path_remote)
+                )
+                fileio.copy(file_path_remote, file_path_local)
+                return Path(file_path_local)
+            else:
+                raise FileNotFoundError(
+                    f"Could not find artifact at {archive_path_remote} or {file_path_remote}"
+                )
 
     def save(self, data: Any) -> None:
         """Store the directory or file in the artifact store.
@@ -89,31 +88,30 @@ class PathMaterializer(BaseMaterializer):
 
         if data.is_dir():
             # Handle directory artifact
-            directory = mkdtemp(prefix="zenml-artifact")
-            archive_path = os.path.join(directory, self.ARCHIVE_NAME)
+            with self.get_temporary_directory(
+                delete_at_exit=True
+            ) as directory:
+                archive_path = os.path.join(directory, self.ARCHIVE_NAME)
 
-            # Create a compressed tar archive
-            with tarfile.open(archive_path, "w:gz") as tar:
-                # Get the current working directory
-                original_dir = os.getcwd()
-                try:
-                    # Change to the source directory to preserve relative paths
-                    os.chdir(str(data))
+                # Create a compressed tar archive
+                with tarfile.open(archive_path, "w:gz") as tar:
+                    # Get the current working directory
+                    original_dir = os.getcwd()
+                    try:
+                        # Change to the source directory to preserve relative paths
+                        os.chdir(str(data))
 
-                    # Add all files and directories
-                    for item in os.listdir("."):
-                        tar.add(item)
-                finally:
-                    # Restore the original working directory
-                    os.chdir(original_dir)
+                        # Add all files and directories
+                        for item in os.listdir("."):
+                            tar.add(item)
+                    finally:
+                        # Restore the original working directory
+                        os.chdir(original_dir)
 
-            # Copy the archive to the artifact store
-            fileio.copy(
-                archive_path, os.path.join(self.uri, self.ARCHIVE_NAME)
-            )
-
-            # Clean up the temporary archive
-            os.remove(archive_path)
+                # Copy the archive to the artifact store
+                fileio.copy(
+                    archive_path, os.path.join(self.uri, self.ARCHIVE_NAME)
+                )
         else:
             # Handle single file artifact
             file_path_remote = os.path.join(self.uri, self.FILE_NAME)
