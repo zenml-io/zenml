@@ -38,7 +38,6 @@ def train_model(data: dict) -> None:
 While optional, type annotations are highly recommended and provide several benefits:
 - **Artifact handling**: ZenML uses type annotations to determine how to serialize, store, and load artifacts. The type information guides ZenML to select the appropriate materializer for saving and loading step outputs.
 - **Type validation**: ZenML validates inputs against type annotations at runtime to catch errors early.
-- **Better serialization**: Types help ZenML choose the most appropriate materializer for efficient storage.
 - **Code documentation**: Types make your code more self-documenting and easier to understand.
 
 ```python
@@ -124,29 +123,31 @@ The run is automatically logged to the ZenML dashboard where you can view the DA
 
 ## Pipeline and Step Parameters
 
-Both pipelines and steps can be parameterized like regular Python functions:
+Steps and pipelines in ZenML can accept inputs in two different ways: as artifacts or as parameters. Understanding this distinction is crucial before diving into parameter types and usage.
+
+### Parameter vs. Artifact Inputs
+
+When calling a step in a pipeline, inputs can be either:
+- **Artifacts**: Outputs from other steps in the same pipeline. These are tracked, versioned, and stored in the artifact store.
+- **Parameters**: Values provided explicitly when invoking a step. These are typically simple values that are directly passed to the step function.
 
 ```python
-@step
-def train_model(data: dict, learning_rate: float = 0.01, epochs: int = 10) -> None:
-    # Use learning_rate and epochs parameters
-    print(f"Training with learning rate: {learning_rate} for {epochs} epochs")
-
 @pipeline
-def training_pipeline(dataset_name: str = "default_dataset"):
-    data = load_data(dataset_name=dataset_name)
-    train_model(data=data, learning_rate=0.005, epochs=20)
+def my_pipeline():
+    int_artifact = some_other_step()  # This is an artifact
+    # input_1 is an artifact, input_2 is a parameter
+    my_step(input_1=int_artifact, input_2=42)
 ```
 
-You can then run the pipeline with specific parameters:
+In this example:
+- `input_1` is an artifact because it comes from another step
+- `input_2` is a parameter because it's a literal value (42) provided directly
 
-```python
-training_pipeline(dataset_name="custom_dataset")
-```
+Artifacts are automatically tracked and versioned by ZenML, while parameters are simply passed through to the step function. This distinction affects how you should design your steps and what types of values you can use.
 
 ### Parameter Types
 
-ZenML step parameters can be:
+Now that we understand the difference between artifacts and parameters, let's look at what types of values can be used as parameters:
 
 1. **Primitive types**: `int`, `float`, `str`, `bool`
 2. **Container types**: `list`, `dict`, `tuple` (containing primitives)
@@ -165,18 +166,26 @@ def preprocess_data(normalize: bool = True, drop_nulls: bool = False):
     pass
 ```
 
-### Parameter vs. Artifact Inputs
+### Parameterizing Steps and Pipelines
 
-When calling a step in a pipeline, inputs can be either:
-- **Parameters**: Values provided explicitly when invoking a step. Only JSON-serializable values can be passed as parameters.
-- **Artifacts**: Outputs from other steps in the same pipeline.
+Both pipelines and steps can be parameterized like regular Python functions:
 
 ```python
+@step
+def train_model(data: dict, learning_rate: float = 0.01, epochs: int = 10) -> None:
+    # Use learning_rate and epochs parameters
+    print(f"Training with learning rate: {learning_rate} for {epochs} epochs")
+
 @pipeline
-def my_pipeline():
-    int_artifact = some_other_step()
-    # input_1 is an artifact, input_2 is a parameter
-    my_step(input_1=int_artifact, input_2=42)
+def training_pipeline(dataset_name: str = "default_dataset"):
+    data = load_data(dataset_name=dataset_name)
+    train_model(data=data, learning_rate=0.005, epochs=20)
+```
+
+You can then run the pipeline with specific parameters:
+
+```python
+training_pipeline(dataset_name="custom_dataset")
 ```
 
 ### Passing Parameters Between Steps
