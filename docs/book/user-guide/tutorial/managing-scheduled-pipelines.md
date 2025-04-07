@@ -142,6 +142,8 @@ zenml pipeline schedule list --pipeline_id my_pipeline_id
 
 Here's an example of what the CLI output might look like:
 
+![Schedules list CLI](../.gitbook/assets/pipeline-schedules-list.png)
+
 #### Step 3.2: Verify the Schedule in the Orchestrator
 
 To ensure the schedule was properly created in Vertex AI, we can verify it using the Google Cloud SDK:
