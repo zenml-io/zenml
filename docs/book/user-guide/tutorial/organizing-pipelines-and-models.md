@@ -1,8 +1,11 @@
 ---
-description: A step-by-step tutorial on effectively organizing your ML assets in ZenML using tags and projects
+description: >-
+  A step-by-step tutorial on effectively organizing your ML assets in ZenML
+  using tags and projects
+icon: inbox-full
 ---
 
-# Organizing Pipelines, Models, and Artifacts: A Cookbook
+# Organizing pipelines and models
 
 This cookbook demonstrates how to effectively organize your machine learning assets in ZenML using tags and projects. We'll implement a fraud detection system while applying increasingly sophisticated organization techniques.
 
@@ -11,13 +14,12 @@ This cookbook demonstrates how to effectively organize your machine learning ass
 As ML projects grow, effective organization becomes critical. ZenML provides two powerful organization mechanisms:
 
 1. **Tags**: Flexible labels that can be applied to various entities (pipelines, runs, artifacts, models)
-2. **Projects** (ZenML Pro): Namespace-based isolation for logical separation
+2. **Projects** (ZenML Pro): Namespace-based isolation for logical separation\
    between initiatives or teams
 
 {% hint style="info" %}
 For our full reference documentation on things covered in this tutorial, see the [Tagging](https://docs.zenml.io/how-to/data-artifact-management/handle-data-artifacts/tagging) page, the [Projects](https://docs.zenml.io/pro/core-concepts/projects) page, and the [Model Control Plane](https://docs.zenml.io/how-to/model-management-metrics/model-control-plane) page.
 {% endhint %}
-
 
 ## Prerequisites
 
@@ -391,6 +393,6 @@ A well-designed tagging strategy helps maintain organization as your ML project 
 
 Now that you understand how to organize your ML assets, consider exploring:
 
-1. [Managing scheduled pipelines](managing-scheduled-pipelines.md) to automate your ML workflows
+1. [Managing scheduled pipelines](../tutorial/managing-scheduled-pipelines.md) to automate your ML workflows
 2. Integrating your tagging strategy with [CI/CD pipelines](https://docs.zenml.io/user-guides/production-guide/ci-cd)
 3. [Ways to trigger pipelines](https://docs.zenml.io/how-to/trigger-pipelines)
