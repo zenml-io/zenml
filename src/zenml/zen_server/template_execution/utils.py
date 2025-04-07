@@ -344,7 +344,8 @@ def deployment_request_from_template(
         user_id: ID of the user that is trying to run the template.
 
     Raises:
-        ValueError: If the run configuration is missing step parameters.
+        ValueError: If there are missing/extra step parameters in the run
+            configuration.
 
     Returns:
         The generated deployment request.
@@ -395,10 +396,17 @@ def deployment_request_from_template(
                 step_config_dict, update=update_dict
             )
 
-        if configured_parameters != required_parameters:
-            missing_parameters = required_parameters - configured_parameters
+        unknown_parameters = configured_parameters - required_parameters
+        if unknown_parameters:
             raise ValueError(
-                "Run configuration is missing missing the following required "
+                "Run configuration contains the following unknown "
+                f"parameters for step {step.config.name}: {unknown_parameters}."
+            )
+
+        missing_parameters = required_parameters - configured_parameters
+        if missing_parameters:
+            raise ValueError(
+                "Run configuration is missing the following required "
                 f"parameters for step {step.config.name}: {missing_parameters}."
             )
 
