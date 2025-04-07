@@ -56,7 +56,10 @@ from zenml.enums import StackComponentType
 from zenml.exceptions import EntityExistsError
 from zenml.hooks.hook_validators import resolve_and_validate_hook
 from zenml.logger import get_logger
-from zenml.logging.step_logging import StepLogsStorageContext, prepare_logs_uri
+from zenml.logging.step_logging import (
+    PipelineLogsStorageContext,
+    prepare_logs_uri,
+)
 from zenml.models import (
     CodeReferenceRequest,
     LogsRequest,
@@ -132,6 +135,7 @@ class Pipeline:
         enable_artifact_metadata: Optional[bool] = None,
         enable_artifact_visualization: Optional[bool] = None,
         enable_step_logs: Optional[bool] = None,
+        enable_pipeline_logs: Optional[bool] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         tags: Optional[List[Union[str, "Tag"]]] = None,
         extra: Optional[Dict[str, Any]] = None,
@@ -151,6 +155,7 @@ class Pipeline:
             enable_artifact_visualization: If artifact visualization should be
                 enabled for this pipeline.
             enable_step_logs: If step logs should be enabled for this pipeline.
+            enable_pipeline_logs: If pipeline logs should be enabled for this pipeline.
             settings: Settings for this pipeline.
             tags: Tags to apply to runs of this pipeline.
             extra: Extra configurations for this pipeline.
@@ -176,6 +181,7 @@ class Pipeline:
                 enable_artifact_metadata=enable_artifact_metadata,
                 enable_artifact_visualization=enable_artifact_visualization,
                 enable_step_logs=enable_step_logs,
+                enable_pipeline_logs=enable_pipeline_logs,
                 settings=settings,
                 tags=tags,
                 extra=extra,
@@ -295,6 +301,7 @@ class Pipeline:
         enable_artifact_metadata: Optional[bool] = None,
         enable_artifact_visualization: Optional[bool] = None,
         enable_step_logs: Optional[bool] = None,
+        enable_pipeline_logs: Optional[bool] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         tags: Optional[List[Union[str, "Tag"]]] = None,
         extra: Optional[Dict[str, Any]] = None,
@@ -324,6 +331,7 @@ class Pipeline:
             enable_artifact_visualization: If artifact visualization should be
                 enabled for this pipeline.
             enable_step_logs: If step logs should be enabled for this pipeline.
+            enable_pipeline_logs: If pipeline logs should be enabled for this pipeline.
             settings: settings for this pipeline.
             tags: Tags to apply to runs of this pipeline.
             extra: Extra configurations for this pipeline.
@@ -366,6 +374,7 @@ class Pipeline:
                 "enable_artifact_metadata": enable_artifact_metadata,
                 "enable_artifact_visualization": enable_artifact_visualization,
                 "enable_step_logs": enable_step_logs,
+                "enable_pipeline_logs": enable_pipeline_logs,
                 "settings": settings,
                 "tags": tags,
                 "extra": extra,
@@ -590,6 +599,8 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         enable_artifact_metadata: Optional[bool] = None,
         enable_artifact_visualization: Optional[bool] = None,
         enable_step_logs: Optional[bool] = None,
+        enable_pipeline_logs: Optional[bool] = None,
+        deployment: Optional[PipelineDeploymentBase] = None,
         schedule: Optional[Schedule] = None,
         build: Union[str, "UUID", "PipelineBuildBase", None] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
@@ -612,6 +623,9 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             enable_artifact_visualization: If artifact visualization should be
                 enabled for this pipeline run.
             enable_step_logs: If step logs should be enabled for this pipeline.
+            enable_pipeline_logs: If pipeline logs should be enabled for this
+                pipeline run.
+            deployment: Optional pre-compiled deployment to use for the run.
             schedule: Optional schedule to use for the run.
             build: Optional build to use for the run.
             settings: Settings for this pipeline run.
@@ -636,19 +650,21 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             ValueError: If the orchestrator doesn't support scheduling, but a
                 schedule was given
         """
-        deployment, schedule, build = self._compile(
-            config_path=config_path,
-            run_name=run_name,
-            enable_cache=enable_cache,
-            enable_artifact_metadata=enable_artifact_metadata,
-            enable_artifact_visualization=enable_artifact_visualization,
-            enable_step_logs=enable_step_logs,
-            steps=step_configurations,
-            settings=settings,
-            schedule=schedule,
-            build=build,
-            extra=extra,
-        )
+        if deployment is None:
+            deployment, schedule, build = self._compile(
+                config_path=config_path,
+                run_name=run_name,
+                enable_cache=enable_cache,
+                enable_artifact_metadata=enable_artifact_metadata,
+                enable_artifact_visualization=enable_artifact_visualization,
+                enable_step_logs=enable_step_logs,
+                enable_pipeline_logs=enable_pipeline_logs,
+                steps=step_configurations,
+                settings=settings,
+                schedule=schedule,
+                build=build,
+                extra=extra,
+            )
 
         skip_pipeline_registration = constants.handle_bool_env_var(
             constants.ENV_ZENML_SKIP_PIPELINE_REGISTRATION,
@@ -809,12 +825,25 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         with track_handler(AnalyticsEvent.RUN_PIPELINE) as analytics_handler:
             stack = Client().active_stack
 
+            deployment, schedule, build = self._compile(**self._run_args)
+            self._run_args["deployment"] = deployment
+            self._run_args["schedule"] = schedule
+            self._run_args["build"] = build
+
             logging_enabled = True
             # Enable or disable pipeline run logs storage
-            # if constants.handle_bool_env_var(constants.ENV_ZENML_DISABLE_STEP_LOGS_STORAGE, False):
-            #     logging_enabled = False
-            # else:
-            #     logging_enabled = deployment.pipeline_configuration.enable_step_logs
+            if schedule:
+                # Pipeline runs scheduled to run in the future are not logged
+                # via the client.
+                logging_enabled = False
+            elif constants.handle_bool_env_var(
+                constants.ENV_ZENML_DISABLE_PIPELINE_LOGS_STORAGE, False
+            ):
+                logging_enabled = False
+            else:
+                logging_enabled = (
+                    deployment.pipeline_configuration.enable_step_logs
+                )
 
             logs_context = nullcontext()
             logs_model = None
@@ -825,7 +854,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                     stack.artifact_store,
                 )
 
-                logs_context = StepLogsStorageContext(
+                logs_context = PipelineLogsStorageContext(
                     logs_uri=logs_uri, artifact_store=stack.artifact_store
                 )  # type: ignore[assignment]
 

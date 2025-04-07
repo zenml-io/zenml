@@ -29,6 +29,7 @@ from zenml.constants import (
 )
 from zenml.enums import ExecutionStatus, StackComponentType
 from zenml.logger import get_logger
+from zenml.logging.step_logging import fetch_logs
 from zenml.models import (
     Page,
     PipelineRunFilter,
@@ -55,6 +56,8 @@ from zenml.zen_server.routers.projects_endpoints import workspace_router
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
+    server_config,
+    workload_manager,
     zen_store,
 )
 
@@ -375,3 +378,54 @@ def refresh_run_status(
             f"The stack, the run '{run.id}' was executed on, is deleted."
         )
     run.refresh_run_status()
+
+
+@router.get(
+    "/{run_id}/logs",
+    responses={
+        401: error_response,
+        404: error_response,
+        422: error_response,
+    },
+)
+@handle_exceptions
+def run_logs(
+    run_id: UUID,
+    offset: int = 0,
+    length: int = 1024 * 1024 * 16,  # Default to 16MiB of data
+    _: AuthContext = Security(authorize),
+) -> str:
+    """Get pipeline run logs.
+
+    Args:
+        run_id: ID of the pipeline run.
+        offset: The offset from which to start reading.
+        length: The amount of bytes that should be read.
+
+    Returns:
+        The pipeline run logs.
+    """
+    store = zen_store()
+
+    run = verify_permissions_and_get_entity(
+        id=run_id,
+        get_method=store.get_run,
+        hydrate=True,
+    )
+
+    if run.deployment_id:
+        deployment = store.get_deployment(run.deployment_id)
+        if deployment.template_id and server_config().workload_manager_enabled:
+            return workload_manager().get_logs(workload_id=deployment.id)
+
+    logs = run.logs
+    if logs is None:
+        raise KeyError("No logs available for this pipeline run")
+
+    return fetch_logs(
+        zen_store=store,
+        artifact_store_id=logs.artifact_store_id,
+        logs_uri=logs.uri,
+        offset=offset,
+        length=length,
+    )

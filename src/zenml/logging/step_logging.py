@@ -48,6 +48,7 @@ logger = get_logger(__name__)
 redirected: ContextVar[bool] = ContextVar("redirected", default=False)
 
 LOGS_EXTENSION = ".log"
+PIPELINE_RUN_LOGS_FOLDER = "pipeline_runs"
 
 
 def remove_ansi_escape_codes(text: str) -> str:
@@ -81,14 +82,8 @@ def prepare_logs_uri(
     if log_key is None:
         log_key = str(uuid4())
 
-    if step_name is None:
-        step_name = "pipeline_runs"
-
-    logs_base_uri = os.path.join(
-        artifact_store.path,
-        step_name,
-        "logs",
-    )
+    subfolder = step_name or PIPELINE_RUN_LOGS_FOLDER
+    logs_base_uri = os.path.join(artifact_store.path, subfolder, "logs")
 
     # Create the dir
     if not artifact_store.exists(logs_base_uri):
@@ -213,7 +208,7 @@ def fetch_logs(
         artifact_store.cleanup()
 
 
-class StepLogsStorage:
+class PipelineLogsStorage:
     """Helper class which buffers and stores logs to a given URI."""
 
     def __init__(
@@ -421,8 +416,8 @@ class StepLogsStorage:
                         )
 
 
-class StepLogsStorageContext:
-    """Context manager which patches stdout and stderr during step execution."""
+class PipelineLogsStorageContext:
+    """Context manager which patches stdout and stderr during pipeline run execution."""
 
     def __init__(
         self, logs_uri: str, artifact_store: "BaseArtifactStore"
@@ -431,17 +426,17 @@ class StepLogsStorageContext:
 
         Args:
             logs_uri: the URI of the logs file.
-            artifact_store: Artifact Store from the current step context.
+            artifact_store: Artifact Store from the current pipeline run context.
         """
-        self.storage = StepLogsStorage(
+        self.storage = PipelineLogsStorage(
             logs_uri=logs_uri, artifact_store=artifact_store
         )
 
-    def __enter__(self) -> "StepLogsStorageContext":
+    def __enter__(self) -> "PipelineLogsStorageContext":
         """Enter condition of the context manager.
 
         Wraps the `write` method of both stderr and stdout, so each incoming
-        message gets stored in the step logs storage.
+        message gets stored in the pipeline logs storage.
 
         Returns:
             self
