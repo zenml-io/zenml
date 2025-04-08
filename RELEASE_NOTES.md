@@ -2,6 +2,37 @@
 
 # 0.80.2
 
+The `0.80.2` release focuses on documentation improvements, bug fixes, and usability enhancements. This release adds new tutorials and guides, fixes several critical issues, and introduces new functionality for pipeline development.
+
+## Features
+
+- Added poetry add support for CLI
+- Added retry option on step.with_options
+- Added service annotations to helm chart
+- Added step name to console logs for better tracing
+
+## Improvements
+
+- Restructured ZenML Pro organization viewer role
+- Added sample visualization for Pandas materializer
+- Improved run templates with small enhancements and hidden option support
+- Fixed service connector list-resources endpoint and CLI command
+
+## Fixes
+
+- Fixed timestamps in logs
+- Fixed yanked fsspec pip resolution issue
+- Fixed Kubernetes Orchestrator step pod failure status updates
+- Fixed CI failures and test issues
+- Updated error message for setting pipeline parameters via API
+
+## Documentation
+
+- Added new ZenML Tutorials section to user guide
+- Added mini-tutorials for pipeline scheduling and organization with tags/projects
+- Updated documentation for MCP Server and VSCode Extension
+- Fixed various documentation issues
+
 ## What's Changed
 * Updating the missing legacy docs by @bcdurak in https://github.com/zenml-io/zenml/pull/3473
 * add new version to the migration tests by @bcdurak in https://github.com/zenml-io/zenml/pull/3471
