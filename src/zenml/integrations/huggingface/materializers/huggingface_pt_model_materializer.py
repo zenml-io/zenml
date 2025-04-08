@@ -55,7 +55,7 @@ class HFPTModelMaterializer(BaseMaterializer):
             model_cls = getattr(
                 importlib.import_module("transformers"), architecture
             )
-            return model_cls.from_pretrained(temp_dir)
+            return model_cls.from_pretrained(temp_dir, from_pt=True)
 
     def save(self, model: PreTrainedModel) -> None:
         """Writes a Model to the specified dir.
