@@ -34,11 +34,13 @@ from zenml.models import (
 )
 from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
+from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas import (
         ActionSchema,
         APIKeySchema,
+        ArtifactSchema,
         ArtifactVersionSchema,
         CodeRepositorySchema,
         EventSourceSchema,
@@ -51,6 +53,7 @@ if TYPE_CHECKING:
         PipelineRunSchema,
         PipelineSchema,
         RunMetadataSchema,
+        RunTemplateSchema,
         ScheduleSchema,
         SecretSchema,
         ServiceConnectorSchema,
@@ -58,6 +61,7 @@ if TYPE_CHECKING:
         StackComponentSchema,
         StackSchema,
         StepRunSchema,
+        TagSchema,
         TriggerSchema,
     )
 
@@ -80,6 +84,15 @@ class UserSchema(NamedSchema, table=True):
     is_admin: bool = Field(default=False)
     user_metadata: Optional[str] = Field(nullable=True)
 
+    default_project_id: Optional[UUID] = build_foreign_key_field(
+        source=__tablename__,
+        target="project",
+        source_column="default_project_id",
+        target_column="id",
+        ondelete="SET NULL",
+        nullable=True,
+    )
+
     stacks: List["StackSchema"] = Relationship(back_populates="user")
     components: List["StackComponentSchema"] = Relationship(
         back_populates="user",
@@ -100,8 +113,12 @@ class UserSchema(NamedSchema, table=True):
         back_populates="user",
     )
     runs: List["PipelineRunSchema"] = Relationship(back_populates="user")
+    run_templates: List["RunTemplateSchema"] = Relationship(
+        back_populates="user",
+    )
     step_runs: List["StepRunSchema"] = Relationship(back_populates="user")
     builds: List["PipelineBuildSchema"] = Relationship(back_populates="user")
+    artifacts: List["ArtifactSchema"] = Relationship(back_populates="user")
     artifact_versions: List["ArtifactVersionSchema"] = Relationship(
         back_populates="user"
     )
@@ -149,6 +166,9 @@ class UserSchema(NamedSchema, table=True):
     api_keys: List["APIKeySchema"] = Relationship(
         back_populates="service_account",
         sa_relationship_kwargs={"cascade": "delete"},
+    )
+    tags: List["TagSchema"] = Relationship(
+        back_populates="user",
     )
 
     @classmethod
@@ -262,8 +282,8 @@ class UserSchema(NamedSchema, table=True):
             include_resources: Whether the resources will be filled.
             **kwargs: Keyword arguments to allow schema specific logic
             include_private: Whether to include the user private information
-                             this is to limit the amount of data one can get
-                             about other users
+                this is to limit the amount of data one can get about other
+                users.
 
         Returns:
             The converted `UserResponse`.
@@ -289,6 +309,7 @@ class UserSchema(NamedSchema, table=True):
                 created=self.created,
                 updated=self.updated,
                 is_admin=self.is_admin,
+                default_project_id=self.default_project_id,
             ),
             metadata=metadata,
         )

@@ -18,7 +18,7 @@ from urllib.parse import urlparse
 
 from google.cloud.devtools import cloudbuild_v1
 
-from zenml.enums import ContainerRegistryFlavor, StackComponentType
+from zenml.enums import StackComponentType
 from zenml.image_builders import BaseImageBuilder
 from zenml.integrations.gcp import GCP_ARTIFACT_STORE_FLAVOR
 from zenml.integrations.gcp.flavors import GCPImageBuilderConfig
@@ -72,14 +72,11 @@ class GCPImageBuilder(BaseImageBuilder, GoogleCredentialsMixin):
         def _validate_remote_components(stack: "Stack") -> Tuple[bool, str]:
             assert stack.container_registry
 
-            if (
-                stack.container_registry.flavor
-                != ContainerRegistryFlavor.GCP.value
-            ):
+            if stack.container_registry.config.is_local:
                 return False, (
-                    "The GCP Image Builder requires a GCP container registry to "
-                    "push the image to. Please update your stack to include a "
-                    "GCP container registry and try again."
+                    "The GCP Image Builder requires a remote container "
+                    "registry to push the image to. Please update your stack "
+                    "to include a remote container registry and try again."
                 )
 
             if stack.artifact_store.flavor != GCP_ARTIFACT_STORE_FLAVOR:

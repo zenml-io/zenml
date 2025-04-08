@@ -32,12 +32,12 @@ from zenml.constants import STR_FIELD_MAX_LENGTH
 from zenml.enums import LogicalOperators, StackComponentType
 from zenml.models.v2.base.base import BaseUpdate
 from zenml.models.v2.base.scoped import (
-    WorkspaceScopedFilter,
-    WorkspaceScopedRequest,
-    WorkspaceScopedResponse,
-    WorkspaceScopedResponseBody,
-    WorkspaceScopedResponseMetadata,
-    WorkspaceScopedResponseResources,
+    UserScopedFilter,
+    UserScopedRequest,
+    UserScopedResponse,
+    UserScopedResponseBody,
+    UserScopedResponseMetadata,
+    UserScopedResponseResources,
 )
 from zenml.utils import secret_utils
 
@@ -96,8 +96,8 @@ class ComponentBase(BaseModel):
 # ------------------ Request Model ------------------
 
 
-class ComponentRequest(ComponentBase, WorkspaceScopedRequest):
-    """Request model for components."""
+class ComponentRequest(ComponentBase, UserScopedRequest):
+    """Request model for stack components."""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = ["type", "flavor"]
 
@@ -128,13 +128,8 @@ class ComponentRequest(ComponentBase, WorkspaceScopedRequest):
         return name
 
 
-class InternalComponentRequest(ComponentRequest):
-    """Internal component request model."""
-
-    user: Optional[UUID] = Field(  # type: ignore[assignment]
-        title="The id of the user that created this resource.",
-        default=None,
-    )
+class DefaultComponentRequest(ComponentRequest):
+    """Internal component request model used only for default stack components."""
 
 
 # ------------------ Update Model ------------------
@@ -179,8 +174,8 @@ class ComponentUpdate(BaseUpdate):
 # ------------------ Response Model ------------------
 
 
-class ComponentResponseBody(WorkspaceScopedResponseBody):
-    """Response body for components."""
+class ComponentResponseBody(UserScopedResponseBody):
+    """Response body for stack components."""
 
     type: StackComponentType = Field(
         title="The type of the stack component.",
@@ -202,8 +197,8 @@ class ComponentResponseBody(WorkspaceScopedResponseBody):
     )
 
 
-class ComponentResponseMetadata(WorkspaceScopedResponseMetadata):
-    """Response metadata for components."""
+class ComponentResponseMetadata(UserScopedResponseMetadata):
+    """Response metadata for stack components."""
 
     configuration: Dict[str, Any] = Field(
         title="The stack component configuration.",
@@ -231,8 +226,8 @@ class ComponentResponseMetadata(WorkspaceScopedResponseMetadata):
     )
 
 
-class ComponentResponseResources(WorkspaceScopedResponseResources):
-    """Class for all resource models associated with the component entity."""
+class ComponentResponseResources(UserScopedResponseResources):
+    """Response resources for stack components."""
 
     flavor: "FlavorResponse" = Field(
         title="The flavor of this stack component.",
@@ -240,13 +235,13 @@ class ComponentResponseResources(WorkspaceScopedResponseResources):
 
 
 class ComponentResponse(
-    WorkspaceScopedResponse[
+    UserScopedResponse[
         ComponentResponseBody,
         ComponentResponseMetadata,
         ComponentResponseResources,
     ]
 ):
-    """Response model for components."""
+    """Response model for stack components."""
 
     ANALYTICS_FIELDS: ClassVar[List[str]] = ["type"]
 
@@ -389,22 +384,16 @@ class ComponentResponse(
 # ------------------ Filter Model ------------------
 
 
-class ComponentFilter(WorkspaceScopedFilter):
-    """Model to enable advanced filtering of all ComponentModels.
-
-    The Component Model needs additional scoping. As such the `_scope_user`
-    field can be set to the user that is doing the filtering. The
-    `generate_filter()` method of the baseclass is overwritten to include the
-    scoping.
-    """
+class ComponentFilter(UserScopedFilter):
+    """Model to enable advanced stack component filtering."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
+        *UserScopedFilter.FILTER_EXCLUDE_FIELDS,
         "scope_type",
         "stack_id",
     ]
     CLI_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *WorkspaceScopedFilter.CLI_EXCLUDE_FIELDS,
+        *UserScopedFilter.CLI_EXCLUDE_FIELDS,
         "scope_type",
     ]
     scope_type: Optional[str] = Field(

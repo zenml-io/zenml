@@ -43,4 +43,3 @@ class ArgillaIntegration(Integration):
         return [ArgillaAnnotatorFlavor]
 
 
-ArgillaIntegration.check_installation()

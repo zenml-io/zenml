@@ -66,7 +66,10 @@ from zenml.zen_server.auth import (
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rate_limit import rate_limit_requests
 from zenml.zen_server.rbac.models import Action, ResourceType
-from zenml.zen_server.rbac.utils import verify_permission
+from zenml.zen_server.rbac.utils import (
+    verify_permission,
+    verify_permission_for_model,
+)
 from zenml.zen_server.utils import (
     get_ip_location,
     handle_exceptions,
@@ -544,10 +547,6 @@ def api_token(
             response=None,
         ).access_token
 
-    verify_permission(
-        resource_type=ResourceType.PIPELINE_RUN, action=Action.CREATE
-    )
-
     schedule_id = schedule_id or token.schedule_id
     pipeline_run_id = pipeline_run_id or token.pipeline_run_id
     step_run_id = step_run_id or token.step_run_id
@@ -583,15 +582,18 @@ def api_token(
             f"step run {token.step_run_id}."
         )
 
+    project_id: Optional[UUID] = None
+
     if schedule_id:
         # The schedule must exist
         try:
-            schedule = zen_store().get_schedule(schedule_id, hydrate=False)
+            schedule = zen_store().get_schedule(schedule_id, hydrate=True)
         except KeyError:
             raise ValueError(
                 f"Schedule {schedule_id} does not exist and API tokens cannot "
                 "be generated for non-existent schedules for security reasons."
             )
+        project_id = schedule.project.id
 
         if not schedule.active:
             raise ValueError(
@@ -602,13 +604,17 @@ def api_token(
     if pipeline_run_id:
         # The pipeline run must exist and the run must not be concluded
         try:
-            pipeline_run = zen_store().get_run(pipeline_run_id, hydrate=False)
+            pipeline_run = zen_store().get_run(pipeline_run_id, hydrate=True)
         except KeyError:
             raise ValueError(
                 f"Pipeline run {pipeline_run_id} does not exist and API tokens "
                 "cannot be generated for non-existent pipeline runs for "
                 "security reasons."
             )
+
+        verify_permission_for_model(model=pipeline_run, action=Action.READ)
+
+        project_id = pipeline_run.project.id
 
         if pipeline_run.status.is_finished:
             raise ValueError(
@@ -627,12 +633,21 @@ def api_token(
                 "be generated for non-existent step runs for security reasons."
             )
 
+        project_id = step_run.project.id
+
         if step_run.status.is_finished:
             raise ValueError(
                 f"The execution of step run {step_run_id} has already "
                 "concluded and API tokens can no longer be generated for it "
                 "for security reasons."
             )
+
+    assert project_id is not None
+    verify_permission(
+        resource_type=ResourceType.PIPELINE_RUN,
+        action=Action.CREATE,
+        project_id=project_id,
+    )
 
     return generate_access_token(
         user_id=token.user_id,

@@ -22,10 +22,15 @@ from types import TracebackType
 from typing import Any, Callable, List, Optional, Type, Union
 from uuid import UUID, uuid4
 
+from zenml import get_step_context
 from zenml.artifact_stores import BaseArtifactStore
 from zenml.artifacts.utils import (
     _load_artifact_store,
     _load_file_from_artifact_store,
+)
+from zenml.constants import (
+    ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS,
+    handle_bool_env_var,
 )
 from zenml.exceptions import DoesNotExistException
 from zenml.logger import get_logger
@@ -253,7 +258,12 @@ class StepLogsStorage:
             return
 
         if not self.disabled:
-            self.buffer.append(text)
+            # Add timestamp to the message when it's received
+            timestamp = utc_now().strftime("%Y-%m-%d %H:%M:%S")
+            formatted_message = (
+                f"[{timestamp} UTC] {remove_ansi_escape_codes(text)}"
+            )
+            self.buffer.append(formatted_message)
             self.save_to_file()
 
     @property
@@ -285,6 +295,28 @@ class StepLogsStorage:
         Args:
             force: whether to force a save even if the write conditions not met.
         """
+        import asyncio
+        import threading
+
+        # Most artifact stores are based on fsspec, which converts between
+        # sync and async operations by using a separate AIO thread.
+        # It may happen that the fsspec call itself will log something,
+        # which will trigger this method, which may then use fsspec again,
+        # causing a "Calling sync() from within a running loop" error, because
+        # the fsspec library does not expect sync calls being made as a result
+        # of a logging call made by itself.
+        # To avoid this, we simply check if we're running in the fsspec AIO
+        # thread and skip the save if that's the case.
+        try:
+            if (
+                asyncio.events.get_running_loop() is not None
+                and threading.current_thread().name == "fsspecIO"
+            ):
+                return
+        except RuntimeError:
+            # No running loop
+            pass
+
         if not self.disabled and (self._is_write_needed or force):
             # IMPORTANT: keep this as the first code line in this method! The
             # code that follows might still emit logging messages, which will
@@ -303,23 +335,13 @@ class StepLogsStorage:
                             "w",
                         ) as file:
                             for message in self.buffer:
-                                timestamp = utc_now().strftime(
-                                    "%Y-%m-%d %H:%M:%S"
-                                )
-                                file.write(
-                                    f"[{timestamp} UTC] {remove_ansi_escape_codes(message)}\n"
-                                )
+                                file.write(f"{message}\n")
                     else:
                         with self.artifact_store.open(
                             self.logs_uri, "a"
                         ) as file:
                             for message in self.buffer:
-                                timestamp = utc_now().strftime(
-                                    "%Y-%m-%d %H:%M:%S"
-                                )
-                                file.write(
-                                    f"[{timestamp} UTC] {remove_ansi_escape_codes(message)}\n"
-                                )
+                                file.write(f"{message}\n")
                         self.artifact_store._remove_previous_file_versions(
                             self.logs_uri
                         )
@@ -430,8 +452,8 @@ class StepLogsStorageContext:
         setattr(sys.stdout, "write", self._wrap_write(self.stdout_write))
         setattr(sys.stdout, "flush", self._wrap_flush(self.stdout_flush))
 
-        setattr(sys.stderr, "write", self._wrap_write(self.stdout_write))
-        setattr(sys.stderr, "flush", self._wrap_flush(self.stdout_flush))
+        setattr(sys.stderr, "write", self._wrap_write(self.stderr_write))
+        setattr(sys.stderr, "flush", self._wrap_flush(self.stderr_flush))
 
         redirected.set(True)
         return self
@@ -477,9 +499,32 @@ class StepLogsStorageContext:
         """
 
         def wrapped_write(*args: Any, **kwargs: Any) -> Any:
-            output = method(*args, **kwargs)
+            # Check if step names in logs are disabled via env var
+            step_names_disabled = handle_bool_env_var(
+                ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS, default=False
+            )
+
+            if step_names_disabled:
+                output = method(*args, **kwargs)
+            else:
+                # Try to get step context if not available yet
+                step_context = None
+                try:
+                    step_context = get_step_context()
+                except Exception:
+                    pass
+
+                if step_context and args[0] != "\n":
+                    message = f"[{step_context.step_name}] " + args[0]
+                else:
+                    message = args[0]
+
+                output = method(message, *args[1:], **kwargs)
+
+            # Save the original message without step name prefix to storage
             if args:
                 self.storage.write(args[0])
+
             return output
 
         return wrapped_write

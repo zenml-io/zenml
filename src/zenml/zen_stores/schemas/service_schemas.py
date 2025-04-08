@@ -35,9 +35,9 @@ from zenml.utils.time_utils import utc_now
 from zenml.zen_stores.schemas.base_schemas import NamedSchema
 from zenml.zen_stores.schemas.model_schemas import ModelVersionSchema
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
+from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
-from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 
 class ServiceSchema(NamedSchema, table=True):
@@ -45,15 +45,15 @@ class ServiceSchema(NamedSchema, table=True):
 
     __tablename__ = "service"
 
-    workspace_id: UUID = build_foreign_key_field(
+    project_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target=WorkspaceSchema.__tablename__,
-        source_column="workspace_id",
+        target=ProjectSchema.__tablename__,
+        source_column="project_id",
         target_column="id",
         ondelete="CASCADE",
         nullable=False,
     )
-    workspace: "WorkspaceSchema" = Relationship(back_populates="services")
+    project: "ProjectSchema" = Relationship(back_populates="services")
 
     user_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -88,7 +88,7 @@ class ServiceSchema(NamedSchema, table=True):
     )
     model_version_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
-        target=ModelVersionSchema.__tablename__,  # type: ignore[has-type]
+        target=ModelVersionSchema.__tablename__,
         source_column="model_version_id",
         target_column="id",
         ondelete="SET NULL",
@@ -135,7 +135,6 @@ class ServiceSchema(NamedSchema, table=True):
         """
         body = ServiceResponseBody(
             user=self.user.to_model() if self.user else None,
-            workspace=self.workspace.to_model(),
             created=self.created,
             updated=self.updated,
             service_type=json.loads(self.service_type),
@@ -147,7 +146,7 @@ class ServiceSchema(NamedSchema, table=True):
         metadata = None
         if include_metadata:
             metadata = ServiceResponseMetadata(
-                workspace=self.workspace.to_model(),
+                project=self.project.to_model(),
                 service_source=self.service_source,
                 config=json.loads(base64.b64decode(self.config).decode()),
                 status=json.loads(base64.b64decode(self.status).decode())
@@ -227,7 +226,7 @@ class ServiceSchema(NamedSchema, table=True):
         """
         return cls(
             name=service_request.name,
-            workspace_id=service_request.workspace,
+            project_id=service_request.project,
             user_id=service_request.user,
             service_source=service_request.service_source,
             service_type=service_request.service_type.model_dump_json(),

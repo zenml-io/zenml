@@ -38,7 +38,7 @@ from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
 )
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
 from zenml.zen_stores.schemas.pipeline_schemas import PipelineSchema
-from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
+from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.run_metadata_schemas import (
     RunMetadataResourceSchema,
     RunMetadataSchema,
@@ -118,5 +118,5 @@ __all__ = [
     "ModelVersionSchema",
     "ModelVersionArtifactSchema",
     "ModelVersionPipelineRunSchema",
-    "WorkspaceSchema",
+    "ProjectSchema",
 ]

@@ -53,7 +53,7 @@ from zenml.utils import io_utils, yaml_utils
 
 if TYPE_CHECKING:
     from zenml.config.base_settings import BaseSettings
-    from zenml.models import PipelineDeploymentResponse
+    from zenml.models import PipelineDeploymentResponse, PipelineRunResponse
     from zenml.stack import Stack
 
 
@@ -460,6 +460,7 @@ class TektonOrchestrator(ContainerizedOrchestrator):
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         environment: Dict[str, str],
+        placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Any:
         """Runs the pipeline on Tekton.
 
@@ -471,6 +472,7 @@ class TektonOrchestrator(ContainerizedOrchestrator):
             stack: The stack the pipeline will run on.
             environment: Environment variables to set in the orchestration
                 environment.
+            placeholder_run: An optional placeholder run for the deployment.
 
         Raises:
             RuntimeError: If you try to run the pipelines in a notebook
@@ -546,6 +548,11 @@ class TektonOrchestrator(ContainerizedOrchestrator):
                         logger.warning(
                             "Volume mounts are set but not supported in "
                             "Tekton with Tekton Pipelines 2.x. Ignoring..."
+                        )
+                    if pod_settings.env or pod_settings.env_from:
+                        logger.warning(
+                            "Environment variables are set but not supported "
+                            "in Tekton with Tekton Pipelines 2.x. Ignoring..."
                         )
                     # apply pod settings
                     if (

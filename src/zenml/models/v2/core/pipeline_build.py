@@ -31,12 +31,12 @@ from pydantic import Field
 
 from zenml.models.v2.base.base import BaseZenModel
 from zenml.models.v2.base.scoped import (
-    WorkspaceScopedFilter,
-    WorkspaceScopedRequest,
-    WorkspaceScopedResponse,
-    WorkspaceScopedResponseBody,
-    WorkspaceScopedResponseMetadata,
-    WorkspaceScopedResponseResources,
+    ProjectScopedFilter,
+    ProjectScopedRequest,
+    ProjectScopedResponse,
+    ProjectScopedResponseBody,
+    ProjectScopedResponseMetadata,
+    ProjectScopedResponseResources,
 )
 from zenml.models.v2.misc.build_item import BuildItem
 
@@ -71,6 +71,9 @@ class PipelineBuildBase(BaseZenModel):
     )
     python_version: Optional[str] = Field(
         title="The Python version used for this build.", default=None
+    )
+    duration: Optional[int] = Field(
+        title="The duration of the build in seconds.", default=None
     )
 
     # Helper methods
@@ -168,7 +171,7 @@ class PipelineBuildBase(BaseZenModel):
             )
 
 
-class PipelineBuildRequest(PipelineBuildBase, WorkspaceScopedRequest):
+class PipelineBuildRequest(PipelineBuildBase, ProjectScopedRequest):
     """Request model for pipelines builds."""
 
     checksum: Optional[str] = Field(title="The build checksum.", default=None)
@@ -190,11 +193,11 @@ class PipelineBuildRequest(PipelineBuildBase, WorkspaceScopedRequest):
 
 
 # ------------------ Response Model ------------------
-class PipelineBuildResponseBody(WorkspaceScopedResponseBody):
+class PipelineBuildResponseBody(ProjectScopedResponseBody):
     """Response body for pipeline builds."""
 
 
-class PipelineBuildResponseMetadata(WorkspaceScopedResponseMetadata):
+class PipelineBuildResponseMetadata(ProjectScopedResponseMetadata):
     """Response metadata for pipeline builds."""
 
     pipeline: Optional["PipelineResponse"] = Field(
@@ -223,14 +226,17 @@ class PipelineBuildResponseMetadata(WorkspaceScopedResponseMetadata):
     contains_code: bool = Field(
         title="Whether any image of the build contains user code.",
     )
+    duration: Optional[int] = Field(
+        title="The duration of the build in seconds.", default=None
+    )
 
 
-class PipelineBuildResponseResources(WorkspaceScopedResponseResources):
+class PipelineBuildResponseResources(ProjectScopedResponseResources):
     """Class for all resource models associated with the pipeline build entity."""
 
 
 class PipelineBuildResponse(
-    WorkspaceScopedResponse[
+    ProjectScopedResponse[
         PipelineBuildResponseBody,
         PipelineBuildResponseMetadata,
         PipelineBuildResponseResources,
@@ -272,7 +278,7 @@ class PipelineBuildResponse(
                 exclude={
                     "pipeline",
                     "stack",
-                    "workspace",
+                    "project",
                 }
             )
         )
@@ -454,15 +460,24 @@ class PipelineBuildResponse(
         """
         return self.get_metadata().contains_code
 
+    @property
+    def duration(self) -> Optional[int]:
+        """The `duration` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().duration
+
 
 # ------------------ Filter Model ------------------
 
 
-class PipelineBuildFilter(WorkspaceScopedFilter):
+class PipelineBuildFilter(ProjectScopedFilter):
     """Model to enable advanced filtering of all pipeline builds."""
 
     FILTER_EXCLUDE_FIELDS: ClassVar[List[str]] = [
-        *WorkspaceScopedFilter.FILTER_EXCLUDE_FIELDS,
+        *ProjectScopedFilter.FILTER_EXCLUDE_FIELDS,
         "container_registry_id",
     ]
 
@@ -501,6 +516,9 @@ class PipelineBuildFilter(WorkspaceScopedFilter):
     )
     stack_checksum: Optional[str] = Field(
         description="The stack checksum.", default=None
+    )
+    duration: Optional[Union[int, str]] = Field(
+        description="The duration of the build in seconds.", default=None
     )
 
     def get_custom_filters(

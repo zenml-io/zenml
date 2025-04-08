@@ -10,12 +10,10 @@ This Kubernetes-native orchestrator is a minimalist, lightweight alternative to 
 
 Overall, the Kubernetes orchestrator is quite similar to the Kubeflow orchestrator in that it runs each pipeline step in a separate Kubernetes pod. However, the orchestration of the different pods is not done by Kubeflow but by a separate master pod that orchestrates the step execution via topological sort.
 
-Compared to Kubeflow, this means that the Kubernetes-native orchestrator is faster and much simpler to start with since you do not need to install and maintain Kubeflow on your cluster. The Kubernetes-native orchestrator is an ideal choice for teams new to distributed orchestration that do not want to go with a fully-managed offering.
-
-However, since Kubeflow is much more mature, you should, in most cases, aim to move your pipelines to Kubeflow in the long run. A smooth way to production-grade orchestration could be to set up a Kubernetes cluster first and get started with the Kubernetes-native orchestrator. If needed, you can then install and set up Kubeflow later and simply switch out the orchestrator of your stack as soon as your full setup is ready.
+Compared to Kubeflow, this means that the Kubernetes-native orchestrator is faster and much simpler since you do not need to install and maintain Kubeflow on your cluster. The Kubernetes-native orchestrator is an ideal choice for teams in need of distributed orchestration that do not want to go with a fully-managed offering.
 
 {% hint style="warning" %}
-This component is only meant to be used within the context of a [remote ZenML deployment scenario](../../getting-started/deploying-zenml/README.md). Usage with a local ZenML deployment may lead to unexpected behavior!
+This component is only meant to be used within the context of a [remote ZenML deployment scenario](https://docs.zenml.io/getting-started/deploying-zenml/). Usage with a local ZenML deployment may lead to unexpected behavior!
 {% endhint %}
 
 ### When to use it
@@ -28,9 +26,9 @@ You should use the Kubernetes orchestrator if:
 
 ### How to deploy it
 
-The Kubernetes orchestrator requires a Kubernetes cluster in order to run. There are many ways to deploy a Kubernetes cluster using different cloud providers or on your custom infrastructure, and we can't possibly cover all of them, but you can check out our [our cloud guide](../../user-guide/cloud-guide/cloud-guide.md).
+The Kubernetes orchestrator requires a Kubernetes cluster in order to run. There are many ways to deploy a Kubernetes cluster using different cloud providers or on your custom infrastructure, and we can't possibly cover all of them, but you can check out our [our production guide](https://docs.zenml.io/user-guides/production-guide).
 
-If the above Kubernetes cluster is deployed remotely on the cloud, then another pre-requisite to use this orchestrator would be to deploy and connect to a [remote ZenML server](../../getting-started/deploying-zenml/README.md).
+If the above Kubernetes cluster is deployed remotely on the cloud, then another pre-requisite to use this orchestrator would be to deploy and connect to a [remote ZenML server](https://docs.zenml.io/getting-started/deploying-zenml/).
 
 ### How to use it
 
@@ -42,19 +40,18 @@ To use the Kubernetes orchestrator, we need:
     zenml integration install kubernetes
     ```
 * [Docker](https://www.docker.com) installed and running.
-* [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) installed.
-* A [remote artifact store](../artifact-stores/artifact-stores.md) as part of your stack.
-* A [remote container registry](../container-registries/container-registries.md) as part of your stack.
+* A [remote artifact store](../artifact-stores/README.md) as part of your stack.
+* A [remote container registry](../container-registries/README.md) as part of your stack.
 * A Kubernetes cluster [deployed](kubernetes.md#how-to-deploy-it)
 * [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) installed and the name of the Kubernetes configuration context which points to the target cluster (i.e. run`kubectl config get-contexts` to see a list of available contexts) . This is optional (see below).
 
 {% hint style="info" %}
-It is recommended that you set up [a Service Connector](../../how-to/infrastructure-deployment/auth-management/service-connectors-guide.md) and use it to connect ZenML Stack Components to the remote Kubernetes cluster, especially If you are using a Kubernetes cluster managed by a cloud provider like AWS, GCP or Azure, This guarantees that your Stack is fully portable on other environments and your pipelines are fully reproducible.
+It is recommended that you set up [a Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/service-connectors-guide) and use it to connect ZenML Stack Components to the remote Kubernetes cluster, especially If you are using a Kubernetes cluster managed by a cloud provider like AWS, GCP or Azure, This guarantees that your Stack is fully portable on other environments and your pipelines are fully reproducible.
 {% endhint %}
 
 We can then register the orchestrator and use it in our active stack. This can be done in two ways:
 
-1.  If you have [a Service Connector](../../how-to/infrastructure-deployment/auth-management/service-connectors-guide.md) configured to access the remote Kubernetes cluster, you no longer need to set the `kubernetes_context` attribute to a local `kubectl` context. In fact, you don't need the local Kubernetes CLI at all. You can [connect the stack component to the Service Connector](../../how-to/infrastructure-deployment/auth-management/service-connectors-guide.md#connect-stack-components-to-resources) instead:
+1.  If you have [a Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/service-connectors-guide) configured to access the remote Kubernetes cluster, you no longer need to set the `kubernetes_context` attribute to a local `kubectl` context. In fact, you don't need the local Kubernetes CLI at all. You can [connect the stack component to the Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/service-connectors-guide#connect-stack-components-to-resources) instead:
 
     ```
     $ zenml orchestrator register <ORCHESTRATOR_NAME> --flavor kubernetes
@@ -86,7 +83,7 @@ We can then register the orchestrator and use it in our active stack. This can b
     # Register and activate a stack with the new orchestrator
     $ zenml stack register <STACK_NAME> -o <ORCHESTRATOR_NAME> ... --set
     ```
-2.  if you don't have a Service Connector on hand and you don't want to [register one](../../how-to/infrastructure-deployment/auth-management/service-connectors-guide.md#register-service-connectors) , the local Kubernetes `kubectl` client needs to be configured with a configuration context pointing to the remote cluster. The `kubernetes_context` stack component must also be configured with the value of that context:
+2.  if you don't have a Service Connector on hand and you don't want to [register one](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/service-connectors-guide#register-service-connectors) , the local Kubernetes `kubectl` client needs to be configured with a configuration context pointing to the remote cluster. The `kubernetes_context` stack component must also be configured with the value of that context:
 
     ```shell
     zenml orchestrator register <ORCHESTRATOR_NAME> \
@@ -98,7 +95,7 @@ We can then register the orchestrator and use it in our active stack. This can b
     ```
 
 {% hint style="info" %}
-ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your pipeline steps in Kubernetes. Check out [this page](../../how-to/customize-docker-builds/README.md) if you want to learn more about how ZenML builds these images and how you can customize them.
+ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your pipeline steps in Kubernetes. Check out [this page](https://docs.zenml.io/how-to/customize-docker-builds/) if you want to learn more about how ZenML builds these images and how you can customize them.
 {% endhint %}
 
 You can now run any ZenML pipeline using the Kubernetes orchestrator:
@@ -128,12 +125,16 @@ The Kubernetes orchestrator will by default use a Kubernetes namespace called `z
 
 * `kubernetes_namespace`: The Kubernetes namespace to use for running the pipelines. The namespace must already exist in the Kubernetes cluster.
 * `service_account_name`: The name of a Kubernetes service account to use for running the pipelines. If configured, it must point to an existing service account in the default or configured `namespace` that has associated RBAC roles granting permissions to create and manage pods in that namespace. This can also be configured as an individual pipeline setting in addition to the global orchestrator setting.
+* `pass_zenml_token_as_secret`: By default, the Kubernetes orchestrator will pass a short-lived API token to authenticate to the ZenML server as an environment variable as part of the Pod manifest. If you want this token to be stored in a Kubernetes secret instead, set `pass_zenml_token_as_secret=True` when registering your orchestrator. If you do so, make sure the service connector that you configure for your has permissions to create Kubernetes secrets. Additionally, the service account used for the Pods running your pipeline must have permissions to delete secrets, otherwise the cleanup will fail and you'll be left with orphaned secrets.
+* `pod_startup_timeout`: The maximum time to wait for a pending step pod to start (in seconds). The orchestrator will delete the pending pod after this time has elapsed and raise an error. If configured, the `pod_failure_retry_delay` and `pod_failure_backoff` settings will also be used to calculate the delay between retries.
+* `pod_failure_retry_delay`: The delay (in seconds) between retries to create a step pod that fails to start.
+* `pod_failure_max_retries`: The maximum number of retries to create a step pod that fails to start.
+* `pod_failure_backoff`: The backoff factor to use for retrying to create a step pod that fails to start.
 
 For additional configuration of the Kubernetes orchestrator, you can pass `KubernetesOrchestratorSettings` which allows you to configure (among others) the following attributes:
 
-* `pod_settings`: Node selectors, labels, affinity, and tolerations, and image pull secrets to apply to the Kubernetes Pods running the steps of your pipeline. These can be either specified using the Kubernetes model objects or as dictionaries.
-
-* `orchestrator_pod_settings`:  Node selectors, labels, affinity, and tolerations, and image pull secrets to apply to the Kubernetes Pod that is responsible for orchestrating the pipeline and starting the other Pods. These can be either specified using the Kubernetes model objects or as dictionaries.
+* `pod_settings`: Node selectors, labels, affinity, and tolerations, secrets, environment variables and image pull secrets to apply to the Kubernetes Pods running the steps of your pipeline. These can be either specified using the Kubernetes model objects or as dictionaries.
+* `orchestrator_pod_settings`: Node selectors, labels, affinity, tolerations, secrets, environment variables and image pull secrets to apply to the Kubernetes Pod that is responsible for orchestrating the pipeline and starting the other Pods. These can be either specified using the Kubernetes model objects or as dictionaries.
 
 ```python
 from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import KubernetesOrchestratorSettings
@@ -216,6 +217,19 @@ kubernetes_settings = KubernetesOrchestratorSettings(
                 "readOnly": True
             }
         ],
+        "env": [
+            {
+                "name": "MY_ENVIRONMENT_VARIABLE",
+                "value": "1",
+            }
+        ],
+        "env_from": [
+            {
+                "secretRef": {
+                    "name": "secret-name",
+                }
+            }
+        ],
         "host_ipc": True,
         "image_pull_secrets": ["regcred", "gcr-secret"],
         "labels": {
@@ -259,7 +273,7 @@ def my_kubernetes_pipeline():
 
 #### Define settings on the step level
 
-You can also define settings on the step level, which will override the settings defined at the pipeline level. This is helpful when you want to run a specific step with a different configuration like affinity for more powerful hardware or a different Kubernetes service account. Learn more about the hierarchy of settings [here](../../how-to/pipeline-development/use-configuration-files/configuration-hierarchy.md).
+You can also define settings on the step level, which will override the settings defined at the pipeline level. This is helpful when you want to run a specific step with a different configuration like affinity for more powerful hardware or a different Kubernetes service account. Learn more about the hierarchy of settings [here](https://docs.zenml.io/how-to/pipeline-development/use-configuration-files/configuration-hierarchy).
 
 ```python
 k8s_settings = KubernetesOrchestratorSettings(
@@ -290,12 +304,12 @@ def simple_ml_pipeline(parameter: int):
 
 This code will now run the `train_model` step on a GPU-enabled node in the `gpu-pool` node pool while the rest of the pipeline can run on ordinary nodes.
 
-Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-kubernetes/#zenml.integrations.kubernetes.flavors.kubernetes\_orchestrator\_flavor.KubernetesOrchestratorSettings) for a full list of available attributes and [this docs page](../../how-to/pipeline-development/use-configuration-files/runtime-configuration.md) for more information on how to specify settings.
+Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-kubernetes.html#zenml.integrations.kubernetes) for a full list of available attributes and [this docs page](https://docs.zenml.io/how-to/pipeline-development/use-configuration-files/runtime-configuration) for more information on how to specify settings.
 
-For more information and a full list of configurable attributes of the Kubernetes orchestrator, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-kubernetes/#zenml.integrations.kubernetes.orchestrators.kubernetes\_orchestrator.KubernetesOrchestrator) .
+For more information and a full list of configurable attributes of the Kubernetes orchestrator, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-kubernetes.html#zenml.integrations.kubernetes) .
 
 #### Enabling CUDA for GPU-backed hardware
 
-Note that if you wish to use this orchestrator to run steps on a GPU, you will need to follow [the instructions on this page](../../how-to/pipeline-development/training-with-gpus/README.md) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
+Note that if you wish to use this orchestrator to run steps on a GPU, you will need to follow [the instructions on this page](https://docs.zenml.io/how-to/pipeline-development/training-with-gpus/) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

@@ -80,7 +80,7 @@ You can also pass in a directory path manually using the
 zenml init --path /path/to/dir
 ```
 
-If you wish to use one of [the available ZenML project templates](https://docs.zenml.io/how-to/setting-up-a-project-repository/using-project-templates#list-of-zenml-project-templates)
+If you wish to use one of [the available ZenML project templates](https://docs.zenml.io/how-to/project-setup-and-management/collaborate-with-team/project-templates)
 to generate a ready-to-use project scaffold in your repository, you can do so by
 passing the ``--template`` option:
 
@@ -106,7 +106,7 @@ zenml go
 Cleaning up
 -----------
 
-If you wish to delete all data relating to your workspace from the
+If you wish to delete all data relating to your project from the
 directory, use the ``zenml clean`` command. This will:
 
 -  delete all pipelines, pipeline runs and associated metadata
@@ -367,8 +367,7 @@ information regarding a specific flavor, you can utilize the command:
 zenml orchestrator flavor describe FLAVOR_NAME
 ```
 
-If you wish to list the orchestrators that have already been registered
-within your ZenML workspace / repository, type:
+If you wish to list the orchestrators that have already been registered, type:
 
 ```bash
 zenml orchestrator list
@@ -1390,7 +1389,7 @@ zenml model-registry --help
 Managing your Stacks
 --------------------
 
-[The stack](https://docs.zenml.io/user-guide/production-guide/understand-stacks)
+[The stack](https://docs.zenml.io/user-guides/production-guide/understand-stacks)
 is a grouping of your artifact store, your orchestrator, and other
 optional MLOps tools like experiment trackers or model deployers.
 With the ZenML tool, switching from a local stack to a distributed cloud
@@ -1446,8 +1445,7 @@ simply pass along the `--set` flag.
 zenml stack register STACK_NAME ... --set
 ```
 
-To list the stacks that you have registered within your current ZenML
-workspace, type:
+To list the stacks that you have registered, type:
 
 ```bash
 zenml stack list
@@ -1590,7 +1588,7 @@ Managing your Models
 --------------------
 
 ZenML provides several CLI commands to help you administer your models and
-their versions as part of [the Model Control Plane](https://docs.zenml.io/user-guide/starter-guide/track-ml-models).
+their versions as part of [the Model Control Plane](https://docs.zenml.io/user-guides/starter-guide/track-ml-models).
 
 To register a new model, you can use the following CLI command:
 
@@ -1674,7 +1672,7 @@ Managing your Pipelines & Artifacts
 -----------------------------------
 
 ZenML provides several CLI commands to help you [administer your pipelines and
-pipeline runs](https://docs.zenml.io/user-guide/starter-guide/manage-artifacts).
+pipeline runs](https://docs.zenml.io/user-guides/starter-guide/manage-artifacts).
 
 To explicitly register a pipeline you need to point to a pipeline instance
 in your Python code. Let's say you have a Python file called `run.py` and
@@ -1882,7 +1880,7 @@ Connecting to a ZenML Server
 ----------------------------
 
 The ZenML client can be [configured to connect to a local ZenML server, a remote
-database or a remote ZenML server](https://docs.zenml.io/how-to/connecting-to-zenml)
+database or a remote ZenML server](https://docs.zenml.io/how-to/manage-zenml-server/connecting-to-zenml)
 with the `zenml login` command.
 
 To connect or re-connect to any ZenML server, if you know its URL, you can
@@ -2070,9 +2068,10 @@ Finally, to delete a secret, use the `delete` command:
 zenml secret delete SECRET_NAME
 ```
 
-Secrets can be scoped to a workspace or a user. By default, secrets
-are scoped to the current workspace. To scope a secret to a user, use the
-`--scope user` argument in the `register` command.
+Secrets can be either private or public. Private secrets are only accessible
+to the current user. Public secrets are accessible to all other users. By
+default, secrets are public. To make a secret private, use the `--private` flag
+in the `create` or `update` commands.
 
 Auth management
 ---------------
@@ -2307,7 +2306,7 @@ zenml service-account api-key <SERVICE_ACCOUNT_NAME> delete <API_KEY_NAME>
 Managing Code Repositories
 --------------------------
 
-[Code repositories](https://docs.zenml.io/user-guide/production-guide/connect-code-repository)
+[Code repositories](https://docs.zenml.io/user-guides/production-guide/connect-code-repository)
 enable ZenML to keep track of the code version that you use for your pipeline
 runs. Additionally, running a pipeline which is tracked in a registered code
 repository can decrease the time it takes Docker to build images for
@@ -2525,5 +2524,5 @@ from zenml.cli.service_connectors import *  # noqa
 from zenml.cli.stack import *  # noqa
 from zenml.cli.stack_components import *  # noqa
 from zenml.cli.user_management import *  # noqa
-from zenml.cli.workspace import *  # noqa
+from zenml.cli.project import *  # noqa
 from zenml.cli.tag import *  # noqa

@@ -29,12 +29,8 @@ jobs:
       - name: Setup environment
         uses: ./.github/actions/setup_environment
         with:
-          cache_version: ${{ secrets.GH_ACTIONS_CACHE_KEY }}
           python-version: '3.10'
           os: ubuntu-latest
-          runners_cache_access_key_id: ${{ secrets.RUNNERS_CACHE_ACCESS_KEY_ID }}
-          runners_cache_secret_access_key: ${{ secrets.RUNNERS_CACHE_SECRET_ACCESS_KEY }}
-          discord_webhook: ${{ secrets.DISCORD_WEBHOOK }}
       - name: Generate test duration file
         continue-on-error: true
             # Ubuntu integration tests run as 6 shards

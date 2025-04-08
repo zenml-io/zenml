@@ -19,6 +19,7 @@ from typing import Any, List, Optional, Union
 
 from zenml.constants import DEFAULT_LOCAL_SERVICE_IP_ADDRESS
 from zenml.logger import get_logger
+from zenml.models.v2.misc.service import ServiceType
 from zenml.services import (
     HTTPEndpointHealthMonitor,
     HTTPEndpointHealthMonitorConfig,
@@ -27,7 +28,6 @@ from zenml.services import (
     LocalDaemonServiceEndpoint,
     LocalDaemonServiceEndpointConfig,
     ServiceEndpointProtocol,
-    ServiceType,
 )
 from zenml.services.service import BaseDeploymentService
 
@@ -150,7 +150,7 @@ class VLLMDeploymentService(LocalDaemonService, BaseDeploymentService):
 
         try:
             parser: argparse.ArgumentParser = make_arg_parser(
-                FlexibleArgumentParser()
+                FlexibleArgumentParser()  # type: ignore[no-untyped-call]
             )
             # pass in empty list to get default args
             # otherwise it will try to get the args from sys.argv

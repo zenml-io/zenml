@@ -25,4 +25,3 @@ class GitLabIntegration(Integration):
     REQUIREMENTS: List[str] = ["python-gitlab"]
 
 
-GitLabIntegration.check_installation()

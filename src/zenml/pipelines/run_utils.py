@@ -81,14 +81,14 @@ def create_placeholder_run(
         # running.
         start_time=start_time,
         orchestrator_run_id=None,
-        user=deployment.user.id,
-        workspace=deployment.workspace.id,
+        project=deployment.project.id,
         deployment=deployment.id,
         pipeline=deployment.pipeline.id if deployment.pipeline else None,
         status=ExecutionStatus.INITIALIZING,
         tags=deployment.pipeline_configuration.tags,
     )
-    return Client().zen_store.create_run(run_request)
+    run, _ = Client().zen_store.get_or_create_run(run_request)
+    return run
 
 
 def get_placeholder_run(
@@ -213,7 +213,7 @@ def validate_stack_is_runnable_from_server(
         assert len(flavors) == 1
         flavor_model = flavors[0]
 
-        if flavor_model.workspace is not None:
+        if flavor_model.is_custom:
             raise ValueError("No custom stack component flavors allowed.")
 
         flavor = Flavor.from_model(flavor_model)
@@ -237,7 +237,22 @@ def validate_run_config_is_runnable_from_server(
     """
     if run_configuration.parameters:
         raise ValueError(
-            "Can't set parameters when running pipeline via Rest API."
+            "Can't set pipeline parameters when running pipeline via Rest API. "
+            "This likely requires refactoring your pipeline code to use step parameters "
+            "instead of pipeline parameters. For example, instead of: "
+            "```yaml "
+            "parameters: "
+            "  param1: 1 "
+            "  param2: 2 "
+            "``` "
+            "You'll need to modify your pipeline code to pass parameters directly to steps: "
+            "```yaml "
+            "steps: "
+            "  step1: "
+            "    parameters: "
+            "      param1: 1 "
+            "      param2: 2 "
+            "``` "
         )
 
     if run_configuration.build:

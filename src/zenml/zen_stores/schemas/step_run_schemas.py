@@ -50,10 +50,10 @@ from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
     PipelineDeploymentSchema,
 )
 from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
+from zenml.zen_stores.schemas.project_schemas import ProjectSchema
 from zenml.zen_stores.schemas.schema_utils import build_foreign_key_field
 from zenml.zen_stores.schemas.user_schemas import UserSchema
 from zenml.zen_stores.schemas.utils import RunMetadataInterface
-from zenml.zen_stores.schemas.workspace_schemas import WorkspaceSchema
 
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.artifact_schemas import ArtifactVersionSchema
@@ -102,7 +102,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    deployment_id: UUID = build_foreign_key_field(
+    deployment_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
         target=PipelineDeploymentSchema.__tablename__,
         source_column="deployment_id",
@@ -112,7 +112,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
     )
     pipeline_run_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target=PipelineRunSchema.__tablename__,  # type: ignore[has-type]
+        target=PipelineRunSchema.__tablename__,
         source_column="pipeline_run_id",
         target_column="id",
         ondelete="CASCADE",
@@ -126,15 +126,15 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         ondelete="SET NULL",
         nullable=True,
     )
-    workspace_id: UUID = build_foreign_key_field(
+    project_id: UUID = build_foreign_key_field(
         source=__tablename__,
-        target=WorkspaceSchema.__tablename__,
-        source_column="workspace_id",
+        target=ProjectSchema.__tablename__,
+        source_column="project_id",
         target_column="id",
         ondelete="CASCADE",
         nullable=False,
     )
-    model_version_id: UUID = build_foreign_key_field(
+    model_version_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
         target=MODEL_VERSION_TABLENAME,
         source_column="model_version_id",
@@ -144,7 +144,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
     )
 
     # Relationships
-    workspace: "WorkspaceSchema" = Relationship(back_populates="step_runs")
+    project: "ProjectSchema" = Relationship(back_populates="step_runs")
     user: Optional["UserSchema"] = Relationship(back_populates="step_runs")
     deployment: Optional["PipelineDeploymentSchema"] = Relationship(
         back_populates="step_runs"
@@ -186,30 +186,32 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
     model_config = ConfigDict(protected_namespaces=())  # type: ignore[assignment]
 
     @classmethod
-    def from_request(cls, request: StepRunRequest) -> "StepRunSchema":
+    def from_request(
+        cls, request: StepRunRequest, deployment_id: Optional[UUID]
+    ) -> "StepRunSchema":
         """Create a step run schema from a step run request model.
 
         Args:
             request: The step run request model.
+            deployment_id: The deployment ID.
 
         Returns:
             The step run schema.
         """
         return cls(
             name=request.name,
-            workspace_id=request.workspace,
+            project_id=request.project,
             user_id=request.user,
             start_time=request.start_time,
             end_time=request.end_time,
             status=request.status.value,
+            deployment_id=deployment_id,
             original_step_run_id=request.original_step_run_id,
             pipeline_run_id=request.pipeline_run_id,
-            deployment_id=request.deployment,
             docstring=request.docstring,
             cache_key=request.cache_key,
             code_hash=request.code_hash,
             source_code=request.source_code,
-            model_version_id=request.model_version_id,
         )
 
     def to_model(
@@ -308,7 +310,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         metadata = None
         if include_metadata:
             metadata = StepRunResponseMetadata(
-                workspace=self.workspace.to_model(),
+                project=self.project.to_model(),
                 config=full_step_config.config,
                 spec=full_step_config.spec,
                 cache_key=self.cache_key,
@@ -355,9 +357,6 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 self.status = value.value
             if key == "end_time":
                 self.end_time = value
-            if key == "model_version_id":
-                if value and self.model_version_id is None:
-                    self.model_version_id = value
 
         self.updated = utc_now()
 

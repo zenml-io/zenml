@@ -216,30 +216,28 @@ class ServiceConnectorRegistry:
                     AWSServiceConnector,
                 )
             except ImportError as e:
-                logger.warning(f"Could not import AWS service connector: {e}.")
+                logger.debug(f"Could not import AWS service connector: {e}.")
 
             try:
                 from zenml.integrations.gcp.service_connectors.gcp_service_connector import (  # noqa
                     GCPServiceConnector,
                 )
             except ImportError as e:
-                logger.warning(f"Could not import GCP service connector: {e}.")
+                logger.debug(f"Could not import GCP service connector: {e}.")
 
             try:
                 from zenml.integrations.azure.service_connectors.azure_service_connector import (  # noqa
                     AzureServiceConnector,
                 )
             except ImportError as e:
-                logger.warning(
-                    f"Could not import Azure service connector: {e}."
-                )
+                logger.debug(f"Could not import Azure service connector: {e}.")
 
             try:
                 from zenml.integrations.kubernetes.service_connectors.kubernetes_service_connector import (  # noqa
                     KubernetesServiceConnector,
                 )
             except ImportError as e:
-                logger.warning(
+                logger.debug(
                     f"Could not import Kubernetes service connector: {e}."
                 )
 
@@ -248,7 +246,7 @@ class ServiceConnectorRegistry:
                     DockerServiceConnector,
                 )
             except ImportError as e:
-                logger.warning(
+                logger.debug(
                     f"Could not import Docker service connector: {e}."
                 )
 
@@ -257,7 +255,7 @@ class ServiceConnectorRegistry:
                     HyperAIServiceConnector,
                 )
             except ImportError as e:
-                logger.warning(
+                logger.debug(
                     f"Could not import HyperAI service connector: {e}."
                 )
 

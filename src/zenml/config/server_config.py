@@ -592,23 +592,23 @@ class ServerConfiguration(BaseModel):
             server_config.external_user_info_url = (
                 f"{server_pro_config.api_url}/users/authorize_server"
             )
-            server_config.external_server_id = server_pro_config.tenant_id
+            server_config.external_server_id = server_pro_config.workspace_id
             server_config.rbac_implementation_source = (
                 "zenml.zen_server.rbac.zenml_cloud_rbac.ZenMLCloudRBAC"
             )
             server_config.feature_gate_implementation_source = "zenml.zen_server.feature_gate.zenml_cloud_feature_gate.ZenMLCloudFeatureGateInterface"
             server_config.reportable_resources = DEFAULT_REPORTABLE_RESOURCES
-            server_config.dashboard_url = f"{server_pro_config.dashboard_url}/organizations/{server_pro_config.organization_id}/tenants/{server_pro_config.tenant_id}"
+            server_config.dashboard_url = f"{server_pro_config.dashboard_url}/workspaces/{server_pro_config.workspace_name}"
             server_config.metadata.update(
                 dict(
                     account_id=str(server_pro_config.organization_id),
                     organization_id=str(server_pro_config.organization_id),
-                    tenant_id=str(server_pro_config.tenant_id),
+                    workspace_id=str(server_pro_config.workspace_id),
                 )
             )
-            if server_pro_config.tenant_name:
+            if server_pro_config.workspace_name:
                 server_config.metadata.update(
-                    dict(tenant_name=server_pro_config.tenant_name)
+                    dict(workspace_name=server_pro_config.workspace_name)
                 )
 
             extra_cors_allow_origins = [
@@ -660,8 +660,8 @@ class ServerProConfiguration(BaseModel):
         oauth2_audience: The OAuth2 audience.
         organization_id: The ZenML Pro organization ID.
         organization_name: The ZenML Pro organization name.
-        tenant_id: The ZenML Pro tenant ID.
-        tenant_name: The ZenML Pro tenant name.
+        workspace_id: The ZenML Pro workspace ID.
+        workspace_name: The ZenML Pro workspace name.
     """
 
     api_url: str
@@ -670,8 +670,8 @@ class ServerProConfiguration(BaseModel):
     oauth2_audience: str
     organization_id: UUID
     organization_name: Optional[str] = None
-    tenant_id: UUID
-    tenant_name: Optional[str] = None
+    workspace_id: UUID
+    workspace_name: Optional[str] = None
 
     @field_validator("api_url", "dashboard_url")
     @classmethod

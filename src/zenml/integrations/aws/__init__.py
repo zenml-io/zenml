@@ -72,6 +72,3 @@ class AWSIntegration(Integration):
             SagemakerStepOperatorFlavor,
             SagemakerOrchestratorFlavor,
         ]
-
-
-AWSIntegration.check_installation()

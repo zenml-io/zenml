@@ -52,7 +52,7 @@ We can now use the model deployer in our stack.
 zenml stack update <CUSTOM_STACK_NAME> --model-deployer=<MODEL_DEPLOYER_NAME>
 ```
 
-See the [databricks\_model\_deployer\_step](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-databricks/#zenml.integrations.databricks.steps.databricks\_deployer.databricks\_model\_deployer\_step) for an example of using the Databricks Model Deployer to deploy a model inside a ZenML pipeline step.
+See the [databricks\_model\_deployer\_step](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-databricks.html#zenml.integrations.databricks) for an example of using the Databricks Model Deployer to deploy a model inside a ZenML pipeline step.
 
 ## Configuration
 
@@ -67,7 +67,7 @@ Within the `DatabricksServiceConfig` you can configure:
 * `workload_type`: The type of workload that the model will be serving. This can be `CPU`, `GPU_LARGE`, `GPU_MEDIUM`, `GPU_SMALL`, or `MULTIGPU_MEDIUM`.
 * `endpoint_secret_name`: The name of the secret that will be used to secure the endpoint and authenticate requests.
 
-For more information and a full list of configurable attributes of the Databricks Model Deployer, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-databricks/#zenml.integrations.databricks.model\_deployers) and Databricks endpoint [code](https://github.com/databricks/databricks\_hub/blob/5e3b603ccc7cd6523d998e75f82848215abf9415/src/databricks\_hub/hf\_api.py#L6957).
+For more information and a full list of configurable attributes of the Databricks Model Deployer, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-databricks.html#zenml.integrations.databricks) and Databricks endpoint [code](https://docs.databricks.com/aws/en/machine-learning/model-serving/create-manage-serving-endpoints).
 
 ### Run inference on a provisioned inference endpoint
 
@@ -143,6 +143,6 @@ def databricks_deployment_inference_pipeline(
     predictions = predictor(model_deployment_service, inference_data)
 ```
 
-For more information and a full list of configurable attributes of the Databricks Model Deployer, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-databricks/#zenml.integrations.databricks.model\_deployers).
+For more information and a full list of configurable attributes of the Databricks Model Deployer, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-databricks.html#zenml.integrations.databricks).
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

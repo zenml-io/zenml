@@ -41,6 +41,7 @@ from typing import (
     Type,
     cast,
 )
+from uuid import UUID
 
 from kubernetes import client as k8s_client
 from kubernetes import config as k8s_config
@@ -66,12 +67,13 @@ from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
 
 if TYPE_CHECKING:
-    from zenml.models import PipelineDeploymentResponse
+    from zenml.models import PipelineDeploymentResponse, PipelineRunResponse
     from zenml.stack import Stack
 
 logger = get_logger(__name__)
 
 ENV_ZENML_KUBERNETES_RUN_ID = "ZENML_KUBERNETES_RUN_ID"
+KUBERNETES_SECRET_TOKEN_KEY_NAME = "zenml_api_token"
 
 
 class KubernetesOrchestrator(ContainerizedOrchestrator):
@@ -221,45 +223,52 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             msg = f"'{self.name}' Kubernetes orchestrator error: "
 
             if not self.connector:
-                if not kubernetes_context:
+                if kubernetes_context:
+                    contexts, active_context = self.get_kubernetes_contexts()
+
+                    if kubernetes_context not in contexts:
+                        return False, (
+                            f"{msg}could not find a Kubernetes context named "
+                            f"'{kubernetes_context}' in the local "
+                            "Kubernetes configuration. Please make sure that "
+                            "the Kubernetes cluster is running and that the "
+                            "kubeconfig file is configured correctly. To list "
+                            "all configured contexts, run:\n\n"
+                            "  `kubectl config get-contexts`\n"
+                        )
+                    if kubernetes_context != active_context:
+                        logger.warning(
+                            f"{msg}the Kubernetes context "  # nosec
+                            f"'{kubernetes_context}' configured for the "
+                            f"Kubernetes orchestrator is not the same as the "
+                            f"active context in the local Kubernetes "
+                            f"configuration. If this is not deliberate, you "
+                            f"should update the orchestrator's "
+                            f"`kubernetes_context` field by running:\n\n"
+                            f"  `zenml orchestrator update {self.name} "
+                            f"--kubernetes_context={active_context}`\n"
+                            f"To list all configured contexts, run:\n\n"
+                            f"  `kubectl config get-contexts`\n"
+                            f"To set the active context to be the same as the "
+                            f"one configured in the Kubernetes orchestrator "
+                            f"and silence this warning, run:\n\n"
+                            f"  `kubectl config use-context "
+                            f"{kubernetes_context}`\n"
+                        )
+                elif self.config.incluster:
+                    # No service connector or kubernetes_context is needed when
+                    # the orchestrator is being used from within a Kubernetes
+                    # cluster.
+                    pass
+                else:
                     return False, (
-                        f"{msg}you must either link this stack component to a "
+                        f"{msg}you must either link this orchestrator to a "
                         "Kubernetes service connector (see the 'zenml "
-                        "orchestrator connect' CLI command) or explicitly set "
+                        "orchestrator connect' CLI command), explicitly set "
                         "the `kubernetes_context` attribute to the name of the "
                         "Kubernetes config context pointing to the cluster "
-                        "where you would like to run pipelines."
-                    )
-
-                contexts, active_context = self.get_kubernetes_contexts()
-
-                if kubernetes_context not in contexts:
-                    return False, (
-                        f"{msg}could not find a Kubernetes context named "
-                        f"'{kubernetes_context}' in the local "
-                        "Kubernetes configuration. Please make sure that the "
-                        "Kubernetes cluster is running and that the kubeconfig "
-                        "file is configured correctly. To list all configured "
-                        "contexts, run:\n\n"
-                        "  `kubectl config get-contexts`\n"
-                    )
-                if kubernetes_context != active_context:
-                    logger.warning(
-                        f"{msg}the Kubernetes context '{kubernetes_context}' "  # nosec
-                        f"configured for the Kubernetes orchestrator is not "
-                        f"the same as the active context in the local "
-                        f"Kubernetes configuration. If this is not deliberate,"
-                        f" you should update the orchestrator's "
-                        f"`kubernetes_context` field by running:\n\n"
-                        f"  `zenml orchestrator update {self.name} "
-                        f"--kubernetes_context={active_context}`\n"
-                        f"To list all configured contexts, run:\n\n"
-                        f"  `kubectl config get-contexts`\n"
-                        f"To set the active context to be the same as the one "
-                        f"configured in the Kubernetes orchestrator and "
-                        f"silence this warning, run:\n\n"
-                        f"  `kubectl config use-context "
-                        f"{kubernetes_context}`\n"
+                        "where you would like to run pipelines, or set the "
+                        "`incluster` attribute to `True`."
                     )
 
             silence_local_validations_msg = (
@@ -368,11 +377,23 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
 
         return pod_settings
 
+    def get_token_secret_name(self, deployment_id: UUID) -> str:
+        """Returns the name of the secret that contains the ZenML token.
+
+        Args:
+            deployment_id: The ID of the deployment.
+
+        Returns:
+            The name of the secret that contains the ZenML token.
+        """
+        return f"zenml-token-{deployment_id}"
+
     def prepare_or_run_pipeline(
         self,
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         environment: Dict[str, str],
+        placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Any:
         """Runs the pipeline in Kubernetes.
 
@@ -381,6 +402,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             stack: The stack the pipeline will run on.
             environment: Environment variables to set in the orchestration
                 environment.
+            placeholder_run: An optional placeholder run for the deployment.
 
         Raises:
             RuntimeError: If the Kubernetes orchestrator is not configured.
@@ -430,6 +452,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             run_name=orchestrator_run_name,
             deployment_id=deployment.id,
             kubernetes_namespace=self.config.kubernetes_namespace,
+            run_id=placeholder_run.id if placeholder_run else None,
         )
 
         settings = cast(
@@ -438,6 +461,38 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
 
         # Authorize pod to run Kubernetes commands inside the cluster.
         service_account_name = self._get_service_account_name(settings)
+
+        # We set some default minimum resource requests for the orchestrator pod
+        # here if the user has not specified any, because the orchestrator pod
+        # takes up some memory resources itself and, if not specified, the pod
+        # will be scheduled on any node regardless of available memory and risk
+        # negatively impacting or even crashing the node due to memory pressure.
+        orchestrator_pod_settings = self.apply_default_resource_requests(
+            memory="400Mi",
+            cpu="100m",
+            pod_settings=settings.orchestrator_pod_settings,
+        )
+
+        if self.config.pass_zenml_token_as_secret:
+            secret_name = self.get_token_secret_name(deployment.id)
+            token = environment.pop("ZENML_STORE_API_TOKEN")
+            kube_utils.create_or_update_secret(
+                core_api=self._k8s_core_api,
+                namespace=self.config.kubernetes_namespace,
+                secret_name=secret_name,
+                data={KUBERNETES_SECRET_TOKEN_KEY_NAME: token},
+            )
+            orchestrator_pod_settings.env.append(
+                {
+                    "name": "ZENML_STORE_API_TOKEN",
+                    "valueFrom": {
+                        "secretKeyRef": {
+                            "name": secret_name,
+                            "key": KUBERNETES_SECRET_TOKEN_KEY_NAME,
+                        }
+                    },
+                }
+            )
 
         # Schedule as CRON job if CRON schedule is given.
         if deployment.schedule:
@@ -458,7 +513,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 args=args,
                 service_account_name=service_account_name,
                 privileged=False,
-                pod_settings=settings.orchestrator_pod_settings,
+                pod_settings=orchestrator_pod_settings,
                 env=environment,
                 mount_local_stores=self.config.is_local,
             )
@@ -472,56 +527,45 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 f'`"{cron_expression}"`.'
             )
             return
-
-        # We set some default minimum resource requests for the orchestrator pod
-        # here if the user has not specified any, because the orchestrator pod
-        # takes up some memory resources itself and, if not specified, the pod
-        # will be scheduled on any node regardless of available memory and risk
-        # negatively impacting or even crashing the node due to memory pressure.
-        orchestrator_pod_settings = self.apply_default_resource_requests(
-            memory="400Mi",
-            cpu="100m",
-            pod_settings=settings.orchestrator_pod_settings,
-        )
-
-        # Create and run the orchestrator pod.
-        pod_manifest = build_pod_manifest(
-            run_name=orchestrator_run_name,
-            pod_name=pod_name,
-            pipeline_name=pipeline_name,
-            image_name=image,
-            command=command,
-            args=args,
-            privileged=False,
-            pod_settings=orchestrator_pod_settings,
-            service_account_name=service_account_name,
-            env=environment,
-            mount_local_stores=self.config.is_local,
-        )
-
-        self._k8s_core_api.create_namespaced_pod(
-            namespace=self.config.kubernetes_namespace,
-            body=pod_manifest,
-        )
-
-        # Wait for the orchestrator pod to finish and stream logs.
-        if settings.synchronous:
-            logger.info("Waiting for Kubernetes orchestrator pod...")
-            kube_utils.wait_pod(
-                kube_client_fn=self.get_kube_client,
-                pod_name=pod_name,
-                namespace=self.config.kubernetes_namespace,
-                exit_condition_lambda=kube_utils.pod_is_done,
-                timeout_sec=settings.timeout,
-                stream_logs=True,
-            )
         else:
-            logger.info(
-                f"Orchestration started asynchronously in pod "
-                f"`{self.config.kubernetes_namespace}:{pod_name}`. "
-                f"Run the following command to inspect the logs: "
-                f"`kubectl logs {pod_name} -n {self.config.kubernetes_namespace}`."
+            # Create and run the orchestrator pod.
+            pod_manifest = build_pod_manifest(
+                run_name=orchestrator_run_name,
+                pod_name=pod_name,
+                pipeline_name=pipeline_name,
+                image_name=image,
+                command=command,
+                args=args,
+                privileged=False,
+                pod_settings=orchestrator_pod_settings,
+                service_account_name=service_account_name,
+                env=environment,
+                mount_local_stores=self.config.is_local,
             )
+
+            self._k8s_core_api.create_namespaced_pod(
+                namespace=self.config.kubernetes_namespace,
+                body=pod_manifest,
+            )
+
+            # Wait for the orchestrator pod to finish and stream logs.
+            if settings.synchronous:
+                logger.info("Waiting for Kubernetes orchestrator pod...")
+                kube_utils.wait_pod(
+                    kube_client_fn=self.get_kube_client,
+                    pod_name=pod_name,
+                    namespace=self.config.kubernetes_namespace,
+                    exit_condition_lambda=kube_utils.pod_is_done,
+                    timeout_sec=settings.timeout,
+                    stream_logs=True,
+                )
+            else:
+                logger.info(
+                    f"Orchestration started asynchronously in pod "
+                    f"`{self.config.kubernetes_namespace}:{pod_name}`. "
+                    f"Run the following command to inspect the logs: "
+                    f"`kubectl logs {pod_name} -n {self.config.kubernetes_namespace}`."
+                )
 
     def _get_service_account_name(
         self, settings: KubernetesOrchestratorSettings

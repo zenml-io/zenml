@@ -46,11 +46,13 @@ class FeastIntegration(Integration):
         return [FeastFeatureStoreFlavor]
 
     @classmethod
-    def get_requirements(cls, target_os: Optional[str] = None) -> List[str]:
+    def get_requirements(cls, target_os: Optional[str] = None, python_version: Optional[str] = None
+    ) -> List[str]:
         """Method to get the requirements for the integration.
 
         Args:
             target_os: The target operating system to get the requirements for.
+            python_version: The Python version to use for the requirements.
 
         Returns:
             A list of requirements.
@@ -58,7 +60,5 @@ class FeastIntegration(Integration):
         from zenml.integrations.pandas import PandasIntegration
 
         return cls.REQUIREMENTS + \
-            PandasIntegration.get_requirements(target_os=target_os)
+            PandasIntegration.get_requirements(target_os=target_os, python_version=python_version)
 
-
-FeastIntegration.check_installation()

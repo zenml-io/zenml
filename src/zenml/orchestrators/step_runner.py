@@ -61,6 +61,7 @@ from zenml.utils import (
     materializer_utils,
     source_utils,
     string_utils,
+    tag_utils,
 )
 from zenml.utils.typing_utils import get_origin, is_union
 
@@ -649,6 +650,10 @@ class StepRunner:
 
             # Get full set of tags
             tags = step_context.get_output_tags(output_name)
+            if step_context.pipeline_run.config.tags is not None:
+                for tag in step_context.pipeline_run.config.tags:
+                    if isinstance(tag, tag_utils.Tag) and tag.cascade is True:
+                        tags.append(tag.name)
 
             artifact_request = _store_artifact_data_and_prepare_request(
                 name=artifact_name,

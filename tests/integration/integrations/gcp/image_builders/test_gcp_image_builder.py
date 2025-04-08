@@ -41,7 +41,6 @@ def _get_gcp_image_builder(
         flavor="gcp",
         type=StackComponentType.IMAGE_BUILDER,
         user=uuid4(),
-        workspace=uuid4(),
         created=datetime.now(),
         updated=datetime.now(),
     )

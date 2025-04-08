@@ -44,15 +44,13 @@ from zenml.enums import (
     ArtifactSaveType,
     MetadataResourceTypes,
     ModelStages,
-    SecretScope,
     StackComponentType,
+    TaggableResourceTypes,
 )
 from zenml.exceptions import (
     EntityExistsError,
     IllegalOperationError,
     InitializationException,
-    StackComponentExistsError,
-    StackExistsError,
 )
 from zenml.io import fileio
 from zenml.model.model import Model
@@ -65,6 +63,7 @@ from zenml.models import (
     PipelineRequest,
     RunMetadataResource,
     StackResponse,
+    TagResource,
 )
 from zenml.utils import io_utils
 from zenml.utils.string_utils import random_str
@@ -270,7 +269,7 @@ def test_registering_a_stack_with_existing_name(clean_client):
     orchestrator = _create_local_orchestrator(clean_client)
     artifact_store = _create_local_artifact_store(clean_client)
 
-    with pytest.raises(StackExistsError):
+    with pytest.raises(EntityExistsError):
         clean_client.create_stack(
             name="axels_super_awesome_stack_of_fluffyness",
             components={
@@ -380,7 +379,7 @@ def test_registering_a_stack_component_with_existing_name(clean_client):
     _create_local_orchestrator(
         client=clean_client, orchestrator_name="axels_orchestration_laboratory"
     )
-    with pytest.raises(StackComponentExistsError):
+    with pytest.raises(EntityExistsError):
         clean_client.create_stack_component(
             name="axels_orchestration_laboratory",
             flavor="local",
@@ -445,8 +444,7 @@ def test_getting_a_pipeline(clean_client: "Client"):
         clean_client.get_pipeline(name_id_or_prefix="non_existent")
 
     request = PipelineRequest(
-        user=clean_client.active_user.id,
-        workspace=clean_client.active_workspace.id,
+        project=clean_client.active_project.id,
         name="pipeline",
     )
     response_1 = clean_client.zen_store.create_pipeline(request)
@@ -463,8 +461,7 @@ def test_listing_pipelines(clean_client):
     assert clean_client.list_pipelines().total == 0
 
     request = PipelineRequest(
-        user=clean_client.active_user.id,
-        workspace=clean_client.active_workspace.id,
+        project=clean_client.active_project.id,
         name="pipeline",
     )
     response_1 = clean_client.zen_store.create_pipeline(request)
@@ -567,28 +564,28 @@ def random_secret_context() -> Generator[str, None, None]:
 
 
 def test_create_secret_default_scope():
-    """Test that secrets are created in the workspace scope by default."""
+    """Test that secrets are created as public by default."""
     client = Client()
     with random_secret_context() as name:
         s = client.create_secret(
             name=name,
             values={"key": "value"},
         )
-        assert s.scope == SecretScope.WORKSPACE
+        assert s.private is False
         assert s.name == name
         assert s.secret_values == {"key": "value"}
 
 
-def test_create_secret_user_scope():
-    """Test creating secrets in the user scope."""
+def test_create_private_secret():
+    """Test creating private secrets."""
     client = Client()
     with random_secret_context() as name:
         s = client.create_secret(
             name=name,
-            scope=SecretScope.USER,
+            private=True,
             values={"key": "value"},
         )
-        assert s.scope == SecretScope.USER
+        assert s.private is True
         assert s.name == name
         assert s.secret_values == {"key": "value"}
 
@@ -609,20 +606,20 @@ def test_create_secret_existing_name_scope():
             )
 
 
-def test_create_secret_existing_name_user_scope():
-    """Test that creating a secret with an existing name in the user scope fails."""
+def test_create_private_secret_existing_name():
+    """Test that creating a private secret with an existing name fails."""
     client = Client()
     with random_secret_context() as name:
         client.create_secret(
             name=name,
-            scope=SecretScope.USER,
+            private=True,
             values={"key": "value"},
         )
 
         with pytest.raises(EntityExistsError):
             client.create_secret(
                 name=name,
-                scope=SecretScope.USER,
+                private=True,
                 values={"key": "value"},
             )
 
@@ -639,7 +636,7 @@ def test_create_secret_existing_name_different_scope():
         with does_not_raise():
             s2 = client.create_secret(
                 name=name,
-                scope=SecretScope.USER,
+                private=True,
                 values={"key": "value"},
             )
 
@@ -658,8 +655,7 @@ def test_listing_builds(clean_client):
     assert len(builds) == 0
 
     request = PipelineBuildRequest(
-        user=clean_client.active_user.id,
-        workspace=clean_client.active_workspace.id,
+        project=clean_client.active_project.id,
         images={},
         is_local=False,
         contains_code=True,
@@ -681,8 +677,7 @@ def test_getting_builds(clean_client):
         clean_client.get_build(str(uuid4()))
 
     request = PipelineBuildRequest(
-        user=clean_client.active_user.id,
-        workspace=clean_client.active_workspace.id,
+        project=clean_client.active_project.id,
         images={},
         is_local=False,
         contains_code=True,
@@ -701,8 +696,7 @@ def test_deleting_builds(clean_client):
         clean_client.delete_build(str(uuid4()))
 
     request = PipelineBuildRequest(
-        user=clean_client.active_user.id,
-        workspace=clean_client.active_workspace.id,
+        project=clean_client.active_project.id,
         images={},
         is_local=False,
         contains_code=True,
@@ -727,8 +721,7 @@ def test_listing_deployments(clean_client):
     assert len(deployments) == 0
 
     request = PipelineDeploymentRequest(
-        user=clean_client.active_user.id,
-        workspace=clean_client.active_workspace.id,
+        project=clean_client.active_project.id,
         stack=clean_client.active_stack.id,
         run_name_template="",
         pipeline_configuration={"name": "pipeline_name"},
@@ -751,8 +744,7 @@ def test_getting_deployments(clean_client):
         clean_client.get_deployment(str(uuid4()))
 
     request = PipelineDeploymentRequest(
-        user=clean_client.active_user.id,
-        workspace=clean_client.active_workspace.id,
+        project=clean_client.active_project.id,
         stack=clean_client.active_stack.id,
         run_name_template="",
         pipeline_configuration={"name": "pipeline_name"},
@@ -773,8 +765,7 @@ def test_deleting_deployments(clean_client):
         clean_client.delete_deployment(str(uuid4()))
 
     request = PipelineDeploymentRequest(
-        user=clean_client.active_user.id,
-        workspace=clean_client.active_workspace.id,
+        project=clean_client.active_project.id,
         stack=clean_client.active_stack.id,
         run_name_template="",
         pipeline_configuration={"name": "pipeline_name"},
@@ -835,9 +826,9 @@ crud_test_configs = [
         update_args={"updated_name": sample_name("updated_user_name")},
     ),
     ClientCrudTestConfig(
-        entity_name="workspace",
-        create_args={"name": sample_name("workspace_name"), "description": ""},
-        update_args={"new_name": sample_name("updated_workspace_name")},
+        entity_name="project",
+        create_args={"name": sample_name("project_name"), "description": ""},
+        update_args={"new_name": sample_name("updated_project_name")},
     ),
     ClientCrudTestConfig(
         entity_name="stack",
@@ -963,8 +954,7 @@ def test_basic_crud_for_entity(
             name_id_or_prefix=id_prefix, **crud_test_config.delete_args
         )
     finally:
-        # Make sure to delete the created entity to not leave anything in the
-        # workspace.
+        # Make sure to delete the created entity to not leave anything behind.
         try:
             delete_method(entity.id, **crud_test_config.delete_args)
         except KeyError:
@@ -1311,16 +1301,16 @@ class TestModel:
         model2 = clean_client.create_model(
             name=self.MODEL_NAME + "2", tags=["foo"]
         )
-        ms = clean_client.list_models(tag="foo")
+        ms = clean_client.list_models(tags=["foo"])
         assert len(ms) == 2
         assert model1 in ms
         assert model2 in ms
 
-        ms = clean_client.list_models(tag="bar")
+        ms = clean_client.list_models(tags=["bar"])
         assert len(ms) == 1
         assert model1 in ms
 
-        ms = clean_client.list_models(tag="non_existent_tag")
+        ms = clean_client.list_models(tags=["non_existent_tag"])
         assert len(ms) == 0
 
         ms = clean_client.list_models()
@@ -1328,10 +1318,8 @@ class TestModel:
         assert model1 in ms
         assert model2 in ms
 
-        ms = clean_client.list_models(tag="")
-        assert len(ms) == 2
-        assert model1 in ms
-        assert model2 in ms
+        ms = clean_client.list_models(tags=[""])
+        assert len(ms) == 0
 
 
 class TestModelVersion:
@@ -1556,23 +1544,16 @@ class TestModelVersion:
         model_versions = client_with_model.list_model_versions(
             self.MODEL_NAME,
             name=f"contains:{self.VERSION_NAME}_",
-            tag="foo",
+            tags=["foo"],
         )
         assert len(model_versions) == PAGE_SIZE_DEFAULT
 
         model_versions = client_with_model.list_model_versions(
             self.MODEL_NAME,
             name=f"contains:{self.VERSION_NAME}_",
-            tag="non_existent_tag",
+            tags=["non_existent_tag"],
         )
         assert len(model_versions) == 0
-
-        model_versions = client_with_model.list_model_versions(
-            self.MODEL_NAME,
-            name=f"contains:{self.VERSION_NAME}_",
-            tag="",
-        )
-        assert len(model_versions) == PAGE_SIZE_DEFAULT
 
     def test_delete_model_version_found(self, client_with_model: "Client"):
         client_with_model.delete_model_version(
@@ -1673,3 +1654,22 @@ class TestModelVersion:
         )
         assert mv.name == "bar"
         assert mv.description == "bar"
+
+
+def test_attach_and_detach_tag_pipeline_run(clean_client_with_run: Client):
+    run = clean_client_with_run.get_pipeline_run("connected_two_step_pipeline")
+    tag = clean_client_with_run.create_tag(name="foo")
+    clean_client_with_run.attach_tag(
+        tag.id,
+        [TagResource(id=run.id, type=TaggableResourceTypes.PIPELINE_RUN)],
+    )
+
+    run = clean_client_with_run.get_pipeline_run(run.id)
+    assert "foo" in [t.name for t in run.tags]
+
+    clean_client_with_run.detach_tag(
+        tag.id,
+        [TagResource(id=run.id, type=TaggableResourceTypes.PIPELINE_RUN)],
+    )
+    run = clean_client_with_run.get_pipeline_run(run.id)
+    assert "foo" not in [t.name for t in run.tags]

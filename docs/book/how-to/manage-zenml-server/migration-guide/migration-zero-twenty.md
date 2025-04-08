@@ -16,7 +16,7 @@ If you have updated to ZenML 0.20.0 by mistake or are experiencing issues with t
 
 High-level overview of the changes:
 
-* [ZenML takes over the Metadata Store](migration-zero-twenty.md#zenml-takes-over-the-metadata-store-role) role. All information about your ZenML Stacks, pipelines, and artifacts is tracked by ZenML itself directly. If you are currently using remote Metadata Stores (e.g. deployed in cloud) in your stacks, you will probably need to replace them with a [ZenML server deployment](../../../getting-started/deploying-zenml/README.md).
+* [ZenML takes over the Metadata Store](migration-zero-twenty.md#zenml-takes-over-the-metadata-store-role) role. All information about your ZenML Stacks, pipelines, and artifacts is tracked by ZenML itself directly. If you are currently using remote Metadata Stores (e.g. deployed in cloud) in your stacks, you will probably need to replace them with a [ZenML server deployment](https://docs.zenml.io/getting-started/deploying-zenml).
 * the [new ZenML Dashboard](migration-zero-twenty.md#the-zenml-dashboard-is-now-available) is now available with all ZenML deployments.
 * [ZenML Profiles have been removed](migration-zero-twenty.md#removal-of-profiles-and-the-local-yaml-database) in favor of ZenML Projects. You need to [manually migrate your existing ZenML Profiles](migration-zero-twenty.md#-how-to-migrate-your-profiles) after the update.
 * the [configuration of Stack Components is now decoupled from their implementation](migration-zero-twenty.md#decoupling-stack-component-configuration-from-implementation). If you extended ZenML with custom stack component implementations, you may need to update the way they are registered in ZenML.
@@ -24,11 +24,11 @@ High-level overview of the changes:
 
 ## ZenML takes over the Metadata Store role
 
-ZenML can now run [as a server](../../../getting-started/core-concepts.md#zenml-server-and-dashboard) that can be accessed via a REST API and also comes with a visual user interface (called the ZenML Dashboard). This server can be deployed in arbitrary environments (local, on-prem, via Docker, on AWS, GCP, Azure etc.) and supports user management, workspace scoping, and more.
+ZenML can now run [as a server](https://docs.zenml.io/getting-started/core-concepts#zenml-server-and-dashboard) that can be accessed via a REST API and also comes with a visual user interface (called the ZenML Dashboard). This server can be deployed in arbitrary environments (local, on-prem, via Docker, on AWS, GCP, Azure etc.) and supports user management, workspace scoping, and more.
 
 The release introduces a series of commands to facilitate managing the lifecycle of the ZenML server and to access the pipeline and pipeline run information:
 
-* `zenml connect / disconnect / down / up / logs / status` can be used to configure your client to connect to a ZenML server, to start a local ZenML Dashboard or to deploy a ZenML server to a cloud environment. For more information on how to use these commands, see [the ZenML deployment documentation](../../../getting-started/deploying-zenml/README.md).
+* `zenml connect / disconnect / down / up / logs / status` can be used to configure your client to connect to a ZenML server, to start a local ZenML Dashboard or to deploy a ZenML server to a cloud environment. For more information on how to use these commands, see [the ZenML deployment documentation](https://docs.zenml.io/getting-started/deploying-zenml).
 * `zenml pipeline list / runs / delete` can be used to display information and about and manage your pipelines and pipeline runs.
 
 In ZenML 0.13.2 and earlier versions, information about pipelines and pipeline runs used to be stored in a separate stack component called the Metadata Store. Starting with 0.20.0, the role of the Metadata Store is now taken over by ZenML itself. This means that the Metadata Store is no longer a separate component in the ZenML architecture, but rather a part of the ZenML core, located wherever ZenML is deployed: locally on your machine or running remotely as a server.
@@ -47,9 +47,9 @@ If you're already using ZenML, aside from the above limitation, this change will
 
 * if you're using the default `sqlite` Metadata Store flavor in your stacks, you don't need to do anything. ZenML will automatically switch to using its local database instead of your `sqlite` Metadata Stores when you update to 0.20.0 (also see how to [migrate your stacks](migration-zero-twenty.md#-how-to-migrate-your-profiles)).
 * if you're using the `kubeflow` Metadata Store flavor _only as a way to connect to the local Kubeflow Metadata Service_ (i.e. the one installed by the `kubeflow` Orchestrator in a local k3d Kubernetes cluster), you also don't need to do anything explicitly. When you [migrate your stacks](migration-zero-twenty.md#-how-to-migrate-your-profiles) to ZenML 0.20.0, ZenML will automatically switch to using its local database.
-* if you're using the `kubeflow` Metadata Store flavor to connect to a remote Kubeflow Metadata Service such as those provided by a Kubeflow installation running in AWS, Google or Azure, there is currently no equivalent in ZenML 0.20.0. You'll need to [deploy a ZenML Server](../../../getting-started/deploying-zenml/README.md) instance close to where your Kubeflow service is running (e.g. in the same cloud region).
-* if you're using the `mysql` Metadata Store flavor to connect to a remote MySQL database service (e.g. a managed AWS, GCP or Azure MySQL service), you'll have to [deploy a ZenML Server](../../../getting-started/deploying-zenml/README.md) instance connected to that same database.
-* if you deployed a `kubernetes` Metadata Store flavor (i.e. a MySQL database service deployed in Kubernetes), you can [deploy a ZenML Server](../../../getting-started/deploying-zenml/README.md) in the same Kubernetes cluster and connect it to that same database. However, ZenML will no longer provide the `kubernetes` Metadata Store flavor and you'll have to manage the Kubernetes MySQL database service deployment yourself going forward.
+* if you're using the `kubeflow` Metadata Store flavor to connect to a remote Kubeflow Metadata Service such as those provided by a Kubeflow installation running in AWS, Google or Azure, there is currently no equivalent in ZenML 0.20.0. You'll need to [deploy a ZenML Server](https://docs.zenml.io/getting-started/deploying-zenml) instance close to where your Kubeflow service is running (e.g. in the same cloud region).
+* if you're using the `mysql` Metadata Store flavor to connect to a remote MySQL database service (e.g. a managed AWS, GCP or Azure MySQL service), you'll have to [deploy a ZenML Server](https://docs.zenml.io/getting-started/deploying-zenml) instance connected to that same database.
+* if you deployed a `kubernetes` Metadata Store flavor (i.e. a MySQL database service deployed in Kubernetes), you can [deploy a ZenML Server](https://docs.zenml.io/getting-started/deploying-zenml) in the same Kubernetes cluster and connect it to that same database. However, ZenML will no longer provide the `kubernetes` Metadata Store flavor and you'll have to manage the Kubernetes MySQL database service deployment yourself going forward.
 
 {% hint style="info" %}
 The ZenML Server inherits the same limitations that the Metadata Store had prior to ZenML 0.20.0:
@@ -69,7 +69,7 @@ The `zenml pipeline runs migrate` CLI command is only available under ZenML vers
 To migrate the pipeline run information already stored in an existing metadata store to the new ZenML paradigm, you can use the `zenml pipeline runs migrate` CLI command.
 
 1. Before upgrading ZenML, make a backup of all metadata stores you want to migrate, then upgrade ZenML.
-2. Decide the ZenML deployment model that you want to follow for your projects. See the [ZenML deployment documentation](../../../getting-started/deploying-zenml/README.md) for available deployment scenarios. If you decide on using a local or remote ZenML server to manage your pipelines, make sure that you first connect your client to it by running `zenml connect`.
+2. Decide the ZenML deployment model that you want to follow for your projects. See the [ZenML deployment documentation](https://docs.zenml.io/getting-started/deploying-zenml) for available deployment scenarios. If you decide on using a local or remote ZenML server to manage your pipelines, make sure that you first connect your client to it by running `zenml connect`.
 3. Use the `zenml pipeline runs migrate` CLI command to migrate your old pipeline runs:
 
 * If you want to migrate from a local SQLite metadata store, you only need to pass the path to the metadata store to the command, e.g.:
@@ -126,7 +126,7 @@ The Dashboard will be available at `http://localhost:8237` by default:
 
 ![ZenML Dashboard Preview](../../user-guide/assets/migration/zenml-dashboard.png)
 
-For more details on other possible deployment options, see the [ZenML deployment documentation](../../../getting-started/deploying-zenml/README.md), and/or follow the [starter guide](../../../user-guide/starter-guide/README.md) to learn more.
+For more details on other possible deployment options, see the [ZenML deployment documentation](https://docs.zenml.io/getting-started/deploying-zenml), and/or follow the [starter guide](https://docs.zenml.io/user-guides/starter-guide) to learn more.
 
 ## Removal of Profiles and the local YAML database
 
@@ -143,7 +143,7 @@ Since the local YAML database is no longer used by ZenML 0.20.0, you will lose a
 If you're already using ZenML, you can migrate your existing Profiles to the new ZenML 0.20.0 paradigm by following these steps:
 
 1. first, update ZenML to 0.20.0. This will automatically invalidate all your existing Profiles.
-2. decide the ZenML deployment model that you want to follow for your projects. See the [ZenML deployment documentation](../../../getting-started/deploying-zenml/README.md) for available deployment scenarios. If you decide on using a local or remote ZenML server to manage your pipelines, make sure that you first connect your client to it by running `zenml connect`.
+2. decide the ZenML deployment model that you want to follow for your projects. See the [ZenML deployment documentation](https://docs.zenml.io/getting-started/deploying-zenml) for available deployment scenarios. If you decide on using a local or remote ZenML server to manage your pipelines, make sure that you first connect your client to it by running `zenml connect`.
 3. use the `zenml profile list` and `zenml profile migrate` CLI commands to import the Stacks and Stack Components from your Profiles into your new ZenML deployment. If you have multiple Profiles that you would like to migrate, you can either use a prefix for the names of your imported Stacks and Stack Components, or you can use a different ZenML Project for each Profile.
 
 {% hint style="warning" %}
@@ -281,7 +281,7 @@ The `zenml profile migrate` CLI command also provides command line flags for cas
 
 Stack components can now be registered without having the required integrations installed. As part of this change, we split all existing stack component definitions into three classes: an implementation class that defines the logic of the stack component, a config class that defines the attributes and performs input validations, and a flavor class that links implementation and config classes together. See [**component flavor models #895**](https://github.com/zenml-io/zenml/pull/895) for more details.
 
-If you are only using stack component flavors that are shipped with the zenml Python distribution, this change has no impact on the configuration of your existing stacks. However, if you are currently using custom stack component implementations, you will need to update them to the new format. See the [documentation on writing custom stack component flavors](../../../how-to/infrastructure-deployment/stack-deployment/implement-a-custom-stack-component.md) for updated information on how to do this.
+If you are only using stack component flavors that are shipped with the zenml Python distribution, this change has no impact on the configuration of your existing stacks. However, if you are currently using custom stack component implementations, you will need to update them to the new format. See the [documentation on writing custom stack component flavors](https://docs.zenml.io//how-to/infrastructure-deployment/stack-deployment/implement-a-custom-stack-component) for updated information on how to do this.
 
 ## Shared ZenML Stacks and Stack Components
 
@@ -298,7 +298,7 @@ We also introduce the notion of `local` vs `non-local` stack components. Local s
 * stacks made up of local stack components should not be shared on a central ZenML Server, even though this is not enforced by the system.
 * stacks made up of non-local stack components are only functional if they are shared through a remotely deployed ZenML Server.
 
-Read more about shared stacks in the new [starter guide](../../user-guide/starter-guide/stacks/managing-stacks.md#sharing-stacks-over-a-zenml-server).
+Read more about shared stacks in the [production guide](https://docs.zenml.io/user-guides/production-guide/understand-stacks).
 
 ## Other changes
 
@@ -339,7 +339,7 @@ With ZenML 0.20.0, we introduce the `BaseSettings` class, a broad class that ser
 
 Pipelines and steps now allow all configurations on their decorators as well as the `.configure(...)` method. This includes configurations for stack components that are not infrastructure-related which was previously done using the `@enable_xxx` decorators). The same configurations can also be defined in a YAML file.
 
-Read more about this paradigm in the [new docs section about settings](../../../how-to/pipeline-development/use-configuration-files/what-can-be-configured.md).
+Read more about this paradigm in the [new docs section about settings](https://docs.zenml.io//how-to/pipeline-development/use-configuration-files/what-can-be-configured).
 
 Here is a list of changes that are the most obvious in consequence of the above code. Please note that this list is not exhaustive, and if we have missed something let us know via [Slack](https://zenml.io/slack).
 
@@ -389,7 +389,7 @@ def my_step() -> None:
 
 With this change, all stack components (e.g. Orchestrators and Step Operators) that accepted a `docker_parent_image` as part of its Stack Configuration should now pass it through the `DockerSettings` object.
 
-Read more [here](../../../how-to/customize-docker-builds/docker-settings-on-a-pipeline.md).
+Read more [here](https://docs.zenml.io//how-to/customize-docker-builds/docker-settings-on-a-pipeline).
 
 **`ResourceConfiguration` is now renamed to `ResourceSettings`**
 
@@ -417,23 +417,23 @@ def my_step() -> None:
   ...
 ```
 
-Read more [here](../../../how-to/customize-docker-builds/README.md).
+Read more [here](https://docs.zenml.io//how-to/customize-docker-builds).
 
 **A new pipeline intermediate representation**
 
 All the aforementioned configurations as well as additional information required to run a ZenML pipelines are now combined into an intermediate representation called `PipelineDeployment`. Instead of the user-facing `BaseStep` and `BasePipeline` classes, all the ZenML orchestrators and step operators now use this intermediate representation to run pipelines and steps.
 
-**How to migrate**: If you have written a [custom orchestrator](../../../how-to/infrastructure-deployment/stack-deployment/implement-a-custom-stack-component.md) or [step operator](../../../how-to/infrastructure-deployment/stack-deployment/implement-a-custom-stack-component.md), then you should see the new base abstractions (seen in the links). You can adjust your stack component implementations accordingly.
+**How to migrate**: If you have written a [custom orchestrator](https://docs.zenml.io//how-to/infrastructure-deployment/stack-deployment/implement-a-custom-stack-component) or [step operator](https://docs.zenml.io//how-to/infrastructure-deployment/stack-deployment/implement-a-custom-stack-component), then you should see the new base abstractions (seen in the links). You can adjust your stack component implementations accordingly.
 
 ### `PipelineSpec` now uniquely defines pipelines
 
 Once a pipeline has been executed, it is represented by a `PipelineSpec` that uniquely identifies it. Therefore, users are no longer able to edit a pipeline once it has been run once. There are now three options to get around this:
 
-* Pipeline runs can be created without being associated with a pipeline explicitly: We call these `unlisted` runs. Read more about unlisted runs [here](../../../how-to/pipeline-development/parameters-and-caching.md#unlisted-runs).
+* Pipeline runs can be created without being associated with a pipeline explicitly: We call these `unlisted` runs. Read more about unlisted runs [here](https://docs.zenml.io/how-to/pipeline-development/develop-locally/keep-your-dashboard-server-clean#unlisted-runs).
 * Pipelines can be deleted and created again.
 * Pipelines can be given unique names each time they are run to uniquely identify them.
 
-**How to migrate**: No code changes, but rather keep in mind the behavior (e.g. in a notebook setting) when quickly [iterating over pipelines as experiments](../../../how-to/pipeline-development/build-pipelines/use-pipeline-step-parameters.md).
+**How to migrate**: No code changes, but rather keep in mind the behavior (e.g. in a notebook setting) when quickly [iterating over pipelines as experiments](https://docs.zenml.io//how-to/pipeline-development/build-pipelines/use-pipeline-step-parameters).
 
 ### New post-execution workflow
 
@@ -447,7 +447,7 @@ from zenml.post_execution import get_pipelines, get_pipeline
 
 * New methods to directly get a run have been introduced: `get_run` and `get_unlisted_runs` method has been introduced to get unlisted runs.
 
-Usage remains largely similar. Please read the [new docs for post-execution](../../../how-to/pipeline-development/build-pipelines/fetching-pipelines.md) to inform yourself of what further has changed.
+Usage remains largely similar. Please read the [new docs for post-execution](https://docs.zenml.io//how-to/pipeline-development/build-pipelines/fetching-pipelines) to inform yourself of what further has changed.
 
 **How to migrate**: Replace all post-execution workflows from the paradigm of `Repository.get_pipelines` or `Repository.get_pipeline_run` to the corresponding post\_execution methods.
 

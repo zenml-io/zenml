@@ -2,9 +2,9 @@
 description: Logging and visualizing experiments with Vertex AI Experiment Tracker.
 ---
 
-# Vertex AI Experiment Tracker
+# Google Cloud VertexAI Experiment Tracker
 
-The Vertex AI Experiment Tracker is an [Experiment Tracker](./experiment-trackers.md) flavor provided with the Vertex AI ZenML integration. It uses the [Vertex AI tracking service](https://cloud.google.com/vertex-ai/docs/experiments/intro-vertex-ai-experiments) to log and visualize information from your pipeline steps (e.g., models, parameters, metrics).
+The Vertex AI Experiment Tracker is an [Experiment Tracker](./) flavor provided with the Vertex AI ZenML integration. It uses the [Vertex AI tracking service](https://cloud.google.com/vertex-ai/docs/experiments/intro-vertex-ai-experiments) to log and visualize information from your pipeline steps (e.g., models, parameters, metrics).
 
 ## When would you want to use it?
 
@@ -16,7 +16,7 @@ You should use the Vertex AI Experiment Tracker:
 * if you are looking for a more visually interactive way of navigating the results produced from your ZenML pipeline runs (e.g. models, metrics, datasets)
 * if you are building machine learning workflows in the Google Cloud ecosystem and want a managed experiment tracking solution tightly integrated with other Google Cloud services, Vertex AI is a great choice
 
-You should consider one of the other [Experiment Tracker flavors](./experiment-trackers.md#experiment-tracker-flavors) if you have never worked with Vertex AI before and would rather use another experiment tracking tool that you are more familiar with, or if you are not using GCP or using other cloud providers.
+You should consider one of the other [Experiment Tracker flavors](./#experiment-tracker-flavors) if you have never worked with Vertex AI before and would rather use another experiment tracking tool that you are more familiar with, or if you are not using GCP or using other cloud providers.
 
 ## How do you configure it?
 
@@ -35,7 +35,7 @@ To properly register the Vertex AI Experiment Tracker, you can provide several c
 * `staging_bucket`: Optional. The default staging bucket to use to stage artifacts. In the form gs://...
 * `service_account_path`: Optional. A path to the service account credential json file to be used to interact with Vertex AI Experiment Tracker. Please check the [Authentication Methods](vertexai.md#authentication-methods) chapter for more details.
 
-With the project, location and staging_bucket, registering the Vertex AI Experiment Tracker can be done as follows:
+With the project, location and staging\_bucket, registering the Vertex AI Experiment Tracker can be done as follows:
 
 ```shell
 # Register the Vertex AI Experiment Tracker
@@ -51,9 +51,10 @@ zenml stack register custom_stack -e vertex_experiment_tracker ... --set
 
 ### Authentication Methods
 
-Integrating and using a Vertex AI Experiment Tracker in your pipelines is not possible without employing some form of authentication. If you're looking for a quick way to get started locally, you can use the _Implicit Authentication_ method. However, the recommended way to authenticate to the Google Cloud Platform is through a [GCP Service Connector](../../how-to/infrastructure-deployment/auth-management/gcp-service-connector.md). This is particularly useful if you are configuring ZenML stacks that combine the Vertex AI Experiment Tracker with other remote stack components also running in GCP.
+Integrating and using a Vertex AI Experiment Tracker in your pipelines is not possible without employing some form of authentication. If you're looking for a quick way to get started locally, you can use the _Implicit Authentication_ method. However, the recommended way to authenticate to the Google Cloud Platform is through a [GCP Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/gcp-service-connector). This is particularly useful if you are configuring ZenML stacks that combine the Vertex AI Experiment Tracker with other remote stack components also running in GCP.
 
 > **Note**: Regardless of your chosen authentication method, you must grant your account the necessary roles to use Vertex AI Experiment Tracking.
+>
 > * `roles/aiplatform.user` role on your project, which allows you to create, manage, and track your experiments within Vertex AI.
 > * `roles/storage.objectAdmin` role on your GCS bucket, granting the ability to read and write experiment artifacts, such as models and datasets, to the storage bucket.
 
@@ -76,11 +77,10 @@ zenml experiment-tracker register <EXPERIMENT_TRACKER_NAME> \
 # Register and set a stack with the new experiment tracker
 zenml stack register custom_stack -e vertex_experiment_tracker ... --set
 ```
-
 {% endtab %}
 
 {% tab title="GCP Service Connector (recommended)" %}
-To set up the Vertex AI Experiment Tracker to authenticate to GCP, it is recommended to leverage the many features provided by the [GCP Service Connector](../../how-to/infrastructure-deployment/auth-management/gcp-service-connector.md) such as auto-configuration, best security practices regarding long-lived credentials and reusing the same credentials across multiple stack components.
+To set up the Vertex AI Experiment Tracker to authenticate to GCP, it is recommended to leverage the many features provided by the [GCP Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/gcp-service-connector) such as auto-configuration, best security practices regarding long-lived credentials and reusing the same credentials across multiple stack components.
 
 If you don't already have a GCP Service Connector configured in your ZenML deployment, you can register one using the interactive CLI command. You have the option to configure a GCP Service Connector that can be used to access more than one type of GCP resource:
 
@@ -104,11 +104,10 @@ zenml experiment-tracker connect <EXPERIMENT_TRACKER_NAME> --connector <CONNECTO
 # Register and set a stack with the new experiment tracker
 zenml stack register custom_stack -e vertex_experiment_tracker ... --set
 ```
-
 {% endtab %}
 
 {% tab title="GCP Credentials" %}
-When you register the Vertex AI Experiment Tracker, you can [generate a GCP Service Account Key](https://cloud.google.com/docs/authentication/application-default-credentials#attached-sa), store it in a [ZenML Secret](../../getting-started/deploying-zenml/secret-management.md) and then reference it in the Experiment Tracker configuration.
+When you register the Vertex AI Experiment Tracker, you can [generate a GCP Service Account Key](https://cloud.google.com/docs/authentication/application-default-credentials#attached-sa), store it in a [ZenML Secret](https://docs.zenml.io/getting-started/deploying-zenml/secret-management) and then reference it in the Experiment Tracker configuration.
 
 This method has some advantages over the implicit authentication method:
 
@@ -132,7 +131,6 @@ zenml experiment-tracker register <EXPERIMENT_TRACKER_NAME> \
 # Register and set a stack with the new experiment tracker
 zenml experiment-tracker connect <EXPERIMENT_TRACKER_NAME> --connector <CONNECTOR_NAME>
 ```
-
 {% endtab %}
 {% endtabs %}
 
@@ -147,6 +145,7 @@ Here are two examples demonstrating how to use the experiment tracker:
 This example demonstrates how to log time-series metrics using `aiplatform.log_time_series_metrics` from within a Keras callback, and using `aiplatform.log_metrics` to log specific metrics and `aiplatform.log_params` to log experiment parameters. The logged metrics can then be visualized in the UI of Vertex AI Experiment Tracker and integrated TensorBoard instance.
 
 > **Note:** To use the autologging functionality, ensure that the google-cloud-aiplatform library is installed with the Autologging extension. You can do this by running the following command:
+>
 > ```bash
 > pip install google-cloud-aiplatform[autologging]
 > ```
@@ -195,6 +194,7 @@ def train_model(
 This example demonstrates how to use an integrated TensorBoard instance to directly upload training logs. This is particularly useful if you're already using TensorBoard in your projects and want to benefit from its detailed visualizations during training. You can initiate the upload using `aiplatform.start_upload_tb_log` and conclude it with `aiplatform.end_upload_tb_log`. Similar to the first example, you can also log specific metrics and parameters directly.
 
 > **Note:** To use TensorBoard logging functionality, ensure you have the `google-cloud-aiplatform` library installed with the TensorBoard extension. You can install it using the following command:
+>
 > ```bash
 > pip install google-cloud-aiplatform[tensorboard]
 > ```
@@ -246,7 +246,7 @@ def train_model(
 ```
 
 {% hint style="info" %}
-Instead of hardcoding an experiment tracker name, you can also use the [Client](../../reference/python-client.md) to dynamically use the experiment tracker of your active stack:
+Instead of hardcoding an experiment tracker name, you can also use the [Client](https://docs.zenml.io/reference/python-client) to dynamically use the experiment tracker of your active stack:
 
 ```python
 from zenml.client import Client
@@ -257,7 +257,6 @@ experiment_tracker = Client().active_stack.experiment_tracker
 def tf_trainer(...):
     ...
 ```
-
 {% endhint %}
 
 ### Experiment Tracker UI
@@ -278,11 +277,9 @@ This will be the URL of the corresponding experiment in Vertex AI Experiment Tra
 
 Below are examples of the UI for the Vertex AI Experiment Tracker and the integrated TensorBoard instance.
 
-**Vertex AI Experiment Tracker UI**
-![VerteAI UI](../../.gitbook/assets/vertexai_experiment_tracker_ui.png)
+**Vertex AI Experiment Tracker UI**![VerteAI UI](../../.gitbook/assets/vertexai_experiment_tracker_ui.png)
 
-**TensorBoard UI**
-![TensorBoard UI](../../.gitbook/assets/vertexai_experiment_tracker_tb.png)
+**TensorBoard UI**![TensorBoard UI](../../.gitbook/assets/vertexai_experiment_tracker_tb.png)
 
 ### Additional configuration
 
@@ -310,6 +307,6 @@ def step_one(
     ...
 ```
 
-Check out [this docs page](../../how-to/pipeline-development/use-configuration-files/runtime-configuration.md) for more information on how to specify settings.
+Check out [this docs page](https://docs.zenml.io/how-to/pipeline-development/use-configuration-files/runtime-configuration) for more information on how to specify settings.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

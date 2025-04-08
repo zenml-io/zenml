@@ -3,8 +3,7 @@ description: Create and run a template over the ZenML Dashboard
 ---
 
 {% hint style="success" %}
-This is a [ZenML Pro](https://zenml.io/pro)-only feature. Please
-[sign up here](https://cloud.zenml.io) to get access.
+This is a [ZenML Pro](https://zenml.io/pro)-only feature. Please [sign up here](https://cloud.zenml.io) to get access.
 {% endhint %}
 
 ## Create a template

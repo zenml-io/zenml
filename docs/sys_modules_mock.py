@@ -8,7 +8,7 @@ mockers = json.load(open(Path(__file__).parent.resolve() / "mocked_libs.json"))
 
 
 class DocsMocker(MagicMock):
-    """This class is used to mock the modules in the API docs.
+    """This class is used to mock the modules in the SDK docs.
 
     Ultimate goal of it to return meaningful object on any import
     like `from never_existed_library.module import some_function`.

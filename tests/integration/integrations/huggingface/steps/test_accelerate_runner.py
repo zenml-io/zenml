@@ -52,7 +52,7 @@ def train() -> str:
         model=model,
         args=transformers.TrainingArguments(
             output_dir="test_trainer",
-            evaluation_strategy="epoch",
+            eval_strategy="epoch",
             no_cuda=True,
             max_steps=1,
             per_device_train_batch_size=1,
