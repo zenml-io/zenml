@@ -87,6 +87,9 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
 
         Returns:
             The deployer ID string
+                    
+        Raises:
+            ValueError: If VertexModelDeployer is not active in the stack
         """
         from zenml.integrations.gcp.model_deployers.vertex_model_deployer import (
             VertexModelDeployer,
@@ -281,7 +284,20 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
         description: Optional[str] = None,
         metadata: Optional[Dict[str, str]] = None,
     ) -> RegisteredModel:
-        """Register a model to the Vertex AI model registry."""
+        """Register a model to the Vertex AI model registry.
+        
+        Args:
+            name: The name of the model.
+            description: The description of the model.
+            metadata: The metadata of the model.
+
+        Returns:
+            The registered model.
+        
+        Raises:
+            NotImplementedError: Vertex AI does not support registering models, you can only register model versions, skipping model registration...
+        
+        """
         raise NotImplementedError(
             "Vertex AI does not support registering models, you can only register model versions, skipping model registration..."
         )
@@ -290,7 +306,14 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
         self,
         name: str,
     ) -> None:
-        """Delete a model and all of its versions from the Vertex AI model registry."""
+        """Delete a model and all of its versions from the Vertex AI model registry.
+        
+        Args:
+            name: The name of the model.
+
+        Raises:
+            NotImplementedError: Vertex AI does not support deleting models, skipping model deletion...
+        """
         try:
             model = self._init_vertex_model(name=name)
             if isinstance(model, aiplatform.Model):
@@ -306,13 +329,33 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
         metadata: Optional[Dict[str, str]] = None,
         remove_metadata: Optional[List[str]] = None,
     ) -> RegisteredModel:
-        """Update a model in the Vertex AI model registry."""
+        """Update a model in the Vertex AI model registry.
+        
+        Args:
+            name: The name of the model.
+            description: The description of the model.
+            metadata: The metadata of the model.
+            remove_metadata: The metadata to remove from the model.
+
+        Returns:
+            The updated model.
+
+        Raises:
+            NotImplementedError: Vertex AI does not support updating models, you can only update model versions, skipping model registration...
+        """
         raise NotImplementedError(
             "Vertex AI does not support updating models, you can only update model versions, skipping model registration..."
         )
 
     def get_model(self, name: str) -> RegisteredModel:
-        """Get a model from the Vertex AI model registry by name without needing a version."""
+        """Get a model from the Vertex AI model registry by name without needing a version.
+        
+        Args:
+            name: The name of the model.
+
+        Returns:
+            The registered model.
+        """
         try:
             # Fetch by display_name, and use unique labels to ensure multi-tenancy
             model = aiplatform.Model(display_name=name)
@@ -329,7 +372,18 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
         name: Optional[str] = None,
         metadata: Optional[Dict[str, str]] = None,
     ) -> List[RegisteredModel]:
-        """List models in the Vertex AI model registry."""
+        """List models in the Vertex AI model registry.
+        
+        Args:
+            name: The name of the model.
+            metadata: The metadata of the model.
+
+        Returns:
+            The registered models.
+        
+        Raises:
+            RuntimeError: If the models are not found
+        """
         credentials, project_id = self._get_authentication()
         location = self.config.location
         # Always filter with ZenML-specific labels (including deployer id for multi-tenancy)
@@ -485,6 +539,9 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
         Args:
             name: Model name
             version: Version string
+        
+        Raises:
+            RuntimeError: If the model version is not found
         """
         try:
             model = self._init_vertex_model(name=name, version=version)
@@ -503,7 +560,22 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
         remove_metadata: Optional[List[str]] = None,
         stage: Optional[ModelVersionStage] = None,
     ) -> RegistryModelVersion:
-        """Update a model version in the Vertex AI model registry."""
+        """Update a model version in the Vertex AI model registry.
+        
+        Args:
+            name: The name of the model.
+            version: The version of the model.
+            description: The description of the model.
+            metadata: The metadata of the model.
+            remove_metadata: The metadata to remove from the model.
+            stage: The stage of the model.
+
+        Returns:
+            The updated model version.
+
+        Raises:
+            RuntimeError: If the model version is not found
+        """
         try:
             parent_model = self._init_vertex_model(name=name, version=version)
             assert isinstance(parent_model, aiplatform.Model)
@@ -537,7 +609,18 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
     def get_model_version(
         self, name: str, version: str
     ) -> RegistryModelVersion:
-        """Get a model version from the Vertex AI model registry using the version label."""
+        """Get a model version from the Vertex AI model registry using the version label.
+        
+        Args:
+            name: The name of the model.
+            version: The version of the model.
+
+        Returns:
+            The registered model version.
+            
+        Raises:
+            RuntimeError: If the model version is not found
+        """
         try:
             parent_model = self._init_vertex_model(name=name, version=version)
             assert isinstance(parent_model, aiplatform.Model)
@@ -557,7 +640,25 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
         order_by_date: Optional[str] = None,
         **kwargs: Any,
     ) -> List[RegistryModelVersion]:
-        """List model versions from the Vertex AI model registry."""
+        """List model versions from the Vertex AI model registry.
+        
+        Args:
+            name: The name of the model.
+            model_source_uri: The URI of the model source.
+            metadata: The metadata of the model.
+            stage: The stage of the model.
+            count: The number of model versions to return.
+            created_after: The date after which the model versions were created.
+            created_before: The date before which the model versions were created.
+            order_by_date: The date to order the model versions by.
+            **kwargs: Additional arguments
+
+        Returns:
+            The registered model versions.
+            
+        Raises:
+            RuntimeError: If the model versions are not found
+        """
         credentials, project_id = self._get_authentication()
         location = self.config.location
         filter_expr = []
@@ -600,7 +701,19 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
         version: str,
         **kwargs: Any,
     ) -> Any:
-        """Load a model version from the Vertex AI model registry using label-based lookup."""
+        """Load a model version from the Vertex AI model registry using label-based lookup.
+        
+        Args:
+            name: The name of the model.
+            version: The version of the model.
+            **kwargs: Additional arguments
+
+        Returns:
+            The loaded model version.
+
+        Raises:
+            RuntimeError: If the model version is not found
+        """
         try:
             parent_model = self._init_vertex_model(name=name, version=version)
             assert isinstance(parent_model, aiplatform.Model)
@@ -612,7 +725,14 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
         self,
         model_version: RegistryModelVersion,
     ) -> str:
-        """Get the model URI artifact store."""
+        """Get the model URI artifact store.
+        
+        Args:
+            model_version: The model version.
+
+        Returns:
+            The model URI artifact store.
+        """
         return model_version.model_source_uri
 
     def _vertex_model_to_registry_version(
@@ -666,7 +786,14 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
         )
 
     def _sanitize_model_display_name(self, name: str) -> str:
-        """Sanitize the model display name to conform to Vertex AI limits."""
+        """Sanitize the model display name to conform to Vertex AI limits.
+        
+        Args:
+            name: The name of the model.
+
+        Returns:
+            The sanitized model name.
+        """
         # Use our existing sanitizer (which converts to lowercase, replaces invalid characters, etc.)
         name = self._sanitize_label(name)
         if len(name) > MAX_DISPLAY_NAME_LENGTH:

@@ -79,7 +79,11 @@ class VertexDeploymentConfig(VertexAIEndpointConfig, ServiceConfig):
     """Vertex AI service configurations."""
 
     def get_vertex_deployment_labels(self) -> Dict[str, str]:
-        """Generate labels for the VertexAI deployment from the service configuration."""
+        """Generate labels for the VertexAI deployment from the service configuration.
+        
+        Returns:
+            A dictionary of labels for the VertexAI deployment.
+        """
         labels = self.labels or {}
         labels["managed_by"] = "zenml"
         if self.pipeline_name:
@@ -152,13 +156,22 @@ class VertexDeploymentService(BaseDeploymentService):
         )
 
     def __init__(self, config: VertexDeploymentConfig, **attrs: Any):
-        """Initialize the Vertex AI deployment service."""
+        """Initialize the Vertex AI deployment service.
+        
+        Args:
+            config: The configuration for the Vertex AI deployment service.
+            **attrs: Additional attributes for the service.
+        """
         super().__init__(config=config, **attrs)
         self._initialize_gcp_clients()
 
     @property
     def prediction_url(self) -> Optional[str]:
-        """The prediction URI exposed by the prediction service."""
+        """The prediction URI exposed by the prediction service.
+        
+        Returns:
+            The prediction URI exposed by the prediction service.
+        """
         endpoints = self.get_endpoints()
         if not endpoints:
             return None
@@ -201,17 +214,21 @@ class VertexDeploymentService(BaseDeploymentService):
         return f"{sanitized_model_name}-{str(self.uuid)[:UUID_SLICE_LENGTH]}"
 
     def _get_model_id(self, name: str) -> str:
-        """Helper to construct a full model ID from a given model name."""
+        """Helper to construct a full model ID from a given model name.
+        
+        Args:
+            name: The name of the model.
+            
+        Returns:
+            The full model ID.
+        """
         return f"projects/{self._project_id}/locations/{self.config.location}/models/{name}"
-
+    
     def _verify_model_exists(self) -> aiplatform.Model:
         """Verify the model exists and return it.
 
         Returns:
             Vertex AI Model instance
-
-        Raises:
-            RuntimeError: If model not found
         """
         if self.config.model_name.startswith("projects/"):
             model_name = self.config.model_name
@@ -236,7 +253,12 @@ class VertexDeploymentService(BaseDeploymentService):
     def _deploy_model(
         self, model: aiplatform.Model, endpoint: aiplatform.Endpoint
     ) -> None:
-        """Deploy model to Vertex AI endpoint."""
+        """Deploy model to Vertex AI endpoint.
+        
+        Args:
+            model: The model to deploy.
+            endpoint: The endpoint to deploy the model to.
+        """
         # Prepare deployment configuration
         deploy_kwargs = {
             "model": model,
@@ -302,7 +324,11 @@ class VertexDeploymentService(BaseDeploymentService):
         endpoint.deploy(**deploy_kwargs)
 
     def provision(self) -> None:
-        """Provision or update remote Vertex AI deployment instance."""
+        """Provision or update remote Vertex AI deployment instance.
+        
+        Raises:
+            RuntimeError: If model not found
+        """
         # First verify model exists
         model = self._verify_model_exists()
         logger.info(f"Found model to deploy: {model.resource_name}")
@@ -405,6 +431,10 @@ class VertexDeploymentService(BaseDeploymentService):
         tail: Optional[int] = None,
     ) -> Generator[str, bool, None]:
         """Retrieve logs for the Vertex AI deployment (not supported).
+        
+        Args:
+            follow: Whether to follow the logs.
+            tail: The number of lines to tail.
 
         Yields:
             Log entries as strings, but logs are not supported for Vertex AI.
@@ -445,6 +475,10 @@ class VertexDeploymentService(BaseDeploymentService):
 
     @property
     def is_running(self) -> bool:
-        """Check if the service is running."""
+        """Check if the service is running.
+        
+        Returns:
+            True if the service is running, False otherwise.
+        """
         self.update_status()
         return self.status.state == ServiceState.ACTIVE
