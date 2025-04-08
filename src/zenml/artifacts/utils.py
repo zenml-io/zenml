@@ -31,9 +31,6 @@ from typing import (
 )
 from uuid import UUID, uuid4
 
-from zenml.artifacts.preexisting_data_materializer import (
-    PreexistingDataMaterializer,
-)
 from zenml.client import Client
 from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
 from zenml.enums import (
@@ -46,6 +43,7 @@ from zenml.enums import (
 from zenml.exceptions import DoesNotExistException, StepContextError
 from zenml.io import fileio
 from zenml.logger import get_logger
+from zenml.materializers.path_materializer import PathMaterializer
 from zenml.metadata.metadata_types import validate_metadata
 from zenml.models import (
     ArtifactVersionRequest,
@@ -343,7 +341,7 @@ def register_artifact(
         type=artifact_type or ArtifactType.DATA,
         save_type=ArtifactSaveType.PREEXISTING,
         uri=folder_or_file_uri,
-        materializer=source_utils.resolve(PreexistingDataMaterializer),
+        materializer=source_utils.resolve(PathMaterializer),
         data_type=source_utils.resolve(Path),
         project=Client().active_project.id,
         artifact_store_id=artifact_store.id,

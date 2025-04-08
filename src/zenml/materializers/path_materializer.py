@@ -14,6 +14,7 @@
 """Implementation of the materializer for Path objects."""
 
 import os
+import shutil
 import tarfile
 from pathlib import Path
 from typing import Any, ClassVar, Tuple, Type
@@ -79,11 +80,7 @@ class PathMaterializer(BaseMaterializer):
                 )
 
     def save(self, data: Any) -> None:
-        """Store the directory or file in the artifact store.
-
-        Args:
-            data: Path to a local directory or file to store.
-        """
+        """Store the directory or file in the artifact store."""
         assert isinstance(data, Path)
 
         if data.is_dir():
@@ -91,26 +88,17 @@ class PathMaterializer(BaseMaterializer):
             with self.get_temporary_directory(
                 delete_at_exit=True
             ) as directory:
-                archive_path = os.path.join(directory, self.ARCHIVE_NAME)
+                archive_base = os.path.join(directory, "data")
 
-                # Create a compressed tar archive
-                with tarfile.open(archive_path, "w:gz") as tar:
-                    # Get the current working directory
-                    original_dir = os.getcwd()
-                    try:
-                        # Change to the source directory to preserve relative paths
-                        os.chdir(str(data))
-
-                        # Add all files and directories
-                        for item in os.listdir("."):
-                            tar.add(item)
-                    finally:
-                        # Restore the original working directory
-                        os.chdir(original_dir)
+                # Create tar.gz archive - automatically uses relative paths
+                shutil.make_archive(
+                    base_name=archive_base, format="gztar", root_dir=str(data)
+                )
 
                 # Copy the archive to the artifact store
                 fileio.copy(
-                    archive_path, os.path.join(self.uri, self.ARCHIVE_NAME)
+                    f"{archive_base}.tar.gz",
+                    os.path.join(self.uri, self.ARCHIVE_NAME),
                 )
         else:
             # Handle single file artifact
