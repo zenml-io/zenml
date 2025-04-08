@@ -137,8 +137,6 @@ def model_deployer(
         return service
 ```
 
-*Example: [`model_deployer.py`](../../examples/vertex-registry-and-deployer/steps/model_deployer.py)*
-
 ### Configuration Options
 
 The Vertex AI Model Deployer leverages a comprehensive configuration system defined in the shared base configuration and deployer-specific settings:
@@ -154,14 +152,14 @@ The Vertex AI Model Deployer leverages a comprehensive configuration system defi
   - `traffic_percentage`: The percentage of incoming traffic to route to this deployment.
 
 - **Container and Resource Configuration:**
-  - Configurations provided via [VertexAIContainerSpec](../../integrations/gcp/flavors/vertex_base_config.py) allow you to specify a custom serving container image, HTTP routes (`predict_route`, `health_route`), environment variables, and port exposure.
-  - [VertexAIResourceSpec](../../integrations/gcp/flavors/vertex_base_config.py) lets you override the default machine type, number of replicas, and even GPU options.
+  - Configurations provided via VertexAIContainerSpec allow you to specify a custom serving container image, HTTP routes (`predict_route`, `health_route`), environment variables, and port exposure.
+  - VertexAIResourceSpec lets you override the default machine type, number of replicas, and even GPU options.
 
 - **Advanced Settings:**
   - Service account, network configuration, and customer-managed encryption keys.
   - Model explanation settings via `VertexAIExplanationSpec` if you need integrated model interpretability.
 
-These options are defined across the [Vertex AI Base Config](../../integrations/gcp/flavors/vertex_base_config.py) and the deployer–specific configuration in [VertexModelDeployerFlavor](../../integrations/gcp/flavors/vertex_model_deployer_flavor.py).
+These options are defined across the Vertex AI Base Config and the deployer–specific configuration in VertexModelDeployerFlavor.
 
 ### Limitations and Considerations
 
@@ -181,7 +179,4 @@ These options are defined across the [Vertex AI Base Config](../../integrations/
 4. **Region Consistency:**
    - Ensure that the model and deployment are created in the same GCP region.
 
-For more details, please refer to the [SDK docs](https://sdkdocs.zenml.io) and the relevant implementation files:
-- [`vertex_model_deployer.py`](../../integrations/gcp/model_deployers/vertex_model_deployer.py)
-- [`vertex_base_config.py`](../../integrations/gcp/flavors/vertex_base_config.py)
-- [`vertex_model_deployer_flavor.py`](../../integrations/gcp/flavors/vertex_model_deployer_flavor.py)
+For more details, please refer to the [SDK docs](https://sdkdocs.zenml.io).

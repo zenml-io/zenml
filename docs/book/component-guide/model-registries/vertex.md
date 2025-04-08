@@ -69,7 +69,7 @@ The service account needs the following permissions:
 
 ### Registering Models inside a Pipeline with Extended Configuration
 
-The Vertex AI Model Registry supports extended configuration options via the `VertexAIModelConfig` class (defined in the [vertex_base_config.py](../../integrations/gcp/flavors/vertex_base_config.py) file). This means you can specify additional details for your deployments such as:
+The Vertex AI Model Registry supports extended configuration options via the `VertexAIModelConfig` class. This means you can specify additional details for your deployments such as:
 
 - **Container configuration**: Use the `VertexAIContainerSpec` to define a custom serving container (e.g., specifying the `image_uri`, `predict_route`, `health_route`, and exposed ports).
 - **Resource configuration**: Use the `VertexAIResourceSpec` to specify compute resources like `machine_type`, `min_replica_count`, and `max_replica_count`.
@@ -152,8 +152,6 @@ def model_register(
         return ""
 ```
 
-*Example: [`model_register.py`](../../examples/vertex-registry-and-deployer/steps/model_register.py)*
-
 ### Working with Model Versions
 
 Since the Vertex AI Model Registry supports only version-level operations, here are some commands to manage model versions:
@@ -184,8 +182,6 @@ The Vertex AI Model Registry accepts several configuration options, now enriched
 - **resources**: (Optional) Compute resource settings (using `VertexAIResourceSpec`) like `machine_type`, `min_replica_count`, and `max_replica_count`.
 - **labels** and **metadata**: Additional annotation data for organizing and tracking your model versions.
 
-These configuration options are specified in the [Vertex AI Base Config](../../integrations/gcp/flavors/vertex_base_config.py) and further extended in the [Vertex AI Model Registry Flavor](../../integrations/gcp/flavors/vertex_model_registry_flavor.py).
-
 ### Key Differences from Other Model Registries
 
 1. **Version-Only Interface**: Vertex AI only supports version-level operations for model registration.
@@ -199,7 +195,7 @@ These configuration options are specified in the [Vertex AI Base Config](../../i
 - It is recommended to specify a serving container image URI rather than rely on the default scikit-learn container to ensure compatibility with Vertex AI endpoints.
 - All models registered through this integration are automatically labeled with `managed_by="zenml"` for consistent tracking.
 
-For more detailed information, check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-gcp/#zenml.integrations.gcp.model_registry).
+For more detailed information, check out the [SDK docs](https://sdkdocs.zenml.io/0.80.1/integration_code_docs/integrations-gcp.html#zenml.integrations.gcp).
 
 <figure>
   <img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf">
