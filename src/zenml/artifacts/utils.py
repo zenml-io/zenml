@@ -576,7 +576,14 @@ def create_artifact_archive(
         archive_path = tempfile.mktemp()
 
     with tempfile.TemporaryDirectory() as temp_dir:
-        io_utils.copy_dir(artifact.uri, temp_dir)
+        if fileio.isdir(artifact.uri):
+            io_utils.copy_dir(artifact.uri, temp_dir)
+        else:
+            destination_path = os.path.join(
+                temp_dir, os.path.basename(artifact.uri)
+            )
+            fileio.copy(artifact.uri, destination_path)
+
         return shutil.make_archive(archive_path, "gztar", temp_dir)
 
 
