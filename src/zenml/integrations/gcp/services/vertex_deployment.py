@@ -80,7 +80,7 @@ class VertexDeploymentConfig(VertexAIEndpointConfig, ServiceConfig):
 
     def get_vertex_deployment_labels(self) -> Dict[str, str]:
         """Generate labels for the VertexAI deployment from the service configuration.
-        
+
         Returns:
             A dictionary of labels for the VertexAI deployment.
         """
@@ -151,13 +151,14 @@ class VertexDeploymentService(BaseDeploymentService):
         )
 
         # Get credentials from model deployer
-        self._credentials, self._project_id = (
-            model_deployer._get_authentication()
-        )
+        (
+            self._credentials,
+            self._project_id,
+        ) = model_deployer._get_authentication()
 
     def __init__(self, config: VertexDeploymentConfig, **attrs: Any):
         """Initialize the Vertex AI deployment service.
-        
+
         Args:
             config: The configuration for the Vertex AI deployment service.
             **attrs: Additional attributes for the service.
@@ -168,7 +169,7 @@ class VertexDeploymentService(BaseDeploymentService):
     @property
     def prediction_url(self) -> Optional[str]:
         """The prediction URI exposed by the prediction service.
-        
+
         Returns:
             The prediction URI exposed by the prediction service.
         """
@@ -215,15 +216,15 @@ class VertexDeploymentService(BaseDeploymentService):
 
     def _get_model_id(self, name: str) -> str:
         """Helper to construct a full model ID from a given model name.
-        
+
         Args:
             name: The name of the model.
-            
+
         Returns:
             The full model ID.
         """
         return f"projects/{self._project_id}/locations/{self.config.location}/models/{name}"
-    
+
     def _verify_model_exists(self) -> aiplatform.Model:
         """Verify the model exists and return it.
 
@@ -254,7 +255,7 @@ class VertexDeploymentService(BaseDeploymentService):
         self, model: aiplatform.Model, endpoint: aiplatform.Endpoint
     ) -> None:
         """Deploy model to Vertex AI endpoint.
-        
+
         Args:
             model: The model to deploy.
             endpoint: The endpoint to deploy the model to.
@@ -313,9 +314,9 @@ class VertexDeploymentService(BaseDeploymentService):
 
         # Add encryption key if specified
         if self.config.encryption_spec_key_name:
-            deploy_kwargs["encryption_spec_key_name"] = (
-                self.config.encryption_spec_key_name
-            )
+            deploy_kwargs[
+                "encryption_spec_key_name"
+            ] = self.config.encryption_spec_key_name
 
         # Deploy model
         logger.info(
@@ -325,7 +326,7 @@ class VertexDeploymentService(BaseDeploymentService):
 
     def provision(self) -> None:
         """Provision or update remote Vertex AI deployment instance.
-        
+
         Raises:
             RuntimeError: If model not found
         """
@@ -431,7 +432,7 @@ class VertexDeploymentService(BaseDeploymentService):
         tail: Optional[int] = None,
     ) -> Generator[str, bool, None]:
         """Retrieve logs for the Vertex AI deployment (not supported).
-        
+
         Args:
             follow: Whether to follow the logs.
             tail: The number of lines to tail.
@@ -476,7 +477,7 @@ class VertexDeploymentService(BaseDeploymentService):
     @property
     def is_running(self) -> bool:
         """Check if the service is running.
-        
+
         Returns:
             True if the service is running, False otherwise.
         """

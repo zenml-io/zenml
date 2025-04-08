@@ -87,7 +87,7 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
 
         Returns:
             The deployer ID string
-                    
+
         Raises:
             ValueError: If VertexModelDeployer is not active in the stack
         """
@@ -285,7 +285,7 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
         metadata: Optional[Dict[str, str]] = None,
     ) -> RegisteredModel:
         """Register a model to the Vertex AI model registry.
-        
+
         Args:
             name: The name of the model.
             description: The description of the model.
@@ -293,10 +293,10 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
 
         Returns:
             The registered model.
-        
+
         Raises:
             NotImplementedError: Vertex AI does not support registering models, you can only register model versions, skipping model registration...
-        
+
         """
         raise NotImplementedError(
             "Vertex AI does not support registering models, you can only register model versions, skipping model registration..."
@@ -307,7 +307,7 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
         name: str,
     ) -> None:
         """Delete a model and all of its versions from the Vertex AI model registry.
-        
+
         Args:
             name: The name of the model.
 
@@ -330,7 +330,7 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
         remove_metadata: Optional[List[str]] = None,
     ) -> RegisteredModel:
         """Update a model in the Vertex AI model registry.
-        
+
         Args:
             name: The name of the model.
             description: The description of the model.
@@ -349,7 +349,7 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
 
     def get_model(self, name: str) -> RegisteredModel:
         """Get a model from the Vertex AI model registry by name without needing a version.
-        
+
         Args:
             name: The name of the model.
 
@@ -373,14 +373,14 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
         metadata: Optional[Dict[str, str]] = None,
     ) -> List[RegisteredModel]:
         """List models in the Vertex AI model registry.
-        
+
         Args:
             name: The name of the model.
             metadata: The metadata of the model.
 
         Returns:
             The registered models.
-        
+
         Raises:
             RuntimeError: If the models are not found
         """
@@ -497,12 +497,12 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
 
         # Include explanation settings if provided in the config.
         if self.config.explanation:
-            upload_arguments["explanation_metadata"] = (
-                self.config.explanation.metadata
-            )
-            upload_arguments["explanation_parameters"] = (
-                self.config.explanation.parameters
-            )
+            upload_arguments[
+                "explanation_metadata"
+            ] = self.config.explanation.metadata
+            upload_arguments[
+                "explanation_parameters"
+            ] = self.config.explanation.parameters
 
         # Remove any parameters that are None to avoid passing them to upload.
         upload_arguments = {
@@ -539,7 +539,7 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
         Args:
             name: Model name
             version: Version string
-        
+
         Raises:
             RuntimeError: If the model version is not found
         """
@@ -561,7 +561,7 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
         stage: Optional[ModelVersionStage] = None,
     ) -> RegistryModelVersion:
         """Update a model version in the Vertex AI model registry.
-        
+
         Args:
             name: The name of the model.
             version: The version of the model.
@@ -610,14 +610,14 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
         self, name: str, version: str
     ) -> RegistryModelVersion:
         """Get a model version from the Vertex AI model registry using the version label.
-        
+
         Args:
             name: The name of the model.
             version: The version of the model.
 
         Returns:
             The registered model version.
-            
+
         Raises:
             RuntimeError: If the model version is not found
         """
@@ -641,7 +641,7 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
         **kwargs: Any,
     ) -> List[RegistryModelVersion]:
         """List model versions from the Vertex AI model registry.
-        
+
         Args:
             name: The name of the model.
             model_source_uri: The URI of the model source.
@@ -655,7 +655,7 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
 
         Returns:
             The registered model versions.
-            
+
         Raises:
             RuntimeError: If the model versions are not found
         """
@@ -702,7 +702,7 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
         **kwargs: Any,
     ) -> Any:
         """Load a model version from the Vertex AI model registry using label-based lookup.
-        
+
         Args:
             name: The name of the model.
             version: The version of the model.
@@ -726,7 +726,7 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
         model_version: RegistryModelVersion,
     ) -> str:
         """Get the model URI artifact store.
-        
+
         Args:
             model_version: The model version.
 
@@ -787,7 +787,7 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
 
     def _sanitize_model_display_name(self, name: str) -> str:
         """Sanitize the model display name to conform to Vertex AI limits.
-        
+
         Args:
             name: The name of the model.
 
