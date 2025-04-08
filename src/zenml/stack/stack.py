@@ -181,6 +181,7 @@ class Stack:
             id=stack_model.id,
             name=stack_model.name,
             environment=stack_model.environment,
+            secrets=stack_model.secrets,
             components=stack_components,
         )
         _STACK_CACHE[key] = stack

@@ -235,6 +235,6 @@ def gather_step_environment(
             continue
 
         for key, value in secret.secret_values.items():
-            environment[key.upper()] = str(value)
+            environment[key] = str(value)
 
     return environment

@@ -209,7 +209,8 @@ class ComponentResponseMetadata(UserScopedResponseMetadata):
     )
     secrets: List[UUID] = Field(
         default=[],
-        title="Secrets to set as environment variables when running on this component.",
+        title="Secrets to set as environment variables when running on this "
+        "component.",
     )
     labels: Optional[Dict[str, Any]] = Field(
         default=None,
