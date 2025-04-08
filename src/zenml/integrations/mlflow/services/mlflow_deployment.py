@@ -13,6 +13,7 @@
 #  permissions and limitations under the License.
 """Implementation of the MLflow deployment functionality."""
 
+import importlib
 import os
 import sys
 from typing import TYPE_CHECKING, Any, Dict, Optional, Union
@@ -126,14 +127,31 @@ class MLFlowDeploymentConfig(LocalDaemonServiceConfig):
             the validated value
 
         Raises:
-            ValueError: if mlserver is set to true on Python 3.12 as it is not
-                yet supported.
+            ValueError: if mlserver packages are not installed
         """
-        if mlserver is True and sys.version_info.minor >= 12:
-            raise ValueError(
-                "The mlserver deployment is not yet supported on Python 3.12 "
-                "or above."
-            )
+        if mlserver is True:
+            # For the mlserver deployment, the mlserver and
+            # mlserver-mlflow packages need to be installed separately
+            # because they rely on an older version of Pydantic.
+
+            # Check if the mlserver and mlserver-mlflow packages are installed
+            try:
+                importlib.import_module("mlserver")
+                importlib.import_module("mlserver_mlflow")
+            except ModuleNotFoundError:
+                if sys.version_info.minor >= 12:
+                    raise ValueError(
+                        "The mlserver deployment is not yet supported on "
+                        "Python 3.12 or above."
+                    )
+
+                raise ValueError(
+                    "The MLflow MLServer backend requires the `mlserver` and "
+                    "`mlserver-mlflow` packages to be installed. These "
+                    "packages are not included in the ZenML MLflow integration "
+                    "requirements. Please install them manually."
+                )
+
         return mlserver
 
 
