@@ -81,6 +81,15 @@ class StackRequest(UserScopedRequest):
             "components.",
         )
     )
+    environment: Optional[Dict[str, str]] = Field(
+        default=None,
+        title="Environment variables to set when running on this stack.",
+    )
+    secrets: Optional[List[UUID]] = Field(
+        default=None,
+        title="Secrets to set as environment variables when running on this "
+        "stack.",
+    )
     labels: Optional[Dict[str, Any]] = Field(
         default=None,
         title="The stack labels.",
@@ -158,6 +167,15 @@ class StackUpdate(BaseUpdate):
         "instances of components of this type.",
         default=None,
     )
+    environment: Optional[Dict[str, str]] = Field(
+        default=None,
+        title="Environment variables to set when running on this stack.",
+    )
+    secrets: Optional[List[UUID]] = Field(
+        default=None,
+        title="Secrets to set as environment variables when running on this "
+        "stack.",
+    )
     labels: Optional[Dict[str, Any]] = Field(
         default=None,
         title="The stack labels.",
@@ -186,6 +204,15 @@ class StackResponseMetadata(UserScopedResponseMetadata):
     stack_spec_path: Optional[str] = Field(
         default=None,
         title="The path to the stack spec used for mlstacks deployments.",
+    )
+    environment: Dict[str, str] = Field(
+        default={},
+        title="Environment variables to set when running on this stack.",
+    )
+    secrets: List[UUID] = Field(
+        default=[],
+        title="Secrets to set as environment variables when running on this "
+        "stack.",
     )
     labels: Optional[Dict[str, Any]] = Field(
         default=None,
@@ -314,6 +341,24 @@ class StackResponse(
             the value of the property.
         """
         return self.get_metadata().components
+
+    @property
+    def environment(self) -> Dict[str, str]:
+        """The `environment` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().environment
+
+    @property
+    def secrets(self) -> List[UUID]:
+        """The `secrets` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().secrets
 
     @property
     def labels(self) -> Optional[Dict[str, Any]]:

@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Any, List, Optional
 from uuid import UUID
 
 from sqlalchemy import UniqueConstraint
-from sqlmodel import Relationship
+from sqlmodel import Field, Relationship
 
 from zenml.enums import StackComponentType
 from zenml.models import (
@@ -63,6 +63,7 @@ class StackComponentSchema(NamedSchema, table=True):
     flavor: str
     configuration: bytes
     labels: Optional[bytes]
+    environment: Optional[bytes] = Field(default=None)
 
     user_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -138,6 +139,9 @@ class StackComponentSchema(NamedSchema, table=True):
             labels=base64.b64encode(
                 json.dumps(request.labels).encode("utf-8")
             ),
+            environment=base64.b64encode(
+                json.dumps(request.environment).encode("utf-8")
+            ),
             connector=service_connector,
             connector_resource_id=request.connector_resource_id,
         )
@@ -163,6 +167,10 @@ class StackComponentSchema(NamedSchema, table=True):
             elif field == "labels":
                 self.labels = base64.b64encode(
                     json.dumps(component_update.labels).encode("utf-8")
+                )
+            elif field == "environment":
+                self.environment = base64.b64encode(
+                    json.dumps(component_update.environment).encode("utf-8")
                 )
             else:
                 setattr(self, field, value)
@@ -204,6 +212,11 @@ class StackComponentSchema(NamedSchema, table=True):
         )
         metadata = None
         if include_metadata:
+            environment = None
+            if self.environment:
+                environment = json.loads(
+                    base64.b64decode(self.environment).decode()
+                )
             metadata = ComponentResponseMetadata(
                 configuration=json.loads(
                     base64.b64decode(self.configuration).decode()
@@ -211,6 +224,7 @@ class StackComponentSchema(NamedSchema, table=True):
                 labels=json.loads(base64.b64decode(self.labels).decode())
                 if self.labels
                 else None,
+                environment=environment or {},
                 connector_resource_id=self.connector_resource_id,
                 connector=self.connector.to_model()
                 if self.connector

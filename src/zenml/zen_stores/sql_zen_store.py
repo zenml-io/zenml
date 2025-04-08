@@ -7605,15 +7605,9 @@ class SqlZenStore(BaseZenStore):
                     select(StackComponentSchema).where(or_(*filters))
                 ).all()
 
-                new_stack_schema = StackSchema(
-                    user_id=stack.user,
-                    stack_spec_path=stack.stack_spec_path,
-                    name=stack.name,
-                    description=stack.description,
+                new_stack_schema = StackSchema.from_request(
+                    request=stack,
                     components=defined_components,
-                    labels=base64.b64encode(
-                        json.dumps(stack.labels).encode("utf-8")
-                    ),
                 )
 
                 session.add(new_stack_schema)

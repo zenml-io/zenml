@@ -22,6 +22,7 @@ from sqlalchemy import UniqueConstraint
 from sqlmodel import Field, Relationship, SQLModel
 
 from zenml.models import (
+    StackRequest,
     StackResponse,
     StackResponseBody,
     StackResponseMetadata,
@@ -86,6 +87,7 @@ class StackSchema(NamedSchema, table=True):
     description: Optional[str] = Field(default=None)
     stack_spec_path: Optional[str]
     labels: Optional[bytes]
+    environment: Optional[bytes] = Field(default=None)
 
     user_id: Optional[UUID] = build_foreign_key_field(
         source=__tablename__,
@@ -105,6 +107,35 @@ class StackSchema(NamedSchema, table=True):
     deployments: List["PipelineDeploymentSchema"] = Relationship(
         back_populates="stack",
     )
+
+    @classmethod
+    def from_request(
+        cls,
+        request: "StackRequest",
+        components: List["StackComponentSchema"],
+    ) -> "StackSchema":
+        """Create a stack schema from a request.
+
+        Args:
+            request: The request from which to create the stack.
+            components: List of components to link to the stack.
+
+        Returns:
+            The stack schema.
+        """
+        return cls(
+            user_id=request.user,
+            stack_spec_path=request.stack_spec_path,
+            name=request.name,
+            description=request.description,
+            components=components,
+            labels=base64.b64encode(
+                json.dumps(request.labels).encode("utf-8")
+            ),
+            environment=base64.b64encode(
+                json.dumps(request.environment).encode("utf-8")
+            ),
+        )
 
     def update(
         self,
@@ -128,6 +159,10 @@ class StackSchema(NamedSchema, table=True):
             elif field == "labels":
                 self.labels = base64.b64encode(
                     json.dumps(stack_update.labels).encode("utf-8")
+                )
+            elif field == "environment":
+                self.environment = base64.b64encode(
+                    json.dumps(stack_update.environment).encode("utf-8")
                 )
             else:
                 setattr(self, field, value)
@@ -158,6 +193,11 @@ class StackSchema(NamedSchema, table=True):
         )
         metadata = None
         if include_metadata:
+            environment = None
+            if self.environment:
+                environment = json.loads(
+                    base64.b64decode(self.environment).decode()
+                )
             metadata = StackResponseMetadata(
                 components={c.type: [c.to_model()] for c in self.components},
                 stack_spec_path=self.stack_spec_path,
@@ -165,6 +205,7 @@ class StackSchema(NamedSchema, table=True):
                 if self.labels
                 else None,
                 description=self.description,
+                environment=environment or {},
             )
 
         return StackResponse(
