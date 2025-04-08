@@ -2,7 +2,38 @@
 
 # 0.80.2
 
+ The `0.80.2` release focuses on several bug fixes, usability enhancements and documentation improvements. Key highlights include fixing the yanked fsspec pip resolution issue, adding sample visualization for Pandas materializer, and upgrading pydantic to 2.11 for improved performance. This release also adds new tutorials and guides, fixes several critical issues, and introduces new functionality for pipeline development.
+
+ ## Features
+
+ - Added poetry add support for CLI
+ - Added retry option on step.with_options
+ - Added service annotations to helm chart
+ - Added step name to console logs for better tracing
+
+ ## Improvements
+
+ - Added sample visualization for Pandas materializer
+ - Improved run templates with small enhancements and hidden option support
+ - Fixed service connector list-resources endpoint and CLI command
+
+ ## Fixes
+
+ - Fixed timestamps in logs
+ - Fixed yanked fsspec pip resolution issue
+ - Fixed Kubernetes Orchestrator step pod failure status updates
+ - Fixed CI failures and test issues
+ - Updated error message for setting pipeline parameters via API
+
+ ## Documentation
+
+ - Added new ZenML Tutorials section to user guide
+ - Added mini-tutorials for [pipeline scheduling](https://docs.zenml.io/user-guides/tutorial/managing-scheduled-pipelines) and [organization with tags/projects](https://docs.zenml.io/user-guides/tutorial/organizing-pipelines-and-models)
+ - Updated documentation for [MCP Server](https://docs.zenml.io/how-to/manage-zenml-server/mcp-chat-with-server) and [VSCode Extension](https://docs.zenml.io/how-to/manage-zenml-server/vscode-extension)
+ - Fixed various documentation issues
+
 ## What's Changed
+
 * Updating the missing legacy docs by @bcdurak in https://github.com/zenml-io/zenml/pull/3473
 * add new version to the migration tests by @bcdurak in https://github.com/zenml-io/zenml/pull/3471
 * Add docs for MCP Server and VSCode Extension by @strickvl in https://github.com/zenml-io/zenml/pull/3475
@@ -35,6 +66,7 @@
 * Minor auth improvement by @schustmi in https://github.com/zenml-io/zenml/pull/3512
 
 ## New Contributors
+
 * @marwan37 made their first contribution in https://github.com/zenml-io/zenml/pull/3483
 * @jsybel made their first contribution in https://github.com/zenml-io/zenml/pull/3482
 
