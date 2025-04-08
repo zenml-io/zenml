@@ -22,11 +22,13 @@ from google.cloud import aiplatform
 from pydantic import Field, PrivateAttr
 
 from zenml.client import Client
+from zenml.enums import ServiceState
 from zenml.integrations.gcp.flavors.vertex_base_config import (
     VertexAIEndpointConfig,
 )
 from zenml.logger import get_logger
-from zenml.services import ServiceState, ServiceStatus, ServiceType
+from zenml.models.v2.misc.service import ServiceType
+from zenml.services import ServiceStatus
 from zenml.services.service import BaseDeploymentService, ServiceConfig
 from zenml.services.service_endpoint import (
     BaseServiceEndpoint,
