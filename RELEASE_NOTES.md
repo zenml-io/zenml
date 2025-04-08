@@ -1,5 +1,44 @@
 <!-- markdown-link-check-disable -->
 
+# 0.80.2
+
+## What's Changed
+* Updating the missing legacy docs by @bcdurak in https://github.com/zenml-io/zenml/pull/3473
+* add new version to the migration tests by @bcdurak in https://github.com/zenml-io/zenml/pull/3471
+* Add docs for MCP Server and VSCode Extension by @strickvl in https://github.com/zenml-io/zenml/pull/3475
+* Log job completion for Vertex orchestrator by @strickvl in https://github.com/zenml-io/zenml/pull/3478
+* Cleaning up the CI failures by @bcdurak in https://github.com/zenml-io/zenml/pull/3480
+* Remove remaining use of tj-actions/changed-files by @stefannica in https://github.com/zenml-io/zenml/pull/3481
+* Fixing the timestamps in logs by @bcdurak in https://github.com/zenml-io/zenml/pull/3479
+* Fix incorrect step access method in documentation by @marwan37 in https://github.com/zenml-io/zenml/pull/3483
+* Relaxing the `mlflow` dependency by @bcdurak in https://github.com/zenml-io/zenml/pull/3446
+* Add two mini-tutorials (pipeline scheduling and organization with tags/projects) by @strickvl in https://github.com/zenml-io/zenml/pull/3485
+* Add ZenML Tutorials section to user guide by @htahir1 in https://github.com/zenml-io/zenml/pull/3488
+* Add service annotations to helm chart by @jsybel in https://github.com/zenml-io/zenml/pull/3482
+* Adding step name to console logs by @bcdurak in https://github.com/zenml-io/zenml/pull/3486
+* Fix yanked fsspec pip resolution issue by @stefannica in https://github.com/zenml-io/zenml/pull/3493
+* Fixed some docs here and there by @htahir1 in https://github.com/zenml-io/zenml/pull/3484
+* Update error message for setting pipeline parameters via API by @htahir1 in https://github.com/zenml-io/zenml/pull/3491
+* Fix the service connector list-resources endpoint and CLI command by @stefannica in https://github.com/zenml-io/zenml/pull/3492
+* Restructure organization viewer role in ZenML Pro by @htahir1 in https://github.com/zenml-io/zenml/pull/3501
+* Add a sample visualization for Pandas materializer by @htahir1 in https://github.com/zenml-io/zenml/pull/3494
+* Add retry option on step.with_options by @schustmi in https://github.com/zenml-io/zenml/pull/3499
+* Fix tutorials + small improvements to docs by @htahir1 in https://github.com/zenml-io/zenml/pull/3489
+* CI fixes with `huggingface` and crud tests by @bcdurak in https://github.com/zenml-io/zenml/pull/3502
+* Upgrading pydantic to 2.11 by @bcdurak in https://github.com/zenml-io/zenml/pull/3472
+* Update step status if Kubernetes Orchestrator step pods fail by @stefannica in https://github.com/zenml-io/zenml/pull/3497
+* Add `poetry add` support for CLI by @avishniakov in https://github.com/zenml-io/zenml/pull/3470
+* Small run template improvements by @schustmi in https://github.com/zenml-io/zenml/pull/3503
+* Move uv env var to constants by @schustmi in https://github.com/zenml-io/zenml/pull/3504
+* Add hidden option for run templates by @schustmi in https://github.com/zenml-io/zenml/pull/3500
+
+## New Contributors
+* @marwan37 made their first contribution in https://github.com/zenml-io/zenml/pull/3483
+* @jsybel made their first contribution in https://github.com/zenml-io/zenml/pull/3482
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.80.1...0.80.2
+
+
 # 0.80.1
 
 The `0.80.1` release focuses on bug fixes and performance improvements following the major `0.80.0` update. This release addresses several critical issues, particularly improving the CLI functionality when used with the REST API through a deployed ZenML instance. Additionally, this version introduces [a restructured documentation architecture](https://docs.zenml.io) for improved user experience.
