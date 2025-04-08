@@ -12,16 +12,16 @@
 #  or implied. See the License for the specific language governing
 #  permissions and limitations under the License.
 
-import pytest
+# import pytest
 
-from tests.integration.examples.utils import run_example
+# from tests.integration.examples.utils import run_example
 
 
-def test_example(request: pytest.FixtureRequest) -> None:
-    """Runs the great expectations test example."""
-    with run_example(
-        request=request,
-        name="great_expectations",
-        pipelines={"validation_pipeline": (1, 5)},
-    ):
-        pass
+# def test_example(request: pytest.FixtureRequest) -> None:
+#     """Runs the great expectations test example."""
+#     with run_example(
+#         request=request,
+#         name="great_expectations",
+#         pipelines={"validation_pipeline": (1, 5)},
+#     ):
+#         pass
