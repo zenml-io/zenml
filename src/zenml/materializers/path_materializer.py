@@ -89,7 +89,11 @@ class PathMaterializer(BaseMaterializer):
                 )
 
     def save(self, data: Any) -> None:
-        """Store the directory or file in the artifact store."""
+        """Store the directory or file in the artifact store.
+        
+        Args:
+            data: Path to a local directory or file to store. Must be a Path object.
+        """
         assert isinstance(data, Path)
 
         if data.is_dir():
