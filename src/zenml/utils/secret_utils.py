@@ -102,7 +102,7 @@ def SecretField(*args: Any, **kwargs: Any) -> Any:
     """
     json_schema_extra = kwargs.get("json_schema_extra", {})
     json_schema_extra.update({PYDANTIC_SENSITIVE_FIELD_MARKER: True})
-    return Field(json_schema_extra=json_schema_extra, *args, **kwargs)  # type: ignore[pydantic-field]
+    return Field(json_schema_extra=json_schema_extra, *args, **kwargs)
 
 
 def ClearTextField(*args: Any, **kwargs: Any) -> Any:
@@ -119,7 +119,7 @@ def ClearTextField(*args: Any, **kwargs: Any) -> Any:
     """
     json_schema_extra = kwargs.get("json_schema_extra", {})
     json_schema_extra.update({PYDANTIC_CLEAR_TEXT_FIELD_MARKER: True})
-    return Field(json_schema_extra=json_schema_extra, *args, **kwargs)  # type: ignore[pydantic-field]
+    return Field(json_schema_extra=json_schema_extra, *args, **kwargs)
 
 
 def is_secret_field(field: "FieldInfo") -> bool:

@@ -357,6 +357,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         environment: Dict[str, str],
+        placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Iterator[Dict[str, MetadataType]]:
         """Creates a KFP JSON pipeline.
 
@@ -390,6 +391,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             stack: The stack the pipeline will run on.
             environment: Environment variables to set in the orchestration
                 environment.
+            placeholder_run: An optional placeholder run for the deployment.
 
         Raises:
             ValueError: If the attribute `pipeline_root` is not set, and it

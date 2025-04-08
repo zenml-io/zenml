@@ -126,6 +126,10 @@ The Kubernetes orchestrator will by default use a Kubernetes namespace called `z
 * `kubernetes_namespace`: The Kubernetes namespace to use for running the pipelines. The namespace must already exist in the Kubernetes cluster.
 * `service_account_name`: The name of a Kubernetes service account to use for running the pipelines. If configured, it must point to an existing service account in the default or configured `namespace` that has associated RBAC roles granting permissions to create and manage pods in that namespace. This can also be configured as an individual pipeline setting in addition to the global orchestrator setting.
 * `pass_zenml_token_as_secret`: By default, the Kubernetes orchestrator will pass a short-lived API token to authenticate to the ZenML server as an environment variable as part of the Pod manifest. If you want this token to be stored in a Kubernetes secret instead, set `pass_zenml_token_as_secret=True` when registering your orchestrator. If you do so, make sure the service connector that you configure for your has permissions to create Kubernetes secrets. Additionally, the service account used for the Pods running your pipeline must have permissions to delete secrets, otherwise the cleanup will fail and you'll be left with orphaned secrets.
+* `pod_startup_timeout`: The maximum time to wait for a pending step pod to start (in seconds). The orchestrator will delete the pending pod after this time has elapsed and raise an error. If configured, the `pod_failure_retry_delay` and `pod_failure_backoff` settings will also be used to calculate the delay between retries.
+* `pod_failure_retry_delay`: The delay (in seconds) between retries to create a step pod that fails to start.
+* `pod_failure_max_retries`: The maximum number of retries to create a step pod that fails to start.
+* `pod_failure_backoff`: The backoff factor to use for retrying to create a step pod that fails to start.
 
 For additional configuration of the Kubernetes orchestrator, you can pass `KubernetesOrchestratorSettings` which allows you to configure (among others) the following attributes:
 
