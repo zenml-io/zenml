@@ -14,6 +14,7 @@
 """Functionality to install or uninstall ZenML integrations via the CLI."""
 
 import os
+import subprocess
 import sys
 from typing import Optional, Tuple
 
@@ -233,9 +234,9 @@ def export_requirements(
                 "and try again."
             )
         else:
-            formatted_reqs = " ".join([f'"{req}"' for req in requirements])
-            cmd = f"poetry add {formatted_reqs}"
-            os.system(cmd)
+            # Use subprocess.run with shell=False to avoid command injection
+            args = ["poetry", "add"] + requirements
+            subprocess.run(args, check=True)
             declare(
                 f"Requirements added to `{envs[0]}` environment in Poetry."
             )
