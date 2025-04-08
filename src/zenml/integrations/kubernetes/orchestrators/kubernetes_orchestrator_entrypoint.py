@@ -278,6 +278,7 @@ def main() -> None:
             list_args = dict(orchestrator_run_id=orchestrator_run_id)
 
         pipeline_runs = client.list_pipeline_runs(
+            hydrate=True,
             project=deployment_config.project.id,
             deployment_id=deployment_config.id,
             **list_args,

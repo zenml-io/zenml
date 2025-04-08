@@ -57,6 +57,7 @@ from zenml.models import (
     OAuthDeviceInternalResponse,
     OAuthDeviceInternalUpdate,
     OAuthTokenResponse,
+    PipelineRunResponse,
     UserAuthModel,
     UserRequest,
     UserResponse,
@@ -418,16 +419,16 @@ def authenticate_credentials(
             # to avoid unnecessary database queries.
 
             @cache_result(expiry=30)
-            def get_pipeline_run_status(
+            def get_pipeline_run(
                 pipeline_run_id: UUID,
-            ) -> Optional[ExecutionStatus]:
-                """Get the status of a pipeline run.
+            ) -> Optional[PipelineRunResponse]:
+                """Get a pipeline run.
 
                 Args:
                     pipeline_run_id: The pipeline run ID.
 
                 Returns:
-                    The pipeline run status or None if the pipeline run does not
+                    The pipeline run or None if the pipeline run does not
                     exist.
                 """
                 try:
@@ -437,12 +438,10 @@ def authenticate_credentials(
                 except KeyError:
                     return None
 
-                return pipeline_run.status
+                return pipeline_run
 
-            pipeline_run_status = get_pipeline_run_status(
-                decoded_token.pipeline_run_id
-            )
-            if pipeline_run_status is None:
+            pipeline_run = get_pipeline_run(decoded_token.pipeline_run_id)
+            if pipeline_run is None:
                 error = (
                     f"Authentication error: error retrieving token pipeline run "
                     f"{decoded_token.pipeline_run_id}"
@@ -450,14 +449,24 @@ def authenticate_credentials(
                 logger.error(error)
                 raise CredentialsNotValid(error)
 
-            if pipeline_run_status.is_finished:
-                error = (
-                    f"The execution of pipeline run "
-                    f"{decoded_token.pipeline_run_id} has already concluded and "
-                    "API tokens scoped to it are no longer valid."
-                )
-                logger.error(error)
-                raise CredentialsNotValid(error)
+            if pipeline_run.status.is_finished:
+                expired_with_leeway = True
+                if (
+                    pipeline_run.end_time
+                    and utc_now(tz_aware=pipeline_run.end_time)
+                    - datetime.timedelta(seconds=30)
+                    <= pipeline_run.end_time
+                ):
+                    expired_with_leeway = False
+
+                if expired_with_leeway:
+                    error = (
+                        f"The execution of pipeline run "
+                        f"{decoded_token.pipeline_run_id} has already concluded and "
+                        "API tokens scoped to it are no longer valid."
+                    )
+                    logger.error(error)
+                    raise CredentialsNotValid(error)
 
         if decoded_token.step_run_id:
             # If the token contains a step run ID, we need to check if the
