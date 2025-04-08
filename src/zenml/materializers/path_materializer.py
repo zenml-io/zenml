@@ -36,6 +36,11 @@ class PathMaterializer(BaseMaterializer):
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
     ARCHIVE_NAME: ClassVar[str] = "data.tar.gz"
     FILE_NAME: ClassVar[str] = "file_data"
+    
+    # Skip registration if the environment variable is set
+    SKIP_REGISTRATION: ClassVar[bool] = os.environ.get(
+        "ZENML_DISABLE_PATH_MATERIALIZER", ""
+    ).lower() in ("true", "1", "yes")
 
     def load(self, data_type: Type[Any]) -> Any:
         """Copy the artifact files to a local temp directory or file.

@@ -133,6 +133,17 @@ Before using `Path` objects in your steps, be aware of how this works behind the
 - **Size Limitations**: Be cautious when passing large directories or files, as this approach isn't ideal for very large datasets (multiple GB).
 - **Network Bandwidth**: If your artifact store is remote (like S3 or GCS), consider network bandwidth limitations.
 
+{% hint style="info" %}
+**Version Compatibility**
+
+The `PathMaterializer` was introduced in ZenML 0.81.0. If you have pipelines written with earlier versions, you should set the `ZENML_DISABLE_PATH_MATERIALIZER` environment variable to maintain compatibility with your existing code. This prevents the automatic registration of the `PathMaterializer` for `Path` objects.
+
+```bash
+# Set this before running pipelines developed with ZenML < 0.81.0
+export ZENML_DISABLE_PATH_MATERIALIZER=true
+```
+{% endhint %}
+
 For extremely large datasets, consider alternatives like:
 - Using remote data access patterns within your steps 
 - Passing only references to the data rather than the data itself
