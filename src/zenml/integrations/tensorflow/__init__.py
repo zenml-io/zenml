@@ -41,11 +41,13 @@ class TensorflowIntegration(Integration):
         from zenml.integrations.tensorflow import materializers  # noqa
 
     @classmethod
-    def get_requirements(cls, target_os: Optional[str] = None) -> List[str]:
+    def get_requirements(cls, target_os: Optional[str] = None, python_version: Optional[str] = None
+    ) -> List[str]:
         """Defines platform specific requirements for the integration.
 
         Args:
             target_os: The target operating system.
+            python_version: The Python version to use for the requirements.
 
         Returns:
             A list of requirements.
@@ -60,7 +62,6 @@ class TensorflowIntegration(Integration):
                 "tensorflow>=2.12,<2.15",
                 "tensorflow_io>=0.24.0",
             ]
-        if sys.version_info.minor == 8:
-            requirements.append("typing-extensions>=4.6.1")
+
         return requirements
 

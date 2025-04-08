@@ -235,7 +235,7 @@ class ClientConfiguration(FileSyncModel):
         else:
             raise RuntimeError(
                 "No active project is configured. Run "
-                "`zenml project set PROJECT_NAME` to set the active "
+                "`zenml project set <NAME>` to set the active "
                 "project."
             )
 
@@ -876,6 +876,7 @@ class Client(metaclass=ClientMetaClass):
         old_password: Optional[str] = None,
         updated_is_admin: Optional[bool] = None,
         updated_metadata: Optional[Dict[str, Any]] = None,
+        updated_default_project_id: Optional[UUID] = None,
         active: Optional[bool] = None,
     ) -> UserResponse:
         """Update a user.
@@ -891,6 +892,7 @@ class Client(metaclass=ClientMetaClass):
                 update.
             updated_is_admin: Whether the user should be an admin.
             updated_metadata: The new metadata for the user.
+            updated_default_project_id: The new default project ID for the user.
             active: Use to activate or deactivate the user.
 
         Returns:
@@ -927,6 +929,9 @@ class Client(metaclass=ClientMetaClass):
 
         if updated_metadata is not None:
             user_update.user_metadata = updated_metadata
+
+        if updated_default_project_id is not None:
+            user_update.default_project_id = updated_default_project_id
 
         return self.zen_store.update_user(
             user_id=user.id, user_update=user_update
@@ -1154,7 +1159,7 @@ class Client(metaclass=ClientMetaClass):
         if not project:
             raise RuntimeError(
                 "No active project is configured. Run "
-                "`zenml project set PROJECT_NAME` to set the active "
+                "`zenml project set <NAME>` to set the active "
                 "project."
             )
 
@@ -1208,7 +1213,6 @@ class Client(metaclass=ClientMetaClass):
             name=name,
             components=stack_components,
             stack_spec_path=stack_spec_file,
-            project=self.active_project.id,
             labels=labels,
         )
 
@@ -1334,7 +1338,6 @@ class Client(metaclass=ClientMetaClass):
 
         # Create the update model
         update_model = StackUpdate(
-            project=self.active_project.id,
             stack_spec_path=stack_spec_file,
         )
 
@@ -2022,7 +2025,6 @@ class Client(metaclass=ClientMetaClass):
             type=component_type,
             flavor=flavor,
             configuration=configuration,
-            project=self.active_project.id,
             labels=labels,
         )
 
@@ -2070,9 +2072,7 @@ class Client(metaclass=ClientMetaClass):
             allow_name_prefix_match=False,
         )
 
-        update_model = ComponentUpdate(
-            project=self.active_project.id,
-        )
+        update_model = ComponentUpdate()
 
         if name is not None:
             existing_components = self.list_stack_components(
@@ -3574,6 +3574,7 @@ class Client(metaclass=ClientMetaClass):
         updated: Optional[Union[datetime, str]] = None,
         id: Optional[Union[UUID, str]] = None,
         name: Optional[str] = None,
+        hidden: Optional[bool] = False,
         tag: Optional[str] = None,
         project: Optional[Union[str, UUID]] = None,
         pipeline_id: Optional[Union[str, UUID]] = None,
@@ -3596,6 +3597,7 @@ class Client(metaclass=ClientMetaClass):
             updated: Filter by the last updated date.
             id: Filter by run template ID.
             name: Filter by run template name.
+            hidden: Filter by run template hidden status.
             tag: Filter by run template tags.
             project: Filter by project name/ID.
             pipeline_id: Filter by pipeline ID.
@@ -3620,6 +3622,7 @@ class Client(metaclass=ClientMetaClass):
             updated=updated,
             id=id,
             name=name,
+            hidden=hidden,
             tag=tag,
             project=project,
             pipeline_id=pipeline_id,
@@ -3640,6 +3643,7 @@ class Client(metaclass=ClientMetaClass):
         name_id_or_prefix: Union[str, UUID],
         name: Optional[str] = None,
         description: Optional[str] = None,
+        hidden: Optional[bool] = None,
         add_tags: Optional[List[str]] = None,
         remove_tags: Optional[List[str]] = None,
         project: Optional[Union[str, UUID]] = None,
@@ -3650,6 +3654,7 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix: Name/ID/ID prefix of the template to update.
             name: The new name of the run template.
             description: The new description of the run template.
+            hidden: The new hidden status of the run template.
             add_tags: Tags to add to the run template.
             remove_tags: Tags to remove from the run template.
             project: The project name/ID to filter by.
@@ -3675,6 +3680,7 @@ class Client(metaclass=ClientMetaClass):
             template_update=RunTemplateUpdate(
                 name=name,
                 description=description,
+                hidden=hidden,
                 add_tags=add_tags,
                 remove_tags=remove_tags,
             ),

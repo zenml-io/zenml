@@ -357,6 +357,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         environment: Dict[str, str],
+        placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Iterator[Dict[str, MetadataType]]:
         """Creates a KFP JSON pipeline.
 
@@ -390,6 +391,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             stack: The stack the pipeline will run on.
             environment: Environment variables to set in the orchestration
                 environment.
+            placeholder_run: An optional placeholder run for the deployment.
 
         Raises:
             ValueError: If the attribute `pipeline_root` is not set, and it
@@ -736,6 +738,9 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                         "Waiting for the Vertex AI Pipelines job to finish..."
                     )
                     run.wait()
+                    logger.info(
+                        "Vertex AI Pipelines job completed successfully."
+                    )
 
         except google_exceptions.ClientError as e:
             logger.error("Failed to create the Vertex AI Pipelines job: %s", e)
