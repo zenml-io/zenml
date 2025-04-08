@@ -16,6 +16,7 @@
 import base64
 import contextlib
 import os
+import shutil
 import tempfile
 import zipfile
 from pathlib import Path
@@ -58,7 +59,7 @@ from zenml.models import (
 )
 from zenml.stack import StackComponent
 from zenml.steps.step_context import get_step_context
-from zenml.utils import source_utils
+from zenml.utils import io_utils, source_utils
 from zenml.utils.yaml_utils import read_yaml, write_yaml
 
 if TYPE_CHECKING:
@@ -552,11 +553,6 @@ def load_artifact_from_response(artifact: "ArtifactVersionResponse") -> Any:
         uri=artifact.uri,
         artifact_store=artifact_store,
     )
-
-
-import shutil
-
-from zenml.utils import io_utils
 
 
 def create_artifact_archive(
