@@ -19,6 +19,10 @@ import tarfile
 from pathlib import Path
 from typing import Any, ClassVar, Tuple, Type
 
+from zenml.constants import (
+    ENV_ZENML_DISABLE_PATH_MATERIALIZER,
+    handle_bool_env_var,
+)
 from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
@@ -36,11 +40,11 @@ class PathMaterializer(BaseMaterializer):
     ASSOCIATED_ARTIFACT_TYPE: ClassVar[ArtifactType] = ArtifactType.DATA
     ARCHIVE_NAME: ClassVar[str] = "data.tar.gz"
     FILE_NAME: ClassVar[str] = "file_data"
-    
+
     # Skip registration if the environment variable is set
-    SKIP_REGISTRATION: ClassVar[bool] = os.environ.get(
-        "ZENML_DISABLE_PATH_MATERIALIZER", ""
-    ).lower() in ("true", "1", "yes")
+    SKIP_REGISTRATION: ClassVar[bool] = handle_bool_env_var(
+        ENV_ZENML_DISABLE_PATH_MATERIALIZER, default=False
+    )
 
     def load(self, data_type: Type[Any]) -> Any:
         """Copy the artifact files to a local temp directory or file.
