@@ -554,6 +554,36 @@ def load_artifact_from_response(artifact: "ArtifactVersionResponse") -> Any:
     )
 
 
+import shutil
+
+from zenml.utils import io_utils
+
+
+def create_artifact_archive(
+    artifact: "ArtifactVersionResponse", archive_path: Optional[str] = None
+) -> str:
+    """Create an archive of the given artifact.
+
+    Args:
+        artifact: The artifact to archive.
+        archive_path: The path to which to save the archive.
+
+    Returns:
+        The path to the created archive.
+    """
+    # Instantiate the artifact store to ensure the artifact store is available
+    # and registered in fileio
+    _ = _get_artifact_store_from_response_or_from_active_stack(
+        artifact=artifact
+    )
+    if archive_path is None:
+        archive_path = tempfile.mktemp()
+
+    with tempfile.TemporaryDirectory() as temp_dir:
+        io_utils.copy_dir(artifact.uri, temp_dir)
+        return shutil.make_archive(archive_path, "gztar", temp_dir)
+
+
 def download_artifact_files_from_response(
     artifact: "ArtifactVersionResponse",
     path: str,
