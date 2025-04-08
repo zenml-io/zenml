@@ -314,9 +314,9 @@ class VertexDeploymentService(BaseDeploymentService):
 
         # Add encryption key if specified
         if self.config.encryption_spec_key_name:
-            deploy_kwargs[
-                "encryption_spec_key_name"
-            ] = self.config.encryption_spec_key_name
+            deploy_kwargs["encryption_spec_key_name"] = (
+                self.config.encryption_spec_key_name
+            )
 
         # Deploy model
         logger.info(

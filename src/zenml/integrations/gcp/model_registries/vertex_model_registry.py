@@ -497,12 +497,12 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
 
         # Include explanation settings if provided in the config.
         if self.config.explanation:
-            upload_arguments[
-                "explanation_metadata"
-            ] = self.config.explanation.metadata
-            upload_arguments[
-                "explanation_parameters"
-            ] = self.config.explanation.parameters
+            upload_arguments["explanation_metadata"] = (
+                self.config.explanation.metadata
+            )
+            upload_arguments["explanation_parameters"] = (
+                self.config.explanation.parameters
+            )
 
         # Remove any parameters that are None to avoid passing them to upload.
         upload_arguments = {
