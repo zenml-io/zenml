@@ -147,7 +147,6 @@ These custom names make it easier to identify outputs in the dashboard and when 
 ### Type Annotations
 
 While optional, type annotations are highly recommended and provide several benefits:
-
 * **Artifact handling**: ZenML uses type annotations to determine how to serialize, store, and load artifacts. The type information guides ZenML to select the appropriate materializer for saving and loading step outputs.
 * **Type validation**: ZenML validates inputs against type annotations at runtime to catch errors early.
 * **Code documentation**: Types make your code more self-documenting and easier to understand.
@@ -241,6 +240,87 @@ my_pipeline.with_options(run_name=run_name)()
 ```
 
 This is especially useful in production environments where you need to track and monitor specific runs.
+
+## Scheduling
+
+Scheduling allows you to run pipelines automatically at specified times or intervals, which is essential for production ML workflows that need regular retraining or inference.
+
+### Setting Up a Schedule
+
+You can schedule a pipeline using either cron expressions or time intervals:
+
+```python
+from zenml.config.schedule import Schedule
+from zenml import pipeline
+from datetime import datetime
+
+@pipeline()
+def my_pipeline(...):
+    ...
+
+# Use cron expressions
+schedule = Schedule(cron_expression="5 14 * * 3")  # Runs at 2:05 PM every Wednesday
+
+# Or use human-readable time intervals
+schedule = Schedule(start_time=datetime.now(), interval_second=1800)  # Runs every 30 minutes
+
+# Apply the schedule when running the pipeline
+my_pipeline = my_pipeline.with_options(schedule=schedule)
+my_pipeline()
+```
+
+### Supported Orchestrators
+
+Not all orchestrators support scheduling. Here's a compatibility overview:
+
+| Orchestrator Type | Scheduling Support |
+|-------------------|--------------------|
+| Local/Docker      | ❌ Not supported   |
+| Kubernetes-based  | ✅ Supported       |
+| Cloud-managed     | ✅ Supported       |
+| Airflow           | ✅ Supported       |
+
+To see the full list of supported orchestrators, check the [scheduling documentation](https://docs.zenml.io/how-to/pipeline-development/build-pipelines/schedule-a-pipeline).
+
+### Managing Schedule Lifecycle
+
+Managing existing schedules depends on your orchestrator. The general workflow for updating schedules is:
+
+1. Find your schedule in ZenML
+2. Match and delete the schedule on the orchestrator side
+3. Delete the schedule in ZenML
+4. Re-run the pipeline with the new schedule
+
+```python
+# Example of updating a schedule
+from zenml.client import Client
+
+# Find the existing schedule
+client = Client()
+schedules = client.list_pipeline_schedules()
+
+# Delete the existing schedule
+# Note: You also need to delete the schedule on the orchestrator side
+client.delete_schedule(schedule_id="your-schedule-id")
+
+# Create and run with a new schedule
+new_schedule = Schedule(cron_expression="0 9 * * *")  # Daily at 9 AM
+my_pipeline.with_options(schedule=new_schedule)()
+```
+
+### Best Practices
+
+* Use descriptive names for scheduled pipelines to easily identify them
+* Consider time zones when setting up cron schedules
+* Set up monitoring to detect and alert on failed scheduled runs
+* For production pipelines, include retry logic to handle transient failures
+* Document your schedule configurations for team reference
+
+### Scheduling Limitations
+
+* Running a pipeline with a schedule multiple times will create multiple scheduled instances
+* ZenML only handles initial schedule creation, not ongoing management
+* For advanced scheduling needs (dependencies, conditional execution), consider using an orchestrator like Airflow directly
 
 ## Error Handling & Reliability
 

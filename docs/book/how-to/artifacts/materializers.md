@@ -178,6 +178,12 @@ The `save_visualizations()` method allows you to create visualizations that will
 - `VisualizationType.IMAGE`: Image files
 - `VisualizationType.CSV`: CSV tables
 
+##### Configuring Visualizations
+
+Some materializers support configuration via environment variables to customize their visualization behavior. For example:
+
+- `ZENML_PANDAS_SAMPLE_ROWS`: Controls the number of rows shown in sample visualizations created by the `PandasMaterializer`. Default is 10 rows.
+
 ### Metadata Extraction
 
 The `extract_metadata()` method allows you to extract key information about your artifact for indexing and searching. This metadata will be displayed alongside the artifact in the dashboard.
