@@ -7,7 +7,19 @@ icon: arrow-progress
 
 Steps and Pipelines are the fundamental building blocks of ZenML. A **Step** is a reusable unit of computation, and a **Pipeline** is a directed acyclic graph (DAG) composed of steps. Together, they allow you to define, version, and execute machine learning workflows.
 
-## Creating Steps
+## The Relationship Between Steps and Pipelines
+
+In ZenML, steps and pipelines work together in a clear hierarchy:
+
+1. **Steps** are individual functions that perform specific tasks, like loading data, processing it, or training models
+2. **Pipelines** orchestrate these steps, connecting them in a defined sequence where outputs from one step can flow as inputs to others
+3. Each step produces artifacts that are tracked, versioned, and can be reused across pipeline runs
+
+Think of a step as a single LEGO brick, and a pipeline as the complete structure you build by connecting many bricks together.
+
+## Basic Steps
+
+### Creating a Simple Step
 
 A step is created by applying the `@step` decorator to a Python function:
 
@@ -34,6 +46,173 @@ def train_model(data: dict) -> None:
           f"Feature sum is {total_features}, label sum is {total_labels}")
 ```
 
+## Basic Pipelines
+
+### Creating a Simple Pipeline
+
+A pipeline is created by applying the `@pipeline` decorator to a Python function that composes steps together:
+
+```python
+from zenml import pipeline
+
+@pipeline
+def simple_ml_pipeline():
+    dataset = load_data()
+    train_model(dataset)
+```
+
+### Running Pipelines
+
+You can run a pipeline by simply calling the function:
+
+```python
+simple_ml_pipeline()
+```
+
+The run is automatically logged to the ZenML dashboard where you can view the DAG and associated metadata.
+
+## End-to-End Example
+
+Here's a simple end-to-end example that demonstrates the basic workflow:
+
+```python
+import numpy as np
+
+from typing import Tuple
+
+from zenml import step, pipeline
+
+# Create steps for a simple ML workflow
+@step
+def get_data() -> Tuple[np.ndarray, np.ndarray]:
+    # Generate some synthetic data
+    X = np.array([[1, 2], [3, 4], [5, 6], [7, 8]])
+    y = np.array([0, 1, 0, 1])
+    return X, y
+
+@step
+def process_data(data: Tuple[np.ndarray, np.ndarray]) -> Tuple[np.ndarray, np.ndarray]:
+    X, y = data
+    # Apply a simple transformation
+    X_processed = X * 2
+    return X_processed, y
+
+@step
+def train_and_evaluate(processed_data: Tuple[np.ndarray, np.ndarray]) -> float:
+    X, y = processed_data
+    # Simplistic "training" - just compute accuracy based on a rule
+    predictions = [1 if sum(sample) > 10 else 0 for sample in X]
+    accuracy = sum(p == actual for p, actual in zip(predictions, y)) / len(y)
+    return accuracy
+
+# Create a pipeline that combines these steps
+@pipeline
+def simple_example_pipeline():
+    raw_data = get_data()
+    processed_data = process_data(raw_data)
+    accuracy = train_and_evaluate(processed_data)
+    print(f"Model accuracy: {accuracy}")
+
+# Run the pipeline
+if __name__ == "__main__":
+    simple_example_pipeline()
+```
+
+## Parameters and Artifacts
+
+### Understanding the Difference
+
+ZenML distinguishes between two types of inputs to steps:
+
+1. **Artifacts**: Outputs from other steps in the same pipeline
+   - These are tracked, versioned, and stored in the artifact store
+   - They are passed between steps and represent data flowing through your pipeline
+   - Examples: datasets, trained models, evaluation metrics
+
+2. **Parameters**: Direct values provided when invoking a step
+   - These are typically simple configuration values passed directly to the step
+   - They're not tracked as separate artifacts but are recorded with the pipeline run
+   - Examples: learning rates, batch sizes, model hyperparameters
+
+This example demonstrates the difference:
+
+```python
+@pipeline
+def my_pipeline():
+    int_artifact = some_other_step()  # This is an artifact
+    # input_1 is an artifact, input_2 is a parameter
+    my_step(input_1=int_artifact, input_2=42)
+```
+
+### Parameter Types
+
+Parameters can be:
+
+1. **Primitive types**: `int`, `float`, `str`, `bool`
+2. **Container types**: `list`, `dict`, `tuple` (containing primitives)
+3. **Custom types**: As long as they can be serialized to JSON using Pydantic
+
+Parameters that cannot be serialized to JSON should be passed as artifacts rather than parameters.
+
+## Parameterizing Workflows
+
+### Step Parameterization
+
+Steps can take parameters like regular Python functions:
+
+```python
+@step
+def train_model(data: dict, learning_rate: float = 0.01, epochs: int = 10) -> None:
+    # Use learning_rate and epochs parameters
+    print(f"Training with learning rate: {learning_rate} for {epochs} epochs")
+```
+
+### Pipeline Parameterization
+
+Pipelines can also be parameterized, allowing values to be passed down to steps:
+
+```python
+@pipeline
+def training_pipeline(dataset_name: str = "default_dataset", learning_rate: float = 0.01):
+    data = load_data(dataset_name=dataset_name)
+    train_model(data=data, learning_rate=learning_rate, epochs=20)
+```
+
+You can then run the pipeline with specific parameters:
+
+```python
+training_pipeline(dataset_name="custom_dataset", learning_rate=0.005)
+```
+
+### Parameter Passing Strategies
+
+You can pass parameters to steps in several ways:
+
+**Via Artifacts**
+
+```python
+@step
+def generate_params() -> dict:
+    return {"learning_rate": 0.01, "epochs": 10}
+
+@step
+def train_model(params: dict):
+    learning_rate = params["learning_rate"]
+    epochs = params["epochs"]
+    # Use parameters
+```
+
+**Via Pipeline Parameters**
+
+```python
+@pipeline
+def training_pipeline(learning_rate: float):
+    data = load_data()
+    train_model(data=data, learning_rate=learning_rate)
+```
+
+## Advanced Step Features
+
 ### Type Annotations
 
 While optional, type annotations are highly recommended and provide several benefits:
@@ -57,24 +236,6 @@ def divide(a: int, b: int) -> Tuple[int, int]:
 When you specify a return type like `-> float` or `-> Tuple[int, int]`, ZenML uses this information to determine how to store the step's output in the artifact store. For instance, a step returning a pandas DataFrame with the annotation `-> pd.DataFrame` will use the pandas-specific materializer for efficient storage.
 
 If you want to enforce type annotations for all steps, set the environment variable `ZENML_ENFORCE_TYPE_ANNOTATIONS` to `True`.
-
-### Custom Output Names
-
-You can name your step outputs using the `Annotated` type:
-
-```python
-from typing_extensions import Annotated  # or `from typing import Annotated` on Python 3.9+
-from typing import Tuple
-
-@step
-def divide(a: int, b: int) -> Tuple[
-    Annotated[int, "quotient"],
-    Annotated[int, "remainder"]
-]:
-    return a // b, a % b
-```
-
-By default, step outputs are named `output` for single output steps and `output_0`, `output_1`, etc. for steps with multiple outputs.
 
 ### Multiple Return Values
 
@@ -101,109 +262,23 @@ ZenML uses the following convention to differentiate between a single output of 
 * When the `return` statement is followed by a tuple literal (e.g., `return 1, 2` or `return (value_1, value_2)`), it's treated as a step with multiple outputs
 * All other cases are treated as a step with a single output of type `Tuple`
 
-## Creating Pipelines
+### Custom Output Names
 
-A pipeline is created by applying the `@pipeline` decorator to a Python function that composes steps together:
-
-```python
-from zenml import pipeline
-
-@pipeline
-def simple_ml_pipeline():
-    dataset = load_data()
-    train_model(dataset)
-```
-
-### Running Pipelines
-
-You can run a pipeline by simply calling the function:
+You can name your step outputs using the `Annotated` type:
 
 ```python
-simple_ml_pipeline()
-```
-
-The run is automatically logged to the ZenML dashboard where you can view the DAG and associated metadata.
-
-## Pipeline and Step Parameters
-
-When calling a step in a pipeline, inputs can be either:
-
-* **Artifacts**: Outputs from other steps in the same pipeline. These are tracked, versioned, and stored in the artifact store.
-* **Parameters**: Values provided explicitly when invoking a step. These are typically simple values that are directly passed to the step function.
-
-```python
-@pipeline
-def my_pipeline():
-    int_artifact = some_other_step()  # This is an artifact
-    # input_1 is an artifact, input_2 is a parameter
-    my_step(input_1=int_artifact, input_2=42)
-```
-
-In this example:
-
-* `input_1` is an artifact because it comes from another step
-* `input_2` is a parameter because it's a literal value (42) provided directly
-
-Artifacts are automatically tracked and versioned by ZenML, while parameters are simply passed through to the step function. This distinction affects how you should design your steps and what types of values you can use.
-
-### Parameter Types
-
-Now that we understand the difference between artifacts and parameters, let's look at what types of values can be used as parameters:
-
-1. **Primitive types**: `int`, `float`, `str`, `bool`
-2. **Container types**: `list`, `dict`, `tuple` (containing primitives)
-3. **Custom types**: As long as they can be serialized to JSON using Pydantic
-
-Parameters that cannot be serialized to JSON should be passed as artifacts rather than parameters.
-
-### Parameterizing Steps and Pipelines
-
-Both pipelines and steps can be parameterized like regular Python functions:
-
-```python
-@step
-def train_model(data: dict, learning_rate: float = 0.01, epochs: int = 10) -> None:
-    # Use learning_rate and epochs parameters
-    print(f"Training with learning rate: {learning_rate} for {epochs} epochs")
-
-@pipeline
-def training_pipeline(dataset_name: str = "default_dataset"):
-    data = load_data(dataset_name=dataset_name)
-    train_model(data=data, learning_rate=0.005, epochs=20)
-```
-
-You can then run the pipeline with specific parameters:
-
-```python
-training_pipeline(dataset_name="custom_dataset")
-```
-
-### Passing Between Steps
-
-You can pass parameters to a step in several ways:
-
-**Via Artifacts**
-
-```python
-@step
-def generate_params() -> dict:
-    return {"learning_rate": 0.01, "epochs": 10}
+from typing_extensions import Annotated  # or `from typing import Annotated` on Python 3.9+
+from typing import Tuple
 
 @step
-def train_model(params: dict):
-    learning_rate = params["learning_rate"]
-    epochs = params["epochs"]
-    # Use parameters
+def divide(a: int, b: int) -> Tuple[
+    Annotated[int, "quotient"],
+    Annotated[int, "remainder"]
+]:
+    return a // b, a % b
 ```
 
-**Via Pipeline Parameters**
-
-```python
-@pipeline
-def training_pipeline(learning_rate: float):
-    data = load_data()
-    train_model(data=data, learning_rate=learning_rate)
-```
+By default, step outputs are named `output` for single output steps and `output_0`, `output_1`, etc. for steps with multiple outputs.
 
 ## Conclusion
 
