@@ -328,8 +328,6 @@ solution, you can create your own API wrapper around pipeline execution. This
 approach gives you full control over how pipelines are triggered and can be integrated
 into your existing infrastructure.
 
-### Architecture Overview
-
 The custom trigger API solution consists of the following components:
 
 1. **Pipeline Definition Module** - Contains your pipeline code
@@ -338,7 +336,7 @@ The custom trigger API solution consists of the following components:
 4. **Authentication** - Secures the API with API key authentication
 5. **Containerization** - Packages everything for deployment
 
-### Step 1: Create a Common Pipeline Module
+### Creating a Pipeline Module
 
 First, create a module containing your pipeline definitions. This will be imported by the API service:
 
@@ -440,7 +438,7 @@ def training_pipeline(
     return metrics
 ```
 
-### Step 2: Create a Requirements File
+### Creating a Requirements File
 
 Create a `requirements.txt` file with the necessary dependencies:
 
@@ -457,9 +455,9 @@ numpy>=1.20.0
 zenml>=0.80.1
 ```
 
-### Step 3: Create the FastAPI Server
+### Creating a FastAPI Wrapper
 
-Now, create the `pipeline_api.py` file with the FastAPI application:
+Next, create the `pipeline_api.py` file with the FastAPI application:
 
 ```python
 import os
@@ -604,7 +602,7 @@ if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
 ```
 
-### Step 4: Create a Dockerfile for Deployment
+### Containerizing Your API
 
 Create a `Dockerfile` to containerize your API:
 
@@ -657,7 +655,7 @@ This Dockerfile includes several important features:
 3. Automatic installation of stack-specific requirements
 4. Setting up environment variables for ZenML configuration
 
-### Step 5: Running the API Server Locally
+### Running Your API Locally
 
 To test the API server locally:
 
@@ -679,7 +677,7 @@ export ZENML_ACTIVE_STACK_ID="your-stack-id"
 python pipeline_api.py
 ```
 
-### Step 6: Building and Deploying the API Container
+### Deploying Your API
 
 Build and deploy your containerized API:
 
@@ -700,7 +698,7 @@ For production deployment, you can:
 - Deploy to a cloud platform supporting Docker containers
 - Set up CI/CD for automated deployments
 
-### Step 7: Triggering Pipelines via the API
+### Triggering Pipelines via the API
 
 You can trigger pipelines in two ways through the custom API:
 
