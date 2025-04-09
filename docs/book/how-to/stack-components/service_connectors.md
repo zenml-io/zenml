@@ -153,7 +153,7 @@ zenml service-connector verify CONNECTOR_NAME
 
 ## Next Steps
 
-* Learn about [AWS integrations](aws.md)
-* Explore [Azure integrations](azure.md)
-* Discover [GCP integrations](gcp.md)
+* Learn about [AWS integrations](broken-reference)
+* Explore [Azure integrations](broken-reference)
+* Discover [GCP integrations](broken-reference)
 * Understand how to [deploy your stack](deployment.md) across different environments

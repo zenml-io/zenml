@@ -119,4 +119,4 @@ Service connectors can be attached to stack components to authenticate with the 
 
 * Learn about [Service Connectors](service_connectors.md) for authenticating with cloud providers
 * Understand how to [deploy stacks](deployment.md) on cloud platforms
-* Explore specific cloud providers: [AWS](aws.md), [Azure](azure.md), [GCP](gcp.md)
+* Explore specific cloud providers: [AWS](broken-reference), [Azure](broken-reference), [GCP](broken-reference)

@@ -43,14 +43,15 @@ zenml deploy gcp --project my-project --region us-central1
 ```
 
 From the dashboard:
-- Navigate to **Stacks** → **New Stack** → **Deploy new Cloud**
-- Follow the guided wizard to configure your deployment
+
+* Navigate to **Stacks** → **New Stack** → **Deploy new Cloud**
+* Follow the guided wizard to configure your deployment
 
 ### Best For
 
-- Getting started quickly with cloud stacks
-- Development and testing environments
-- Users who want minimal configuration overhead
+* Getting started quickly with cloud stacks
+* Development and testing environments
+* Users who want minimal configuration overhead
 
 ## Stack Wizard
 
@@ -75,14 +76,15 @@ zenml stack register my-stack -p gcp
 ```
 
 From the dashboard:
-- Navigate to **Stacks** → **New Stack** → **Use existing Cloud**
-- Follow the guided interface to select resources and create your stack
+
+* Navigate to **Stacks** → **New Stack** → **Use existing Cloud**
+* Follow the guided interface to select resources and create your stack
 
 ### Best For
 
-- Using existing cloud resources
-- Organizations with established cloud infrastructure
-- Customizing which resources to use for each component
+* Using existing cloud resources
+* Organizations with established cloud infrastructure
+* Customizing which resources to use for each component
 
 ## Terraform Deployment
 
@@ -114,23 +116,23 @@ terraform apply -var="region=us-west-2" -var="prefix=zenml"
 
 ### Best For
 
-- Production environments
-- Infrastructure-as-code workflows
-- DevOps teams
-- Custom infrastructure requirements
-- Compliance and governance requirements
+* Production environments
+* Infrastructure-as-code workflows
+* DevOps teams
+* Custom infrastructure requirements
+* Compliance and governance requirements
 
 ## Comparing Deployment Methods
 
-| Feature | 1-Click Deployment | Stack Wizard | Terraform |
-|---------|-------------------|--------------|-----------|
-| **Setup Speed** | Fastest | Medium | Slower |
-| **Customization** | Limited | Medium | High |
-| **Learning Curve** | Low | Medium | Higher |
-| **Infrastructure Control** | Minimal | Medium | Complete |
-| **Best For** | Quick starts | Existing resources | Production |
-| **Version Control** | No | No | Yes |
-| **Reproducibility** | Limited | Medium | High |
+| Feature                    | 1-Click Deployment | Stack Wizard       | Terraform  |
+| -------------------------- | ------------------ | ------------------ | ---------- |
+| **Setup Speed**            | Fastest            | Medium             | Slower     |
+| **Customization**          | Limited            | Medium             | High       |
+| **Learning Curve**         | Low                | Medium             | Higher     |
+| **Infrastructure Control** | Minimal            | Medium             | Complete   |
+| **Best For**               | Quick starts       | Existing resources | Production |
+| **Version Control**        | No                 | No                 | Yes        |
+| **Reproducibility**        | Limited            | Medium             | High       |
 
 ## Post-Deployment Steps
 
@@ -143,29 +145,29 @@ After deploying your stack, regardless of the method used:
 
 ## Best Practices
 
-- **Start small**: Begin with a minimal stack and add components as needed
-- **Use descriptive names** for stacks and components
-- **Document your deployment** process and configurations
-- **Use separate stacks** for development, staging, and production
-- **Regularly update** your stack components to get the latest features and security updates
-- **Monitor costs** of cloud resources to avoid unexpected expenses
+* **Start small**: Begin with a minimal stack and add components as needed
+* **Use descriptive names** for stacks and components
+* **Document your deployment** process and configurations
+* **Use separate stacks** for development, staging, and production
+* **Regularly update** your stack components to get the latest features and security updates
+* **Monitor costs** of cloud resources to avoid unexpected expenses
 
 ## Troubleshooting
 
 Common deployment issues include:
 
-- **Permission errors**: Ensure your credentials have the necessary permissions
-- **Resource limits**: Check if you've hit cloud provider quotas or limits
-- **Network issues**: Verify connectivity between resources
-- **Configuration errors**: Double-check component settings
+* **Permission errors**: Ensure your credentials have the necessary permissions
+* **Resource limits**: Check if you've hit cloud provider quotas or limits
+* **Network issues**: Verify connectivity between resources
+* **Configuration errors**: Double-check component settings
 
 Most deployment methods provide detailed logs to help diagnose issues.
 
 ## Next Steps
 
-- Learn about specific cloud provider integrations:
-  - [AWS](aws.md)
-  - [Azure](azure.md)
-  - [GCP](gcp.md)
-- Explore [Service Connectors](service_connectors.md) for authentication
-- Understand [Stack Components](stack_components.md) in more detail 
+* Learn about specific cloud provider integrations:
+  * [AWS](broken-reference)
+  * [Azure](broken-reference)
+  * [GCP](broken-reference)
+* Explore [Service Connectors](service_connectors.md) for authentication
+* Understand [Stack Components](stack_components.md) in more detail
