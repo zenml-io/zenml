@@ -1,3 +1,9 @@
+---
+description: >-
+  A step-by-step tutorial on effectively triggering your ZenML pipelines from external systems
+icon: traffic-light-go
+---
+
 # Triggering Pipelines from External Systems
 
 This tutorial demonstrates practical approaches to triggering ZenML pipelines from external systems. We'll explore multiple methods, from ZenML Pro's [Run Templates](https://docs.zenml.io/how-to/trigger-pipelines) to open-source alternatives using custom APIs, serverless functions, and GitHub Actions.
