@@ -31,6 +31,7 @@
 """Kubernetes-native orchestrator."""
 
 import os
+import time
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -543,10 +544,69 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 mount_local_stores=self.config.is_local,
             )
 
-            self._k8s_core_api.create_namespaced_pod(
-                namespace=self.config.kubernetes_namespace,
-                body=pod_manifest,
-            )
+            retries = 0
+            max_retries = settings.pod_failure_max_retries
+            delay: float = settings.pod_failure_retry_delay
+            backoff = settings.pod_failure_backoff
+
+            while retries < max_retries:
+                try:
+                    # Create and run pod.
+                    self._k8s_core_api.create_namespaced_pod(
+                        namespace=self.config.kubernetes_namespace,
+                        body=pod_manifest,
+                    )
+                    break
+                except Exception as e:
+                    retries += 1
+                    if retries < max_retries:
+                        logger.debug(f"Orchestrator pod failed to start: {e}")
+                        logger.error(
+                            f"Failed to create orchestrator pod. "
+                            f"Retrying in {delay} seconds..."
+                        )
+                        time.sleep(delay)
+                        delay *= backoff
+                    else:
+                        logger.error(
+                            f"Failed to create orchestrator pod after "
+                            f"{max_retries} retries. Exiting."
+                        )
+                        raise
+
+            # Wait for pod to start
+            logger.info("Waiting for orchestrator pod to start...")
+            max_wait = settings.pod_startup_timeout
+            total_wait: float = 0
+            delay = settings.pod_failure_retry_delay
+            while True:
+                pod = kube_utils.get_pod(
+                    core_api=self._k8s_core_api,
+                    pod_name=pod_name,
+                    namespace=self.config.kubernetes_namespace,
+                )
+                if not pod or kube_utils.pod_is_not_pending(pod):
+                    break
+                if total_wait >= max_wait:
+                    # Have to delete the pending pod so it doesn't start running
+                    # later on.
+                    try:
+                        self._k8s_core_api.delete_namespaced_pod(
+                            name=pod_name,
+                            namespace=self.config.kubernetes_namespace,
+                        )
+                    except Exception:
+                        pass
+                    raise TimeoutError(
+                        f"Orchestrator pod is still in a pending state "
+                        f"after {total_wait} seconds. Exiting."
+                    )
+
+                if total_wait + delay > max_wait:
+                    delay = max_wait - total_wait
+                total_wait += delay
+                time.sleep(delay)
+                delay *= backoff
 
             # Wait for the orchestrator pod to finish and stream logs.
             if settings.synchronous:
