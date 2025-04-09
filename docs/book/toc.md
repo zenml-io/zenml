@@ -14,6 +14,20 @@
   * [Deploy with custom images](getting-started/deploying-zenml/deploy-with-custom-image.md)
   * [Secret management](getting-started/deploying-zenml/secret-management.md)
   * [Custom secret stores](getting-started/deploying-zenml/custom-secret-stores.md)
+* [Manage your ZenML server](how-to/manage-zenml-server/README.md)
+  * [Connect to a server](how-to/manage-zenml-server/connecting-to-zenml/README.md)
+    * [Connect in with your User (interactive)](how-to/manage-zenml-server/connecting-to-zenml/connect-in-with-your-user-interactive.md)
+    * [Connect with an API Token](how-to/manage-zenml-server/connecting-to-zenml/connect-with-an-api-token.md)
+    * [Connect with a Service Account](how-to/manage-zenml-server/connecting-to-zenml/connect-with-a-service-account.md)
+  * [Upgrade your ZenML server](how-to/manage-zenml-server/upgrade-zenml-server.md)
+  * [Best practices for upgrading ZenML](how-to/manage-zenml-server/best-practices-upgrading-zenml.md)
+  * [Using ZenML server in production](how-to/manage-zenml-server/using-zenml-server-in-prod.md)
+  * [Troubleshoot your ZenML server](how-to/manage-zenml-server/troubleshoot-your-deployed-server.md)
+  * [Migration guide](how-to/manage-zenml-server/migration-guide/migration-guide.md)
+    * [Migration guide 0.13.2 → 0.20.0](how-to/manage-zenml-server/migration-guide/migration-zero-twenty.md)
+    * [Migration guide 0.23.0 → 0.30.0](how-to/manage-zenml-server/migration-guide/migration-zero-thirty.md)
+    * [Migration guide 0.39.1 → 0.41.0](how-to/manage-zenml-server/migration-guide/migration-zero-forty.md)
+    * [Migration guide 0.58.2 → 0.60.0](how-to/manage-zenml-server/migration-guide/migration-zero-sixty.md)
 
 ## How-To
 
