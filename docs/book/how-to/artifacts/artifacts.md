@@ -9,16 +9,6 @@ icon: binary
 
 Artifacts are a cornerstone of ZenML's ML pipeline management system. This guide explains what artifacts are, how they work, and how to use them effectively in your pipelines.
 
-## Introduction to Artifacts
-
-In ZenML, artifacts are the data objects that flow between steps in your pipeline. They represent the outputs of one step that can become inputs to another step.
-
-Artifacts in ZenML are:
-* Automatically tracked and versioned 
-* Stored persistently in your artifact store
-* Referenced by their unique identifiers
-* Seamlessly passed between pipeline steps
-
 ### Artifacts in the Pipeline Workflow
 
 Here's how artifacts fit into the ZenML pipeline workflow:
@@ -229,28 +219,6 @@ ZenML supports these placeholders:
 
 ## How Artifacts Work Under the Hood
 
-### Storage and Versioning
-
-When a step produces an output, ZenML:
-1. Creates a unique directory in the artifact store
-2. Uses a materializer to serialize the data
-3. Stores the serialized data in that directory
-4. Records metadata about the artifact
-5. Returns a reference to the artifact
-
-The artifact store is organized hierarchically:
-
-```
-artifacts/
-├── 2023-06-15/
-│   ├── 34a2c1f5-7dfa-4b9e-8e5c-6c7b2d3a1e8f/  # Artifact directory
-│   │   ├── data/  # Serialized data
-│   │   └── metadata.json  # Metadata about the artifact
-│   └── b9e8c5f4-3a1e-7dfa-2d3a-6c7b4b9e8e5c/  # Another artifact
-└── 2023-06-16/
-    └── ...
-```
-
 ### Materializers: How Data Gets Stored
 
 Materializers are a key concept in ZenML's artifact system. They handle:
@@ -264,9 +232,7 @@ When a step produces an output, ZenML automatically selects the appropriate mate
 
 * Primitive types (`int`, `float`, `str`, `bool`)
 * Container types (`dict`, `list`, `tuple`)
-* NumPy arrays
-* Pandas DataFrames
-* Many ML model formats (through integrations)
+* NumPy arrays, Pandas DataFrames and many other ML-related formats (through integrations)
 
 Here's how materializers work in practice:
 
