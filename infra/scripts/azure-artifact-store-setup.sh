@@ -20,8 +20,8 @@ PREFIX="${NAME}-${RANDOM_SUFFIX}"
 RESOURCE_GROUP="${PREFIX}"
 STORAGE_ACCOUNT="${PREFIX//-/}"  # Remove hyphens as storage accounts don't allow them
 CONTAINER_NAME="${PREFIX}"
-SERVICE_CONNECTOR_NAME="${NAME}-azure"
-ARTIFACT_STORE_NAME="${NAME}-azure"
+SERVICE_CONNECTOR_NAME="${NAME}-blob"
+ARTIFACT_STORE_NAME="${NAME}-blob"
 SP_NAME="${PREFIX}"
 
 # Function to print cleanup instructions
