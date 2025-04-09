@@ -289,20 +289,6 @@ schedule:
   start_time: "2023-06-01T00:00:00Z"
 ```
 
-### Finding Which Configuration Was Used for a Run
-
-To access the configuration that was used for a specific run:
-
-```python
-from zenml.client import Client
-
-# Get a specific pipeline run
-run = Client().get_pipeline_run("<RUN_ID>")
-
-# Access the configuration
-config = run.config
-```
-
 ## Conclusion
 
 YAML configuration in ZenML provides a powerful way to customize pipeline behavior without changing your code. By separating configuration from implementation, you can make your ML workflows more flexible, maintainable, and reproducible.

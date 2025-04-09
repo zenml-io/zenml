@@ -7,25 +7,34 @@ icon: binary
 
 # Artifacts
 
-Artifacts are a cornerstone of ZenML's ML pipeline management system, enabling versioning, lineage tracking, and reproducibility. This guide explains how artifacts work in ZenML and how to use them effectively in your pipelines.
+Artifacts are a cornerstone of ZenML's ML pipeline management system. This guide explains what artifacts are, how they work, and how to use them effectively in your pipelines.
 
-## What Are Artifacts?
+## Introduction to Artifacts
 
-In ZenML, artifacts are data objects that:
+In ZenML, artifacts are the data objects that flow between steps in your pipeline. They represent the outputs of one step that can become inputs to another step.
 
-* Are produced by steps (outputs)
-* Are consumed by steps (inputs)
-* Are automatically versioned and tracked
-* Have their lineage recorded
-* Can be stored, retrieved, and visualized
+Artifacts in ZenML are:
+* Automatically tracked and versioned 
+* Stored persistently in your artifact store
+* Referenced by their unique identifiers
+* Seamlessly passed between pipeline steps
 
-Artifacts are the data that flows between steps in your pipelines, and they form the backbone of ZenML's data management capabilities.
+### Artifacts in the Pipeline Workflow
 
-## How Artifacts Work in ZenML
+Here's how artifacts fit into the ZenML pipeline workflow:
 
-### Basic Artifact Flow
+1. A step produces data as output
+2. ZenML automatically stores this output as an artifact
+3. Other steps can use this artifact as input
+4. ZenML tracks the relationships between artifacts and steps
 
-Here's a simple example of how artifacts are created and used in ZenML:
+This system creates a complete data lineage for every artifact in your ML workflows, enabling reproducibility and traceability.
+
+## Basic Artifact Usage
+
+### Creating Artifacts (Step Outputs)
+
+Any value returned from a step becomes an artifact:
 
 ```python
 from zenml import pipeline, step
@@ -39,7 +48,13 @@ def create_data() -> pd.DataFrame:
         "feature_2": [4, 5, 6],
         "target": [10, 20, 30]
     })
+```
 
+### Consuming Artifacts (Step Inputs)
+
+You can use artifacts by receiving them as inputs to other steps:
+
+```python
 @step
 def process_data(df: pd.DataFrame) -> pd.DataFrame:
     """Takes an artifact as input and returns a new artifact."""
@@ -51,29 +66,179 @@ def simple_pipeline():
     """Pipeline that creates and processes artifacts."""
     data = create_data()  # Produces an artifact
     processed_data = process_data(data)  # Uses and produces artifacts
-
-# Run the pipeline
-simple_pipeline()
 ```
 
-When this pipeline runs:
+### Artifacts vs. Parameters
 
-1. `create_data()` executes and returns a DataFrame
-2. ZenML saves this DataFrame as an artifact in the artifact store
-3. `process_data()` receives this artifact as an input
-4. `process_data()` returns a new DataFrame, which becomes another artifact
+When calling a step, inputs can be either artifacts or parameters:
 
-### How ZenML Stores Artifacts
+* **Artifacts** are outputs from other steps in the pipeline. They are tracked, versioned, and stored in the artifact store.
+* **Parameters** are literal values provided directly to the step. They aren't stored as artifacts but are recorded with the pipeline run.
+
+```python
+@step
+def train_model(data: pd.DataFrame, learning_rate: float) -> object:
+    """Step with both artifact and parameter inputs."""
+    # data is an artifact (output from another step)
+    # learning_rate is a parameter (literal value)
+    model = create_model(learning_rate)
+    model.fit(data)
+    return model
+
+@pipeline
+def training_pipeline():
+    # data is an artifact
+    data = create_data()
+    
+    # data is passed as an artifact, learning_rate as a parameter
+    model = train_model(data=data, learning_rate=0.01)
+```
+
+Parameters are limited to JSON-serializable values (numbers, strings, lists, dictionaries, etc.). More complex objects should be passed as artifacts.
+
+### Accessing Artifacts After Pipeline Runs
+
+You can access artifacts from completed runs using the ZenML Client:
+
+```python
+from zenml.client import Client
+
+# Get a specific run
+client = Client()
+pipeline_run = client.get_pipeline_run("<PIPELINE_RUN_ID>")
+
+# Get an artifact from a specific step
+train_data = pipeline_run.steps["split_data"].outputs["train_data"].load()
+
+# Use the artifact
+print(train_data.shape)
+```
+
+## Working with Artifact Types
+
+### Type Annotations
+
+Type annotations are important when working with artifacts as they:
+1. Help ZenML select the appropriate materializer for storage
+2. Validate inputs and outputs at runtime
+3. Document the data flow of your pipeline
+
+```python
+from typing import Tuple
+import numpy as np
+
+@step
+def preprocess_data(df: pd.DataFrame) -> np.ndarray:
+    """Type annotation tells ZenML this returns a numpy array."""
+    return df.values
+
+@step
+def split_data(data: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    """Type annotation tells ZenML this returns a tuple of numpy arrays."""
+    split_point = len(data) // 2
+    return data[:split_point], data[split_point:]
+```
+
+ZenML supports many common data types out of the box:
+* Primitive types (`int`, `float`, `str`, `bool`)
+* Container types (`dict`, `list`, `tuple`)
+* NumPy arrays
+* Pandas DataFrames
+* Many ML model formats (through integrations)
+
+### Returning Multiple Outputs
+
+Steps can return multiple artifacts using tuples:
+
+```python
+from typing import Tuple, Annotated
+import numpy as np
+
+@step
+def split_data(
+    data: np.ndarray, 
+    target: np.ndarray
+) -> Tuple[
+    Annotated[np.ndarray, "X_train"],
+    Annotated[np.ndarray, "X_test"],
+    Annotated[np.ndarray, "y_train"],
+    Annotated[np.ndarray, "y_test"]
+]:
+    """Split data into training and testing sets."""
+    # Implement split logic
+    X_train, X_test = data[:80], data[80:]
+    y_train, y_test = target[:80], target[80:]
+    
+    return X_train, X_test, y_train, y_test
+```
+
+ZenML differentiates between:
+* A step with multiple outputs: `return a, b` or `return (a, b)`
+* A step with a single tuple output: `return some_tuple`
+
+### Naming Your Artifacts
+
+By default, artifacts are named based on their position or variable name:
+* Single outputs are named `output`
+* Multiple outputs are named `output_0`, `output_1`, etc.
+
+You can give your artifacts more meaningful names using the `Annotated` type:
+
+```python
+from typing import Tuple
+from typing_extensions import Annotated  # or `from typing import Annotated` in Python 3.9+
+
+@step
+def split_dataset(
+    df: pd.DataFrame
+) -> Tuple[
+    Annotated[pd.DataFrame, "train_data"],
+    Annotated[pd.DataFrame, "test_data"]
+]:
+    """Split a dataframe into training and testing sets."""
+    train = df.sample(frac=0.8, random_state=42)
+    test = df.drop(train.index)
+    return train, test
+```
+
+You can even use dynamic naming with placeholders:
+
+```python
+@step
+def extract_data(source: str) -> Annotated[pd.DataFrame, "{dataset_type}_data"]:
+    """Extract data with a dynamically named output."""
+    # Implementation...
+    return data
+
+@pipeline
+def data_pipeline():
+    # These will create artifacts named "train_data" and "test_data"
+    train_df = extract_data.with_options(
+        substitutions={"dataset_type": "train"}
+    )(source="train_source")
+    
+    test_df = extract_data.with_options(
+        substitutions={"dataset_type": "test"}
+    )(source="test_source")
+```
+
+ZenML supports these placeholders:
+* `{date}`: Current date (e.g., "2023_06_15")
+* `{time}`: Current time (e.g., "14_30_45_123456")
+* Custom placeholders can be defined using `substitutions`
+
+## How Artifacts Work Under the Hood
+
+### Storage and Versioning
 
 When a step produces an output, ZenML:
-
 1. Creates a unique directory in the artifact store
 2. Uses a materializer to serialize the data
 3. Stores the serialized data in that directory
 4. Records metadata about the artifact
 5. Returns a reference to the artifact
 
-Each pipeline run generates a new set of artifacts, which are organized in the artifact store like this:
+The artifact store is organized hierarchically:
 
 ```
 artifacts/
@@ -139,153 +304,26 @@ def cached_pipeline():
     processed_data = process_data(data)
 ```
 
-## Working with Artifacts
+## Advanced Artifact Usage
 
-### Type Annotations and Artifact Handling
+### Accessing Artifacts from Previous Runs
 
-Type annotations are crucial when working with artifacts as they:
-
-1. Help ZenML select the appropriate materializer
-2. Validate inputs and outputs
-3. Document the data flow of your pipeline
-
-```python
-from typing import Tuple, List
-import numpy as np
-
-@step
-def preprocess_data(df: pd.DataFrame) -> np.ndarray:
-    """Type annotation tells ZenML this returns a numpy array."""
-    return df.values
-
-@step
-def split_data(data: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-    """Type annotation tells ZenML this returns a tuple of numpy arrays."""
-    split_point = len(data) // 2
-    return data[:split_point], data[split_point:]
-```
-
-When you specify a return type like `-> np.ndarray`, ZenML uses this information to select the appropriate materializer. The more specific your type annotations, the better ZenML can handle your data.
-
-### Naming Your Artifacts
-
-By default, artifacts are named based on their position or variable name:
-
-* Single outputs are named `output`
-* Multiple outputs are named `output_0`, `output_1`, etc.
-
-You can give your artifacts more meaningful names using the `Annotated` type:
-
-```python
-from typing import Tuple
-from typing_extensions import Annotated  # or `from typing import Annotated` in Python 3.9+
-
-@step
-def split_dataset(
-    df: pd.DataFrame
-) -> Tuple[
-    Annotated[pd.DataFrame, "train_data"],
-    Annotated[pd.DataFrame, "test_data"]
-]:
-    """Split a dataframe into training and testing sets."""
-    train = df.sample(frac=0.8, random_state=42)
-    test = df.drop(train.index)
-    return train, test
-```
-
-You can even use dynamic naming with placeholders:
-
-```python
-@step
-def extract_data(source: str) -> Annotated[pd.DataFrame, "{dataset_type}_data"]:
-    """Extract data with a dynamically named output."""
-    # Implementation...
-    return data
-
-@pipeline
-def data_pipeline():
-    # These will create artifacts named "train_data" and "test_data"
-    train_df = extract_data.with_options(
-        substitutions={"dataset_type": "train"}
-    )(source="train_source")
-    
-    test_df = extract_data.with_options(
-        substitutions={"dataset_type": "test"}
-    )(source="test_source")
-```
-
-ZenML supports these placeholders:
-
-* `{date}`: Current date (e.g., "2023\_06\_15")
-* `{time}`: Current time (e.g., "14\_30\_45\_123456")
-* Custom placeholders can be defined using `substitutions`
-
-### Returning Multiple Outputs
-
-Steps can return multiple artifacts using tuples:
-
-```python
-from typing import Tuple, Annotated
-import numpy as np
-
-@step
-def split_data(
-    data: np.ndarray, 
-    target: np.ndarray
-) -> Tuple[
-    Annotated[np.ndarray, "X_train"],
-    Annotated[np.ndarray, "X_test"],
-    Annotated[np.ndarray, "y_train"],
-    Annotated[np.ndarray, "y_test"]
-]:
-    """Split data into training and testing sets."""
-    # Implement split logic
-    X_train, X_test = data[:80], data[80:]
-    y_train, y_test = target[:80], target[80:]
-    
-    return X_train, X_test, y_train, y_test
-```
-
-ZenML differentiates between:
-
-* A step with multiple outputs: `return a, b` or `return (a, b)`
-* A step with a single tuple output: `return some_tuple`
-
-### Accessing Artifacts
-
-You can access artifacts from past runs using the ZenML Client:
+You can access artifacts from any previous run by name or ID:
 
 ```python
 from zenml.client import Client
 
-# Get a specific run
-client = Client()
-pipeline_run = client.get_pipeline_run("<PIPELINE_RUN_ID>")
-
-# Get an artifact from a specific step
-step = pipeline_run.steps["split_data"]
-X_train = step.outputs["X_train"].load()
-
-# Use the artifact
-print(X_train.shape)
-```
-
-You can also access artifacts by name and version:
-
-```python
 # Get a specific artifact version
-artifact = client.get_artifact_version("my_model", "1.0")
+artifact = Client().get_artifact_version("my_model", "1.0")
 
 # Get the latest version of an artifact
-latest_artifact = client.get_artifact_version("my_model")
+latest_artifact = Client().get_artifact_version("my_model")
 
 # Load it into memory
 model = latest_artifact.load()
 ```
 
-### Accessing Artifacts in Steps
-
-You can access any artifact within a step, not just those passed as inputs:
+You can also access artifacts within steps:
 
 ```python
 from zenml.client import Client
@@ -306,56 +344,7 @@ def evaluate_against_previous(model, X_test, y_test) -> float:
     return current_accuracy - previous_accuracy
 ```
 
-### Artifact vs. Parameter Inputs
-
-When calling a step, inputs can be either:
-
-* **Artifacts**: Outputs from other steps, tracked and versioned by ZenML
-* **Parameters**: Literal values provided directly to the step
-
-```python
-@pipeline
-def training_pipeline():
-    # data is an artifact
-    data = load_data()
-    
-    # data is an artifact, learning_rate is a parameter
-    model = train_model(data=data, learning_rate=0.01)
-```
-
-Parameters are limited to JSON-serializable values (numbers, strings, lists, dictionaries, etc.). More complex objects should be passed as artifacts.
-
-## Advanced Artifact Usage
-
-### Visualizing Artifacts
-
-ZenML automatically generates visualizations for many types of artifacts, viewable in the dashboard:
-
-```python
-# You can also view visualizations in notebooks
-from zenml.client import Client
-
-artifact = Client().get_artifact_version("<ARTIFACT_NAME>")
-artifact.visualize()
-```
-
-For detailed information on visualizations, see [Visualizations](visualizations.md).
-
-### Deleting Artifacts
-
-Individual artifacts cannot be deleted directly (to prevent broken references). However, you can clean up unused artifacts:
-
-```bash
-zenml artifact prune
-```
-
-This deletes artifacts that are no longer referenced by any pipeline run. You can control this behavior with flags:
-
-* `--only-artifact`: Only delete the physical files, keep database entries
-* `--only-metadata`: Only delete database entries, keep files
-* `--ignore-errors`: Continue pruning even if some artifacts can't be deleted
-
-### Exchanging Artifacts Between Pipelines
+### Cross-Pipeline Artifact Usage
 
 You can use artifacts produced by one pipeline in another pipeline:
 
@@ -381,6 +370,34 @@ def inference_pipeline():
 ```
 
 This allows you to build modular pipelines that can work together as part of a larger ML system.
+
+### Visualizing Artifacts
+
+ZenML automatically generates visualizations for many types of artifacts, viewable in the dashboard:
+
+```python
+# You can also view visualizations in notebooks
+from zenml.client import Client
+
+artifact = Client().get_artifact_version("<ARTIFACT_NAME>")
+artifact.visualize()
+```
+
+For detailed information on visualizations, see [Visualizations](visualizations.md).
+
+### Managing Artifacts
+
+Individual artifacts cannot be deleted directly (to prevent broken references). However, you can clean up unused artifacts:
+
+```bash
+zenml artifact prune
+```
+
+This deletes artifacts that are no longer referenced by any pipeline run. You can control this behavior with flags:
+
+* `--only-artifact`: Only delete the physical files, keep database entries
+* `--only-metadata`: Only delete database entries, keep files
+* `--ignore-errors`: Continue pruning even if some artifacts can't be deleted
 
 ## Conclusion
 
