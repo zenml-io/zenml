@@ -68,7 +68,7 @@ class SklearnMaterializer(CloudpickleMaterializer):
 
         Returns:
             The loaded sklearn model.
-            
+
         Raises:
             FileNotFoundError: if model file not found
         """
