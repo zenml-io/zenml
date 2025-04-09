@@ -107,6 +107,19 @@ class BuiltInMaterializer(BaseMaterializer):
             ensure_ascii=not ZENML_MATERIALIZER_ALLOW_NON_ASCII_JSON_DUMPS,
         )
 
+    def save_visualizations(
+        self, data: Union[bool, float, int, str]
+    ) -> Dict[str, VisualizationType]:
+        """Save visualizations for the given basic type.
+
+        Args:
+            data: The data to save visualizations for.
+
+        Returns:
+            A dictionary of visualization URIs and their types.
+        """
+        return {self.data_path.replace("\\", "/"): VisualizationType.JSON}
+
     def extract_metadata(
         self, data: Union[bool, float, int, str]
     ) -> Dict[str, "MetadataType"]:
@@ -164,6 +177,17 @@ class BytesMaterializer(BaseMaterializer):
         """
         with self.artifact_store.open(self.data_path, "wb") as file_:
             file_.write(data)
+
+    def save_visualizations(self, data: bytes) -> Dict[str, VisualizationType]:
+        """Save visualizations for the given bytes data.
+
+        Args:
+            data: The bytes data to save visualizations for.
+
+        Returns:
+            A dictionary of visualization URIs and their types.
+        """
+        return {self.data_path.replace("\\", "/"): VisualizationType.MARKDOWN}
 
 
 def _all_serializable(iterable: Iterable[Any]) -> bool:
