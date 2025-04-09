@@ -483,6 +483,8 @@ from common import training_pipeline
 app = FastAPI(title="ZenML Pipeline Trigger API")
 
 # Simple API key authentication
+# This environment variable serves as a security token to protect your API endpoints
+# In production, use a strong, randomly generated key stored securely
 API_KEY = os.environ.get("PIPELINE_API_KEY", "your-secure-api-key")
 api_key_header = APIKeyHeader(name="X-API-Key")
 
@@ -776,7 +778,7 @@ You can extend this API to support additional features:
 
 When deploying this API in production:
 
-1. **Use Strong API Keys**: Generate secure, random API keys
+1. **Use Strong API Keys**: Generate secure, random API keys. The `PIPELINE_API_KEY` in the code example is a simple authentication token that protects your API endpoints. Do not use the default value in production.
 2. **HTTPS/TLS**: Always use HTTPS for production deployments
 3. **Least Privilege**: Use ZenML service accounts with minimal permissions
 4. **Rate Limiting**: Implement rate limiting to prevent abuse
