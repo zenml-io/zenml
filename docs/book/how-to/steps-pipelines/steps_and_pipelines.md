@@ -39,12 +39,24 @@ Steps can take inputs and produce outputs. These can be simple types, complex da
 
 ```python
 @step
-def train_model(data: dict) -> None:
-    total_features = sum(map(sum, data['features']))
-    total_labels = sum(data['labels'])
-    print(f"Trained model using {len(data['features'])} data points. "
-          f"Feature sum is {total_features}, label sum is {total_labels}")
+def process_data(data: dict) -> dict:
+    # Input: data dictionary with features and labels
+    # Process the input data
+    processed_features = [feature * 2 for feature in data['features']]
+    
+    # Output: return processed data and statistics
+    return {
+        'processed_features': processed_features,
+        'labels': data['labels'],
+        'num_samples': len(data['features']),
+        'feature_sum': sum(map(sum, data['features']))
+    }
 ```
+
+In this example:
+- The step takes a `dict` as input containing features and labels
+- It processes the features and computes some statistics
+- It returns a new `dict` as output with the processed data and additional information
 
 ## Basic Pipelines
 
