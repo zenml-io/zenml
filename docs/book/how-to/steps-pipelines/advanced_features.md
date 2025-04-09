@@ -6,7 +6,9 @@ description: Advanced features and capabilities of ZenML pipelines and steps
 
 This guide covers advanced features and capabilities of ZenML pipelines and steps, allowing you to build more sophisticated machine learning workflows.
 
-## Caching
+## Execution Control
+
+### Caching
 
 Steps are automatically cached based on their inputs. When a step runs, ZenML computes a hash of the inputs and checks if a previous run with the same inputs exists. If found, ZenML reuses the outputs instead of re-executing the step.
 
@@ -38,7 +40,7 @@ Cache invalidation happens automatically when:
 - Step code changes
 - Step configuration changes (parameters, settings, etc.)
 
-## Running Individual Steps
+### Running Individual Steps
 
 You can run a single step directly:
 
@@ -54,7 +56,29 @@ model, accuracy = train_classifier.entrypoint(X_train=X_train, y_train=y_train)
 
 You can make this the default behavior by setting the `ZENML_RUN_SINGLE_STEPS_WITHOUT_STACK` environment variable to `True`.
 
-## Step Execution Order
+### Asynchronous Pipeline Execution
+
+By default, pipelines run synchronously, with terminal logs displaying as the pipeline builds and runs. You can change this behavior to run pipelines asynchronously (in the background):
+
+```python
+from zenml import pipeline
+
+@pipeline(settings={"orchestrator": {"synchronous": False}})
+def my_pipeline():
+    ...
+```
+
+Alternatively, you can configure this in a YAML config file:
+
+```yaml
+settings:
+  orchestrator.<STACK_NAME>:
+    synchronous: false
+```
+
+You can also configure the orchestrator to always run asynchronously by setting `synchronous=False` in its configuration.
+
+### Step Execution Order
 
 By default, ZenML determines step execution order based on data dependencies. When a step requires output from another step, it automatically creates a dependency.
 
@@ -76,7 +100,77 @@ def my_pipeline():
 
 This is particularly useful for steps with side effects (like data loading or model deployment) where the data dependency is not explicit.
 
-## Pipeline Composition
+## Data & Output Management
+
+### Tuple vs Multiple Outputs
+
+ZenML needs to differentiate between a step with a single output of type `Tuple` and a step with multiple outputs. The system uses the following convention:
+
+- When the `return` statement is followed by a tuple literal (e.g., `return 1, 2` or `return (value_1, value_2)`), it's treated as a step with multiple outputs
+- All other cases are treated as a step with a single output of type `Tuple`
+
+```python
+from zenml import step
+from typing_extensions import Annotated
+from typing import Tuple
+
+# Single output artifact
+@step
+def my_step() -> Tuple[int, int]:
+    output_value = (0, 1)
+    return output_value
+
+# Multiple output artifacts
+@step
+def my_step() -> Tuple[int, int]:
+    return 0, 1  # or return (0, 1)
+```
+
+### Custom Output Names
+
+By default, step outputs are named `output` for single output steps and `output_0`, `output_1`, etc. for steps with multiple outputs. You can name your step outputs using the `Annotated` type:
+
+```python
+from typing_extensions import Annotated  # or `from typing import Annotated` on Python 3.9+
+from typing import Tuple
+
+@step
+def divide(a: int, b: int) -> Tuple[
+    Annotated[int, "quotient"],
+    Annotated[int, "remainder"]
+]:
+    return a // b, a % b
+```
+
+These custom names make it easier to identify outputs in the dashboard and when fetching them programmatically.
+
+### Type Annotations
+
+While optional, type annotations are highly recommended and provide several benefits:
+
+* **Artifact handling**: ZenML uses type annotations to determine how to serialize, store, and load artifacts. The type information guides ZenML to select the appropriate materializer for saving and loading step outputs.
+* **Type validation**: ZenML validates inputs against type annotations at runtime to catch errors early.
+* **Code documentation**: Types make your code more self-documenting and easier to understand.
+
+```python
+from typing import Tuple
+
+@step
+def square_root(number: int) -> float:
+    return number ** 0.5
+
+@step
+def divide(a: int, b: int) -> Tuple[int, int]:
+    return a // b, a % b
+```
+
+When you specify a return type like `-> float` or `-> Tuple[int, int]`, ZenML uses this information to determine how to store the step's output in the artifact store. For instance, a step returning a pandas DataFrame with the annotation `-> pd.DataFrame` will use the pandas-specific materializer for efficient storage.
+
+If you want to enforce type annotations for all steps, set the environment variable `ZENML_ENFORCE_TYPE_ANNOTATIONS` to `True`.
+
+## Workflow Patterns
+
+### Pipeline Composition
 
 You can compose pipelines from other pipelines to create modular, reusable workflows:
 
@@ -102,7 +196,55 @@ def training_pipeline():
 
 Pipeline composition allows you to build complex workflows from simpler, well-tested components.
 
-## Automatic Step Retries
+### Fan-in and Fan-out
+
+You can implement parallel processing patterns for data-parallel workloads:
+
+```python
+@pipeline
+def fan_pipeline():
+    # Fan-out: Process data chunks in parallel
+    results = []
+    for i in range(5):
+        results.append(process_chunk(i))
+    
+    # Fan-in: Combine all results
+    final_result = combine_results(results)
+```
+
+When run on an orchestrator that supports parallelism (like Kubeflow), the `process_chunk` steps can run in parallel, improving performance for data-parallel workloads.
+
+### Custom Step Invocation IDs
+
+By default, ZenML uses the function name as the step invocation ID. For steps used multiple times, you should specify a custom ID:
+
+```python
+@pipeline
+def my_pipeline():
+    # Custom invocation ID "first_step"
+    first_output = my_step(step_name="first_step")
+    # Custom invocation ID "second_step"
+    second_output = my_step(step_name="second_step")
+```
+
+This makes the pipeline easier to understand and helps with debugging and monitoring.
+
+### Named Pipeline Runs
+
+You can give your pipeline runs descriptive names to make them easier to identify:
+
+```python
+from datetime import datetime
+
+run_name = f"training_run_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+my_pipeline.with_options(run_name=run_name)()
+```
+
+This is especially useful in production environments where you need to track and monitor specific runs.
+
+## Error Handling & Reliability
+
+### Automatic Step Retries
 
 For steps that may encounter transient failures (like network issues or resource limitations), you can configure automatic retries:
 
@@ -129,7 +271,9 @@ With this configuration, if the step fails, ZenML will:
 
 This is particularly useful for steps that interact with external services or resources.
 
-## Pipeline and Step Hooks
+## Monitoring & Notifications
+
+### Pipeline and Step Hooks
 
 Hooks allow you to execute custom code at specific points in the pipeline or step lifecycle:
 
@@ -158,7 +302,7 @@ Step-level hooks take precedence over pipeline-level hooks. Hooks are particular
 - Logging detailed information about runs
 - Triggering external workflows based on pipeline state
 
-## Accessing Step Context in Hooks
+### Accessing Step Context in Hooks
 
 You can access detailed information about the current run using the step context:
 
@@ -179,7 +323,7 @@ def my_step(some_parameter: int = 1):
     raise ValueError("My exception")
 ```
 
-## Using Alerter in Hooks
+### Using Alerter in Hooks
 
 You can use the Alerter stack component to send notifications when steps fail or succeed:
 
@@ -202,53 +346,9 @@ def my_step():
     ...
 ```
 
-## Fan-in and Fan-out
+## Configuration & Customization
 
-You can implement parallel processing patterns for data-parallel workloads:
-
-```python
-@pipeline
-def fan_pipeline():
-    # Fan-out: Process data chunks in parallel
-    results = []
-    for i in range(5):
-        results.append(process_chunk(i))
-    
-    # Fan-in: Combine all results
-    final_result = combine_results(results)
-```
-
-When run on an orchestrator that supports parallelism (like Kubeflow), the `process_chunk` steps can run in parallel, improving performance for data-parallel workloads.
-
-## Custom Step Invocation IDs
-
-By default, ZenML uses the function name as the step invocation ID. For steps used multiple times, you should specify a custom ID:
-
-```python
-@pipeline
-def my_pipeline():
-    # Custom invocation ID "first_step"
-    first_output = my_step(step_name="first_step")
-    # Custom invocation ID "second_step"
-    second_output = my_step(step_name="second_step")
-```
-
-This makes the pipeline easier to understand and helps with debugging and monitoring.
-
-## Named Pipeline Runs
-
-You can give your pipeline runs descriptive names to make them easier to identify:
-
-```python
-from datetime import datetime
-
-run_name = f"training_run_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-my_pipeline.with_options(run_name=run_name)()
-```
-
-This is especially useful in production environments where you need to track and monitor specific runs.
-
-## Step Settings
+### Step Settings
 
 You can configure additional settings for steps beyond the basic parameters:
 
@@ -270,7 +370,7 @@ def train_model() -> tf.keras.Model:
     return model
 ```
 
-## Configuring Stack Components per Step
+### Configuring Stack Components per Step
 
 You can use different stack components for different steps:
 
@@ -286,7 +386,7 @@ def evaluate_model():
     ...
 ```
 
-## Advanced Pipeline Configuration
+### Advanced Pipeline Configuration
 
 You can configure various aspects of a pipeline using the `configure` method:
 
@@ -308,6 +408,44 @@ my_pipeline.configure(
 # Run the pipeline
 my_pipeline()
 ```
+
+### Environment Variables in Configurations
+
+You can make your configurations more flexible by referencing environment variables using the placeholder syntax `${ENV_VARIABLE_NAME}`:
+
+**In code:**
+
+```python
+from zenml import step
+
+@step(extra={"value_from_environment": "${ENV_VAR}"})
+def my_step() -> None:
+    ...
+```
+
+**In configuration files:**
+
+```yaml
+extra:
+  value_from_environment: ${ENV_VAR}
+  combined_value: prefix_${ENV_VAR}_suffix
+```
+
+This allows you to easily adapt your pipelines to different environments without changing code.
+
+### Runtime Configuration of Pipelines
+
+You can configure a pipeline at runtime using the `with_options` method:
+
+```python
+# Configure specific step parameters
+my_pipeline.with_options(steps={"trainer": {"parameters": {"learning_rate": 0.01}}})()
+
+# Or using a YAML configuration file
+my_pipeline.with_options(config_file="path_to_yaml_file")()
+```
+
+For triggering pipelines from a client or another pipeline, you can use a `PipelineRunConfiguration` object. This approach is covered in the [advanced template usage documentation](https://docs.zenml.io/how-to/trigger-pipelines/use-templates-python#advanced-usage-run-a-template-from-another-pipeline).
 
 ## Conclusion
 

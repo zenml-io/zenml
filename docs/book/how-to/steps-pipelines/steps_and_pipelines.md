@@ -196,34 +196,7 @@ You can then run the pipeline with specific parameters:
 training_pipeline(dataset_name="custom_dataset", learning_rate=0.005)
 ```
 
-### Parameter Passing Strategies
-
-You can pass parameters to steps in several ways:
-
-**Via Artifacts**
-
-```python
-@step
-def generate_params() -> dict:
-    return {"learning_rate": 0.01, "epochs": 10}
-
-@step
-def train_model(params: dict):
-    learning_rate = params["learning_rate"]
-    epochs = params["epochs"]
-    # Use parameters
-```
-
-**Via Pipeline Parameters**
-
-```python
-@pipeline
-def training_pipeline(learning_rate: float):
-    data = load_data()
-    train_model(data=data, learning_rate=learning_rate)
-```
-
-## Advanced Step Features
+## Step Type Handling & Output Management
 
 ### Type Annotations
 
