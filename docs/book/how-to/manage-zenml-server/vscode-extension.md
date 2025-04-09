@@ -2,6 +2,11 @@
 description: Use the ZenML VSCode extension to manage your ZenML server
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Use the ZenML VSCode extension to manage your ZenML server
 
 The ZenML VSCode extension is a tool that allows you to manage your ZenML server

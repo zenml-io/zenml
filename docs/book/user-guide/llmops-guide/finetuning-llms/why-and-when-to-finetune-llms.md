@@ -2,6 +2,11 @@
 description: Deciding when is the right time to finetune LLMs.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Why and when to finetune LLMs
 
 This guide is intended to be a practical overview that gets you started with
