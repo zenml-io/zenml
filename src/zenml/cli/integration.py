@@ -13,6 +13,8 @@
 #  permissions and limitations under the License.
 """Functionality to install or uninstall ZenML integrations via the CLI."""
 
+import os
+import subprocess
 import sys
 from typing import Optional, Tuple
 
@@ -131,12 +133,20 @@ def get_requirements(integration_name: Optional[str] = None) -> None:
     "environment. This can not be specified when also providing explicit "
     "integrations.",
 )
+@click.option(
+    "--poetry",
+    "poetry",
+    is_flag=True,
+    default=False,
+    help="Add the exported requirements to your current Poetry project.",
+)
 def export_requirements(
     integrations: Tuple[str],
     ignore_integration: Tuple[str],
     output_file: Optional[str] = None,
     overwrite: bool = False,
     installed_only: bool = False,
+    poetry: bool = False,
 ) -> None:
     """Exports integration requirements so they can be installed using pip.
 
@@ -150,6 +160,7 @@ def export_requirements(
         installed_only: Only export requirements for integrations installed in
             your current environment. This can not be specified when also
             providing explicit integrations.
+        poetry: Add the exported requirements to your current Poetry project.
     """
     from zenml.integrations.registry import integration_registry
 
@@ -158,6 +169,12 @@ def export_requirements(
             "You can either provide specific integrations or export only "
             "requirements for integrations installed in your local "
             "environment, not both."
+        )
+
+    if poetry and output_file:
+        error(
+            "You can either specify an output file or add the requirements to "
+            "the Poetry project, not both."
         )
 
     all_integrations = set(integration_registry.integrations.keys())
@@ -204,6 +221,25 @@ def export_requirements(
                 with open(output_file, "w") as f:
                     f.write("\n".join(requirements))
         declare(f"Requirements exported to {output_file}.")
+    if poetry:
+        res = os.popen("poetry env list").read()
+        envs = [
+            env
+            for env in res.split("\n")
+            if env.lower().find("(activated)") > 0
+        ]
+        if len(envs) == 0:
+            error(
+                "No activated Poetry environment found. Please activate one "
+                "and try again."
+            )
+        else:
+            # Use subprocess.run with shell=False to avoid command injection
+            args = ["poetry", "add"] + requirements
+            subprocess.run(args, check=True)
+            declare(
+                f"Requirements added to `{envs[0]}` environment in Poetry."
+            )
     else:
         click.echo(" ".join(requirements), nl=False)
 
