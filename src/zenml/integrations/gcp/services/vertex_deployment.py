@@ -223,7 +223,8 @@ class VertexDeploymentService(BaseDeploymentService):
         Returns:
             The full model ID.
         """
-        return f"projects/{self._project_id}/locations/{self.config.location}/models/{name}"
+        model_id = f"projects/{self._project_id}/locations/{self.config.location}/models/{name}"
+        return model_id
 
     def _verify_model_exists(self) -> aiplatform.Model:
         """Verify the model exists and return it.
@@ -328,7 +329,7 @@ class VertexDeploymentService(BaseDeploymentService):
         """Provision or update remote Vertex AI deployment instance.
 
         Raises:
-            RuntimeError: If model not found
+            Exception: if model deployment fails
         """
         # First verify model exists
         model = self._verify_model_exists()
@@ -377,6 +378,9 @@ class VertexDeploymentService(BaseDeploymentService):
 
         Args:
             force: Whether to force deprovision
+
+        Raises:
+            RuntimeError: if endpoint deletion fails
         """
         endpoints = self.get_endpoints()
         if endpoints:

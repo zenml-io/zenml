@@ -217,10 +217,11 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
             name: Model name
 
         Returns:
-            Full model ID in format: projects/{project}/locations/{location}/models/{model}
+            str: Full model ID in format: projects/{project}/locations/{location}/models/{model}
         """
         _, project_id = self._get_authentication()
-        return f"projects/{project_id}/locations/{self.config.location}/models/{name}"
+        model_id = f"projects/{project_id}/locations/{self.config.location}/models/{name}"
+        return model_id
 
     def _get_model_version_id(self, model_id: str, version: str) -> str:
         """Get the full Vertex AI model version ID.
@@ -230,9 +231,10 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
             version: Version string
 
         Returns:
-            Full model version ID in format: {model_id}/versions/{version}
+            str: Full model version ID in format: {model_id}/versions/{version}
         """
-        return f"{model_id}/versions/{version}"
+        model_version_id = f"{model_id}/versions/{version}"
+        return model_version_id
 
     def _init_vertex_model(
         self, name: str, version: Optional[str] = None
@@ -291,9 +293,6 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
             description: The description of the model.
             metadata: The metadata of the model.
 
-        Returns:
-            The registered model.
-
         Raises:
             NotImplementedError: Vertex AI does not support registering models, you can only register model versions, skipping model registration...
 
@@ -312,7 +311,7 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
             name: The name of the model.
 
         Raises:
-            NotImplementedError: Vertex AI does not support deleting models, skipping model deletion...
+            RuntimeError: if model deletion fails
         """
         try:
             model = self._init_vertex_model(name=name)
@@ -337,9 +336,6 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
             metadata: The metadata of the model.
             remove_metadata: The metadata to remove from the model.
 
-        Returns:
-            The updated model.
-
         Raises:
             NotImplementedError: Vertex AI does not support updating models, you can only update model versions, skipping model registration...
         """
@@ -355,17 +351,20 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
 
         Returns:
             The registered model.
+
+        Raises:
+            RuntimeError: if model retrieval fails
         """
         try:
             # Fetch by display_name, and use unique labels to ensure multi-tenancy
             model = aiplatform.Model(display_name=name)
-            return RegisteredModel(
-                name=model.display_name,
-                description=model.description,
-                metadata=model.labels,
-            )
         except Exception as e:
             raise RuntimeError(f"Failed to get model: {str(e)}")
+        return RegisteredModel(
+            name=model.display_name,
+            description=model.description,
+            metadata=model.labels,
+        )
 
     def list_models(
         self,
@@ -602,9 +601,9 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
             if stage:
                 labels["stage"] = stage.value.lower()
             target_version.update(description=description, labels=labels)
-            return self.get_model_version(name, version)
         except Exception as e:
             raise RuntimeError(f"Failed to update model version: {str(e)}")
+        return self.get_model_version(name, version)
 
     def get_model_version(
         self, name: str, version: str
