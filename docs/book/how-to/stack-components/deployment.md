@@ -4,170 +4,142 @@ description: Methods for deploying ZenML stacks on cloud platforms
 
 # Deployment
 
-ZenML provides multiple ways to deploy stacks on cloud platforms like AWS, Azure, and GCP. This page describes the different deployment methods and their pros and cons.
+Once you understand the concept of stacks, you may want to deploy them on cloud platforms to leverage more powerful resources. This page explains the different approaches to deploying ZenML stacks in cloud environments.
 
-## Deployment Options Overview
+## Why Deploy Stacks to the Cloud?
 
-ZenML offers three main approaches to deploy cloud stacks:
+While local stacks are great for development, cloud-based stacks offer significant advantages:
 
-1. **1-Click Deployment**: A guided, automated deployment for quickly setting up fully functional stacks
-2. **Stack Wizard**: A tool to create stacks from existing cloud resources
-3. **Terraform Deployment**: Infrastructure-as-code deployment for more customization and control
+* **Scalability**: Access to virtually unlimited compute resources
+* **Specialized Hardware**: Use GPUs/TPUs for model training
+* **Managed Services**: Leverage cloud-native MLOps tools
+* **Collaboration**: Share infrastructure with your team
+* **Production Readiness**: Deploy in environments that match production
+* **Cost Efficiency**: Pay only for what you use
+* **Reliability**: Benefit from high-availability cloud infrastructure
 
-Each method has different levels of automation, customization, and complexity, allowing you to choose the approach that best fits your needs.
+## The Challenges of Stack Deployment
 
-## 1-Click Deployment
+Deploying MLOps stacks involves several challenges:
 
-The 1-Click Deployment feature automates the provisioning of all necessary cloud resources to run ZenML pipelines. It's the fastest way to get a production-ready stack up and running without manual configuration.
+* **Tool Requirements**: Ensuring all tool requirements are met and compatible
+* **Configuration Complexity**: Determining appropriate infrastructure parameters
+* **Production Readiness**: Creating secure setups with proper authentication and monitoring
+* **Component Integration**: Managing permissions and connectivity between components
+* **Resource Management**: Properly cleaning up resources to avoid wasted costs
+* **Custom Adaptations**: Modifying standard tool installations to meet specific needs
 
-### How It Works
+ZenML's deployment approaches help address these challenges with varying degrees of automation and control.
 
-1. ZenML provisions the necessary resources on your cloud platform
-2. Configures these resources to work together
-3. Registers the necessary stack components
-4. Creates a new stack with these components
+## The Deployment Process
 
-### Usage
+Deploying a ZenML stack to the cloud involves these general steps:
 
-From the CLI:
+1. **Provision infrastructure** resources on a cloud platform
+2. **Configure stack components** to use these resources
+3. **Register these components** in ZenML
+4. **Create a stack** from these components
+5. **Set the stack as active** for pipeline execution
 
-```bash
-# For AWS
-zenml deploy aws --region us-west-2 --bucket-name my-zenml-artifacts
+ZenML offers multiple approaches to accomplish these steps, ranging from fully automated to highly customizable.
 
-# For Azure
-zenml deploy azure --resource-group zenml-stack --location eastus
+## Deployment Approaches
 
-# For GCP
-zenml deploy gcp --project my-project --region us-central1
-```
+ZenML provides three main approaches to deploy cloud stacks:
 
-From the dashboard:
+### 1. 1-Click Deployment
 
-* Navigate to **Stacks** → **New Stack** → **Deploy new Cloud**
-* Follow the guided wizard to configure your deployment
+The simplest way to deploy a complete stack to a cloud provider.
 
-### Best For
+**How it works**:
+* ZenML automatically provisions all necessary cloud resources
+* Configures them to work together
+* Registers the components and creates a ready-to-use stack
 
-* Getting started quickly with cloud stacks
+**Best for**:
+* Getting started quickly with cloud infrastructure
 * Development and testing environments
-* Users who want minimal configuration overhead
+* Users with limited cloud expertise
+* Teams who want minimal configuration overhead
 
-## Stack Wizard
+### 2. Stack Wizard
 
-The Stack Wizard helps you create a stack from existing cloud resources. It scans available resources through a service connector and lets you select which ones to use for each stack component.
+A guided approach to creating a stack from existing cloud resources.
 
-### How It Works
+**How it works**:
+* Connects to your cloud provider using a service connector
+* Discovers available resources (storage buckets, compute services, etc.)
+* Lets you select which resources to use for each component
+* Creates a stack from your selected resources
 
-1. Connect to your cloud provider using a service connector
-2. The wizard discovers available resources (storage buckets, container registries, etc.)
-3. You select which resources to use for each component
-4. The wizard registers the components and creates a stack
+**Best for**:
+* Using existing cloud infrastructure
+* Organizations with established cloud resources
+* Greater control over which resources are used
+* Compliance with company-specific resource policies
 
-### Usage
+### 3. Infrastructure as Code
 
-From the CLI:
+An approach for maximum customization and control using tools like Terraform.
 
-```bash
-# Start the wizard for a specific cloud provider
-zenml stack register my-stack -p aws
-zenml stack register my-stack -p azure
-zenml stack register my-stack -p gcp
-```
+**How it works**:
+* Uses Terraform to define and provision cloud resources
+* Provides complete control over infrastructure configuration
+* Enables version control of your infrastructure
+* Supports complex, custom deployments
 
-From the dashboard:
-
-* Navigate to **Stacks** → **New Stack** → **Use existing Cloud**
-* Follow the guided interface to select resources and create your stack
-
-### Best For
-
-* Using existing cloud resources
-* Organizations with established cloud infrastructure
-* Customizing which resources to use for each component
-
-## Terraform Deployment
-
-Terraform deployment provides infrastructure-as-code capabilities for deploying ZenML stacks. This approach gives you complete control over your infrastructure and enables version control, collaboration, and reproducibility.
-
-### How It Works
-
-1. ZenML provides Terraform modules for different cloud providers
-2. You configure variables to customize the deployment
-3. Terraform provisions the resources based on your configuration
-4. You register stack components using the outputs from Terraform
-
-### Usage
-
-```bash
-# Clone the ZenML repository
-git clone https://github.com/zenml-io/zenml.git
-cd zenml/terraform/aws  # or azure, gcp
-
-# Initialize Terraform
-terraform init
-
-# Configure and apply
-terraform apply -var="region=us-west-2" -var="prefix=zenml"
-
-# Register components and stack using outputs
-# (See cloud-specific guides for detailed instructions)
-```
-
-### Best For
-
+**Best for**:
 * Production environments
 * Infrastructure-as-code workflows
-* DevOps teams
-* Custom infrastructure requirements
+* DevOps-oriented teams
 * Compliance and governance requirements
+* Custom infrastructure requirements
 
-## Comparing Deployment Methods
+## Choosing a Deployment Method
 
-| Feature                    | 1-Click Deployment | Stack Wizard       | Terraform  |
-| -------------------------- | ------------------ | ------------------ | ---------- |
-| **Setup Speed**            | Fastest            | Medium             | Slower     |
-| **Customization**          | Limited            | Medium             | High       |
-| **Learning Curve**         | Low                | Medium             | Higher     |
-| **Infrastructure Control** | Minimal            | Medium             | Complete   |
-| **Best For**               | Quick starts       | Existing resources | Production |
-| **Version Control**        | No                 | No                 | Yes        |
-| **Reproducibility**        | Limited            | Medium             | High       |
+Consider these factors when selecting a deployment method:
 
-## Post-Deployment Steps
+| Factor | 1-Click | Stack Wizard | Terraform |
+|--------|---------|--------------|-----------|
+| Setup Speed | Fastest | Medium | Slower |
+| Customization | Limited | Medium | High |
+| Learning Curve | Low | Medium | Higher |
+| Control | Minimal | Medium | Complete |
+| Security Configuration | Pre-configured | Manual selection | Fully customizable |
+| Resource Cleanup | Automatic | Manual | Defined in code |
+| Best Use Case | Getting started | Existing resources | Production |
 
-After deploying your stack, regardless of the method used:
+## Deployment and Service Connectors
 
-1. **Set as active**: `zenml stack set STACK_NAME`
-2. **Verify the stack**: `zenml stack describe`
-3. **Run a test pipeline** to ensure everything works correctly
-4. **Set up CI/CD** for automated pipeline runs (optional)
+All deployment methods require authentication with cloud services. Service connectors provide the authentication layer that allows ZenML to interact with your cloud resources:
+
+* **1-Click Deployment**: Creates service connectors automatically
+* **Stack Wizard**: Uses existing service connectors to discover resources
+* **Infrastructure as Code**: Requires configuring service connectors after provisioning
+
+Understanding service connectors is crucial for successful stack deployment. See the [Service Connectors](service_connectors.md) page for more details.
+
+## After Deployment
+
+Once your stack is deployed:
+
+1. **Set it as active**: `zenml stack set STACK_NAME`
+2. **Verify configuration**: `zenml stack describe`
+3. **Run a test pipeline** to ensure everything works
+4. **Share with team members** as needed
 
 ## Best Practices
 
-* **Start small**: Begin with a minimal stack and add components as needed
+* **Start small**: Begin with minimal components and add more as needed
 * **Use descriptive names** for stacks and components
-* **Document your deployment** process and configurations
-* **Use separate stacks** for development, staging, and production
-* **Regularly update** your stack components to get the latest features and security updates
-* **Monitor costs** of cloud resources to avoid unexpected expenses
-
-## Troubleshooting
-
-Common deployment issues include:
-
-* **Permission errors**: Ensure your credentials have the necessary permissions
-* **Resource limits**: Check if you've hit cloud provider quotas or limits
-* **Network issues**: Verify connectivity between resources
-* **Configuration errors**: Double-check component settings
-
-Most deployment methods provide detailed logs to help diagnose issues.
+* **Create separate stacks** for development, staging, and production
+* **Document your infrastructure** for team knowledge sharing
+* **Monitor cloud costs** to avoid unexpected expenses
+* **Implement proper security measures** for production deployments
 
 ## Next Steps
 
-* Learn about specific cloud provider integrations:
-  * [AWS](broken-reference)
-  * [Azure](broken-reference)
-  * [GCP](broken-reference)
-* Explore [Service Connectors](service_connectors.md) for authentication
-* Understand [Stack Components](stack_components.md) in more detail
+* Learn how to [deploy a cloud stack with 1-click](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack)
+* Register [existing cloud resources](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack) using the Stack Wizard
+* Deploy infrastructure with [Terraform modules](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform)
+* Understand [Service Connectors](service_connectors.md) for authentication

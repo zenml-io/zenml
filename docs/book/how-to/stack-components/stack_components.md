@@ -7,116 +7,154 @@ icon: cubes
 
 ## Understanding ZenML Stacks
 
-A ZenML stack is a collection of components that together form an MLOps infrastructure to run your ML pipelines. Stacks allow you to seamlessly transition from local development to production environments without changing your pipeline code.
+A ZenML stack is a collection of components that together form an MLOps infrastructure to run your ML pipelines. While your pipeline code defines what happens in your ML workflow, the stack determines where and how that code runs.
 
-Each stack must include at least one:
+### Why Stacks Matter
 
-* **Orchestrator**: The component that executes your pipeline steps
-* **Artifact Store**: The component that stores and versions your pipeline artifacts
+Stacks provide several key benefits:
 
-Additionally, stacks may include optional components such as:
+1. **Environment Flexibility**: Run the same pipeline code locally during development and in the cloud for production
+2. **Infrastructure Separation**: Change your infrastructure without modifying your pipeline code
+3. **Specialized Resources**: Use specialized tools for different aspects of your ML workflow
+4. **Team Collaboration**: Share infrastructure configurations across your team
+5. **Reproducibility**: Ensure consistent pipeline execution across different environments
 
-* **Container Registry**: To store Docker images for your pipeline steps
-* **Step Operator**: To run specific steps on specialized infrastructure
-* **Model Deployer**: To deploy models as prediction services
-* **Experiment Tracker**: To track metrics and parameters
-* **Feature Store**: To manage and serve ML features
-* **Alerter**: To notify you about pipeline events
-* **Annotator**: To manage data labeling workflows
+### Stacks for Environment Organization
+
+Stacks provide a powerful way to organize your execution environments:
+
+* **Development**: Use a local stack for rapid iteration and debugging
+* **Staging**: Deploy a cloud stack with modest resources for integration testing
+* **Production**: Use a production-grade stack with robust resources and security
+
+This separation helps you:
+* Control costs by using appropriate resources for each environment
+* Prevent accidental deployments to production
+* Manage access control by restricting who can use which stacks
+
+### Stack Structure
+
+Each ZenML stack must include these core components:
+
+* **Orchestrator**: Controls how your pipeline steps are executed
+* **Artifact Store**: Manages where your pipeline artifacts are stored
+
+Stacks may also include these optional components:
+
+* **Container Registry**: Stores Docker images for your pipeline steps
+* **Step Operator**: Runs specific steps on specialized hardware
+* **Model Deployer**: Deploys models as prediction services
+* **Experiment Tracker**: Tracks metrics and parameters
+* **Feature Store**: Manages ML features
+* **Alerter**: Sends notifications about pipeline events
+* **Annotator**: Manages data labeling workflows
+
+### Stacks and Pipeline Execution
+
+When you run a pipeline, ZenML:
+
+1. Checks which stack is active
+2. Uses the orchestrator from that stack to execute the pipeline steps
+3. Stores artifacts in the artifact store from that stack
+4. Utilizes any other configured components as needed
+
+This abstraction allows you to focus on building your pipeline logic without worrying about the underlying infrastructure.
 
 ## Stack Components
 
-Stack components are modular building blocks that provide specific functionality to your MLOps infrastructure. Each component type comes in different flavors, which are implementations of the component interface for specific tools or services.
+Stack components are modular building blocks that provide specific functionality. Each component type comes in different flavors - implementations for specific tools or services.
 
-### Core Component Types
+### Core Components
 
 #### Orchestrators
 
-Orchestrators are responsible for executing pipeline steps according to their dependencies. They determine where and how your code runs. Examples include:
+Orchestrators determine how your pipeline steps are executed:
 
-* **Local**: Runs steps sequentially on your local machine
-* **Kubernetes**: Orchestrates steps as Kubernetes jobs
-* **Kubeflow**: Uses Kubeflow Pipelines to run steps
-* **Vertex**: Runs pipelines on Google Cloud Vertex AI
-* **AzureML**: Executes pipelines on Azure Machine Learning
+* **Local**: Runs steps sequentially on your local machine (default)
+* **Kubernetes**: Runs steps as Kubernetes jobs
+* **Kubeflow**: Uses Kubeflow Pipelines
+* **Vertex AI, AzureML, SageMaker**: Runs on managed cloud services
 
 #### Artifact Stores
 
-Artifact stores manage the data produced and consumed by pipeline steps. They handle storage, versioning, and retrieval of artifacts. Examples include:
+Artifact stores determine where pipeline artifacts are saved:
 
-* **Local**: Stores artifacts on your local filesystem
-* **S3**: Uses Amazon S3 buckets for artifacts
-* **GCS**: Stores artifacts in Google Cloud Storage
-* **Azure Blob**: Uses Azure Blob Storage for artifacts
+* **Local**: Stores artifacts on your local filesystem (default)
+* **S3**: Uses Amazon S3 buckets
+* **GCS**: Stores in Google Cloud Storage
+* **Azure Blob**: Uses Azure Blob Storage
 
-#### Container Registries
+### Component Interactions
 
-Container registries store Docker images that encapsulate the environment for your pipeline steps. They ensure reproducibility and portability. Examples include:
+Components in a stack work together to support your ML pipeline:
 
-* **Docker Hub**: The public Docker registry
-* **ECR**: Amazon Elastic Container Registry
-* **GCR**: Google Container Registry
-* **ACR**: Azure Container Registry
+1. The **orchestrator** executes your pipeline steps
+2. Each step produces artifacts stored in the **artifact store**
+3. The orchestrator may use the **container registry** for containerized execution
+4. Specialized steps might use a **step operator** for execution
+5. Models can be deployed via a **model deployer**
+6. Metrics are tracked in an **experiment tracker**
 
 ## Working with Stacks
 
-### Active Stack
+### The Active Stack
 
-In ZenML, you always have an active stack that is used when you run a pipeline. You can view your active stack with:
+In ZenML, you always have an active stack that's used when you run a pipeline:
 
 ```bash
+# See your active stack
 zenml stack describe
-```
 
-To switch to a different stack:
-
-```bash
+# Switch to a different stack
 zenml stack set STACK_NAME
 ```
 
-### Stack Management
+### Managing Stacks
 
-You can manage your stacks through the ZenML CLI or the Python API:
+You can create and manage stacks through the CLI:
 
 ```bash
-# List all registered stacks
+# List all stacks
 zenml stack list
 
-# Get details about a specific stack
-zenml stack describe STACK_NAME
+# Register a new stack with minimal components
+zenml stack register my-stack -a local-store -o local-orchestrator
 
-# Register a new stack
-zenml stack register STACK_NAME \
-    -a ARTIFACT_STORE \
-    -o ORCHESTRATOR \
-    [optional components...]
+# Register a stack with additional components
+zenml stack register production-stack \
+    -a s3-store \
+    -o kubeflow \
+    --container-registry ecr-registry \
+    --experiment-tracker mlflow-tracker
 ```
 
-Using the Python API:
+Or through the Python API:
 
 ```python
 from zenml.client import Client
 
 client = Client()
+# List all stacks
 stacks = client.list_stacks()
 
 # Set active stack
-client.activate_stack("STACK_NAME")
+client.activate_stack("my-stack")
 ```
 
-## Using Service Connectors with Stack Components
+### Local vs. Cloud Stacks
 
-Service connectors provide a unified way to handle authentication between ZenML and cloud services. They:
+ZenML provides two main types of stacks:
 
-1. Simplify credential management
-2. Support multiple authentication methods
-3. Enable secure sharing of credentials among team members
-4. Provide fine-grained access control to resources
+1. **Local Stack**: Uses your local machine for orchestration and storage. This is the default and requires no additional setup.
 
-Service connectors can be attached to stack components to authenticate with the underlying services, making it easier to work with different environments and cloud providers.
+2. **Cloud Stack**: Uses cloud services for orchestration, storage, and other components. These stacks offer more scalability and features but require additional deployment and configuration.
+
+When you start with ZenML, you're automatically using a local stack. As your ML projects grow, you'll likely want to deploy cloud stacks to handle larger workloads and collaborate with your team.
 
 ## Next Steps
 
-* Learn about [Service Connectors](service_connectors.md) for authenticating with cloud providers
-* Understand how to [deploy stacks](deployment.md) on cloud platforms
-* Explore specific cloud providers: [AWS](broken-reference), [Azure](broken-reference), [GCP](broken-reference)
+Now that you understand what stacks are, you might want to:
+
+* Learn about [deploying stacks](deployment.md) on cloud platforms
+* Understand [Service Connectors](service_connectors.md) for authenticating with cloud services
+* Explore how to [register existing cloud resources](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack) as ZenML stack components
