@@ -407,6 +407,9 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
 
         Raises:
             RuntimeError: If the Kubernetes orchestrator is not configured.
+            TimeoutError: If the orchestrator pod is still in a pending state
+                after the maximum wait time has elapsed.
+            Exception: If the orchestrator pod fails to start.
         """
         for step_name, step in deployment.step_configurations.items():
             if self.requires_resources_in_orchestration_environment(step):
