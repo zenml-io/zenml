@@ -68,6 +68,9 @@ class SklearnMaterializer(CloudpickleMaterializer):
 
         Returns:
             The loaded sklearn model.
+            
+        Raises:
+            FileNotFoundError: if model file not found
         """
         # First try to load from model.pkl
         model_filepath = os.path.join(self.uri, SKLEARN_MODEL_FILENAME)
