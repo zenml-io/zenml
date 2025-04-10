@@ -16,6 +16,8 @@ import numpy as np
 
 from tests.unit.test_general import _test_materializer
 from zenml.integrations.numpy.materializers.numpy_materializer import (
+    IS_NUMPY_2,
+    NUMPY_OBJECT_TYPE,
     NumpyMaterializer,
 )
 from zenml.metadata.metadata_types import (
@@ -86,3 +88,38 @@ def test_numpy_materializer():
     assert text_metadata["total_words"] == 7
     assert text_metadata["most_common_word"] == "world"
     assert text_metadata["most_common_count"] == 2
+
+
+def test_numpy_version_compatibility():
+    """Test NumPy version compatibility handling in the materializer."""
+    # Create an array with Python objects - this tests our NUMPY_OBJECT_TYPE handling
+    object_array = np.array(
+        [{"key": "value"}, ["list", "items"], (1, 2, 3)], dtype=object
+    )
+
+    # Test the materializer with the object array
+    result, metadata = _test_materializer(
+        step_output_type=np.ndarray,
+        materializer_class=NumpyMaterializer,
+        step_output=object_array,
+        return_metadata=True,
+        expected_metadata_size=7,
+    )
+
+    # Verify the array was properly handled
+    assert np.array_equal(object_array, result)
+    assert metadata["shape"] == (3,)
+
+    # Verify our version detection logic is consistent
+    # In NumPy 2.x, np.object_ is object
+    if IS_NUMPY_2:
+        assert NUMPY_OBJECT_TYPE is object
+        # Print version info for test log clarity
+        print(f"Running with NumPy 2.x: {np.__version__}")
+    else:
+        assert NUMPY_OBJECT_TYPE is np.object_
+        # Print version info for test log clarity
+        print(f"Running with NumPy 1.x: {np.__version__}")
+
+    # Make sure dtype detection works correctly regardless of version
+    assert np.issubdtype(object_array.dtype, NUMPY_OBJECT_TYPE)
