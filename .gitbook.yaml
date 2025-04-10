@@ -265,8 +265,9 @@ redirects:
   how-to/advanced-topics/control-logging/disable-colorful-logging: how-to/control-logging/disable-colorful-logging.md
 
   some-random/redirect: introduction.md
-  some-other/redirect: stacks/introduction.md
-  
+  some-other/redirect: stacks/integrations.md
+  some-third/redirect: component-guide/integrations.md
+
   # # Redirects for the Steps and Pipelines section
   # how-to/build-pipelines/step-dependencies: how-to/steps-pipelines/steps_and_pipelines.md
   # how-to/build-pipelines/pipelines-abstraction: how-to/steps-pipelines/steps_and_pipelines.md
