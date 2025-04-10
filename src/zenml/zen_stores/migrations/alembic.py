@@ -19,7 +19,16 @@ database connection.
 """
 
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Sequence, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Sequence,
+    Union,
+)
 
 from alembic.config import Config
 from alembic.runtime.environment import EnvironmentContext
@@ -28,7 +37,7 @@ from alembic.script import ScriptDirectory
 from sqlalchemy import Column, String
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import declarative_base
-from sqlalchemy.sql.schema import MetaData
+from sqlalchemy.sql.schema import MetaData, SchemaItem
 from sqlmodel import SQLModel
 
 from zenml.zen_stores import schemas
@@ -39,7 +48,18 @@ exclude_tables = ["sqlite_sequence"]
 
 
 def include_object(
-    object: Any, name: str, type_: str, *args: Any, **kwargs: Any
+    object: SchemaItem,
+    name: Optional[str],
+    type_: Literal[
+        "schema",
+        "table",
+        "column",
+        "index",
+        "unique_constraint",
+        "foreign_key_constraint",
+    ],
+    reflected: bool,
+    compare_to: Optional[SchemaItem],
 ) -> bool:
     """Function used to exclude tables from the migration scripts.
 
@@ -47,8 +67,8 @@ def include_object(
         object: The schema item object to check.
         name: The name of the object to check.
         type_: The type of the object to check.
-        *args: Additional arguments.
-        **kwargs: Additional keyword arguments.
+        reflected: Whether this object is being reflected.
+        compare_to: The object being compared against.
 
     Returns:
         True if the object should be included, False otherwise.
@@ -180,9 +200,14 @@ class Alembic:
         def do_get_current_rev(rev: _RevIdType, context: Any) -> List[Any]:
             nonlocal current_revisions
 
-            for r in self.script_directory.get_all_current(
-                rev  # type:ignore [arg-type]
-            ):
+            # Always convert to tuple of strings as get_all_current expects this type
+            if isinstance(rev, str):
+                # Explicitly annotate with variable-length tuple
+                rev_tuple: Sequence[str] = (rev,)
+            else:
+                rev_tuple = tuple(str(r) for r in rev)
+
+            for r in self.script_directory.get_all_current(rev_tuple):  # type: ignore[arg-type]
                 if r is None:
                     continue
                 current_revisions.append(r.revision)
@@ -200,7 +225,11 @@ class Alembic:
         """
 
         def do_stamp(rev: _RevIdType, context: Any) -> List[Any]:
-            return self.script_directory._stamp_revs(revision, rev)
+            if isinstance(rev, str):
+                return self.script_directory._stamp_revs(revision, rev)
+            else:
+                rev_tuple = tuple(str(r) for r in rev)
+                return self.script_directory._stamp_revs(revision, rev_tuple)
 
         self.run_migrations(do_stamp)
 
@@ -212,10 +241,14 @@ class Alembic:
         """
 
         def do_upgrade(rev: _RevIdType, context: Any) -> List[Any]:
-            return self.script_directory._upgrade_revs(
-                revision,
-                rev,  # type:ignore [arg-type]
-            )
+            if isinstance(rev, str):
+                return self.script_directory._upgrade_revs(revision, rev)
+            else:
+                if rev:
+                    return self.script_directory._upgrade_revs(
+                        revision, str(rev[0])
+                    )
+                return []
 
         self.run_migrations(do_upgrade)
 
@@ -227,9 +260,13 @@ class Alembic:
         """
 
         def do_downgrade(rev: _RevIdType, context: Any) -> List[Any]:
-            return self.script_directory._downgrade_revs(
-                revision,
-                rev,  # type:ignore [arg-type]
-            )
+            if isinstance(rev, str):
+                return self.script_directory._downgrade_revs(revision, rev)
+            else:
+                if rev:
+                    return self.script_directory._downgrade_revs(
+                        revision, str(rev[0])
+                    )
+                return self.script_directory._downgrade_revs(revision, None)
 
         self.run_migrations(do_downgrade)
