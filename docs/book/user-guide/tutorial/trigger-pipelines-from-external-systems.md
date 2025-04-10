@@ -525,42 +525,8 @@ def import_pipeline(pipeline_name):
     except Exception as e:
         raise HTTPException(status_code=404, detail=f"Pipeline not found: {str(e)}")
 
-@app.post("/trigger", status_code=200)
+@app.post("/trigger", status_code=202)
 async def trigger_pipeline(
-    request: PipelineRequest, 
-    api_key: str = Depends(get_api_key)
-):
-    """Trigger a ZenML pipeline with the given parameters."""
-    try:
-        # Dynamically import the pipeline
-        pipeline_func = import_pipeline(request.pipeline_name)
-        
-        # Configure the pipeline
-        if request.config_path:
-            configured_pipeline = pipeline_func.with_options(config_path=request.config_path)
-        else:
-            configured_pipeline = pipeline_func
-        
-        # Extract parameters from steps
-        step_parameters = {}
-        if request.steps:
-            for step_name, step_config in request.steps.items():
-                if step_config.parameters:
-                    step_parameters.update(step_config.parameters)
-        
-        # Run the pipeline with the provided parameters
-        run = configured_pipeline(**step_parameters)
-        
-        return {
-            "status": "success", 
-            "message": f"Pipeline '{request.pipeline_name}' triggered successfully",
-            "run_id": run.id if hasattr(run, 'id') else None
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to trigger pipeline: {str(e)}")
-
-@app.post("/trigger-async", status_code=202)
-async def trigger_pipeline_async(
     request: PipelineRequest, 
     api_key: str = Depends(get_api_key)
 ):
@@ -708,11 +674,7 @@ For production deployment, you can:
 
 ### Triggering Pipelines via the API
 
-You can trigger pipelines in two ways through the custom API:
-
-#### 1. Direct Synchronous Pipeline Execution
-
-This method runs the pipeline directly with the specified parameters and waits for completion:
+You can trigger pipelines through the custom API with this endpoint:
 
 ```bash
 curl -X 'POST' \
@@ -737,32 +699,7 @@ curl -X 'POST' \
   }'
 ```
 
-#### 2. Asynchronous Pipeline Execution
-
-This method starts the pipeline in a background thread and returns immediately:
-
-```bash
-curl -X 'POST' \
-  'http://your-api-server:8000/trigger-async' \
-  -H 'accept: application/json' \
-  -H 'X-API-Key: your-secure-api-key' \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "pipeline_name": "training_pipeline",
-    "steps": {
-      "load_data": {
-        "parameters": {
-          "data_url": "s3://some-bucket/new-data.csv"
-        }
-      },
-      "train_model": {
-        "parameters": {
-          "model_type": "gradient_boosting"
-        }
-      }
-    }
-  }'
-```
+This method starts the pipeline in a background thread and returns immediately with a status code of 202 (Accepted), making it suitable for asynchronous execution from external systems.
 
 ### Extending the API
 
