@@ -41,7 +41,6 @@
   * [Materializers](how-to/artifacts/materializers.md)
   * [Visualizations](how-to/artifacts/visualizations.md)
 * [Stack & Components](how-to/stack-components/stack_components.md)
-  * [Deployment](how-to/stack-components/deployment.md)
 * [Service Connectors](how-to/stack-components/service_connectors.md)
 * [Containerization](how-to/containerization/containerization.md)
 * [Code Repositories](how-to/code-repositories/code-repositories.md)

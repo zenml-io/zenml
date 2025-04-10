@@ -106,6 +106,18 @@
 * [GCP](../how-to/stack-components/gcp.md)
 * [Kubernetes](../how-to/stack-components/kubernetes.md)
 
+## Deployment
+
+* [Manage Stacks](../how-to/infrastructure-deployment/stack-deployment/README.md)
+  * [Deploy a cloud stack with ZenML](../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack.md)
+  * [Deploy a cloud stack with Terraform](../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform.md)
+  * [Register a cloud stack](../how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack.md)
+  * [Export and install stack requirements](../how-to/infrastructure-deployment/stack-deployment/export-stack-requirements.md)
+  * [Reference secrets in stack configuration](../how-to/infrastructure-deployment/stack-deployment/reference-secrets-in-stack-configuration.md)
+* [Infrastructure as code](../how-to/infrastructure-deployment/infrastructure-as-code/README.md)
+  * [Manage your stacks with Terraform](../how-to/infrastructure-deployment/infrastructure-as-code/terraform-stack-management.md)
+  * [ZenML & Terraform Best Practices](../how-to/infrastructure-deployment/infrastructure-as-code/best-practices.md)
+
 ## Contribute
 
 * [Custom Stack Component](contribute/custom-stack-component.md)
