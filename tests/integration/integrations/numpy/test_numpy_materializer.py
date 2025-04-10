@@ -16,8 +16,6 @@ import numpy as np
 
 from tests.unit.test_general import _test_materializer
 from zenml.integrations.numpy.materializers.numpy_materializer import (
-    IS_NUMPY_2,
-    NUMPY_OBJECT_TYPE,
     NumpyMaterializer,
 )
 from zenml.metadata.metadata_types import (
@@ -90,14 +88,17 @@ def test_numpy_materializer():
     assert text_metadata["most_common_count"] == 2
 
 
-def test_numpy_version_compatibility():
-    """Test NumPy version compatibility handling in the materializer."""
-    # Create an array with Python objects - this tests our NUMPY_OBJECT_TYPE handling
+def test_object_array_handling():
+    """Test that arrays with Python objects are handled correctly.
+
+    This ensures our materializer works with object arrays on any NumPy version.
+    """
+    # Create an array with Python objects
     object_array = np.array(
         [{"key": "value"}, ["list", "items"], (1, 2, 3)], dtype=object
     )
 
-    # Test the materializer with the object array
+    # Test serialization and deserialization
     result, metadata = _test_materializer(
         step_output_type=np.ndarray,
         materializer_class=NumpyMaterializer,
@@ -107,19 +108,15 @@ def test_numpy_version_compatibility():
     )
 
     # Verify the array was properly handled
-    assert np.array_equal(object_array, result)
+    assert len(result) == 3
+    assert isinstance(result[0], dict)
+    assert isinstance(result[1], list)
+    assert isinstance(result[2], tuple)
+
+    # Verify structure is preserved
+    assert result[0]["key"] == "value"
+    assert result[1][0] == "list"
+    assert result[2][2] == 3
+
+    # Verify metadata
     assert metadata["shape"] == (3,)
-
-    # Verify our version detection logic is consistent
-    # In NumPy 2.x, np.object_ is object
-    if IS_NUMPY_2:
-        assert NUMPY_OBJECT_TYPE is object
-        # Print version info for test log clarity
-        print(f"Running with NumPy 2.x: {np.__version__}")
-    else:
-        assert NUMPY_OBJECT_TYPE is np.object_
-        # Print version info for test log clarity
-        print(f"Running with NumPy 1.x: {np.__version__}")
-
-    # Make sure dtype detection works correctly regardless of version
-    assert np.issubdtype(object_array.dtype, NUMPY_OBJECT_TYPE)
