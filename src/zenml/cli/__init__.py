@@ -2414,6 +2414,7 @@ If you want to create a run template based on your pipeline that can later be us
 ```bash
 zenml pipeline create-run-template <PIPELINE_SOURCE_PATH> \
    --name=<TEMPLATE_NAME>
+```
 
 To specify a config file, use the `--config/-c` option. If you would like to use a different stack than the active one, use the `--stack` option.
 
