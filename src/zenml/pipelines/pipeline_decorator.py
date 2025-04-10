@@ -57,6 +57,7 @@ def pipeline(
     on_success: Optional["HookSpecification"] = None,
     model: Optional["Model"] = None,
     substitutions: Optional[Dict[str, str]] = None,
+    workload_token_expiration_leeway: Optional[int] = None,
 ) -> Callable[["F"], "Pipeline"]: ...
 
 
@@ -74,6 +75,7 @@ def pipeline(
     on_success: Optional["HookSpecification"] = None,
     model: Optional["Model"] = None,
     substitutions: Optional[Dict[str, str]] = None,
+    workload_token_expiration_leeway: Optional[int] = None,
 ) -> Union["Pipeline", Callable[["F"], "Pipeline"]]:
     """Decorator to create a pipeline.
 
@@ -95,6 +97,8 @@ def pipeline(
             (e.g. `module.my_function`).
         model: configuration of the model in the Model Control Plane.
         substitutions: Extra placeholders to use in the name templates.
+        workload_token_expiration_leeway: Number of seconds of leeway to add to
+            the expiration time of workload tokens.
 
     Returns:
         A pipeline instance.
@@ -116,6 +120,7 @@ def pipeline(
             model=model,
             entrypoint=func,
             substitutions=substitutions,
+            workload_token_expiration_leeway=workload_token_expiration_leeway,
         )
 
         p.__doc__ = func.__doc__
