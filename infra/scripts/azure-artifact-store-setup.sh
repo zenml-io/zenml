@@ -80,7 +80,7 @@ az role assignment create \
     --scope "$STORAGE_ID"
 
 # Give Azure time to propagate the role assignment
-sleep 10
+sleep 30
 
 # Create ZenML service connector
 zenml service-connector register "$SERVICE_CONNECTOR_NAME" \
