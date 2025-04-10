@@ -114,7 +114,7 @@ ZenML handles packaging code, building containers, orchestrating execution, and 
 Congratulations! You've just experienced the core value proposition of ZenML:
 
 * **Write Once, Run Anywhere**: The same code runs locally during development and in the cloud for production
-* **Infrastructure Abstraction**: Focus on your ML logic instead of cloud configuration
+* **Separation of Concerns**: Infrastructure configuration and ML code are completely decoupled, enabling independent evolution of each
 * **Full Tracking**: Every run, artifact, and model is automatically versioned and tracked
 
 To continue your ZenML journey, explore these key topics:
@@ -126,6 +126,5 @@ To continue your ZenML journey, explore these key topics:
 * **Stacks & Infrastructure**: Explore the [stack concept](../how-to/stack-components/stack_components.md) and [service connectors](../how-to/stack-components/service_connectors.md) for authentication
 * **Secrets Management**: Learn how to [handle sensitive information](../how-to/infrastructure-deployment/auth-management/manage-secrets.md) securely
 * **Templates**: Create [reusable pipeline templates](../how-to/trigger-pipelines/use-templates-python.md) for standardized workflows
-
 {% endstep %}
 {% endstepper %}
