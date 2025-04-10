@@ -24,7 +24,6 @@ from typing import (
     Callable,
     Dict,
     List,
-    Literal,
     Optional,
     Sequence,
     Union,
@@ -37,7 +36,7 @@ from alembic.script import ScriptDirectory
 from sqlalchemy import Column, String
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import declarative_base
-from sqlalchemy.sql.schema import MetaData, SchemaItem
+from sqlalchemy.sql.schema import MetaData
 from sqlmodel import SQLModel
 
 from zenml.zen_stores import schemas
@@ -48,18 +47,11 @@ exclude_tables = ["sqlite_sequence"]
 
 
 def include_object(
-    object: SchemaItem,
+    object: Any,  # Use Any for backward compatibility
     name: Optional[str],
-    type_: Literal[
-        "schema",
-        "table",
-        "column",
-        "index",
-        "unique_constraint",
-        "foreign_key_constraint",
-    ],
-    reflected: bool,
-    compare_to: Optional[SchemaItem],
+    type_: str,  # Use string instead of Literal for backward compatibility
+    reflected: bool = False,
+    compare_to: Optional[Any] = None,
 ) -> bool:
     """Function used to exclude tables from the migration scripts.
 
@@ -155,6 +147,7 @@ class Alembic:
             fn_context_args["fn"] = fn
 
         with self.engine.connect() as connection:
+            # Configure the context with our metadata
             self.environment_context.configure(
                 connection=connection,
                 target_metadata=self.metadata,
@@ -200,14 +193,15 @@ class Alembic:
         def do_get_current_rev(rev: _RevIdType, context: Any) -> List[Any]:
             nonlocal current_revisions
 
-            # Always convert to tuple of strings as get_all_current expects this type
+            # Handle rev parameter in a way that's compatible with different alembic versions
+            rev_input: Any
             if isinstance(rev, str):
-                # Explicitly annotate with variable-length tuple
-                rev_tuple: Sequence[str] = (rev,)
+                rev_input = rev
             else:
-                rev_tuple = tuple(str(r) for r in rev)
+                rev_input = tuple(str(r) for r in rev)
 
-            for r in self.script_directory.get_all_current(rev_tuple):  # type: ignore[arg-type]
+            # Get current revision(s)
+            for r in self.script_directory.get_all_current(rev_input):
                 if r is None:
                     continue
                 current_revisions.append(r.revision)
@@ -225,9 +219,11 @@ class Alembic:
         """
 
         def do_stamp(rev: _RevIdType, context: Any) -> List[Any]:
+            # Handle rev parameter in a way that's compatible with different alembic versions
             if isinstance(rev, str):
                 return self.script_directory._stamp_revs(revision, rev)
             else:
+                # Convert to tuple for compatibility
                 rev_tuple = tuple(str(r) for r in rev)
                 return self.script_directory._stamp_revs(revision, rev_tuple)
 
@@ -241,10 +237,12 @@ class Alembic:
         """
 
         def do_upgrade(rev: _RevIdType, context: Any) -> List[Any]:
+            # Handle rev parameter in a way that's compatible with different alembic versions
             if isinstance(rev, str):
                 return self.script_directory._upgrade_revs(revision, rev)
             else:
                 if rev:
+                    # Use first element or revs for compatibility
                     return self.script_directory._upgrade_revs(
                         revision, str(rev[0])
                     )
@@ -260,6 +258,7 @@ class Alembic:
         """
 
         def do_downgrade(rev: _RevIdType, context: Any) -> List[Any]:
+            # Handle rev parameter in a way that's compatible with different alembic versions
             if isinstance(rev, str):
                 return self.script_directory._downgrade_revs(revision, rev)
             else:
