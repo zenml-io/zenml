@@ -479,8 +479,13 @@ def authenticate_credentials(
                 ):
                     error = (
                         f"The execution of pipeline run "
-                        f"{decoded_token.pipeline_run_id} has already concluded and "
-                        "API tokens scoped to it are no longer valid."
+                        f"{decoded_token.pipeline_run_id} has concluded and "
+                        "API tokens scoped to it are no longer valid. If you "
+                        "want to increase the expiration time of the token to "
+                        "allow steps to continue for longer after other steps "
+                        "have failed, you can do so by configuring the "
+                        "`workload_token_expiration_leeway` parameter of the "
+                        "pipeline."
                     )
                     logger.error(error)
                     raise CredentialsNotValid(error)
