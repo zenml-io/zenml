@@ -3,7 +3,7 @@
 * [Overview](component-guide.md)
 * [Integrations](integrations.md)
 
-## Component Types
+## Stack Components
 
 * [Orchestrators](orchestrators/README.md)
   * [Local Orchestrator](orchestrators/local.md)
