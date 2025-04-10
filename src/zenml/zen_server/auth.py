@@ -458,7 +458,7 @@ def authenticate_credentials(
                 logger.error(error)
                 raise CredentialsNotValid(error)
 
-            if pipeline_run_status.is_finished:
+            if pipeline_run_status == ExecutionStatus.FAILED:
                 if pipeline_run_workload_token_expiration_leeway < 0:
                     # The token should never expire, we don't need to check
                     # the end time.
@@ -478,17 +478,23 @@ def authenticate_credentials(
                     )
                 ):
                     error = (
-                        f"The execution of pipeline run "
-                        f"{decoded_token.pipeline_run_id} has concluded and "
-                        "API tokens scoped to it are no longer valid. If you "
-                        "want to increase the expiration time of the token to "
-                        "allow steps to continue for longer after other steps "
-                        "have failed, you can do so by configuring the "
-                        "`workload_token_expiration_leeway` parameter of the "
-                        "pipeline."
+                        f"The pipeline run {decoded_token.pipeline_run_id} has "
+                        "failed and API tokens scoped to it are no longer "
+                        "valid. If you want to increase the expiration time "
+                        "of the token to allow steps to continue for longer "
+                        "after other steps have failed, you can do so by "
+                        "configuring the `workload_token_expiration_leeway` "
+                        "parameter of the pipeline."
                     )
                     logger.error(error)
                     raise CredentialsNotValid(error)
+            elif pipeline_run_status.is_finished:
+                error = (
+                    f"The pipeline run {decoded_token.pipeline_run_id} has "
+                    "finished and API tokens scoped to it are no longer valid."
+                )
+                logger.error(error)
+                raise CredentialsNotValid(error)
 
         auth_context = AuthContext(
             user=user_model,

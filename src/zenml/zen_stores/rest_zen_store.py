@@ -4032,6 +4032,39 @@ class RestZenStore(BaseZenStore):
     # Internal helper methods
     # =======================
 
+    def _can_generate_api_token(self) -> bool:
+        """Check if it is possible to generate a new API token.
+
+        Returns:
+            Whether the configured credentials allow for a new API token to be
+            generated.
+        """
+        credentials_store = get_credentials_store()
+
+        api_key = credentials_store.get_api_key(self.url)
+        username, password = credentials_store.get_password(self.url)
+
+        if api_key is not None:
+            return True
+        elif username is not None and password is not None:
+            return True
+        elif self.server_info.is_pro_server():
+            credentials = credentials_store.get_credentials(self.url)
+
+            pro_api_url = self.server_info.pro_api_url
+            if not pro_api_url and credentials and credentials.pro_api_url:
+                pro_api_url = credentials.pro_api_url
+            if not pro_api_url:
+                pro_api_url = ZENML_PRO_API_URL
+
+            pro_token = credentials_store.get_pro_token(
+                pro_api_url, allow_expired=False
+            )
+            if pro_token:
+                return True
+
+        return False
+
     def get_or_generate_api_token(self) -> str:
         """Get or generate an API token.
 
@@ -4076,7 +4109,7 @@ class RestZenStore(BaseZenStore):
 
             api_key_hint = (
                 "\nHint: If you're getting this error in an automated, "
-                "non-interactive workload like a pipeline run or a CI/CD job, "
+                "non-interactive workload like a CI/CD job, "
                 "you should use a service account API key to authenticate to "
                 "the server instead of temporary CLI login credentials. For "
                 "more information, see "
@@ -4416,6 +4449,11 @@ class RestZenStore(BaseZenStore):
                         "Re-authenticating and retrying..."
                     )
                     self.authenticate()
+                elif not self._can_generate_new_token():
+                    # The request failed either because we're not
+                    # authenticated or our current credentials are not valid
+                    # anymore.
+                    raise e
                 elif not re_authenticated:
                     # The last request was authenticated with an API token
                     # that was rejected by the server. We attempt a
