@@ -6,19 +6,22 @@
 * [Installation](getting-started/installation.md)
 * [Hello World](getting-started/hello-world.md)
 * [Core concepts](getting-started/core-concepts.md)
-* [System Architecture](getting-started/system-architectures.md)
-* [Deploying ZenML](getting-started/deploying-zenml/README.md)
+* [System Architecture](getting-started/system-architectures.md)]
+
+## Deploying ZenML
+
+* [Deploy](getting-started/deploying-zenml/README.md)
   * [Deploy with Docker](getting-started/deploying-zenml/deploy-with-docker.md)
   * [Deploy with Helm](getting-started/deploying-zenml/deploy-with-helm.md)
   * [Deploy using HuggingFace Spaces](getting-started/deploying-zenml/deploy-using-huggingface-spaces.md)
   * [Deploy with custom images](getting-started/deploying-zenml/deploy-with-custom-image.md)
   * [Secret management](getting-started/deploying-zenml/secret-management.md)
   * [Custom secret stores](getting-started/deploying-zenml/custom-secret-stores.md)
-* [Connecting to ZenML](how-to/manage-zenml-server/connecting-to-zenml/README.md)
+* [Connect](how-to/manage-zenml-server/connecting-to-zenml/README.md)
   * [Connect in with your User (interactive)](how-to/manage-zenml-server/connecting-to-zenml/connect-in-with-your-user-interactive.md)
   * [Connect with an API Token](how-to/manage-zenml-server/connecting-to-zenml/connect-with-an-api-token.md)
   * [Connect with a Service Account](how-to/manage-zenml-server/connecting-to-zenml/connect-with-a-service-account.md)
-* [Upgrading ZenML](how-to/manage-zenml-server/upgrade-zenml-server.md)
+* [Upgrade](how-to/manage-zenml-server/upgrade-zenml-server.md)
   * [Best practices for upgrading ZenML](how-to/manage-zenml-server/best-practices-upgrading-zenml.md)
   * [Using ZenML server in production](how-to/manage-zenml-server/using-zenml-server-in-prod.md)
   * [Troubleshoot your ZenML server](how-to/manage-zenml-server/troubleshoot-your-deployed-server.md)
