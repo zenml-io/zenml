@@ -3,19 +3,6 @@
 * [Overview](component-guide.md)
 * [Integrations](integrations.md)
 
-## Service Connectors
-
-* [Introduction](service-connectors/auth-management.md)
-* [Complete guide](service-connectors/service-connectors-guide.md)
-* [Best practices](service-connectors/best-security-practices.md)
-* [Connector Types](service-connectors/connector-types/README.md)
-  * [Docker Service Connector](service-connectors/connector-types/docker-service-connector.md)
-  * [Kubernetes Service Connector](service-connectors/connector-types/kubernetes-service-connector.md)
-  * [AWS Service Connector](service-connectors/connector-types/aws-service-connector.md)
-  * [GCP Service Connector](service-connectors/connector-types/gcp-service-connector.md)
-  * [Azure Service Connector](service-connectors/connector-types/azure-service-connector.md)
-  * [HyperAI Service Connector](service-connectors/connector-types/hyperai-service-connector.md)
-
 ## Component Types
 
 * [Orchestrators](orchestrators/README.md)
@@ -98,6 +85,19 @@
 * [Model Registries](model-registries/README.md)
   * [MLflow Model Registry](model-registries/mlflow.md)
   * [Develop a Custom Model Registry](model-registries/custom.md)
+
+## Service Connectors
+
+* [Introduction](service-connectors/auth-management.md)
+* [Complete guide](service-connectors/service-connectors-guide.md)
+* [Best practices](service-connectors/best-security-practices.md)
+* [Connector Types](service-connectors/connector-types/README.md)
+  * [Docker Service Connector](service-connectors/connector-types/docker-service-connector.md)
+  * [Kubernetes Service Connector](service-connectors/connector-types/kubernetes-service-connector.md)
+  * [AWS Service Connector](service-connectors/connector-types/aws-service-connector.md)
+  * [GCP Service Connector](service-connectors/connector-types/gcp-service-connector.md)
+  * [Azure Service Connector](service-connectors/connector-types/azure-service-connector.md)
+  * [HyperAI Service Connector](service-connectors/connector-types/hyperai-service-connector.md)
 
 ## Popular Stacks
 
