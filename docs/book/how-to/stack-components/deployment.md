@@ -1,8 +1,9 @@
 ---
 description: Methods for deploying ZenML stacks on cloud platforms
+icon: gear
 ---
 
-# Deployment
+# Deployment Options
 
 Once you understand the concept of stacks, you may want to deploy them on cloud platforms to leverage more powerful resources. This page explains the different approaches to deploying ZenML stacks in cloud environments.
 
@@ -52,11 +53,13 @@ ZenML provides three main approaches to deploy cloud stacks:
 The simplest way to deploy a complete stack to a cloud provider.
 
 **How it works**:
+
 * ZenML automatically provisions all necessary cloud resources
 * Configures them to work together
 * Registers the components and creates a ready-to-use stack
 
 **Best for**:
+
 * Getting started quickly with cloud infrastructure
 * Development and testing environments
 * Users with limited cloud expertise
@@ -67,12 +70,14 @@ The simplest way to deploy a complete stack to a cloud provider.
 A guided approach to creating a stack from existing cloud resources.
 
 **How it works**:
+
 * Connects to your cloud provider using a service connector
 * Discovers available resources (storage buckets, compute services, etc.)
 * Lets you select which resources to use for each component
 * Creates a stack from your selected resources
 
 **Best for**:
+
 * Using existing cloud infrastructure
 * Organizations with established cloud resources
 * Greater control over which resources are used
@@ -83,12 +88,14 @@ A guided approach to creating a stack from existing cloud resources.
 An approach for maximum customization and control using tools like Terraform.
 
 **How it works**:
+
 * Uses Terraform to define and provision cloud resources
 * Provides complete control over infrastructure configuration
 * Enables version control of your infrastructure
 * Supports complex, custom deployments
 
 **Best for**:
+
 * Production environments
 * Infrastructure-as-code workflows
 * DevOps-oriented teams
@@ -99,15 +106,15 @@ An approach for maximum customization and control using tools like Terraform.
 
 Consider these factors when selecting a deployment method:
 
-| Factor | 1-Click | Stack Wizard | Terraform |
-|--------|---------|--------------|-----------|
-| Setup Speed | Fastest | Medium | Slower |
-| Customization | Limited | Medium | High |
-| Learning Curve | Low | Medium | Higher |
-| Control | Minimal | Medium | Complete |
-| Security Configuration | Pre-configured | Manual selection | Fully customizable |
-| Resource Cleanup | Automatic | Manual | Defined in code |
-| Best Use Case | Getting started | Existing resources | Production |
+| Factor                 | 1-Click         | Stack Wizard       | Terraform          |
+| ---------------------- | --------------- | ------------------ | ------------------ |
+| Setup Speed            | Fastest         | Medium             | Slower             |
+| Customization          | Limited         | Medium             | High               |
+| Learning Curve         | Low             | Medium             | Higher             |
+| Control                | Minimal         | Medium             | Complete           |
+| Security Configuration | Pre-configured  | Manual selection   | Fully customizable |
+| Resource Cleanup       | Automatic       | Manual             | Defined in code    |
+| Best Use Case          | Getting started | Existing resources | Production         |
 
 ## Deployment and Service Connectors
 

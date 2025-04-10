@@ -1,5 +1,6 @@
 ---
 description: Overview of categories of MLOps components and third-party integrations.
+icon: magnifying-glass
 ---
 
 # Overview
@@ -86,4 +87,3 @@ Here is a full list of all stack components currently supported in ZenML, with a
 You can take control of how ZenML behaves by creating your own components. This is done by writing custom component `flavors`.
 
 <table data-card-size="large" data-view="cards"><thead><tr><th></th><th></th><th data-hidden data-card-cover data-type="files"></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><strong>Component Flavors</strong></td><td>How to write a custom stack component flavor</td><td><a href=".gitbook/assets/flavors.png">flavors.png</a></td><td><a href="https://app.gitbook.com/s/5aBlTJNbVDkrxJp7J1J9/how-to/infrastructure-deployment/stack-deployment/implement-a-custom-stack-component">Implement a custom stack component</a></td></tr><tr><td><strong>Custom orchestrator guide</strong></td><td>Learn how to develop a custom orchestrator</td><td><a href=".gitbook/assets/custom-orchestrator.png">custom-orchestrator.png</a></td><td><a href="orchestrators/custom.md">custom.md</a></td></tr></tbody></table>
-
