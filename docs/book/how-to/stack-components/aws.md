@@ -1,5 +1,6 @@
 ---
 description: A guide to create and use AWS stacks in ZenML
+icon: aws
 ---
 
 # AWS
@@ -34,10 +35,10 @@ The SageMaker step operator enables running individual pipeline steps on SageMak
 
 The AWS Service Connector facilitates authentication between ZenML stack components and AWS services. It offers several authentication methods:
 
-- **AWS profile**: Uses profiles from your local AWS credentials file
-- **Access keys**: Uses AWS access key ID and secret access key
-- **IAM role**: Assumes an IAM role for authentication
-- **Session token**: Uses temporary session credentials
+* **AWS profile**: Uses profiles from your local AWS credentials file
+* **Access keys**: Uses AWS access key ID and secret access key
+* **IAM role**: Assumes an IAM role for authentication
+* **Session token**: Uses temporary session credentials
 
 One service connector can authenticate multiple stack components to various AWS resources, simplifying credential management and access control.
 
@@ -94,6 +95,7 @@ zenml stack register aws_stack -p aws
 ```
 
 The wizard walks you through:
+
 1. Authentication setup or service connector selection
 2. Resource selection for each stack component
 3. Stack creation and registration
@@ -116,6 +118,7 @@ For more details on 1-Click Deployment, see the [Deploy a Cloud Stack](../infras
 ### 4. Manual Deployment
 
 Deploy components manually by:
+
 1. Creating AWS resources (S3 bucket, ECR repository, IAM roles)
 2. Creating a service connector with appropriate AWS credentials
 3. Registering individual stack components and connecting them to the service connector
@@ -146,5 +149,4 @@ zenml stack register aws_stack \
   -c aws_container_registry
 ```
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure> 
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

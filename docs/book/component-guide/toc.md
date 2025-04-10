@@ -5,15 +5,16 @@
 
 ## Service Connectors
 
-* [Connect services via connectors](../how-to/infrastructure-deployment/auth-management/README.md)
-  * [Service Connectors guide](../how-to/infrastructure-deployment/auth-management/service-connectors-guide.md)
-  * [Security best practices](../how-to/infrastructure-deployment/auth-management/best-security-practices.md)
-  * [Docker Service Connector](../how-to/infrastructure-deployment/auth-management/docker-service-connector.md)
-  * [Kubernetes Service Connector](../how-to/infrastructure-deployment/auth-management/kubernetes-service-connector.md)
-  * [AWS Service Connector](../how-to/infrastructure-deployment/auth-management/aws-service-connector.md)
-  * [GCP Service Connector](../how-to/infrastructure-deployment/auth-management/gcp-service-connector.md)
-  * [Azure Service Connector](../how-to/infrastructure-deployment/auth-management/azure-service-connector.md)
-  * [HyperAI Service Connector](../how-to/infrastructure-deployment/auth-management/hyperai-service-connector.md)
+* [Introduction](service-connectors/auth-management.md)
+* [Complete guide](service-connectors/service-connectors-guide.md)
+* [Best practices](service-connectors/best-security-practices.md)
+* [Connector Types](service-connectors/connector-types/README.md)
+  * [Docker Service Connector](service-connectors/connector-types/docker-service-connector.md)
+  * [Kubernetes Service Connector](service-connectors/connector-types/kubernetes-service-connector.md)
+  * [AWS Service Connector](service-connectors/connector-types/aws-service-connector.md)
+  * [GCP Service Connector](service-connectors/connector-types/gcp-service-connector.md)
+  * [Azure Service Connector](service-connectors/connector-types/azure-service-connector.md)
+  * [HyperAI Service Connector](service-connectors/connector-types/hyperai-service-connector.md)
 
 ## Component Types
 
@@ -107,5 +108,5 @@
 
 ## Contribute
 
-* [Custom Stack Component](../how-to/stack-deployment/implement-a-custom-stack-component.md)
+* [Custom Stack Component](contribute/custom-stack-component.md)
 * [Custom Integration](../how-to/contribute-to-zenml/implement-a-custom-integration.md)

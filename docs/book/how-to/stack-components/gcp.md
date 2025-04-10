@@ -1,5 +1,6 @@
 ---
 description: A guide to create and use GCP stacks in ZenML
+icon: google
 ---
 
 # GCP
@@ -34,10 +35,10 @@ The Vertex AI step operator enables running individual pipeline steps on Vertex 
 
 The GCP Service Connector facilitates authentication between ZenML stack components and Google Cloud services. It offers several authentication methods:
 
-- **User account**: Uses gcloud credentials from your local environment
-- **Service account key**: Uses a service account key JSON file
-- **Service account impersonation**: Impersonates a service account using your credentials
-- **Workload identity**: Uses Kubernetes workload identity for GCP authentication
+* **User account**: Uses gcloud credentials from your local environment
+* **Service account key**: Uses a service account key JSON file
+* **Service account impersonation**: Impersonates a service account using your credentials
+* **Workload identity**: Uses Kubernetes workload identity for GCP authentication
 
 One service connector can authenticate multiple stack components to various GCP resources, simplifying credential management and access control.
 
@@ -95,6 +96,7 @@ zenml stack register gcp_stack -p gcp
 ```
 
 The wizard walks you through:
+
 1. Authentication setup or service connector selection
 2. Resource selection for each stack component
 3. Stack creation and registration
@@ -117,6 +119,7 @@ For more details on 1-Click Deployment, see the [Deploy a Cloud Stack](../infras
 ### 4. Manual Deployment
 
 Deploy components manually by:
+
 1. Creating GCP resources (GCS bucket, GCR repository, service accounts)
 2. Creating a service connector with appropriate GCP credentials
 3. Registering individual stack components and connecting them to the service connector
@@ -148,5 +151,4 @@ zenml stack register gcp_stack \
   -c gcp_container_registry
 ```
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure> 
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

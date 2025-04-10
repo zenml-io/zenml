@@ -2,9 +2,10 @@
 description: >-
   The complete guide to managing Service Connectors and connecting ZenML to
   external resources.
+icon: book
 ---
 
-# Service Connectors guide
+# Complete guide
 
 This documentation section contains everything that you need to use Service Connectors to connect ZenML to external resources. A lot of information is covered, so it might be useful to use the following guide to navigate it:
 
@@ -707,7 +708,7 @@ Attributes:
 
 ### Basic Service Connector Types
 
-Service Connector Types like the [Kubernetes Service Connector](kubernetes-service-connector.md) and [Docker Service Connector](docker-service-connector.md) can only handle one resource at a time: a Kubernetes cluster and a Docker container registry respectively. These basic Service Connector Types are the easiest to instantiate and manage, as each Service Connector instance is tied exactly to one resource (i.e. they are _single-instance_ connectors).
+Service Connector Types like the [Kubernetes Service Connector](connector-types/kubernetes-service-connector.md) and [Docker Service Connector](connector-types/docker-service-connector.md) can only handle one resource at a time: a Kubernetes cluster and a Docker container registry respectively. These basic Service Connector Types are the easiest to instantiate and manage, as each Service Connector instance is tied exactly to one resource (i.e. they are _single-instance_ connectors).
 
 The following output shows two Service Connector instances configured from basic Service Connector Types:
 
@@ -1053,7 +1054,7 @@ For help answering these questions, you can also use the interactive CLI mode to
 Many Service Connector Types support using auto-configuration to discover and extract configuration information and credentials directly from your local environment. This assumes that you have already installed and set up the local CLI or SDK associated with the type of resource or cloud provider that you're willing to use. The Service Connector auto-configuration feature relies on these CLIs being configured with valid credentials to work properly. Some examples are listed here, but you should consult the documentation section for the Service Connector Type of choice to find out if and how auto-configuration is supported:
 
 * AWS uses the [`aws configure` CLI command](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html)
-* GCP offers [the `gcloud auth application-default login` CLI command](https://cloud.google.com/docs/authentication/provide-credentials-adc#how\_to\_provide\_credentials\_to\_adc)
+* GCP offers [the `gcloud auth application-default login` CLI command](https://cloud.google.com/docs/authentication/provide-credentials-adc#how_to_provide_credentials_to_adc)
 * Azure provides [the `az login` CLI command](https://learn.microsoft.com/en-us/cli/azure/authenticate-azure-cli)
 
 <details>
@@ -1733,8 +1734,8 @@ Successfully connected artifact store `s3-zenfiles` to the following resources:
 
 To get an idea of what a complete end-to-end journey looks like, from registering Service Connector all the way to configuring Stacks and Stack Components and running pipelines that access remote resources through Service Connectors, take a look at the following full-fledged examples:
 
-* [the AWS Service Connector end-to-end examples](aws-service-connector.md)
-* [the GCP Service Connector end-to-end examples](gcp-service-connector.md)
-* [the Azure Service Connector end-to-end examples](azure-service-connector.md)
+* [the AWS Service Connector end-to-end examples](connector-types/aws-service-connector.md)
+* [the GCP Service Connector end-to-end examples](connector-types/gcp-service-connector.md)
+* [the Azure Service Connector end-to-end examples](connector-types/azure-service-connector.md)
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

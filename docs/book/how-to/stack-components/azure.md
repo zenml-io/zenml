@@ -1,5 +1,6 @@
 ---
 description: A guide to create and use Azure stacks in ZenML
+icon: microsoft
 ---
 
 # Azure
@@ -30,10 +31,10 @@ The AzureML step operator allows individual pipeline steps to run on AzureML com
 
 The Azure Service Connector facilitates authentication between ZenML stack components and Azure services. It offers several authentication methods:
 
-- **Service Principal**: Uses a client ID, client secret, and tenant ID
-- **Access Token**: Uses a temporary Azure access token
-- **Managed Identity**: Uses Azure managed identities for authentication
-- **CLI Authentication**: Uses the Azure CLI authentication context
+* **Service Principal**: Uses a client ID, client secret, and tenant ID
+* **Access Token**: Uses a temporary Azure access token
+* **Managed Identity**: Uses Azure managed identities for authentication
+* **CLI Authentication**: Uses the Azure CLI authentication context
 
 One service connector can authenticate multiple stack components to various Azure resources, simplifying credential management and access control.
 
@@ -92,6 +93,7 @@ zenml stack register azure_stack -p azure
 ```
 
 The wizard walks you through:
+
 1. Authentication setup or service connector selection
 2. Resource selection for each stack component
 3. Stack creation and registration
@@ -114,6 +116,7 @@ For more details on 1-Click Deployment, see the [Deploy a Cloud Stack](../infras
 ### 4. Manual Deployment
 
 Deploy components manually by:
+
 1. Creating a resource group and necessary Azure resources (storage account, container registry, AzureML workspace)
 2. Creating a service principal with appropriate permissions
 3. Registering a service connector with the service principal credentials
@@ -150,5 +153,4 @@ zenml stack register azure_stack \
   -c azure_container_registry
 ```
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure> 
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

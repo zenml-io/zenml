@@ -9,13 +9,14 @@ description: >-
 
 The ZenML Azure Service Connector facilitates the authentication and access to managed Azure services and resources. These encompass a range of resources, including blob storage containers, ACR repositories, and AKS clusters.
 
-This connector also supports [automatic configuration and detection of credentials](service-connectors-guide.md#auto-configuration) locally configured through the Azure CLI.
+This connector also supports [automatic configuration and detection of credentials](../service-connectors-guide.md#auto-configuration) locally configured through the Azure CLI.
 
 This connector serves as a general means of accessing any Azure service by issuing credentials to clients. Additionally, the connector can handle specialized authentication for Azure blob storage, Docker and Kubernetes Python clients. It also allows for the configuration of local Docker and Kubernetes CLIs.
 
 ```shell
 $ zenml service-connector list-types --type azure
 ```
+
 ```shell
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━┯━━━━━━━┯━━━━━━━━┓
 ┃          NAME           │ TYPE     │ RESOURCE TYPES        │ AUTH METHODS      │ LOCAL │ REMOTE ┃
@@ -104,16 +105,16 @@ If set, the resource name must identify an ACR registry using one of the followi
 
 If a resource group is configured in the connector, only ACR registries in that resource group will be accessible.
 
-If an authentication method other than the Azure service principal is used, Entra ID authentication is used.
-This requires the configured identity to have the `AcrPush` role to be configured.
-If Entra ID authentication fails, admin account authentication is tried. For this the admin account must be enabled for the registry.
+If an authentication method other than the Azure service principal is used, Entra ID authentication is used.\
+This requires the configured identity to have the `AcrPush` role to be configured.\
+If Entra ID authentication fails, admin account authentication is tried. For this the admin account must be enabled for the registry.\
 See the official Azure[documentation on the admin account](https://docs.microsoft.com/en-us/azure/container-registry/container-registry-authentication#admin-account) for more information.
 
 ## Authentication Methods
 
 ### Implicit authentication
 
-[Implicit authentication](best-security-practices.md#implicit-authentication) to Azure services using environment variables, local configuration files, workload or managed identities.
+[Implicit authentication](../best-security-practices.md#implicit-authentication) to Azure services using environment variables, local configuration files, workload or managed identities.
 
 {% hint style="warning" %}
 This method may constitute a security risk, because it can give users access to the same cloud resources and services that the ZenML Server itself is configured to access. For this reason, all implicit authentication methods are disabled by default and need to be explicitly enabled by setting the `ZENML_ENABLE_IMPLICIT_AUTH_METHODS` environment variable or the helm chart `enableImplicitAuthMethods` configuration option to `true` in the ZenML deployment.
@@ -293,7 +294,7 @@ zenml service-connector describe azure-service-principal
 
 ### Azure Access Token
 
-Uses [temporary Azure access tokens](best-security-practices.md#short-lived-credentials) explicitly configured by the user or auto-configured from a local environment.
+Uses [temporary Azure access tokens](../best-security-practices.md#short-lived-credentials) explicitly configured by the user or auto-configured from a local environment.
 
 This method has the major limitation that the user must regularly generate new tokens and update the connector configuration as API tokens expire. On the other hand, this method is ideal in cases where the connector only needs to be used for a short period of time, such as sharing access temporarily with someone else in your team.
 
@@ -402,7 +403,7 @@ Could not import GCP service connector: No module named 'google.api_core'.
 
 ## Auto-configuration
 
-The Azure Service Connector allows [auto-discovering and fetching credentials](service-connectors-guide.md#auto-configuration) and [configuration set up by the Azure CLI](https://learn.microsoft.com/en-us/cli/azure/authenticate-azure-cli) on your local host.
+The Azure Service Connector allows [auto-discovering and fetching credentials](../service-connectors-guide.md#auto-configuration) and [configuration set up by the Azure CLI](https://learn.microsoft.com/en-us/cli/azure/authenticate-azure-cli) on your local host.
 
 {% hint style="warning" %}
 The Azure service connector auto-configuration comes with two limitations:
@@ -415,7 +416,7 @@ For an auto-configuration example, please refer to the [section about Azure acce
 
 ## Local client provisioning
 
-The local Azure CLI, Kubernetes `kubectl` CLI and the Docker CLI can be [configured with credentials extracted from or generated by a compatible Azure Service Connector](service-connectors-guide.md#configure-local-clients).
+The local Azure CLI, Kubernetes `kubectl` CLI and the Docker CLI can be [configured with credentials extracted from or generated by a compatible Azure Service Connector](../service-connectors-guide.md#configure-local-clients).
 
 {% hint style="info" %}
 Note that the Azure local CLI can only be configured with credentials issued by the Azure Service Connector if the connector is configured with the [service principal authentication method](azure-service-connector.md#azure-service-principal).

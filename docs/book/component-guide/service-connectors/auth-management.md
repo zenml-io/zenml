@@ -1,11 +1,11 @@
 ---
-icon: plug
 description: >-
   Connect your ZenML deployment to a cloud provider and other infrastructure
   services and resources.
+icon: plug
 ---
 
-# Connect services (AWS, GCP, Azure, K8s etc)
+# Introduction
 
 A production-grade MLOps platform involves interactions between a diverse combination of third-party libraries and external services sourced from various different vendors. One of the most daunting hurdles in building and operating an MLOps platform composed of multiple components is configuring and maintaining uninterrupted and secured access to the infrastructure resources and services that it consumes.
 
@@ -17,13 +17,13 @@ The challenge comes from _setting up and implementing proper authentication and 
 
 The hard-to-swallow truth is there is no single standard that unifies all authentication and authorization-related matters or a single, well-defined set of security best practices that you can follow. However, with ZenML you get the next best thing, an abstraction that keeps the complexity of authentication and authorization away from your code and makes it easier to tackle them: _<mark style="color:blue;">the ZenML Service Connectors</mark>_.
 
-<figure><img src="../../../.gitbook/assets/ConnectorsDiagram.png" alt=""><figcaption><p>Service Connectors abstract away complexity and implement security best practices</p></figcaption></figure>
+<figure><img src="../../.gitbook/assets/ConnectorsDiagram.png" alt=""><figcaption><p>Service Connectors abstract away complexity and implement security best practices</p></figcaption></figure>
 
 ## A representative use-case
 
-The range of features covered by Service Connectors is extensive and going through the entire [Service Connector Guide](service-connectors-guide.md) can be overwhelming. If all you want is to get a quick overview of how Service Connectors work and what they can do for you, this section is for you.
+The range of features covered by Service Connectors is extensive and going through the entire [Service Connector Guide](../../how-to/infrastructure-deployment/auth-management/service-connectors-guide.md) can be overwhelming. If all you want is to get a quick overview of how Service Connectors work and what they can do for you, this section is for you.
 
-This is a representative example of how you would use a Service Connector to connect ZenML to a cloud service. This example uses [the AWS Service Connector](aws-service-connector.md) to connect ZenML to an AWS S3 bucket and then link [an S3 Artifact Store Stack Component](https://docs.zenml.io/stacks/artifact-stores/s3) to it.
+This is a representative example of how you would use a Service Connector to connect ZenML to a cloud service. This example uses [the AWS Service Connector](../../how-to/infrastructure-deployment/auth-management/aws-service-connector.md) to connect ZenML to an AWS S3 bucket and then link [an S3 Artifact Store Stack Component](https://docs.zenml.io/stacks/artifact-stores/s3) to it.
 
 Some details about the current alternatives to using Service Connectors and their drawbacks are provided below. Feel free to skip them if you are already familiar with them or just want to get to the good part.
 
@@ -66,11 +66,11 @@ These drawbacks are addressed by Service Connectors.
 
 Without Service Connectors, credentials are stored directly in the Stack Component configuration or ZenML Secret and are directly used in the runtime environment. The Stack Component implementation is directly responsible for validating credentials, authenticating and connecting to the infrastructure service. This is illustrated in the following diagram:
 
-![Authentication without Service Connectors](../../../.gitbook/assets/authentication_without_connectors.png)
+![Authentication without Service Connectors](../../.gitbook/assets/authentication_without_connectors.png)
 
 When Service Connectors are involved in the authentication and authorization process, they can act as brokers. The credentials validation and authentication process takes place on the ZenML server. In most cases, the main credentials never have to leave the ZenML server as the Service Connector automatically converts them into short-lived credentials with a reduced set of privileges and issues these credentials to clients. Furthermore, multiple Stack Components of different flavors can use the same Service Connector to access different types or resources with the same credentials:
 
-![Authentication with Service Connectors](../../../.gitbook/assets/authentication_with_connectors.png)
+![Authentication with Service Connectors](../../.gitbook/assets/authentication_with_connectors.png)
 
 In working with Service Connectors, the first step is usually _<mark style="color:purple;">finding out what types of resources you can connect ZenML to</mark>_. Maybe you have already planned out the infrastructure options for your MLOps platform and are looking to find out whether ZenML can accommodate them. Or perhaps you want to use a particular Stack Component flavor in your Stack and are wondering whether you can use a Service Connector to connect it to external resources.
 
@@ -191,7 +191,7 @@ setup that includes using the auto-configuration Service Connector features.
 
 Dashboard equivalent:
 
-<img src="../../../.gitbook/assets/aws-service-connector-type.png" alt="AWS Service Connector Type Details" data-size="original">
+<img src="../../.gitbook/assets/aws-service-connector-type.png" alt="AWS Service Connector Type Details" data-size="original">
 
 Fetching details about the S3 bucket resource type:
 
@@ -249,7 +249,7 @@ formats:
 
 Dashboard equivalent:
 
-<img src="../../.gitbook/assets/.gitbook/assets/aws-s3-bucket-resource-type.png" alt="AWS Service Connector Type Details" data-size="original">
+<img src="../../how-to/.gitbook/assets/.gitbook/assets/aws-s3-bucket-resource-type.png" alt="AWS Service Connector Type Details" data-size="original">
 
 Displaying information about the AWS Session Token authentication method:
 
@@ -310,7 +310,7 @@ Attributes:
 
 Dashboard equivalent:
 
-<img src="../../.gitbook/assets/.gitbook/assets/aws-session-token-auth-method.png" alt="AWS Service Connector Type Details" data-size="original">
+<img src="../../how-to/.gitbook/assets/.gitbook/assets/aws-session-token-auth-method.png" alt="AWS Service Connector Type Details" data-size="original">
 
 </details>
 
@@ -572,6 +572,6 @@ Dashboard URL: http://127.0.0.1:8237/default/pipelines/8267b0bc-9cbd-42ac-9b56-4
 
 This example is just a simple demonstration of how to use Service Connectors to connect ZenML Stack Components to your infrastructure. The range of features and possibilities is much larger. ZenML ships with built-in Service Connectors able to connect and authenticate to AWS, GCP, and Azure and offers many different authentication methods and security best practices. Follow the resources below for more information.
 
-<table data-view="cards"><thead><tr><th></th><th></th><th data-hidden></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1fa84">🪄</span> <mark style="color:purple;"><strong>The complete guide to Service Connectors</strong></mark></td><td>Everything you need to know to unlock the power of Service Connectors in your project.</td><td></td><td><a href="./service-connectors-guide.md">./service-connectors-guide.md</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="2705">✅</span> <mark style="color:purple;"><strong>Security Best Practices</strong></mark></td><td>Best practices concerning the various authentication methods implemented by Service Connectors.</td><td></td><td><a href="./best-security-practices.md">./best-security-practices.md</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f40b">🐋</span> <mark style="color:purple;"><strong>Docker Service Connector</strong></mark></td><td>Use the Docker Service Connector to connect ZenML to a generic Docker container registry.</td><td></td><td><a href="./docker-service-connector.md">./docker-service-connector.md</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f300">🌀</span> <mark style="color:purple;"><strong>Kubernetes Service Connector</strong></mark></td><td>Use the Kubernetes Service Connector to connect ZenML to a generic Kubernetes cluster.</td><td></td><td><a href="./kubernetes-service-connector.md">./kubernetes-service-connector.md</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f536">🔶</span> <mark style="color:purple;"><strong>AWS Service Connector</strong></mark></td><td>Use the AWS Service Connector to connect ZenML to AWS cloud resources.</td><td></td><td><a href="./aws-service-connector.md">./aws-service-connector.md</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f535">🔵</span> <mark style="color:purple;"><strong>GCP Service Connector</strong></mark></td><td>Use the GCP Service Connector to connect ZenML to GCP cloud resources.</td><td></td><td><a href="./gcp-service-connector.md">./gcp-service-connector.md</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f170">🅰️</span> <mark style="color:purple;"><strong>Azure Service Connector</strong></mark></td><td>Use the Azure Service Connector to connect ZenML to Azure cloud resources.</td><td></td><td><a href="./azure-service-connector.md">./azure-service-connector.md</a></td></tr></tbody></table>
+<table data-view="cards"><thead><tr><th></th><th></th><th data-hidden></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1fa84">🪄</span> <mark style="color:purple;"><strong>The complete guide to Service Connectors</strong></mark></td><td>Everything you need to know to unlock the power of Service Connectors in your project.</td><td></td><td><a href="../../how-to/infrastructure-deployment/auth-management/service-connectors-guide.md">service-connectors-guide.md</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="2705">✅</span> <mark style="color:purple;"><strong>Security Best Practices</strong></mark></td><td>Best practices concerning the various authentication methods implemented by Service Connectors.</td><td></td><td><a href="../../how-to/infrastructure-deployment/auth-management/best-security-practices.md">best-security-practices.md</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f40b">🐋</span> <mark style="color:purple;"><strong>Docker Service Connector</strong></mark></td><td>Use the Docker Service Connector to connect ZenML to a generic Docker container registry.</td><td></td><td><a href="../../how-to/infrastructure-deployment/auth-management/docker-service-connector.md">docker-service-connector.md</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f300">🌀</span> <mark style="color:purple;"><strong>Kubernetes Service Connector</strong></mark></td><td>Use the Kubernetes Service Connector to connect ZenML to a generic Kubernetes cluster.</td><td></td><td><a href="../../how-to/infrastructure-deployment/auth-management/kubernetes-service-connector.md">kubernetes-service-connector.md</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f536">🔶</span> <mark style="color:purple;"><strong>AWS Service Connector</strong></mark></td><td>Use the AWS Service Connector to connect ZenML to AWS cloud resources.</td><td></td><td><a href="../../how-to/infrastructure-deployment/auth-management/aws-service-connector.md">aws-service-connector.md</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f535">🔵</span> <mark style="color:purple;"><strong>GCP Service Connector</strong></mark></td><td>Use the GCP Service Connector to connect ZenML to GCP cloud resources.</td><td></td><td><a href="../../how-to/infrastructure-deployment/auth-management/gcp-service-connector.md">gcp-service-connector.md</a></td></tr><tr><td><span data-gb-custom-inline data-tag="emoji" data-code="1f170">🅰️</span> <mark style="color:purple;"><strong>Azure Service Connector</strong></mark></td><td>Use the Azure Service Connector to connect ZenML to Azure cloud resources.</td><td></td><td><a href="../../how-to/infrastructure-deployment/auth-management/azure-service-connector.md">azure-service-connector.md</a></td></tr></tbody></table>
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

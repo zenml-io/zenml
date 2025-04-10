@@ -2,9 +2,10 @@
 description: >-
   Best practices concerning the various authentication methods implemented by
   Service Connectors.
+icon: star
 ---
 
-# Security best practices
+# Best practices
 
 Service Connector Types, especially those targeted at cloud providers, offer a plethora of authentication methods matching those supported by remote cloud platforms. While there is no single authentication standard that unifies this process, there are some patterns that are easily identifiable and can be used as guidelines when deciding which authentication method to use to configure a Service Connector.
 
@@ -65,7 +66,7 @@ zenml service-connector register gcp-implicit --type gcp --auth-method implicit 
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Successfully registered service connector `gcp-implicit` with access to the following resources:
 ┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃     RESOURCE TYPE     │ RESOURCE NAMES                                  ┃
@@ -87,6 +88,7 @@ Successfully registered service connector `gcp-implicit` with access to the foll
 ┗━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 ```
 {% endcode %}
+
 </details>
 
 ### Long-lived credentials (API keys, account keys)
@@ -98,7 +100,7 @@ This is the magic formula of authentication methods. When paired with another ab
 As a general best practice, but implemented particularly well for cloud platforms, account passwords are never directly used as a credential when authenticating to the cloud platform APIs. There is always a process in place that exchanges the account/password credential for another type of long-lived credential:
 
 * AWS uses the [`aws configure` CLI command](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html)
-* GCP offers [the `gcloud auth application-default login` CLI commands](https://cloud.google.com/docs/authentication/provide-credentials-adc#how\_to\_provide\_credentials\_to\_adc)
+* GCP offers [the `gcloud auth application-default login` CLI commands](https://cloud.google.com/docs/authentication/provide-credentials-adc#how_to_provide_credentials_to_adc)
 * Azure provides [the `az login` CLI command](https://learn.microsoft.com/en-us/cli/azure/authenticate-azure-cli)
 
 None of your original login information is stored on your local machine or used to access workloads. Instead, an API key, account key or some other form of intermediate credential is generated and stored on the local host and used to authenticate to remote cloud service APIs.
@@ -109,7 +111,7 @@ When using auto-configuration with Service Connector registration, this is usual
 
 Different cloud providers use different names for these types of long-lived credentials, but they usually represent the same concept, with minor variations regarding the identity information and level of permissions attached to them:
 
-* AWS has [Account Access Keys](https://docs.aws.amazon.com/powershell/latest/userguide/pstools-appendix-sign-up.html) and [IAM User Access Keys](https://docs.aws.amazon.com/IAM/latest/UserGuide/id\_credentials\_access-keys.html)
+* AWS has [Account Access Keys](https://docs.aws.amazon.com/powershell/latest/userguide/pstools-appendix-sign-up.html) and [IAM User Access Keys](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html)
 * GCP has [User Account Credentials](https://cloud.google.com/docs/authentication#user-accounts) and [Service Account Credentials](https://cloud.google.com/docs/authentication#service-accounts)
 
 Generally speaking, a differentiation is being made between the following two classes of credentials:
@@ -117,7 +119,7 @@ Generally speaking, a differentiation is being made between the following two cl
 * _user credentials_: credentials representing a human user and usually directly tied to a user account identity. These credentials are usually associated with a broad spectrum of permissions and it is therefore not recommended to share them or make them available outside the confines of your local host.
 * _service credentials:_ credentials used with automated processes and programmatic access, where humans are not directly involved. These credentials are not directly tied to a user account identity, but some other form of accounting like a service account or an IAM user devised to be used by non-human actors. It is also usually possible to restrict the range of permissions associated with this class of credentials, which makes them better candidates for sharing them with a larger audience.
 
-ZenML cloud provider Service Connectors can use both classes of credentials, but you should aim to use _service credentials_ as often as possible instead of _user credentials_, especially in production environments. Attaching automated workloads like ML pipelines to service accounts instead of user accounts acts as an extra layer of protection for your user identity and facilitates enforcing another security best practice called [_"the least-privilege principle"_](https://en.wikipedia.org/wiki/Principle\_of\_least\_privilege)_:_ granting each actor only the minimum level of permissions required to function correctly.
+ZenML cloud provider Service Connectors can use both classes of credentials, but you should aim to use _service credentials_ as often as possible instead of _user credentials_, especially in production environments. Attaching automated workloads like ML pipelines to service accounts instead of user accounts acts as an extra layer of protection for your user identity and facilitates enforcing another security best practice called [_"the least-privilege principle"_](https://en.wikipedia.org/wiki/Principle_of_least_privilege)_:_ granting each actor only the minimum level of permissions required to function correctly.
 
 Using long-lived credentials on their own still isn't ideal, because if leaked, they pose a security risk, even when they have limited permissions attached. The good news is that ZenML Service Connectors include additional mechanisms that, when used in combination with long-lived credentials, make it even safer to share long-lived credentials with other ZenML users and automated workloads:
 
@@ -143,7 +145,7 @@ zenml service-connector describe eks-zenhacks-cluster
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Service connector 'eks-zenhacks-cluster' of type 'aws' with id 'be53166a-b39c-4e39-8e31-84658e50eec4' is owned by user 'default' and is 'private'.
    'eks-zenhacks-cluster' aws Service Connector Details    
 ┏━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -188,14 +190,14 @@ Service connector 'eks-zenhacks-cluster' of type 'aws' with id 'be53166a-b39c-4e
 ```
 {% endcode %}
 
-Then, showing the temporary credentials that are issued to clients.  Note the expiration time on the Kubernetes API token:
+Then, showing the temporary credentials that are issued to clients. Note the expiration time on the Kubernetes API token:
 
 ```sh
 zenml service-connector describe eks-zenhacks-cluster --client
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Service connector 'eks-zenhacks-cluster (kubernetes-cluster | zenhacks-cluster client)' of type 'kubernetes' with id 'be53166a-b39c-4e39-8e31-84658e50eec4' is owned by user 'default' and is 'private'.
  'eks-zenhacks-cluster (kubernetes-cluster | zenhacks-cluster client)' kubernetes Service 
                                     Connector Details                                     
@@ -260,7 +262,7 @@ zenml service-connector register aws-federation-multi --type aws --auth-method=f
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Successfully registered service connector `aws-federation-multi` with access to the following resources:
 ┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃     RESOURCE TYPE     │ RESOURCE NAMES                               ┃
@@ -309,7 +311,7 @@ s3_client.head_bucket(Bucket="zenml-demos")
 ```
 
 {% code title="Example Output" %}
-```text
+```
 >>> from zenml.client import Client
 >>> 
 >>> client = Client()
@@ -399,7 +401,7 @@ zenml service-connector register gcp-empty-sa --type gcp --auth-method service-a
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Expanding argument value service_account_json to contents of file /home/stefan/aspyre/src/zenml/empty-connectors@zenml-core.json.
 Successfully registered service connector `gcp-empty-sa` with access to the following resources:
 ┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -430,7 +432,7 @@ zenml service-connector register gcp-impersonate-sa --type gcp --auth-method imp
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Expanding argument value service_account_json to contents of file /home/stefan/aspyre/src/zenml/empty-connectors@zenml-core.json.
 Successfully registered service connector `gcp-impersonate-sa` with access to the following resources:
 ┏━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━┓
@@ -466,7 +468,7 @@ AWS_PROFILE=connectors zenml service-connector register aws-sts-token --type aws
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 ⠸ Registering service connector 'aws-sts-token'...
 Successfully registered service connector `aws-sts-token` with access to the following resources:
 ┏━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -493,7 +495,7 @@ zenml service-connector describe aws-sts-token
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 Service connector 'aws-sts-token' of type 'aws' with id '63e14350-6719-4255-b3f5-0539c8f7c303' is owned by user 'default' and is 'private'.
                         'aws-sts-token' aws Service Connector Details                         
 ┏━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -547,7 +549,7 @@ zenml service-connector list --name aws-sts-token
 ```
 
 {% code title="Example Command Output" %}
-```text
+```
 ┏━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━┯━━━━━━━━┯━━━━━━━━━┯━━━━━━━━━━━━┯━━━━━━━━┓
 ┃ ACTIVE │ NAME          │ ID                              │ TYPE   │ RESOURCE TYPES        │ RESOURCE NAME │ SHARED │ OWNER   │ EXPIRES IN │ LABELS ┃
 ┠────────┼───────────────┼─────────────────────────────────┼────────┼───────────────────────┼───────────────┼────────┼─────────┼────────────┼────────┨
@@ -561,5 +563,4 @@ zenml service-connector list --name aws-sts-token
 
 </details>
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
