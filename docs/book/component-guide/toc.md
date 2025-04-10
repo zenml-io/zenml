@@ -2,6 +2,21 @@
 
 * [Overview](component-guide.md)
 * [Integrations](integrations.md)
+
+## Service Connectors
+
+* [Connect services via connectors](../how-to/infrastructure-deployment/auth-management/README.md)
+  * [Service Connectors guide](how-to/infrastructure-deployment/auth-management/service-connectors-guide.md)
+  * [Security best practices](how-to/infrastructure-deployment/auth-management/best-security-practices.md)
+  * [Docker Service Connector](how-to/infrastructure-deployment/auth-management/docker-service-connector.md)
+  * [Kubernetes Service Connector](how-to/infrastructure-deployment/auth-management/kubernetes-service-connector.md)
+  * [AWS Service Connector](how-to/infrastructure-deployment/auth-management/aws-service-connector.md)
+  * [GCP Service Connector](how-to/infrastructure-deployment/auth-management/gcp-service-connector.md)
+  * [Azure Service Connector](how-to/infrastructure-deployment/auth-management/azure-service-connector.md)
+  * [HyperAI Service Connector](how-to/infrastructure-deployment/auth-management/hyperai-service-connector.md)
+
+## Component Types
+
 * [Orchestrators](orchestrators/README.md)
   * [Local Orchestrator](orchestrators/local.md)
   * [Local Docker Orchestrator](orchestrators/local-docker.md)
@@ -82,3 +97,15 @@
 * [Model Registries](model-registries/README.md)
   * [MLflow Model Registry](model-registries/mlflow.md)
   * [Develop a Custom Model Registry](model-registries/custom.md)
+
+## Popular Stacks
+
+* [AWS](../how-to/stack-components/aws.md)
+* [Azure](../how-to/stack-components/azure.md)
+* [GCP](../how-to/stack-components/gcp.md)
+* [Kubernetes](../how-to/stack-components/kubernetes.md)
+
+## Contribute
+
+* [Custom Stack Component](../how-to/stack-deployment/implement-a-custom-stack-component.md)
+* [Custom Integration](../how-to/contribute-to-zenml/implement-a-custom-integration.md)
