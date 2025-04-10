@@ -48,7 +48,7 @@ If you would like to, you can already run this pipeline locally with `python run
 
 You can create [your ZenML Pro account](https://zenml.io/pro) here. No worries, it comes with a 14-day free trial without requiring any payment information. This way, you will have access to our Pro Dashboard, which can help you manage all the resources related to your ML workflows:
 
-<figure><img src="../.gitbook/assets/dcp_walkthrough.gif" alt=""><figcaption></figcaption></figure>
+<figure><img src="../.gitbook/assets/dcp_walkthrough (1).gif" alt=""><figcaption></figcaption></figure>
 
 If this is your first time logging in to ZenML Pro, you will have to set up a workspace and project. Keep in mind that this might take a few minutes. In the meanwhile, we would recommend going through the [Core Concepts](core-concepts.md) in ZenML. Once the workspace is set, you can do:&#x20;
 
