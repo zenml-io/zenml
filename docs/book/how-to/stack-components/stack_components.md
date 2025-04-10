@@ -5,11 +5,7 @@ icon: cubes
 
 # Stack & Components
 
-## Understanding ZenML Stacks
-
 A ZenML stack is a collection of components that together form an MLOps infrastructure to run your ML pipelines. While your pipeline code defines what happens in your ML workflow, the stack determines where and how that code runs.
-
-### Why Stacks Matter
 
 Stacks provide several key benefits:
 
@@ -18,19 +14,6 @@ Stacks provide several key benefits:
 3. **Specialized Resources**: Use specialized tools for different aspects of your ML workflow
 4. **Team Collaboration**: Share infrastructure configurations across your team
 5. **Reproducibility**: Ensure consistent pipeline execution across different environments
-
-### Stacks for Environment Organization
-
-Stacks provide a powerful way to organize your execution environments:
-
-* **Development**: Use a local stack for rapid iteration and debugging
-* **Staging**: Deploy a cloud stack with modest resources for integration testing
-* **Production**: Use a production-grade stack with robust resources and security
-
-This separation helps you:
-* Control costs by using appropriate resources for each environment
-* Prevent accidental deployments to production
-* Manage access control by restricting who can use which stacks
 
 ### Stack Structure
 
@@ -60,41 +43,6 @@ When you run a pipeline, ZenML:
 
 This abstraction allows you to focus on building your pipeline logic without worrying about the underlying infrastructure.
 
-## Stack Components
-
-Stack components are modular building blocks that provide specific functionality. Each component type comes in different flavors - implementations for specific tools or services.
-
-### Core Components
-
-#### Orchestrators
-
-Orchestrators determine how your pipeline steps are executed:
-
-* **Local**: Runs steps sequentially on your local machine (default)
-* **Kubernetes**: Runs steps as Kubernetes jobs
-* **Kubeflow**: Uses Kubeflow Pipelines
-* **Vertex AI, AzureML, SageMaker**: Runs on managed cloud services
-
-#### Artifact Stores
-
-Artifact stores determine where pipeline artifacts are saved:
-
-* **Local**: Stores artifacts on your local filesystem (default)
-* **S3**: Uses Amazon S3 buckets
-* **GCS**: Stores in Google Cloud Storage
-* **Azure Blob**: Uses Azure Blob Storage
-
-### Component Interactions
-
-Components in a stack work together to support your ML pipeline:
-
-1. The **orchestrator** executes your pipeline steps
-2. Each step produces artifacts stored in the **artifact store**
-3. The orchestrator may use the **container registry** for containerized execution
-4. Specialized steps might use a **step operator** for execution
-5. Models can be deployed via a **model deployer**
-6. Metrics are tracked in an **experiment tracker**
-
 ## Working with Stacks
 
 ### The Active Stack
@@ -122,8 +70,8 @@ zenml stack register my-stack -a local-store -o local-orchestrator
 
 # Register a stack with additional components
 zenml stack register production-stack \
-    -a s3-store \
-    -o kubeflow \
+    -artifact-store s3-store \
+    --orchestrator kubeflow \
     --container-registry ecr-registry \
     --experiment-tracker mlflow-tracker
 ```

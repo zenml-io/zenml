@@ -9,8 +9,6 @@ icon: link
 
 Service Connectors provide a unified way to handle authentication between ZenML and external services like cloud providers. They are a critical part of working with cloud-based stacks.
 
-## What Are Service Connectors?
-
 A service connector is an entity that:
 
 1. Stores credentials and authentication configuration
@@ -41,37 +39,7 @@ Service connectors solve these problems by providing a single point of authentic
 * **Simplified Rotation**: Update credentials in one place when they change
 * **Team Sharing**: Securely share access to resources within your team
 
-## Team Workflows with Service Connectors
-
-For team settings, we recommend:
-
-* **Limiting who can create connectors**: Only those with direct cloud access should create connectors
-* **Environment separation**: Create separate connectors for development/staging and production environments
-* **Simplified access**: Allow data scientists to use pre-configured connectors without managing credentials
-
-This approach balances convenience with security by:
-* Reducing the chance of credential leakage
-* Enabling quick revocation of compromised credentials
-* Providing easier auditing of resource access
-* Freeing data scientists from credential management complexity
-
-> Note: Restricting permissions through roles is available in ZenML Pro.
-
-## Service Connectors in the Stack Lifecycle
-
-Service connectors play a crucial role in deploying and managing stacks:
-
-1. **During deployment**: Authenticate to cloud services to provision or discover resources
-2. **During pipeline execution**: Provide secure access to cloud resources
-3. **For stack management**: Enable secure sharing of infrastructure across teams
-
-The three deployment approaches interact with service connectors differently:
-
-* **1-Click Deployment**: Creates service connectors automatically
-* **Stack Wizard**: Uses connectors to discover existing resources
-* **Infrastructure as Code**: Requires configuring connectors after provisioning
-
-## Supported Cloud Providers and Services
+### Supported Cloud Providers and Services
 
 ZenML supports connectors for major cloud providers and services:
 

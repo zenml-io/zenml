@@ -34,9 +34,7 @@
 ## Concepts
 
 * [Steps & Pipelines](how-to/steps-pipelines/steps_and_pipelines.md)
-
   * [Logging](how-to/steps-pipelines/logging.md)
-
   * [Advanced Features](how-to/steps-pipelines/advanced_features.md)
   * [Configuration with YAML](how-to/steps-pipelines/configuration_with_yaml.md)
 * [Artifacts](how-to/artifacts/artifacts.md)
