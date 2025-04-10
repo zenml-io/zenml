@@ -106,7 +106,7 @@ python file_that_runs_a_zenml_pipeline.py
 
 If all went well, you should now see the logs of all Kubernetes pods in your terminal, and when running `kubectl get pods -n zenml`, you should also see that a pod was created in your cluster for each pipeline step.
 
-#### Interacting with pods via kubectl
+### Interacting with pods via kubectl
 
 For debugging, it can sometimes be handy to interact with the Kubernetes pods directly via kubectl. To make this easier, we have added the following labels to all pods:
 
@@ -119,7 +119,7 @@ E.g., you can use these labels to manually delete all pods related to a specific
 kubectl delete pod -n zenml -l pipeline=kubernetes_example_pipeline
 ```
 
-#### Additional configuration
+### Additional configuration
 
 The Kubernetes orchestrator will by default use a Kubernetes namespace called `zenml` to run pipelines. In that namespace, it will automatically create a Kubernetes service account called `zenml-service-account` and grant it `edit` RBAC role in that namespace. To customize these settings, you can configure the following additional attributes in the Kubernetes orchestrator:
 
@@ -271,7 +271,7 @@ def my_kubernetes_pipeline():
     ...
 ```
 
-#### Define settings on the step level
+### Define settings on the step level
 
 You can also define settings on the step level, which will override the settings defined at the pipeline level. This is helpful when you want to run a specific step with a different configuration like affinity for more powerful hardware or a different Kubernetes service account. Learn more about the hierarchy of settings [here](https://docs.zenml.io/how-to/pipeline-development/use-configuration-files/configuration-hierarchy).
 
@@ -308,7 +308,7 @@ Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/i
 
 For more information and a full list of configurable attributes of the Kubernetes orchestrator, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-kubernetes.html#zenml.integrations.kubernetes) .
 
-#### Enabling CUDA for GPU-backed hardware
+### Enabling CUDA for GPU-backed hardware
 
 Note that if you wish to use this orchestrator to run steps on a GPU, you will need to follow [the instructions on this page](https://docs.zenml.io/how-to/pipeline-development/training-with-gpus/) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
 
