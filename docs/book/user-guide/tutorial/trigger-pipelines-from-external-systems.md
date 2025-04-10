@@ -525,7 +525,7 @@ def import_pipeline(pipeline_name):
     except Exception as e:
         raise HTTPException(status_code=404, detail=f"Pipeline not found: {str(e)}")
 
-@app.post("/trigger")
+@app.post("/trigger", status_code=200)
 async def trigger_pipeline(
     request: PipelineRequest, 
     api_key: str = Depends(get_api_key)
@@ -559,7 +559,7 @@ async def trigger_pipeline(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to trigger pipeline: {str(e)}")
 
-@app.post("/trigger-async")
+@app.post("/trigger-async", status_code=202)
 async def trigger_pipeline_async(
     request: PipelineRequest, 
     api_key: str = Depends(get_api_key)
