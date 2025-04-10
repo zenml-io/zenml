@@ -447,4 +447,9 @@ kubectl logs job/<job-name> -n zenml
 
 Common issues include incorrect cron expressions, insufficient permissions for the service account, or resource constraints.
 
+For a tutorial on how to work with schedules in ZenML, check out our ['Managing
+Scheduled
+Pipelines'](https://docs.zenml.io/user-guides/tutorial/managing-scheduled-pipelines)
+docs page.
+
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
