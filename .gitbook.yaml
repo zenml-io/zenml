@@ -266,7 +266,7 @@ redirects:
 
   some-random/redirect: introduction.md
   some-other/redirect: stacks/integrations.md
-  some-third/redirect: component-guide/integrations.md
+  some-third/redirect: https://docs.zenml.io
 
   # # Redirects for the Steps and Pipelines section
   # how-to/build-pipelines/step-dependencies: how-to/steps-pipelines/steps_and_pipelines.md
