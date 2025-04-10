@@ -562,15 +562,6 @@ class PipelineRunResponse(
         return self.get_metadata().step_substitutions
 
     @property
-    def workload_token_expiration_leeway(self) -> Optional[int]:
-        """The `workload_token_expiration_leeway` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_metadata().workload_token_expiration_leeway
-
-    @property
     def model_version(self) -> Optional[ModelVersionResponse]:
         """The `model_version` property.
 
