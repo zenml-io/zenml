@@ -5,7 +5,7 @@ icon: hand-wave
 
 # Hello World
 
-This guide will help you build and deploy your first ZenML pipeline. You'll start locally and then seamlessly transition to running the same pipeline in the cloud - all without changing your code.
+This guide will help you build and deploy your first ZenML pipeline, starting locally and then transitioning to the cloud without changing your code.
 
 {% stepper %}
 {% step %}
@@ -17,13 +17,13 @@ Start by installing ZenML in a fresh Python environment:
 pip install zenml
 ```
 
-This single command gives you access to both the ZenML Python SDK for building pipelines and the ZenML CLI for managing your MLOps infrastructure.
+This gives you access to both the ZenML Python SDK and CLI tools.
 {% endstep %}
 
 {% step %}
 ### Write your first pipeline
 
-Now, create a simple `run.py` file that defines a basic ML workflow using ZenML's Python decorators:
+Create a simple `run.py` file with a basic workflow:
 
 <pre class="language-python"><code class="lang-python">from zenml import step, pipeline
 
@@ -45,26 +45,20 @@ if __name__ == "__main__":
 </strong></code></pre>
 
 {% hint style="success" %}
-You can run this pipeline locally right now with `python run.py`. ZenML will automatically track the execution and store artifacts, even in this local mode.
+Run this pipeline locally with `python run.py`. ZenML automatically tracks the execution and stores artifacts.
 {% endhint %}
 {% endstep %}
 
 {% step %}
 ### Create your ZenML account
 
-To unlock the full potential of ZenML, create a [ZenML Pro account](https://zenml.io/pro). It comes with a 14-day free trial with no payment information required.
+Create a [ZenML Pro account](https://zenml.io/pro) with a 14-day free trial (no payment information required). ZenML Pro provides a dashboard to visualize pipelines, manage infrastructure, and collaborate with team members.
 
-ZenML Pro provides a powerful dashboard that helps you:
-- Visualize your ML pipelines and their execution history
-- Manage your infrastructure and cloud resources
-- Track artifacts and model versions
-- Collaborate with team members
+<figure><img src="../.gitbook/assets/dcp_walkthrough (1).gif" alt="ZenML Pro Dashboard"><figcaption>The ZenML Pro Dashboard</figcaption></figure>
 
-<figure><img src="../.gitbook/assets/dcp_walkthrough (1).gif" alt="ZenML Pro Dashboard"><figcaption>The ZenML Pro Dashboard helps you manage all aspects of your ML workflows</figcaption></figure>
+First-time users will need to set up a workspace and project. While waiting, check out the [Core Concepts](core-concepts.md) page.
 
-If this is your first time logging in to ZenML Pro, you'll need to set up a workspace and project. This process typically takes a few minutes. While waiting, we recommend reading through the [Core Concepts](core-concepts.md) to understand ZenML's architecture.
-
-Once your workspace is ready, connect your local environment:
+Once ready, connect your local environment:
 
 ```bash
 # Log in and select your workspace
@@ -78,49 +72,40 @@ zenml project set <PROJECT_NAME>
 {% step %}
 ### Create your first remote stack
 
-A "stack" in ZenML represents the infrastructure where your pipelines run. While you've been using a local stack so far, ZenML really shines when connecting to cloud resources.
+A "stack" in ZenML represents the infrastructure where your pipelines run. Moving from local to cloud resources is where ZenML truly shines.
 
-<figure><img src="../.gitbook/assets/Screenshot 2025-04-09 at 14.56.35.png" alt="ZenML Stack Deployment Options"><figcaption>ZenML offers multiple ways to deploy your ML infrastructure to the cloud</figcaption></figure>
+<figure><img src="../.gitbook/assets/Screenshot 2025-04-09 at 14.56.35.png" alt="ZenML Stack Deployment Options"><figcaption>Stack deployment options</figcaption></figure>
 
-The fastest way to create a cloud stack is through the **Infrastructure-as-Code** option. This uses ZenML's Terraform modules to automatically:
-1. Deploy the necessary cloud resources (storage, compute, etc.)
-2. Configure them for optimal ML workloads
-3. Register them back to your ZenML server as a ready-to-use stack
+The fastest way to create a cloud stack is through the **Infrastructure-as-Code** option. This uses Terraform to deploy cloud resources and register them as a ZenML stack.
 
-Requirements for this approach:
+You'll need:
 * [Terraform](https://www.terraform.io/downloads.html) version 1.9+ installed locally
 * Authentication configured for your preferred cloud provider (AWS, GCP, or Azure)
 * Appropriate permissions to create resources in your cloud account
 
-The deployment wizard in the ZenML dashboard will guide you through the process step-by-step, automatically generating the necessary configuration based on your selections.
+The deployment wizard will guide you through each step.
 {% endstep %}
 
 {% step %}
 ### Run your pipeline on the remote stack
 
-Now for the magic moment - running your pipeline in the cloud without changing any code!
+Now run your pipeline in the cloud without changing any code.
 
-First, activate your newly created cloud stack:
+First, activate your new stack:
 
 ```bash
 zenml stack set <NAME_OF_YOUR_NEW_STACK>
 ```
 
-Then, run the exact same Python script as before:
+Then run the exact same script:
 
 ```bash
 python run.py
 ```
 
-ZenML automatically handles all the complexity behind the scenes:
-- Packaging your code and dependencies
-- Building container images if needed
-- Orchestrating the execution on your cloud infrastructure
-- Tracking artifacts and metadata
+ZenML handles packaging code, building containers, orchestrating execution, and tracking artifacts automatically.
 
-You can monitor the execution in real-time through the ZenML dashboard:
-
-<figure><img src="../.gitbook/assets/Screenshot 2025-04-09 at 15.02.42.png" alt="Pipeline Run in ZenML Dashboard"><figcaption>Your pipeline execution is fully tracked and visualized in the ZenML dashboard</figcaption></figure>
+<figure><img src="../.gitbook/assets/Screenshot 2025-04-09 at 15.02.42.png" alt="Pipeline Run in ZenML Dashboard"><figcaption>Your pipeline in the ZenML dashboard</figcaption></figure>
 {% endstep %}
 
 {% step %}
