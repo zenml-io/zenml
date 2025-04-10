@@ -108,9 +108,9 @@
 
 ## Deployment
 
-* [Manage Stacks](../how-to/infrastructure-deployment/stack-deployment/README.md)
-  * [Deploy a cloud stack with ZenML](../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack.md)
-  * [Deploy a cloud stack with Terraform](../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform.md)
+* [Deployment Options](../how-to/stack-components/deployment.md)
+  * [1-click Deployment](../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack.md)
+  * [Terraform Modules](../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform.md)
   * [Register a cloud stack](../how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack.md)
   * [Export and install stack requirements](../how-to/infrastructure-deployment/stack-deployment/export-stack-requirements.md)
   * [Reference secrets in stack configuration](../how-to/infrastructure-deployment/stack-deployment/reference-secrets-in-stack-configuration.md)
