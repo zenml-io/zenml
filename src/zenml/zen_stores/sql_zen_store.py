@@ -7635,6 +7635,17 @@ class SqlZenStore(BaseZenStore):
                                 },
                                 session=session,
                             )
+                    if (
+                        defined_component.type
+                        == StackComponentType.ARTIFACT_STORE
+                    ):
+                        if defined_component.flavor != "local":
+                            self._update_onboarding_state(
+                                completed_steps={
+                                    OnboardingStep.STACK_WITH_REMOTE_ARTIFACT_STORE_CREATED
+                                },
+                                session=session,
+                            )
 
                 return new_stack_schema.to_model(
                     include_metadata=True, include_resources=True
@@ -8466,6 +8477,12 @@ class SqlZenStore(BaseZenStore):
                     completed_onboarding_steps.update(
                         {
                             OnboardingStep.PIPELINE_RUN_WITH_REMOTE_ORCHESTRATOR,
+                        }
+                    )
+                if stack_metadata["artifact_store"] != "local":
+                    completed_onboarding_steps.update(
+                        {
+                            OnboardingStep.PIPELINE_RUN_WITH_REMOTE_ARTIFACT_STORE,
                             OnboardingStep.PRODUCTION_SETUP_COMPLETED,
                         }
                     )
