@@ -18,11 +18,11 @@
   * [Secret management](getting-started/deploying-zenml/secret-management.md)
   * [Custom secret stores](getting-started/deploying-zenml/custom-secret-stores.md)
 * [Connect](how-to/manage-zenml-server/connecting-to-zenml/README.md)
-  * [Connect in with your User (interactive)](how-to/manage-zenml-server/connecting-to-zenml/connect-in-with-your-user-interactive.md)
-  * [Connect with an API Token](how-to/manage-zenml-server/connecting-to-zenml/connect-with-an-api-token.md)
-  * [Connect with a Service Account](how-to/manage-zenml-server/connecting-to-zenml/connect-with-a-service-account.md)
-* [Upgrade](how-to/manage-zenml-server/upgrade-zenml-server.md)
-  * [Best practices for upgrading ZenML](how-to/manage-zenml-server/best-practices-upgrading-zenml.md)
+  * [with your User (interactive)](how-to/manage-zenml-server/connecting-to-zenml/connect-in-with-your-user-interactive.md)
+  * [with an API Token](how-to/manage-zenml-server/connecting-to-zenml/connect-with-an-api-token.md)
+  * [with a Service Account](how-to/manage-zenml-server/connecting-to-zenml/connect-with-a-service-account.md)
+* [Manage](how-to/manage-zenml-server/upgrade-zenml-server.md)
+  * [Best practices for upgrading](how-to/manage-zenml-server/best-practices-upgrading-zenml.md)
   * [Using ZenML server in production](how-to/manage-zenml-server/using-zenml-server-in-prod.md)
   * [Troubleshoot your ZenML server](how-to/manage-zenml-server/troubleshoot-your-deployed-server.md)
   * [Migration guide](how-to/manage-zenml-server/migration-guide/migration-guide.md)
@@ -34,9 +34,11 @@
 ## Concepts
 
 * [Steps & Pipelines](how-to/steps-pipelines/steps_and_pipelines.md)
+
+  * [Logging](how-to/steps-pipelines/logging.md)
+
   * [Advanced Features](how-to/steps-pipelines/advanced_features.md)
   * [Configuration with YAML](how-to/steps-pipelines/configuration_with_yaml.md)
-  * [Logging](how-to/steps-pipelines/logging.md)
 * [Artifacts](how-to/artifacts/artifacts.md)
   * [Materializers](how-to/artifacts/materializers.md)
   * [Visualizations](how-to/artifacts/visualizations.md)

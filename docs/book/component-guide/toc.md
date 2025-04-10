@@ -101,10 +101,10 @@
 
 ## Popular Stacks
 
-* [AWS](../how-to/stack-components/aws.md)
-* [Azure](../how-to/stack-components/azure.md)
-* [GCP](../how-to/stack-components/gcp.md)
-* [Kubernetes](../how-to/stack-components/kubernetes.md)
+* [AWS](../how-to/popular-integrations/aws-guide.md)
+* [Azure](../how-to/popular-integrations/azure-guide.md)
+* [GCP](../how-to/popular-integrations/gcp-guide.md)
+* [Kubernetes](../how-to/popular-integrations/kubernetes.md)
 
 ## Deployment
 
