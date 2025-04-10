@@ -1,21 +1,20 @@
 ---
 description: A simple guide to create an AWS stack to run your ZenML pipelines
+icon: aws
 ---
 
-# Run on AWS
+# AWS
 
 This page aims to quickly set up a minimal production stack on AWS. With just a few simple steps, you will set up an IAM role with specifically-scoped permissions that ZenML can use to authenticate with the relevant AWS resources.
 
 {% hint style="info" %}
 Would you like to skip ahead and deploy a full AWS ZenML cloud stack already?
 
-Check out the
-[in-browser stack deployment wizard](https://docs.zenml.io//how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack),
-the [stack registration wizard](https://docs.zenml.io//how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack),
-or [the ZenML AWS Terraform module](https://docs.zenml.io//how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform)
+Check out the[in-browser stack deployment wizard](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack),\
+the [stack registration wizard](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack),\
+or [the ZenML AWS Terraform module](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform)\
 for a shortcut on how to deploy & register this stack.
 {% endhint %}
-
 
 ## 1) Set up credentials and local environment
 
@@ -286,15 +285,15 @@ Now that you have a functional AWS stack set up with ZenML, you can explore more
 * Explore ZenML's [integrations](https://docs.zenml.io/stacks) with other popular tools and frameworks in the machine learning ecosystem.
 * Join the [ZenML community](https://zenml.io/slack) to connect with other users, ask questions, and get support.
 
-By leveraging the power of AWS and ZenML, you can streamline your machine
-learning workflows, improve collaboration, and deploy production-ready pipelines
+By leveraging the power of AWS and ZenML, you can streamline your machine\
+learning workflows, improve collaboration, and deploy production-ready pipelines\
 with ease. What follows is a set of best practices for using your AWS stack with ZenML.
 
 ## Best Practices for Using an AWS Stack with ZenML
 
-When working with an AWS stack in ZenML, consider the following best practices
-to optimize your workflow, enhance security, and improve cost-efficiency. These
-are all things you might want to do or amend in your own setup once you have
+When working with an AWS stack in ZenML, consider the following best practices\
+to optimize your workflow, enhance security, and improve cost-efficiency. These\
+are all things you might want to do or amend in your own setup once you have\
 tried running some pipelines on your AWS stack.
 
 ### Use IAM Roles and Least Privilege Principle
@@ -305,12 +304,11 @@ Always adhere to the principle of least privilege when setting up IAM roles. Onl
 
 Implement a [consistent tagging strategy](https://aws.amazon.com/solutions/guidance/tagging-on-aws/) for all of your AWS resources that you use for your pipelines. For example, if you have S3 as an artifact store in your stack, you should tag it like shown below:
 
-
 ```shell
 aws s3api put-bucket-tagging --bucket your-bucket-name --tagging 'TagSet=[{Key=Project,Value=ZenML},{Key=Environment,Value=Production}]'
 ```
 
-These tags will help you with billing and cost allocation tracking and also with
+These tags will help you with billing and cost allocation tracking and also with\
 any cleanup efforts.
 
 ### Implement Cost Management Strategies
