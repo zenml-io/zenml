@@ -209,6 +209,7 @@ def main() -> None:
                     raise
 
         # Wait for pod to start
+        logger.info(f"Waiting for pod of step `{step_name}` to start...")
         max_wait = settings.pod_startup_timeout
         total_wait: float = 0
         delay = settings.pod_failure_retry_delay
