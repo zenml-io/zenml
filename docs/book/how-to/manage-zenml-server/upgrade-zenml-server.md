@@ -2,9 +2,10 @@
 description: >-
   Learn how to upgrade your server to a new version of ZenML for the different
   deployment options.
+icon: circle-arrow-up
 ---
 
-# Upgrade your ZenML server
+# Upgrading ZenML
 
 The way to upgrade your ZenML server depends a lot on how you deployed it. However, there are some best practices that apply in all cases. Before you upgrade, check out the [best practices for upgrading ZenML](best-practices-upgrading-zenml.md) guide.
 
@@ -46,7 +47,7 @@ Optionally also perform a backup before the upgrade.
 {% tab title="Kubernetes with Helm" %}
 To upgrade your ZenML server Helm release to a new version, follow the steps below.
 
-### Simple in-place upgrade
+#### Simple in-place upgrade
 
 If you don't need to change any configuration values, you can perform a simple in-place upgrade that reuses your existing configuration:
 
@@ -54,7 +55,7 @@ If you don't need to change any configuration values, you can perform a simple i
 helm -n <namespace> upgrade zenml-server oci://public.ecr.aws/zenml/zenml --version <VERSION> --reuse-values
 ```
 
-### Upgrade with configuration changes
+#### Upgrade with configuration changes
 
 If you need to modify your ZenML server configuration during the upgrade, follow these steps instead:
 

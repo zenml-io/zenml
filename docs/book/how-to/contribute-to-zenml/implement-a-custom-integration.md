@@ -1,8 +1,9 @@
 ---
 description: Creating an external integration and contributing to ZenML
+icon: cubes
 ---
 
-# Implement a custom integration
+# Custom Integration
 
 ![ZenML integrates with a number of tools from the MLOps landscape](../../../.gitbook/assets/sam-side-by-side-full-text.png)
 
@@ -27,7 +28,7 @@ zenml orchestrator flavor register flavors.my_flavor.MyOrchestratorFlavor
 ```
 
 {% hint style="warning" %}
-ZenML resolves the flavor class by taking the path where you initialized zenml (via `zenml init`) as the starting point of resolution. Therefore, please ensure you follow [the best practice](../project-setup-and-management/setting-up-a-project-repository/README.md) of initializing zenml at the root of your repository.
+ZenML resolves the flavor class by taking the path where you initialized zenml (via `zenml init`) as the starting point of resolution. Therefore, please ensure you follow [the best practice](../project-setup-and-management/setting-up-a-project-repository/) of initializing zenml at the root of your repository.
 
 If ZenML does not find an initialized ZenML repository in any parent directory, it will default to the current working directory, but usually it's better to not have to rely on this mechanism, and initialize zenml at the root.
 {% endhint %}
@@ -113,11 +114,11 @@ class ExampleIntegration(Integration):
 ExampleIntegration.check_installation() # this checks if the requirements are installed
 ```
 
-Have a look at the [MLflow Integration](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/mlflow/\_\_init\_\_.py) as an example for how it is done.
+Have a look at the [MLflow Integration](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/mlflow/__init__.py) as an example for how it is done.
 
 **5. Import in all the right places**
 
-The Integration itself must be imported within [`src/zenml/integrations/__init__.py`](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/\_\_init\_\_.py).
+The Integration itself must be imported within [`src/zenml/integrations/__init__.py`](https://github.com/zenml-io/zenml/blob/main/src/zenml/integrations/__init__.py).
 
 ### Step 4: Create a PR and celebrate :tada:
 
