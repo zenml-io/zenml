@@ -235,7 +235,10 @@ class NumpyMaterializer(BaseMaterializer):
         Returns:
             A dictionary of metadata.
         """
-        text = " ".join(arr)
+        # Convert all array elements to strings explicitly to handle
+        # mixed types and ensure NumPy 2.0 compatibility
+        str_arr = np.array([str(item) for item in arr.flat]).reshape(arr.shape)
+        text = " ".join(str_arr)
         words = text.split()
         word_counts = Counter(words)
         unique_words = len(word_counts)
