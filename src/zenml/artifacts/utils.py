@@ -16,7 +16,7 @@
 import base64
 import contextlib
 import os
-import shutil
+import tarfile
 import tempfile
 import zipfile
 from pathlib import Path
@@ -36,7 +36,12 @@ from zenml.artifacts.preexisting_data_materializer import (
     PreexistingDataMaterializer,
 )
 from zenml.client import Client
-from zenml.constants import MODEL_METADATA_YAML_FILE_NAME
+from zenml.constants import (
+    DEFAULT_ZENML_SERVER_FILE_DOWNLOAD_SIZE_LIMIT,
+    ENV_ZENML_SERVER_FILE_DOWNLOAD_SIZE_LIMIT,
+    MODEL_METADATA_YAML_FILE_NAME,
+    handle_int_env_var,
+)
 from zenml.enums import (
     ArtifactSaveType,
     ArtifactType,
@@ -44,7 +49,11 @@ from zenml.enums import (
     StackComponentType,
     VisualizationType,
 )
-from zenml.exceptions import DoesNotExistException, StepContextError
+from zenml.exceptions import (
+    DoesNotExistException,
+    IllegalOperationError,
+    StepContextError,
+)
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.metadata.metadata_types import validate_metadata
@@ -555,45 +564,6 @@ def load_artifact_from_response(artifact: "ArtifactVersionResponse") -> Any:
     )
 
 
-def _download_file(
-    src: str, dst: str, src_artifact_store: "BaseArtifactStore"
-) -> None:
-    """Download a file from the artifact store to the local filesystem.
-
-    Args:
-        src: The path of the file to download.
-        dst: The path to save the file to.
-        src_artifact_store: The artifact store to download from.
-    """
-    with open(dst, "wb") as f:
-        with src_artifact_store.open(src, "rb") as src_file:
-            shutil.copyfileobj(src_file, f)
-
-
-def _download_directory(
-    src_root: str, dst_root: str, src_artifact_store: "BaseArtifactStore"
-) -> None:
-    """Download a directory from the artifact store to the local filesystem.
-
-    Args:
-        src_root: The root of the directory to download.
-        dst_root: The root of the directory to download to.
-        src_artifact_store: The artifact store to download from.
-    """
-    for src_dir, _, files in src_artifact_store.walk(src_root):
-        src_dir_ = str(src_dir)
-        dst_dir = str(
-            os.path.join(dst_root, os.path.relpath(src_dir_, src_root))
-        )
-        os.makedirs(dst_dir, exist_ok=True)
-
-        for file in files:
-            file_ = str(file)
-            src_file = os.path.join(src_dir_, file_)
-            dst_file = os.path.join(dst_dir, file_)
-            _download_file(src_file, dst_file, src_artifact_store)
-
-
 def create_artifact_archive(
     artifact: "ArtifactVersionResponse",
     archive_path: Optional[str] = None,
@@ -606,6 +576,9 @@ def create_artifact_archive(
         archive_path: The path to which to save the archive.
         zen_store: Optional store to use for fetching the artifact store.
 
+    Raises:
+        IllegalOperationError: If the artifact is too large to be archived.
+
     Returns:
         The path to the created archive.
     """
@@ -616,16 +589,44 @@ def create_artifact_archive(
         artifact_store_id=artifact.artifact_store_id, zen_store=zen_store
     )
 
-    with tempfile.TemporaryDirectory() as temp_dir:
-        if artifact_store.isdir(artifact.uri):
-            _download_directory(artifact.uri, temp_dir, artifact_store)
-        else:
-            destination_path = os.path.join(
-                temp_dir, os.path.basename(artifact.uri)
-            )
-            _download_file(artifact.uri, destination_path, artifact_store)
+    size = artifact_store.size(artifact.uri)
+    max_download_size = handle_int_env_var(
+        ENV_ZENML_SERVER_FILE_DOWNLOAD_SIZE_LIMIT,
+        DEFAULT_ZENML_SERVER_FILE_DOWNLOAD_SIZE_LIMIT,
+    )
+    if size and size > max_download_size:
+        raise IllegalOperationError(
+            f"The artifact '{artifact.id}' is too large to be downloaded. "
+            f"The maximum download size is {max_download_size} bytes."
+        )
 
-        return shutil.make_archive(archive_path, "gztar", temp_dir)
+    def _prepare_tarinfo(path) -> tarfile.TarInfo:
+        archive_path = os.path.relpath(path, artifact.uri)
+        tarinfo = tarfile.TarInfo(name=archive_path)
+        tarinfo.size = artifact_store.size(path)
+        return tarinfo
+
+    with tarfile.open(name=archive_path, mode="w:gz") as tar:
+        if artifact_store.isdir(artifact.uri):
+            for dir, _, files in artifact_store.walk(artifact.uri):
+                dir_info = tarfile.TarInfo(
+                    name=os.path.relpath(dir, artifact.uri)
+                )
+                dir_info.type = tarfile.DIRTYPE
+                dir_info.mode = 0o755
+                tar.addfile(dir_info)
+
+                for file in files:
+                    path = os.path.join(dir, file)
+                    tarinfo = _prepare_tarinfo(path)
+                    with artifact_store.open(path, "rb") as f:
+                        tar.addfile(tarinfo, fileobj=f)
+        else:
+            tarinfo = _prepare_tarinfo(artifact.uri)
+            with artifact_store.open(artifact.uri, "rb") as f:
+                tar.addfile(tarinfo, fileobj=f)
+
+    return archive_path
 
 
 def download_artifact_files_from_response(
