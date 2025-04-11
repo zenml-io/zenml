@@ -13,11 +13,13 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for artifact versions."""
 
+import os
 from typing import List, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
 from fastapi.responses import FileResponse
+from starlette.background import BackgroundTask
 
 from zenml.artifacts.utils import (
     create_artifact_archive,
@@ -315,4 +317,5 @@ def get_artifact_data(
         archive_path,
         media_type="application/gzip",
         filename=f"{artifact.name}-{artifact.version}.tar.gz",
+        background=BackgroundTask(os.remove, archive_path),
     )
