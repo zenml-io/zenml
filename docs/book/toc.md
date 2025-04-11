@@ -50,6 +50,7 @@
 * [Models](how-to/models/models.md)
 * [Templates](how-to/templates/templates.md)
 * [Core Concepts](getting-started/core-concepts.md)
+* [some other](component-guide/service-connectors/connector-types/azure-service-connector.md)
 
 ## Reference
 
