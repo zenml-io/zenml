@@ -41,6 +41,7 @@ class PipelineConfigurationUpdate(StrictBaseModel):
     enable_artifact_metadata: Optional[bool] = None
     enable_artifact_visualization: Optional[bool] = None
     enable_step_logs: Optional[bool] = None
+    enable_pipeline_logs: Optional[bool] = None
     settings: Dict[str, SerializeAsAny[BaseSettings]] = {}
     tags: Optional[List[Union[str, "Tag"]]] = None
     extra: Dict[str, Any] = {}

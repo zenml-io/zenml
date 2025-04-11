@@ -45,6 +45,7 @@ from zenml.models.v2.base.scoped import (
     RunMetadataFilterMixin,
     TaggableFilter,
 )
+from zenml.models.v2.core.logs import LogsRequest
 from zenml.models.v2.core.model_version import ModelVersionResponse
 from zenml.models.v2.core.tag import TagResponse
 from zenml.utils.tag_utils import Tag
@@ -55,6 +56,7 @@ if TYPE_CHECKING:
     from zenml.models import TriggerExecutionResponse
     from zenml.models.v2.core.artifact_version import ArtifactVersionResponse
     from zenml.models.v2.core.code_reference import CodeReferenceResponse
+    from zenml.models.v2.core.logs import LogsResponse
     from zenml.models.v2.core.pipeline import PipelineResponse
     from zenml.models.v2.core.pipeline_build import (
         PipelineBuildResponse,
@@ -123,6 +125,10 @@ class PipelineRunRequest(ProjectScopedRequest):
     tags: Optional[List[Union[str, Tag]]] = Field(
         default=None,
         title="Tags of the pipeline run.",
+    )
+    logs: Optional[LogsRequest] = Field(
+        default=None,
+        title="Logs of the pipeline run.",
     )
 
     model_config = ConfigDict(protected_namespaces=())
@@ -242,6 +248,10 @@ class PipelineRunResponseMetadata(ProjectScopedResponseMetadata):
     step_substitutions: Dict[str, Dict[str, str]] = Field(
         title="Substitutions used in the step runs of this pipeline run.",
         default_factory=dict,
+    )
+    logs: Optional["LogsResponse"] = Field(
+        title="Logs associated with this pipeline run.",
+        default=None,
     )
 
 
@@ -578,6 +588,15 @@ class PipelineRunResponse(
             the value of the property.
         """
         return self.get_resources().tags
+
+    @property
+    def logs(self) -> Optional["LogsResponse"]:
+        """The `logs` property.
+
+        Returns:
+            the value of the property.
+        """
+        return self.get_metadata().logs
 
 
 # ------------------ Filter Model ------------------
