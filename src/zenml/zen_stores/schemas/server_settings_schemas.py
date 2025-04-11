@@ -18,6 +18,7 @@ from datetime import datetime
 from typing import Any, Optional, Set
 from uuid import UUID
 
+from sqlalchemy import TEXT, Column
 from sqlmodel import Field, SQLModel
 
 from zenml.models import (
@@ -42,7 +43,9 @@ class ServerSettingsSchema(SQLModel, table=True):
     enable_analytics: bool = Field(default=False)
     display_announcements: Optional[bool] = Field(nullable=True)
     display_updates: Optional[bool] = Field(nullable=True)
-    onboarding_state: Optional[str] = Field(nullable=True)
+    onboarding_state: Optional[str] = Field(
+        sa_column=Column(TEXT, nullable=True)
+    )
     last_user_activity: datetime = Field(default_factory=utc_now)
     updated: datetime = Field(default_factory=utc_now)
 
