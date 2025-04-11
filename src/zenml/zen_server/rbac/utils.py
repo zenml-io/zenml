@@ -688,21 +688,31 @@ def get_schema_for_resource_type(
 
 
 def update_resource_membership(
-    user: UserResponse, resource: Resource, actions: List[Action]
+    sharing_user: "UserResponse",
+    resource: Resource,
+    actions: List[Action],
+    user_id: Optional[str] = None,
+    team_id: Optional[str] = None,
 ) -> None:
     """Update the resource membership of a user.
 
     Args:
-        user: User for which the resource membership should be updated.
+        sharing_user: User that is sharing the resource.
         resource: The resource.
         actions: The actions that the user should be able to perform on the
             resource.
+        user_id: ID of the user for which to update the membership.
+        team_id: ID of the team for which to update the membership.
     """
     if not server_config().rbac_enabled:
         return
 
     rbac().update_resource_membership(
-        user=user, resource=resource, actions=actions
+        sharing_user=sharing_user,
+        resource=resource,
+        actions=actions,
+        user_id=user_id,
+        team_id=team_id,
     )
 
 
