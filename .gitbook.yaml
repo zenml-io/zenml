@@ -268,7 +268,7 @@ redirects:
   some-other/redirect: stacks/integrations.md
   some-third/redirect: https://docs.zenml.io
   some-fourth/redirect: how-to/steps-pipelines/logging.md
-  some-fifth/redirect: how-to/steps-pipelines/logging.md#basic-logging
+  some-fifth/redirect: how-to/steps-pipelines/logging#basic-logging
 
   # # Redirects for the Steps and Pipelines section
   # how-to/build-pipelines/step-dependencies: how-to/steps-pipelines/steps_and_pipelines.md
