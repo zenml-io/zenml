@@ -49,6 +49,7 @@
 * [Metadata](how-to/metadata/metadata.md)
 * [Models](how-to/models/models.md)
 * [Templates](how-to/templates/templates.md)
+* [Core Concepts](getting-started/core-concepts.md)
 
 ## Reference
 
