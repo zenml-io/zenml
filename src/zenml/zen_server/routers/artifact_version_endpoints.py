@@ -13,13 +13,26 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for artifact versions."""
 
+import os
 from typing import List, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
+from fastapi.responses import FileResponse
+from starlette.background import BackgroundTask
 
-from zenml.artifacts.utils import load_artifact_visualization
-from zenml.constants import API, ARTIFACT_VERSIONS, BATCH, VERSION_1, VISUALIZE
+from zenml.artifacts.utils import (
+    create_artifact_archive,
+    load_artifact_visualization,
+)
+from zenml.constants import (
+    API,
+    ARTIFACT_VERSIONS,
+    BATCH,
+    DATA,
+    VERSION_1,
+    VISUALIZE,
+)
 from zenml.models import (
     ArtifactVersionFilter,
     ArtifactVersionRequest,
@@ -274,4 +287,35 @@ def get_artifact_visualization(
     )
     return load_artifact_visualization(
         artifact=artifact, index=index, zen_store=store, encode_image=True
+    )
+
+
+@artifact_version_router.get(
+    "/{artifact_version_id}" + DATA,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def get_artifact_data(
+    artifact_version_id: UUID,
+    _: AuthContext = Security(authorize),
+) -> FileResponse:
+    """Get the artifact data.
+
+    Args:
+        artifact_version_id: ID of the artifact version for which to get the data.
+
+    Returns:
+        The artifact data.
+    """
+    artifact = verify_permissions_and_get_entity(
+        id=artifact_version_id, get_method=zen_store().get_artifact_version
+    )
+
+    archive_path = create_artifact_archive(artifact, zen_store=zen_store())
+
+    return FileResponse(
+        archive_path,
+        media_type="application/gzip",
+        filename=f"{artifact.name}-{artifact.version}.tar.gz",
+        background=BackgroundTask(os.remove, archive_path),
     )
