@@ -137,6 +137,7 @@ class Pipeline:
         on_success: Optional["HookSpecification"] = None,
         model: Optional["Model"] = None,
         substitutions: Optional[Dict[str, str]] = None,
+        workload_token_expiration_leeway: Optional[int] = None,
     ) -> None:
         """Initializes a pipeline.
 
@@ -160,12 +161,15 @@ class Pipeline:
                 function (e.g. `module.my_function`).
             model: configuration of the model in the Model Control Plane.
             substitutions: Extra placeholders to use in the name templates.
+            workload_token_expiration_leeway: Number of seconds of leeway to
+                add to the expiration time of workload tokens.
         """
         self._invocations: Dict[str, StepInvocation] = {}
         self._run_args: Dict[str, Any] = {}
 
         self._configuration = PipelineConfiguration(
             name=name,
+            workload_token_expiration_leeway=constants.DEFAULT_ZENML_WORKLOAD_TOKEN_EXPIRATION_LEEWAY,
         )
         self._from_config_file: Dict[str, Any] = {}
         with self.__suppress_configure_warnings__():
@@ -181,6 +185,7 @@ class Pipeline:
                 on_success=on_success,
                 model=model,
                 substitutions=substitutions,
+                workload_token_expiration_leeway=workload_token_expiration_leeway,
             )
         self.entrypoint = entrypoint
         self._parameters: Dict[str, Any] = {}
@@ -302,6 +307,7 @@ class Pipeline:
         parameters: Optional[Dict[str, Any]] = None,
         merge: bool = True,
         substitutions: Optional[Dict[str, str]] = None,
+        workload_token_expiration_leeway: Optional[int] = None,
     ) -> Self:
         """Configures the pipeline.
 
@@ -339,6 +345,8 @@ class Pipeline:
             model: configuration of the model version in the Model Control Plane.
             parameters: input parameters for the pipeline.
             substitutions: Extra placeholders to use in the name templates.
+            workload_token_expiration_leeway: Number of seconds of leeway to
+                add to the expiration time of workload tokens.
 
         Returns:
             The pipeline instance that this method was called on.
@@ -372,6 +380,7 @@ class Pipeline:
                 "model": model,
                 "parameters": parameters,
                 "substitutions": substitutions,
+                "workload_token_expiration_leeway": workload_token_expiration_leeway,
             }
         )
         if not self.__suppress_warnings_flag__:

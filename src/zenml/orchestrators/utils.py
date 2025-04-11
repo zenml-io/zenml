@@ -105,7 +105,6 @@ def is_setting_enabled(
 def get_config_environment_vars(
     schedule_id: Optional[UUID] = None,
     pipeline_run_id: Optional[UUID] = None,
-    step_run_id: Optional[UUID] = None,
 ) -> Dict[str, str]:
     """Gets environment variables to set for mirroring the active config.
 
@@ -119,7 +118,6 @@ def get_config_environment_vars(
         schedule_id: Optional schedule ID to use to generate a new API token.
         pipeline_run_id: Optional pipeline run ID to use to generate a new API
             token.
-        step_run_id: Optional step run ID to use to generate a new API token.
 
     Returns:
         Environment variable dict.
@@ -138,7 +136,7 @@ def get_config_environment_vars(
         credentials_store = get_credentials_store()
         url = global_config.store_configuration.url
         api_token = credentials_store.get_token(url, allow_expired=False)
-        if schedule_id or pipeline_run_id or step_run_id:
+        if schedule_id or pipeline_run_id:
             assert isinstance(global_config.zen_store, RestZenStore)
 
             # The user has the option to manually set an expiration for the API
@@ -173,7 +171,7 @@ def get_config_environment_vars(
                 # If only a schedule is given, the pipeline run credentials will
                 # be valid for the entire duration of the schedule.
                 api_key = credentials_store.get_api_key(url)
-                if not api_key and not pipeline_run_id and not step_run_id:
+                if not api_key and not pipeline_run_id:
                     logger.warning(
                         "An API token without an expiration time will be generated "
                         "and used to run this pipeline on a schedule. This is very "
@@ -194,7 +192,6 @@ def get_config_environment_vars(
                     token_type=APITokenType.WORKLOAD,
                     schedule_id=schedule_id,
                     pipeline_run_id=pipeline_run_id,
-                    step_run_id=step_run_id,
                 )
 
             environment_vars[ENV_ZENML_STORE_PREFIX + "API_TOKEN"] = (

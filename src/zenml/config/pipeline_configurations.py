@@ -50,6 +50,7 @@ class PipelineConfigurationUpdate(StrictBaseModel):
     parameters: Optional[Dict[str, Any]] = None
     retry: Optional[StepRetryConfig] = None
     substitutions: Dict[str, str] = {}
+    workload_token_expiration_leeway: Optional[int] = None
 
     def _get_full_substitutions(
         self, start_time: Optional[datetime]

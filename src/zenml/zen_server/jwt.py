@@ -54,7 +54,6 @@ class JWTToken(BaseModel):
     api_key_id: Optional[UUID] = None
     schedule_id: Optional[UUID] = None
     pipeline_run_id: Optional[UUID] = None
-    step_run_id: Optional[UUID] = None
     session_id: Optional[UUID] = None
     claims: Dict[str, Any] = {}
 
@@ -148,16 +147,6 @@ class JWTToken(BaseModel):
                     "UUID"
                 )
 
-        step_run_id: Optional[UUID] = None
-        if "step_run_id" in claims:
-            try:
-                step_run_id = UUID(claims.pop("step_run_id"))
-            except ValueError:
-                raise CredentialsNotValid(
-                    "Invalid JWT token: the step_run_id claim is not a valid "
-                    "UUID"
-                )
-
         session_id: Optional[UUID] = None
         if "session_id" in claims:
             try:
@@ -174,7 +163,6 @@ class JWTToken(BaseModel):
             api_key_id=api_key_id,
             schedule_id=schedule_id,
             pipeline_run_id=pipeline_run_id,
-            step_run_id=step_run_id,
             session_id=session_id,
             claims=claims,
         )
@@ -212,8 +200,6 @@ class JWTToken(BaseModel):
             claims["schedule_id"] = str(self.schedule_id)
         if self.pipeline_run_id:
             claims["pipeline_run_id"] = str(self.pipeline_run_id)
-        if self.step_run_id:
-            claims["step_run_id"] = str(self.step_run_id)
         if self.session_id:
             claims["session_id"] = str(self.session_id)
 
