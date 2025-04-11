@@ -311,7 +311,7 @@ def get_artifact_data(
         id=artifact_version_id, get_method=zen_store().get_artifact_version
     )
 
-    archive_path = create_artifact_archive(artifact)
+    archive_path = create_artifact_archive(artifact, zen_store=zen_store())
 
     return FileResponse(
         archive_path,

@@ -59,7 +59,7 @@ from zenml.models import (
 )
 from zenml.stack import StackComponent
 from zenml.steps.step_context import get_step_context
-from zenml.utils import io_utils, source_utils
+from zenml.utils import source_utils
 from zenml.utils.yaml_utils import read_yaml, write_yaml
 
 if TYPE_CHECKING:
@@ -555,34 +555,75 @@ def load_artifact_from_response(artifact: "ArtifactVersionResponse") -> Any:
     )
 
 
+def _download_file(
+    src: str, dst: str, src_artifact_store: "BaseArtifactStore"
+) -> None:
+    """Download a file from the artifact store to the local filesystem.
+
+    Args:
+        src: The path of the file to download.
+        dst: The path to save the file to.
+        src_artifact_store: The artifact store to download from.
+    """
+    with open(dst, "wb") as f:
+        with src_artifact_store.open(src, "rb") as src_file:
+            shutil.copyfileobj(src_file, f)
+
+
+def _download_directory(
+    src_root: str, dst_root: str, src_artifact_store: "BaseArtifactStore"
+) -> None:
+    """Download a directory from the artifact store to the local filesystem.
+
+    Args:
+        src_root: The root of the directory to download.
+        dst_root: The root of the directory to download to.
+        src_artifact_store: The artifact store to download from.
+    """
+    for src_dir, _, files in src_artifact_store.walk(src_root):
+        src_dir_ = str(src_dir)
+        dst_dir = str(
+            os.path.join(dst_root, os.path.relpath(src_dir_, src_root))
+        )
+        os.makedirs(dst_dir, exist_ok=True)
+
+        for file in files:
+            file_ = str(file)
+            src_file = os.path.join(src_dir_, file_)
+            dst_file = os.path.join(dst_dir, file_)
+            _download_file(src_file, dst_file, src_artifact_store)
+
+
 def create_artifact_archive(
-    artifact: "ArtifactVersionResponse", archive_path: Optional[str] = None
+    artifact: "ArtifactVersionResponse",
+    archive_path: Optional[str] = None,
+    zen_store: Optional["BaseZenStore"] = None,
 ) -> str:
     """Create an archive of the given artifact.
 
     Args:
         artifact: The artifact to archive.
         archive_path: The path to which to save the archive.
+        zen_store: Optional store to use for fetching the artifact store.
 
     Returns:
         The path to the created archive.
     """
-    # Instantiate the artifact store to ensure the artifact store is available
-    # and registered in fileio
-    _ = _get_artifact_store_from_response_or_from_active_stack(
-        artifact=artifact
-    )
     if archive_path is None:
         archive_path = tempfile.mktemp()
 
+    artifact_store = _load_artifact_store(
+        artifact_store_id=artifact.artifact_store_id, zen_store=zen_store
+    )
+
     with tempfile.TemporaryDirectory() as temp_dir:
-        if fileio.isdir(artifact.uri):
-            io_utils.copy_dir(artifact.uri, temp_dir)
+        if artifact_store.isdir(artifact.uri):
+            _download_directory(artifact.uri, temp_dir, artifact_store)
         else:
             destination_path = os.path.join(
                 temp_dir, os.path.basename(artifact.uri)
             )
-            fileio.copy(artifact.uri, destination_path)
+            _download_file(artifact.uri, destination_path, artifact_store)
 
         return shutil.make_archive(archive_path, "gztar", temp_dir)
 
