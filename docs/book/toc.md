@@ -31,7 +31,7 @@
     * [Migration guide 0.39.1 → 0.41.0](how-to/manage-zenml-server/migration-guide/migration-zero-forty.md)
     * [Migration guide 0.58.2 → 0.60.0](how-to/manage-zenml-server/migration-guide/migration-zero-sixty.md)
 
-## Concepts
+## Concepts & Others
 
 * [Steps & Pipelines](how-to/steps-pipelines/steps_and_pipelines.md)
   * [Logging](how-to/steps-pipelines/logging.md)
@@ -50,11 +50,13 @@
 * [Models](how-to/models/models.md)
 * [Templates](how-to/templates/templates.md)
 * [Core Concepts](getting-started/core-concepts.md)
+* [some sub](component-guide/orchestrators/sagemaker.md)
 * [some second](component-guide/service-connectors/connector-types/README.md)
   * [some other](component-guide/service-connectors/connector-types/azure-service-connector.md)
     * [some other](component-guide/service-connectors/connector-types/aws-service-connector.md)
       * [some other](component-guide/service-connectors/connector-types/gcp-service-connector.md)
         * [some sub](component-guide/orchestrators/README.md)
+        * [some sub](component-guide/orchestrators/airflow.md)
 
 ## Reference
 
