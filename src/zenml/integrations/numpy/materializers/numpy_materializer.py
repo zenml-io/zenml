@@ -36,6 +36,13 @@ DATA_FILENAME = "data.parquet"
 SHAPE_FILENAME = "shape.json"
 DATA_VAR = "data_var"
 
+# Check NumPy version for compatibility handling
+IS_NUMPY_2 = np.lib.NumpyVersion(np.__version__) >= "2.0.0"
+
+# In NumPy 2.0, np.object_ is deprecated in favor of object
+# Let's use the right type based on the NumPy version
+NUMPY_OBJECT_TYPE = object if IS_NUMPY_2 else np.object_
+
 
 class NumpyMaterializer(BaseMaterializer):
     """Materializer to read data to and from pandas."""
@@ -187,7 +194,7 @@ class NumpyMaterializer(BaseMaterializer):
         if np.issubdtype(arr.dtype, np.number):
             return self._extract_numeric_metadata(arr)
         elif np.issubdtype(arr.dtype, np.unicode_) or np.issubdtype(
-            arr.dtype, np.object_
+            arr.dtype, NUMPY_OBJECT_TYPE
         ):
             return self._extract_text_metadata(arr)
         else:
@@ -228,7 +235,10 @@ class NumpyMaterializer(BaseMaterializer):
         Returns:
             A dictionary of metadata.
         """
-        text = " ".join(arr)
+        # Convert all array elements to strings explicitly to handle
+        # mixed types and ensure NumPy 2.0 compatibility
+        str_arr = np.array([str(item) for item in arr.flat]).reshape(arr.shape)
+        text = " ".join(str_arr)
         words = text.split()
         word_counts = Counter(words)
         unique_words = len(word_counts)
