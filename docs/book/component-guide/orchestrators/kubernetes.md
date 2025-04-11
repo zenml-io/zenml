@@ -16,7 +16,7 @@ Compared to Kubeflow, this means that the Kubernetes-native orchestrator is fast
 This component is only meant to be used within the context of a [remote ZenML deployment scenario](https://docs.zenml.io/getting-started/deploying-zenml/). Usage with a local ZenML deployment may lead to unexpected behavior!
 {% endhint %}
 
-### When to use it
+## When to use it
 
 You should use the Kubernetes orchestrator if:
 
@@ -24,13 +24,13 @@ You should use the Kubernetes orchestrator if:
 * you're not willing to maintain [Kubeflow Pipelines](kubeflow.md) on your Kubernetes cluster.
 * you're not interested in paying for managed solutions like [Vertex](vertex.md).
 
-### How to deploy it
+## How to deploy it
 
 The Kubernetes orchestrator requires a Kubernetes cluster in order to run. There are many ways to deploy a Kubernetes cluster using different cloud providers or on your custom infrastructure, and we can't possibly cover all of them, but you can check out our [our production guide](https://docs.zenml.io/user-guides/production-guide).
 
 If the above Kubernetes cluster is deployed remotely on the cloud, then another pre-requisite to use this orchestrator would be to deploy and connect to a [remote ZenML server](https://docs.zenml.io/getting-started/deploying-zenml/).
 
-### How to use it
+## How to use it
 
 To use the Kubernetes orchestrator, we need:
 
@@ -106,7 +106,7 @@ python file_that_runs_a_zenml_pipeline.py
 
 If all went well, you should now see the logs of all Kubernetes pods in your terminal, and when running `kubectl get pods -n zenml`, you should also see that a pod was created in your cluster for each pipeline step.
 
-#### Interacting with pods via kubectl
+### Interacting with pods via kubectl
 
 For debugging, it can sometimes be handy to interact with the Kubernetes pods directly via kubectl. To make this easier, we have added the following labels to all pods:
 
@@ -119,7 +119,7 @@ E.g., you can use these labels to manually delete all pods related to a specific
 kubectl delete pod -n zenml -l pipeline=kubernetes_example_pipeline
 ```
 
-#### Additional configuration
+### Additional configuration
 
 The Kubernetes orchestrator will by default use a Kubernetes namespace called `zenml` to run pipelines. In that namespace, it will automatically create a Kubernetes service account called `zenml-service-account` and grant it `edit` RBAC role in that namespace. To customize these settings, you can configure the following additional attributes in the Kubernetes orchestrator:
 
@@ -271,7 +271,7 @@ def my_kubernetes_pipeline():
     ...
 ```
 
-#### Define settings on the step level
+### Define settings on the step level
 
 You can also define settings on the step level, which will override the settings defined at the pipeline level. This is helpful when you want to run a specific step with a different configuration like affinity for more powerful hardware or a different Kubernetes service account. Learn more about the hierarchy of settings [here](https://docs.zenml.io/how-to/pipeline-development/use-configuration-files/configuration-hierarchy).
 
@@ -308,8 +308,148 @@ Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/i
 
 For more information and a full list of configurable attributes of the Kubernetes orchestrator, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-kubernetes.html#zenml.integrations.kubernetes) .
 
-#### Enabling CUDA for GPU-backed hardware
+### Enabling CUDA for GPU-backed hardware
 
 Note that if you wish to use this orchestrator to run steps on a GPU, you will need to follow [the instructions on this page](https://docs.zenml.io/how-to/pipeline-development/training-with-gpus/) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
+
+### Running scheduled pipelines with Kubernetes
+
+The Kubernetes orchestrator supports scheduling pipelines through Kubernetes CronJobs. This feature allows you to run your pipelines on a recurring schedule without manual intervention.
+
+#### How scheduling works
+
+When you add a schedule to a pipeline running on the Kubernetes orchestrator, ZenML:
+
+1. Creates a Kubernetes CronJob resource instead of a regular Pod
+2. Configures the CronJob to use the same container image, command, and settings as your pipeline
+3. Sets the CronJob's schedule field to match your provided cron expression
+
+The Kubernetes scheduler then takes over and handles executing your pipeline on schedule.
+
+#### Setting up a scheduled pipeline
+
+You can add a schedule to your pipeline using the `Schedule` class:
+
+```python
+from zenml.config.schedule import Schedule
+from zenml import pipeline
+
+@pipeline()
+def my_kubernetes_pipeline():
+    # Your pipeline steps here
+    ...
+
+# Create a schedule using a cron expression
+schedule = Schedule(cron_expression="5 2 * * *")  # Runs at 2:05 AM daily
+
+# Attach the schedule to your pipeline
+scheduled_pipeline = my_kubernetes_pipeline.with_options(schedule=schedule)
+
+# Run the pipeline once to register the schedule
+scheduled_pipeline()
+```
+
+Cron expressions follow the standard format (`minute hour day-of-month month day-of-week`):
+
+* `"0 * * * *"` - Run hourly at the start of the hour
+* `"0 0 * * *"` - Run daily at midnight
+* `"0 0 * * 0"` - Run weekly on Sundays at midnight
+* `"0 0 1 * *"` - Run monthly on the 1st at midnight
+
+#### Verifying your scheduled pipeline
+
+To check that your pipeline has been scheduled correctly:
+
+1. Using the ZenML CLI:
+```shell
+zenml pipeline schedule list
+```
+
+2. Using kubectl to check the created CronJob:
+```shell
+kubectl get cronjobs -n zenml
+kubectl describe cronjob <cronjob-name> -n zenml
+```
+
+The CronJob name will be based on your pipeline name with a random suffix for uniqueness.
+
+#### Managing scheduled pipelines
+
+To view your scheduled jobs and their status:
+
+```shell
+# List all CronJobs
+kubectl get cronjobs -n zenml
+
+# Check Jobs created by the CronJob
+kubectl get jobs -n zenml
+
+# View logs of a running job
+kubectl logs job/<job-name> -n zenml
+```
+
+To update a scheduled pipeline, you need to:
+
+1. Delete the existing CronJob from Kubernetes
+2. Create a new pipeline with the updated schedule
+
+```shell
+# Delete the existing CronJob
+kubectl delete cronjob <cronjob-name> -n zenml
+```
+
+```python
+# Create a new schedule
+new_schedule = Schedule(cron_expression="0 4 * * *")  # Now runs at 4 AM
+updated_pipeline = my_kubernetes_pipeline.with_options(schedule=new_schedule)
+updated_pipeline()
+```
+
+#### Deleting a scheduled pipeline
+
+When you no longer need a scheduled pipeline, you must delete both the ZenML schedule and the Kubernetes CronJob:
+
+1. Delete the schedule from ZenML:
+```python
+from zenml.client import Client
+
+client = Client()
+client.delete_schedule("<schedule-name>")
+```
+
+2. Delete the CronJob from Kubernetes:
+```shell
+kubectl delete cronjob <cronjob-name> -n zenml
+```
+
+{% hint style="warning" %}
+Deleting just the ZenML schedule will not stop the recurring executions. You must delete the Kubernetes CronJob as well.
+{% endhint %}
+
+#### Troubleshooting
+
+If your scheduled pipeline isn't running as expected:
+
+1. Verify the CronJob exists and has the correct schedule:
+```shell
+kubectl get cronjob <cronjob-name> -n zenml
+```
+
+2. Check the CronJob's recent events and status:
+```shell
+kubectl describe cronjob <cronjob-name> -n zenml
+```
+
+3. Look at logs from recent job executions:
+```shell
+kubectl logs job/<job-name> -n zenml
+```
+
+Common issues include incorrect cron expressions, insufficient permissions for the service account, or resource constraints.
+
+For a tutorial on how to work with schedules in ZenML, check out our ['Managing
+Scheduled
+Pipelines'](https://docs.zenml.io/user-guides/tutorial/managing-scheduled-pipelines)
+docs page.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

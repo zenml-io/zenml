@@ -108,6 +108,7 @@
     * [Organize data with tags](how-to/data-artifact-management/handle-data-artifacts/tagging.md)
     * [Get arbitrary artifacts in a step](how-to/data-artifact-management/handle-data-artifacts/get-arbitrary-artifacts-in-a-step.md)
     * [Handle custom data types](how-to/data-artifact-management/handle-data-artifacts/handle-custom-data-types.md)
+    * [Managing Files and Directories](how-to/data-artifact-management/handle-data-artifacts/pass-files-through-steps.md)
     * [Load artifacts into memory](how-to/data-artifact-management/handle-data-artifacts/load-artifacts-into-memory.md)
   * [Complex use-cases](how-to/data-artifact-management/complex-usecases/README.md)
     * [Datasets in ZenML](how-to/data-artifact-management/complex-usecases/datasets.md)
