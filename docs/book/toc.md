@@ -53,8 +53,11 @@
 * [some other](component-guide/service-connectors/connector-types/azure-service-connector.md)
 * [some second](component-guide/service-connectors/connector-types/README.md)
   * [some sub](component-guide/service-connectors/connector-types/README.md)
+  * [some other](component-guide/service-connectors/connector-types/azure-service-connector.md) 
     * [some sub](component-guide/service-connectors/connector-types/README.md)
+    * [some other](component-guide/service-connectors/connector-types/azure-service-connector.md)
       * [some sub](component-guide/service-connectors/connector-types/README.md)
+      * [some other](component-guide/service-connectors/connector-types/azure-service-connector.md)
         * [some sub](component-guide/service-connectors/connector-types/README.md)
 
 ## Reference
