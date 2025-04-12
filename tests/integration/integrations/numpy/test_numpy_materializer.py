@@ -219,9 +219,9 @@ def test_integer_type_handling():
         )
 
         # Verify the dtype is preserved
-        assert (
-            result.dtype == test_array.dtype
-        ), f"Failed to preserve dtype {int_type}"
+        assert result.dtype == test_array.dtype, (
+            f"Failed to preserve dtype {int_type}"
+        )
 
         # Verify metadata correctly identifies the type
         assert metadata["dtype"] == DType(test_array.dtype.type)
