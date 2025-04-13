@@ -4,7 +4,6 @@ import json
 import os
 import re
 from typing import Any, Dict, List, Optional, Tuple, cast
-
 from pydantic import Field
 
 from zenml.constants import (
@@ -30,25 +29,37 @@ from zenml.service_connectors.service_connector import (
     ServiceConnector,
 )
 
-class KanikoCredeintials(AuthenticationConfig):
-    """
-    Kaniko credentials for Docker registry authentication.
-    """
+class KanikoConnectorConfig(AuthenticationConfig):
+    """Kubernetes connection configuration for Kaniko."""
 
-    # The Docker registry URL
-    registry_url: str = Field(
-        description="The URL of the Docker registry.",
-        title="Docker Registry URL",
+    api_token: str = Field(
+        description="Kubernetes API token for authentication.",
+        title="API token",
+        secret=True,
+        default=None
     )
 
-    # The username for Docker registry authentication
-    username: str = Field(
-        description="The username for Docker registry authentication.",
-        title="Username",
+    service_account_name: str = Field(
+        description="Kubernetes service account name for authentication.",
+        title="Service Account Name",
+        default=None,
+    )
+    kubeconfig: Optional[str] = Field(
+        description="Content of the kubecofig file,",
+        title="Kubeconfig",
+        secret=True,
+        default=None,
     )
 
-    # The password for Docker registry authentication
-    password: str = Field(
-        description="The password for Docker registry authentication.",
-        title="Password",
-    )
+class KubernetesKanikoServiceConnector(ServiceConnector):
+    """Kubernetes Service Connector for Kaniko."""
+
+    config: KanikoConnectorConfig
+
+    @classmethod
+    def _get_connector_type(cls):
+        return ServiceConnectorTypeModel(
+            name="kubernetes-kaniko",
+            type="kubernetes",
+            description="Kubernetes Service Connector for Kaniko.",
+        )
