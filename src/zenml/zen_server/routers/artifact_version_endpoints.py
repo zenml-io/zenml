@@ -14,11 +14,9 @@
 """Endpoint definitions for artifact versions."""
 
 import os
-from datetime import timedelta
 from typing import List, Union
 from uuid import UUID
 
-import jwt
 from fastapi import APIRouter, Depends, Security
 from fastapi.responses import FileResponse
 from starlette.background import BackgroundTask
@@ -44,9 +42,13 @@ from zenml.models import (
     LoadedVisualization,
     Page,
 )
-from zenml.utils.time_utils import utc_now
-from zenml.zen_server.auth import AuthContext, authorize
-from zenml.zen_server.exceptions import CredentialsNotValid, error_response
+from zenml.zen_server.auth import (
+    AuthContext,
+    authorize,
+    generate_artifact_download_token,
+    verify_artifact_download_token,
+)
+from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_batch_create_entity,
     verify_permissions_and_create_entity,
@@ -63,7 +65,6 @@ from zenml.zen_server.rbac.utils import (
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
-    server_config,
     set_filter_project_scope,
     zen_store,
 )
@@ -316,13 +317,7 @@ def get_artifact_download_token(
         id=artifact_version_id, get_method=zen_store().get_artifact_version
     )
 
-    config = server_config()
-
-    return jwt.encode(
-        {"exp": utc_now() + timedelta(seconds=30)},
-        key=config.jwt_secret_key,
-        algorithm=config.jwt_token_algorithm,
-    )
+    return generate_artifact_download_token(artifact_version_id)
 
 
 @artifact_version_router.get(
@@ -342,17 +337,7 @@ def download_artifact_data(
     Returns:
         The artifact data.
     """
-    config = server_config()
-
-    try:
-        jwt.decode(
-            token,
-            config.jwt_secret_key,
-            algorithms=[config.jwt_token_algorithm],
-            verify=True,
-        )
-    except jwt.PyJWTError as e:
-        raise CredentialsNotValid(f"Invalid JWT token: {e}") from e
+    verify_artifact_download_token(token, artifact_version_id)
 
     artifact = zen_store().get_artifact_version(artifact_version_id)
     archive_path = create_artifact_archive(artifact, zen_store=zen_store())
