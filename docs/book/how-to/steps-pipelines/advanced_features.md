@@ -8,9 +8,15 @@ This guide covers advanced features and capabilities of ZenML pipelines and step
 
 ## Configuration & Customization
 
-### Step Settings
+ZenML offers multiple ways to configure and customize your pipelines and steps. This section explains the different configuration options available.
 
-You can configure additional settings for steps beyond the basic parameters:
+### Ways to Apply Configuration
+
+ZenML provides several approaches to configure your pipelines and steps:
+
+#### 1. Step-Level Configuration
+
+You can configure individual steps with the `@step` decorator:
 
 ```python
 @step(
@@ -30,9 +36,9 @@ def train_model() -> tf.keras.Model:
     return model
 ```
 
-### Configuring Stack Components per Step
+#### 2. Direct Component Assignment
 
-You can use different stack components for different steps:
+You can directly specify which stack components a step should use:
 
 ```python
 @step(experiment_tracker="mlflow_tracker", step_operator="vertex_ai")
@@ -46,7 +52,24 @@ def evaluate_model():
     ...
 ```
 
-### Advanced Pipeline Configuration
+This direct specification is a concise way to assign different stack components to different steps. You can combine this with settings to configure the specific behavior of those components:
+
+```python
+@step(step_operator="nameofstepoperator", settings={"step_operator": {"estimator_args": {"instance_type": "m7g.medium"}}})
+def my_step():
+    # This step will use the specified step operator with custom instance type
+    ...
+
+# Alternatively, using the appropriate settings class:
+@step(step_operator="nameofstepoperator", settings={"step_operator": SagemakerStepOperatorSettings(instance_type="m7g.medium")})
+def my_step():
+    # Same configuration using the settings class
+    ...
+```
+
+This approach allows you to use different components for different steps in your pipeline while also customizing their runtime behavior.
+
+#### 3. Pipeline Configuration with `configure`
 
 You can configure various aspects of a pipeline using the `configure` method:
 
@@ -69,7 +92,111 @@ my_pipeline.configure(
 my_pipeline()
 ```
 
-### Environment Variables in Configurations
+#### 4. Runtime Configuration with `with_options`
+
+You can configure a pipeline at runtime using the `with_options` method:
+
+```python
+# Configure specific step parameters
+my_pipeline.with_options(steps={"trainer": {"parameters": {"learning_rate": 0.01}}})()
+
+# Or using a YAML configuration file
+my_pipeline.with_options(config_file="path_to_yaml_file")()
+```
+
+### Types of Settings
+
+Settings in ZenML are categorized into two main types:
+
+* **General settings** that can be used on all ZenML pipelines:
+  * `DockerSettings` for container configuration
+  * `ResourceSettings` for CPU, memory, and GPU allocation
+
+* **Stack-component-specific settings** for configuring behaviors of components in your stack:
+  * These use the pattern `<COMPONENT_CATEGORY>` or `<COMPONENT_CATEGORY>.<COMPONENT_FLAVOR>` as keys
+  * Examples include `experiment_tracker.mlflow` or just `step_operator`
+
+### Common Setting Types
+
+#### Resource Settings
+
+Resource settings allow you to specify the CPU, memory, and GPU requirements for your steps:
+
+```python
+from zenml.config import ResourceSettings
+
+@step(settings={"resources": ResourceSettings(gpu_count=1, memory="2GB")})
+def train_model(data: dict) -> None:
+    ...
+
+@pipeline(settings={"resources": ResourceSettings(cpu_count=2, memory="1GB")}) 
+def simple_ml_pipeline(parameter: int):
+    ...
+```
+
+When both pipeline and step resource settings are specified, they are merged with step settings taking precedence:
+
+```python
+# Result of merging the above configurations:
+# train_model.configuration.settings["resources"]
+# -> cpu_count: 2, gpu_count=1, memory="2GB"
+```
+
+#### Docker Settings
+
+Docker settings allow you to customize the containerization process:
+
+```python
+@pipeline(settings={
+    "docker": {
+        "parent_image": "zenml-io/zenml-cuda:latest"
+    }
+})
+def my_pipeline():
+    ...
+```
+
+### Stack Component Configuration
+
+#### Registration-time vs Runtime Stack Component Settings
+
+Stack components have two types of configuration:
+
+1. **Registration-time configuration**: Static settings defined when registering a component
+   ```bash
+   # Example: Setting a fixed tracking URL for MLflow
+   zenml experiment-tracker register mlflow_tracker --flavor=mlflow --tracking_url=http://localhost:5000
+   ```
+
+2. **Runtime settings**: Dynamic settings that can change between pipeline runs
+   ```python
+   # Example: Setting experiment name that changes for each run
+   @step(settings={"experiment_tracker.mlflow": {"experiment_name": "custom_experiment"}})
+   def my_step():
+       ...
+   ```
+
+Even for runtime settings, you can set default values during registration:
+```bash
+# Setting a default value for "nested" setting
+zenml experiment-tracker register <n> --flavor=mlflow --nested=True
+```
+
+#### Using the Right Key for Stack Component Settings
+
+When specifying stack-component-specific settings, the key follows this pattern:
+
+```python
+# Using just the component category
+@step(settings={"step_operator": {"estimator_args": {"instance_type": "m7g.medium"}}})
+
+# Or using the component category and flavor
+@step(settings={"experiment_tracker.mlflow": {"experiment_name": "custom_experiment"}})
+```
+
+If you specify just the category (e.g., `step_operator`), ZenML applies these settings to whatever flavor of component is in your stack. If the settings don't apply to that flavor, they are ignored.
+
+### Making Configurations Flexible with Environment Variables
 
 You can make your configurations more flexible by referencing environment variables using the placeholder syntax `${ENV_VARIABLE_NAME}`:
 
