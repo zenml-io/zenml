@@ -30,7 +30,7 @@ from zenml.constants import (
     ARTIFACT_VERSIONS,
     BATCH,
     DATA,
-    DOWNLOAD_URL,
+    DOWNLOAD_TOKEN,
     VERSION_1,
     VISUALIZE,
 )
@@ -297,7 +297,7 @@ def get_artifact_visualization(
 
 
 @artifact_version_router.get(
-    "/{artifact_version_id}" + DOWNLOAD_URL,
+    "/{artifact_version_id}" + DOWNLOAD_TOKEN,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
