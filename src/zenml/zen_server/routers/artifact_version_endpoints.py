@@ -14,9 +14,11 @@
 """Endpoint definitions for artifact versions."""
 
 import os
+from datetime import timedelta
 from typing import List, Union
 from uuid import UUID
 
+import jwt
 from fastapi import APIRouter, Depends, Security
 from fastapi.responses import FileResponse
 from starlette.background import BackgroundTask
@@ -30,6 +32,7 @@ from zenml.constants import (
     ARTIFACT_VERSIONS,
     BATCH,
     DATA,
+    DOWNLOAD_URL,
     VERSION_1,
     VISUALIZE,
 )
@@ -41,8 +44,9 @@ from zenml.models import (
     LoadedVisualization,
     Page,
 )
+from zenml.utils.time_utils import utc_now
 from zenml.zen_server.auth import AuthContext, authorize
-from zenml.zen_server.exceptions import error_response
+from zenml.zen_server.exceptions import CredentialsNotValid, error_response
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_batch_create_entity,
     verify_permissions_and_create_entity,
@@ -59,6 +63,7 @@ from zenml.zen_server.rbac.utils import (
 from zenml.zen_server.utils import (
     handle_exceptions,
     make_dependable,
+    server_config,
     set_filter_project_scope,
     zen_store,
 )
@@ -291,26 +296,65 @@ def get_artifact_visualization(
 
 
 @artifact_version_router.get(
-    "/{artifact_version_id}" + DATA,
+    "/{artifact_version_id}" + DOWNLOAD_URL,
     responses={401: error_response, 404: error_response, 422: error_response},
 )
 @handle_exceptions
-def get_artifact_data(
+def get_artifact_download_token(
     artifact_version_id: UUID,
     _: AuthContext = Security(authorize),
-) -> FileResponse:
-    """Get the artifact data.
+) -> str:
+    """Get a download token for the artifact data.
 
     Args:
         artifact_version_id: ID of the artifact version for which to get the data.
 
     Returns:
-        The artifact data.
+        The download token for the artifact data.
     """
-    artifact = verify_permissions_and_get_entity(
+    _ = verify_permissions_and_get_entity(
         id=artifact_version_id, get_method=zen_store().get_artifact_version
     )
 
+    config = server_config()
+
+    return jwt.encode(
+        {"exp": utc_now() + timedelta(seconds=30)},
+        key=config.jwt_secret_key,
+        algorithm=config.jwt_token_algorithm,
+    )
+
+
+@artifact_version_router.get(
+    "/{artifact_version_id}" + DATA,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def download_artifact_data(
+    artifact_version_id: UUID, token: str
+) -> FileResponse:
+    """Download the artifact data.
+
+    Args:
+        artifact_version_id: ID of the artifact version for which to get the data.
+        token: The token to authenticate the artifact download.
+
+    Returns:
+        The artifact data.
+    """
+    config = server_config()
+
+    try:
+        jwt.decode(
+            token,
+            config.jwt_secret_key,
+            algorithms=[config.jwt_token_algorithm],
+            verify=True,
+        )
+    except jwt.PyJWTError as e:
+        raise CredentialsNotValid(f"Invalid JWT token: {e}") from e
+
+    artifact = zen_store().get_artifact_version(artifact_version_id)
     archive_path = create_artifact_archive(artifact, zen_store=zen_store())
 
     return FileResponse(
