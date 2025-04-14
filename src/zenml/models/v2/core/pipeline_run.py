@@ -249,10 +249,6 @@ class PipelineRunResponseMetadata(ProjectScopedResponseMetadata):
         title="Substitutions used in the step runs of this pipeline run.",
         default_factory=dict,
     )
-    logs: Optional["LogsResponse"] = Field(
-        title="Logs associated with this pipeline run.",
-        default=None,
-    )
 
 
 class PipelineRunResponseResources(ProjectScopedResponseResources):
@@ -261,6 +257,10 @@ class PipelineRunResponseResources(ProjectScopedResponseResources):
     model_version: Optional[ModelVersionResponse] = None
     tags: List[TagResponse] = Field(
         title="Tags associated with the pipeline run.",
+    )
+    logs: Optional["LogsResponse"] = Field(
+        title="Logs associated with this pipeline run.",
+        default=None,
     )
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
@@ -596,7 +596,7 @@ class PipelineRunResponse(
         Returns:
             the value of the property.
         """
-        return self.get_metadata().logs
+        return self.get_resources().logs
 
 
 # ------------------ Filter Model ------------------

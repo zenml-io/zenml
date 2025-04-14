@@ -600,7 +600,6 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         enable_artifact_visualization: Optional[bool] = None,
         enable_step_logs: Optional[bool] = None,
         enable_pipeline_logs: Optional[bool] = None,
-        deployment: Optional[PipelineDeploymentBase] = None,
         schedule: Optional[Schedule] = None,
         build: Union[str, "UUID", "PipelineBuildBase", None] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
@@ -625,7 +624,6 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             enable_step_logs: If step logs should be enabled for this pipeline.
             enable_pipeline_logs: If pipeline logs should be enabled for this
                 pipeline run.
-            deployment: Optional pre-compiled deployment to use for the run.
             schedule: Optional schedule to use for the run.
             build: Optional build to use for the run.
             settings: Settings for this pipeline run.
@@ -650,21 +648,20 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             ValueError: If the orchestrator doesn't support scheduling, but a
                 schedule was given
         """
-        if deployment is None:
-            deployment, schedule, build = self._compile(
-                config_path=config_path,
-                run_name=run_name,
-                enable_cache=enable_cache,
-                enable_artifact_metadata=enable_artifact_metadata,
-                enable_artifact_visualization=enable_artifact_visualization,
-                enable_step_logs=enable_step_logs,
-                enable_pipeline_logs=enable_pipeline_logs,
-                steps=step_configurations,
-                settings=settings,
-                schedule=schedule,
-                build=build,
-                extra=extra,
-            )
+        deployment, schedule, build = self._compile(
+            config_path=config_path,
+            run_name=run_name,
+            enable_cache=enable_cache,
+            enable_artifact_metadata=enable_artifact_metadata,
+            enable_artifact_visualization=enable_artifact_visualization,
+            enable_step_logs=enable_step_logs,
+            enable_pipeline_logs=enable_pipeline_logs,
+            steps=step_configurations,
+            settings=settings,
+            schedule=schedule,
+            build=build,
+            extra=extra,
+        )
 
         skip_pipeline_registration = constants.handle_bool_env_var(
             constants.ENV_ZENML_SKIP_PIPELINE_REGISTRATION,
@@ -825,16 +822,8 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         with track_handler(AnalyticsEvent.RUN_PIPELINE) as analytics_handler:
             stack = Client().active_stack
 
-            compiled_deployment, schedule, build = self._compile(
-                **self._run_args
-            )
-            self._run_args["deployment"] = compiled_deployment
-            self._run_args["schedule"] = schedule
-            self._run_args["build"] = build
-
-            logging_enabled = True
             # Enable or disable pipeline run logs storage
-            if schedule:
+            if self._run_args.get("schedule"):
                 # Pipeline runs scheduled to run in the future are not logged
                 # via the client.
                 logging_enabled = False
@@ -842,11 +831,10 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 constants.ENV_ZENML_DISABLE_PIPELINE_LOGS_STORAGE, False
             ):
                 logging_enabled = False
-            elif (
-                compiled_deployment.pipeline_configuration.enable_pipeline_logs
-                is not None
-            ):
-                logging_enabled = compiled_deployment.pipeline_configuration.enable_pipeline_logs
+            else:
+                logging_enabled = self._run_args.get(
+                    "enable_pipeline_logs", True
+                )
 
             logs_context = nullcontext()
             logs_model = None
