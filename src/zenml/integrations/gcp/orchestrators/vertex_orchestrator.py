@@ -343,7 +343,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
 
         # Create a dictionary of explicit parameters
         params = custom_job_parameters.model_dump(
-            exclude_none=True, exclude=set("additional_training_job_args")
+            exclude_none=True, exclude={"additional_training_job_args"}
         )
 
         # If service account is not provided and we're not using persistent resource,
@@ -391,7 +391,13 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             params["encryption_spec_key_name"] = (
                 self.config.encryption_spec_key_name
             )
+        if (
+            self.config.workload_service_account
+            and "service_account" not in params
+        ):
+            params["service_account"] = self.config.workload_service_account
 
+        # Add env to params if it exists
         custom_job_component = create_custom_training_job_from_component(
             component_spec=component,
             **params,
