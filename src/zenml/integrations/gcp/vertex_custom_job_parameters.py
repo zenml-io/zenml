@@ -38,8 +38,13 @@ class VertexCustomJobParameters(BaseModel):
             https://cloud.google.com/vertex-ai/docs/training/configure-compute#boot_disk_options
         persistent_resource_id: The ID of the persistent resource to use for the job.
             If empty (default), the job will not use a persistent resource.
+            When using a persistent resource, you must also specify a service_account.
+            Conversely, when explicitly setting this to an empty string, you
+            should not specify a service_account (ZenML will handle this automatically).
             https://cloud.google.com/vertex-ai/docs/training/persistent-resource-overview
         service_account: Specifies the service account to be used.
+            This is required when using a persistent_resource_id, and
+            should not be set when persistent_resource_id="".
         advanced_training_job_args: Additional arguments to pass to the create_custom_training_job_from_component
             function. This allows passing any additional parameters supported by the Google
             Cloud Pipeline Components library without requiring ZenML to update its API.

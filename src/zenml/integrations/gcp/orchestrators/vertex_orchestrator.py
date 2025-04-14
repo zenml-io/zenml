@@ -331,7 +331,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             settings.custom_job_parameters or VertexCustomJobParameters()
         )
         if (
-            custom_job_parameters.persistent_resource_id
+            custom_job_parameters.persistent_resource_id != ""
             and not custom_job_parameters.service_account
         ):
             # Persistent resources require an explicit service account, but
@@ -340,6 +340,15 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             custom_job_parameters.service_account = (
                 self.config.workload_service_account
             )
+
+        if (
+            custom_job_parameters.persistent_resource_id == ""
+            and not custom_job_parameters.service_account
+        ):
+            # Persistent resources require an explicit service account, but
+            # none was provided in the custom job parameters. We set it to an
+            # empty string to avoid Vertex API errors.
+            custom_job_parameters.service_account = ""
 
         # Create a dictionary of explicit parameters
         params = {
@@ -351,6 +360,38 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             "persistent_resource_id": custom_job_parameters.persistent_resource_id,
             "service_account": custom_job_parameters.service_account,
         }
+
+        # Inherit settings from the orchestrator config if they're not already
+        # specified in the custom job parameters
+
+        # Add network from orchestrator config if not specified
+        if (
+            self.config.network
+            and "network"
+            not in custom_job_parameters.advanced_training_job_args
+        ):
+            params["network"] = self.config.network
+
+        # Add encryption spec from orchestrator config if not specified
+        if (
+            self.config.encryption_spec_key_name
+            and "encryption_spec_key_name"
+            not in custom_job_parameters.advanced_training_job_args
+        ):
+            params["encryption_spec_key_name"] = (
+                self.config.encryption_spec_key_name
+            )
+
+        # If service account is not provided and we're not using persistent resource,
+        # use the workload service account from orchestrator config
+        if (
+            not params.get("service_account")
+            and custom_job_parameters.persistent_resource_id == ""
+            and self.config.workload_service_account
+            and "service_account"
+            not in custom_job_parameters.advanced_training_job_args
+        ):
+            params["service_account"] = self.config.workload_service_account
 
         # Remove None values to let defaults be set by the function
         params = {k: v for k, v in params.items() if v is not None}

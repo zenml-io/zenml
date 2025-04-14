@@ -477,6 +477,18 @@ VertexCustomJobParameters(
 The resulting machine type will be "n1-standard-16". When this happens, ZenML will log a warning at runtime to alert you of the parameter override, which helps avoid confusion about which configuration values are actually being used.
 {% endhint %}
 
+{% hint style="info" %}
+When using `custom_job_parameters`, ZenML automatically applies certain configurations from your orchestrator:
+
+- **Network Configuration**: If you've set `network` in your Vertex orchestrator configuration, it will be automatically applied to all custom jobs unless you explicitly override it in `advanced_training_job_args`.
+
+- **Encryption Specification**: If you've set `encryption_spec_key_name` in your orchestrator configuration, it will be applied to custom jobs for consistent encryption.
+
+- **Service Account**: For non-persistent resource jobs, if no service account is specified in the custom job parameters, the `workload_service_account` from the orchestrator configuration will be used.
+
+This inheritance mechanism ensures consistent configuration across your pipeline steps, maintaining connectivity to GCP resources (like databases), security settings, and compute resources without requiring manual specification for each step.
+{% endhint %}
+
 For a complete list of parameters supported by the underlying function, refer to the [Google Pipeline Components SDK V1 docs](https://google-cloud-pipeline-components.readthedocs.io/en/google-cloud-pipeline-components-2.19.0/api/v1/custom_job.html#v1.custom_job.create_custom_training_job_from_component).
 
 Note that when using custom job parameters with `persistent_resource_id`, you must always specify a `service_account` as well.
@@ -573,6 +585,10 @@ def my_step():
 ```
 
 Using a persistent resource is particularly useful when you're developing locally and want to iterate quickly on steps that need cloud resources. The startup time of the job can be extremely quick.
+
+{% hint style="warning" %}
+When using persistent resources (`persistent_resource_id` specified), you **must** always include a `service_account`. Conversely, when explicitly setting `persistent_resource_id=""` to avoid using persistent resources, ZenML will automatically set the service account to an empty string to avoid Vertex API errors - so don't set the service account in this case.
+{% endhint %}
 
 {% hint style="warning" %}
 Remember that persistent resources continue to incur costs as long as they're running, even when idle. Make sure to monitor your usage and configure appropriate idle timeout periods.
