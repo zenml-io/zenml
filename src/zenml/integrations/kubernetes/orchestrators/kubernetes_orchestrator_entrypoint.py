@@ -176,6 +176,18 @@ def main() -> None:
             mount_local_stores=mount_local_stores,
         )
 
+        kube_utils.create_and_wait_for_pod_to_start(
+            core_api=core_api,
+            pod_display_name=f"pod for step `{step_name}`",
+            pod_name=pod_name,
+            pod_manifest=pod_manifest,
+            namespace=args.kubernetes_namespace,
+            startup_max_retries=settings.pod_failure_max_retries,
+            startup_failure_delay=settings.pod_failure_retry_delay,
+            startup_failure_backoff=settings.pod_failure_backoff,
+            startup_timeout=settings.pod_startup_timeout,
+        )
+
         retries = 0
         max_retries = settings.pod_failure_max_retries
         delay: float = settings.pod_failure_retry_delay
