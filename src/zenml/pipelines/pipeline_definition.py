@@ -833,7 +833,10 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 logging_enabled = False
             else:
                 logging_enabled = self._run_args.get(
-                    "enable_pipeline_logs", True
+                    "enable_pipeline_logs",
+                    self.configuration.enable_pipeline_logs
+                    if self.configuration.enable_pipeline_logs is not None
+                    else True,
                 )
 
             logs_context = nullcontext()
