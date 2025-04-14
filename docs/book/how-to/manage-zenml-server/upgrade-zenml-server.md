@@ -13,8 +13,7 @@ In general, upgrade your ZenML server as soon as you can once a new version is r
 
 {% tabs %}
 {% tab title="Docker" %}
-To upgrade to a new version with docker, you have to delete the existing container and then run the new version of\
-the `zenml-server` image.
+To upgrade to a new version with docker, you have to delete the existing container and then run the new version of the `zenml-server` image.
 
 {% hint style="danger" %}
 Check that your data is persisted (either on persistent storage or on an external MySQL instance) before doing this.
@@ -36,8 +35,7 @@ Optionally also perform a backup before the upgrade.
     # remove the container
     docker rm <CONTAINER_ID>
     ```
-*   Deploy the version of the `zenml-server` image that you want to use. Find all\
-    versions [here](https://hub.docker.com/r/zenmldocker/zenml-server/tags).
+*   Deploy the version of the `zenml-server` image that you want to use. Find all versions [here](https://hub.docker.com/r/zenmldocker/zenml-server/tags).
 
     ```bash
     docker run -it -d -p 8080:8080 --name <CONTAINER_NAME> zenmldocker/zenml-server:<VERSION>
