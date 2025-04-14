@@ -26,7 +26,7 @@ from zenml.constants import (
 from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
-from zenml.utils.io_utils import is_safe_extraction_path
+from zenml.utils.io_utils import is_path_within_directory
 
 
 class PathMaterializer(BaseMaterializer):
@@ -76,7 +76,7 @@ class PathMaterializer(BaseMaterializer):
                     # Filter members to only those with safe paths
                     safe_members = []
                     for member in tar.getmembers():
-                        if is_safe_extraction_path(member.name, directory):
+                        if is_path_within_directory(member.name, directory):
                             safe_members.append(member)
 
                     # Extract only safe members

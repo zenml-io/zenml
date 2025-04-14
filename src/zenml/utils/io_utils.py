@@ -205,29 +205,27 @@ def resolve_relative_path(path: str) -> str:
     return str(Path(path).resolve())
 
 
-def is_safe_extraction_path(member_path: str, target_dir: str) -> bool:
-    """Validates if a file extraction path is safe and doesn't allow path traversal.
+def is_path_within_directory(path: str, directory: str) -> bool:
+    """Checks if a path is contained within a given directory.
 
-    This utility function is designed to prevent path traversal vulnerabilities
-    (such as CVE-2007-4559) when extracting files from archives. It ensures that
-    the final path after extraction is within the intended target directory.
+    This utility function verifies that a path (absolute or relative) resolves
+    to a location that is within the specified directory. This is useful for
+    security checks such as preventing path traversal attacks when extracting
+    archives (CVE-2007-4559) or whenever path containment needs to be verified.
 
     Args:
-        member_path: The path of the archive member to be extracted.
-        target_dir: The target directory where files should be extracted.
+        path: The path to check (can be relative or absolute).
+        directory: The directory that should contain the path.
 
     Returns:
-        Boolean indicating whether the extraction path is safe (True) or
-        potentially malicious (False).
+        Boolean indicating whether the path is contained within the directory (True)
+        or not (False).
     """
     # Convert to absolute path, ensuring it's normalized
-    abs_path = os.path.abspath(os.path.join(target_dir, member_path))
+    abs_path = os.path.abspath(os.path.join(directory, path))
     # Check if the path is within the target directory
-    target_dir_abs = os.path.abspath(target_dir)
-    return (
-        abs_path.startswith(target_dir_abs + os.sep)
-        or abs_path == target_dir_abs
-    )
+    dir_abs = os.path.abspath(directory)
+    return abs_path.startswith(dir_abs + os.sep) or abs_path == dir_abs
 
 
 def move(source: str, destination: str, overwrite: bool = False) -> None:
