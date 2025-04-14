@@ -268,3 +268,4 @@ redirects:
   how-to/pipeline-development/trigger-pipelines/use-templates-python: how-to/trigger-pipelines/use-templates-python.md
   how-to/pipeline-development/trigger-pipelines/use-templates-cli: how-to/trigger-pipelines/use-templates-cli.md
   how-to/pipeline-development/trigger-pipelines/use-templates-dashboard: how-to/trigger-pipelines/use-templates-dashboard.md
+  how-to/pipeline-development/trigger-pipelines/use-templates-rest-api: how-to/trigger-pipelines/use-templates-rest-api.md
