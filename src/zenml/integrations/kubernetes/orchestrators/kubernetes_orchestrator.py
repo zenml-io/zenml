@@ -543,14 +543,24 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 mount_local_stores=self.config.is_local,
             )
 
-            self._k8s_core_api.create_namespaced_pod(
+            logger.info("Waiting for Kubernetes orchestrator pod to start...")
+            kube_utils.create_and_wait_for_pod_to_start(
+                core_api=self._k8s_core_api,
+                pod_display_name="Kubernetes orchestrator pod",
+                pod_name=pod_name,
+                pod_manifest=pod_manifest,
                 namespace=self.config.kubernetes_namespace,
-                body=pod_manifest,
+                startup_max_retries=settings.pod_failure_max_retries,
+                startup_failure_delay=settings.pod_failure_retry_delay,
+                startup_failure_backoff=settings.pod_failure_backoff,
+                startup_timeout=settings.pod_startup_timeout,
             )
 
             # Wait for the orchestrator pod to finish and stream logs.
             if settings.synchronous:
-                logger.info("Waiting for Kubernetes orchestrator pod...")
+                logger.info(
+                    "Waiting for Kubernetes orchestrator pod to finish..."
+                )
                 kube_utils.wait_pod(
                     kube_client_fn=self.get_kube_client,
                     pod_name=pod_name,

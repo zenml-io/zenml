@@ -218,13 +218,24 @@ class KubernetesStepOperator(BaseStepOperator):
             mount_local_stores=False,
         )
 
-        self._k8s_core_api.create_namespaced_pod(
+        logger.info(
+            "Waiting for pod of step `%s` to start...", info.pipeline_step_name
+        )
+        kube_utils.create_and_wait_for_pod_to_start(
+            core_api=self._k8s_core_api,
+            pod_display_name=f"pod of step `{info.pipeline_step_name}`",
+            pod_name=pod_name,
+            pod_manifest=pod_manifest,
             namespace=self.config.kubernetes_namespace,
-            body=pod_manifest,
+            startup_max_retries=settings.pod_failure_max_retries,
+            startup_failure_delay=settings.pod_failure_retry_delay,
+            startup_failure_backoff=settings.pod_failure_backoff,
+            startup_timeout=settings.pod_startup_timeout,
         )
 
         logger.info(
-            "Waiting for pod of step `%s` to start...", info.pipeline_step_name
+            "Waiting for pod of step `%s` to finish...",
+            info.pipeline_step_name,
         )
         kube_utils.wait_pod(
             kube_client_fn=self.get_kube_client,
