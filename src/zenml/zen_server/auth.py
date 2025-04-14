@@ -482,7 +482,7 @@ def authenticate_credentials(
                         "after other steps have failed, you can do so by "
                         "configuring the "
                         f"`{ENV_ZENML_WORKLOAD_TOKEN_EXPIRATION_LEEWAY}` "
-                        "environment variable."
+                        "ZenML server environment variable."
                     )
                     logger.error(error)
                     raise CredentialsNotValid(error)
