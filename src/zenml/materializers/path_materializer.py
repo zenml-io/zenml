@@ -26,6 +26,7 @@ from zenml.constants import (
 from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.utils.io_utils import is_path_within_directory
 
 
 class PathMaterializer(BaseMaterializer):
@@ -71,7 +72,15 @@ class PathMaterializer(BaseMaterializer):
 
                 # Extract the archive to the temporary directory
                 with tarfile.open(archive_path_local, "r:gz") as tar:
-                    tar.extractall(path=directory)
+                    # Validate archive members to prevent path traversal attacks
+                    # Filter members to only those with safe paths
+                    safe_members = []
+                    for member in tar.getmembers():
+                        if is_path_within_directory(member.name, directory):
+                            safe_members.append(member)
+
+                    # Extract only safe members
+                    tar.extractall(path=directory, members=safe_members)  # nosec B202 - members are filtered through is_path_within_directory
 
                 # Clean up the archive file
                 os.remove(archive_path_local)
@@ -93,8 +102,14 @@ class PathMaterializer(BaseMaterializer):
 
         Args:
             data: Path to a local directory or file to store. Must be a Path object.
+
+        Raises:
+            TypeError: If data is not a Path object.
         """
-        assert isinstance(data, Path)
+        if not isinstance(data, Path):
+            raise TypeError(
+                f"Expected a Path object, got {type(data).__name__}"
+            )
 
         if data.is_dir():
             # Handle directory artifact
