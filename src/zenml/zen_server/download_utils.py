@@ -69,7 +69,8 @@ def verify_artifact_is_downloadable(
     if size and size > max_download_size:
         raise IllegalOperationError(
             f"The artifact '{artifact.id}' is too large to be downloaded. "
-            f"The maximum download size is {max_download_size} bytes."
+            f"The maximum download size allowed by your ZenML server is "
+            f"{max_download_size} bytes."
         )
 
     return artifact_store
