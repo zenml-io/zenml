@@ -108,10 +108,9 @@
 
 ## Deployment
 
-* [Deployment Options](../how-to/stack-components/deployment.md)
-  * [1-click Deployment](../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack.md)
-  * [Terraform Modules](../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform.md)
-  * [Register a cloud stack](../how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack.md)
+* [1-click Deployment](../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack.md)
+* [Terraform Modules](../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform.md)
+* [Register a cloud stack](../how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack.md)
 * [Infrastructure as code](../how-to/infrastructure-deployment/infrastructure-as-code/README.md)
   * [Manage your stacks with Terraform](../how-to/infrastructure-deployment/infrastructure-as-code/terraform-stack-management.md)
   * [ZenML & Terraform Best Practices](../how-to/infrastructure-deployment/infrastructure-as-code/best-practices.md)
