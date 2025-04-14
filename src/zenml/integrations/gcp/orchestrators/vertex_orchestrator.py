@@ -341,13 +341,31 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                 self.config.workload_service_account
             )
 
+        # Create a dictionary of explicit parameters
+        params = {
+            "accelerator_type": custom_job_parameters.accelerator_type,
+            "accelerator_count": custom_job_parameters.accelerator_count,
+            "machine_type": custom_job_parameters.machine_type,
+            "boot_disk_size_gb": custom_job_parameters.boot_disk_size_gb,
+            "boot_disk_type": custom_job_parameters.boot_disk_type,
+            "persistent_resource_id": custom_job_parameters.persistent_resource_id,
+            "service_account": custom_job_parameters.service_account,
+        }
+
+        # Remove None values to let defaults be set by the function
+        params = {k: v for k, v in params.items() if v is not None}
+
+        # Add environment variables
+        params["env"] = [
+            {"name": key, "value": value} for key, value in environment.items()
+        ]
+
+        # Add any additional parameters from custom_training_job_kwargs
+        params.update(custom_job_parameters.custom_training_job_kwargs)
+
         custom_job_component = create_custom_training_job_from_component(
             component_spec=component,
-            env=[
-                {"name": key, "value": value}
-                for key, value in environment.items()
-            ],
-            **custom_job_parameters.model_dump(),
+            **params,
         )
 
         return custom_job_component

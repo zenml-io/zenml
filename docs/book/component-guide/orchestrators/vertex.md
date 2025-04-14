@@ -421,7 +421,7 @@ def my_pipeline():
     ...
 ```
 
-The `VertexCustomJobParameters` supports many configuration options:
+The `VertexCustomJobParameters` supports the following common configuration options:
 
 | Parameter | Description |
 |-----------|-------------|
@@ -432,12 +432,43 @@ The `VertexCustomJobParameters` supports many configuration options:
 | accelerator_count | Number of accelerators to attach |
 | service_account | Service account to use for the job |
 | persistent_resource_id | ID of persistent resource for faster job startup |
-| timeout | Maximum time the job can run before timing out |
-| replica_count | Number of replicas for distributed training |
 
-For a complete list of parameters and their descriptions, refer to the [Google Pipleines SDK V1 docs](https://google-cloud-pipeline-components.readthedocs.io/en/google-cloud-pipeline-components-2.19.0/api/v1/custom_job.html#v1.custom_job.create_custom_training_job_from_component.persistent_resource_id).
+#### Advanced Custom Job Parameters
+
+For advanced scenarios, you can use `custom_training_job_kwargs` to pass additional parameters directly to the underlying Google Cloud Pipeline Components library:
+
+```python
+@step(
+    settings={
+        "orchestrator": VertexOrchestratorSettings(
+            custom_job_parameters=VertexCustomJobParameters(
+                machine_type="n1-standard-8",
+                # Advanced parameters passed directly to create_custom_training_job_from_component
+                custom_training_job_kwargs={
+                    "timeout": "86400s",  # 24 hour timeout
+                    "network": "projects/12345/global/networks/my-vpc",
+                    "enable_web_access": True,
+                    "reserved_ip_ranges": ["192.168.0.0/16"],
+                    "base_output_directory": "gs://my-bucket/outputs",
+                    "labels": {"team": "ml-research", "project": "image-classification"}
+                }
+            )
+        )
+    }
+)
+def my_advanced_step():
+    ...
+```
+
+These advanced parameters are passed directly to the Google Cloud Pipeline Components library's [`create_custom_training_job_from_component`](https://google-cloud-pipeline-components.readthedocs.io/en/google-cloud-pipeline-components-2.19.0/api/v1/custom_job.html#v1.custom_job.create_custom_training_job_from_component) function. This approach lets you access new features of the Google API without requiring ZenML updates.
+
+For a complete list of parameters supported by the underlying function, refer to the [Google Pipeline Components SDK V1 docs](https://google-cloud-pipeline-components.readthedocs.io/en/google-cloud-pipeline-components-2.19.0/api/v1/custom_job.html#v1.custom_job.create_custom_training_job_from_component).
 
 Note that when using custom job parameters with `persistent_resource_id`, you must always specify a `service_account` as well.
+
+{% hint style="info" %}
+The `custom_training_job_kwargs` field provides future-proofing for your ZenML pipelines. If Google adds new parameters to their API, you can immediately use them without waiting for ZenML updates. This is especially useful for accessing new hardware configurations, networking features, or security settings as they become available.
+{% endhint %}
 
 ### Enabling CUDA for GPU-backed hardware
 
@@ -457,7 +488,7 @@ Note that a service account with permissions to access the persistent resource i
 
 ```bash
 # You can also use `zenml orchestrator update`
-zenml orchestrator register <NAME> -f vertex --custom_job_parameters='{"persistent_resource_id": <PERSISTENT_RESOURCE_ID>, "service_account": <SERVICE_ACCOUNT_NAME>, "machine_type": "n1-standard-4", "boot_disk_type": "pd-standard"}'
+zenml orchestrator register <NAME> -f vertex --custom_job_parameters='{"persistent_resource_id": "<PERSISTENT_RESOURCE_ID>", "service_account": "<SERVICE_ACCOUNT_NAME>", "machine_type": "n1-standard-4", "boot_disk_type": "pd-standard"}'
 ```
 
 #### Configure the orchestrator using the dashboard
