@@ -319,6 +319,12 @@ def get_artifact_download_token(
     )
     verify_artifact_is_downloadable(artifact, zen_store())
 
+    # The artifact download is handled in a separate tab by the browser. In this
+    # tab, we do not have the ability to set any headers and therefore cannot
+    # include the CSRF token in the request. To handle this, we instead generate
+    # a JWT token in this endpoint (which includes CSRF and RBAC checks) and
+    # then use that token to download the artifact data in a separate endpoint
+    # which only verifies this short-lived token.
     return generate_artifact_download_token(artifact_version_id)
 
 
