@@ -31,7 +31,7 @@
     * [Migration guide 0.39.1 → 0.41.0](how-to/manage-zenml-server/migration-guide/migration-zero-forty.md)
     * [Migration guide 0.58.2 → 0.60.0](how-to/manage-zenml-server/migration-guide/migration-zero-sixty.md)
 
-## Concepts & Others
+## Stacks
 
 * [Steps & Pipelines](how-to/steps-pipelines/steps_and_pipelines.md)
   * [Logging](how-to/steps-pipelines/logging.md)
