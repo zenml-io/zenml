@@ -119,7 +119,7 @@ Congratulations! You've just experienced the core value proposition of ZenML:
 
 To continue your ZenML journey, explore these key topics:
 
-* **Pipeline Development**: Discover advanced features like [scheduling](../how-to/steps-pipelines/advanced_features.md#scheduling), [caching](../how-to/steps-pipelines/advanced_features.md#caching), and [parameterization](../how-to/steps-pipelines/steps_and_pipelines.md#parameterizing-workflows)
+* **Pipeline Development**: Discover advanced features like [scheduling](../how-to/steps-pipelines/advanced_features.md#scheduling) and [caching](../how-to/steps-pipelines/advanced_features.md#caching)
 * **Artifact Management**: Learn how ZenML [stores, versions, and tracks your data](../how-to/artifacts/artifacts.md) automatically
 * **Organization**: Use [tags](../how-to/tags/tags.md) and [metadata](../how-to/metadata/metadata.md) to keep your ML projects structured
 * **Containerization**: Understand how ZenML [handles containerization](../how-to/containerization/containerization.md) for reproducible execution
