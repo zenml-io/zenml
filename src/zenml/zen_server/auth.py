@@ -33,9 +33,12 @@ from zenml.analytics.context import AnalyticsContext
 from zenml.constants import (
     API,
     DEFAULT_USERNAME,
+    DEFAULT_ZENML_SERVER_GENERIC_API_TOKEN_LIFETIME,
+    ENV_ZENML_WORKLOAD_TOKEN_EXPIRATION_LEEWAY,
     EXTERNAL_AUTHENTICATOR_TIMEOUT,
     LOGIN,
     VERSION_1,
+    handle_int_env_var,
 )
 from zenml.enums import (
     AuthScheme,
@@ -442,13 +445,11 @@ def authenticate_credentials(
                 return (
                     pipeline_run.status,
                     pipeline_run.end_time,
-                    pipeline_run.config.workload_token_expiration_leeway,
                 )
 
             (
                 pipeline_run_status,
                 pipeline_run_end_time,
-                pipeline_run_workload_token_expiration_leeway,
             ) = get_pipeline_run_status(decoded_token.pipeline_run_id)
             if pipeline_run_status is None:
                 error = (
@@ -458,8 +459,12 @@ def authenticate_credentials(
                 logger.error(error)
                 raise CredentialsNotValid(error)
 
+            leeway = handle_int_env_var(
+                ENV_ZENML_WORKLOAD_TOKEN_EXPIRATION_LEEWAY,
+                DEFAULT_ZENML_SERVER_GENERIC_API_TOKEN_LIFETIME,
+            )
             if pipeline_run_status == ExecutionStatus.FAILED:
-                if pipeline_run_workload_token_expiration_leeway < 0:
+                if leeway < 0:
                     # The token should never expire, we don't need to check
                     # the end time.
                     pass
@@ -467,15 +472,9 @@ def authenticate_credentials(
                     # We don't know the end time. This should never happen, but
                     # just in case we always expire the token.
                     pipeline_run_end_time is None
-                    # No expiration leeway set. The token should expire
-                    # immediately.
-                    or pipeline_run_workload_token_expiration_leeway is None
                     # Calculate whether the token has expired.
                     or utc_now(tz_aware=pipeline_run_end_time)
-                    > pipeline_run_end_time
-                    + timedelta(
-                        seconds=pipeline_run_workload_token_expiration_leeway
-                    )
+                    > pipeline_run_end_time + timedelta(seconds=leeway)
                 ):
                     error = (
                         f"The pipeline run {decoded_token.pipeline_run_id} has "
@@ -483,8 +482,9 @@ def authenticate_credentials(
                         "valid. If you want to increase the expiration time "
                         "of the token to allow steps to continue for longer "
                         "after other steps have failed, you can do so by "
-                        "configuring the `workload_token_expiration_leeway` "
-                        "parameter of the pipeline."
+                        "configuring the "
+                        f"`{ENV_ZENML_WORKLOAD_TOKEN_EXPIRATION_LEEWAY}` "
+                        "environment variable."
                     )
                     logger.error(error)
                     raise CredentialsNotValid(error)

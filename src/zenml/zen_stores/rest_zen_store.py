@@ -4449,7 +4449,7 @@ class RestZenStore(BaseZenStore):
                         "Re-authenticating and retrying..."
                     )
                     self.authenticate()
-                elif not self._can_generate_new_token():
+                elif not self._can_generate_api_token():
                     # The request failed either because we're not
                     # authenticated or our current credentials are not valid
                     # anymore.
