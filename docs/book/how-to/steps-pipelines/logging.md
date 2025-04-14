@@ -5,10 +5,6 @@ description: >-
 
 # Logging
 
-ZenML provides comprehensive logging capabilities for tracking pipeline execution, step outputs, and system events.
-
-## Viewing logs on the dashboard
-
 ZenML's logging handler captures logs during step execution. You can use standard Python logging or print statements:
 
 ```python
