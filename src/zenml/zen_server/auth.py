@@ -438,7 +438,7 @@ def authenticate_credentials(
                         pipeline_run_id, hydrate=True
                     )
                 except KeyError:
-                    return None, None, None
+                    return None, None
 
                 return (
                     pipeline_run.status,
