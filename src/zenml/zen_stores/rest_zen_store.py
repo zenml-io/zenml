@@ -4421,6 +4421,15 @@ class RestZenStore(BaseZenStore):
                     # The request failed either because we're not
                     # authenticated or our current credentials are not valid
                     # anymore.
+                    logger.error(
+                        "The current token is no longer valid, and "
+                        "it is not possible to generate a new token using the "
+                        "configured credentials. Please run "
+                        f"`zenml login --url {self.url}` to re-authenticate to "
+                        "the server or authenticate using an API key. See "
+                        "https://docs.zenml.io/how-to/project-setup-and-management/connecting-to-zenml/connect-with-a-service-account "
+                        "for more information."
+                    )
                     raise e
                 elif not re_authenticated:
                     # The last request was authenticated with an API token
