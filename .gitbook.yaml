@@ -263,3 +263,9 @@ redirects:
   how-to/advanced-topics/control-logging/set-logging-verbosity: how-to/control-logging/set-logging-verbosity.md
   how-to/advanced-topics/control-logging/disable-rich-traceback: how-to/control-logging/disable-rich-traceback.md
   how-to/advanced-topics/control-logging/disable-colorful-logging: how-to/control-logging/disable-colorful-logging.md
+
+  how-to/pipeline-development/trigger-pipelines/: how-to/trigger-pipelines/README.md
+  how-to/pipeline-development/trigger-pipelines/use-templates-python: how-to/trigger-pipelines/use-templates-python.md
+  how-to/pipeline-development/trigger-pipelines/use-templates-cli: how-to/trigger-pipelines/use-templates-cli.md
+  how-to/pipeline-development/trigger-pipelines/use-templates-dashboard: how-to/trigger-pipelines/use-templates-dashboard.md
+  how-to/pipeline-development/trigger-pipelines/use-templates-rest-api: how-to/trigger-pipelines/use-templates-rest-api.md
