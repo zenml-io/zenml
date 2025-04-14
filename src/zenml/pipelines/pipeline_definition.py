@@ -741,7 +741,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         if prevent_build_reuse:
             logger.warning(
                 "Passing `prevent_build_reuse=True` to "
-                "`pipeline.with_opitions(...)` is deprecated. Use "
+                "`pipeline.with_options(...)` is deprecated. Use "
                 "`DockerSettings.prevent_build_reuse` instead."
             )
 
@@ -749,7 +749,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             deployment=deployment,
             pipeline_id=pipeline_id,
             allow_build_reuse=not prevent_build_reuse,
-            build=build,
+            build=build,  # type: ignore[arg-type]
             code_repository=code_repository,
         )
         build_id = build_model.id if build_model else None
@@ -825,8 +825,10 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         with track_handler(AnalyticsEvent.RUN_PIPELINE) as analytics_handler:
             stack = Client().active_stack
 
-            deployment, schedule, build = self._compile(**self._run_args)
-            self._run_args["deployment"] = deployment
+            compiled_deployment, schedule, build = self._compile(
+                **self._run_args
+            )
+            self._run_args["deployment"] = compiled_deployment
             self._run_args["schedule"] = schedule
             self._run_args["build"] = build
 
@@ -840,9 +842,12 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 constants.ENV_ZENML_DISABLE_PIPELINE_LOGS_STORAGE, False
             ):
                 logging_enabled = False
-            else:
+            elif (
+                compiled_deployment.pipeline_configuration.enable_step_logs
+                is not None
+            ):
                 logging_enabled = (
-                    deployment.pipeline_configuration.enable_step_logs
+                    compiled_deployment.pipeline_configuration.enable_step_logs
                 )
 
             logs_context = nullcontext()

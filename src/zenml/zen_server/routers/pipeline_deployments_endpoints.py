@@ -205,6 +205,9 @@ def deployment_logs(
 
     Returns:
         The deployment logs.
+
+    Raises:
+        KeyError: If no logs are available for the deployment.
     """
     store = zen_store()
 
@@ -234,7 +237,7 @@ def deployment_logs(
 
     logs = run.logs
     if logs is None:
-        raise KeyError("No logs available for this run")
+        raise KeyError("No logs available for this deployment")
 
     return fetch_logs(
         zen_store=store,
