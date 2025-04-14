@@ -357,16 +357,6 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             "service_account": custom_job_parameters.service_account,
         }
 
-        # Add encryption spec from orchestrator config if not specified
-        if (
-            self.config.encryption_spec_key_name
-            and "encryption_spec_key_name"
-            not in custom_job_parameters.advanced_training_job_args
-        ):
-            params["encryption_spec_key_name"] = (
-                self.config.encryption_spec_key_name
-            )
-
         # If service account is not provided and we're not using persistent resource,
         # use the workload service account from orchestrator config
         if (
