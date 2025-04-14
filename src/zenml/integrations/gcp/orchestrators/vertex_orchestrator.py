@@ -346,17 +346,6 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             exclude_none=True, exclude={"additional_training_job_args"}
         )
 
-        # If service account is not provided and we're not using persistent resource,
-        # use the workload service account from orchestrator config
-        if (
-            not params.get("service_account")
-            and custom_job_parameters.persistent_resource_id == ""
-            and self.config.workload_service_account
-            and "service_account"
-            not in custom_job_parameters.additional_training_job_args
-        ):
-            params["service_account"] = self.config.workload_service_account
-
         # Remove None values to let defaults be set by the function
         params = {k: v for k, v in params.items() if v is not None}
 
@@ -381,9 +370,10 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         # Add any advanced parameters - these will override explicit parameters if provided
         params.update(custom_job_parameters.additional_training_job_args)
 
-        # Add network and encryption spec key name from orchestrator config if not already in params
+        # Add other parameters from orchestrator config if not already in params
         if self.config.network and "network" not in params:
             params["network"] = self.config.network
+
         if (
             self.config.encryption_spec_key_name
             and "encryption_spec_key_name" not in params
