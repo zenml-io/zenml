@@ -5,11 +5,9 @@ icon: square-info
 
 # Metadata
 
-![Metadata in the dashboard](../../.gitbook/assets/metadata-in-dashboard.png)
-
 Metadata in ZenML provides critical context to your ML workflows, allowing you to track additional information about your steps, runs, artifacts, and models. This enhanced traceability helps you better understand, compare, and reproduce your experiments.
 
-## Understanding Metadata
+![Metadata in the dashboard](../../.gitbook/assets/metadata-in-dashboard.png)
 
 Metadata is any additional contextual information you want to associate with your ML workflow components. In ZenML, you can attach metadata to:
 
@@ -244,6 +242,31 @@ log_metadata(
 ```
 
 In the ZenML dashboard, "model\_metrics" and "data\_details" will appear as separate cards, each containing their respective key-value pairs, making it easier to navigate and interpret the metadata.
+
+## Visualizing and Comparing Metadata (Pro)
+
+Once you've logged metadata in your runs, you can use ZenML's Experiment Comparison tool to analyze and compare metrics across different run.
+
+{% hint style="success" %}
+The metadata comparison tool is a [ZenML Pro](https://zenml.io/pro)-only feature. Please [sign up here](https://cloud.zenml.io) to get access.
+{% endhint %}
+
+[![Experiment Comparison Introduction Video](../../../../book/.gitbook/assets/experiment_comparison_video.png)](https://www.loom.com/share/693b2d829600492da7cd429766aeba6a?sid=7182e55b-31e9-4b38-a3be-07c989dbea32)
+
+### Comparison Views
+
+The Experiment Comparison tool offers two complementary views for analyzing your pipeline metadata:
+
+1. **Table View**: Compare metadata across runs with automatic change tracking
+
+![Table View](../../../../book/.gitbook/assets/table-view.png)
+
+2. **Parallel Coordinates Plot**: Visualize relationships between different metrics
+
+![Parallel Coordinates](../../../../book/.gitbook/assets/coordinates-view.png)
+
+The tool lets you compare up to 20 pipeline runs simultaneously and supports any
+numerical metadata (`float` or `int`) that you've logged in your pipelines.
 
 ## Fetching Metadata
 

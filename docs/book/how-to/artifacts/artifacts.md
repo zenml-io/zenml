@@ -365,6 +365,113 @@ This deletes artifacts that are no longer referenced by any pipeline run. You ca
 * `--only-metadata`: Only delete database entries, keep files
 * `--ignore-errors`: Continue pruning even if some artifacts can't be deleted
 
+### Registering Existing Data as Artifacts
+
+Sometimes, you may have data created externally (outside of ZenML pipelines) that you want to use within your ZenML workflows. Instead of reading and materializing this data within a step, you can register existing files or folders as ZenML artifacts directly.
+
+#### Register an Existing Folder
+
+To register a folder as a ZenML artifact:
+
+```python
+from zenml.client import Client
+from zenml import register_artifact
+import os
+from pathlib import Path
+
+# Path to an existing folder in your artifact store
+prefix = Client().active_stack.artifact_store.path
+existing_folder = os.path.join(prefix, "my_folder")
+
+# Register it as a ZenML artifact
+register_artifact(
+    folder_or_file_uri=existing_folder,
+    name="my_folder_artifact"
+)
+
+# Later, load the artifact
+folder_path = Client().get_artifact_version("my_folder_artifact").load()
+assert isinstance(folder_path, Path)
+assert os.path.isdir(folder_path)
+```
+
+#### Register an Existing File
+
+Similarly, you can register individual files:
+
+```python
+from zenml.client import Client
+from zenml import register_artifact
+import os
+from pathlib import Path
+
+# Path to an existing file in your artifact store
+prefix = Client().active_stack.artifact_store.path
+existing_file = os.path.join(prefix, "my_folder/model.pkl")
+
+# Register it as a ZenML artifact
+register_artifact(
+    folder_or_file_uri=existing_file,
+    name="my_model_artifact"
+)
+
+# Later, load the artifact
+file_path = Client().get_artifact_version("my_model_artifact").load()
+assert isinstance(file_path, Path)
+assert not os.path.isdir(file_path)
+```
+
+This approach is particularly useful for:
+* Integrating with external ML frameworks that save their own data
+* Working with pre-existing datasets
+* Registering model checkpoints created during training
+
+When you load these artifacts, you'll receive a `pathlib.Path` pointing to a temporary location in your executing environment, ready for use as a normal local path.
+
+#### Register Framework Checkpoints
+
+A common use case is registering model checkpoints from training frameworks like PyTorch Lightning:
+
+```python
+import os
+from uuid import uuid4
+from zenml.client import Client
+from zenml import register_artifact
+from pytorch_lightning import Trainer
+from pytorch_lightning.callbacks import ModelCheckpoint
+
+# Define checkpoint location in your artifact store
+prefix = Client().active_stack.artifact_store.path
+checkpoint_dir = os.path.join(prefix, uuid4().hex)
+
+# Configure PyTorch Lightning trainer with checkpointing
+model = YourLightningModel()
+trainer = Trainer(
+    default_root_dir=checkpoint_dir,
+    callbacks=[
+        ModelCheckpoint(
+            every_n_epochs=1, 
+            save_top_k=-1,  # Keep all checkpoints
+            filename="checkpoint-{epoch:02d}"
+        )
+    ],
+)
+
+# Train the model
+trainer.fit(model)
+
+# Register all checkpoints as a ZenML artifact
+register_artifact(
+    folder_or_file_uri=checkpoint_dir, 
+    name="lightning_checkpoints"
+)
+
+# Later, you can load the checkpoint folder
+checkpoint_path = Client().get_artifact_version("lightning_checkpoints").load()
+```
+
+You can also extend the `ModelCheckpoint` callback to register each checkpoint as a separate artifact version during training. This approach enables better version control of intermediate checkpoints.
+
 ## Conclusion
 
 Artifacts are a central part of ZenML's approach to ML pipelines. They provide:

@@ -7,6 +7,10 @@ icon: rectangle-history
 
 Machine learning models are at the heart of any ML workflow. ZenML provides comprehensive model management capabilities through its Model Control Plane, allowing you to track, version, promote, and share models across your ML pipelines.
 
+{% hint style="success" %}
+Models are a [ZenML Pro](https://zenml.io/pro)-only feature. Please [sign up here](https://cloud.zenml.io) to get access.
+{% endhint %}
+
 This guide covers all aspects of working with models in ZenML, from basic concepts to advanced usage patterns.
 
 ## Understanding Models in ZenML
