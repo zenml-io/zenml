@@ -5,131 +5,151 @@ description: >-
 
 # Logging
 
-Effective logging is essential for monitoring, debugging, and auditing machine learning workflows. ZenML provides comprehensive logging capabilities that allow you to track pipeline execution, step outputs, and system events.
+ZenML provides comprehensive logging capabilities for tracking pipeline execution, step outputs, and system events.
 
-## Viewing Logs
+## Viewing logs on the dashboard
 
-### Dashboard Logs
-
-The ZenML dashboard provides a central place to view logs for all pipeline runs:
-
-1. Navigate to the **Runs** tab in the dashboard
-2. Select a specific run to view its logs
-3. You can view logs for the entire pipeline or filter by specific steps
-
-### CLI Logs
-
-You can view logs using the ZenML CLI:
-
-```bash
-# View logs for a specific pipeline run
-zenml pipeline logs <PIPELINE_RUN_ID>
-
-# View logs for a specific step in a pipeline run
-zenml pipeline logs <PIPELINE_RUN_ID> --step-name <STEP_NAME>
-```
-
-### Python Client Logs
-
-You can also access logs programmatically using the Python client:
+ZenML's logging handler captures logs during step execution. You can use standard Python logging or print statements:
 
 ```python
-from zenml.client import Client
+import logging
 
-# Get logs for a specific pipeline run
-run = Client().get_pipeline_run("<PIPELINE_RUN_ID>")
-logs = run.get_logs()
-print(logs)
+from zenml import step
 
-# Get logs for a specific step
-step_logs = run.get_logs(step_name="<STEP_NAME>")
-print(step_logs)
+@step 
+def my_step() -> None:
+    logging.warning("`Hello`")  # You can use the regular `logging` module.
+    print("World.")  # You can utilize `print` statements as well. 
 ```
+
+Logs are stored in your stack's artifact store and viewable in the dashboard if the ZenML server has access to the artifact store:
+* Local ZenML server (`zenml login --local`): Both local and remote artifact stores may be accessible
+* Deployed ZenML server: Local artifact store logs won't be accessible; remote artifact store logs require [service connector](https://docs.zenml.io//how-to/infrastructure-deployment/auth-management/service-connectors-guide) configuration (see [remote storage guide](https://docs.zenml.io/user-guides/production-guide/remote-storage))
+
+When configured correctly, logs appear in the dashboard:
+
+![Displaying step logs on the dashboard](../../.gitbook/assets/zenml_step_logs.png)
 
 ## Logging Configuration
 
-### Enabling or Disabling Logs Storage
+### Environment Variables and Remote Execution
 
-You can control whether logs are stored in the ZenML database:
+For all logging configurations below, note:
+- Setting environment variables on your local machine only affects local pipeline runs
+- For remote pipeline runs, you must set these variables in the pipeline's execution environment using Docker settings:
 
 ```python
-# At pipeline level
-@pipeline(enable_step_logs=True)
-def my_pipeline():
+from zenml import pipeline
+from zenml.config import DockerSettings
+
+docker_settings = DockerSettings(environment={"ENVIRONMENT_VARIABLE": "value"})
+
+# Either add it to the decorator
+@pipeline(settings={"docker": docker_settings})
+def my_pipeline() -> None:
+    my_step()
+
+# Or configure the pipelines options
+my_pipeline = my_pipeline.with_options(
+    settings={"docker": docker_settings}
+)
+```
+
+### Enabling or Disabling Logs Storage
+
+You can disable storing logs in your artifact store by:
+
+1. Using the `enable_step_logs` parameter with decorators:
+
+```python
+from zenml import pipeline, step
+
+@step(enable_step_logs=False)  # disables logging for this step
+def my_step() -> None:
     ...
 
-# At step level
-@step(enable_step_logs=True)
-def my_step():
+@pipeline(enable_step_logs=False)  # disables logging for the entire pipeline
+def my_pipeline():
     ...
 ```
 
-You can also configure this using a YAML file:
+2. Setting the `ZENML_DISABLE_STEP_LOGS_STORAGE=true` environment variable in the execution environment:
 
-```yaml
-enable_step_logs: True
+```python
+from zenml import pipeline
+from zenml.config import DockerSettings
 
-steps:
-  my_step:
-    enable_step_logs: False
+docker_settings = DockerSettings(environment={"ZENML_DISABLE_STEP_LOGS_STORAGE": "true"})
+
+# Either add it to the decorator
+@pipeline(settings={"docker": docker_settings})
+def my_pipeline() -> None:
+    my_step()
+
+# Or configure the pipelines options
+my_pipeline = my_pipeline.with_options(
+    settings={"docker": docker_settings}
+)
 ```
 
 ### Setting Logging Verbosity
 
-You can control the verbosity level of ZenML logs:
-
-```python
-from zenml.logger import get_logger
-
-# Set global logging level
-import logging
-logging.getLogger("zenml").setLevel(logging.DEBUG)
-
-# Get a logger for a specific module
-logger = get_logger(__name__)
-logger.debug("This is a debug message")
-logger.info("This is an info message")
-logger.warning("This is a warning message")
-logger.error("This is an error message")
-```
-
-You can also set the logging level using environment variables:
+Change the default logging level (`INFO`) with:
 
 ```bash
-# Set logging level to DEBUG
-export ZENML_LOGGING_VERBOSITY=DEBUG
+export ZENML_LOGGING_VERBOSITY=INFO
 ```
 
-Valid levels are: `NOTSET`, `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`
+Options: `INFO`, `WARN`, `ERROR`, `CRITICAL`, `DEBUG`
+
+For remote pipeline runs:
+
+```python
+from zenml import pipeline
+from zenml.config import DockerSettings
+
+docker_settings = DockerSettings(environment={"ZENML_LOGGING_VERBOSITY": "DEBUG"})
+
+# Either add it to the decorator
+@pipeline(settings={"docker": docker_settings})
+def my_pipeline() -> None:
+    my_step()
+
+# Or configure the pipelines options
+my_pipeline = my_pipeline.with_options(
+    settings={"docker": docker_settings}
+)
+```
 
 ### Setting Logging Format
 
-You can customize the format of log messages:
+Change the default logging format with:
 
 ```bash
-# Set a custom log format
-export ZENML_LOGGING_FORMAT="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+export ZENML_LOGGING_FORMAT='%(asctime)s %(message)s'
 ```
+
+The format must use `%`-string formatting style. See [available attributes](https://docs.python.org/3/library/logging.html#logrecord-attributes).
 
 ### Disabling Rich Traceback Output
 
-ZenML uses rich tracebacks by default. You can disable them:
+ZenML uses [rich](https://rich.readthedocs.io/en/stable/traceback.html) for enhanced traceback display. Disable it with:
 
 ```bash
-export ZENML_DISABLE_RICH_TRACEBACK=True
+export ZENML_ENABLE_RICH_TRACEBACK=false
 ```
 
 ### Disabling Colorful Logging
 
-To disable colorful logging output:
+Disable colorful logging with:
 
 ```bash
-export ZENML_DISABLE_COLOR=True
+ZENML_LOGGING_COLORS_DISABLED=true
 ```
 
 ### Disabling Step Names in Logs
 
-By default, ZenML displays the current step name as a prefix in logs during pipeline execution to help you identify which step is currently running. For example:
+By default, ZenML adds step name prefixes to console logs:
 
 ```
 [data_loader] Loading data from source...
@@ -137,147 +157,28 @@ By default, ZenML displays the current step name as a prefix in logs during pipe
 [model_trainer] Training model with parameters...
 ```
 
-These step name prefixes are only added to the console output and are not stored in the actual log files that ZenML saves. The stored logs will always be clean without the step name prefixes.
-
-If you wish to disable this feature and have logs without step name prefixes, you can do so by setting the following environment variable:
+These prefixes only appear in console output, not in stored logs. Disable them with:
 
 ```bash
-export ZENML_DISABLE_STEP_NAMES_IN_LOGS=true
-```
-
-This is particularly useful when you have multiple pipeline steps running simultaneously, as the step prefixes can sometimes make the logs harder to read when steps are interleaved.
-
-To disable step names in logs for remote pipeline runs, you can set the environment variable in your pipeline's Docker container:
-
-```python
-from zenml import pipeline
-from zenml.config import DockerSettings
-
-docker_settings = DockerSettings(environment={"ZENML_DISABLE_STEP_NAMES_IN_LOGS": "true"})
-
-# Either add it to the decorator
-@pipeline(settings={"docker": docker_settings})
-def my_pipeline() -> None:
-    my_step()
-
-# Or configure the pipeline's options
-my_pipeline = my_pipeline.with_options(
-    settings={"docker": docker_settings}
-)
-```
-
-## Logging in Steps
-
-### Basic Logging
-
-You can use Python's standard logging mechanism inside steps:
-
-```python
-from zenml import step
-from zenml.logger import get_logger
-
-logger = get_logger(__name__)
-
-@step
-def my_step():
-    logger.info("Starting step execution")
-    # Step logic
-    logger.info("Step execution completed")
-```
-
-### Capturing Standard Output
-
-Standard output and error streams are automatically captured and stored:
-
-```python
-@step
-def my_step():
-    print("This will be captured in the logs")
-    # Step logic
-```
-
-### Structured Logging with Metadata
-
-You can add structured metadata to your logs:
-
-```python
-from zenml import step, log_artifact_metadata
-
-@step
-def train_model() -> None:
-    model = train()
-    
-    # Log metadata about the training
-    log_artifact_metadata(
-        metadata={
-            "accuracy": 0.95,
-            "f1_score": 0.94,
-            "training_time": 120,
-        },
-        artifact_name="model"
-    )
-```
-
-### Logging Metrics
-
-For more advanced metrics tracking, you can use experiment trackers:
-
-```python
-from zenml import step
-from zenml.client import Client
-
-@step(experiment_tracker="mlflow")
-def train_model():
-    # Get the active experiment tracker
-    tracker = Client().active_stack.experiment_tracker
-    
-    # Log metrics
-    tracker.log_metric("accuracy", 0.95)
-    tracker.log_metric("f1_score", 0.94)
+ZENML_DISABLE_STEP_NAMES_IN_LOGS=true
 ```
 
 ## Best Practices for Logging
 
 1. **Use appropriate log levels**:
-   - `DEBUG`: Detailed information for diagnosing problems
-   - `INFO`: Confirmation that things are working as expected
-   - `WARNING`: Indication that something unexpected happened
-   - `ERROR`: Due to a more serious problem, software hasn't been able to perform a function
-   - `CRITICAL`: A serious error, indicating program may be unable to continue running
+   - `DEBUG`: Detailed diagnostic information
+   - `INFO`: Confirmation that things work as expected
+   - `WARNING`: Something unexpected happened
+   - `ERROR`: A more serious problem occurred
+   - `CRITICAL`: A serious error that may prevent continued execution
 
-2. **Include contextual information** in log messages to make them more useful for debugging
+2. **Include contextual information** in logs
+3. **Log at decision points** to track execution flow
+4. **Avoid logging sensitive information**
+5. **Use structured logging** when appropriate
+6. **Configure appropriate verbosity** for different environments
 
-3. **Log at decision points** to help understand the flow of execution
-
-4. **Avoid logging sensitive information** like passwords, tokens, or personal data
-
-5. **Use structured logging** when appropriate to make logs more searchable and analyzable
-
-6. **Configure appropriate verbosity** based on the environment (more verbose in development, less in production)
-
-## Accessing Logs Programmatically
-
-You can access logs programmatically for automation or analysis:
-
-```python
-from zenml.client import Client
-
-# Get all pipeline runs
-runs = Client().list_pipeline_runs()
-
-# Get logs for each run
-for run in runs:
-    logs = run.get_logs()
-    # Process logs
-```
-
-## Conclusion
-
-Effective logging is crucial for developing, monitoring, and maintaining ML pipelines. ZenML provides flexible logging capabilities that can be tailored to your specific needs, from basic debugging to detailed performance tracking.
-
-By configuring logging appropriately and following best practices, you can gain valuable insights into your pipeline execution and quickly identify and resolve issues when they arise.
-
-See also:
-- [Steps & Pipelines](./steps_and_pipelines.md) - Core building blocks
-- [Configuration with YAML](./configuration_with_yaml.md) - YAML configuration
-- [Advanced Features](./advanced_features.md) - Advanced pipeline features 
+## See Also
+- [Steps & Pipelines](./steps_and_pipelines.md)
+- [Configuration with YAML](./configuration_with_yaml.md)
+- [Advanced Features](./advanced_features.md) 

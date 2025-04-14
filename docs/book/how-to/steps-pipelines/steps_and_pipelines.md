@@ -202,7 +202,7 @@ training_pipeline(dataset_name="custom_dataset", learning_rate=0.005)
 
 While optional, type annotations are highly recommended and provide several benefits:
 
-* **Artifact handling**: ZenML uses type annotations to determine how to serialize, store, and load artifacts. The type information guides ZenML to select the appropriate materializer for saving and loading step outputs.
+* **Artifact handling**: ZenML uses type annotations to determine how to serialize, store, and load [artifacts](../artifacts/artifacts.md). The type information guides ZenML to select the appropriate [materializer](../artifacts/materializers.md) for saving and loading step outputs.
 * **Type validation**: ZenML validates inputs against type annotations at runtime to catch errors early.
 * **Code documentation**: Types make your code more self-documenting and easier to understand.
 
@@ -220,7 +220,9 @@ def divide(a: int, b: int) -> Tuple[int, int]:
 
 When you specify a return type like `-> float` or `-> Tuple[int, int]`, ZenML uses this information to determine how to store the step's output in the artifact store. For instance, a step returning a pandas DataFrame with the annotation `-> pd.DataFrame` will use the pandas-specific materializer for efficient storage.
 
+{% hint style="info" %}
 If you want to enforce type annotations for all steps, set the environment variable `ZENML_ENFORCE_TYPE_ANNOTATIONS` to `True`.
+{% endhint %}
 
 ### Multiple Return Values
 
