@@ -173,6 +173,7 @@ def main() -> None:
             mount_local_stores=mount_local_stores,
         )
 
+        logger.info(f"Waiting for pod of step `{step_name}` to start...")
         kube_utils.create_and_wait_for_pod_to_start(
             core_api=core_api,
             pod_display_name=f"pod for step `{step_name}`",
