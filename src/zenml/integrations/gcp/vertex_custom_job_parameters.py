@@ -59,6 +59,6 @@ class VertexCustomJobParameters(BaseModel):
     machine_type: str = "n1-standard-4"
     boot_disk_size_gb: int = 100
     boot_disk_type: str = "pd-ssd"
-    persistent_resource_id: str = ""
+    persistent_resource_id: Optional[str] = None
     service_account: Optional[str] = None
     advanced_training_job_args: Dict[str, Any] = {}

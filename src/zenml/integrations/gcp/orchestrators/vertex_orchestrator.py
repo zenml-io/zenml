@@ -331,7 +331,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             settings.custom_job_parameters or VertexCustomJobParameters()
         )
         if (
-            custom_job_parameters.persistent_resource_id != ""
+            custom_job_parameters.persistent_resource_id
             and not custom_job_parameters.service_account
         ):
             # Persistent resources require an explicit service account, but
@@ -341,14 +341,10 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                 self.config.workload_service_account
             )
 
-        if (
-            custom_job_parameters.persistent_resource_id == ""
-            and not custom_job_parameters.service_account
-        ):
-            # Persistent resources require an explicit service account, but
-            # none was provided in the custom job parameters. We set it to an
-            # empty string to avoid Vertex API errors.
-            custom_job_parameters.service_account = ""
+        if custom_job_parameters.persistent_resource_id is None:
+            # If the persistent resource ID is not set, we set to empty
+            # strings to avoid Vertex API errors.
+            custom_job_parameters.persistent_resource_id = ""
 
         # Create a dictionary of explicit parameters
         params = {
@@ -360,17 +356,6 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             "persistent_resource_id": custom_job_parameters.persistent_resource_id,
             "service_account": custom_job_parameters.service_account,
         }
-
-        # Inherit settings from the orchestrator config if they're not already
-        # specified in the custom job parameters
-
-        # Add network from orchestrator config if not specified
-        if (
-            self.config.network
-            and "network"
-            not in custom_job_parameters.advanced_training_job_args
-        ):
-            params["network"] = self.config.network
 
         # Add encryption spec from orchestrator config if not specified
         if (
@@ -416,6 +401,17 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
 
         # Add any advanced parameters - these will override explicit parameters if provided
         params.update(custom_job_parameters.advanced_training_job_args)
+
+        # Add network and encryption spec key name from orchestrator config if not already in params
+        if self.config.network and "network" not in params:
+            params["network"] = self.config.network
+        if (
+            self.config.encryption_spec_key_name
+            and "encryption_spec_key_name" not in params
+        ):
+            params["encryption_spec_key_name"] = (
+                self.config.encryption_spec_key_name
+            )
 
         custom_job_component = create_custom_training_job_from_component(
             component_spec=component,
