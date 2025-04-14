@@ -52,13 +52,11 @@ Run this pipeline locally with `python run.py`. ZenML automatically tracks the e
 {% step %}
 ### Create your ZenML account
 
-Create a [ZenML Pro account](https://zenml.io/pro) with a 14-day free trial (no payment information required). ZenML Pro provides a dashboard to visualize pipelines, manage infrastructure, and collaborate with team members.
+Create a [ZenML Pro account](https://zenml.io/pro) with a 14-day free trial (no payment information required). It will provide you with a dashboard to visualize pipelines, manage infrastructure, and collaborate with team members.
 
 <figure><img src="../.gitbook/assets/dcp_walkthrough (1).gif" alt="ZenML Pro Dashboard"><figcaption>The ZenML Pro Dashboard</figcaption></figure>
 
-First-time users will need to set up a workspace and project. While waiting, check out the [Core Concepts](core-concepts.md) page.
-
-Once ready, connect your local environment:
+First-time users will need to set up a workspace and project. This process might take a few minutes. In the meanwhile, feel free to check out the [Core Concepts](core-concepts.md) page to get familiar with the main ideas ZenML is built on. Once ready, connect your local environment:
 
 ```bash
 # Log in and select your workspace
@@ -70,6 +68,7 @@ zenml project set <PROJECT_NAME>
 {% endstep %}
 
 {% step %}
+
 ### Create your first remote stack
 
 A "stack" in ZenML represents the infrastructure where your pipelines run. Moving from local to cloud resources is where ZenML truly shines.
@@ -87,6 +86,7 @@ The deployment wizard will guide you through each step.
 {% endstep %}
 
 {% step %}
+
 ### Run your pipeline on the remote stack
 
 Now run your pipeline in the cloud without changing any code.
@@ -119,12 +119,12 @@ Congratulations! You've just experienced the core value proposition of ZenML:
 
 To continue your ZenML journey, explore these key topics:
 
-* **Pipeline Development**: Discover advanced features like [scheduling](../how-to/pipeline-development/build-pipelines/schedule-a-pipeline.md), [caching](../how-to/steps-pipelines/advanced_features.md#caching), and [parameterization](../how-to/pipeline-development/use-configuration-files/runtime-configuration.md)
+* **Pipeline Development**: Discover advanced features like [scheduling](../how-to/steps-pipelines/advanced_features.md#scheduling), [caching](../how-to/steps-pipelines/advanced_features.md#caching), and [parameterization](../how-to/steps-pipelines/steps_and_pipelines.md#parameterizing-workflows)
 * **Artifact Management**: Learn how ZenML [stores, versions, and tracks your data](../how-to/artifacts/artifacts.md) automatically
-* **Organization**: Use [tags and metadata](../how-to/tag-runs-and-artifacts.md) to keep your ML projects structured
-* **Containerization**: Understand how ZenML [handles containerization](../how-to/containerization/containerize-your-pipeline.md) for reproducible execution
-* **Stacks & Infrastructure**: Explore the [stack concept](../how-to/stack-components/stack_components.md) and [service connectors](../how-to/stack-components/service_connectors.md) for authentication
-* **Secrets Management**: Learn how to [handle sensitive information](../how-to/infrastructure-deployment/auth-management/manage-secrets.md) securely
-* **Templates**: Create [reusable pipeline templates](../how-to/trigger-pipelines/use-templates-python.md) for standardized workflows
+* **Organization**: Use [tags](../how-to/tags/tags.md) and [metadata](../how-to/metadata/metadata.md) to keep your ML projects structured
+* **Containerization**: Understand how ZenML [handles containerization](../how-to/containerization/containerization.md) for reproducible execution
+* **Stacks & Infrastructure**: Explore the concepts behind [stacks](../how-to/stack-components/stack_components.md) and [service connectors](../how-to/stack-components/service_connectors.md) for authentication
+* **Secrets Management**: Learn how to [handle sensitive information](../how-to/secrets/secrets.md) securely
+* **Templates**: Create [reusable pipeline templates](../how-to/templates/templates.md) for standardized workflows
 {% endstep %}
 {% endstepper %}
