@@ -411,14 +411,14 @@ def deployment_request_from_template(
         if unknown_parameters:
             raise ValueError(
                 "Run configuration contains the following unknown "
-                f"parameters for step {step.config.name}: {unknown_parameters}."
+                f"parameters for step {invocation_id}: {unknown_parameters}."
             )
 
         missing_parameters = required_parameters - configured_parameters
         if missing_parameters:
             raise ValueError(
                 "Run configuration is missing the following required "
-                f"parameters for step {step.config.name}: {missing_parameters}."
+                f"parameters for step {invocation_id}: {missing_parameters}."
             )
 
         step_config = StepConfiguration.model_validate(step_config_dict)
