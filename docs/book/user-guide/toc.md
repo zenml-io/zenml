@@ -50,6 +50,7 @@
 
 * [Organizing pipelines and models](tutorial/organizing-pipelines-and-models.md)
 * [Managing scheduled pipelines](tutorial/managing-scheduled-pipelines.md)
+* [Trigger pipelines from external systems](tutorial/trigger-pipelines-from-external-systems.md)
 
 ## Examples
 

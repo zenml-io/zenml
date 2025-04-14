@@ -264,6 +264,9 @@ def wait_pod(
 
         resp = get_pod(core_api, pod_name, namespace)
 
+        if resp is None:
+            raise RuntimeError(f"Pod `{namespace}:{pod_name}` not found.")
+
         # Stream logs to `zenml.logger.info()`.
         # TODO: can we do this without parsing all logs every time?
         if stream_logs and pod_is_not_pending(resp):

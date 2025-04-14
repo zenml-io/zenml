@@ -261,7 +261,7 @@ class PipelineLogsStorage:
             formatted_message = (
                 f"[{timestamp} UTC] {remove_ansi_escape_codes(text)}"
             )
-            self.buffer.append(formatted_message)
+            self.buffer.append(formatted_message.rstrip())
             self.save_to_file()
 
     @property

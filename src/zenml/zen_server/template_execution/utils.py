@@ -20,6 +20,8 @@ from zenml.config.step_configurations import Step, StepConfiguration
 from zenml.constants import (
     ENV_ZENML_ACTIVE_PROJECT_ID,
     ENV_ZENML_ACTIVE_STACK_ID,
+    ENV_ZENML_RUNNER_IMAGE_DISABLE_UV,
+    handle_bool_env_var,
 )
 from zenml.enums import ExecutionStatus, StackComponentType, StoreType
 from zenml.logger import get_logger
@@ -148,35 +150,36 @@ def run_template(
         deployment_id=new_deployment.id
     )
 
+    if build.python_version:
+        version_info = version.parse(build.python_version)
+        python_version = f"{version_info.major}.{version_info.minor}"
+    else:
+        python_version = f"{sys.version_info.major}.{sys.version_info.minor}"
+
+    (
+        pypi_requirements,
+        apt_packages,
+    ) = requirements_utils.get_requirements_for_stack(
+        stack=stack, python_version=python_version
+    )
+
+    dockerfile = generate_dockerfile(
+        pypi_requirements=pypi_requirements,
+        apt_packages=apt_packages,
+        zenml_version=zenml_version,
+        python_version=python_version,
+    )
+
+    # Building a docker image with requirements and apt packages from the
+    # stack only (no code). Ideally, only orchestrator requirements should
+    # be added to the docker image, but we have to instantiate the entire
+    # stack to get the orchestrator to run pipelines.
+    image_hash = generate_image_hash(dockerfile=dockerfile)
+    logger.info(
+        "Building runner image %s for dockerfile:\n%s", image_hash, dockerfile
+    )
+
     def _task() -> None:
-        if build.python_version:
-            version_info = version.parse(build.python_version)
-            python_version = f"{version_info.major}.{version_info.minor}"
-        else:
-            python_version = (
-                f"{sys.version_info.major}.{sys.version_info.minor}"
-            )
-
-        (
-            pypi_requirements,
-            apt_packages,
-        ) = requirements_utils.get_requirements_for_stack(
-            stack=stack, python_version=python_version
-        )
-
-        dockerfile = generate_dockerfile(
-            pypi_requirements=pypi_requirements,
-            apt_packages=apt_packages,
-            zenml_version=zenml_version,
-            python_version=python_version,
-        )
-
-        # building a docker image with requirements and apt packages from the
-        # stack only (no code). Ideally, only orchestrator requirements should
-        # be added to the docker image, but we have to instantiate the entire
-        # stack to get the orchestrator to run pipelines.
-        image_hash = generate_image_hash(dockerfile=dockerfile)
-
         runner_image = workload_manager().build_and_push_image(
             workload_id=new_deployment.id,
             dockerfile=dockerfile,
@@ -322,10 +325,19 @@ def generate_dockerfile(
         pypi_requirements_string = " ".join(
             [f"'{r}'" for r in pypi_requirements]
         )
-        lines.append(
-            f"RUN pip install --default-timeout=60 --no-cache-dir "
-            f"{pypi_requirements_string}"
-        )
+
+        if handle_bool_env_var(
+            ENV_ZENML_RUNNER_IMAGE_DISABLE_UV, default=False
+        ):
+            lines.append(
+                f"RUN pip install --default-timeout=60 --no-cache-dir "
+                f"{pypi_requirements_string}"
+            )
+        else:
+            lines.append("RUN pip install uv")
+            lines.append(
+                f"RUN uv pip install --no-cache-dir {pypi_requirements_string}"
+            )
 
     return "\n".join(lines)
 
@@ -343,7 +355,8 @@ def deployment_request_from_template(
         user_id: ID of the user that is trying to run the template.
 
     Raises:
-        ValueError: If the run configuration is missing step parameters.
+        ValueError: If there are missing/extra step parameters in the run
+            configuration.
 
     Returns:
         The generated deployment request.
@@ -394,10 +407,17 @@ def deployment_request_from_template(
                 step_config_dict, update=update_dict
             )
 
-        if configured_parameters != required_parameters:
-            missing_parameters = required_parameters - configured_parameters
+        unknown_parameters = configured_parameters - required_parameters
+        if unknown_parameters:
             raise ValueError(
-                "Run configuration is missing missing the following required "
+                "Run configuration contains the following unknown "
+                f"parameters for step {step.config.name}: {unknown_parameters}."
+            )
+
+        missing_parameters = required_parameters - configured_parameters
+        if missing_parameters:
+            raise ValueError(
+                "Run configuration is missing the following required "
                 f"parameters for step {step.config.name}: {missing_parameters}."
             )
 
