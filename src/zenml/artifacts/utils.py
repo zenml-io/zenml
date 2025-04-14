@@ -578,12 +578,18 @@ def create_artifact_archive(
 
     Raises:
         IllegalOperationError: If the artifact is too large to be archived.
-
+        KeyError: If the artifact store is not found.
     Returns:
         The path to the created archive.
     """
     if archive_path is None:
         archive_path = tempfile.mktemp()
+
+    if not artifact.artifact_store_id:
+        raise KeyError(
+            f"Artifact '{artifact.id}' cannot be downloaded because the "
+            "underlying artifact store was deleted."
+        )
 
     artifact_store = _load_artifact_store(
         artifact_store_id=artifact.artifact_store_id, zen_store=zen_store
@@ -600,15 +606,17 @@ def create_artifact_archive(
             f"The maximum download size is {max_download_size} bytes."
         )
 
-    def _prepare_tarinfo(path) -> tarfile.TarInfo:
+    def _prepare_tarinfo(path: str) -> tarfile.TarInfo:
         archive_path = os.path.relpath(path, artifact.uri)
         tarinfo = tarfile.TarInfo(name=archive_path)
-        tarinfo.size = artifact_store.size(path)
+        if size := artifact_store.size(path):
+            tarinfo.size = size
         return tarinfo
 
     with tarfile.open(name=archive_path, mode="w:gz") as tar:
         if artifact_store.isdir(artifact.uri):
             for dir, _, files in artifact_store.walk(artifact.uri):
+                dir = dir.decode() if isinstance(dir, bytes) else dir
                 dir_info = tarfile.TarInfo(
                     name=os.path.relpath(dir, artifact.uri)
                 )
@@ -617,6 +625,7 @@ def create_artifact_archive(
                 tar.addfile(dir_info)
 
                 for file in files:
+                    file = file.decode() if isinstance(file, bytes) else file
                     path = os.path.join(dir, file)
                     tarinfo = _prepare_tarinfo(path)
                     with artifact_store.open(path, "rb") as f:
