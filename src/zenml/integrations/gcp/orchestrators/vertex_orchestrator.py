@@ -387,7 +387,6 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         ):
             params["service_account"] = self.config.workload_service_account
 
-        # Add env to params if it exists
         custom_job_component = create_custom_training_job_from_component(
             component_spec=component,
             **params,
