@@ -543,7 +543,6 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 mount_local_stores=self.config.is_local,
             )
 
-            logger.info("Waiting for Kubernetes orchestrator pod to start...")
             kube_utils.create_and_wait_for_pod_to_start(
                 core_api=self._k8s_core_api,
                 pod_display_name="Kubernetes orchestrator pod",
