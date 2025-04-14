@@ -423,17 +423,15 @@ def authenticate_credentials(
             @cache_result(expiry=30)
             def get_pipeline_run_status(
                 pipeline_run_id: UUID,
-            ) -> Tuple[
-                Optional[ExecutionStatus], Optional[datetime], Optional[int]
-            ]:
+            ) -> Tuple[Optional[ExecutionStatus], Optional[datetime]]:
                 """Get the status of a pipeline run.
 
                 Args:
                     pipeline_run_id: The pipeline run ID.
 
                 Returns:
-                    The pipeline run status or None if the pipeline run does not
-                    exist.
+                    The pipeline run status and end time or None if the pipeline
+                    run does not exist.
                 """
                 try:
                     pipeline_run = zen_store().get_run(
@@ -463,7 +461,7 @@ def authenticate_credentials(
                 ENV_ZENML_WORKLOAD_TOKEN_EXPIRATION_LEEWAY,
                 DEFAULT_ZENML_SERVER_GENERIC_API_TOKEN_LIFETIME,
             )
-            if pipeline_run_status == ExecutionStatus.FAILED:
+            if pipeline_run_status.is_finished:
                 if leeway < 0:
                     # The token should never expire, we don't need to check
                     # the end time.
@@ -478,7 +476,7 @@ def authenticate_credentials(
                 ):
                     error = (
                         f"The pipeline run {decoded_token.pipeline_run_id} has "
-                        "failed and API tokens scoped to it are no longer "
+                        "finished and API tokens scoped to it are no longer "
                         "valid. If you want to increase the expiration time "
                         "of the token to allow steps to continue for longer "
                         "after other steps have failed, you can do so by "
@@ -488,13 +486,6 @@ def authenticate_credentials(
                     )
                     logger.error(error)
                     raise CredentialsNotValid(error)
-            elif pipeline_run_status.is_finished:
-                error = (
-                    f"The pipeline run {decoded_token.pipeline_run_id} has "
-                    "finished and API tokens scoped to it are no longer valid."
-                )
-                logger.error(error)
-                raise CredentialsNotValid(error)
 
         auth_context = AuthContext(
             user=user_model,
