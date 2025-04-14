@@ -34,7 +34,7 @@
 ## Concepts
 
 * [Steps & Pipelines](how-to/steps-pipelines/steps_and_pipelines.md)
-  * [Configuration & Customization](how-to/steps-pipelines/configuration_and_customization.md)
+  * [Configuration](how-to/steps-pipelines/configuration.md)
   * [Scheduling](how-to/steps-pipelines/scheduling.md)
   * [Logging](how-to/steps-pipelines/logging.md)
   * [Advanced Features](how-to/steps-pipelines/advanced_features.md)

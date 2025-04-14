@@ -2,11 +2,42 @@
 description: Configuring and customizing your pipeline runs.
 ---
 
-ZenML offers multiple ways to configure and customize your pipelines and steps. This section explains the different configuration options available.
-
-## Ways to Apply Configuration
-
 ZenML provides several approaches to configure your pipelines and steps:
+
+### Pipeline Configuration with `configure`
+
+You can configure various aspects of a pipeline using the `configure` method:
+
+```python
+# Create a pipeline
+my_pipeline = MyPipeline()
+
+# Configure the pipeline
+my_pipeline.configure(
+    enable_cache=False,
+    enable_artifact_metadata=True,
+    settings={
+        "docker": {
+            "parent_image": "zenml-io/zenml-cuda:latest"
+        }
+    }
+)
+
+# Run the pipeline
+my_pipeline()
+```
+
+### Runtime Configuration with `with_options`
+
+You can configure a pipeline at runtime using the `with_options` method:
+
+```python
+# Configure specific step parameters
+my_pipeline.with_options(steps={"trainer": {"parameters": {"learning_rate": 0.01}}})()
+
+# Or using a YAML configuration file
+my_pipeline.with_options(config_file="path_to_yaml_file")()
+```
 
 ### Step-Level Configuration
 
@@ -62,41 +93,6 @@ def my_step():
 ```
 
 This approach allows you to use different components for different steps in your pipeline while also customizing their runtime behavior.
-
-### Pipeline Configuration with `configure`
-
-You can configure various aspects of a pipeline using the `configure` method:
-
-```python
-# Create a pipeline
-my_pipeline = MyPipeline()
-
-# Configure the pipeline
-my_pipeline.configure(
-    enable_cache=False,
-    enable_artifact_metadata=True,
-    settings={
-        "docker": {
-            "parent_image": "zenml-io/zenml-cuda:latest"
-        }
-    }
-)
-
-# Run the pipeline
-my_pipeline()
-```
-
-### Runtime Configuration with `with_options`
-
-You can configure a pipeline at runtime using the `with_options` method:
-
-```python
-# Configure specific step parameters
-my_pipeline.with_options(steps={"trainer": {"parameters": {"learning_rate": 0.01}}})()
-
-# Or using a YAML configuration file
-my_pipeline.with_options(config_file="path_to_yaml_file")()
-```
 
 ## Types of Settings
 
