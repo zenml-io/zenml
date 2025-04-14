@@ -746,7 +746,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             deployment=deployment,
             pipeline_id=pipeline_id,
             allow_build_reuse=not prevent_build_reuse,
-            build=build,  # type: ignore[arg-type]
+            build=build,
             code_repository=code_repository,
         )
         build_id = build_model.id if build_model else None
