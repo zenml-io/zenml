@@ -40,9 +40,12 @@ class VertexCustomJobParameters(BaseModel):
             If empty (default), the job will not use a persistent resource.
             https://cloud.google.com/vertex-ai/docs/training/persistent-resource-overview
         service_account: Specifies the service account to be used.
-        custom_training_job_kwargs: Additional kwargs to pass to the create_custom_training_job_from_component
+        advanced_training_job_args: Additional arguments to pass to the create_custom_training_job_from_component
             function. This allows passing any additional parameters supported by the Google
             Cloud Pipeline Components library without requiring ZenML to update its API.
+            Note: If you specify parameters in this dictionary that are also defined as explicit
+            attributes (like machine_type or boot_disk_size_gb), the values in this dictionary
+            will override the explicit values.
             See: https://google-cloud-pipeline-components.readthedocs.io/en/google-cloud-pipeline-components-2.19.0/api/v1/custom_job.html
     """
 
@@ -53,4 +56,4 @@ class VertexCustomJobParameters(BaseModel):
     boot_disk_type: str = "pd-ssd"
     persistent_resource_id: str = ""
     service_account: Optional[str] = None
-    custom_training_job_kwargs: Dict[str, Any] = {}
+    advanced_training_job_args: Dict[str, Any] = {}

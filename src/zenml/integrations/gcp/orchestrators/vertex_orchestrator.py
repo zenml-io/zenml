@@ -360,8 +360,21 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             {"name": key, "value": value} for key, value in environment.items()
         ]
 
-        # Add any additional parameters from custom_training_job_kwargs
-        params.update(custom_job_parameters.custom_training_job_kwargs)
+        # Check if any advanced parameters will override explicit parameters
+        if custom_job_parameters.advanced_training_job_args:
+            overridden_params = set(params.keys()) & set(
+                custom_job_parameters.advanced_training_job_args.keys()
+            )
+            if overridden_params:
+                logger.warning(
+                    f"The following explicit parameters are being overridden by values in "
+                    f"advanced_training_job_args: {', '.join(overridden_params)}. "
+                    f"This may lead to unexpected behavior. Consider using either explicit "
+                    f"parameters or advanced_training_job_args, but not both for the same parameters."
+                )
+
+        # Add any advanced parameters - these will override explicit parameters if provided
+        params.update(custom_job_parameters.advanced_training_job_args)
 
         custom_job_component = create_custom_training_job_from_component(
             component_spec=component,

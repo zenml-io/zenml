@@ -435,7 +435,7 @@ The `VertexCustomJobParameters` supports the following common configuration opti
 
 #### Advanced Custom Job Parameters
 
-For advanced scenarios, you can use `custom_training_job_kwargs` to pass additional parameters directly to the underlying Google Cloud Pipeline Components library:
+For advanced scenarios, you can use `advanced_training_job_args` to pass additional parameters directly to the underlying Google Cloud Pipeline Components library:
 
 ```python
 @step(
@@ -444,7 +444,7 @@ For advanced scenarios, you can use `custom_training_job_kwargs` to pass additio
             custom_job_parameters=VertexCustomJobParameters(
                 machine_type="n1-standard-8",
                 # Advanced parameters passed directly to create_custom_training_job_from_component
-                custom_training_job_kwargs={
+                advanced_training_job_args={
                     "timeout": "86400s",  # 24 hour timeout
                     "network": "projects/12345/global/networks/my-vpc",
                     "enable_web_access": True,
@@ -462,12 +462,27 @@ def my_advanced_step():
 
 These advanced parameters are passed directly to the Google Cloud Pipeline Components library's [`create_custom_training_job_from_component`](https://google-cloud-pipeline-components.readthedocs.io/en/google-cloud-pipeline-components-2.19.0/api/v1/custom_job.html#v1.custom_job.create_custom_training_job_from_component) function. This approach lets you access new features of the Google API without requiring ZenML updates.
 
+{% hint style="warning" %}
+If you specify parameters in `advanced_training_job_args` that are also defined as explicit attributes (like `machine_type` or `boot_disk_size_gb`), the values in `advanced_training_job_args` will override the explicit values. For example:
+
+```python
+VertexCustomJobParameters(
+    machine_type="n1-standard-4",  # This will be overridden
+    advanced_training_job_args={
+        "machine_type": "n1-standard-16"  # This takes precedence
+    }
+)
+```
+
+The resulting machine type will be "n1-standard-16". When this happens, ZenML will log a warning at runtime to alert you of the parameter override, which helps avoid confusion about which configuration values are actually being used.
+{% endhint %}
+
 For a complete list of parameters supported by the underlying function, refer to the [Google Pipeline Components SDK V1 docs](https://google-cloud-pipeline-components.readthedocs.io/en/google-cloud-pipeline-components-2.19.0/api/v1/custom_job.html#v1.custom_job.create_custom_training_job_from_component).
 
 Note that when using custom job parameters with `persistent_resource_id`, you must always specify a `service_account` as well.
 
 {% hint style="info" %}
-The `custom_training_job_kwargs` field provides future-proofing for your ZenML pipelines. If Google adds new parameters to their API, you can immediately use them without waiting for ZenML updates. This is especially useful for accessing new hardware configurations, networking features, or security settings as they become available.
+The `advanced_training_job_args` field provides future-proofing for your ZenML pipelines. If Google adds new parameters to their API, you can immediately use them without waiting for ZenML updates. This is especially useful for accessing new hardware configurations, networking features, or security settings as they become available.
 {% endhint %}
 
 ### Enabling CUDA for GPU-backed hardware
