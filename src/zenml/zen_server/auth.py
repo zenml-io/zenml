@@ -983,6 +983,58 @@ def generate_access_token(
     )
 
 
+def generate_artifact_download_token(artifact_version_id: UUID) -> str:
+    """Generate a JWT token for artifact download.
+
+    Args:
+        artifact_version_id: The ID of the artifact version to download.
+
+    Returns:
+        The JWT token for the artifact download.
+    """
+    import jwt
+
+    config = server_config()
+
+    return jwt.encode(
+        {
+            "exp": utc_now() + timedelta(seconds=30),
+            "artifact_version_id": str(artifact_version_id),
+        },
+        key=config.jwt_secret_key,
+        algorithm=config.jwt_token_algorithm,
+    )
+
+
+def verify_artifact_download_token(
+    token: str, artifact_version_id: UUID
+) -> None:
+    """Verify a JWT token for artifact download.
+
+    Args:
+        token: The JWT token to verify.
+        artifact_version_id: The ID of the artifact version to download.
+
+    Raises:
+        CredentialsNotValid: If the token is invalid or the artifact version
+            ID does not match.
+    """
+    import jwt
+
+    config = server_config()
+    try:
+        claims = jwt.decode(
+            token,
+            config.jwt_secret_key,
+            algorithms=[config.jwt_token_algorithm],
+        )
+    except jwt.PyJWTError as e:
+        raise CredentialsNotValid(f"Invalid JWT token: {e}") from e
+
+    if claims["artifact_version_id"] != str(artifact_version_id):
+        raise CredentialsNotValid("Invalid artifact version ID")
+
+
 def http_authentication(
     credentials: HTTPBasicCredentials = Depends(HTTPBasic()),
 ) -> AuthContext:

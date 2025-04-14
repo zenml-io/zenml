@@ -34,6 +34,7 @@ from zenml.constants import (
     DEFAULT_ZENML_JWT_TOKEN_LEEWAY,
     DEFAULT_ZENML_SERVER_DEVICE_AUTH_POLLING,
     DEFAULT_ZENML_SERVER_DEVICE_AUTH_TIMEOUT,
+    DEFAULT_ZENML_SERVER_FILE_DOWNLOAD_SIZE_LIMIT,
     DEFAULT_ZENML_SERVER_GENERIC_API_TOKEN_LIFETIME,
     DEFAULT_ZENML_SERVER_GENERIC_API_TOKEN_MAX_LIFETIME,
     DEFAULT_ZENML_SERVER_LOGIN_RATE_LIMIT_DAY,
@@ -245,6 +246,8 @@ class ServerConfiguration(BaseModel):
         memcache_default_expiry: The default expiry time in seconds for cache
             entries. If not specified, the default value of 30 seconds will be
             used.
+        file_download_size_limit: The maximum size of the file download in
+            bytes. If not specified, the default value of 2GB will be used.
     """
 
     deployment_type: ServerDeploymentType = ServerDeploymentType.OTHER
@@ -345,6 +348,10 @@ class ServerConfiguration(BaseModel):
 
     memcache_max_capacity: int = 1000
     memcache_default_expiry: int = 30
+
+    file_download_size_limit: int = (
+        DEFAULT_ZENML_SERVER_FILE_DOWNLOAD_SIZE_LIMIT
+    )
 
     _deployment_id: Optional[UUID] = None
 
