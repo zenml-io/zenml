@@ -4041,22 +4041,13 @@ class RestZenStore(BaseZenStore):
         """
         credentials_store = get_credentials_store()
 
-        api_key = credentials_store.get_api_key(self.url)
-        username, password = credentials_store.get_password(self.url)
-
-        if api_key is not None:
+        credentials = credentials_store.get_credentials(self.url)
+        if credentials.api_key is not None:
             return True
-        elif username is not None and password is not None:
+        elif credentials.username is not None and credentials.password is not None:
             return True
-        elif self.server_info.is_pro_server():
-            credentials = credentials_store.get_credentials(self.url)
-
-            pro_api_url = self.server_info.pro_api_url
-            if not pro_api_url and credentials and credentials.pro_api_url:
-                pro_api_url = credentials.pro_api_url
-            if not pro_api_url:
-                pro_api_url = ZENML_PRO_API_URL
-
+        elif credentials.type == ServerType.PRO:
+            pro_api_url = self.server_info.pro_api_url or ZENML_PRO_API_URL
             pro_token = credentials_store.get_pro_token(
                 pro_api_url, allow_expired=False
             )
