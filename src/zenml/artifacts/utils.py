@@ -564,6 +564,51 @@ def load_artifact_from_response(artifact: "ArtifactVersionResponse") -> Any:
     )
 
 
+def verify_artifact_is_downloadable(
+    artifact: "ArtifactVersionResponse",
+    zen_store: Optional["BaseZenStore"] = None,
+) -> "BaseArtifactStore":
+    """Verify that the given artifact is downloadable.
+
+    Args:
+        artifact: The artifact to verify.
+        zen_store: The ZenStore to use for finding the artifact store.
+
+    Raises:
+        IllegalOperationError: If the artifact is too large to be archived.
+        KeyError: If the artifact store is not found or the artifact URI does
+            not exist.
+
+    Returns:
+        The artifact store.
+    """
+    if not artifact.artifact_store_id:
+        raise KeyError(
+            f"Artifact '{artifact.id}' cannot be downloaded because the "
+            "underlying artifact store was deleted."
+        )
+
+    artifact_store = _load_artifact_store(
+        artifact_store_id=artifact.artifact_store_id, zen_store=zen_store
+    )
+
+    if not artifact_store.exists(artifact.uri):
+        raise KeyError(f"The artifact URI '{artifact.uri}' does not exist.")
+
+    size = artifact_store.size(artifact.uri)
+    max_download_size = handle_int_env_var(
+        ENV_ZENML_SERVER_FILE_DOWNLOAD_SIZE_LIMIT,
+        DEFAULT_ZENML_SERVER_FILE_DOWNLOAD_SIZE_LIMIT,
+    )
+    if size and size > max_download_size:
+        raise IllegalOperationError(
+            f"The artifact '{artifact.id}' is too large to be downloaded. "
+            f"The maximum download size is {max_download_size} bytes."
+        )
+
+    return artifact_store
+
+
 def create_artifact_archive(
     artifact: "ArtifactVersionResponse",
     archive_path: Optional[str] = None,
@@ -576,35 +621,13 @@ def create_artifact_archive(
         archive_path: The path to which to save the archive.
         zen_store: Optional store to use for fetching the artifact store.
 
-    Raises:
-        IllegalOperationError: If the artifact is too large to be archived.
-        KeyError: If the artifact store is not found.
     Returns:
         The path to the created archive.
     """
     if archive_path is None:
         archive_path = tempfile.mktemp()
 
-    if not artifact.artifact_store_id:
-        raise KeyError(
-            f"Artifact '{artifact.id}' cannot be downloaded because the "
-            "underlying artifact store was deleted."
-        )
-
-    artifact_store = _load_artifact_store(
-        artifact_store_id=artifact.artifact_store_id, zen_store=zen_store
-    )
-
-    size = artifact_store.size(artifact.uri)
-    max_download_size = handle_int_env_var(
-        ENV_ZENML_SERVER_FILE_DOWNLOAD_SIZE_LIMIT,
-        DEFAULT_ZENML_SERVER_FILE_DOWNLOAD_SIZE_LIMIT,
-    )
-    if size and size > max_download_size:
-        raise IllegalOperationError(
-            f"The artifact '{artifact.id}' is too large to be downloaded. "
-            f"The maximum download size is {max_download_size} bytes."
-        )
+    artifact_store = verify_artifact_is_downloadable(artifact, zen_store)
 
     def _prepare_tarinfo(path: str) -> tarfile.TarInfo:
         archive_path = os.path.relpath(path, artifact.uri)

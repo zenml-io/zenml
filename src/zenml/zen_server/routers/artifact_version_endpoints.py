@@ -24,6 +24,7 @@ from starlette.background import BackgroundTask
 from zenml.artifacts.utils import (
     create_artifact_archive,
     load_artifact_visualization,
+    verify_artifact_is_downloadable,
 )
 from zenml.constants import (
     API,
@@ -313,9 +314,10 @@ def get_artifact_download_token(
     Returns:
         The download token for the artifact data.
     """
-    _ = verify_permissions_and_get_entity(
+    artifact = verify_permissions_and_get_entity(
         id=artifact_version_id, get_method=zen_store().get_artifact_version
     )
+    verify_artifact_is_downloadable(artifact, zen_store())
 
     return generate_artifact_download_token(artifact_version_id)
 
