@@ -22,9 +22,7 @@ from fastapi.responses import FileResponse
 from starlette.background import BackgroundTask
 
 from zenml.artifacts.utils import (
-    create_artifact_archive,
     load_artifact_visualization,
-    verify_artifact_is_downloadable,
 )
 from zenml.constants import (
     API,
@@ -48,6 +46,10 @@ from zenml.zen_server.auth import (
     authorize,
     generate_artifact_download_token,
     verify_artifact_download_token,
+)
+from zenml.zen_server.download_utils import (
+    create_artifact_archive,
+    verify_artifact_is_downloadable,
 )
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
@@ -317,7 +319,7 @@ def get_artifact_download_token(
     artifact = verify_permissions_and_get_entity(
         id=artifact_version_id, get_method=zen_store().get_artifact_version
     )
-    verify_artifact_is_downloadable(artifact, zen_store())
+    verify_artifact_is_downloadable(artifact)
 
     # The artifact download is handled in a separate tab by the browser. In this
     # tab, we do not have the ability to set any headers and therefore cannot
@@ -348,7 +350,7 @@ def download_artifact_data(
     verify_artifact_download_token(token, artifact_version_id)
 
     artifact = zen_store().get_artifact_version(artifact_version_id)
-    archive_path = create_artifact_archive(artifact, zen_store=zen_store())
+    archive_path = create_artifact_archive(artifact)
 
     return FileResponse(
         archive_path,
