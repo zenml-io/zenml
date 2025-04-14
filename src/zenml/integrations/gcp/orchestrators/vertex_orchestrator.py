@@ -341,21 +341,10 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                 self.config.workload_service_account
             )
 
-        if custom_job_parameters.persistent_resource_id is None:
-            # If the persistent resource ID is not set, we set to empty
-            # strings to avoid Vertex API errors.
-            custom_job_parameters.persistent_resource_id = ""
-
         # Create a dictionary of explicit parameters
-        params = {
-            "accelerator_type": custom_job_parameters.accelerator_type,
-            "accelerator_count": custom_job_parameters.accelerator_count,
-            "machine_type": custom_job_parameters.machine_type,
-            "boot_disk_size_gb": custom_job_parameters.boot_disk_size_gb,
-            "boot_disk_type": custom_job_parameters.boot_disk_type,
-            "persistent_resource_id": custom_job_parameters.persistent_resource_id,
-            "service_account": custom_job_parameters.service_account,
-        }
+        params = custom_job_parameters.model_dump(
+            exclude_none=True, exclude=set("additional_training_job_args")
+        )
 
         # If service account is not provided and we're not using persistent resource,
         # use the workload service account from orchestrator config
@@ -364,7 +353,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             and custom_job_parameters.persistent_resource_id == ""
             and self.config.workload_service_account
             and "service_account"
-            not in custom_job_parameters.advanced_training_job_args
+            not in custom_job_parameters.additional_training_job_args
         ):
             params["service_account"] = self.config.workload_service_account
 
@@ -377,20 +366,20 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         ]
 
         # Check if any advanced parameters will override explicit parameters
-        if custom_job_parameters.advanced_training_job_args:
+        if custom_job_parameters.additional_training_job_args:
             overridden_params = set(params.keys()) & set(
-                custom_job_parameters.advanced_training_job_args.keys()
+                custom_job_parameters.additional_training_job_args.keys()
             )
             if overridden_params:
                 logger.warning(
                     f"The following explicit parameters are being overridden by values in "
-                    f"advanced_training_job_args: {', '.join(overridden_params)}. "
+                    f"additional_training_job_args: {', '.join(overridden_params)}. "
                     f"This may lead to unexpected behavior. Consider using either explicit "
-                    f"parameters or advanced_training_job_args, but not both for the same parameters."
+                    f"parameters or additional_training_job_args, but not both for the same parameters."
                 )
 
         # Add any advanced parameters - these will override explicit parameters if provided
-        params.update(custom_job_parameters.advanced_training_job_args)
+        params.update(custom_job_parameters.additional_training_job_args)
 
         # Add network and encryption spec key name from orchestrator config if not already in params
         if self.config.network and "network" not in params:

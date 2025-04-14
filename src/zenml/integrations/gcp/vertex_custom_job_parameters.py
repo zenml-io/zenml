@@ -45,7 +45,7 @@ class VertexCustomJobParameters(BaseModel):
         service_account: Specifies the service account to be used.
             This is required when using a persistent_resource_id, and
             should not be set when persistent_resource_id="".
-        advanced_training_job_args: Additional arguments to pass to the create_custom_training_job_from_component
+        additional_training_job_args: Additional arguments to pass to the create_custom_training_job_from_component
             function. This allows passing any additional parameters supported by the Google
             Cloud Pipeline Components library without requiring ZenML to update its API.
             Note: If you specify parameters in this dictionary that are also defined as explicit
@@ -61,4 +61,4 @@ class VertexCustomJobParameters(BaseModel):
     boot_disk_type: str = "pd-ssd"
     persistent_resource_id: Optional[str] = None
     service_account: Optional[str] = None
-    advanced_training_job_args: Dict[str, Any] = {}
+    additional_training_job_args: Dict[str, Any] = {}

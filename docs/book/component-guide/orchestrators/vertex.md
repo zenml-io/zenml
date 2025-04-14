@@ -435,7 +435,7 @@ The `VertexCustomJobParameters` supports the following common configuration opti
 
 #### Advanced Custom Job Parameters
 
-For advanced scenarios, you can use `advanced_training_job_args` to pass additional parameters directly to the underlying Google Cloud Pipeline Components library:
+For advanced scenarios, you can use `additional_training_job_args` to pass additional parameters directly to the underlying Google Cloud Pipeline Components library:
 
 ```python
 @step(
@@ -444,7 +444,7 @@ For advanced scenarios, you can use `advanced_training_job_args` to pass additio
             custom_job_parameters=VertexCustomJobParameters(
                 machine_type="n1-standard-8",
                 # Advanced parameters passed directly to create_custom_training_job_from_component
-                advanced_training_job_args={
+                additional_training_job_args={
                     "timeout": "86400s",  # 24 hour timeout
                     "network": "projects/12345/global/networks/my-vpc",
                     "enable_web_access": True,
@@ -463,12 +463,12 @@ def my_advanced_step():
 These advanced parameters are passed directly to the Google Cloud Pipeline Components library's [`create_custom_training_job_from_component`](https://google-cloud-pipeline-components.readthedocs.io/en/google-cloud-pipeline-components-2.19.0/api/v1/custom_job.html#v1.custom_job.create_custom_training_job_from_component) function. This approach lets you access new features of the Google API without requiring ZenML updates.
 
 {% hint style="warning" %}
-If you specify parameters in `advanced_training_job_args` that are also defined as explicit attributes (like `machine_type` or `boot_disk_size_gb`), the values in `advanced_training_job_args` will override the explicit values. For example:
+If you specify parameters in `additional_training_job_args` that are also defined as explicit attributes (like `machine_type` or `boot_disk_size_gb`), the values in `additional_training_job_args` will override the explicit values. For example:
 
 ```python
 VertexCustomJobParameters(
     machine_type="n1-standard-4",  # This will be overridden
-    advanced_training_job_args={
+    additional_training_job_args={
         "machine_type": "n1-standard-16"  # This takes precedence
     }
 )
@@ -480,7 +480,7 @@ The resulting machine type will be "n1-standard-16". When this happens, ZenML wi
 {% hint style="info" %}
 When using `custom_job_parameters`, ZenML automatically applies certain configurations from your orchestrator:
 
-- **Network Configuration**: If you've set `network` in your Vertex orchestrator configuration, it will be automatically applied to all custom jobs unless you explicitly override it in `advanced_training_job_args`.
+- **Network Configuration**: If you've set `network` in your Vertex orchestrator configuration, it will be automatically applied to all custom jobs unless you explicitly override it in `additional_training_job_args`.
 
 - **Encryption Specification**: If you've set `encryption_spec_key_name` in your orchestrator configuration, it will be applied to custom jobs for consistent encryption.
 
@@ -494,7 +494,7 @@ For a complete list of parameters supported by the underlying function, refer to
 Note that when using custom job parameters with `persistent_resource_id`, you must always specify a `service_account` as well.
 
 {% hint style="info" %}
-The `advanced_training_job_args` field provides future-proofing for your ZenML pipelines. If Google adds new parameters to their API, you can immediately use them without waiting for ZenML updates. This is especially useful for accessing new hardware configurations, networking features, or security settings as they become available.
+The `additional_training_job_args` field provides future-proofing for your ZenML pipelines. If Google adds new parameters to their API, you can immediately use them without waiting for ZenML updates. This is especially useful for accessing new hardware configurations, networking features, or security settings as they become available.
 {% endhint %}
 
 ### Enabling CUDA for GPU-backed hardware
