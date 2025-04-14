@@ -80,7 +80,7 @@ class PathMaterializer(BaseMaterializer):
                             safe_members.append(member)
 
                     # Extract only safe members
-                    tar.extractall(path=directory, members=safe_members)
+                    tar.extractall(path=directory, members=safe_members)  # nosec B202 - members are filtered through is_path_within_directory
 
                 # Clean up the archive file
                 os.remove(archive_path_local)
@@ -102,8 +102,14 @@ class PathMaterializer(BaseMaterializer):
 
         Args:
             data: Path to a local directory or file to store. Must be a Path object.
+
+        Raises:
+            TypeError: If data is not a Path object.
         """
-        assert isinstance(data, Path)
+        if not isinstance(data, Path):
+            raise TypeError(
+                f"Expected a Path object, got {type(data).__name__}"
+            )
 
         if data.is_dir():
             # Handle directory artifact
