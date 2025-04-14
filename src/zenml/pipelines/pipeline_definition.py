@@ -843,12 +843,10 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             ):
                 logging_enabled = False
             elif (
-                compiled_deployment.pipeline_configuration.enable_step_logs
+                compiled_deployment.pipeline_configuration.enable_pipeline_logs
                 is not None
             ):
-                logging_enabled = (
-                    compiled_deployment.pipeline_configuration.enable_step_logs
-                )
+                logging_enabled = compiled_deployment.pipeline_configuration.enable_pipeline_logs
 
             logs_context = nullcontext()
             logs_model = None
