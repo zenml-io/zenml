@@ -4032,30 +4032,6 @@ class RestZenStore(BaseZenStore):
     # Internal helper methods
     # =======================
 
-    def _can_generate_api_token(self) -> bool:
-        """Check if it is possible to generate a new API token.
-
-        Returns:
-            Whether the configured credentials allow for a new API token to be
-            generated.
-        """
-        credentials_store = get_credentials_store()
-
-        credentials = credentials_store.get_credentials(self.url)
-        if credentials.api_key is not None:
-            return True
-        elif credentials.username is not None and credentials.password is not None:
-            return True
-        elif credentials.type == ServerType.PRO:
-            pro_api_url = self.server_info.pro_api_url or ZENML_PRO_API_URL
-            pro_token = credentials_store.get_pro_token(
-                pro_api_url, allow_expired=False
-            )
-            if pro_token:
-                return True
-
-        return False
-
     def get_or_generate_api_token(self) -> str:
         """Get or generate an API token.
 
@@ -4429,6 +4405,7 @@ class RestZenStore(BaseZenStore):
                 # explicitly indicates that the credentials are not valid and
                 # they can be thrown away or when the request is not
                 # authenticated at all.
+                credentials_store = get_credentials_store()
 
                 if self._api_token is None:
                     # The last request was not authenticated with an API
@@ -4440,7 +4417,7 @@ class RestZenStore(BaseZenStore):
                         "Re-authenticating and retrying..."
                     )
                     self.authenticate()
-                elif not self._can_generate_api_token():
+                elif not credentials_store.can_login(self.url):
                     # The request failed either because we're not
                     # authenticated or our current credentials are not valid
                     # anymore.
