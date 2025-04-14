@@ -6,7 +6,7 @@
 * [Installation](getting-started/installation.md)
 * [Hello World](getting-started/hello-world.md)
 * [Core Concepts](getting-started/core-concepts.md)
-* [System Architecture](getting-started/system-architectures.md)]
+* [System Architecture](getting-started/system-architectures.md)
 
 ## Deploying ZenML
 
