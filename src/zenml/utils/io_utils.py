@@ -205,6 +205,31 @@ def resolve_relative_path(path: str) -> str:
     return str(Path(path).resolve())
 
 
+def is_safe_extraction_path(member_path: str, target_dir: str) -> bool:
+    """Validates if a file extraction path is safe and doesn't allow path traversal.
+
+    This utility function is designed to prevent path traversal vulnerabilities
+    (such as CVE-2007-4559) when extracting files from archives. It ensures that
+    the final path after extraction is within the intended target directory.
+
+    Args:
+        member_path: The path of the archive member to be extracted.
+        target_dir: The target directory where files should be extracted.
+
+    Returns:
+        Boolean indicating whether the extraction path is safe (True) or
+        potentially malicious (False).
+    """
+    # Convert to absolute path, ensuring it's normalized
+    abs_path = os.path.abspath(os.path.join(target_dir, member_path))
+    # Check if the path is within the target directory
+    target_dir_abs = os.path.abspath(target_dir)
+    return (
+        abs_path.startswith(target_dir_abs + os.sep)
+        or abs_path == target_dir_abs
+    )
+
+
 def move(source: str, destination: str, overwrite: bool = False) -> None:
     """Moves dir or file from source to destination. Can be used to rename.
 

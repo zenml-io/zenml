@@ -26,6 +26,7 @@ from zenml.constants import (
 from zenml.enums import ArtifactType
 from zenml.io import fileio
 from zenml.materializers.base_materializer import BaseMaterializer
+from zenml.utils.io_utils import is_safe_extraction_path
 
 
 class PathMaterializer(BaseMaterializer):
@@ -71,7 +72,15 @@ class PathMaterializer(BaseMaterializer):
 
                 # Extract the archive to the temporary directory
                 with tarfile.open(archive_path_local, "r:gz") as tar:
-                    tar.extractall(path=directory)
+                    # Validate archive members to prevent path traversal attacks
+                    # Filter members to only those with safe paths
+                    safe_members = []
+                    for member in tar.getmembers():
+                        if is_safe_extraction_path(member.name, directory):
+                            safe_members.append(member)
+
+                    # Extract only safe members
+                    tar.extractall(path=directory, members=safe_members)
 
                 # Clean up the archive file
                 os.remove(archive_path_local)
