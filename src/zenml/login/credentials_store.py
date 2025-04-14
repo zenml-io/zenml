@@ -398,8 +398,7 @@ class CredentialsStore(metaclass=SingletonMetaClass):
         return self.get_pro_token(pro_api_url) is not None
 
     def can_login(self, server_url: str) -> bool:
-        """Check if the credentials store contains credentials that can be used
-        to login to the given server URL.
+        """Check if credentials to login to the given server exist.
 
         Args:
             server_url: The server URL for which to check the authentication.
