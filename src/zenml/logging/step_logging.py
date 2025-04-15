@@ -518,25 +518,26 @@ class PipelineLogsStorageContext:
         """
 
         def wrapped_write(*args: Any, **kwargs: Any) -> Any:
-            # Check if step names in logs are disabled via env var
-            step_names_disabled = handle_bool_env_var(
-                ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS, default=False
+            step_names_disabled = (
+                handle_bool_env_var(
+                    ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS, default=False
+                )
+                or not self.prepend_step_name
             )
 
             if step_names_disabled:
                 output = method(*args, **kwargs)
             else:
                 message = args[0]
-                if self.prepend_step_name:
-                    # Try to get step context if not available yet
-                    step_context = None
-                    try:
-                        step_context = get_step_context()
-                    except Exception:
-                        pass
+                # Try to get step context if not available yet
+                step_context = None
+                try:
+                    step_context = get_step_context()
+                except Exception:
+                    pass
 
-                    if step_context and args[0] != "\n":
-                        message = f"[{step_context.step_name}] " + message
+                if step_context and args[0] != "\n":
+                    message = f"[{step_context.step_name}] " + message
 
                 output = method(message, *args[1:], **kwargs)
 
