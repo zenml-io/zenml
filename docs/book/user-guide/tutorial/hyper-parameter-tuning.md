@@ -11,7 +11,7 @@ that would allow for a different learning rate to be used across the
 same `train_step`. Once that step has been run for all the different 
 learning rates, the `selection_step` finds which hyperparameters gave the 
 best results or performance. It utilizes the [fan-in, fan-out method of 
-building a pipeline.](./fan-in-fan-out.md)
+building a pipeline.](../../how-to/pipeline-development/build-pipelines/fan-in-fan-out.md)
 
 ```python
 from typing import Annotated

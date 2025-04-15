@@ -173,7 +173,7 @@ If you're only calling each step once inside your pipeline, the **invocation ID*
 
 ### Inspect pipeline runs with our VS Code extension
 
-![GIF of our VS code extension, showing some of the uses of the sidebar](../../../.gitbook/assets/zenml-extension-shortened.gif)
+![GIF of our VS code extension, showing some of the uses of the sidebar](../../.gitbook/assets/zenml-extension-shortened.gif)
 
 If you are using [our VS Code extension](https://marketplace.visualstudio.com/items?itemName=ZenML.zenml-vscode), you can easily view your pipeline runs by opening the sidebar (click on the ZenML icon). You can then click on any particular pipeline run to see its status and some other metadata. If you want to delete a run, you can also do so from the same sidebar view.
 

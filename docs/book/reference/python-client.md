@@ -47,7 +47,7 @@ These are the main ZenML resources that you can interact with via the ZenML Clie
 * **Code Repositories**: The git code repositories that you have connected with your ZenML instance. See [here](https://docs.zenml.io/user-guides/production-guide/connect-code-repository) for more information.
 
 {% hint style="info" %}
-Checkout the [documentation on fetching runs](../how-to/pipeline-development/build-pipelines/fetching-pipelines.md) for more information on the various ways how you can fetch and use the pipeline, pipeline run, step run, and artifact resources in code.
+Checkout the [documentation on fetching runs](../user-guide/tutorial/fetching-pipelines.md) for more information on the various ways how you can fetch and use the pipeline, pipeline run, step run, and artifact resources in code.
 {% endhint %}
 
 #### Stacks, Infrastructure, Authentication

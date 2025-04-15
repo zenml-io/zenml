@@ -31,13 +31,13 @@ Other team members can use connectors to create stack components that talk to th
 Let's look at an example of how this works in practice.
 Imagine you have a `DataScientist` role in your ZenML server. This role should only be able to use the connectors to create stack components and run pipelines. They shouldn't have access to the credentials used to configure these connectors. Therefore, the permissions for this role could look like the following:
 
-![Data Scientist Permissions](../../../.gitbook/assets/data_scientist_connector_role.png)
+![Data Scientist Permissions](../../.gitbook/assets/data_scientist_connector_role.png)
 
 You can notice that the role doesn't grant the data scientist permissions to create, update, or delete connectors, or read their secret values.
 
 On the other hand, the `MLOpsPlatformEngineer` role has the permissions to create, update, and delete connectors, as well as read their secret values. The permissions for this role could look like the following:
 
-![MLOps Platform Engineer Permissions](../../../.gitbook/assets/platform_engineer_connector_role.png)
+![MLOps Platform Engineer Permissions](../../.gitbook/assets/platform_engineer_connector_role.png)
 
 {% hint style="info" %}
 Note that you can only use the RBAC features in ZenML Pro. Learn more about roles in ZenML Pro [here](https://docs.zenml.io/pro/core-concepts/roles).

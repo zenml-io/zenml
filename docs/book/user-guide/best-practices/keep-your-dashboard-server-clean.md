@@ -117,7 +117,7 @@ Models are something that you have to explicitly register or pass in as you
 define your pipeline, so to run a pipeline without it being attached to a model
 is fairly straightforward: simply don't do the things specified in our
 [documentation on registering
-models](../../model-management-metrics/model-control-plane/register-a-model.md).
+models](../../how-to/model-management-metrics/model-control-plane/register-a-model.md).
 
 In order to delete a model or a specific model version, you can use the CLI or
 Python SDK to accomplish this. As an example, to delete all versions of a model,

@@ -70,7 +70,7 @@ storage). The rest is up to you. You might for example want to parametrize your 
 for the respective environments. You can also use different [configuration files](https://docs.zenml.io/how-to/pipeline-development/use-configuration-files)
 for the different environments to configure the [Model](https://docs.zenml.io/how-to/model-management-metrics/model-control-plane), the 
 [DockerSettings](https://docs.zenml.io/how-to/customize-docker-builds/docker-settings-on-a-pipeline), the [ResourceSettings like
-accelerators](../../how-to/pipeline-development/training-with-gpus/README.md) differently for the different environments.
+accelerators](../tutorial/distributed-training/README.md) differently for the different environments.
 
 ### Trigger a pipeline on a Pull Request (Merge Request)
 
