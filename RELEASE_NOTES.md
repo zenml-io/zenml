@@ -2,6 +2,41 @@
 
 # 0.81.0
 
+The `0.81.0` release focuses on significant improvements to artifact management, enhanced security features, and advanced resource sharing capabilities. Key highlights include a new Path materializer for directory and file uploads, artifact visualization enhancements, client-side pipeline run logs storage, and support for resource sharing between teams and external users. This release also improves logging, adds security protections, and enhances orchestration capabilities across multiple cloud platforms.
+
+## Features
+
+- Added a [Path materializer](https://docs.zenml.io/how-to/data-artifact-management/handle-data-artifacts/pass-files-through-steps.md) to upload directories and files
+- Added save_visualizations method to materializers
+- Implemented ZenML artifact store provisioning scripts for AWS/GCP/Azure
+- Added endpoint to download artifact data
+- Enabled resource sharing for teams and external users
+- Added support for custom job parameters in Vertex orchestrator
+- Added client-side pipeline run logs storage in the artifact store
+
+## Improvements
+
+- Improved logging with step ID instead of name and avoided extra newlines
+- Added tracking for stack creation and pipeline runs with remote artifact store
+- Implemented failure retries and pending timeouts for the k8s orchestrator pod
+- Added configurable workload token expiration leeway
+- Migrated onboarding state for better user experience
+
+## Fixes
+
+- Fixed artifact control plane vs model control plane GIF links in docs
+- Used step invocation ID in run template error message
+- Prevented path traversal attacks during file extraction
+- Fixed missing vertex orchestrator dependencies in server image
+- Resolved pydantic 2.11 deprecation warnings
+- Removed duplicate step name from logs
+
+## Documentation
+
+- Added [triggering pipelines mini-tutorial](https://docs.zenml.io/user-guides/tutorial/trigger-pipelines-from-external-systems)
+- Improved [SDK Client documentation](https://docs.zenml.io/sdk-reference/client) with thematic grouping
+- Added [Kubernetes schedule documentation](https://docs.zenml.io/stacks/orchestrators/kubernetes#running-scheduled-pipelines-with-kubernetes) and fixed heading hierarchy
+
 ## What's Changed
 * Added a Path materializer to upload directories and files by @htahir1 in https://github.com/zenml-io/zenml/pull/3496
 * Avoid extra newlines in logs by @avishniakov in https://github.com/zenml-io/zenml/pull/3518
