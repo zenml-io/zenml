@@ -849,7 +849,9 @@ To avoid this consider setting pipeline parameters only in one place (config or 
                 )
 
                 logs_context = PipelineLogsStorageContext(
-                    logs_uri=logs_uri, artifact_store=stack.artifact_store
+                    logs_uri=logs_uri,
+                    artifact_store=stack.artifact_store,
+                    prepend_step_name=False,
                 )  # type: ignore[assignment]
 
                 logs_model = LogsRequest(

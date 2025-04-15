@@ -436,17 +436,22 @@ class PipelineLogsStorageContext:
     """Context manager which patches stdout and stderr during pipeline run execution."""
 
     def __init__(
-        self, logs_uri: str, artifact_store: "BaseArtifactStore"
+        self,
+        logs_uri: str,
+        artifact_store: "BaseArtifactStore",
+        prepend_step_name: bool = True,
     ) -> None:
         """Initializes and prepares a storage object.
 
         Args:
             logs_uri: the URI of the logs file.
             artifact_store: Artifact Store from the current pipeline run context.
+            prepend_step_name: Whether to prepend the step name to the logs.
         """
         self.storage = PipelineLogsStorage(
             logs_uri=logs_uri, artifact_store=artifact_store
         )
+        self.prepend_step_name = prepend_step_name
 
     def __enter__(self) -> "PipelineLogsStorageContext":
         """Enter condition of the context manager.
@@ -521,20 +526,17 @@ class PipelineLogsStorageContext:
             if step_names_disabled:
                 output = method(*args, **kwargs)
             else:
-                # Try to get step context if not available yet
-                step_context = None
-                try:
-                    step_context = get_step_context()
-                except Exception:
-                    pass
+                message = args[0]
+                if self.prepend_step_name:
+                    # Try to get step context if not available yet
+                    step_context = None
+                    try:
+                        step_context = get_step_context()
+                    except Exception:
+                        pass
 
-                if step_context and args[0] != "\n":
-                    prefix = f"[{step_context.step_name}] "
-                    message = args[0]
-                    if not message.startswith(prefix):
-                        message = prefix + message
-                else:
-                    message = args[0]
+                    if step_context and args[0] != "\n":
+                        message = f"[{step_context.step_name}] " + message
 
                 output = method(message, *args[1:], **kwargs)
 
