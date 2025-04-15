@@ -1,5 +1,39 @@
 <!-- markdown-link-check-disable -->
 
+# 0.81.0
+
+## What's Changed
+* Added a Path materializer to upload directories and files by @htahir1 in https://github.com/zenml-io/zenml/pull/3496
+* Avoid extra newlines in logs by @avishniakov in https://github.com/zenml-io/zenml/pull/3518
+* Use step ID instead of name in step logs by @schustmi in https://github.com/zenml-io/zenml/pull/3519
+* Fix artifact control plane vs model control plane GIF links in docs by @strickvl in https://github.com/zenml-io/zenml/pull/3508
+* Adding 0.80.1 to the legacy docs by @bcdurak in https://github.com/zenml-io/zenml/pull/3521
+* Adding 0.80.2 to the migration tests by @bcdurak in https://github.com/zenml-io/zenml/pull/3517
+* Enabling the `greatexpectations` test again by @bcdurak in https://github.com/zenml-io/zenml/pull/3516
+* Add save_visualizations method to materializers by @htahir1 in https://github.com/zenml-io/zenml/pull/3520
+* Add triggering pipelines mini-tutorial by @strickvl in https://github.com/zenml-io/zenml/pull/3495
+* ZenML artifact store provisioning scripts for AWS/GCP/Azure by @stefannica in https://github.com/zenml-io/zenml/pull/3514
+* Improve SDK Client documentation with thematic grouping by @strickvl in https://github.com/zenml-io/zenml/pull/3528
+* Track stack creation and pipeline run with remote artifact store for onboarding state by @schustmi in https://github.com/zenml-io/zenml/pull/3525
+* Add Kubernetes schedule documentation and fix heading hierarchy by @strickvl in https://github.com/zenml-io/zenml/pull/3530
+* Use step invocation ID in run template error message by @schustmi in https://github.com/zenml-io/zenml/pull/3534
+* Migrate onboarding state by @schustmi in https://github.com/zenml-io/zenml/pull/3533
+* Prevent path traversal attacks during file extraction by @htahir1 in https://github.com/zenml-io/zenml/pull/3535
+* Implement failure retries and pending timeouts for the k8s orchestrator pod by @stefannica in https://github.com/zenml-io/zenml/pull/3523
+* Add endpoint to download artifact data by @schustmi in https://github.com/zenml-io/zenml/pull/3507
+* Enable resource sharing for teams and external users by @schustmi in https://github.com/zenml-io/zenml/pull/3461
+* Add support for custom job parameters in Vertex orchestrator by @htahir1 in https://github.com/zenml-io/zenml/pull/3536
+* Add configurable workload token expiration leeway by @schustmi in https://github.com/zenml-io/zenml/pull/3526
+* Fix llms.txt docs by @strickvl in https://github.com/zenml-io/zenml/pull/3540
+* Store client-side pipeline run logs in the artifact store by @stefannica in https://github.com/zenml-io/zenml/pull/3498
+* Add missing vertex orchestrator dependencies to server image by @schustmi in https://github.com/zenml-io/zenml/pull/3541
+* Resolve pydantic 2.11 deprecation warnings by @schustmi in https://github.com/zenml-io/zenml/pull/3542
+* Remove duplicate step name from logs by @schustmi in https://github.com/zenml-io/zenml/pull/3543
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.80.2...0.81.0
+
+
 # 0.80.2
 
  The `0.80.2` release focuses on several bug fixes, usability enhancements and documentation improvements. Key highlights include fixing the yanked fsspec pip resolution issue, adding sample visualization for Pandas materializer, and upgrading pydantic to 2.11 for improved performance. This release also adds new tutorials and guides, fixes several critical issues, and introduces new functionality for pipeline development.
