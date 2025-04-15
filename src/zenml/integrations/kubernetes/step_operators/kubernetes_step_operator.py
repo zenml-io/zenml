@@ -218,9 +218,6 @@ class KubernetesStepOperator(BaseStepOperator):
             mount_local_stores=False,
         )
 
-        logger.info(
-            "Waiting for pod of step `%s` to start...", info.pipeline_step_name
-        )
         kube_utils.create_and_wait_for_pod_to_start(
             core_api=self._k8s_core_api,
             pod_display_name=f"pod of step `{info.pipeline_step_name}`",

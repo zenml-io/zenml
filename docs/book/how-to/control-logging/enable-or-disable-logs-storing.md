@@ -1,6 +1,11 @@
 # Enable or disable logs storing
 
-By default, ZenML uses a logging handler to capture the logs that occur during the execution of a step. Users are free to use the default python logging module or print statements, and ZenML's logging handler will catch these logs and store them. 
+By default, ZenML uses a logging handler to capture two types of logs:
+
+* the logs collected from your ZenML client while triggering and waiting for a pipeline to run. These logs cover everything that happens client-side: building and pushing container images, triggering the pipeline, waiting for it to start, and waiting for it to finish. Note that these logs are not available for scheduled pipelines and the logs might not be available for pipeline runs that fail while building or pushing the container images.
+* the logs collected from the execution of a step. These logs only cover what happens during the execution of a single step and originate mostly from the user-provided step code and the libraries it calls.
+
+For step logs, users are free to use the default python logging module or print statements, and ZenML's logging handler will catch these logs and store them.
 
 ```python
 import logging
@@ -13,8 +18,9 @@ def my_step() -> None:
     print("World.")  # You can utilize `print` statements as well. 
 ```
 
-These logs are stored within the respective artifact store of your stack. You can display the logs in the dashboard as follows:
+All these logs are stored within the respective artifact store of your stack. You can visualize the pipeline run logs and step logs in the dashboard as follows:
 
+![Displaying pipeline run logs on the dashboard](../../.gitbook/assets/zenml_pipeline_run_logs.png)
 ![Displaying step logs on the dashboard](../../.gitbook/assets/zenml_step_logs.png)
 
 {% hint style="warning" %}
@@ -22,7 +28,28 @@ Note that if you are not connected to a cloud artifact store with a service conn
 be able to view your logs in the dashboard. Read more [here](./view-logs-on-the-dasbhoard.md).
 {% endhint %}
 
-If you do not want to store the logs in your artifact store, you can:
+If you do not want to store the logs in your artifact store, you can do the following:
+
+For pipeline run logs:
+
+1.  Disable it by using the `enable_pipeline_logs` parameter with your `@pipeline` decorator:
+
+    ```python
+    from zenml import pipeline, step
+
+    @pipeline(enable_pipeline_logs=False)  # disables logging for pipeline
+    def my_pipeline():
+        ...
+    ```
+2. Disable it by using the environmental variable `ZENML_DISABLE_PIPELINE_LOGS_STORAGE` and setting it to `true`. This environmental variable takes precedence over the parameter mentioned above. Note this environmental variable needs to be set on the [execution environment](../pipeline-development/configure-python-environments/README.md#execution-environments), i.e., on the orchestrator level:
+
+```shell
+export ZENML_DISABLE_PIPELINE_LOGS_STORAGE=true
+
+python my_pipeline.py
+```
+
+For step logs:
 
 1.  Disable it by using the `enable_step_logs` parameter either with your `@pipeline` or `@step` decorator:
 
