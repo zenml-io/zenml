@@ -15,7 +15,6 @@
 
 import argparse
 import socket
-import time
 from typing import Any, Dict
 from uuid import UUID
 
@@ -26,6 +25,7 @@ from zenml.entrypoints.step_entrypoint_configuration import (
     StepEntrypointConfiguration,
 )
 from zenml.enums import ExecutionStatus
+from zenml.exceptions import AuthorizationException
 from zenml.integrations.kubernetes.flavors.kubernetes_orchestrator_flavor import (
     KubernetesOrchestratorSettings,
 )
@@ -102,8 +102,6 @@ def main() -> None:
 
         Raises:
             Exception: If the pod fails to start.
-            TimeoutError: If the pod is still in a pending state after the
-                maximum wait time has elapsed.
         """
         # Define Kubernetes pod name.
         pod_name = f"{orchestrator_run_id}-{step_name}"
@@ -175,68 +173,17 @@ def main() -> None:
             mount_local_stores=mount_local_stores,
         )
 
-        retries = 0
-        max_retries = settings.pod_failure_max_retries
-        delay: float = settings.pod_failure_retry_delay
-        backoff = settings.pod_failure_backoff
-
-        while retries < max_retries:
-            try:
-                # Create and run pod.
-                core_api.create_namespaced_pod(
-                    namespace=args.kubernetes_namespace,
-                    body=pod_manifest,
-                )
-                break
-            except Exception as e:
-                retries += 1
-                if retries < max_retries:
-                    logger.debug(
-                        f"Pod for step `{step_name}` failed to start: {e}"
-                    )
-                    logger.error(
-                        f"Failed to create pod for step `{step_name}`. "
-                        f"Retrying in {delay} seconds..."
-                    )
-                    time.sleep(delay)
-                    delay *= backoff
-                else:
-                    logger.error(
-                        f"Failed to create pod for step `{step_name}` after "
-                        f"{max_retries} retries. Exiting."
-                    )
-                    raise
-
-        # Wait for pod to start
-        max_wait = settings.pod_startup_timeout
-        total_wait: float = 0
-        delay = settings.pod_failure_retry_delay
-        while True:
-            pod = kube_utils.get_pod(
-                core_api, pod_name, args.kubernetes_namespace
-            )
-            if not pod or kube_utils.pod_is_not_pending(pod):
-                break
-            if total_wait >= max_wait:
-                # Have to delete the pending pod so it doesn't start running
-                # later on.
-                try:
-                    core_api.delete_namespaced_pod(
-                        name=pod_name,
-                        namespace=args.kubernetes_namespace,
-                    )
-                except Exception:
-                    pass
-                raise TimeoutError(
-                    f"Pod for step `{step_name}` is still in a pending state "
-                    f"after {total_wait} seconds. Exiting."
-                )
-
-            if total_wait + delay > max_wait:
-                delay = max_wait - total_wait
-            total_wait += delay
-            time.sleep(delay)
-            delay *= backoff
+        kube_utils.create_and_wait_for_pod_to_start(
+            core_api=core_api,
+            pod_display_name=f"pod for step `{step_name}`",
+            pod_name=pod_name,
+            pod_manifest=pod_manifest,
+            namespace=args.kubernetes_namespace,
+            startup_max_retries=settings.pod_failure_max_retries,
+            startup_failure_delay=settings.pod_failure_retry_delay,
+            startup_failure_backoff=settings.pod_failure_backoff,
+            startup_timeout=settings.pod_startup_timeout,
+        )
 
         # Wait for pod to finish.
         logger.info(f"Waiting for pod of step `{step_name}` to finish...")
@@ -263,58 +210,66 @@ def main() -> None:
         Args:
             node_states: The states of the nodes.
         """
-        # Some steps may have failed because the pods could not be created.
-        # We need to check for this and mark the step run as failed if so.
+        try:
+            # Some steps may have failed because the pods could not be created.
+            # We need to check for this and mark the step run as failed if so.
 
-        # Fetch the pipeline run using any means possible.
-        list_args: Dict[str, Any] = {}
-        if args.run_id:
-            # For a run triggered outside of a schedule, we can use the
-            # placeholder run ID to find the pipeline run.
-            list_args = dict(id=UUID(args.run_id))
-        else:
-            # For a run triggered by a schedule, we can only use the
-            # orchestrator run ID to find the pipeline run.
-            list_args = dict(orchestrator_run_id=orchestrator_run_id)
+            # Fetch the pipeline run using any means possible.
+            list_args: Dict[str, Any] = {}
+            if args.run_id:
+                # For a run triggered outside of a schedule, we can use the
+                # placeholder run ID to find the pipeline run.
+                list_args = dict(id=UUID(args.run_id))
+            else:
+                # For a run triggered by a schedule, we can only use the
+                # orchestrator run ID to find the pipeline run.
+                list_args = dict(orchestrator_run_id=orchestrator_run_id)
 
-        pipeline_runs = client.list_pipeline_runs(
-            project=deployment_config.project.id,
-            deployment_id=deployment_config.id,
-            **list_args,
-        )
-        if not len(pipeline_runs):
-            # No pipeline run found, so we can't mark any step runs as failed.
-            return
+            pipeline_runs = client.list_pipeline_runs(
+                hydrate=True,
+                project=deployment_config.project.id,
+                deployment_id=deployment_config.id,
+                **list_args,
+            )
+            if not len(pipeline_runs):
+                # No pipeline run found, so we can't mark any step runs as failed.
+                return
 
-        pipeline_run = pipeline_runs[0]
-        pipeline_failed = False
+            pipeline_run = pipeline_runs[0]
+            pipeline_failed = False
 
-        for step_name, node_state in node_states.items():
-            if node_state != NodeStatus.FAILED:
-                continue
+            for step_name, node_state in node_states.items():
+                if node_state != NodeStatus.FAILED:
+                    continue
 
-            pipeline_failed = True
+                pipeline_failed = True
 
-            # If steps failed for any reason, we need to mark the step run as
-            # failed, if it exists and it wasn't already in a final state.
+                # If steps failed for any reason, we need to mark the step run as
+                # failed, if it exists and it wasn't already in a final state.
 
-            step_run = pipeline_run.steps.get(step_name)
+                step_run = pipeline_run.steps.get(step_name)
 
-            # Try to update the step run status, if it exists and is in
-            # a transient state.
-            if step_run and step_run.status in {
+                # Try to update the step run status, if it exists and is in
+                # a transient state.
+                if step_run and step_run.status in {
+                    ExecutionStatus.INITIALIZING,
+                    ExecutionStatus.RUNNING,
+                }:
+                    publish_utils.publish_failed_step_run(step_run.id)
+
+            # If any steps failed and the pipeline run is still in a transient
+            # state, we need to mark it as failed.
+            if pipeline_failed and pipeline_run.status in {
                 ExecutionStatus.INITIALIZING,
                 ExecutionStatus.RUNNING,
             }:
-                publish_utils.publish_failed_step_run(step_run.id)
-
-        # If any steps failed and the pipeline run is still in a transient
-        # state, we need to mark it as failed.
-        if pipeline_failed and pipeline_run.status in {
-            ExecutionStatus.INITIALIZING,
-            ExecutionStatus.RUNNING,
-        }:
-            publish_utils.publish_failed_pipeline_run(pipeline_run.id)
+                publish_utils.publish_failed_pipeline_run(pipeline_run.id)
+        except AuthorizationException:
+            # If a step of the pipeline failed or all of them completed
+            # successfully, the pipeline run will be finished and the API token
+            # will be invalidated. We catch this exception and do nothing here,
+            # as the pipeline run status will already have been published.
+            pass
 
     parallel_node_startup_waiting_period = (
         orchestrator.config.parallel_step_startup_waiting_period or 0.0

@@ -52,6 +52,7 @@ def pipeline(
     enable_step_logs: Optional[bool] = None,
     environment: Optional[Dict[str, Any]] = None,
     secrets: Optional[List[str]] = None,
+    enable_pipeline_logs: Optional[bool] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     tags: Optional[List[Union[str, "Tag"]]] = None,
     extra: Optional[Dict[str, Any]] = None,
@@ -71,6 +72,7 @@ def pipeline(
     enable_step_logs: Optional[bool] = None,
     environment: Optional[Dict[str, Any]] = None,
     secrets: Optional[List[str]] = None,
+    enable_pipeline_logs: Optional[bool] = None,
     settings: Optional[Dict[str, "SettingsOrDict"]] = None,
     tags: Optional[List[Union[str, "Tag"]]] = None,
     extra: Optional[Dict[str, Any]] = None,
@@ -91,6 +93,7 @@ def pipeline(
         environment: Environment variables to set when running this pipeline.
         secrets: Secrets to set as environment variables when running this
             pipeline.
+        enable_pipeline_logs: If pipeline logs should be enabled for this pipeline.
         settings: Settings for this pipeline.
         tags: Tags to apply to runs of the pipeline.
         extra: Extra configurations for this pipeline.
@@ -117,6 +120,7 @@ def pipeline(
             enable_step_logs=enable_step_logs,
             environment=environment,
             secrets=secrets,
+            enable_pipeline_logs=enable_pipeline_logs,
             settings=settings,
             tags=tags,
             extra=extra,

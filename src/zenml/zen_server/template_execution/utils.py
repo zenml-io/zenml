@@ -373,7 +373,7 @@ def deployment_request_from_template(
     )
 
     step_config_dict_base = pipeline_configuration.model_dump(
-        exclude={"name", "parameters", "tags"}
+        exclude={"name", "parameters", "tags", "enable_pipeline_logs"}
     )
     steps = {}
     for invocation_id, step in deployment.step_configurations.items():
@@ -411,14 +411,14 @@ def deployment_request_from_template(
         if unknown_parameters:
             raise ValueError(
                 "Run configuration contains the following unknown "
-                f"parameters for step {step.config.name}: {unknown_parameters}."
+                f"parameters for step {invocation_id}: {unknown_parameters}."
             )
 
         missing_parameters = required_parameters - configured_parameters
         if missing_parameters:
             raise ValueError(
                 "Run configuration is missing the following required "
-                f"parameters for step {step.config.name}: {missing_parameters}."
+                f"parameters for step {invocation_id}: {missing_parameters}."
             )
 
         step_config = StepConfiguration.model_validate(step_config_dict)

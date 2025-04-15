@@ -40,7 +40,7 @@ from zenml.constants import (
 from zenml.enums import ArtifactSaveType
 from zenml.exceptions import StepInterfaceError
 from zenml.logger import get_logger
-from zenml.logging.step_logging import StepLogsStorageContext, redirected
+from zenml.logging.step_logging import PipelineLogsStorageContext, redirected
 from zenml.materializers.base_materializer import BaseMaterializer
 from zenml.models.v2.core.step_run import StepRunInputResponse
 from zenml.orchestrators.publish_utils import (
@@ -137,7 +137,7 @@ class StepRunner:
         logs_context = nullcontext()
         if step_logging_enabled and not redirected.get():
             if step_run.logs:
-                logs_context = StepLogsStorageContext(  # type: ignore[assignment]
+                logs_context = PipelineLogsStorageContext(  # type: ignore[assignment]
                     logs_uri=step_run.logs.uri,
                     artifact_store=self._stack.artifact_store,
                 )

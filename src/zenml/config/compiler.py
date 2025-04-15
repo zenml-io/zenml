@@ -231,6 +231,7 @@ class Compiler:
                 enable_step_logs=config.enable_step_logs,
                 environment=config.environment,
                 secrets=config.secrets,
+                enable_pipeline_logs=config.enable_pipeline_logs,
                 settings=config.settings,
                 tags=config.tags,
                 extra=config.extra,
