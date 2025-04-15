@@ -18,7 +18,6 @@ import tarfile
 import tempfile
 from typing import (
     TYPE_CHECKING,
-    Optional,
 )
 
 from zenml.artifacts.utils import _load_artifact_store
@@ -78,20 +77,15 @@ def verify_artifact_is_downloadable(
 
 def create_artifact_archive(
     artifact: "ArtifactVersionResponse",
-    archive_path: Optional[str] = None,
 ) -> str:
     """Create an archive of the given artifact.
 
     Args:
         artifact: The artifact to archive.
-        archive_path: The path to which to save the archive.
 
     Returns:
         The path to the created archive.
     """
-    if archive_path is None:
-        archive_path = tempfile.mktemp()
-
     artifact_store = verify_artifact_is_downloadable(artifact)
 
     def _prepare_tarinfo(path: str) -> tarfile.TarInfo:
@@ -101,26 +95,29 @@ def create_artifact_archive(
             tarinfo.size = size
         return tarinfo
 
-    with tarfile.open(name=archive_path, mode="w:gz") as tar:
-        if artifact_store.isdir(artifact.uri):
-            for dir, _, files in artifact_store.walk(artifact.uri):
-                dir = dir.decode() if isinstance(dir, bytes) else dir
-                dir_info = tarfile.TarInfo(
-                    name=os.path.relpath(dir, artifact.uri)
-                )
-                dir_info.type = tarfile.DIRTYPE
-                dir_info.mode = 0o755
-                tar.addfile(dir_info)
+    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+        with tarfile.open(fileobj=temp_file, mode="w:gz") as tar:
+            if artifact_store.isdir(artifact.uri):
+                for dir, _, files in artifact_store.walk(artifact.uri):
+                    dir = dir.decode() if isinstance(dir, bytes) else dir
+                    dir_info = tarfile.TarInfo(
+                        name=os.path.relpath(dir, artifact.uri)
+                    )
+                    dir_info.type = tarfile.DIRTYPE
+                    dir_info.mode = 0o755
+                    tar.addfile(dir_info)
 
-                for file in files:
-                    file = file.decode() if isinstance(file, bytes) else file
-                    path = os.path.join(dir, file)
-                    tarinfo = _prepare_tarinfo(path)
-                    with artifact_store.open(path, "rb") as f:
-                        tar.addfile(tarinfo, fileobj=f)
-        else:
-            tarinfo = _prepare_tarinfo(artifact.uri)
-            with artifact_store.open(artifact.uri, "rb") as f:
-                tar.addfile(tarinfo, fileobj=f)
+                    for file in files:
+                        file = (
+                            file.decode() if isinstance(file, bytes) else file
+                        )
+                        path = os.path.join(dir, file)
+                        tarinfo = _prepare_tarinfo(path)
+                        with artifact_store.open(path, "rb") as f:
+                            tar.addfile(tarinfo, fileobj=f)
+            else:
+                tarinfo = _prepare_tarinfo(artifact.uri)
+                with artifact_store.open(artifact.uri, "rb") as f:
+                    tar.addfile(tarinfo, fileobj=f)
 
-    return archive_path
+        return temp_file.name
