@@ -95,8 +95,8 @@ def create_artifact_archive(
             tarinfo.size = size
         return tarinfo
 
-    with tempfile.NamedTemporaryFile(delete=False) as f:
-        with tarfile.open(fileobj=f, mode="w:gz") as tar:
+    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+        with tarfile.open(fileobj=temp_file, mode="w:gz") as tar:
             if artifact_store.isdir(artifact.uri):
                 for dir, _, files in artifact_store.walk(artifact.uri):
                     dir = dir.decode() if isinstance(dir, bytes) else dir
@@ -120,4 +120,4 @@ def create_artifact_archive(
                 with artifact_store.open(artifact.uri, "rb") as f:
                     tar.addfile(tarinfo, fileobj=f)
 
-    return f.name
+        return temp_file.name
