@@ -19,11 +19,13 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Security
 
 from zenml.constants import API, PIPELINE_DEPLOYMENTS, VERSION_1
+from zenml.logging.step_logging import fetch_logs
 from zenml.models import (
     Page,
     PipelineDeploymentFilter,
     PipelineDeploymentRequest,
     PipelineDeploymentResponse,
+    PipelineRunFilter,
 )
 from zenml.zen_server.auth import AuthContext, authorize
 from zenml.zen_server.exceptions import error_response
@@ -179,33 +181,68 @@ def delete_deployment(
     )
 
 
-if server_config().workload_manager_enabled:
+@router.get(
+    "/{deployment_id}/logs",
+    responses={
+        401: error_response,
+        404: error_response,
+        422: error_response,
+    },
+)
+@handle_exceptions
+def deployment_logs(
+    deployment_id: UUID,
+    offset: int = 0,
+    length: int = 1024 * 1024 * 16,  # Default to 16MiB of data
+    _: AuthContext = Security(authorize),
+) -> str:
+    """Get deployment logs.
 
-    @router.get(
-        "/{deployment_id}/logs",
-        responses={
-            401: error_response,
-            404: error_response,
-            422: error_response,
-        },
+    Args:
+        deployment_id: ID of the deployment.
+        offset: The offset from which to start reading.
+        length: The amount of bytes that should be read.
+
+    Returns:
+        The deployment logs.
+
+    Raises:
+        KeyError: If no logs are available for the deployment.
+    """
+    store = zen_store()
+
+    deployment = verify_permissions_and_get_entity(
+        id=deployment_id,
+        get_method=store.get_deployment,
+        hydrate=True,
     )
-    @handle_exceptions
-    def deployment_logs(
-        deployment_id: UUID,
-        _: AuthContext = Security(authorize),
-    ) -> str:
-        """Get deployment logs.
 
-        Args:
-            deployment_id: ID of the deployment.
-
-        Returns:
-            The deployment logs.
-        """
-        deployment = verify_permissions_and_get_entity(
-            id=deployment_id,
-            get_method=zen_store().get_deployment,
-            hydrate=True,
-        )
-
+    if deployment.template_id and server_config().workload_manager_enabled:
         return workload_manager().get_logs(workload_id=deployment.id)
+
+    # Get the last pipeline run for this deployment
+    pipeline_runs = store.list_runs(
+        runs_filter_model=PipelineRunFilter(
+            project=deployment.project.id,
+            sort_by="asc:created",
+            size=1,
+            deployment_id=deployment.id,
+        )
+    )
+
+    if len(pipeline_runs.items) == 0:
+        return ""
+
+    run = pipeline_runs.items[0]
+
+    logs = run.logs
+    if logs is None:
+        raise KeyError("No logs available for this deployment")
+
+    return fetch_logs(
+        zen_store=store,
+        artifact_store_id=logs.artifact_store_id,
+        logs_uri=logs.uri,
+        offset=offset,
+        length=length,
+    )

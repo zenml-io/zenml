@@ -15,6 +15,7 @@ from zenml.enums import ExecutionStatus
 from zenml.logger import get_logger
 from zenml.models import (
     FlavorFilter,
+    LogsRequest,
     PipelineDeploymentBase,
     PipelineDeploymentResponse,
     PipelineRunRequest,
@@ -49,6 +50,7 @@ def get_default_run_name(pipeline_name: str) -> str:
 
 def create_placeholder_run(
     deployment: "PipelineDeploymentResponse",
+    logs: Optional["LogsRequest"] = None,
 ) -> Optional["PipelineRunResponse"]:
     """Create a placeholder run for the deployment.
 
@@ -57,6 +59,7 @@ def create_placeholder_run(
 
     Args:
         deployment: The deployment for which to create the placeholder run.
+        logs: The logs for the run.
 
     Returns:
         The placeholder run or `None` if no run was created.
@@ -86,6 +89,7 @@ def create_placeholder_run(
         pipeline=deployment.pipeline.id if deployment.pipeline else None,
         status=ExecutionStatus.INITIALIZING,
         tags=deployment.pipeline_configuration.tags,
+        logs=logs,
     )
     run, _ = Client().zen_store.get_or_create_run(run_request)
     return run

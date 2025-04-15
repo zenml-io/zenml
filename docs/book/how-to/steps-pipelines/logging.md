@@ -5,7 +5,12 @@ description: >-
 
 # Logging
 
-ZenML's logging handler captures logs during step execution. You can use standard Python logging or print statements:
+By default, ZenML uses a logging handler to capture two types of logs:
+
+* the logs collected from your ZenML client while triggering and waiting for a pipeline to run. These logs cover everything that happens client-side: building and pushing container images, triggering the pipeline, waiting for it to start, and waiting for it to finish. Note that these logs are not available for scheduled pipelines and the logs might not be available for pipeline runs that fail while building or pushing the container images.
+* the logs collected from the execution of a step. These logs only cover what happens during the execution of a single step and originate mostly from the user-provided step code and the libraries it calls.
+
+For step logs, users are free to use the default python logging module or print statements, and ZenML's logging handler will catch these logs and store them.
 
 ```python
 import logging
@@ -18,12 +23,12 @@ def my_step() -> None:
     print("World.")  # You can utilize `print` statements as well. 
 ```
 
-Logs are stored in your stack's artifact store and viewable in the dashboard if the ZenML server has access to the artifact store:
+All these logs are stored within the respective artifact store of your stack. You can visualize the pipeline run logs and step logs in the dashboard as follows:
+
 * Local ZenML server (`zenml login --local`): Both local and remote artifact stores may be accessible
 * Deployed ZenML server: Local artifact store logs won't be accessible; remote artifact store logs require [service connector](https://docs.zenml.io//how-to/infrastructure-deployment/auth-management/service-connectors-guide) configuration (see [remote storage guide](https://docs.zenml.io/user-guides/production-guide/remote-storage))
 
-When configured correctly, logs appear in the dashboard:
-
+![Displaying pipeline run logs on the dashboard](../../.gitbook/assets/zenml_pipeline_run_logs.png)
 ![Displaying step logs on the dashboard](../../.gitbook/assets/zenml_step_logs.png)
 
 ## Logging Configuration
@@ -55,38 +60,40 @@ my_pipeline = my_pipeline.with_options(
 
 You can disable storing logs in your artifact store by:
 
-1. Using the `enable_step_logs` parameter with decorators:
+1. Using the `enable_step_logs` or the `enable_pipeline_logs` parameter with decorators:
 
-```python
-from zenml import pipeline, step
+    ```python
+    from zenml import pipeline, step
 
-@step(enable_step_logs=False)  # disables logging for this step
-def my_step() -> None:
-    ...
+    @step(enable_step_logs=False)  # disables logging for this step
+    def my_step() -> None:
+        ...
 
-@pipeline(enable_step_logs=False)  # disables logging for the entire pipeline
-def my_pipeline():
-    ...
-```
+    @pipeline(enable_pipeline_logs=False)  # disables logging for the entire pipeline
+    def my_pipeline():
+        ...
+    ```
 
 2. Setting the `ZENML_DISABLE_STEP_LOGS_STORAGE=true` environment variable in the execution environment:
 
-```python
-from zenml import pipeline
-from zenml.config import DockerSettings
+    ```python
+    from zenml import pipeline
+    from zenml.config import DockerSettings
 
-docker_settings = DockerSettings(environment={"ZENML_DISABLE_STEP_LOGS_STORAGE": "true"})
+    docker_settings = DockerSettings(environment={"ZENML_DISABLE_STEP_LOGS_STORAGE": "true"})
 
-# Either add it to the decorator
-@pipeline(settings={"docker": docker_settings})
-def my_pipeline() -> None:
-    my_step()
+    # Either add it to the decorator
+    @pipeline(settings={"docker": docker_settings})
+    def my_pipeline() -> None:
+        my_step()
 
-# Or configure the pipelines options
-my_pipeline = my_pipeline.with_options(
-    settings={"docker": docker_settings}
-)
-```
+    # Or configure the pipelines options
+    my_pipeline = my_pipeline.with_options(
+        settings={"docker": docker_settings}
+    )
+    ```
+
+    This environmental variable takes precedence over the parameter mentioned above. 
 
 ### Setting Logging Verbosity
 

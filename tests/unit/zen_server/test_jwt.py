@@ -37,7 +37,6 @@ def test_encode_decode_works():
     api_key_id = uuid.uuid4()
     schedule_id = uuid.uuid4()
     pipeline_run_id = uuid.uuid4()
-    step_run_id = uuid.uuid4()
     claims = {
         "foo": "bar",
         "baz": "qux",
@@ -49,7 +48,6 @@ def test_encode_decode_works():
         api_key_id=api_key_id,
         schedule_id=schedule_id,
         pipeline_run_id=pipeline_run_id,
-        step_run_id=step_run_id,
         claims=claims,
     )
 
@@ -61,7 +59,6 @@ def test_encode_decode_works():
     assert decoded_token.api_key_id == api_key_id
     assert decoded_token.schedule_id == schedule_id
     assert decoded_token.pipeline_run_id == pipeline_run_id
-    assert decoded_token.step_run_id == step_run_id
     # Check that the configured custom claims are included in the decoded claims
     assert decoded_token.claims["foo"] == "bar"
     assert decoded_token.claims["baz"] == "qux"
