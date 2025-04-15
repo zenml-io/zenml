@@ -56,6 +56,7 @@
 
 * [Community & content](reference/community-and-content.md)
 * [Environment Variables](reference/environment-variables.md)
+* [llms.txt](reference/llms-txt.md)
 * [FAQ](reference/faq.md)
 * [Global settings](reference/global-settings.md)
 * [Legacy docs](reference/legacy-docs.md)

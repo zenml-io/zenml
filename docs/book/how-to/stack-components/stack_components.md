@@ -32,17 +32,6 @@ Stacks may also include these optional components:
 * **Alerter**: Sends notifications about pipeline events
 * **Annotator**: Manages data labeling workflows
 
-### Stacks and Pipeline Execution
-
-When you run a pipeline, ZenML:
-
-1. Checks which stack is active
-2. Uses the orchestrator from that stack to execute the pipeline steps
-3. Stores artifacts in the artifact store from that stack
-4. Utilizes any other configured components as needed
-
-This abstraction allows you to focus on building your pipeline logic without worrying about the underlying infrastructure.
-
 ## Working with Stacks
 
 ### The Active Stack
