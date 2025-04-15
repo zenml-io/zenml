@@ -529,7 +529,10 @@ class PipelineLogsStorageContext:
                     pass
 
                 if step_context and args[0] != "\n":
-                    message = f"[{step_context.step_name}] " + args[0]
+                    prefix = f"[{step_context.step_name}] "
+                    message = args[0]
+                    if not message.startswith(prefix):
+                        message = prefix + message
                 else:
                     message = args[0]
 
