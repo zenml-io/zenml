@@ -436,17 +436,22 @@ class PipelineLogsStorageContext:
     """Context manager which patches stdout and stderr during pipeline run execution."""
 
     def __init__(
-        self, logs_uri: str, artifact_store: "BaseArtifactStore"
+        self,
+        logs_uri: str,
+        artifact_store: "BaseArtifactStore",
+        prepend_step_name: bool = True,
     ) -> None:
         """Initializes and prepares a storage object.
 
         Args:
             logs_uri: the URI of the logs file.
             artifact_store: Artifact Store from the current pipeline run context.
+            prepend_step_name: Whether to prepend the step name to the logs.
         """
         self.storage = PipelineLogsStorage(
             logs_uri=logs_uri, artifact_store=artifact_store
         )
+        self.prepend_step_name = prepend_step_name
 
     def __enter__(self) -> "PipelineLogsStorageContext":
         """Enter condition of the context manager.
@@ -513,14 +518,17 @@ class PipelineLogsStorageContext:
         """
 
         def wrapped_write(*args: Any, **kwargs: Any) -> Any:
-            # Check if step names in logs are disabled via env var
-            step_names_disabled = handle_bool_env_var(
-                ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS, default=False
+            step_names_disabled = (
+                handle_bool_env_var(
+                    ENV_ZENML_DISABLE_STEP_NAMES_IN_LOGS, default=False
+                )
+                or not self.prepend_step_name
             )
 
             if step_names_disabled:
                 output = method(*args, **kwargs)
             else:
+                message = args[0]
                 # Try to get step context if not available yet
                 step_context = None
                 try:
@@ -529,9 +537,7 @@ class PipelineLogsStorageContext:
                     pass
 
                 if step_context and args[0] != "\n":
-                    message = f"[{step_context.step_name}] " + args[0]
-                else:
-                    message = args[0]
+                    message = f"[{step_context.step_name}] " + message
 
                 output = method(message, *args[1:], **kwargs)
 
