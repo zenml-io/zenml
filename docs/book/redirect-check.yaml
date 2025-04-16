@@ -3,7 +3,7 @@
 # Format: slug_name: path/to/gitbook.yaml
 
 documentation: .gitbook.yaml
-user-guides: docs/book/.gitbook.yaml 
+user-guides: docs/book/user-guide/.gitbook.yaml
 pro: docs/book/getting-started/zenml-pro/.gitbook.yaml
 stacks: docs/book/component-guide/.gitbook.yaml
 api-reference: docs/book/api-docs/.gitbook.yaml
