@@ -243,9 +243,6 @@ class GitHubCodeRepository(BaseCodeRepository):
         owner = self.config.owner
         repo = self.config.repository
          
-
-        print(f"Checking remote URL: {url} against {host} {owner} {repo}")   
-
         # Clean the input URL by removing any trailing slashes
         url = url.rstrip('/')
         
