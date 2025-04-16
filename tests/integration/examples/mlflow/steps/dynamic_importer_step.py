@@ -21,7 +21,7 @@ from typing_extensions import Annotated
 from zenml import step
 
 
-def get_data_from_api() -> Annotated[np.ndarray, "data"]:
+def get_data_from_api() -> Annotated[np.ndarray, "api_data"]:
     """Downloads the latest data from a mock API.
 
     Returns:
