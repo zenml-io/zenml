@@ -2,6 +2,11 @@
 description: How to configure the server environment
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Configure the server environment
 
 The ZenML server environment is configured using environment variables. You will

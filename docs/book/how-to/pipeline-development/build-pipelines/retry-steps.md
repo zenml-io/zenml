@@ -2,6 +2,11 @@
 description: Automatically configure your steps to retry if they fail.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Allow step retry in case of failure
 
 ZenML provides a built-in retry mechanism that allows you to configure automatic retries for your steps in case of failures. This can be useful when dealing with intermittent issues or transient errors. A common pattern when trying to run a step on GPU-backed hardware is that the provider will not have enough resources available, so you can set ZenML to handle the retries until the resources free up. You can configure three parameters for step retries:
