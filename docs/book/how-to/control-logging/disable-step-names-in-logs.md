@@ -2,6 +2,11 @@
 description: How to disable step names from being displayed in logs.
 ---
 
+{% hint style="warning" %}
+This is an older version of the ZenML documentation. To read and view the latest version please [visit this up-to-date URL](https://docs.zenml.io).
+{% endhint %}
+
+
 # Disable step names in logs
 
 By default, ZenML displays the current step name as a prefix in logs during pipeline execution to help you identify which step is currently running. For example:
