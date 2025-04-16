@@ -134,7 +134,8 @@ def parse_toc_file(filepath: str) -> List[Tuple[str, str]]:
         if indent_level > prev_indent_level:
             hierarchy_stack.append(last_part)
         elif indent_level < prev_indent_level:
-            hierarchy_stack.pop()
+            for _ in range(prev_indent_level - indent_level):
+                hierarchy_stack.pop()
 
         # Process the item path
         path_parts = item_path.split("/")
