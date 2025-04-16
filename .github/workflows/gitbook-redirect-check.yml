@@ -51,4 +51,4 @@ jobs:
       # Run GitBook Redirect Check Script
       - name: Run GitBook Redirect Check Script
         run: |-
-          python scripts/gitbook_redirect_check.py $RUNNER_TEMP/gitbook_base $RUNNER_TEMP/gitbook_head
+          python scripts/gitbook_redirect_check.py $RUNNER_TEMP/gitbook_base $RUNNER_TEMP/gitbook_head --pr "${{ github.event.pull_request.number }}"

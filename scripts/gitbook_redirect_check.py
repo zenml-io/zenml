@@ -101,6 +101,7 @@ def parse_toc_file(filepath: str) -> List[Tuple[str, str]]:
 
     result = []
     current_section = ""
+    last_part = ""
 
     # Track hierarchy based on indentation
     hierarchy_stack = []
@@ -128,20 +129,12 @@ def parse_toc_file(filepath: str) -> List[Tuple[str, str]]:
         # Extract indent level and filepath
         indentation = list_match.group(1)
         indent_level = len(indentation) // 2  # assuming 2 spaces per level
-        item_title = list_match.group(3)
         item_path = list_match.group(4)
 
-        # Handle hierarchy based on indentation
         if indent_level > prev_indent_level:
-            # Going deeper, add previous item as part of the hierarchy
-            if hierarchy_stack:
-                # Don't add anything as we're just starting to indent
-                pass
+            hierarchy_stack.append(last_part)
         elif indent_level < prev_indent_level:
-            # Going back up, remove elements from the hierarchy
-            levels_to_pop = prev_indent_level - indent_level
-            for _ in range(min(levels_to_pop, len(hierarchy_stack))):
-                hierarchy_stack.pop()
+            hierarchy_stack.pop()
 
         # Process the item path
         path_parts = item_path.split("/")
@@ -152,63 +145,24 @@ def parse_toc_file(filepath: str) -> List[Tuple[str, str]]:
             if len(path_parts) > 1:
                 # For README.md, use the parent directory name
                 last_part = path_parts[-2]
-                # Update hierarchy with the directory
-                if indent_level == 0:
-                    hierarchy_stack = [last_part]
-                else:
-                    # If we're already indented, add to hierarchy
-                    if len(hierarchy_stack) == indent_level:
-                        hierarchy_stack.append(last_part)
-                    else:
-                        hierarchy_stack = hierarchy_stack[:indent_level]
-                        hierarchy_stack.append(last_part)
             else:
                 # Root README.md, skip as there's no meaningful URL
                 continue
         else:
             # For regular files, remove .md extension
-            last_part = filename.replace(".md", "")
+            last_part = path_parts[-1]
 
-            # Update the hierarchy if needed
-            if indent_level > 0:
-                if len(hierarchy_stack) >= indent_level:
-                    # We're at a level where we can just append
-                    pass
-                else:
-                    # Missing hierarchy levels, reconstruct from path
-                    for i in range(len(hierarchy_stack), indent_level):
-                        if i < len(path_parts) - 1:
-                            hierarchy_stack.append(path_parts[i])
-                        else:
-                            # Not enough parts in the path, use the title
-                            hierarchy_stack.append(
-                                item_title.lower().replace(" ", "-")
-                            )
+        # Handle hierarchy based on indentation
+        last_part = last_part.replace(".md", "")
 
         # Construct the full URL
         if current_section:
             url_parts = [current_section]
-            url_parts.extend(hierarchy_stack[:indent_level])
-            if filename.lower() != "readme.md":
-                url_parts.append(last_part)
         else:
             url_parts = []
-            url_parts.extend(hierarchy_stack[:indent_level])
-            if filename.lower() != "readme.md":
-                url_parts.append(last_part)
 
-        url = "/".join(url_parts)
+        url = "/".join(url_parts + hierarchy_stack + [last_part])
 
-        # Add this item to the stack for next iteration if it's at level 0
-        if indent_level == 0:
-            if filename.lower() == "readme.md":
-                # Directory name already added above
-                pass
-            else:
-                # Clear the hierarchy and start fresh with this item
-                hierarchy_stack = []
-
-        # Update prev_indent_level for the next iteration
         prev_indent_level = indent_level
 
         # Add to result
@@ -240,7 +194,6 @@ def check_toc_entries(
     Args:
         redirects: A dictionary of redirects
         toc_filepaths: A set of filepaths in the TOC
-        root_path: The root path of the GitBook
 
     Returns:
         A list of missing target paths (as they appear in the redirects)
@@ -277,7 +230,7 @@ def generate_gitbook_fixes(
     output_file: Optional[TextIO] = None,
 ):
     """Generate a fixed version of the .gitbook.yaml file.
-    
+
     Args:
         slug: The slug being processed
         gitbook_yaml: The original gitbook yaml content
@@ -286,6 +239,16 @@ def generate_gitbook_fixes(
         pr_name: Optional PR name/number for the comment
         output_file: Optional file to write to
     """
+    # Calculate and output the number of errors for this slug
+    num_missing_redirects = len(missing_redirects)
+    num_missing_files = len(missing_files)
+    total_errors = num_missing_redirects + num_missing_files
+
+    write_output(
+        f"\n\nSlug '{slug}': {total_errors} errors ({num_missing_redirects} missing redirects, {num_missing_files} missing files)",
+        output_file,
+    )
+
     # Make a deep copy of the original gitbook yaml
     solution = copy.deepcopy(gitbook_yaml)
 
@@ -307,9 +270,9 @@ def generate_gitbook_fixes(
         solution["redirects"][missing_url] = placeholder
 
     # Output the fixed gitbook.yaml
-    write_output(f"\n\nFIXED .gitbook.yaml for slug '{slug}':", output_file)
+    write_output(f"FIXED .gitbook.yaml for slug '{slug}':", output_file)
     write_output("```yaml", output_file)
-    
+
     # Output the complete solution YAML
     for key in solution:
         if key != "redirects":
@@ -319,21 +282,40 @@ def generate_gitbook_fixes(
                     write_output(f"  {subkey}: {value}", output_file)
             else:
                 write_output(f"{key}: {solution[key]}", output_file)
-    
+
     # Output redirects section with appropriate comments
     write_output("\nredirects:", output_file)
-    for src, target in sorted(solution["redirects"].items()):
-        # Determine if this is a new or fixed redirect
-        is_new = src in missing_redirects
-        is_fixed = any(src == s for s, t in gitbook_yaml.get("redirects", {}).items() if t in missing_files)
-        
-        if is_new:
-            write_output(f"  {src}: {target}  # New redirect", output_file)
-        elif is_fixed:
+
+    # First, output existing redirects in their original order
+    original_redirects = gitbook_yaml.get("redirects", {})
+    for src in original_redirects:
+        target = solution["redirects"][src]
+        is_fixed = (
+            src in original_redirects
+            and original_redirects[src] in missing_files
+        )
+
+        if is_fixed:
             write_output(f"  {src}: {target}  # Fixed target", output_file)
         else:
             write_output(f"  {src}: {target}", output_file)
-    
+
+    # Then output new redirects at the bottom
+    if missing_redirects:
+        # Add a comment for new redirects section
+        if pr_name:
+            write_output(
+                f"\n  # New redirects added by PR {pr_name}", output_file
+            )
+        else:
+            write_output("\n  # New redirects added", output_file)
+
+        for src in sorted(missing_redirects):
+            if src not in original_redirects:  # Only if it's truly new
+                write_output(
+                    f"  {src}: {solution['redirects'][src]}", output_file
+                )
+
     write_output("```", output_file)
 
 
