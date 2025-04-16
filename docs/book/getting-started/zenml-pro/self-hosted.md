@@ -1496,7 +1496,7 @@ zenml login
 
 ## Enabling Run Templates Support
 
-The ZenML Pro control plane can be configured to optionally support Run Templates - the ability to run pipelines straight from the dashboard. This feature is not enabled by default and needs a few additional steps to be set up.
+The ZenML Pro workspace server can be configured to optionally support Run Templates - the ability to run pipelines straight from the dashboard. This feature is not enabled by default and needs a few additional steps to be set up.
 
 The Run Templates feature comes with some optional sub-features that can be turned on or off to customize the behavior of the feature:
 
