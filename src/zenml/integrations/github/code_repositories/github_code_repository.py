@@ -239,7 +239,9 @@ class GitHubCodeRepository(BaseCodeRepository):
             Whether the remote url is correct.
         """
         # Normalize repository information
-        host = self.config.host
+        host = self.config.host or "github.com"
+        host = host.rstrip("/")
+        
         owner = self.config.owner
         repo = self.config.repository
          
