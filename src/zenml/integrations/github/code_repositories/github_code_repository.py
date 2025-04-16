@@ -241,14 +241,14 @@ class GitHubCodeRepository(BaseCodeRepository):
         # Normalize repository information
         host = self.config.host or "github.com"
         host = host.rstrip("/")
-        
+
         owner = self.config.owner
         repo = self.config.repository
          
         # Clean the input URL by removing any trailing slashes
         url = url.rstrip('/')
         
-        # Handle HTTPS URLs using urlparse (similar to GitLab implementation)
+        # Handle HTTPS URLs using urlparse
         parsed_url = urlparse(url)
         if parsed_url.scheme == "https":
             expected_path = f"/{owner}/{repo}"
