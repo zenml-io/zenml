@@ -66,22 +66,26 @@ def setup_directories(source_dir: str, output_dir: str) -> None:
 
             if "structure" in gitbook and "summary" in gitbook["structure"]:
                 toc_path = gitbook["structure"]["summary"]
-                
+
                 # Get the directory containing the gitbook.yaml file
                 gitbook_dir = os.path.dirname(full_gitbook_path)
-                
+
                 # Get the root path (default to '.' if not specified)
                 root_path = gitbook.get("root", ".")
-                
+
                 # If root is specified, it's relative to the gitbook.yaml location
                 if root_path:
                     # Join the gitbook dir with the root path
-                    base_path = os.path.normpath(os.path.join(gitbook_dir, root_path))
+                    base_path = os.path.normpath(
+                        os.path.join(gitbook_dir, root_path)
+                    )
                 else:
                     base_path = gitbook_dir
-                
+
                 # Now join with the toc path to get the full path
-                full_toc_path = os.path.normpath(os.path.join(base_path, toc_path))
+                full_toc_path = os.path.normpath(
+                    os.path.join(base_path, toc_path)
+                )
 
                 if os.path.exists(full_toc_path):
                     shutil.copy(
