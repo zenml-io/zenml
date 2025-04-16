@@ -1498,6 +1498,10 @@ zenml login
 
 The ZenML Pro workspace server can be configured to optionally support Run Templates - the ability to run pipelines straight from the dashboard. This feature is not enabled by default and needs a few additional steps to be set up.
 
+{% hint style="warning" %}
+The Run Templates feature is only available from ZenML workspace server version 0.81.0 onwards.
+{% endhint %}
+
 The Run Templates feature comes with some optional sub-features that can be turned on or off to customize the behavior of the feature:
 
 * **Building runner container images**: Running pipelines from the dashboard relies on Kubernetes jobs (aka "runner" jobs) that are triggered by the ZenML workspace server. These jobs need to use container images that have the correct Python software packages installed on them to be able to launch the pipelines.
