@@ -17,9 +17,18 @@ It checks:
 - if all URLs that exist in the old TOC but not in the new one are
  present in the redirects section of the new GitBook YAML.
 - if all redirect targets exist in the TOC.
+
+The script also generates a formatted report for fixing the identified issues,
+with templates for adding missing redirects and fixing faulty filepaths.
+
+Usage examples:
+    python gitbook_redirect_check.py old_dir new_dir
+    python gitbook_redirect_check.py old_dir new_dir --output results.txt
+    python gitbook_redirect_check.py old_dir new_dir --output results.txt --pr "PR-123"
 """
 
 import argparse
+import copy
 import os
 import re
 import sys
@@ -92,7 +101,7 @@ def parse_toc_file(filepath: str) -> List[Tuple[str, str]]:
 
     result = []
     current_section = ""
-    
+
     # Track hierarchy based on indentation
     hierarchy_stack = []
     prev_indent_level = 0
@@ -137,7 +146,7 @@ def parse_toc_file(filepath: str) -> List[Tuple[str, str]]:
         # Process the item path
         path_parts = item_path.split("/")
         filename = path_parts[-1]
-        
+
         # Handle the case where the file is a README.md
         if filename.lower() == "readme.md":
             if len(path_parts) > 1:
@@ -159,7 +168,7 @@ def parse_toc_file(filepath: str) -> List[Tuple[str, str]]:
         else:
             # For regular files, remove .md extension
             last_part = filename.replace(".md", "")
-            
+
             # Update the hierarchy if needed
             if indent_level > 0:
                 if len(hierarchy_stack) >= indent_level:
@@ -172,8 +181,10 @@ def parse_toc_file(filepath: str) -> List[Tuple[str, str]]:
                             hierarchy_stack.append(path_parts[i])
                         else:
                             # Not enough parts in the path, use the title
-                            hierarchy_stack.append(item_title.lower().replace(" ", "-"))
-        
+                            hierarchy_stack.append(
+                                item_title.lower().replace(" ", "-")
+                            )
+
         # Construct the full URL
         if current_section:
             url_parts = [current_section]
@@ -185,9 +196,9 @@ def parse_toc_file(filepath: str) -> List[Tuple[str, str]]:
             url_parts.extend(hierarchy_stack[:indent_level])
             if filename.lower() != "readme.md":
                 url_parts.append(last_part)
-        
+
         url = "/".join(url_parts)
-        
+
         # Add this item to the stack for next iteration if it's at level 0
         if indent_level == 0:
             if filename.lower() == "readme.md":
@@ -196,10 +207,10 @@ def parse_toc_file(filepath: str) -> List[Tuple[str, str]]:
             else:
                 # Clear the hierarchy and start fresh with this item
                 hierarchy_stack = []
-        
+
         # Update prev_indent_level for the next iteration
         prev_indent_level = indent_level
-        
+
         # Add to result
         result.append((url, item_path))
 
@@ -216,24 +227,13 @@ def check_redirects(old_urls: Set[str], new_gitbook_yaml: Dict) -> List[str]:
     Returns:
         A list of missing redirects
     """
-    missing_redirects = []
     redirects = new_gitbook_yaml.get("redirects", {})
 
-    for old_url in old_urls:
-        found = False
-        for redirect_src in redirects:
-            if redirect_src == old_url or redirect_src.endswith(f"/{old_url}"):
-                found = True
-                break
-
-        if not found:
-            missing_redirects.append(old_url)
-
-    return missing_redirects
+    return [old_url for old_url in old_urls if old_url not in redirects.keys()]
 
 
 def check_toc_entries(
-    redirects: Dict[str, str], toc_filepaths: Set[str], root_path: str
+    redirects: Dict[str, str], toc_filepaths: Set[str]
 ) -> List[str]:
     """Check if all redirect targets exist in the TOC.
 
@@ -243,25 +243,15 @@ def check_toc_entries(
         root_path: The root path of the GitBook
 
     Returns:
-        A list of missing filepaths
+        A list of missing target paths (as they appear in the redirects)
     """
     missing_files = []
 
-    for redirect_target in redirects.values():
-        # Handle paths correctly using the root path from gitbook.yaml
-        # Note: This assumes the toc_filepaths are in the same format as the redirects
-        # i.e., both are relative to the same base or both contain the same prefixes
-        if root_path and not redirect_target.startswith(root_path):
-            # Path is relative to the root path
-            target_path = os.path.normpath(
-                os.path.join(root_path, redirect_target)
-            )
-        else:
-            # Path already includes root or is absolute
-            target_path = os.path.normpath(redirect_target)
-
-        if target_path not in toc_filepaths:
-            missing_files.append(target_path)
+    for _, redirect_target in redirects.items():
+        # Add the redirect target to missing_files if it's not in the TOC
+        # We keep the original redirect_target for easier fixing
+        if redirect_target not in toc_filepaths:
+            missing_files.append(redirect_target)
 
     return missing_files
 
@@ -276,6 +266,75 @@ def write_output(message: str, output_file: Optional[TextIO] = None):
     print(message)
     if output_file:
         output_file.write(message + "\n")
+
+
+def generate_gitbook_fixes(
+    slug: str,
+    gitbook_yaml: Dict,
+    missing_redirects: List[str],
+    missing_files: List[str],
+    pr_name: Optional[str] = None,
+    output_file: Optional[TextIO] = None,
+):
+    """Generate a fixed version of the .gitbook.yaml file.
+    
+    Args:
+        slug: The slug being processed
+        gitbook_yaml: The original gitbook yaml content
+        missing_redirects: List of missing redirect URLs
+        missing_files: List of missing target paths
+        pr_name: Optional PR name/number for the comment
+        output_file: Optional file to write to
+    """
+    # Make a deep copy of the original gitbook yaml
+    solution = copy.deepcopy(gitbook_yaml)
+
+    # Ensure redirects section exists
+    if missing_redirects:
+        if "redirects" not in solution:
+            solution["redirects"] = {}
+
+    # Determine default placeholder from structure.readme
+    placeholder = solution["structure"]["readme"]
+
+    # Fix missing redirects: find best matching new URL for each missing old URL
+    for redirect_src, redirect_target in solution.get("redirects", {}).items():
+        if redirect_target in missing_files:
+            solution["redirects"][redirect_src] = placeholder
+
+    # Fix missing redirects: find best matching new URL for each missing old URL
+    for missing_url in missing_redirects:
+        solution["redirects"][missing_url] = placeholder
+
+    # Output the fixed gitbook.yaml
+    write_output(f"\n\nFIXED .gitbook.yaml for slug '{slug}':", output_file)
+    write_output("```yaml", output_file)
+    
+    # Output the complete solution YAML
+    for key in solution:
+        if key != "redirects":
+            if isinstance(solution[key], dict):
+                write_output(f"{key}:", output_file)
+                for subkey, value in solution[key].items():
+                    write_output(f"  {subkey}: {value}", output_file)
+            else:
+                write_output(f"{key}: {solution[key]}", output_file)
+    
+    # Output redirects section with appropriate comments
+    write_output("\nredirects:", output_file)
+    for src, target in sorted(solution["redirects"].items()):
+        # Determine if this is a new or fixed redirect
+        is_new = src in missing_redirects
+        is_fixed = any(src == s for s, t in gitbook_yaml.get("redirects", {}).items() if t in missing_files)
+        
+        if is_new:
+            write_output(f"  {src}: {target}  # New redirect", output_file)
+        elif is_fixed:
+            write_output(f"  {src}: {target}  # Fixed target", output_file)
+        else:
+            write_output(f"  {src}: {target}", output_file)
+    
+    write_output("```", output_file)
 
 
 def main():
@@ -297,12 +356,18 @@ def main():
         help="Output file to save results (optional)",
         type=str,
     )
+    parser.add_argument(
+        "--pr",
+        help="PR name/number for including in the generated redirects",
+        type=str,
+    )
 
     args = parser.parse_args()
 
     old_dir = args.old_dir
     new_dir = args.new_dir
     output_file_path = args.output
+    pr_name = args.pr
 
     # Open output file if specified
     output_file = None
@@ -337,6 +402,16 @@ def main():
             new_toc_path = os.path.join(new_dir, slug, "toc.md")
             new_gitbook_path = os.path.join(new_dir, slug, ".gitbook.yaml")
 
+            # Load the new GitBook YAML
+            new_gitbook_yaml = load_yaml_file(new_gitbook_path)
+
+            # Validate the GitBook structure
+            assert (
+                "structure" in new_gitbook_yaml
+                and "readme" in new_gitbook_yaml["structure"]
+                and new_gitbook_yaml["structure"]["readme"]
+            )
+
             # Parse TOC files
             old_toc_entries = parse_toc_file(old_toc_path)
             new_toc_entries = parse_toc_file(new_toc_path)
@@ -346,67 +421,38 @@ def main():
             new_urls = {url for url, _ in new_toc_entries}
             new_filepaths = {filepath for _, filepath in new_toc_entries}
 
-            # Load the new GitBook YAML
-            new_gitbook_yaml = load_yaml_file(new_gitbook_path)
-            root_path = new_gitbook_yaml.get("root", "")
-
             # Check 1: Find URLs that exist in old but not in new, and ensure they're in redirects
             removed_urls = old_urls - new_urls
             missing_redirects = check_redirects(removed_urls, new_gitbook_yaml)
 
             # Check 2: Ensure all redirect targets exist in the TOC
             redirects = new_gitbook_yaml.get("redirects", {})
-            missing_files = check_toc_entries(
-                redirects, new_filepaths, root_path
-            )
+            missing_files = check_toc_entries(redirects, new_filepaths)
 
-            slug_has_errors = False
-
-            # Report findings
-            if missing_redirects:
-                slug_has_errors = True
+            # Update the counters but don't output details
+            if missing_redirects or missing_files:
                 success = False
                 total_missing_redirects += len(missing_redirects)
-                write_output(
-                    f"ERROR in slug '{slug}': {len(missing_redirects)} URLs have been removed but are missing redirects:",
-                    output_file,
-                )
-                for url in missing_redirects:
-                    write_output(f"  - {url}", output_file)
-
-            if missing_files:
-                slug_has_errors = True
-                success = False
                 total_missing_files += len(missing_files)
-                write_output(
-                    f"ERROR in slug '{slug}': {len(missing_files)} redirect targets are missing from the TOC:",
+
+                # Generate fixed gitbook.yaml if there are issues
+                generate_gitbook_fixes(
+                    slug,
+                    new_gitbook_yaml,
+                    missing_redirects,
+                    missing_files,
+                    pr_name,
                     output_file,
                 )
-                for filepath in missing_files:
-                    write_output(f"  - {filepath}", output_file)
 
-            if slug_has_errors:
-                write_output("", output_file)  # Add empty line between slugs
-
-        # Output the summary of all issues
-        if total_missing_redirects > 0 or total_missing_files > 0:
-            write_output("\nSUMMARY OF ISSUES:", output_file)
+        # Output the summary statistics at the end
+        if not success:
             write_output(
-                f"Total missing redirects: {total_missing_redirects}",
-                output_file,
+                f"\nMissing redirects: {total_missing_redirects}", output_file
             )
-            write_output(
-                f"Total missing files: {total_missing_files}", output_file
-            )
-            write_output(
-                f"Total issues: {total_missing_redirects + total_missing_files}",
-                output_file,
-            )
-
-        if success:
-            write_output(
-                "All GitBook redirect checks passed successfully!", output_file
-            )
+            write_output(f"Missing files: {total_missing_files}", output_file)
+        else:
+            write_output("All GitBook redirects are valid!", output_file)
 
     finally:
         # Close output file if it was opened
@@ -419,4 +465,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    # parse_toc_file("/Users/bariscandurak/zenml/zenml/old/documentation/toc.md")
