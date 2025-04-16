@@ -15,7 +15,7 @@
 
 from contextvars import ContextVar
 from datetime import datetime, timedelta
-from typing import Callable, Optional, Union
+from typing import Callable, Optional, Tuple, Union
 from urllib.parse import urlencode, urlparse
 from uuid import UUID, uuid4
 
@@ -33,9 +33,12 @@ from zenml.analytics.context import AnalyticsContext
 from zenml.constants import (
     API,
     DEFAULT_USERNAME,
+    DEFAULT_ZENML_SERVER_GENERIC_API_TOKEN_LIFETIME,
+    ENV_ZENML_WORKLOAD_TOKEN_EXPIRATION_LEEWAY,
     EXTERNAL_AUTHENTICATOR_TIMEOUT,
     LOGIN,
     VERSION_1,
+    handle_int_env_var,
 )
 from zenml.enums import (
     AuthScheme,
@@ -420,28 +423,32 @@ def authenticate_credentials(
             @cache_result(expiry=30)
             def get_pipeline_run_status(
                 pipeline_run_id: UUID,
-            ) -> Optional[ExecutionStatus]:
+            ) -> Tuple[Optional[ExecutionStatus], Optional[datetime]]:
                 """Get the status of a pipeline run.
 
                 Args:
                     pipeline_run_id: The pipeline run ID.
 
                 Returns:
-                    The pipeline run status or None if the pipeline run does not
-                    exist.
+                    The pipeline run status and end time or None if the pipeline
+                    run does not exist.
                 """
                 try:
                     pipeline_run = zen_store().get_run(
-                        pipeline_run_id, hydrate=False
+                        pipeline_run_id, hydrate=True
                     )
                 except KeyError:
-                    return None
+                    return None, None
 
-                return pipeline_run.status
+                return (
+                    pipeline_run.status,
+                    pipeline_run.end_time,
+                )
 
-            pipeline_run_status = get_pipeline_run_status(
-                decoded_token.pipeline_run_id
-            )
+            (
+                pipeline_run_status,
+                pipeline_run_end_time,
+            ) = get_pipeline_run_status(decoded_token.pipeline_run_id)
             if pipeline_run_status is None:
                 error = (
                     f"Authentication error: error retrieving token pipeline run "
@@ -450,59 +457,35 @@ def authenticate_credentials(
                 logger.error(error)
                 raise CredentialsNotValid(error)
 
+            leeway = handle_int_env_var(
+                ENV_ZENML_WORKLOAD_TOKEN_EXPIRATION_LEEWAY,
+                DEFAULT_ZENML_SERVER_GENERIC_API_TOKEN_LIFETIME,
+            )
             if pipeline_run_status.is_finished:
-                error = (
-                    f"The execution of pipeline run "
-                    f"{decoded_token.pipeline_run_id} has already concluded and "
-                    "API tokens scoped to it are no longer valid."
-                )
-                logger.error(error)
-                raise CredentialsNotValid(error)
-
-        if decoded_token.step_run_id:
-            # If the token contains a step run ID, we need to check if the
-            # step run exists in the database and the step run has not concluded.
-            # We use a cached version of the step run status to avoid unnecessary
-            # database queries.
-
-            @cache_result(expiry=30)
-            def get_step_run_status(
-                step_run_id: UUID,
-            ) -> Optional[ExecutionStatus]:
-                """Get the status of a step run.
-
-                Args:
-                    step_run_id: The step run ID.
-
-                Returns:
-                    The step run status or None if the step run does not exist.
-                """
-                try:
-                    step_run = zen_store().get_run_step(
-                        step_run_id, hydrate=False
+                if leeway < 0:
+                    # The token should never expire, we don't need to check
+                    # the end time.
+                    pass
+                elif (
+                    # We don't know the end time. This should never happen, but
+                    # just in case we always expire the token.
+                    pipeline_run_end_time is None
+                    # Calculate whether the token has expired.
+                    or utc_now(tz_aware=pipeline_run_end_time)
+                    > pipeline_run_end_time + timedelta(seconds=leeway)
+                ):
+                    error = (
+                        f"The pipeline run {decoded_token.pipeline_run_id} has "
+                        "finished and API tokens scoped to it are no longer "
+                        "valid. If you want to increase the expiration time "
+                        "of the token to allow steps to continue for longer "
+                        "after other steps have failed, you can do so by "
+                        "configuring the "
+                        f"`{ENV_ZENML_WORKLOAD_TOKEN_EXPIRATION_LEEWAY}` "
+                        "ZenML server environment variable."
                     )
-                except KeyError:
-                    return None
-
-                return step_run.status
-
-            step_run_status = get_step_run_status(decoded_token.step_run_id)
-            if step_run_status is None:
-                error = (
-                    f"Authentication error: error retrieving token step run "
-                    f"{decoded_token.step_run_id}"
-                )
-                logger.error(error)
-                raise CredentialsNotValid(error)
-
-            if step_run_status.is_finished:
-                error = (
-                    f"The execution of step run "
-                    f"{decoded_token.step_run_id} has already concluded and "
-                    "API tokens scoped to it are no longer valid."
-                )
-                logger.error(error)
-                raise CredentialsNotValid(error)
+                    logger.error(error)
+                    raise CredentialsNotValid(error)
 
         auth_context = AuthContext(
             user=user_model,
@@ -861,7 +844,6 @@ def generate_access_token(
     expires_in: Optional[int] = None,
     schedule_id: Optional[UUID] = None,
     pipeline_run_id: Optional[UUID] = None,
-    step_run_id: Optional[UUID] = None,
 ) -> OAuthTokenResponse:
     """Generates an access token for the given user.
 
@@ -880,7 +862,6 @@ def generate_access_token(
             expire.
         schedule_id: The ID of the schedule to scope the token to.
         pipeline_run_id: The ID of the pipeline run to scope the token to.
-        step_run_id: The ID of the step run to scope the token to.
 
     Returns:
         An authentication response with an access token.
@@ -956,7 +937,6 @@ def generate_access_token(
         api_key_id=api_key.id if api_key else None,
         schedule_id=schedule_id,
         pipeline_run_id=pipeline_run_id,
-        step_run_id=step_run_id,
         # Set the session ID if this is a cross-site request
         session_id=session_id,
     ).encode(expires=expires)
@@ -981,6 +961,58 @@ def generate_access_token(
         token_type="bearer",
         csrf_token=csrf_token,
     )
+
+
+def generate_artifact_download_token(artifact_version_id: UUID) -> str:
+    """Generate a JWT token for artifact download.
+
+    Args:
+        artifact_version_id: The ID of the artifact version to download.
+
+    Returns:
+        The JWT token for the artifact download.
+    """
+    import jwt
+
+    config = server_config()
+
+    return jwt.encode(
+        {
+            "exp": utc_now() + timedelta(seconds=30),
+            "artifact_version_id": str(artifact_version_id),
+        },
+        key=config.jwt_secret_key,
+        algorithm=config.jwt_token_algorithm,
+    )
+
+
+def verify_artifact_download_token(
+    token: str, artifact_version_id: UUID
+) -> None:
+    """Verify a JWT token for artifact download.
+
+    Args:
+        token: The JWT token to verify.
+        artifact_version_id: The ID of the artifact version to download.
+
+    Raises:
+        CredentialsNotValid: If the token is invalid or the artifact version
+            ID does not match.
+    """
+    import jwt
+
+    config = server_config()
+    try:
+        claims = jwt.decode(
+            token,
+            config.jwt_secret_key,
+            algorithms=[config.jwt_token_algorithm],
+        )
+    except jwt.PyJWTError as e:
+        raise CredentialsNotValid(f"Invalid JWT token: {e}") from e
+
+    if claims["artifact_version_id"] != str(artifact_version_id):
+        raise CredentialsNotValid("Invalid artifact version ID")
 
 
 def http_authentication(

@@ -308,13 +308,13 @@ def print_pydantic_models(
             if isinstance(model, BaseIdentifiedResponse):
                 include_columns = ["id"]
 
-                if "name" in model.model_fields:
+                if "name" in type(model).model_fields:
                     include_columns.append("name")
 
                 include_columns.extend(
                     [
                         k
-                        for k in model.get_body().model_fields.keys()
+                        for k in type(model.get_body()).model_fields.keys()
                         if k not in exclude_columns
                     ]
                 )
@@ -323,7 +323,9 @@ def print_pydantic_models(
                     include_columns.extend(
                         [
                             k
-                            for k in model.get_metadata().model_fields.keys()
+                            for k in type(
+                                model.get_metadata()
+                            ).model_fields.keys()
                             if k not in exclude_columns
                         ]
                     )
@@ -347,7 +349,7 @@ def print_pydantic_models(
             #  we want to attempt to represent them by name, if they contain
             #  such a field, else the id is used
             if isinstance(value, BaseIdentifiedResponse):
-                if "name" in value.model_fields:
+                if "name" in type(value).model_fields:
                     items[k] = str(getattr(value, "name"))
                 else:
                     items[k] = str(value.id)
@@ -357,7 +359,7 @@ def print_pydantic_models(
             elif isinstance(value, list):
                 for v in value:
                     if isinstance(v, BaseIdentifiedResponse):
-                        if "name" in v.model_fields:
+                        if "name" in type(v).model_fields:
                             items.setdefault(k, []).append(
                                 str(getattr(v, "name"))
                             )
@@ -448,13 +450,13 @@ def print_pydantic_model(
         if isinstance(model, BaseIdentifiedResponse):
             include_columns = ["id"]
 
-            if "name" in model.model_fields:
+            if "name" in type(model).model_fields:
                 include_columns.append("name")
 
             include_columns.extend(
                 [
                     k
-                    for k in model.get_body().model_fields.keys()
+                    for k in type(model.get_body()).model_fields.keys()
                     if k not in exclude_columns
                 ]
             )
@@ -463,7 +465,7 @@ def print_pydantic_model(
                 include_columns.extend(
                     [
                         k
-                        for k in model.get_metadata().model_fields.keys()
+                        for k in type(model.get_metadata()).model_fields.keys()
                         if k not in exclude_columns
                     ]
                 )
@@ -482,7 +484,7 @@ def print_pydantic_model(
     for k in include_columns:
         value = getattr(model, k)
         if isinstance(value, BaseIdentifiedResponse):
-            if "name" in value.model_fields:
+            if "name" in type(value).model_fields:
                 items[k] = str(getattr(value, "name"))
             else:
                 items[k] = str(value.id)
@@ -492,7 +494,7 @@ def print_pydantic_model(
         elif isinstance(value, list):
             for v in value:
                 if isinstance(v, BaseIdentifiedResponse):
-                    if "name" in v.model_fields:
+                    if "name" in type(v).model_fields:
                         items.setdefault(k, []).append(str(getattr(v, "name")))
                     else:
                         items.setdefault(k, []).append(str(v.id))
@@ -2138,7 +2140,7 @@ def _scrub_secret(config: StackComponentConfig) -> Dict[str, Any]:
         A configuration with secret values removed.
     """
     config_dict = {}
-    config_fields = config.__class__.model_fields
+    config_fields = type(config).model_fields
     for key, value in config_fields.items():
         if getattr(config, key):
             if secret_utils.is_secret_field(value):

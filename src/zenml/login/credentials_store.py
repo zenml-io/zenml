@@ -25,6 +25,7 @@ from zenml.constants import (
 from zenml.io import fileio
 from zenml.logger import get_logger
 from zenml.login.credentials import APIToken, ServerCredentials, ServerType
+from zenml.login.pro.constants import ZENML_PRO_API_URL
 from zenml.login.pro.workspace.models import WorkspaceRead
 from zenml.models import OAuthTokenResponse, ServerModel
 from zenml.utils import yaml_utils
@@ -395,6 +396,36 @@ class CredentialsStore(metaclass=SingletonMetaClass):
             bool: True if a valid token is stored, False otherwise.
         """
         return self.get_pro_token(pro_api_url) is not None
+
+    def can_login(self, server_url: str) -> bool:
+        """Check if credentials to login to the given server exist.
+
+        Args:
+            server_url: The server URL for which to check the authentication.
+
+        Returns:
+            True if the credentials store contains credentials that can be used
+            to login to the given server URL, False otherwise.
+        """
+        self.check_and_reload_from_file()
+        credentials = self.get_credentials(server_url)
+        if not credentials:
+            return False
+
+        if credentials.api_key is not None:
+            return True
+        elif (
+            credentials.username is not None
+            and credentials.password is not None
+        ):
+            return True
+        elif credentials.type == ServerType.PRO:
+            pro_api_url = credentials.pro_api_url or ZENML_PRO_API_URL
+            pro_token = self.get_pro_token(pro_api_url, allow_expired=False)
+            if pro_token:
+                return True
+
+        return False
 
     def set_api_key(
         self,
