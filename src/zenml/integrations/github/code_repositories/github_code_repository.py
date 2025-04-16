@@ -237,19 +237,35 @@ class GitHubCodeRepository(BaseCodeRepository):
         Returns:
             Whether the remote url is correct.
         """
-        host = self.config.host or "github.com"
-        host = host.rstrip("/")
-
-        https_url = (
-            f"https://{host}/{self.config.owner}/{self.config.repository}.git"
-        )
-        if url == https_url:
-            return True
-
-        ssh_regex = re.compile(
-            f".*@{host}:{self.config.owner}/{self.config.repository}.git"
-        )
-        if ssh_regex.fullmatch(url):
-            return True
-
+        # Normalize repository information
+        host = self.config.host
+        owner = self.config.owner
+        repo = self.config.repository
+        
+        # Clean the input URL by removing any trailing slashes
+        url = url.rstrip('/')
+        
+        # Create regex patterns for different URL formats
+        patterns = [
+            # HTTPS format: https://github.com/owner/repo[.git]
+            rf"^https://{re.escape(host)}/{re.escape(owner)}/{re.escape(repo)}(\.git)?$",
+            
+            # SSH format: git@github.com:owner/repo[.git]
+            rf"^[^@]+@{re.escape(host)}:{re.escape(owner)}/{re.escape(repo)}(\.git)?$",
+            
+            # Alternative SSH: ssh://git@github.com/owner/repo[.git]
+            rf"^ssh://[^@]+@{re.escape(host)}/{re.escape(owner)}/{re.escape(repo)}(\.git)?$",
+            
+            # Git protocol: git://github.com/owner/repo[.git]
+            rf"^git://{re.escape(host)}/{re.escape(owner)}/{re.escape(repo)}(\.git)?$",
+            
+            # GitHub CLI: gh:owner/repo
+            rf"^gh:{re.escape(owner)}/{re.escape(repo)}$",
+        ]
+        
+        # Try matching against each pattern
+        for pattern in patterns:
+            if re.match(pattern, url):
+                return True
+                
         return False
