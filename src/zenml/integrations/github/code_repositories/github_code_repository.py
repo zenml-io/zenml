@@ -16,6 +16,7 @@
 import os
 import re
 from typing import Any, Dict, List, Optional
+from urllib.parse import urlparse
 from uuid import uuid4
 
 import requests
@@ -245,11 +246,15 @@ class GitHubCodeRepository(BaseCodeRepository):
         # Clean the input URL by removing any trailing slashes
         url = url.rstrip('/')
         
-        # Create regex patterns for different URL formats
+        # Handle HTTPS URLs using urlparse (similar to GitLab implementation)
+        parsed_url = urlparse(url)
+        if parsed_url.scheme == "https":
+            expected_path = f"/{owner}/{repo}"
+            actual_path = parsed_url.path.removesuffix('.git')
+            return parsed_url.hostname == host and actual_path == expected_path
+        
+        # Create regex patterns for non-HTTPS URL formats
         patterns = [
-            # HTTPS format: https://github.com/owner/repo[.git]
-            rf"^https://{re.escape(host)}/{re.escape(owner)}/{re.escape(repo)}(\.git)?$",
-            
             # SSH format: git@github.com:owner/repo[.git]
             rf"^[^@]+@{re.escape(host)}:{re.escape(owner)}/{re.escape(repo)}(\.git)?$",
             
