@@ -196,14 +196,15 @@ def check_toc_entries(
     missing_files = []
 
     for redirect_target in redirects.values():
-        # Adjust path with root if needed
+        # Handle paths correctly using the root path from gitbook.yaml
+        # Note: This assumes the toc_filepaths are in the same format as the redirects
+        # i.e., both are relative to the same base or both contain the same prefixes
         if root_path and not redirect_target.startswith(root_path):
-            target_path = os.path.join(root_path, redirect_target)
+            # Path is relative to the root path
+            target_path = os.path.normpath(os.path.join(root_path, redirect_target))
         else:
-            target_path = redirect_target
-
-        # Normalize path
-        target_path = os.path.normpath(target_path)
+            # Path already includes root or is absolute
+            target_path = os.path.normpath(redirect_target)
 
         if target_path not in toc_filepaths:
             missing_files.append(target_path)
