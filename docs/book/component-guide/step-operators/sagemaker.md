@@ -33,6 +33,27 @@ To use the SageMaker step operator, we need:
 * An instance type that we want to execute our steps on. See [here](https://docs.aws.amazon.com/sagemaker/latest/dg/notebooks-available-instance-types.html) for a list of available instance types.
 * (Optional) An experiment that is used to group SageMaker runs. Check [this guide](https://docs.aws.amazon.com/sagemaker/latest/dg/experiments-create.html) to see how to create an experiment.
 
+### Using Step Operators in Steps
+
+To use step operators within steps, you can specify the step operator in the `@step` decorator. This allows the step to be executed in the environment provided by the step operator, such as AWS SageMaker.
+
+- **Step Operator Parameter**: The `step_operator` parameter in the `@step` decorator specifies which step operator to use for executing the step.
+
+- **Example**:
+
+  ```python
+  from zenml import step
+
+  @step(step_operator="my_sagemaker_operator")
+  def my_training_step(...) -> ...:
+      # Step logic here
+      pass
+  ```
+
+- **Running the Pipeline**: Include the step in your pipeline and execute it. The specified step operator will handle the execution of the step in the designated environment.
+
+This approach allows you to leverage the specialized compute resources and capabilities of the step operator for specific steps in your pipeline.
+
 There are two ways you can authenticate your orchestrator to AWS to be able to run steps on SageMaker:
 
 {% tabs %}
