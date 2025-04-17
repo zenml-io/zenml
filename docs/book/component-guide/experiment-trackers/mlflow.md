@@ -113,6 +113,47 @@ Read more about [ZenML Secrets](https://docs.zenml.io/how-to/project-setup-and-m
 
 For more, up-to-date information on the MLflow Experiment Tracker implementation and its configuration, you can have a look at [the SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-mlflow.html#zenml.integrations.mlflow) .
 
+## Integrating Experiment Trackers with MCP
+
+### Overview of MCP
+
+The ZenML Model Control Plane (MCP) is designed to manage and track machine learning models independently. It provides features like version control, metadata tracking, and storage of model artifacts, allowing you to register, version, and manage models as first-class citizens in ZenML.
+
+### Enhancing MCP with Experiment Trackers
+
+While the MCP functions independently, integrating experiment trackers can enhance its capabilities by providing additional logging and visualization features for experiments and model performance. Experiment trackers offer extensive UIs that allow users to browse, visualize, and compare experiment data, complementing the MCP's model management features.
+
+### Popular Experiment Trackers
+
+Some popular experiment trackers that can be integrated with ZenML include:
+
+- Comet
+- MLflow
+- Neptune
+- Weights & Biases
+
+### Integration Steps
+
+To integrate an experiment tracker with the MCP, follow these steps:
+
+1. **Configure and Add an Experiment Tracker**: Register the experiment tracker as part of your ZenML stack.
+
+2. **Enable the Experiment Tracker for Pipeline Steps**: Decorate individual steps in your pipeline to enable logging with the experiment tracker.
+
+3. **Log Information**: Explicitly log models, metrics, and data to the experiment tracker within your pipeline steps.
+
+4. **Access the Experiment Tracker UI**: Use the experiment tracker UI to browse and visualize logged information.
+
+Example code snippet for accessing the experiment tracker UI:
+
+```python
+from zenml.client import Client
+
+pipeline_run = Client().get_pipeline_run("<PIPELINE_RUN_NAME>")
+step = pipeline_run.steps["<STEP_NAME>"]
+experiment_tracker_url = step.run_metadata["experiment_tracker_url"].value
+```
+
 ## How do you use it?
 
 To be able to log information from a ZenML pipeline step using the MLflow Experiment Tracker component in the active stack, you need to enable an experiment tracker using the `@step` decorator. Then use MLflow's logging or auto-logging capabilities as you would normally do, e.g.:
