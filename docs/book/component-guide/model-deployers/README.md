@@ -61,14 +61,16 @@ zenml model-deployer register mlflow --flavor=mlflow
 zenml model-deployer register seldon --flavor=seldon \
 --kubernetes_context=zenml-eks --kubernetes_namespace=zenml-workloads \
 --base_url=http://abb84c444c7804aa98fc8c097896479d-377673393.us-east-1.elb.amazonaws.com
-...
+
+# Configure AWS SageMaker model deployer
+zenml model-deployer register sagemaker_deployer --flavor=path.to.SageMakerModelDeployer
 ```
 
 {% endhint %}
 
 #### The role that a model deployer plays in a ZenML Stack
 
-* Seamless Model Deployment: Facilitates the deployment of machine learning models to various serving environments, such as local servers, Kubernetes clusters, or cloud platforms, ensuring that models can be deployed and managed efficiently in accordance with the specific requirements of the serving infrastructure by holds all the stack-related configuration attributes required to interact with the remote model serving tool, service, or platform (e.g. hostnames, URLs, references to credentials, and other client-related configuration parameters). The following are examples of configuring the MLflow and Seldon Core Model Deployers and registering them as a Stack component:
+* Seamless Model Deployment: Facilitates the deployment of machine learning models to various serving environments, such as local servers, Kubernetes clusters, or cloud platforms, ensuring that models can be deployed and managed efficiently in accordance with the specific requirements of the serving infrastructure by holds all the stack-related configuration attributes required to interact with the remote model serving tool, service, or platform (e.g. hostnames, URLs, references to credentials, and other client-related configuration parameters). The following are examples of configuring the MLflow, Seldon Core, and AWS SageMaker Model Deployers and registering them as a Stack component:
 
    ```bash
    zenml integration install mlflow
@@ -85,14 +87,17 @@ zenml model-deployer register seldon --flavor=seldon \
    zenml stack register seldon_stack -m default -a aws -o default -d seldon
    ```
 
+   ```bash
+   # Register AWS SageMaker model deployer
+   zenml model-deployer register sagemaker_deployer --flavor=path.to.SageMakerModelDeployer
+   zenml stack register sagemaker_stack -m default -a aws -o default -d sagemaker_deployer
+   ```
+
 * Lifecycle Management: Provides mechanisms for comprehensive lifecycle management of model servers, including the ability to start, stop, and delete model servers, as well as to update existing servers with new model versions, thereby optimizing resource utilization and facilitating continuous delivery of model updates. Some core methods that can be used to interact with the remote model server include:
-  - `deploy_model` - Deploys a model to the serving environment and returns a Service object that represents the deployed model server.
-  - `find_model_server` - Finds and returns a list of Service objects that
-    represent model servers that have been deployed to the serving environment,
-    the `services` are stored in the DB and can be used as a reference to know what and where the model is deployed.
-  - `stop_model_server` - Stops a model server that is currently running in the serving environment.
-  - `start_model_server` - Starts a model server that has been stopped in the serving environment.
-  - `delete_model_server` - Deletes a model server from the serving environment and from the DB.
+  - `perform_deploy_model` - Deploys a model to the serving environment and returns a Service object that represents the deployed model server.
+  - `perform_stop_model` - Stops a model server that is currently running in the serving environment.
+  - `perform_start_model` - Starts a model server that has been stopped in the serving environment.
+  - `perform_delete_model` - Deletes a model server from the serving environment and from the DB.
 
 {% hint style="info" %}
 ZenML uses the Service object to represent a model server that has been deployed to a serving environment. The Service object is saved in the DB and can be used as a reference to know what and where the model is deployed. The Service object consists of 2 main attributes, the `config` and the `status`. The `config` attribute holds all the deployment configuration attributes required to create a new deployment, while the `status` attribute holds the operational status of the deployment, such as the last error message, the prediction URL, and the deployment status.
