@@ -33,6 +33,18 @@ def train_model(data: dict) -> None:
 def simple_ml_pipeline():
     dataset = load_data()
     train_model(dataset)
+
+# Iterating Over Pipeline Steps Before Execution
+
+# ZenML does not provide a direct API for iterating over steps before execution.
+# You can manually manage steps in a list and iterate over them before running the pipeline.
+# This is useful for scenarios like dynamic step modification or pre-execution validation.
+
+# Example:
+steps = [load_data, train_model]
+for step_func in steps:
+    print(f"Preparing to run: {step_func.__name__}")
+
 ```
 
 You can now run this pipeline by simply calling the function:

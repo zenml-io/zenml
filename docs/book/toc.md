@@ -62,6 +62,7 @@
     * [Use failure/success hooks](how-to/pipeline-development/build-pipelines/use-failure-success-hooks.md)
     * [Fan in, fan out](how-to/pipeline-development/build-pipelines/fan-in-fan-out.md)
     * [Hyperparameter tuning](how-to/pipeline-development/build-pipelines/hyper-parameter-tuning.md)
+    * [Iterating Over Pipeline Steps Before Execution](how-to/pipeline-development/build-pipelines/iterating-over-pipeline-steps-before-execution.md)
     * [Access secrets in a step](how-to/pipeline-development/build-pipelines/access-secrets-in-a-step.md)
     * [Run an individual step](how-to/pipeline-development/build-pipelines/run-an-individual-step.md)
     * [Fetching pipelines](how-to/pipeline-development/build-pipelines/fetching-pipelines.md)
