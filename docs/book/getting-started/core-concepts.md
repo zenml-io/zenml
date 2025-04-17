@@ -106,6 +106,45 @@ For instance, if you take a close look at the default local stack of ZenML, you 
 Keep in mind, that each one of these components is built on top of base abstractions and is completely extensible.
 {% endhint %}
 
+#### Updating Stacks with Existing Components
+
+To update a ZenML stack with existing components, you can use the `zenml stack update` command. This command allows you to add different types of components to an existing stack. Here is a breakdown of how to use it:
+
+- **Purpose**: The `zenml stack update` command is used to modify an existing stack by adding or updating its components.
+- **Syntax**: `zenml stack update STACK_NAME [OPTIONS]`
+
+**Step-by-step Instructions**:
+
+1. **Add an Orchestrator**:
+   ```shell
+   zenml stack update STACK_NAME -o ORCHESTRATOR_NAME
+   ```
+   Example: To add an orchestrator named `my_orchestrator` to a stack named `my_stack`, use:
+   ```shell
+   zenml stack update my_stack -o my_orchestrator
+   ```
+
+2. **Add an Artifact Store**:
+   ```shell
+   zenml stack update STACK_NAME -a ARTIFACT_STORE_NAME
+   ```
+
+3. **Add a Container Registry**:
+   ```shell
+   zenml stack update STACK_NAME -c CONTAINER_REGISTRY_NAME
+   ```
+
+**Flags**:
+- `-o`: Specifies the orchestrator to add.
+- `-a`: Specifies the artifact store to add.
+- `-c`: Specifies the container registry to add.
+
+**Troubleshooting Tips**:
+- Ensure that the components you want to add are already registered.
+- Use `zenml stack update --help` to see all available options and flags.
+
+This section helps users understand how to effectively manage and update their ZenML stacks, making the process more accessible and reducing potential confusion.
+
 #### Orchestrator
 
 An **Orchestrator** is a workhorse that coordinates all the steps to run in a pipeline. Since pipelines can be set up with complex combinations of steps with various asynchronous dependencies between them, the orchestrator acts as the component that decides what steps to run and when to run them.
