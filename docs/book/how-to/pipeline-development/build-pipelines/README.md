@@ -47,6 +47,31 @@ locally or remotely. See our documentation on this [here](https://docs.zenml.io/
 
 <figure><img src="../../../.gitbook/assets/SimplePipelineDag.png" alt=""><figcaption><p>DAG representation in the ZenML Dashboard.</p></figcaption></figure>
 
+# Simulating Pipeline Runs
+
+ZenML does not support a direct 'dry run' feature. However, you can simulate a pipeline run using mock data. Here are the steps to do so:
+
+1. **Use Mock Data**: Replace real data with mock data in your pipeline steps. For example:
+   ```python
+   @step
+def load_mock_data() -> dict:
+    mock_data = [[0, 0], [0, 0], [0, 0]]
+    mock_labels = [0, 0, 0]
+    return {'features': mock_data, 'labels': mock_labels}
+   ```
+
+2. **Integrate Mock Data**: Use the mock data step in your pipeline:
+   ```python
+   @pipeline
+def mock_ml_pipeline():
+    dataset = load_mock_data()
+    train_model(dataset)
+   ```
+
+3. **Test Environment**: Set up a test environment for pipeline testing. This can include using isolated resources or environments to ensure no real data is processed.
+
+4. **Common Scenarios**: Simulating a pipeline run is beneficial for testing pipeline logic or configuration without processing real data.
+
 Check below for more advanced ways to build and interact with your pipeline.
 
 <table data-view="cards"><thead><tr><th></th><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td>Configure pipeline/step parameters</td><td></td><td></td><td><a href="use-pipeline-step-parameters.md">use-pipeline-step-parameters.md</a></td></tr><tr><td>Name and annotate step outputs</td><td></td><td></td><td><a href="step-output-typing-and-annotation.md">step-output-typing-and-annotation.md</a></td></tr><tr><td>Control caching behavior</td><td></td><td></td><td><a href="control-caching-behavior.md">control-caching-behavior.md</a></td></tr><tr><td>Customize the step invocation ids</td><td></td><td></td><td><a href="using-a-custom-step-invocation-id.md">using-a-custom-step-invocation-id.md</a></td></tr><tr><td>Name your pipeline runs</td><td></td><td></td><td><a href="name-your-pipeline-runs.md">name-your-pipeline-runs.md</a></td></tr><tr><td>Use failure/success hooks</td><td></td><td></td><td><a href="use-failure-success-hooks.md">use-failure-success-hooks.md</a></td></tr><tr><td>Hyperparameter tuning</td><td></td><td></td><td><a href="hyper-parameter-tuning.md">hyper-parameter-tuning.md</a></td></tr><tr><td>Attach metadata to a step</td><td></td><td></td><td><a href="https://docs.zenml.io/how-to/model-management-metrics/track-metrics-metadata/attach-metadata-to-a-step">attach-metadata-to-a-step.md</a></td></tr><tr><td>Fetch metadata within steps</td><td></td><td></td><td><a href="https://docs.zenml.io/how-to/model-management-metrics/track-metrics-metadata/fetch-metadata-within-steps">fetch-metadata-within-steps.md</a></td></tr><tr><td>Fetch metadata during pipeline composition</td><td></td><td></td><td><a href="https://docs.zenml.io/how-to/model-management-metrics/track-metrics-metadata/fetch-metadata-within-pipeline">fetch-metadata-within-pipeline.md</a></td></tr><tr><td>Enable or disable logs storing</td><td></td><td></td><td><a href="https://docs.zenml.io/how-to/control-logging/enable-or-disable-logs-storing">enable-or-disable-logs-storing.md</a></td></tr><tr><td>Special Metadata Types</td><td></td><td></td><td><a href="https://docs.zenml.io/how-to/model-management-metrics/track-metrics-metadata/logging-metadata">logging-metadata.md</a></td></tr><tr><td>Access secrets in a step</td><td></td><td></td><td><a href="access-secrets-in-a-step.md">access-secrets-in-a-step.md</a></td></tr></tbody></table>
