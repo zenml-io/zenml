@@ -701,6 +701,13 @@ curl -X 'POST' \
 
 This method starts the pipeline in a background thread and returns immediately with a status code of 202 (Accepted), making it suitable for asynchronous execution from external systems.
 
+### Handling API Token Generation and Usage
+
+- **API Token Generation**: Each request for an API token results in a new, unique token. Ensure that you generate a token for each session or request as needed.
+- **Token Validity**: The default validity period of an API token is typically 1 hour. You can extend this period if necessary by configuring the server settings.
+- **Concurrent Runs**: When using a single token for multiple concurrent runs, ensure that the token remains valid for the duration of all requests. Consider generating individual tokens for each request to enhance security.
+- **Error Handling**: Common errors related to API tokens include `ReadTimeout` and `RuntimeError` when replacing pipeline runs. To troubleshoot, increase the timeout setting, check network connectivity, and ensure that the run being replaced is a valid placeholder.
+
 ### Extending the API
 
 You can extend this API to support additional features:
