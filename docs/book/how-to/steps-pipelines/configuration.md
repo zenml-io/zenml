@@ -63,7 +63,7 @@ def train_model() -> tf.keras.Model:
 
 ### Direct Component Assignment
 
-You can directly specify which stack components a step should use:
+You can directly specify which stack components a step should use. This feature is only available for experiment trackers and stack components:
 
 ```python
 @step(experiment_tracker="mlflow_tracker", step_operator="vertex_ai")
@@ -132,6 +132,8 @@ When both pipeline and step resource settings are specified, they are merged wit
 # -> cpu_count: 2, gpu_count=1, memory="2GB"
 ```
 
+Note that ResourceSettings are not always applied by all orchestrators. The ability to enforce resource constraints depends on the specific orchestrator being used. Some orchestrators like Kubernetes fully support these settings, while others may ignore them.
+
 ### Docker Settings
 
 Docker settings allow you to customize the containerization process:
@@ -145,6 +147,8 @@ Docker settings allow you to customize the containerization process:
 def my_pipeline():
     ...
 ```
+
+For more detailed information on containerization options, see the [containerization guide](../containerization/containerization.md).
 
 ## Stack Component Configuration
 
