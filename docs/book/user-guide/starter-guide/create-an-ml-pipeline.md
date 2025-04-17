@@ -26,6 +26,32 @@ running your pipelines remotely.
 
 Let's jump into an example that demonstrates how a simple pipeline can be set up in ZenML, featuring actual ML components to give you a better sense of its application.
 
+## Simulating Pipeline Runs
+
+ZenML does not support a direct 'dry run' feature. However, you can simulate a pipeline run using mock data. This involves creating mock data that mimics the structure of your real data and integrating it into your ZenML pipelines. Setting up a test environment specifically for ZenML pipeline testing is recommended. This can include using isolated environments or containers to ensure that your tests do not interfere with production data or configurations.
+
+### Example of Simulating a Pipeline Run
+
+1. **Create Mock Data**: Define mock data that resembles your actual data structure.
+
+   ```python
+   mock_data = {'features': [[0, 0], [0, 0]], 'labels': [0, 0]}
+   ```
+
+2. **Integrate Mock Data**: Use this mock data in your pipeline steps.
+
+   ```python
+   @step
+   def load_mock_data() -> dict:
+       return mock_data
+   ```
+
+3. **Test Environment Setup**: Use virtual environments or Docker to create isolated test environments.
+
+4. **Common Scenarios**: Simulating a pipeline run is beneficial for testing pipeline logic or configuration without processing real data.
+
+By following these steps, you can validate your pipeline configurations and logic without executing real data processing.
+
 ```python
 from zenml import pipeline, step
 
