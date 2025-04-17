@@ -43,6 +43,44 @@ Even though settings can be overridden at runtime, you can also specify _default
 
 This means that all pipelines that run using this experiment tracker use nested MLflow runs unless overridden by specifying settings for the pipeline at runtime.
 
+### Using Step Operators in Steps
+
+The `@step` decorator in ZenML allows you to specify a `step_operator` parameter, which is used to define the step operator responsible for executing the step. This is particularly useful for running steps in different environments, such as AWS SageMaker.
+
+#### Specifying Step Operators
+
+To specify a step operator, use the `step_operator` parameter in the `@step` decorator:
+
+```python
+from zenml import step
+
+@step(step_operator="<STEP_OPERATOR_NAME>")
+def my_step(...):
+    # Step logic here
+    pass
+```
+
+In this example, `<STEP_OPERATOR_NAME>` is the name of the step operator you have registered, such as an AWS SageMaker step operator.
+
+#### Example: Using AWS SageMaker
+
+Here's an example of how to define a step with a SageMaker step operator:
+
+```python
+from zenml import step
+
+@step(step_operator="my_sagemaker_operator")
+def trainer(...) -> ...:
+    """Train a model."""
+    # This step will be executed in SageMaker.
+```
+
+#### Running the Pipeline
+
+When you run your pipeline, the specified step operator will manage the execution environment for the step, allowing you to leverage specialized compute resources and capabilities.
+
+This approach enhances the flexibility and scalability of your pipelines by enabling the execution of individual steps in different environments.
+
 ### Using the right key for Stack-component-specific settings
 
 When specifying stack-component-specific settings, a key needs to be passed. This key should always correspond to the pattern: `<COMPONENT_CATEGORY>` or `<COMPONENT_CATEGORY>.<COMPONENT_FLAVOR>`. If you specify just the category (e.g. `step_operator` or `orchestrator`), ZenML will try to apply those settings to whatever flavor of component is in your stack when running a pipeline. If your settings don't apply to this flavor, they will be ignored.
