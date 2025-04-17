@@ -85,7 +85,7 @@ Please read our [general information on how to compose steps + pipelines togethe
 
 #### How do I use templates and starter code with ZenML?
 
-[Project templates](broken-reference) allow you to get going quickly with ZenML. We recommend the Starter template (`starter`) for most use cases, which gives you a basic scaffold and structure around which you can write your own code. You can also build templates for others inside a Git repository and use them with ZenML's templates functionality.
+[Project templates](https://docs.zenml.io/user-guides/best-practices/project-templates) allow you to get going quickly with ZenML. We recommend the Starter template (`starter`) for most use cases, which gives you a basic scaffold and structure around which you can write your own code. You can also build templates for others inside a Git repository and use them with ZenML's templates functionality.
 
 #### How do I upgrade my ZenML client and/or server?
 

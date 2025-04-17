@@ -70,7 +70,7 @@ if __name__ == "__main__":
 
 Artifacts represent the data that goes through your steps as inputs and outputs, and they are automatically tracked and stored by ZenML in the artifact store. They are produced by and circulated among steps whenever your step returns an object or a value. This means the data is not passed between steps in memory. Rather, when the execution of a step is completed, they are written to storage, and when a new step gets executed, they are loaded from storage.
 
-The serialization and deserialization logic of artifacts is defined by [Materializers](broken-reference).
+The serialization and deserialization logic of artifacts is defined by [Materializers](../how-to/artifacts/materializers.md).
 
 #### Models
 
@@ -80,7 +80,7 @@ Models are used to represent the outputs of a training process along with all me
 
 Materializers define how artifacts live in between steps. More precisely, they define how data of a particular type can be serialized/deserialized, so that the steps are able to load the input data and store the output data.
 
-All materializers use the base abstraction called the `BaseMaterializer` class. While ZenML comes built-in with various implementations of materializers for different datatypes, if you are using a library or a tool that doesn't work with our built-in options, you can write [your own custom materializer](broken-reference) to ensure that your data can be passed from step to step.
+All materializers use the base abstraction called the `BaseMaterializer` class. While ZenML comes built-in with various implementations of materializers for different datatypes, if you are using a library or a tool that doesn't work with our built-in options, you can write [your own custom materializer](../how-to/artifacts/materializers.md) to ensure that your data can be passed from step to step.
 
 #### Parameters & Settings
 

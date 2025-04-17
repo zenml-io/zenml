@@ -77,7 +77,7 @@ The advantage of this setup is that it is a fully-managed service, and is very e
 
 </details>
 
-We also offer a hybrid SaaS option where customer secrets are stored on the customer side. In this case, the customer connects their own secret store directly to the ZenML server that is managed by us. All ZenML secrets used by running pipelines to access infrastructure services and resources are stored in the customer secret store. This allows users to use [service connectors](broken-reference) and the [secrets API](../how-to/secrets/secrets.md) to authenticate ZenML pipelines and the ZenML Pro to third-party services and infrastructure while ensuring that credentials are always stored on the customer side.
+We also offer a hybrid SaaS option where customer secrets are stored on the customer side. In this case, the customer connects their own secret store directly to the ZenML server that is managed by us. All ZenML secrets used by running pipelines to access infrastructure services and resources are stored in the customer secret store. This allows users to use [service connectors](https://docs.zenml.io/concepts/service_connectors) and the [secrets API](../how-to/secrets/secrets.md) to authenticate ZenML pipelines and the ZenML Pro to third-party services and infrastructure while ensuring that credentials are always stored on the customer side.
 
 ![ZenML Pro SaaS deployment with Customer secret store](../.gitbook/assets/cloud_architecture_scenario_1_1.png)
 

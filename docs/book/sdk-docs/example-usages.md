@@ -60,7 +60,7 @@ Checkout the [documentation on fetching runs](../user-guide/tutorial/fetching-pi
   * Custom flavors that you have [created yourself](../how-to/infrastructure-deployment/stack-deployment/implement-a-custom-stack-component.md).
 * **User**: The users registered in your ZenML instance. If you are running locally, there will only be a single `default` user.
 * **Secrets**: The infrastructure authentication secrets that you have registered in the [ZenML Secret Store](../how-to/project-setup-and-management/interact-with-secrets.md).
-* **Service Connectors**: The service connectors that you have set up to [connect ZenML to your infrastructure](../how-to/infrastructure-deployment/auth-management/README.md).
+* **Service Connectors**: The service connectors that you have set up to [connect ZenML to your infrastructure](https://docs.zenml.io/stacks/service-connectors/auth-management).
 
 ### Client Methods
 

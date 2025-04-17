@@ -21,7 +21,7 @@ A clean and organized repository structure is essential for any ZenML project. T
 - Clear separation of concerns between different components
 - Consistent naming conventions
 
-Learn more about setting up your repository in the [Set up repository guide](../../../how-to/code-repositories/code-repositories.md).
+Learn more about setting up your repository in the [Set up repository guide](https://docs.zenml.io/user-guides/production-guide/connect-code-repository).
 
 ### Version Control and Collaboration
 
@@ -31,7 +31,7 @@ Integrating your ZenML project with version control systems like Git is crucial 
 - Easy tracking of changes
 - Collaboration among team members
 
-Discover how to connect your Git repository in the [Set up a repository guide](../../../how-to/code-repositories/code-repositories.md).
+Discover how to connect your Git repository in the [Set up a repository guide](https://docs.zenml.io/user-guides/production-guide/connect-code-repository).
 
 ### Stacks, Pipelines, Models, and Artifacts
 
@@ -42,7 +42,7 @@ Understanding the relationship between stacks, models, and pipelines is key to d
 - Pipelines: Encapsulate your ML workflows
 - Artifacts: Track your data and model outputs
 
-Learn about organizing these components in the [Organizing Stacks, Pipelines, Models, and Artifacts guide](../../../how-to/steps-pipelines/steps_and_pipelines.md).
+Learn about organizing these components in the [Organizing Stacks, Pipelines, Models, and Artifacts guide](https://docs.zenml.io/user-guides/best-practices/organizing-pipelines-and-models).
 
 ### Access Management and Roles
 
@@ -53,7 +53,7 @@ Proper access management ensures that team members have the right permissions an
 - Establish processes for pipeline maintenance and server upgrades
 - Leverage [Teams in ZenML Pro](https://docs.zenml.io/pro/core-concepts/teams) to assign roles and permissions to a group of users, to mimic your real-world team roles.
 
-Explore access management strategies in the [Access Management and Roles guide](../../../how-to/tags/tags.md).
+Explore access management strategies in the [Access Management and Roles guide](https://docs.zenml.io/pro/core-concepts/roles).
 
 ### Shared Components and Libraries
 
@@ -63,7 +63,7 @@ Leverage shared components and libraries to promote code reuse and standardizati
 - Shared private wheels for internal distribution
 - Handling authentication for specific libraries
 
-Find out more about sharing code in the [Shared Libraries and Logic for Teams guide](../../../how-to/stack-components/stack_components.md).
+Find out more about sharing code in the [Shared Libraries and Logic for Teams guide](https://docs.zenml.io/user-guides/best-practices/shared-components-for-teams).
 
 ### Project Templates
 
@@ -125,7 +125,7 @@ without the need so structure them in subfolders.
 {% hint style="info" %}
 It might also make sense to register your repository as a code repository. These
 enable ZenML to keep track of the code version that you use for your pipeline
-runs. Additionally, running a pipeline that is tracked in [a registered code repository](../../../how-to/code-repositories/code-repositories.md) can speed up the Docker image building for containerized stack
+runs. Additionally, running a pipeline that is tracked in [a registered code repository](https://docs.zenml.io/user-guides/production-guide/connect-code-repository) can speed up the Docker image building for containerized stack
 components by eliminating the need to rebuild Docker images each time you change
 one of your source code files. Learn more about these in [connecting your Git repository](https://docs.zenml.io/how-to/code-repositories/code-repositories.md).
 {% endhint %}
