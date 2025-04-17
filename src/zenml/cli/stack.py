@@ -217,6 +217,14 @@ def stack() -> None:
     type=str,
     required=False,
 )
+@click.option(
+    "--secret",
+    "secrets",
+    help="Secret to attach to the stack.",
+    type=str,
+    required=False,
+    multiple=True,
+)
 def register_stack(
     stack_name: str,
     artifact_store: Optional[str] = None,
@@ -234,6 +242,7 @@ def register_stack(
     set_stack: bool = False,
     provider: Optional[str] = None,
     connector: Optional[str] = None,
+    secrets: List[str] = [],
 ) -> None:
     """Register a stack.
 
@@ -254,6 +263,7 @@ def register_stack(
         set_stack: Immediately set this stack as active.
         provider: Name of the cloud provider for this stack.
         connector: Name of the service connector for this stack.
+        secrets: List of secrets to attach to the stack.
     """
     if (provider is None and connector is None) and (
         artifact_store is None or orchestrator is None
@@ -500,6 +510,12 @@ def register_stack(
                     ).id
                 ]
 
+        secret_ids = []
+        for secret in secrets:
+            if isinstance(secret, UUID):
+                secret_ids.append(secret)
+            else:
+                secret_ids.append(Client().get_secret(secret).id)
         try:
             created_stack = client.zen_store.create_stack(
                 stack=StackRequest(
@@ -509,6 +525,7 @@ def register_stack(
                     if service_connector
                     else [],
                     labels=labels,
+                    secrets=secret_ids,
                 )
             )
         except (KeyError, IllegalOperationError) as err:

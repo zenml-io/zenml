@@ -13,9 +13,10 @@
 #  permissions and limitations under the License.
 """Utility functions for handling environment variables."""
 
+import contextlib
 import os
 import re
-from typing import Any, Dict, List, Match, Optional, TypeVar, cast
+from typing import Any, Dict, Iterator, List, Match, Optional, TypeVar, cast
 
 from zenml.logger import get_logger
 from zenml.utils import string_utils
@@ -152,3 +153,88 @@ def substitute_env_variable_placeholders(
     return string_utils.substitute_string(
         value=value, substitution_func=_substitution_func
     )
+
+
+@contextlib.contextmanager
+def temporary_environment(environment: Dict[str, str]) -> Iterator[None]:
+    """Temporarily set environment variables.
+
+    Args:
+        environment: The environment variables to set.
+
+    Yields:
+        Nothing.
+    """
+    try:
+        previous_env = {}
+        for key, value in environment.items():
+            previous_env[key] = os.environ.get(key, None)
+            os.environ[key] = value
+        yield
+    finally:
+        for key, previous_value in previous_env.items():
+            updated_value = environment[key]
+            current_value = os.environ.get(key)
+
+            if current_value != updated_value:
+                # The environment variable got updated while this context
+                # manager was active -> We don't reset it back to the old
+                # value
+                continue
+            else:
+                if previous_value is None:
+                    os.environ.pop(key, None)
+                else:
+                    os.environ[key] = previous_value
+
+
+from zenml.client import Client
+from zenml.config.step_configurations import StepConfiguration
+from zenml.stack import Stack
+
+
+def gather_step_environment(
+    step_config: "StepConfiguration", stack: Stack
+) -> Dict[str, str]:
+    environment = {}
+    secrets = []
+    for component in stack.components.values():
+        environment.update(component.environment)
+        secrets.extend(component.secrets)
+
+    environment.update(stack.environment)
+    secrets.extend(stack.secrets)
+
+    environment.update(step_config.environment)
+    secrets.extend(step_config.secrets)
+
+    # Remove duplicates while preserving order, only the last occurrence of
+    # each secret will be used to handle overrides
+    secrets = list(reversed(dict.fromkeys(reversed(secrets))))
+
+    for secret_name_or_id in secrets:
+        try:
+            secret = Client().get_secret(secret_name_or_id)
+        except Exception as e:
+            logger.warning(
+                "Failed to get secret `%s` with error: %s. Skipping setting "
+                "environment variable for this secret.",
+                secret_name_or_id,
+                e,
+            )
+            continue
+
+        if not secret.secret_values:
+            logger.warning(
+                "Did not find any secret values for secret `%s`. This might be "
+                "because you do not have permissions to read the secret "
+                "values. Skipping setting environment variable for this "
+                "secret.",
+                secret_name_or_id,
+            )
+            continue
+
+        for key, value in secret.secret_values.items():
+            environment[key] = str(value)
+
+    return environment
