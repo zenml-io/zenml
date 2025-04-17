@@ -37,11 +37,11 @@ All metadata is now stored, tracked, and managed by ZenML itself. The Metadata S
 
 The architecture changes for the local case are shown in the diagram below:
 
-![ZenML local metadata before 0.20.0](../../user-guide/assets/migration/local-metadata-pre-0.20.png) ![ZenML local metadata after 0.20.0](../../user-guide/assets/migration/local-metadata-post-0.20.png)
+![ZenML local metadata before 0.20.0](../../../.gitbook/assets/local-metadata-pre-0.20.png) ![ZenML local metadata after 0.20.0](../../../.gitbook/assets/local-metadata-post-0.20.png)
 
 The architecture changes for the remote case are shown in the diagram below:
 
-![ZenML remote metadata before 0.20.0](../../user-guide/assets/migration/remote-metadata-pre-0.20.png) ![ZenML remote metadata after 0.20.0](../../user-guide/assets/migration/remote-metadata-post-0.20.png)
+![ZenML remote metadata before 0.20.0](../../../.gitbook/assets/remote-metadata-pre-0.20.png) ![ZenML remote metadata after 0.20.0](../../../.gitbook/assets/remote-metadata-post-0.20.png)
 
 If you're already using ZenML, aside from the above limitation, this change will impact you differently, depending on the flavor of Metadata Stores you have in your stacks:
 
@@ -92,7 +92,7 @@ zenml pipeline runs migrate DATABASE_NAME \
 
 **Deploy the server**
 
-`zenml deploy --aws` (maybe don’t do this :) since it spins up infrastructure on AWS…)
+`zenml deploy --aws` (maybe don't do this :) since it spins up infrastructure on AWS…)
 
 **Spin up a local ZenML Server**
 
@@ -124,7 +124,7 @@ connect to it using the 'default' username and an empty password.
 
 The Dashboard will be available at `http://localhost:8237` by default:
 
-![ZenML Dashboard Preview](../../user-guide/assets/migration/zenml-dashboard.png)
+![ZenML Dashboard Preview](../../../.gitbook/assets/zenml-dashboard.png)
 
 For more details on other possible deployment options, see the [ZenML deployment documentation](https://docs.zenml.io/getting-started/deploying-zenml), and/or follow the [starter guide](https://docs.zenml.io/user-guides/starter-guide) to learn more.
 

@@ -13,7 +13,7 @@ evaluation metrics to assess the performance of our retrieval system. A reranker
 is a way to squeeze a bit of extra performance out of the system by reordering
 the retrieved documents based on additional features or scores.
 
-![](/docs/book/.gitbook/assets/reranking-workflow.png)
+![](../../../.gitbook/assets/reranking-workflow.png)
 
 As you can see, reranking is an optional addition we make to what we've already
 set up. It's not strictly necessary, but it can help improve the relevance and

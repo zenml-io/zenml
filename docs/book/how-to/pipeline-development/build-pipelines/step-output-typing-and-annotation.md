@@ -83,7 +83,7 @@ def my_step() -> Tuple[int, ...]:
 
 ## Step output names
 
-By default, ZenML uses the output name `output` for single output steps and `output_0, output_1, ...` for steps with multiple outputs. These output names are used to display your outputs in the dashboard and [fetch them after your pipeline is finished](fetching-pipelines.md).
+By default, ZenML uses the output name `output` for single output steps and `output_0, output_1, ...` for steps with multiple outputs. These output names are used to display your outputs in the dashboard and [fetch them after your pipeline is finished](../../../user-guide/tutorial/fetching-pipelines.md).
 
 If you want to use custom output names for your steps, use the `Annotated` type annotation:
 

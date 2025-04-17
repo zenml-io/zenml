@@ -84,13 +84,8 @@ To keep things simple, we can summarize the steps:
 
 You can use a service account's API key to obtain short-lived API tokens for programmatic access to the ZenML server's REST API. This is particularly useful when you need to make long-term securely authenticated HTTP requests to the ZenML API endpoints. This is the recommended way to access the ZenML API programmatically when you're not using the ZenML CLI or Python client.
 
-Accessing the API with this method is thoroughly documented in the [API reference section](https://docs.zenml.io/api-reference/oss-api/oss-api#using-a-short-lived-api-token).
+Accessing the API with this method is thoroughly documented in the [API reference section](https://docs.zenml.io/api-reference/oss-api/getting-started#using-a-service-account-and-an-api-key).
 
 ## Important notice
 
 Every API key issued is a potential gateway to access your data, secrets and infrastructure. It's important to regularly rotate API keys and deactivate or delete service accounts and API keys that are no longer needed.
-
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
-
-

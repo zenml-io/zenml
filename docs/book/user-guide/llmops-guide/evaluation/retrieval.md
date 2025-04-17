@@ -25,7 +25,7 @@ of how well the retrieval component is working. It can also be useful to target
 known edge cases or difficult queries to see how the retrieval component handles
 those known scenarios.
 
-![](/docs/book/.gitbook/assets/retrieval-eval-manual.png)
+![](../../../.gitbook/assets/retrieval-eval-manual.png)
 
 Implementing this is pretty simple - you just need to create some queries and
 check the retrieved documents. Having tested the basic inference of our RAG
@@ -125,7 +125,7 @@ retrieval component's performance. We do this by using an LLM to generate
 synthetic data. In our case we take the text of each document chunk and pass it
 to an LLM, telling it to generate a question. 
 
-![](/docs/book/.gitbook/assets/retrieval-eval-automated.png)
+![](../../../.gitbook/assets/retrieval-eval-automated.png)
 
 For example, given the text:
 
@@ -222,7 +222,7 @@ To give you an indication of how long this process takes, generating 1800+
 questions from an equivalent number of documentation chunks took a little over
 45 minutes using the local model on a GPU-enabled machine with Ollama.
 
-![](/docs/book/.gitbook/assets/hf-qa-embedding-questions.png)
+![](../../../.gitbook/assets/hf-qa-embedding-questions.png)
 
 You can [view the generated
 dataset](https://huggingface.co/datasets/zenml/rag_qa_embedding_questions) on
