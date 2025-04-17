@@ -38,6 +38,7 @@
   * [Kubernetes](step-operators/kubernetes.md)
   * [Modal](step-operators/modal.md)
   * [Spark](step-operators/spark-kubernetes.md)
+  * [Using Step Operators in Steps](step-operators/using-step-operators-in-steps.md)
   * [Develop a Custom Step Operator](step-operators/custom.md)
 * [Experiment Trackers](experiment-trackers/README.md)
   * [Comet](experiment-trackers/comet.md)
