@@ -45,18 +45,28 @@ zenml step-operator register <STEP_OPERATOR_NAME> \
     --flavor=sagemaker \
     --role=<SAGEMAKER_ROLE> \
     --instance_type=<INSTANCE_TYPE> \
-#   --experiment_name=<EXPERIMENT_NAME> # optionally specify an experiment to assign this run to
+#   --experiment_name=<EXPERIMENT_NAME> # optionally specify an experiment to assign# Registering AWS Step Operator
 
-zenml step-operator connect <STEP_OPERATOR_NAME> --connector <CONNECTOR_NAME>
-zenml stack register <STACK_NAME> -s <STEP_OPERATOR_NAME> ... --set
+## Prerequisites
+
+Before registering an AWS Step Operator, ensure you have the following:
+
+- **AWS Account**: An active AWS account with necessary permissions.
+- **IAM Role**: Create a role in the IAM console that you want the jobs running in SageMaker to assume. This role should at least have the `AmazonS3FullAccess` and `AmazonSageMakerFullAccess` policies applied. Check [here](https://docs.aws.amazon.com/sagemaker/latest/dg/sagemaker-roles.html#sagemaker-roles-create-execution-role) for a guide on how to set up this role.
+- **AWS CLI**: Installed and configured with a profile that has the necessary permissions.
+- **Docker**: Installed and running.
+
+## Installing ZenML AWS Integration
+
+To use AWS services, you need to install the ZenML AWS integration:
+
+```shell
+zenml integration install aws
 ```
-{% endtab %}
 
-{% tab title="Implicit Authentication" %}
-If you don't connect your step operator to a service connector:
+## Registering the AWS Step Operator
 
-* If using a [local orchestrator](https://docs.zenml.io/stacks/orchestrators/local): ZenML will try to implicitly authenticate to AWS via the `default` profile in your local [AWS configuration file](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html). Make sure this profile has permissions to create and manage SageMaker runs (e.g. [the `AmazonSageMakerFullAccess` managed policy](https://docs.aws.amazon.com/sagemaker/latest/dg/security-iam-awsmanpol.html) permissions).
-* If using a remote orchestrator: the remote environment in which the orchestrator runs needs to be able to implicitly authenticate to AWS and assume the IAM role specified when registering the SageMaker step operator. This is only possible if the orchestrator is also running in AWS and uses a form of implicit workload authentication like the IAM role of an EC2 instance. If this is not the case, you will need to use a service connector.
+Use the ZenML CLI to register a step operator with the AWS flavor, such as SageMaker. You will need to specify the necessary AWS configurations like the IAM role and instance type.
 
 ```shell
 zenml step-operator register <NAME> \
@@ -64,12 +74,23 @@ zenml step-operator register <NAME> \
     --role=<SAGEMAKER_ROLE> \
     --instance_type=<INSTANCE_TYPE> \
 #   --experiment_name=<EXPERIMENT_NAME> # optionally specify an experiment to assign this run to
-
-zenml stack register <STACK_NAME> -s <STEP_OPERATOR_NAME> ... --set
-python run.py  # Authenticates with `default` profile in `~/.aws/config`
 ```
-{% endtab %}
-{% endtabs %}
+
+## Connecting to a Service Connector
+
+If you are using a service connector for authentication, connect the step operator to the service connector.
+
+```shell
+zenml step-operator connect <STEP_OPERATOR_NAME> --connector <CONNECTOR_NAME>
+```
+
+## Adding the Step Operator to a ZenML Stack
+
+Add the registered step operator to your ZenML stack.
+
+```shell
+zenml stack register <STACK_NAME> -s <STEP_OPERATOR_NAME> ... --set
+```
 
 Once you added the step operator to your active stack, you can use it to execute individual steps of your pipeline by specifying it in the `@step` decorator as follows:
 
@@ -82,6 +103,22 @@ def trainer(...) -> ...:
     """Train a model."""
     # This step will be executed in SageMaker.
 ```
+
+{% hint style="info" %}
+ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your steps in SageMaker. Check out [this page](https://docs.zenml.io/how-to/customize-docker-builds/) if you want to learn more about how ZenML builds these images and how you can customize them.
+{% endhint %}
+
+#### Additional configuration
+
+For additional configuration of the SageMaker step operator, you can pass `SagemakerStepOperatorSettings` when defining or running your pipeline. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-aws.html#zenml.integrations.aws) for a full list of available attributes and [this docs page](https://docs.zenml.io/how-to/pipeline-development/use-configuration-files/runtime-configuration) for more information on how to specify settings.
+
+For more information and a full list of configurable attributes of the SageMaker step operator, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-aws.html#zenml.integrations.aws) .
+
+#### Enabling CUDA for GPU-backed hardware
+
+Note that if you wish to use this step operator to run steps on a GPU, you will need to follow [the instructions on this page](https://docs.zenml.io/how-to/pipeline-development/training-with-gpus/) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
+
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
 
 {% hint style="info" %}
 ZenML will build a Docker image called `<CONTAINER_REGISTRY_URI>/zenml:<PIPELINE_NAME>` which includes your code and use it to run your steps in SageMaker. Check out [this page](https://docs.zenml.io/how-to/customize-docker-builds/) if you want to learn more about how ZenML builds these images and how you can customize them.
