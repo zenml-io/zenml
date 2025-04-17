@@ -241,7 +241,6 @@ class GitHubCodeRepository(BaseCodeRepository):
         # Normalize repository information
         host = self.config.host or "github.com"
         host = host.rstrip("/")
-
         owner = self.config.owner
         repo = self.config.repository
          

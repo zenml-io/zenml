@@ -178,23 +178,25 @@ class GitLabCodeRepository(BaseCodeRepository):
         """
         host = self.config.host or "gitlab.com"
         host = host.rstrip("/")
+        owner = self.config.owner
+        repo = self.config.repository
 
+        # Handle HTTPS URLs
         parsed_url = urlparse(url)
-        if (
-            parsed_url.scheme == "https"
-            and parsed_url.hostname == host
-            and parsed_url.path
-            == f"/{self.config.group}/{self.config.project}.git"
-        ):
-            return True
+        if parsed_url.scheme == "https" and parsed_url.hostname == host:
+            # Remove .git suffix if present for comparison
+            expected_path = f"/{owner}/{repo}"
+            actual_path = parsed_url.path.removesuffix('.git')
+            return actual_path == expected_path
 
+        # Handle SSH URLs
         ssh_regex = re.compile(
             r"^(?P<scheme_with_delimiter>ssh://)?"
             r"(?P<userinfo>git)"
             f"@{host}:"
             r"(?P<port>\d+)?"
             r"(?(scheme_with_delimiter)/|/?)"
-            f"{self.config.group}/{self.config.project}.git$",
+            f"{owner}/{repo}(\.git)?$",
         )
         if ssh_regex.fullmatch(url):
             return True
