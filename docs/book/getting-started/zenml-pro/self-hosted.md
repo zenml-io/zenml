@@ -782,6 +782,7 @@ If the TLS certificates used by the ZenML Pro services are signed by a custom Ce
 
       docker_settings = DockerSettings(
           parent_image=CUSTOM_BASE_IMAGE,
+          skip_build=True
       )
 
       @pipeline(settings={"docker": docker_settings})
