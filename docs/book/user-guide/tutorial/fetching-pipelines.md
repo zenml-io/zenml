@@ -260,7 +260,7 @@ ZenML automatically saves visualizations for many common data types. Using the `
 output.visualize()
 ```
 
-![output.visualize() Output](../../../.gitbook/assets/artifact_visualization_evidently.png)
+![output.visualize() Output](../../.gitbook/assets/artifact_visualization_evidently.png)
 
 {% hint style="info" %}
 If you're not in a Jupyter notebook, you can simply view the visualizations in the ZenML dashboard by running `zenml login --local` and clicking on the respective artifact in the pipeline run DAG instead. Check out the [artifact visualization page](https://docs.zenml.io/how-to/data-artifact-management/visualize-artifacts) to learn more about how to build and view artifact visualizations in ZenML!
