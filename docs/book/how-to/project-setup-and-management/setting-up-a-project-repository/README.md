@@ -53,7 +53,7 @@ Proper access management ensures that team members have the right permissions an
 - Establish processes for pipeline maintenance and server upgrades
 - Leverage [Teams in ZenML Pro](https://docs.zenml.io/pro/core-concepts/teams) to assign roles and permissions to a group of users, to mimic your real-world team roles.
 
-Explore access management strategies in the [Access Management and Roles guide](../collaborate-with-team/access-management.md).
+Explore access management strategies in the [Access Management and Roles guide](../../../user-guide/best-practices/access-management.md).
 
 ### Shared Components and Libraries
 
@@ -63,7 +63,7 @@ Leverage shared components and libraries to promote code reuse and standardizati
 - Shared private wheels for internal distribution
 - Handling authentication for specific libraries
 
-Find out more about sharing code in the [Shared Libraries and Logic for Teams guide](../collaborate-with-team/shared-components-for-teams.md).
+Find out more about sharing code in the [Shared Libraries and Logic for Teams guide](../../../user-guide/best-practices/shared-components-for-teams.md).
 
 ### Project Templates
 

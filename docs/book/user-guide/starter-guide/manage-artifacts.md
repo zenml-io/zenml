@@ -151,7 +151,7 @@ The tool offers two complementary views for analyzing your metadata:
 #### Table View
 The tabular view provides a structured comparison of metadata across runs:
 
-![Comparing metadata values across different pipeline runs in table view.](../../../book/.gitbook/assets/table-view.png)
+![Comparing metadata values across different pipeline runs in table view.](../../.gitbook/assets/table-view.png)
 
 This view automatically calculates changes between runs and allows you to:
 
@@ -162,7 +162,7 @@ This view automatically calculates changes between runs and allows you to:
 #### Parallel Coordinates View
 The parallel coordinates visualization helps identify relationships between different metadata parameters:
 
-![Comparing metadata values across different pipeline runs in parallel coordinates view.](../../../book/.gitbook/assets/coordinates-view.png)
+![Comparing metadata values across different pipeline runs in parallel coordinates view.](../../.gitbook/assets/coordinates-view.png)
 
 This view is particularly useful for:
 

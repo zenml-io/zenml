@@ -62,7 +62,7 @@ The fan-out pattern allows for parallel processing and better resource utilizati
 - Ensemble methods
 - Batch processing
 - Data validation across multiple sources
-- [Hyperparameter tuning](./hyper-parameter-tuning.md)
+- [Hyperparameter tuning](../../../user-guide/tutorial/hyper-parameter-tuning.md)
 
 Note that when implementing the fan-in step, you'll need to use the ZenML Client to query the results from previous parallel steps, as shown in the example above, and you can't pass in the result directly.
 

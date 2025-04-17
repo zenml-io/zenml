@@ -3,7 +3,7 @@ description: Why do we need to deploy ZenML?
 icon: rocket-launch
 ---
 
-# Deploying ZenML
+# Deploy
 
 ![ZenML OSS server deployment architecture](../../.gitbook/assets/oss_simple_deployment.png)
 
@@ -31,19 +31,11 @@ This documentation page will focus on the components required to deploy ZenML OS
 
 <summary>Details on the ZenML Python Client</summary>
 
-The ZenML client is a Python package that you can install on your machine. It\
-is used to interact with the ZenML server. You can install it using the `pip`\
-command as outlined [here](../installation.md).
+The ZenML client is a Python package that you can install on your machine. It is used to interact with the ZenML server. You can install it using the `pip` command as outlined [here](../installation.md).
 
-This Python package gives you [the `zenml` command-line interface](https://sdkdocs.zenml.io/latest/cli.html) which\
-you can use to interact with the ZenML server for common tasks like managing\
-stacks, setting up secrets, and so on. It also gives you the general framework that lets you[author and deploy pipelines](https://docs.zenml.io/user-guides/starter-guide) and so forth.
+This Python package gives you [the `zenml` command-line interface](https://sdkdocs.zenml.io/latest/cli.html) which you can use to interact with the ZenML server for common tasks like managing stacks, setting up secrets, and so on. It also gives you the general framework that lets you [author and deploy pipelines](https://docs.zenml.io/user-guides/starter-guide) and so forth.
 
-If you want to have more fine-grained control and access to the metadata that\
-ZenML manages, you can use the Python SDK to access the API. This allows you to\
-create your own custom automations and scripts and is the most common way teams\
-access the metadata stored in the ZenML server. The full documentation for the\
-Python SDK can be found [here](https://sdkdocs.zenml.io/latest/). The full HTTP[API documentation](https://docs.zenml.io/api-reference) can also be found by adding the`/doc` suffix to the URL when accessing your deployed ZenML server.
+If you want to have more fine-grained control and access to the metadata that ZenML manages, you can use the Python SDK to access the API. This allows you to create your own custom automations and scripts and is the most common way teams access the metadata stored in the ZenML server. The full documentation for the Python SDK can be found [here](https://sdkdocs.zenml.io/latest/). The full HTTP [API documentation](https://docs.zenml.io/api-reference) can also be found by adding the`/doc` suffix to the URL when accessing your deployed ZenML server.
 
 </details>
 
@@ -53,15 +45,9 @@ When you first get started with ZenML, you have the following architecture on yo
 
 ![ZenML default local configuration](../../.gitbook/assets/Scenario1.png)
 
-The SQLite database that you can see in this diagram is used to store\
-information about pipelines, pipeline runs, stacks, and other configurations.\
-This default setup allows you to get started and try out the core features but\
-you won't be able to use cloud-based components like serverless orchestrators\
-and so on.
+The SQLite database that you can see in this diagram is used to store information about pipelines, pipeline runs, stacks, and other configurations. This default setup allows you to get started and try out the core features, but you won't be able to use cloud-based components like serverless orchestrators and so on.
 
-Users can run the `zenml login --local` command to spin up a local ZenML OSS server to serve the\
-dashboard. For the local OSS server option, the `zenml login --local` command implicitly\
-connects the client to the server. The diagram for this looks as follows:
+Users can run the `zenml login --local` command to spin up a local ZenML OSS server to serve the dashboard. For the local OSS server option, the `zenml login --local` command implicitly connects the client to the server. The diagram for this looks as follows:
 
 ![ZenML with a local ZenML OSS Server](../../.gitbook/assets/Scenario2.png)
 
@@ -69,11 +55,7 @@ In order to move into production, the ZenML server needs to be deployed somewher
 
 ![ZenML centrally deployed for multiple users](../../.gitbook/assets/Scenario3.2.png)
 
-You connect to your deployed ZenML server using the `zenml login` command and\
-then you have the full benefits and power of ZenML. You can use all the\
-cloud-based components, your metadata will be stored and synchronized across all\
-the users of the server and you can leverage features like centralized logs\
-storage and pipeline artifact visualization.
+You connect to your deployed ZenML server using the `zenml login` command, and then you have the full benefits and power of ZenML. You can use all the cloud-based components, your metadata will be stored and synchronized across all the users of the server, and you can leverage features like centralized logs storage and pipeline artifact visualization.
 
 ## How to deploy ZenML
 
@@ -82,7 +64,7 @@ Deploying the ZenML Server is a crucial step towards transitioning to a producti
 Currently, there are two main options to access a deployed ZenML server:
 
 1. **Managed deployment:** With [ZenML Pro](https://docs.zenml.io/pro) offering you can utilize a control plane to create ZenML servers, also known as [workspaces](https://docs.zenml.io/pro/core-concepts/workspaces). These workspaces are managed and maintained by ZenML's dedicated team, alleviating the burden of server management from your end. Importantly, your data remains securely within your stack, and ZenML's role is primarily to handle tracking of metadata and server maintenance.
-2. **Self-hosted Deployment:** Alternatively, you have the ability to deploy ZenML on your own self-hosted environment. This can be achieved through various methods, including using [Docker](deploy-with-docker.md), [Helm](deploy-with-helm.md), or [HuggingFace Spaces](deploy-using-huggingface-spaces.md). We also offer our Pro version for self-hosted deployments, so you can use our full paid feature-set while staying fully in control with an air-gapped solution on your infrastructure.
+2. **Self-hosted Deployment:** Alternatively, you have the ability to deploy ZenML on your own self-hosted environment. This can be achieved through various methods, including using [Docker](deploy-with-docker.md), [Helm](deploy-with-helm.md), or [HuggingFace Spaces](deploy-using-huggingface-spaces.md). We also offer our Pro version for self-hosted deployments, so you can use our full paid feature set while staying fully in control with an air-gapped solution on your infrastructure.
 
 Both options offer distinct advantages, allowing you to choose the deployment approach that best aligns with your organization's needs and infrastructure preferences. Whichever path you select, ZenML facilitates a seamless and efficient way to take advantage of the ZenML Server and enhance your machine learning workflows for production-level success.
 

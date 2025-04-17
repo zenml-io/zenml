@@ -11,7 +11,7 @@ high-dimensional space where similar items are closer together. By generating
 embeddings for your data, you can enhance the retrieval capabilities of your RAG
 pipeline and provide more accurate and relevant responses to user queries.
 
-![](/docs/book/.gitbook/assets/rag-stage-2.png)
+![](../../../.gitbook/assets/rag-stage-2.png)
 
 {% hint style="info" %} Embeddings are vector representations of data that capture the semantic
 meaning and context of the data in a high-dimensional space. They are generated
@@ -178,8 +178,8 @@ def umap_visualization(embeddings, parent_sections):
     plt.show()
 ```
 
-![UMAP visualization of the ZenML documentation chunks as embeddings](/docs/book/.gitbook/assets/umap.png)
-![t-SNE visualization of the ZenML documentation chunks as embeddings](/docs/book/.gitbook/assets/tsne.png)
+![UMAP visualization of the ZenML documentation chunks as embeddings](../../../.gitbook/assets/umap.png)
+![t-SNE visualization of the ZenML documentation chunks as embeddings](../../../.gitbook/assets/tsne.png)
 
 In this stage, we have utilized the 'parent directory', which we had previously
 stored in the vector store as an additional attribute, as a means to color the

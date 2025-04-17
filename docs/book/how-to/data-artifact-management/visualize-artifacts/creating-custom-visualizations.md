@@ -42,7 +42,7 @@ def my_step() -> CSVString:
 
 This would create the following visualization in the dashboard:
 
-![CSV Visualization Example](../../.gitbook/assets/artifact_visualization_csv.png)
+![CSV Visualization Example](../../../.gitbook/assets/artifact_visualization_csv.png)
 
 Another example is visualizing a matplotlib plot by embedding the image in an HTML string:
 
