@@ -14,6 +14,7 @@
   * [Logout](oss-api-docs/v1/logout.md)
   * [Device authorization](oss-api-docs/v1/device-authorization.md)
   * [Api token](oss-api-docs/v1/api-token.md)
+  * [API Token Management](oss-api-docs/v1/api-token-management.md)
   * [Code repositories](oss-api-docs/v1/code-repositories.md)
   * [Logs](oss-api-docs/v1/logs.md)
   * [Models](oss-api-docs/v1/models/README.md)
