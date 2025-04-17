@@ -190,7 +190,7 @@ class StepRunner:
 
             step_failed = False
             environment = env_utils.gather_step_environment(
-                step_run=step_run, stack=self._stack
+                step_config=step_run.config, stack=self._stack
             )
             with env_utils.temporary_environment(environment):
                 try:

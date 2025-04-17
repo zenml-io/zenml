@@ -21,7 +21,7 @@ from uuid import UUID
 from sqlalchemy import UniqueConstraint
 from sqlmodel import Field, Relationship
 
-from zenml.enums import StackComponentType
+from zenml.enums import SecretResourceTypes, StackComponentType
 from zenml.models import (
     ComponentRequest,
     ComponentResponse,
@@ -44,6 +44,7 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas.logs_schemas import LogsSchema
     from zenml.zen_stores.schemas.run_metadata_schemas import RunMetadataSchema
     from zenml.zen_stores.schemas.schedule_schema import ScheduleSchema
+    from zenml.zen_stores.schemas.secret_schemas import SecretSchema
     from zenml.zen_stores.schemas.stack_schemas import StackSchema
 
 
@@ -111,6 +112,15 @@ class StackComponentSchema(NamedSchema, table=True):
     )
 
     connector_resource_id: Optional[str]
+    secrets: List["SecretSchema"] = Relationship(
+        sa_relationship_kwargs=dict(
+            primaryjoin=f"and_(foreign(SecretResourceSchema.resource_type)=='{SecretResourceTypes.STACK_COMPONENT.value}', foreign(SecretResourceSchema.resource_id)==StackComponentSchema.id)",
+            secondary="secret_resource",
+            secondaryjoin="SecretSchema.id == foreign(SecretResourceSchema.secret_id)",
+            order_by="SecretSchema.name",
+            overlaps="secrets",
+        ),
+    )
 
     @classmethod
     def from_request(
@@ -229,6 +239,7 @@ class StackComponentSchema(NamedSchema, table=True):
                 connector=self.connector.to_model()
                 if self.connector
                 else None,
+                secrets=[secret.id for secret in self.secrets],
             )
         resources = None
         if include_resources:

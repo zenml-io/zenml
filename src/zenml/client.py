@@ -1183,6 +1183,7 @@ class Client(metaclass=ClientMetaClass):
         components: Mapping[StackComponentType, Union[str, UUID]],
         stack_spec_file: Optional[str] = None,
         labels: Optional[Dict[str, Any]] = None,
+        secrets: Optional[List[Union[UUID, str]]] = None,
     ) -> StackResponse:
         """Registers a stack and its components.
 
@@ -1191,6 +1192,7 @@ class Client(metaclass=ClientMetaClass):
             components: dictionary which maps component types to component names
             stack_spec_file: path to the stack spec file
             labels: The labels of the stack.
+            secrets: The secrets of the stack.
 
         Returns:
             The model of the registered stack.
@@ -1209,11 +1211,19 @@ class Client(metaclass=ClientMetaClass):
             )
             stack_components[c_type] = [component.id]
 
+        secret_ids = []
+        for secret in secrets or []:
+            if isinstance(secret, UUID):
+                secret_ids.append(secret)
+            else:
+                secret_ids.append(self.get_secret(secret).id)
+
         stack = StackRequest(
             name=name,
             components=stack_components,
             stack_spec_path=stack_spec_file,
             labels=labels,
+            secrets=secret_ids,
         )
 
         self._validate_stack_configuration(stack=stack)

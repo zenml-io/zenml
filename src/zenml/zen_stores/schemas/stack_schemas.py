@@ -21,6 +21,7 @@ from uuid import UUID
 from sqlalchemy import UniqueConstraint
 from sqlmodel import Field, Relationship, SQLModel
 
+from zenml.enums import SecretResourceTypes
 from zenml.models import (
     StackRequest,
     StackResponse,
@@ -43,6 +44,7 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas.pipeline_deployment_schemas import (
         PipelineDeploymentSchema,
     )
+    from zenml.zen_stores.schemas.secret_schemas import SecretSchema
 
 
 class StackCompositionSchema(SQLModel, table=True):
@@ -106,6 +108,15 @@ class StackSchema(NamedSchema, table=True):
     builds: List["PipelineBuildSchema"] = Relationship(back_populates="stack")
     deployments: List["PipelineDeploymentSchema"] = Relationship(
         back_populates="stack",
+    )
+    secrets: List["SecretSchema"] = Relationship(
+        sa_relationship_kwargs=dict(
+            primaryjoin=f"and_(foreign(SecretResourceSchema.resource_type)=='{SecretResourceTypes.STACK.value}', foreign(SecretResourceSchema.resource_id)==StackSchema.id)",
+            secondary="secret_resource",
+            secondaryjoin="SecretSchema.id == foreign(SecretResourceSchema.secret_id)",
+            order_by="SecretSchema.name",
+            overlaps="secrets",
+        ),
     )
 
     @classmethod
@@ -206,6 +217,7 @@ class StackSchema(NamedSchema, table=True):
                 else None,
                 description=self.description,
                 environment=environment or {},
+                secrets=[secret.id for secret in self.secrets],
             )
 
         return StackResponse(

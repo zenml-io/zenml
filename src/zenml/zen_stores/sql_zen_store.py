@@ -124,6 +124,7 @@ from zenml.enums import (
     MetadataResourceTypes,
     ModelStages,
     OnboardingStep,
+    SecretResourceTypes,
     SecretsStoreType,
     StackComponentType,
     StackDeploymentProvider,
@@ -345,6 +346,7 @@ from zenml.zen_stores.schemas import (
     RunMetadataSchema,
     RunTemplateSchema,
     ScheduleSchema,
+    SecretResourceSchema,
     SecretSchema,
     ServerSettingsSchema,
     ServiceConnectorSchema,
@@ -3438,6 +3440,22 @@ class SqlZenStore(BaseZenStore):
             new_component = StackComponentSchema.from_request(
                 request=component, service_connector=service_connector
             )
+
+            for secret_id in component.secrets or []:
+                secret = self._get_reference_schema_by_id(
+                    resource=new_component,
+                    reference_schema=SecretSchema,
+                    reference_id=secret_id,
+                    session=session,
+                )
+
+                secret_resource = SecretResourceSchema(
+                    resource_id=new_component.id,
+                    resource_type=SecretResourceTypes.STACK_COMPONENT.value,
+                    secret_id=secret.id,
+                )
+
+                session.add(secret_resource)
 
             session.add(new_component)
             session.commit()
@@ -7627,6 +7645,22 @@ class SqlZenStore(BaseZenStore):
                     request=stack,
                     components=defined_components,
                 )
+
+                for secret_id in stack.secrets:
+                    secret = self._get_reference_schema_by_id(
+                        resource=new_stack_schema,
+                        reference_schema=SecretSchema,
+                        reference_id=secret_id,
+                        session=session,
+                    )
+
+                    secret_resource = SecretResourceSchema(
+                        resource_id=new_stack_schema.id,
+                        resource_type=SecretResourceTypes.STACK.value,
+                        secret_id=secret.id,
+                    )
+
+                    session.add(secret_resource)
 
                 session.add(new_stack_schema)
                 session.commit()

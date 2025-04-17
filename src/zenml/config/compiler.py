@@ -38,8 +38,8 @@ from zenml.config.step_configurations import (
     StepSpec,
 )
 from zenml.constants import (
+    ENV_ZENML_ACTIVE_PROJECT_ID,
     ENV_ZENML_ACTIVE_STACK_ID,
-    ENV_ZENML_ACTIVE_WORKSPACE_ID,
     ENV_ZENML_STORE_PREFIX,
 )
 from zenml.environment import get_run_environment_dict
@@ -707,7 +707,7 @@ def finalize_environment_variables(
 
     for key, value in environment.items():
         if key.upper().startswith(ENV_ZENML_STORE_PREFIX) or key.upper() in [
-            ENV_ZENML_ACTIVE_WORKSPACE_ID,
+            ENV_ZENML_ACTIVE_PROJECT_ID,
             ENV_ZENML_ACTIVE_STACK_ID,
         ]:
             logger.warning(
