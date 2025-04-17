@@ -80,6 +80,24 @@ If you want to create your own custom flavor for a step operator, you can follow
 1. Create a class that inherits from the `BaseStepOperator` class and implement the abstract `launch` method. This method has two main responsibilities:
    * Preparing a suitable execution environment (e.g. a Docker image): The general environment is highly dependent on the concrete step operator implementation, but for ZenML to be able to run the step it requires you to install some `pip` dependencies. The list of requirements needed to successfully execute the step can be found via the Docker settings `info.pipeline.docker_settings` passed to the `launch()` method. Additionally, you'll have to make sure that all the source code of your ZenML step and pipeline are available within this execution environment.
    * Running the entrypoint command: Actually running a single step of a pipeline requires knowledge of many ZenML internals and is implemented in the `zenml.step_operators.step_operator_entrypoint_configuration` module. As long as your environment was set up correctly (see the previous bullet point), you can run the step using the command provided via the `entrypoint_command` argument of the `launch()` method.
+
+### Using Step Operators in Steps
+
+- **Step Operator Parameter**: The `step_operator` parameter in the `@step` decorator allows you to specify the step operator for executing the step. This enables the step to be executed in the environment provided by the step operator, such as AWS SageMaker.
+
+- **Example**:
+  ```python
+  from zenml import step
+
+  @step(step_operator="my_sagemaker_operator")
+  def my_training_step(...) -> ...:
+      # Step logic here
+      pass
+  ```
+  In this example, `my_sagemaker_operator` is the name of the step operator registered for AWS SageMaker.
+
+- **Running the Pipeline**: Include the step in your pipeline and execute it. The specified step operator will handle the execution of the step in the designated environment.
+
 2. If your step operator allows the specification of per-step resources, make sure to handle the resources defined on the step (`info.config.resource_settings`) that was passed to the `launch()` method.
 3. If you need to provide any configuration, create a class that inherits from the `BaseStepOperatorConfig` class adds your configuration parameters.
 4. Bring both the implementation and the configuration together by inheriting from the `BaseStepOperatorFlavor` class. Make sure that you give a `name` to the flavor through its abstract property.
