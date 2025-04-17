@@ -5,175 +5,175 @@ structure:
   summary: toc.md
 
 redirects:
-  how-to/customize-docker-builds/use-code-repositories-to-speed-up-docker-build-times: introduction.md  # Fixed target
-  reference/migration-guide: introduction.md  # Fixed target
-  reference/migration-guide/migration-zero-twenty: introduction.md  # Fixed target
-  reference/migration-guide/migration-zero-thirty: introduction.md  # Fixed target
-  reference/migration-guide/migration-zero-forty: introduction.md  # Fixed target
-  reference/migration-guide/migration-zero-sixty: introduction.md  # Fixed target
-  getting-started/deploying-zenml/manage-the-deployed-services/upgrade-the-version-of-the-zenml-server: introduction.md  # Fixed target
-  getting-started/deploying-zenml/manage-the-deployed-services/troubleshoot-your-deployed-server: introduction.md  # Fixed target
-  how-to/stack-deployment/implement-a-custom-integration: introduction.md  # Fixed target
-  how-to/setting-up-a-project-repository/best-practices: introduction.md  # Fixed target
+  how-to/customize-docker-builds/use-code-repositories-to-speed-up-docker-build-times: how-to/code-repositories/code-repositories.md
+  reference/migration-guide: how-to/manage-zenml-server/migration-guide/migration-guide.md
+  reference/migration-guide/migration-zero-twenty: how-to/manage-zenml-server/migration-guide/migration-zero-twenty.md
+  reference/migration-guide/migration-zero-thirty: how-to/manage-zenml-server/migration-guide/migration-zero-thirty.md
+  reference/migration-guide/migration-zero-forty: how-to/manage-zenml-server/migration-guide/migration-zero-forty.md
+  reference/migration-guide/migration-zero-sixty: how-to/manage-zenml-server/migration-guide/migration-zero-sixty.md
+  getting-started/deploying-zenml/manage-the-deployed-services/upgrade-the-version-of-the-zenml-server: how-to/manage-zenml-server/upgrade-zenml-server.md
+  getting-started/deploying-zenml/manage-the-deployed-services/troubleshoot-your-deployed-server: how-to/manage-zenml-server/troubleshoot-your-deployed-server.md
+  how-to/stack-deployment/implement-a-custom-integration: how-to/stack-components/stack_components.md
+  how-to/setting-up-a-project-repository/best-practices: how-to/code-repositories/code-repositories.md
   getting-started/zenml-pro/system-architectures: getting-started/system-architectures.md
-  how-to/build-pipelines/name-your-pipeline-and-runs: introduction.md  # Fixed target
-  how-to/model-management-metrics/track-metrics-metadata/attach-metadata-to-steps: introduction.md  # Fixed target
-  getting-started/zenml-pro/user-management: introduction.md  # Fixed target
-  getting-started/zenml-pro/zenml-cloud: introduction.md  # Fixed target
-  how-to/setting-up-a-project-repository/: introduction.md  # Fixed target
-  how-to/setting-up-a-project-repository/set-up-repository: introduction.md  # Fixed target
-  how-to/setting-up-a-project-repository/connect-your-git-repository: introduction.md  # Fixed target
-  how-to/setting-up-a-project-repository/using-project-templates: introduction.md  # Fixed target
-  how-to/setting-up-a-project-repository/create-your-own-template: introduction.md  # Fixed target
-  how-to/setting-up-a-project-repository/shared-components-for-teams: introduction.md  # Fixed target
-  how-to/setting-up-a-project-repository/stacks-pipelines-models: introduction.md  # Fixed target
-  how-to/setting-up-a-project-repository/access-management: introduction.md  # Fixed target
-  how-to/develop-locally/: introduction.md  # Fixed target
-  how-to/develop-locally/local-prod-pipeline-variants: introduction.md  # Fixed target
-  how-to/develop-locally/keep-your-dashboard-server-clean: introduction.md  # Fixed target
-  how-to/connecting-to-zenml/: introduction.md  # Fixed target
-  how-to/connecting-to-zenml/connect-in-with-your-user-interactive: introduction.md  # Fixed target
-  how-to/connecting-to-zenml/connect-with-a-service-account: introduction.md  # Fixed target
-  how-to/build-pipelines/: introduction.md  # Fixed target
-  how-to/build-pipelines/use-pipeline-step-parameters: introduction.md  # Fixed target
-  how-to/build-pipelines/configuring-a-pipeline-at-runtime: introduction.md  # Fixed target
-  how-to/build-pipelines/reference-environment-variables-in-configurations: introduction.md  # Fixed target
-  how-to/build-pipelines/step-output-typing-and-annotation: introduction.md  # Fixed target
-  how-to/build-pipelines/control-caching-behavior: introduction.md  # Fixed target
-  how-to/build-pipelines/schedule-a-pipeline: introduction.md  # Fixed target
-  how-to/build-pipelines/delete-a-pipeline: introduction.md  # Fixed target
-  how-to/build-pipelines/compose-pipelines: introduction.md  # Fixed target
-  how-to/build-pipelines/dynamically-assign-artifact-names: introduction.md  # Fixed target
-  how-to/pipeline-development/build-pipelines/dynamically-assign-artifact-names: introduction.md  # Fixed target
-  how-to/build-pipelines/retry-steps: introduction.md  # Fixed target
-  how-to/build-pipelines/run-pipelines-asynchronously: introduction.md  # Fixed target
-  how-to/build-pipelines/control-execution-order-of-steps: introduction.md  # Fixed target
-  how-to/build-pipelines/using-a-custom-step-invocation-id: introduction.md  # Fixed target
-  how-to/build-pipelines/tag-your-pipeline-runs: introduction.md  # Fixed target
-  how-to/build-pipelines/use-failure-success-hooks: introduction.md  # Fixed target
-  how-to/build-pipelines/hyper-parameter-tuning: introduction.md  # Fixed target
-  how-to/build-pipelines/access-secrets-in-a-step: introduction.md  # Fixed target
-  how-to/build-pipelines/run-an-individual-step: introduction.md  # Fixed target
-  how-to/build-pipelines/fetching-pipelines: introduction.md  # Fixed target
-  how-to/build-pipelines/get-past-pipeline-step-runs: introduction.md  # Fixed target
-  how-to/trigger-pipelines/: introduction.md  # Fixed target
-  how-to/trigger-pipelines/use-templates-python: introduction.md  # Fixed target
-  how-to/trigger-pipelines/use-templates-dashboard: introduction.md  # Fixed target
-  how-to/trigger-pipelines/use-templates-rest-api: introduction.md  # Fixed target
-  how-to/use-configuration-files/: introduction.md  # Fixed target
-  how-to/use-configuration-files/how-to-use-config: introduction.md  # Fixed target
-  how-to/use-configuration-files/what-can-be-configured: introduction.md  # Fixed target
-  how-to/use-configuration-files/runtime-configuration: introduction.md  # Fixed target
-  how-to/use-configuration-files/configuration-hierarchy: introduction.md  # Fixed target
-  how-to/use-configuration-files/retrieve-used-configuration-of-a-run: introduction.md  # Fixed target
-  how-to/use-configuration-files/autogenerate-a-template-yaml-file: introduction.md  # Fixed target
-  how-to/handle-data-artifacts/: introduction.md  # Fixed target
-  how-to/handle-data-artifacts/artifact-versioning: introduction.md  # Fixed target
-  how-to/handle-data-artifacts/return-multiple-outputs-from-a-step: introduction.md  # Fixed target
-  how-to/handle-data-artifacts/delete-an-artifact: introduction.md  # Fixed target
-  how-to/handle-data-artifacts/tagging: introduction.md  # Fixed target
-  how-to/handle-data-artifacts/get-arbitrary-artifacts-in-a-step: introduction.md  # Fixed target
-  how-to/handle-data-artifacts/handle-custom-data-types: introduction.md  # Fixed target
-  how-to/handle-data-artifacts/load-artifacts-into-memory: introduction.md  # Fixed target
-  how-to/handle-data-artifacts/datasets: introduction.md  # Fixed target
-  how-to/handle-data-artifacts/manage-big-data: introduction.md  # Fixed target
-  how-to/handle-data-artifacts/unmaterialized-artifacts: introduction.md  # Fixed target
-  how-to/handle-data-artifacts/passing-artifacts-between-pipelines: introduction.md  # Fixed target
-  how-to/handle-data-artifacts/registering-existing-data: introduction.md  # Fixed target
-  how-to/visualize-artifacts/: introduction.md  # Fixed target
-  how-to/visualize-artifacts/types-of-visualizations: introduction.md  # Fixed target
-  how-to/visualize-artifacts/creating-custom-visualizations: introduction.md  # Fixed target
-  how-to/visualize-artifacts/visualizations-in-dashboard: introduction.md  # Fixed target
-  how-to/visualize-artifacts/disabling-visualizations: introduction.md  # Fixed target
-  how-to/use-the-model-control-plane/: introduction.md  # Fixed target
-  how-to/use-the-model-control-plane/register-a-model: introduction.md  # Fixed target
-  how-to/use-the-model-control-plane/delete-a-model: introduction.md  # Fixed target
-  how-to/use-the-model-control-plane/associate-a-pipeline-with-a-model: introduction.md  # Fixed target
-  how-to/use-the-model-control-plane/connecting-artifacts-via-a-model: introduction.md  # Fixed target
-  how-to/use-the-model-control-plane/model-versions: introduction.md  # Fixed target
-  how-to/use-the-model-control-plane/load-a-model-in-code: introduction.md  # Fixed target
-  how-to/use-the-model-control-plane/promote-a-model: introduction.md  # Fixed target
-  how-to/use-the-model-control-plane/linking-model-binaries-data-to-models: introduction.md  # Fixed target
-  how-to/use-the-model-control-plane/load-artifacts-from-model: introduction.md  # Fixed target
-  how-to/track-metrics-metadata/: introduction.md  # Fixed target
-  how-to/track-metrics-metadata/attach-metadata-to-a-model: introduction.md  # Fixed target
-  how-to/track-metrics-metadata/attach-metadata-to-an-artifact: introduction.md  # Fixed target
-  how-to/track-metrics-metadata/attach-metadata-to-steps: introduction.md  # Fixed target
-  how-to/track-metrics-metadata/grouping-metadata: introduction.md  # Fixed target
-  how-to/track-metrics-metadata/logging-metadata: introduction.md  # Fixed target
-  how-to/track-metrics-metadata/fetch-metadata-within-steps: introduction.md  # Fixed target
-  how-to/track-metrics-metadata/fetch-metadata-within-pipeline: introduction.md  # Fixed target
-  how-to/stack-deployment/: introduction.md  # Fixed target
-  how-to/stack-deployment/deploy-a-cloud-stack: introduction.md  # Fixed target
-  how-to/stack-deployment/deploy-a-cloud-stack-with-terraform: introduction.md  # Fixed target
-  how-to/stack-deployment/register-a-cloud-stack: introduction.md  # Fixed target
-  how-to/stack-deployment/reference-secrets-in-stack-configuration: introduction.md  # Fixed target
-  how-to/stack-deployment/implement-a-custom-stack-component: introduction.md  # Fixed target
-  how-to/customize-docker-builds/: introduction.md  # Fixed target
-  how-to/customize-docker-builds/docker-settings-on-a-pipeline: introduction.md  # Fixed target
-  how-to/customize-docker-builds/docker-settings-on-a-step: introduction.md  # Fixed target
-  how-to/customize-docker-builds/use-a-prebuilt-image: introduction.md  # Fixed target
-  how-to/customize-docker-builds/specify-pip-dependencies-and-apt-packages: introduction.md  # Fixed target
-  how-to/customize-docker-builds/how-to-use-a-private-pypi-repository: introduction.md  # Fixed target
-  how-to/customize-docker-builds/use-your-own-docker-files: introduction.md  # Fixed target
-  how-to/customize-docker-builds/which-files-are-built-into-the-image: introduction.md  # Fixed target
-  how-to/customize-docker-builds/how-to-reuse-builds: introduction.md  # Fixed target
-  how-to/customize-docker-builds/define-where-an-image-is-built: introduction.md  # Fixed target
-  how-to/auth-management/: introduction.md  # Fixed target
-  how-to/auth-management/service-connectors-guide: introduction.md  # Fixed target
-  how-to/auth-management/best-security-practices: introduction.md  # Fixed target
-  how-to/auth-management/docker-service-connector: introduction.md  # Fixed target
-  how-to/auth-management/kubernetes-service-connector: introduction.md  # Fixed target
-  how-to/auth-management/aws-service-connector: introduction.md  # Fixed target
-  how-to/auth-management/gcp-service-connector: introduction.md  # Fixed target
-  how-to/auth-management/azure-service-connector: introduction.md  # Fixed target
-  how-to/auth-management/hyperai-service-connector: introduction.md  # Fixed target
-  how-to/configure-python-environments/: introduction.md  # Fixed target
-  how-to/configure-python-environments/handling-dependencies: introduction.md  # Fixed target
-  how-to/configure-python-environments/configure-the-server-environment: introduction.md  # Fixed target
-  how-to/training-with-gpus/training-with-gpus: introduction.md  # Fixed target
-  how-to/training-with-gpus/accelerate-distributed-training: introduction.md  # Fixed target
-  how-to/run-remote-steps-and-pipelines-from-notebooks/: introduction.md  # Fixed target
-  how-to/run-remote-steps-and-pipelines-from-notebooks/limitations-of-defining-steps-in-notebook-cells: introduction.md  # Fixed target
-  how-to/run-remote-steps-and-pipelines-from-notebooks/run-a-single-step-from-a-notebook: introduction.md  # Fixed target
-  how-to/manage-the-zenml-server/: introduction.md  # Fixed target
-  how-to/manage-the-zenml-server/best-practices-upgrading-zenml: introduction.md  # Fixed target
-  how-to/manage-the-zenml-server/upgrade-zenml-server: introduction.md  # Fixed target
-  how-to/manage-the-zenml-server/using-zenml-server-in-prod: introduction.md  # Fixed target
-  how-to/manage-the-zenml-server/troubleshoot-your-deployed-server: introduction.md  # Fixed target
-  how-to/manage-the-zenml-server/migration-guide/migration-guide: introduction.md  # Fixed target
-  how-to/manage-the-zenml-server/migration-guide/migration-zero-twenty: introduction.md  # Fixed target
-  how-to/manage-the-zenml-server/migration-guide/migration-zero-thirty: introduction.md  # Fixed target
-  how-to/manage-the-zenml-server/migration-guide/migration-zero-forty: introduction.md  # Fixed target
-  how-to/manage-the-zenml-server/migration-guide/migration-zero-sixty: introduction.md  # Fixed target
-  how-to/control-logging/: introduction.md  # Fixed target
-  how-to/control-logging/view-logs-on-the-dasbhoard: introduction.md  # Fixed target
-  how-to/control-logging/enable-or-disable-logs-storing: introduction.md  # Fixed target
-  how-to/control-logging/set-logging-verbosity: introduction.md  # Fixed target
-  how-to/control-logging/disable-rich-traceback: introduction.md  # Fixed target
-  how-to/control-logging/disable-colorful-logging: introduction.md  # Fixed target
-  docs/getting-started/zenml-pro/core-concepts/tenants: introduction.md  # Fixed target
+  how-to/build-pipelines/name-your-pipeline-and-runs: how-to/steps-pipelines/steps_and_pipelines.md
+  how-to/model-management-metrics/track-metrics-metadata/attach-metadata-to-steps: how-to/metadata/metadata.md
+  getting-started/zenml-pro/user-management: getting-started/core-concepts.md
+  getting-started/zenml-pro/zenml-cloud: getting-started/system-architectures.md
+  how-to/setting-up-a-project-repository/: how-to/code-repositories/code-repositories.md
+  how-to/setting-up-a-project-repository/set-up-repository: how-to/code-repositories/code-repositories.md
+  how-to/setting-up-a-project-repository/connect-your-git-repository: how-to/code-repositories/code-repositories.md
+  how-to/setting-up-a-project-repository/using-project-templates: how-to/templates/templates.md
+  how-to/setting-up-a-project-repository/create-your-own-template: how-to/templates/templates.md
+  how-to/setting-up-a-project-repository/shared-components-for-teams: how-to/stack-components/stack_components.md
+  how-to/setting-up-a-project-repository/stacks-pipelines-models: how-to/steps-pipelines/steps_and_pipelines.md
+  how-to/setting-up-a-project-repository/access-management: how-to/tags/tags.md
+  how-to/develop-locally/: how-to/steps-pipelines/steps_and_pipelines.md
+  how-to/develop-locally/local-prod-pipeline-variants: how-to/steps-pipelines/steps_and_pipelines.md
+  how-to/develop-locally/keep-your-dashboard-server-clean: how-to/steps-pipelines/logging.md
+  how-to/connecting-to-zenml/: how-to/manage-zenml-server/connecting-to-zenml/README.md
+  how-to/connecting-to-zenml/connect-in-with-your-user-interactive: how-to/manage-zenml-server/connecting-to-zenml/connect-in-with-your-user-interactive.md
+  how-to/connecting-to-zenml/connect-with-a-service-account: how-to/manage-zenml-server/connecting-to-zenml/connect-with-a-service-account.md
+  how-to/build-pipelines/: how-to/steps-pipelines/steps_and_pipelines.md
+  how-to/build-pipelines/use-pipeline-step-parameters: how-to/steps-pipelines/configuration.md
+  how-to/build-pipelines/configuring-a-pipeline-at-runtime: how-to/steps-pipelines/configuration.md
+  how-to/build-pipelines/reference-environment-variables-in-configurations: how-to/steps-pipelines/configuration.md
+  how-to/build-pipelines/step-output-typing-and-annotation: how-to/steps-pipelines/steps_and_pipelines.md
+  how-to/build-pipelines/control-caching-behavior: how-to/steps-pipelines/advanced_features.md
+  how-to/build-pipelines/schedule-a-pipeline: how-to/steps-pipelines/scheduling.md
+  how-to/build-pipelines/delete-a-pipeline: how-to/steps-pipelines/steps_and_pipelines.md
+  how-to/build-pipelines/compose-pipelines: how-to/steps-pipelines/advanced_features.md
+  how-to/build-pipelines/dynamically-assign-artifact-names: how-to/artifacts/artifacts.md
+  how-to/pipeline-development/build-pipelines/dynamically-assign-artifact-names: how-to/artifacts/artifacts.md
+  how-to/build-pipelines/retry-steps: how-to/steps-pipelines/advanced_features.md
+  how-to/build-pipelines/run-pipelines-asynchronously: how-to/steps-pipelines/steps_and_pipelines.md
+  how-to/build-pipelines/control-execution-order-of-steps: how-to/steps-pipelines/steps_and_pipelines.md
+  how-to/build-pipelines/using-a-custom-step-invocation-id: how-to/steps-pipelines/steps_and_pipelines.md
+  how-to/build-pipelines/tag-your-pipeline-runs: how-to/tags/tags.md
+  how-to/build-pipelines/use-failure-success-hooks: how-to/steps-pipelines/advanced_features.md
+  how-to/build-pipelines/hyper-parameter-tuning: how-to/steps-pipelines/advanced_features.md
+  how-to/build-pipelines/access-secrets-in-a-step: how-to/secrets/secrets.md
+  how-to/build-pipelines/run-an-individual-step: how-to/steps-pipelines/steps_and_pipelines.md
+  how-to/build-pipelines/fetching-pipelines: how-to/steps-pipelines/steps_and_pipelines.md
+  how-to/build-pipelines/get-past-pipeline-step-runs: how-to/steps-pipelines/steps_and_pipelines.md
+  how-to/trigger-pipelines/: how-to/templates/templates.md
+  how-to/trigger-pipelines/use-templates-python: how-to/templates/templates.md
+  how-to/trigger-pipelines/use-templates-dashboard: how-to/templates/templates.md
+  how-to/trigger-pipelines/use-templates-rest-api: how-to/templates/templates.md
+  how-to/use-configuration-files/: how-to/steps-pipelines/yaml_configuration.md
+  how-to/use-configuration-files/how-to-use-config: how-to/steps-pipelines/yaml_configuration.md
+  how-to/use-configuration-files/what-can-be-configured: how-to/steps-pipelines/yaml_configuration.md
+  how-to/use-configuration-files/runtime-configuration: how-to/steps-pipelines/yaml_configuration.md
+  how-to/use-configuration-files/configuration-hierarchy: how-to/steps-pipelines/yaml_configuration.md
+  how-to/use-configuration-files/retrieve-used-configuration-of-a-run: how-to/steps-pipelines/yaml_configuration.md
+  how-to/use-configuration-files/autogenerate-a-template-yaml-file: how-to/steps-pipelines/yaml_configuration.md
+  how-to/handle-data-artifacts/: how-to/artifacts/artifacts.md
+  how-to/handle-data-artifacts/artifact-versioning: how-to/artifacts/artifacts.md
+  how-to/handle-data-artifacts/return-multiple-outputs-from-a-step: how-to/artifacts/artifacts.md
+  how-to/handle-data-artifacts/delete-an-artifact: how-to/artifacts/artifacts.md
+  how-to/handle-data-artifacts/tagging: how-to/tags/tags.md
+  how-to/handle-data-artifacts/get-arbitrary-artifacts-in-a-step: how-to/artifacts/artifacts.md
+  how-to/handle-data-artifacts/handle-custom-data-types: how-to/artifacts/materializers.md
+  how-to/handle-data-artifacts/load-artifacts-into-memory: how-to/artifacts/artifacts.md
+  how-to/handle-data-artifacts/datasets: how-to/artifacts/artifacts.md
+  how-to/handle-data-artifacts/manage-big-data: how-to/artifacts/artifacts.md
+  how-to/handle-data-artifacts/unmaterialized-artifacts: how-to/artifacts/materializers.md
+  how-to/handle-data-artifacts/passing-artifacts-between-pipelines: how-to/artifacts/artifacts.md
+  how-to/handle-data-artifacts/registering-existing-data: how-to/artifacts/artifacts.md
+  how-to/visualize-artifacts/: how-to/artifacts/visualizations.md
+  how-to/visualize-artifacts/types-of-visualizations: how-to/artifacts/visualizations.md
+  how-to/visualize-artifacts/creating-custom-visualizations: how-to/artifacts/visualizations.md
+  how-to/visualize-artifacts/visualizations-in-dashboard: how-to/artifacts/visualizations.md
+  how-to/visualize-artifacts/disabling-visualizations: how-to/artifacts/visualizations.md
+  how-to/use-the-model-control-plane/: how-to/models/models.md
+  how-to/use-the-model-control-plane/register-a-model: how-to/models/models.md
+  how-to/use-the-model-control-plane/delete-a-model: how-to/models/models.md
+  how-to/use-the-model-control-plane/associate-a-pipeline-with-a-model: how-to/models/models.md
+  how-to/use-the-model-control-plane/connecting-artifacts-via-a-model: how-to/models/models.md
+  how-to/use-the-model-control-plane/model-versions: how-to/models/models.md
+  how-to/use-the-model-control-plane/load-a-model-in-code: how-to/models/models.md
+  how-to/use-the-model-control-plane/promote-a-model: how-to/models/models.md
+  how-to/use-the-model-control-plane/linking-model-binaries-data-to-models: how-to/models/models.md
+  how-to/use-the-model-control-plane/load-artifacts-from-model: how-to/models/models.md
+  how-to/track-metrics-metadata/: how-to/metadata/metadata.md
+  how-to/track-metrics-metadata/attach-metadata-to-a-model: how-to/metadata/metadata.md
+  how-to/track-metrics-metadata/attach-metadata-to-an-artifact: how-to/metadata/metadata.md
+  how-to/track-metrics-metadata/attach-metadata-to-steps: how-to/metadata/metadata.md
+  how-to/track-metrics-metadata/grouping-metadata: how-to/metadata/metadata.md
+  how-to/track-metrics-metadata/logging-metadata: how-to/metadata/metadata.md
+  how-to/track-metrics-metadata/fetch-metadata-within-steps: how-to/metadata/metadata.md
+  how-to/track-metrics-metadata/fetch-metadata-within-pipeline: how-to/metadata/metadata.md
+  how-to/stack-deployment/: how-to/stack-components/stack_components.md
+  how-to/stack-deployment/deploy-a-cloud-stack: how-to/stack-components/stack_components.md
+  how-to/stack-deployment/deploy-a-cloud-stack-with-terraform: how-to/stack-components/stack_components.md
+  how-to/stack-deployment/register-a-cloud-stack: how-to/stack-components/stack_components.md
+  how-to/stack-deployment/reference-secrets-in-stack-configuration: how-to/secrets/secrets.md
+  how-to/stack-deployment/implement-a-custom-stack-component: how-to/stack-components/stack_components.md
+  how-to/customize-docker-builds/: how-to/containerization/containerization.md
+  how-to/customize-docker-builds/docker-settings-on-a-pipeline: how-to/containerization/containerization.md
+  how-to/customize-docker-builds/docker-settings-on-a-step: how-to/containerization/containerization.md
+  how-to/customize-docker-builds/use-a-prebuilt-image: how-to/containerization/containerization.md
+  how-to/customize-docker-builds/specify-pip-dependencies-and-apt-packages: how-to/containerization/containerization.md
+  how-to/customize-docker-builds/how-to-use-a-private-pypi-repository: how-to/containerization/containerization.md
+  how-to/customize-docker-builds/use-your-own-docker-files: how-to/containerization/containerization.md
+  how-to/customize-docker-builds/which-files-are-built-into-the-image: how-to/containerization/containerization.md
+  how-to/customize-docker-builds/how-to-reuse-builds: how-to/containerization/containerization.md
+  how-to/customize-docker-builds/define-where-an-image-is-built: how-to/containerization/containerization.md
+  how-to/auth-management/: how-to/stack-components/service_connectors.md
+  how-to/auth-management/service-connectors-guide: how-to/stack-components/service_connectors.md
+  how-to/auth-management/best-security-practices: how-to/stack-components/service_connectors.md
+  how-to/auth-management/docker-service-connector: how-to/stack-components/service_connectors.md
+  how-to/auth-management/kubernetes-service-connector: how-to/stack-components/service_connectors.md
+  how-to/auth-management/aws-service-connector: how-to/stack-components/service_connectors.md
+  how-to/auth-management/gcp-service-connector: how-to/stack-components/service_connectors.md
+  how-to/auth-management/azure-service-connector: how-to/stack-components/service_connectors.md
+  how-to/auth-management/hyperai-service-connector: how-to/stack-components/service_connectors.md
+  how-to/configure-python-environments/: how-to/containerization/containerization.md
+  how-to/configure-python-environments/handling-dependencies: how-to/containerization/containerization.md
+  how-to/configure-python-environments/configure-the-server-environment: how-to/containerization/containerization.md
+  how-to/training-with-gpus/training-with-gpus: how-to/containerization/containerization.md
+  how-to/training-with-gpus/accelerate-distributed-training: how-to/containerization/containerization.md
+  how-to/run-remote-steps-and-pipelines-from-notebooks/: how-to/steps-pipelines/steps_and_pipelines.md
+  how-to/run-remote-steps-and-pipelines-from-notebooks/limitations-of-defining-steps-in-notebook-cells: how-to/steps-pipelines/steps_and_pipelines.md
+  how-to/run-remote-steps-and-pipelines-from-notebooks/run-a-single-step-from-a-notebook: how-to/steps-pipelines/steps_and_pipelines.md
+  how-to/manage-the-zenml-server/: how-to/manage-zenml-server/upgrade-zenml-server.md
+  how-to/manage-the-zenml-server/best-practices-upgrading-zenml: how-to/manage-zenml-server/best-practices-upgrading-zenml.md
+  how-to/manage-the-zenml-server/upgrade-zenml-server: how-to/manage-zenml-server/upgrade-zenml-server.md
+  how-to/manage-the-zenml-server/using-zenml-server-in-prod: how-to/manage-zenml-server/using-zenml-server-in-prod.md
+  how-to/manage-the-zenml-server/troubleshoot-your-deployed-server: how-to/manage-zenml-server/troubleshoot-your-deployed-server.md
+  how-to/manage-the-zenml-server/migration-guide/migration-guide: how-to/manage-zenml-server/migration-guide/migration-guide.md
+  how-to/manage-the-zenml-server/migration-guide/migration-zero-twenty: how-to/manage-zenml-server/migration-guide/migration-zero-twenty.md
+  how-to/manage-the-zenml-server/migration-guide/migration-zero-thirty: how-to/manage-zenml-server/migration-guide/migration-zero-thirty.md
+  how-to/manage-the-zenml-server/migration-guide/migration-zero-forty: how-to/manage-zenml-server/migration-guide/migration-zero-forty.md
+  how-to/manage-the-zenml-server/migration-guide/migration-zero-sixty: how-to/manage-zenml-server/migration-guide/migration-zero-sixty.md
+  how-to/control-logging/: how-to/steps-pipelines/logging.md
+  how-to/control-logging/view-logs-on-the-dasbhoard: how-to/steps-pipelines/logging.md
+  how-to/control-logging/enable-or-disable-logs-storing: how-to/steps-pipelines/logging.md
+  how-to/control-logging/set-logging-verbosity: how-to/steps-pipelines/logging.md
+  how-to/control-logging/disable-rich-traceback: how-to/steps-pipelines/logging.md
+  how-to/control-logging/disable-colorful-logging: how-to/steps-pipelines/logging.md
+  docs/getting-started/zenml-pro/core-concepts/tenants: getting-started/core-concepts.md
   docs/introduction: introduction.md
   docs/getting-started/installation: getting-started/installation.md
   docs/getting-started/core-concepts: getting-started/core-concepts.md
   docs/getting-started/system-architectures: getting-started/system-architectures.md
   docs/getting-started/deploying-zenml/: getting-started/deploying-zenml/README.md
-  docs/getting-started/zenml-pro/: introduction.md  # Fixed target
-  docs/user-guide/starter-guide/: introduction.md  # Fixed target
-  docs/user-guide/production-guide/: introduction.md  # Fixed target
-  docs/user-guide/llmops-guide/: introduction.md  # Fixed target
-  docs/how-to/interact-with-secrets: introduction.md  # Fixed target
-  docs/how-to/debug-and-solve-issues: introduction.md  # Fixed target
-  docs/how-to/contribute-to-zenml/: introduction.md  # Fixed target
-  docs/component-guide/: introduction.md  # Fixed target
-  docs/reference/python-client: introduction.md  # Fixed target
+  docs/getting-started/zenml-pro/: getting-started/core-concepts.md
+  docs/user-guide/starter-guide/: getting-started/hello-world.md
+  docs/user-guide/production-guide/: getting-started/system-architectures.md
+  docs/user-guide/llmops-guide/: reference/llms-txt.md
+  docs/how-to/interact-with-secrets: how-to/secrets/secrets.md
+  docs/how-to/debug-and-solve-issues: reference/faq.md
+  docs/how-to/contribute-to-zenml/: reference/community-and-content.md
+  docs/component-guide/: how-to/stack-components/stack_components.md
+  docs/reference/python-client: reference/environment-variables.md
   docs/reference/global-settings: reference/global-settings.md
   docs/reference/environment-variables: reference/environment-variables.md
-  docs/reference/api-reference: introduction.md  # Fixed target
-  docs/reference/how-do-i: introduction.md  # Fixed target
+  docs/reference/api-reference: reference/environment-variables.md
+  docs/reference/how-do-i: reference/faq.md
   docs/reference/community-and-content: reference/community-and-content.md
   docs/reference/faq: reference/faq.md
-  how-to/advanced-topics/manage-zenml-server/: introduction.md  # Fixed target
+  how-to/advanced-topics/manage-zenml-server/: how-to/manage-zenml-server/upgrade-zenml-server.md
   how-to/project-setup-and-management/connecting-to-zenml/: how-to/manage-zenml-server/connecting-to-zenml/README.md
   how-to/project-setup-and-management/connecting-to-zenml/connect-in-with-your-user-interactive: how-to/manage-zenml-server/connecting-to-zenml/connect-in-with-your-user-interactive.md
   how-to/project-setup-and-management/connecting-to-zenml/connect-with-a-service-account: how-to/manage-zenml-server/connecting-to-zenml/connect-with-a-service-account.md
@@ -186,204 +186,163 @@ redirects:
   how-to/advanced-topics/manage-zenml-server/migration-guide/migration-zero-thirty: how-to/manage-zenml-server/migration-guide/migration-zero-thirty.md
   how-to/advanced-topics/manage-zenml-server/migration-guide/migration-zero-forty: how-to/manage-zenml-server/migration-guide/migration-zero-forty.md
   how-to/advanced-topics/manage-zenml-server/migration-guide/migration-zero-sixty: how-to/manage-zenml-server/migration-guide/migration-zero-sixty.md
-  how-to/project-setup-and-management/setting-up-a-project-repository/using-project-templates: introduction.md  # Fixed target
-  how-to/project-setup-and-management/setting-up-a-project-repository/create-your-own-template: introduction.md  # Fixed target
-  how-to/project-setup-and-management/setting-up-a-project-repository/shared-components-for-teams: introduction.md  # Fixed target
-  how-to/project-setup-and-management/setting-up-a-project-repository/stacks-pipelines-models: introduction.md  # Fixed target
-  how-to/project-setup-and-management/setting-up-a-project-repository/access-management: introduction.md  # Fixed target
-  how-to/interact-with-secrets: introduction.md  # Fixed target
-  how-to/project-setup-and-management/develop-locally/: introduction.md  # Fixed target
-  how-to/project-setup-and-management/develop-locally/local-prod-pipeline-variants: introduction.md  # Fixed target
-  how-to/project-setup-and-management/develop-locally/keep-your-dashboard-server-clean: introduction.md  # Fixed target
-  how-to/advanced-topics/training-with-gpus/: introduction.md  # Fixed target
-  how-to/advanced-topics/training-with-gpus/accelerate-distributed-training: introduction.md  # Fixed target
-  how-to/advanced-topics/run-remote-notebooks/: introduction.md  # Fixed target
-  how-to/advanced-topics/run-remote-notebooks/limitations-of-defining-steps-in-notebook-cells: introduction.md  # Fixed target
-  how-to/advanced-topics/run-remote-notebooks/run-a-single-step-from-a-notebook: introduction.md  # Fixed target
-  how-to/infrastructure-deployment/configure-python-environments/: introduction.md  # Fixed target
-  how-to/infrastructure-deployment/configure-python-environments/handling-dependencies: introduction.md  # Fixed target
-  how-to/infrastructure-deployment/configure-python-environments/configure-the-server-environment: introduction.md  # Fixed target
-  how-to/infrastructure-deployment/customize-docker-builds/: introduction.md  # Fixed target
-  how-to/infrastructure-deployment/customize-docker-builds/docker-settings-on-a-pipeline: introduction.md  # Fixed target
-  how-to/infrastructure-deployment/customize-docker-builds/docker-settings-on-a-step: introduction.md  # Fixed target
-  how-to/infrastructure-deployment/customize-docker-builds/use-a-prebuilt-image: introduction.md  # Fixed target
-  how-to/infrastructure-deployment/customize-docker-builds/specify-pip-dependencies-and-apt-packages: introduction.md  # Fixed target
-  how-to/infrastructure-deployment/customize-docker-builds/how-to-use-a-private-pypi-repository: introduction.md  # Fixed target
-  how-to/infrastructure-deployment/customize-docker-builds/use-your-own-docker-files: introduction.md  # Fixed target
-  how-to/infrastructure-deployment/customize-docker-builds/which-files-are-built-into-the-image: introduction.md  # Fixed target
-  how-to/infrastructure-deployment/customize-docker-builds/how-to-reuse-builds: introduction.md  # Fixed target
-  how-to/infrastructure-deployment/customize-docker-builds/define-where-an-image-is-built: introduction.md  # Fixed target
-  how-to/data-artifact-management/handle-data-artifacts/datasets: introduction.md  # Fixed target
-  how-to/data-artifact-management/handle-data-artifacts/manage-big-data: introduction.md  # Fixed target
-  how-to/data-artifact-management/handle-data-artifacts/unmaterialized-artifacts: introduction.md  # Fixed target
-  how-to/data-artifact-management/handle-data-artifacts/passing-artifacts-between-pipelines: introduction.md  # Fixed target
-  how-to/data-artifact-management/handle-data-artifacts/registering-existing-data: introduction.md  # Fixed target
-  how-to/advanced-topics/control-logging/: introduction.md  # Fixed target
-  how-to/advanced-topics/control-logging/view-logs-on-the-dasbhoard: introduction.md  # Fixed target
-  how-to/advanced-topics/control-logging/enable-or-disable-logs-storing: introduction.md  # Fixed target
-  how-to/advanced-topics/control-logging/set-logging-verbosity: introduction.md  # Fixed target
-  how-to/advanced-topics/control-logging/disable-rich-traceback: introduction.md  # Fixed target
-  how-to/advanced-topics/control-logging/disable-colorful-logging: introduction.md  # Fixed target
-  how-to/pipeline-development/trigger-pipelines/: introduction.md  # Fixed target
-  how-to/pipeline-development/trigger-pipelines/use-templates-python: introduction.md  # Fixed target
-  how-to/pipeline-development/trigger-pipelines/use-templates-cli: introduction.md  # Fixed target
-  how-to/pipeline-development/trigger-pipelines/use-templates-dashboard: introduction.md  # Fixed target
-  how-to/pipeline-development/trigger-pipelines/use-templates-rest-api: introduction.md  # Fixed target
+  how-to/project-setup-and-management/setting-up-a-project-repository/using-project-templates: how-to/templates/templates.md
+  how-to/project-setup-and-management/setting-up-a-project-repository/create-your-own-template: how-to/templates/templates.md
+  how-to/project-setup-and-management/setting-up-a-project-repository/shared-components-for-teams: how-to/stack-components/stack_components.md
+  how-to/project-setup-and-management/setting-up-a-project-repository/stacks-pipelines-models: how-to/steps-pipelines/steps_and_pipelines.md
+  how-to/project-setup-and-management/setting-up-a-project-repository/access-management: how-to/tags/tags.md
+  how-to/interact-with-secrets: how-to/secrets/secrets.md
+  how-to/project-setup-and-management/develop-locally/: how-to/steps-pipelines/steps_and_pipelines.md
+  how-to/project-setup-and-management/develop-locally/local-prod-pipeline-variants: how-to/steps-pipelines/steps_and_pipelines.md
+  how-to/project-setup-and-management/develop-locally/keep-your-dashboard-server-clean: how-to/steps-pipelines/logging.md
+  how-to/advanced-topics/training-with-gpus/: how-to/containerization/containerization.md
+  how-to/advanced-topics/training-with-gpus/accelerate-distributed-training: how-to/containerization/containerization.md
+  how-to/advanced-topics/run-remote-notebooks/: how-to/steps-pipelines/steps_and_pipelines.md
+  how-to/advanced-topics/run-remote-notebooks/limitations-of-defining-steps-in-notebook-cells: how-to/steps-pipelines/steps_and_pipelines.md
+  how-to/advanced-topics/run-remote-notebooks/run-a-single-step-from-a-notebook: how-to/steps-pipelines/steps_and_pipelines.md
+  how-to/infrastructure-deployment/configure-python-environments/: how-to/containerization/containerization.md
+  how-to/infrastructure-deployment/configure-python-environments/handling-dependencies: how-to/containerization/containerization.md
+  how-to/infrastructure-deployment/configure-python-environments/configure-the-server-environment: how-to/containerization/containerization.md
+  how-to/infrastructure-deployment/customize-docker-builds/: how-to/containerization/containerization.md
+  how-to/infrastructure-deployment/customize-docker-builds/docker-settings-on-a-pipeline: how-to/containerization/containerization.md
+  how-to/infrastructure-deployment/customize-docker-builds/docker-settings-on-a-step: how-to/containerization/containerization.md
+  how-to/infrastructure-deployment/customize-docker-builds/use-a-prebuilt-image: how-to/containerization/containerization.md
+  how-to/infrastructure-deployment/customize-docker-builds/specify-pip-dependencies-and-apt-packages: how-to/containerization/containerization.md
+  how-to/infrastructure-deployment/customize-docker-builds/how-to-use-a-private-pypi-repository: how-to/containerization/containerization.md
+  how-to/infrastructure-deployment/customize-docker-builds/use-your-own-docker-files: how-to/containerization/containerization.md
+  how-to/infrastructure-deployment/customize-docker-builds/which-files-are-built-into-the-image: how-to/containerization/containerization.md
+  how-to/infrastructure-deployment/customize-docker-builds/how-to-reuse-builds: how-to/containerization/containerization.md
+  how-to/infrastructure-deployment/customize-docker-builds/define-where-an-image-is-built: how-to/containerization/containerization.md
+  how-to/data-artifact-management/handle-data-artifacts/datasets: how-to/artifacts/artifacts.md
+  how-to/data-artifact-management/handle-data-artifacts/manage-big-data: how-to/artifacts/artifacts.md
+  how-to/data-artifact-management/handle-data-artifacts/unmaterialized-artifacts: how-to/artifacts/materializers.md
+  how-to/data-artifact-management/handle-data-artifacts/passing-artifacts-between-pipelines: how-to/artifacts/artifacts.md
+  how-to/data-artifact-management/handle-data-artifacts/registering-existing-data: how-to/artifacts/artifacts.md
+  how-to/advanced-topics/control-logging/: how-to/steps-pipelines/logging.md
+  how-to/advanced-topics/control-logging/view-logs-on-the-dasbhoard: how-to/steps-pipelines/logging.md
+  how-to/advanced-topics/control-logging/enable-or-disable-logs-storing: how-to/steps-pipelines/logging.md
+  how-to/advanced-topics/control-logging/set-logging-verbosity: how-to/steps-pipelines/logging.md
+  how-to/advanced-topics/control-logging/disable-rich-traceback: how-to/steps-pipelines/logging.md
+  how-to/advanced-topics/control-logging/disable-colorful-logging: how-to/steps-pipelines/logging.md
+  how-to/pipeline-development/trigger-pipelines/: how-to/templates/templates.md
+  how-to/pipeline-development/trigger-pipelines/use-templates-python: how-to/templates/templates.md
+  how-to/pipeline-development/trigger-pipelines/use-templates-cli: how-to/templates/templates.md
+  how-to/pipeline-development/trigger-pipelines/use-templates-dashboard: how-to/templates/templates.md
+  how-to/pipeline-development/trigger-pipelines/use-templates-rest-api: how-to/templates/templates.md
 
-  # New redirects added by PR docsdocsdocs
-  getting-started/deploying-zenml: introduction.md
-  getting-started/deploying-zenml/custom-secret-stores: introduction.md
-  getting-started/deploying-zenml/deploy-using-huggingface-spaces: introduction.md
-  getting-started/deploying-zenml/deploy-with-custom-image: introduction.md
-  getting-started/deploying-zenml/deploy-with-docker: introduction.md
-  getting-started/deploying-zenml/deploy-with-helm: introduction.md
-  getting-started/deploying-zenml/secret-management: introduction.md
-  how-to/contribute-to-zenml: introduction.md
-  how-to/contribute-to-zenml/implement-a-custom-integration: introduction.md
-  how-to/control-logging: introduction.md
-  how-to/control-logging/disable-step-names-in-logs: introduction.md
-  how-to/control-logging/set-logging-format: introduction.md
-  how-to/customize-docker-builds: introduction.md
-  how-to/data-artifact-management: introduction.md
-  how-to/data-artifact-management/complex-usecases: introduction.md
-  how-to/data-artifact-management/complex-usecases/datasets: introduction.md
-  how-to/data-artifact-management/complex-usecases/manage-big-data: introduction.md
-  how-to/data-artifact-management/complex-usecases/passing-artifacts-between-pipelines: introduction.md
-  how-to/data-artifact-management/complex-usecases/registering-existing-data: introduction.md
-  how-to/data-artifact-management/complex-usecases/unmaterialized-artifacts: introduction.md
-  how-to/data-artifact-management/handle-data-artifacts: introduction.md
-  how-to/data-artifact-management/handle-data-artifacts/artifact-versioning: introduction.md
-  how-to/data-artifact-management/handle-data-artifacts/artifacts-naming: introduction.md
-  how-to/data-artifact-management/handle-data-artifacts/delete-an-artifact: introduction.md
-  how-to/data-artifact-management/handle-data-artifacts/get-arbitrary-artifacts-in-a-step: introduction.md
-  how-to/data-artifact-management/handle-data-artifacts/handle-custom-data-types: introduction.md
-  how-to/data-artifact-management/handle-data-artifacts/load-artifacts-into-memory: introduction.md
-  how-to/data-artifact-management/handle-data-artifacts/pass-files-through-steps: introduction.md
-  how-to/data-artifact-management/handle-data-artifacts/return-multiple-outputs-from-a-step: introduction.md
-  how-to/data-artifact-management/handle-data-artifacts/tagging: introduction.md
-  how-to/data-artifact-management/visualize-artifacts: introduction.md
-  how-to/data-artifact-management/visualize-artifacts/creating-custom-visualizations: introduction.md
-  how-to/data-artifact-management/visualize-artifacts/disabling-visualizations: introduction.md
-  how-to/data-artifact-management/visualize-artifacts/types-of-visualizations: introduction.md
-  how-to/data-artifact-management/visualize-artifacts/visualizations-in-dashboard: introduction.md
-  how-to/debug-and-solve-issues: introduction.md
-  how-to/infrastructure-deployment: introduction.md
-  how-to/infrastructure-deployment/auth-management: introduction.md
-  how-to/infrastructure-deployment/auth-management/aws-service-connector: introduction.md
-  how-to/infrastructure-deployment/auth-management/azure-service-connector: introduction.md
-  how-to/infrastructure-deployment/auth-management/best-security-practices: introduction.md
-  how-to/infrastructure-deployment/auth-management/docker-service-connector: introduction.md
-  how-to/infrastructure-deployment/auth-management/gcp-service-connector: introduction.md
-  how-to/infrastructure-deployment/auth-management/hyperai-service-connector: introduction.md
-  how-to/infrastructure-deployment/auth-management/kubernetes-service-connector: introduction.md
-  how-to/infrastructure-deployment/auth-management/service-connectors-guide: introduction.md
-  how-to/infrastructure-deployment/infrastructure-as-code: introduction.md
-  how-to/infrastructure-deployment/infrastructure-as-code/best-practices: introduction.md
-  how-to/infrastructure-deployment/infrastructure-as-code/terraform-stack-management: introduction.md
-  how-to/infrastructure-deployment/stack-deployment: introduction.md
-  how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack: introduction.md
-  how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform: introduction.md
-  how-to/infrastructure-deployment/stack-deployment/export-stack-requirements: introduction.md
-  how-to/infrastructure-deployment/stack-deployment/implement-a-custom-stack-component: introduction.md
-  how-to/infrastructure-deployment/stack-deployment/reference-secrets-in-stack-configuration: introduction.md
-  how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack: introduction.md
-  how-to/manage-zenml-server: introduction.md
-  how-to/manage-zenml-server/best-practices-upgrading-zenml: introduction.md
-  how-to/manage-zenml-server/connecting-to-zenml: introduction.md
-  how-to/manage-zenml-server/connecting-to-zenml/connect-in-with-your-user-interactive: introduction.md
-  how-to/manage-zenml-server/connecting-to-zenml/connect-with-a-service-account: introduction.md
-  how-to/manage-zenml-server/connecting-to-zenml/connect-with-an-api-token: introduction.md
-  how-to/manage-zenml-server/mcp-chat-with-server: introduction.md
-  how-to/manage-zenml-server/migration-guide: introduction.md
-  how-to/manage-zenml-server/migration-guide/migration-zero-forty: introduction.md
-  how-to/manage-zenml-server/migration-guide/migration-zero-sixty: introduction.md
-  how-to/manage-zenml-server/migration-guide/migration-zero-thirty: introduction.md
-  how-to/manage-zenml-server/migration-guide/migration-zero-twenty: introduction.md
-  how-to/manage-zenml-server/troubleshoot-your-deployed-server: introduction.md
-  how-to/manage-zenml-server/upgrade-zenml-server: introduction.md
-  how-to/manage-zenml-server/using-zenml-server-in-prod: introduction.md
-  how-to/manage-zenml-server/vscode-extension: introduction.md
-  how-to/model-management-metrics: introduction.md
-  how-to/model-management-metrics/model-control-plane: introduction.md
-  how-to/model-management-metrics/model-control-plane/associate-a-pipeline-with-a-model: introduction.md
-  how-to/model-management-metrics/model-control-plane/connecting-artifacts-via-a-model: introduction.md
-  how-to/model-management-metrics/model-control-plane/delete-a-model: introduction.md
-  how-to/model-management-metrics/model-control-plane/linking-model-binaries-data-to-models: introduction.md
-  how-to/model-management-metrics/model-control-plane/load-a-model-in-code: introduction.md
-  how-to/model-management-metrics/model-control-plane/load-artifacts-from-model: introduction.md
-  how-to/model-management-metrics/model-control-plane/model-versions: introduction.md
-  how-to/model-management-metrics/model-control-plane/promote-a-model: introduction.md
-  how-to/model-management-metrics/model-control-plane/register-a-model: introduction.md
-  how-to/model-management-metrics/track-metrics-metadata: introduction.md
-  how-to/model-management-metrics/track-metrics-metadata/attach-metadata-to-a-model: introduction.md
-  how-to/model-management-metrics/track-metrics-metadata/attach-metadata-to-a-run: introduction.md
-  how-to/model-management-metrics/track-metrics-metadata/attach-metadata-to-a-step: introduction.md
-  how-to/model-management-metrics/track-metrics-metadata/attach-metadata-to-an-artifact: introduction.md
-  how-to/model-management-metrics/track-metrics-metadata/fetch-metadata-within-pipeline: introduction.md
-  how-to/model-management-metrics/track-metrics-metadata/fetch-metadata-within-steps: introduction.md
-  how-to/model-management-metrics/track-metrics-metadata/grouping-metadata: introduction.md
-  how-to/model-management-metrics/track-metrics-metadata/logging-metadata: introduction.md
-  how-to/pipeline-development: introduction.md
-  how-to/pipeline-development/build-pipelines: introduction.md
-  how-to/pipeline-development/build-pipelines/access-secrets-in-a-step: introduction.md
-  how-to/pipeline-development/build-pipelines/compose-pipelines: introduction.md
-  how-to/pipeline-development/build-pipelines/configuring-a-pipeline-at-runtime: introduction.md
-  how-to/pipeline-development/build-pipelines/control-caching-behavior: introduction.md
-  how-to/pipeline-development/build-pipelines/control-execution-order-of-steps: introduction.md
-  how-to/pipeline-development/build-pipelines/delete-a-pipeline: introduction.md
-  how-to/pipeline-development/build-pipelines/fan-in-fan-out: introduction.md
-  how-to/pipeline-development/build-pipelines/fetching-pipelines: introduction.md
-  how-to/pipeline-development/build-pipelines/get-past-pipeline-step-runs: introduction.md
-  how-to/pipeline-development/build-pipelines/hyper-parameter-tuning: introduction.md
-  how-to/pipeline-development/build-pipelines/name-your-pipeline-runs: introduction.md
-  how-to/pipeline-development/build-pipelines/reference-environment-variables-in-configurations: introduction.md
-  how-to/pipeline-development/build-pipelines/retry-steps: introduction.md
-  how-to/pipeline-development/build-pipelines/run-an-individual-step: introduction.md
-  how-to/pipeline-development/build-pipelines/run-pipelines-asynchronously: introduction.md
-  how-to/pipeline-development/build-pipelines/schedule-a-pipeline: introduction.md
-  how-to/pipeline-development/build-pipelines/step-output-typing-and-annotation: introduction.md
-  how-to/pipeline-development/build-pipelines/tag-your-pipeline-runs: introduction.md
-  how-to/pipeline-development/build-pipelines/use-failure-success-hooks: introduction.md
-  how-to/pipeline-development/build-pipelines/use-pipeline-step-parameters: introduction.md
-  how-to/pipeline-development/build-pipelines/using-a-custom-step-invocation-id: introduction.md
-  how-to/pipeline-development/configure-python-environments: introduction.md
-  how-to/pipeline-development/configure-python-environments/configure-the-server-environment: introduction.md
-  how-to/pipeline-development/configure-python-environments/handling-dependencies: introduction.md
-  how-to/pipeline-development/develop-locally: introduction.md
-  how-to/pipeline-development/develop-locally/keep-your-dashboard-server-clean: introduction.md
-  how-to/pipeline-development/develop-locally/local-prod-pipeline-variants: introduction.md
-  how-to/pipeline-development/run-remote-notebooks: introduction.md
-  how-to/pipeline-development/run-remote-notebooks/limitations-of-defining-steps-in-notebook-cells: introduction.md
-  how-to/pipeline-development/run-remote-notebooks/run-a-single-step-from-a-notebook: introduction.md
-  how-to/pipeline-development/training-with-gpus: introduction.md
-  how-to/pipeline-development/training-with-gpus/accelerate-distributed-training: introduction.md
-  how-to/pipeline-development/use-configuration-files: introduction.md
-  how-to/pipeline-development/use-configuration-files/autogenerate-a-template-yaml-file: introduction.md
-  how-to/pipeline-development/use-configuration-files/configuration-hierarchy: introduction.md
-  how-to/pipeline-development/use-configuration-files/how-to-use-config: introduction.md
-  how-to/pipeline-development/use-configuration-files/retrieve-used-configuration-of-a-run: introduction.md
-  how-to/pipeline-development/use-configuration-files/runtime-configuration: introduction.md
-  how-to/pipeline-development/use-configuration-files/what-can-be-configured: introduction.md
-  how-to/popular-integrations: introduction.md
-  how-to/popular-integrations/aws-guide: introduction.md
-  how-to/popular-integrations/azure-guide: introduction.md
-  how-to/popular-integrations/gcp-guide: introduction.md
-  how-to/popular-integrations/kubeflow: introduction.md
-  how-to/popular-integrations/kubernetes: introduction.md
-  how-to/popular-integrations/mlflow: introduction.md
-  how-to/popular-integrations/skypilot: introduction.md
-  how-to/project-setup-and-management: introduction.md
-  how-to/project-setup-and-management/collaborate-with-team: introduction.md
-  how-to/project-setup-and-management/collaborate-with-team/access-management: introduction.md
-  how-to/project-setup-and-management/collaborate-with-team/project-templates: introduction.md
-  how-to/project-setup-and-management/collaborate-with-team/project-templates/create-your-own-template: introduction.md
-  how-to/project-setup-and-management/collaborate-with-team/shared-components-for-teams: introduction.md
-  how-to/project-setup-and-management/collaborate-with-team/stacks-pipelines-models: introduction.md
-  how-to/project-setup-and-management/interact-with-secrets: introduction.md
-  how-to/project-setup-and-management/setting-up-a-project-repository: introduction.md
-  how-to/project-setup-and-management/setting-up-a-project-repository/connect-your-git-repository: introduction.md
-  how-to/project-setup-and-management/setting-up-a-project-repository/set-up-repository: introduction.md
-  how-to/trigger-pipelines: introduction.md
-  how-to/trigger-pipelines/use-templates-cli: introduction.md
-  reference/how-do-i: introduction.md
-  reference/python-client: introduction.md
+  # New redirects
+  getting-started/deploying-zenml: getting-started/deploying-zenml/README.md
+  getting-started/deploying-zenml/custom-secret-stores: getting-started/deploying-zenml/custom-secret-stores.md
+  getting-started/deploying-zenml/deploy-using-huggingface-spaces: getting-started/deploying-zenml/deploy-using-huggingface-spaces.md
+  getting-started/deploying-zenml/deploy-with-custom-image: getting-started/deploying-zenml/deploy-with-custom-image.md
+  getting-started/deploying-zenml/deploy-with-docker: getting-started/deploying-zenml/deploy-with-docker.md
+  getting-started/deploying-zenml/deploy-with-helm: getting-started/deploying-zenml/deploy-with-helm.md
+  getting-started/deploying-zenml/secret-management: getting-started/deploying-zenml/secret-management.md
+  how-to/contribute-to-zenml: reference/community-and-content.md
+  how-to/contribute-to-zenml/implement-a-custom-integration: how-to/stack-components/stack_components.md
+  how-to/control-logging: how-to/steps-pipelines/logging.md
+  how-to/control-logging/disable-step-names-in-logs: how-to/steps-pipelines/logging.md
+  how-to/control-logging/set-logging-format: how-to/steps-pipelines/logging.md
+  how-to/customize-docker-builds: how-to/containerization/containerization.md
+  how-to/data-artifact-management: how-to/artifacts/artifacts.md
+  how-to/data-artifact-management/complex-usecases: how-to/artifacts/artifacts.md
+  how-to/data-artifact-management/complex-usecases/datasets: how-to/artifacts/artifacts.md
+  how-to/data-artifact-management/complex-usecases/manage-big-data: how-to/artifacts/artifacts.md
+  how-to/data-artifact-management/complex-usecases/passing-artifacts-between-pipelines: how-to/artifacts/artifacts.md
+  how-to/data-artifact-management/complex-usecases/registering-existing-data: how-to/artifacts/artifacts.md
+  how-to/data-artifact-management/complex-usecases/unmaterialized-artifacts: how-to/artifacts/materializers.md
+  how-to/data-artifact-management/handle-data-artifacts: how-to/artifacts/artifacts.md
+  how-to/data-artifact-management/handle-data-artifacts/artifact-versioning: how-to/artifacts/artifacts.md
+  how-to/data-artifact-management/handle-data-artifacts/artifacts-naming: how-to/artifacts/artifacts.md
+  how-to/data-artifact-management/handle-data-artifacts/delete-an-artifact: how-to/artifacts/artifacts.md
+  how-to/data-artifact-management/handle-data-artifacts/get-arbitrary-artifacts-in-a-step: how-to/artifacts/artifacts.md
+  how-to/data-artifact-management/handle-data-artifacts/handle-custom-data-types: how-to/artifacts/materializers.md
+  how-to/data-artifact-management/handle-data-artifacts/load-artifacts-into-memory: how-to/artifacts/artifacts.md
+  how-to/data-artifact-management/handle-data-artifacts/pass-files-through-steps: how-to/artifacts/artifacts.md
+  how-to/data-artifact-management/handle-data-artifacts/return-multiple-outputs-from-a-step: how-to/artifacts/artifacts.md
+  how-to/data-artifact-management/handle-data-artifacts/tagging: how-to/tags/tags.md
+  how-to/data-artifact-management/visualize-artifacts: how-to/artifacts/visualizations.md
+  how-to/data-artifact-management/visualize-artifacts/creating-custom-visualizations: how-to/artifacts/visualizations.md
+  how-to/data-artifact-management/visualize-artifacts/disabling-visualizations: how-to/artifacts/visualizations.md
+  how-to/data-artifact-management/visualize-artifacts/types-of-visualizations: how-to/artifacts/visualizations.md
+  how-to/data-artifact-management/visualize-artifacts/visualizations-in-dashboard: how-to/artifacts/visualizations.md
+  how-to/debug-and-solve-issues: reference/faq.md
+  how-to/infrastructure-deployment: how-to/stack-components/stack_components.md
+  how-to/infrastructure-deployment/auth-management: how-to/stack-components/service_connectors.md
+  how-to/infrastructure-deployment/auth-management/aws-service-connector: how-to/stack-components/service_connectors.md
+  how-to/infrastructure-deployment/auth-management/azure-service-connector: how-to/stack-components/service_connectors.md
+  how-to/infrastructure-deployment/auth-management/best-security-practices: how-to/stack-components/service_connectors.md
+  how-to/infrastructure-deployment/auth-management/docker-service-connector: how-to/stack-components/service_connectors.md
+  how-to/infrastructure-deployment/auth-management/gcp-service-connector: how-to/stack-components/service_connectors.md
+  how-to/infrastructure-deployment/auth-management/hyperai-service-connector: how-to/stack-components/service_connectors.md
+  how-to/infrastructure-deployment/auth-management/kubernetes-service-connector: how-to/stack-components/service_connectors.md
+  how-to/infrastructure-deployment/auth-management/service-connectors-guide: how-to/stack-components/service_connectors.md
+  how-to/infrastructure-deployment/infrastructure-as-code: how-to/stack-components/stack_components.md
+  how-to/infrastructure-deployment/infrastructure-as-code/best-practices: how-to/stack-components/stack_components.md
+  how-to/infrastructure-deployment/infrastructure-as-code/terraform-stack-management: how-to/stack-components/stack_components.md
+  how-to/infrastructure-deployment/stack-deployment: how-to/stack-components/stack_components.md
+  how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack: how-to/stack-components/stack_components.md
+  how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform: how-to/stack-components/stack_components.md
+  how-to/infrastructure-deployment/stack-deployment/export-stack-requirements: how-to/stack-components/stack_components.md
+  how-to/infrastructure-deployment/stack-deployment/implement-a-custom-stack-component: how-to/stack-components/stack_components.md
+  how-to/infrastructure-deployment/stack-deployment/reference-secrets-in-stack-configuration: how-to/secrets/secrets.md
+  how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack: how-to/stack-components/stack_components.md
+  how-to/manage-zenml-server: how-to/manage-zenml-server/upgrade-zenml-server.md
+  how-to/manage-zenml-server/best-practices-upgrading-zenml: how-to/manage-zenml-server/best-practices-upgrading-zenml.md
+  how-to/manage-zenml-server/connecting-to-zenml: how-to/manage-zenml-server/connecting-to-zenml/README.md
+  how-to/manage-zenml-server/connecting-to-zenml/connect-in-with-your-user-interactive: how-to/manage-zenml-server/connecting-to-zenml/connect-in-with-your-user-interactive.md
+  how-to/manage-zenml-server/connecting-to-zenml/connect-with-a-service-account: how-to/manage-zenml-server/connecting-to-zenml/connect-with-a-service-account.md
+  how-to/manage-zenml-server/connecting-to-zenml/connect-with-an-api-token: how-to/manage-zenml-server/connecting-to-zenml/connect-with-an-api-token.md
+  how-to/manage-zenml-server/mcp-chat-with-server: reference/llms-txt.md
+  how-to/manage-zenml-server/migration-guide: how-to/manage-zenml-server/migration-guide/migration-guide.md
+  how-to/manage-zenml-server/migration-guide/migration-zero-forty: how-to/manage-zenml-server/migration-guide/migration-zero-forty.md
+  how-to/manage-zenml-server/migration-guide/migration-zero-sixty: how-to/manage-zenml-server/migration-guide/migration-zero-sixty.md
+  how-to/manage-zenml-server/migration-guide/migration-zero-thirty: how-to/manage-zenml-server/migration-guide/migration-zero-thirty.md
+  how-to/manage-zenml-server/migration-guide/migration-zero-twenty: how-to/manage-zenml-server/migration-guide/migration-zero-twenty.md
+  how-to/manage-zenml-server/troubleshoot-your-deployed-server: how-to/manage-zenml-server/troubleshoot-your-deployed-server.md
+  how-to/manage-zenml-server/upgrade-zenml-server: how-to/manage-zenml-server/upgrade-zenml-server.md
+  how-to/manage-zenml-server/using-zenml-server-in-prod: how-to/manage-zenml-server/using-zenml-server-in-prod.md
+  how-to/manage-zenml-server/vscode-extension: reference/community-and-content.md
+  how-to/model-management-metrics: how-to/models/models.md
+  how-to/model-management-metrics/model-control-plane: how-to/models/models.md
+  how-to/model-management-metrics/model-control-plane/associate-a-pipeline-with-a-model: how-to/models/models.md
+  how-to/model-management-metrics/model-control-plane/connecting-artifacts-via-a-model: how-to/models/models.md
+  how-to/model-management-metrics/model-control-plane/delete-a-model: how-to/models/models.md
+  how-to/model-management-metrics/model-control-plane/linking-model-binaries-data-to-models: how-to/models/models.md
+  how-to/model-management-metrics/model-control-plane/load-a-model-in-code: how-to/models/models.md
+  how-to/model-management-metrics/model-control-plane/load-artifacts-from-model: how-to/models/models.md
+  how-to/model-management-metrics/model-control-plane/model-versions: how-to/models/models.md
+  how-to/model-management-metrics/model-control-plane/promote-a-model: how-to/models/models.md
+  how-to/model-management-metrics/model-control-plane/register-a-model: how-to/models/models.md
+  how-to/model-management-metrics/track-metrics-metadata: how-to/metadata/metadata.md
+  how-to/model-management-metrics/track-metrics-metadata/attach-metadata-to-a-model: how-to/metadata/metadata.md
+  how-to/model-management-metrics/track-metrics-metadata/attach-metadata-to-a-run: how-to/metadata/metadata.md
+  how-to/model-management-metrics/track-metrics-metadata/attach-metadata-to-a-step: how-to/metadata/metadata.md
+  how-to/model-management-metrics/track-metrics-metadata/attach-metadata-to-an-artifact: how-to/metadata/metadata.md
+  how-to/model-management-metrics/track-metrics-metadata/fetch-metadata-within-pipeline: how-to/metadata/metadata.md
+  how-to/model-management-metrics/track-metrics-metadata/fetch-metadata-within-steps: how-to/metadata/metadata.md
+  how-to/model-management-metrics/track-metrics-metadata/grouping-metadata: how-to/metadata/metadata.md
+  how-to/model-management-metrics/track-metrics-metadata/logging-metadata: how-to/metadata/metadata.md
+  how-to/popular-integrations: how-to/stack-components/stack_components.md
+  how-to/popular-integrations/aws-guide: how-to/stack-components/service_connectors.md
+  how-to/popular-integrations/azure-guide: how-to/stack-components/service_connectors.md
+  how-to/popular-integrations/gcp-guide: how-to/stack-components/service_connectors.md
+  how-to/popular-integrations/kubeflow: how-to/stack-components/stack_components.md
+  how-to/popular-integrations/kubernetes: how-to/stack-components/stack_components.md
+  how-to/popular-integrations/mlflow: how-to/stack-components/stack_components.md
+  how-to/popular-integrations/skypilot: how-to/stack-components/stack_components.md
+  how-to/project-setup-and-management: how-to/code-repositories/code-repositories.md
+  how-to/project-setup-and-management/collaborate-with-team: how-to/code-repositories/code-repositories.md
+  how-to/project-setup-and-management/collaborate-with-team/access-management: how-to/tags/tags.md
+  how-to/project-setup-and-management/collaborate-with-team/project-templates: how-to/templates/templates.md
+  how-to/project-setup-and-management/collaborate-with-team/project-templates/create-your-own-template: how-to/templates/templates.md
+  how-to/project-setup-and-management/collaborate-with-team/shared-components-for-teams: how-to/stack-components/stack_components.md
+  how-to/project-setup-and-management/collaborate-with-team/stacks-pipelines-models: how-to/steps-pipelines/steps_and_pipelines.md
+  how-to/project-setup-and-management/interact-with-secrets: how-to/secrets/secrets.md
+  how-to/project-setup-and-management/setting-up-a-project-repository: how-to/code-repositories/code-repositories.md
+  how-to/project-setup-and-management/setting-up-a-project-repository/connect-your-git-repository: how-to/code-repositories/code-repositories.md
+  how-to/project-setup-and-management/setting-up-a-project-repository/set-up-repository: how-to/code-repositories/code-repositories.md
+  how-to/trigger-pipelines: how-to/templates/templates.md
+  how-to/trigger-pipelines/use-templates-cli: how-to/templates/templates.md
+  reference/how-do-i: reference/faq.md
+  reference/python-client: reference/environment-variables.md
