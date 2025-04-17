@@ -386,6 +386,8 @@ def unreliable_step():
     ...
 ```
 
+It's important to note that **retries happen at the step level, not the pipeline level**. This means that ZenML will only retry individual failed steps, not the entire pipeline. The only exception to this is the Kubernetes orchestrator, which can be configured to retry at the pipeline level.
+
 With this configuration, if the step fails, ZenML will:
 1. Wait 10 seconds before the first retry
 2. Wait 20 seconds (10 × 2) before the second retry
