@@ -40,6 +40,8 @@ should set the following environment variable, which will ensure that your conne
 
 ```bash
 export OBJC_DISABLE_INITIALIZE_FORK_SAFETY=YES
+
+pip install zenml
 ```
 
 You can read more about this [here](http://sealiesoftware.com/blog/archive/2017/6/5/Objective-C_and_fork_in_macOS_1013.html). This environment variable is needed if you are working with a local server on your Mac, but if you're just using ZenML as a client / CLI and connecting to a deployed server, then you don't need to set it.
