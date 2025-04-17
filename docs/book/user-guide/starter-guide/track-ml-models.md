@@ -259,7 +259,7 @@ zenml model version update <MODEL_NAME> <MODEL_VERSIONNAME> -s production
 {% tab title="Cloud (Dashboard)" %}
 The [ZenML Pro](https://zenml.io/pro) dashboard has additional capabilities, that include easily changing the stage:
 
-![ZenML Pro Transition Model Stages](../../../../.gitbook/assets/dcp_transition_stage.gif)
+![ZenML Pro Transition Model Stages](../../.gitbook/assets/dcp_transition_stage.gif)
 {% endtab %}
 {% endtabs %}
 
