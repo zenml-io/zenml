@@ -83,7 +83,7 @@ If you want to create your own custom flavor for a step operator, you can follow
 
 ### Using Step Operators in Steps
 
-- **Step Operator Parameter**: The `step_operator` parameter in the `@step` decorator allows you to specify the step operator for executing the step. This enables the step to be executed in the environment provided by the step operator, such as AWS SageMaker.
+- **Step Operator Parameter**: The `step_operator` parameter in the `@step` decorator allows you to specify the step operator for executing the step. This enables the step to be executed in the environment provided by the step operator, such as a cloud service or a custom environment.
 
 - **Example**:
   ```python
@@ -94,7 +94,7 @@ If you want to create your own custom flavor for a step operator, you can follow
       # Step logic here
       pass
   ```
-  In this example, `my_sagemaker_operator` is the name of the step operator registered for AWS SageMaker.
+  In this example, `my_custom_operator` is the name of the step operator registered for a specific environment.
 
 - **Running the Pipeline**: Include the step in your pipeline and execute it. The specified step operator will handle the execution of the step in the designated environment.
 
