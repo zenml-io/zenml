@@ -51,6 +51,39 @@ zenml integration install aws s3
 * The local client (whoever is running the pipeline) will also have to have the necessary permissions or roles to be able to launch Sagemaker jobs. (This would be covered by the `AmazonSageMakerFullAccess` policy suggested above.)
 * If you want to use schedules, you also need to set up the correct roles, permissions and policies covered [here](sagemaker.md#required-iam-permissions-for-schedules).
 
+## Registering AWS Step Operator
+
+To register a step operator for AWS, follow these steps:
+
+1. **Prerequisites**: Ensure you have the necessary AWS configurations and permissions, including an IAM role with `AmazonSageMakerFullAccess`.
+
+2. **Install AWS Integration**: Use the ZenML CLI to install the AWS integration.
+
+   ```shell
+   zenml integration install aws
+   ```
+
+3. **Register the Step Operator**: Use the ZenML CLI to register a step operator with the AWS flavor, such as SageMaker. Specify the necessary AWS configurations like the IAM role and instance type.
+
+   ```shell
+   zenml step-operator register my_sagemaker_operator \
+       --flavor=sagemaker \
+       --role=<SAGEMAKER_ROLE> \
+       --instance_type=<INSTANCE_TYPE>
+   ```
+
+4. **Connect to a Service Connector**: If using a service connector for authentication, connect the step operator to the service connector.
+
+   ```shell
+   zenml step-operator connect my_sagemaker_operator --connector <CONNECTOR_NAME>
+   ```
+
+5. **Add to Stack**: Add the registered step operator to your ZenML stack.
+
+   ```shell
+   zenml stack update <STACK_NAME> -s my_sagemaker_operator
+   ```
+
 There are three ways you can authenticate your orchestrator and link it to the IAM role you have created:
 
 {% tabs %}
