@@ -206,6 +206,23 @@ settings:
     
 ```
 
+#### Using `DockerSettings`
+
+The `DockerSettings` class is used to configure Docker-related settings for ZenML pipelines. It allows you to specify various options for building and running Docker images.
+
+- **parent_image**: This attribute is specific to `DockerSettings` and is used to specify the full name of the Docker image that should be used as the parent for the image that will be built. If you specify a custom image here, ensure it has ZenML installed.
+
+Example usage:
+
+```python
+from zenml.config import DockerSettings
+
+docker_settings = DockerSettings(
+    parent_image="my_registry.io/image_name:tag",
+    skip_build=True
+)
+```
+
 {% hint style="info" %}
 Find a complete list of all Docker Settings [here](https://sdkdocs.zenml.io/latest/core_code_docs/core-config.html#zenml.config.docker_settings). To learn more about pipeline containerization consult our documentation on this [here](https://docs.zenml.io//how-to/customize-docker-builds).
 {% endhint %}

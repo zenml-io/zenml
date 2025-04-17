@@ -56,7 +56,7 @@ All steps running on GPU-backed hardware will be executed within a containerized
 
 #### 1. **Specify a CUDA-enabled parent image in your `DockerSettings`**
 
-For complete details, refer to the [containerization page](https://docs.zenml.io//how-to/customize-docker-builds) that explains how to do this. As an example, if you want to use the latest CUDA-enabled official PyTorch image for your entire pipeline run, you can include the following code:
+The `DockerSettings` class is used to configure Docker-related settings for ZenML pipelines, including specifying a parent Docker image. The `parent_image` attribute is specific to `DockerSettings` and not available in `BaseSettings`. For complete details, refer to the [containerization page](https://docs.zenml.io//how-to/customize-docker-builds) that explains how to do this. As an example, if you want to use the latest CUDA-enabled official PyTorch image for your entire pipeline run, you can include the following code:
 
 ```python
 from zenml import pipeline

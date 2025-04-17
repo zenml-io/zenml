@@ -387,6 +387,25 @@ def my_step() -> None:
   ...
 ```
 
+### Understanding `DockerSettings`
+
+The `DockerSettings` class is used to configure Docker-related settings for ZenML pipelines. It allows you to specify various options for building Docker images, including the `parent_image` attribute, which defines the base Docker image to use.
+
+- **parent_image**: This attribute is specific to `DockerSettings` and not available in `BaseSettings`. It specifies the full name of the Docker image to be used as the parent for the image that will be built. If you set `skip_build=True`, you must provide a `parent_image`.
+
+Example usage:
+
+```python
+from zenml.config import DockerSettings
+
+docker_settings = DockerSettings(
+    parent_image="my_registry.io/image_name:tag",
+    skip_build=True
+)
+```
+
+This example demonstrates how to instantiate `DockerSettings` with a specified `parent_image` and `skip_build` option.
+
 With this change, all stack components (e.g. Orchestrators and Step Operators) that accepted a `docker_parent_image` as part of its Stack Configuration should now pass it through the `DockerSettings` object.
 
 Read more [here](https://docs.zenml.io//how-to/customize-docker-builds/docker-settings-on-a-pipeline).
