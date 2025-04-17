@@ -239,5 +239,5 @@ Execution parameters in ZenML provide a powerful mechanism for making your ML wo
 
 See also:
 - [Steps & Pipelines](./steps_and_pipelines.md) - Core building blocks
-- [Configuration & Settings](./configuration_settings.md) - YAML configuration
+- [YAML Configuration](./yaml_configuration.md) - YAML configuration
 - [Logging](./logging.md) - Logging configuration 

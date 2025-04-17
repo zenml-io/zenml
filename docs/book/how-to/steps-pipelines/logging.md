@@ -183,5 +183,5 @@ ZENML_DISABLE_STEP_NAMES_IN_LOGS=true
 
 ## See Also
 - [Steps & Pipelines](./steps_and_pipelines.md)
-- [Configuration with YAML](./configuration_with_yaml.md)
+- [YAML Configuration](./yaml_configuration.md)
 - [Advanced Features](./advanced_features.md) 

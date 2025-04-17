@@ -14,7 +14,7 @@ ZenML automatically generates visualizations for many common data types, making 
 
 The ZenML dashboard displays visualizations for artifacts produced by your pipeline runs:
 
-![ZenML Artifact Visualizations](../../../.gitbook/assets/artifact_visualization_dashboard.png)
+![ZenML Artifact Visualizations](../../.gitbook/assets/artifact_visualization_dashboard.png)
 
 To view visualizations in the dashboard:
 
@@ -122,7 +122,7 @@ def create_drift_report(
 
 [Hugging Face](https://zenml.io/integrations/huggingface) datasets are visualized using an interactive dataset viewer:
 
-![Hugging Face Dataset Viewer](../../../.gitbook/assets/artifact_visualization_huggingface.gif)
+![Hugging Face Dataset Viewer](../../.gitbook/assets/artifact_visualization_huggingface.gif)
 
 #### Other Integrations
 

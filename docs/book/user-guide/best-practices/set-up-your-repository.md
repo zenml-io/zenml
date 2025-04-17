@@ -72,7 +72,7 @@ Utilize project templates to kickstart your ZenML projects and ensure consistenc
 - Use pre-made templates for common use cases
 - Create custom templates tailored to your team's needs
 
-Learn about using and creating project templates in the [Project Templates guide](../../../how-to/templates/templates.md).
+Learn about using and creating project templates in the [Project Templates guide](../../how-to/templates/templates.md).
 
 ### Migration and Maintenance
 

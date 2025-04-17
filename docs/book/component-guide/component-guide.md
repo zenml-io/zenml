@@ -21,7 +21,7 @@ With ZenML, you can run your pipelines on more than one stacks with ease. This p
 
 This enables a case like this: a data scientist starts experimentation locally on their system and then once they are satisfied, move to a cloud environment on your staging cloud account to test more advanced features of your pipeline. Finally, when all looks good, they can mark the pipeline ready for production and have it run on a production-grade stack in your production cloud account.
 
-![Stacks as a way to organize your execution environment](../../.gitbook/assets/stack_envs.png)
+![Stacks as a way to organize your execution environment](../.gitbook/assets/stack_envs.png)
 
 Having separate stacks for these environments helps:
 
@@ -35,7 +35,7 @@ Most stack components require some form of credentials to interact with the unde
 
 The preferred way to handle credentials in ZenML is to use [Service Connectors](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/service-connectors-guide). Service connectors are a powerful feature of ZenML that allow you to abstract away credentials and sensitive information from your team.
 
-![Service Connectors abstract away complexity and implement security best practices](../../.gitbook/assets/ConnectorsDiagram.png)
+![Service Connectors abstract away complexity and implement security best practices](../.gitbook/assets/ConnectorsDiagram.png)
 
 ### Recommended roles
 
@@ -47,7 +47,7 @@ Ideally, you would want that only the people who deal with and have direct acces
 
 ### Recommended workflow
 
-![Recommended workflow for managing credentials](../../.gitbook/assets/service_con_workflow.png)
+![Recommended workflow for managing credentials](../.gitbook/assets/service_con_workflow.png)
 
 Here's an approach you can take that is a good balance between convenience and security:
 

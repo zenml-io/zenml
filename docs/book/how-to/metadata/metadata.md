@@ -251,7 +251,7 @@ Once you've logged metadata in your runs, you can use ZenML's Experiment Compari
 The metadata comparison tool is a [ZenML Pro](https://zenml.io/pro)-only feature. Please [sign up here](https://cloud.zenml.io) to get access.
 {% endhint %}
 
-[![Experiment Comparison Introduction Video](../../../../book/.gitbook/assets/experiment_comparison_video.png)](https://www.loom.com/share/693b2d829600492da7cd429766aeba6a?sid=7182e55b-31e9-4b38-a3be-07c989dbea32)
+[![Experiment Comparison Introduction Video](../../.gitbook/assets/experiment_comparison_video.png)](https://www.loom.com/share/693b2d829600492da7cd429766aeba6a?sid=7182e55b-31e9-4b38-a3be-07c989dbea32)
 
 ### Comparison Views
 
@@ -259,11 +259,11 @@ The Experiment Comparison tool offers two complementary views for analyzing your
 
 1. **Table View**: Compare metadata across runs with automatic change tracking
 
-![Table View](../../../../book/.gitbook/assets/table-view.png)
+![Table View](../../.gitbook/assets/table-view.png)
 
 2. **Parallel Coordinates Plot**: Visualize relationships between different metrics
 
-![Parallel Coordinates](../../../../book/.gitbook/assets/coordinates-view.png)
+![Parallel Coordinates](../../../book/.gitbook/assets/coordinates-view.png)
 
 The tool lets you compare up to 20 pipeline runs simultaneously and supports any
 numerical metadata (`float` or `int`) that you've logged in your pipelines.

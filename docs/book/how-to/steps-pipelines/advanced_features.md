@@ -292,7 +292,7 @@ The fan-out pattern allows for parallel processing and better resource utilizati
 - Ensemble methods
 - Batch processing
 - Data validation across multiple sources
-- [Hyperparameter tuning](./hyper-parameter-tuning.md)
+- Hyperparameter tuning
 
 Note that when implementing the fan-in step, you'll need to use the ZenML Client to query the results from previous parallel steps, as shown in the example above, and you can't pass in the result directly.
 
@@ -305,7 +305,7 @@ The fan-in, fan-out method has the following limitations:
 
 ### Custom Step Invocation IDs
 
-When calling a ZenML step as part of your pipeline, it gets assigned a unique **invocation ID** that you can use to reference this step invocation when [defining the execution order](control-execution-order-of-steps.md) of your pipeline steps or use it to [fetch information](fetching-pipelines.md) about the invocation after the pipeline has finished running.
+When calling a ZenML step as part of your pipeline, it gets assigned a unique **invocation ID** that you can use to reference this step invocation when defining the execution order of your pipeline steps or use it to fetch information about the invocation after the pipeline has finished running.
 
 ```python
 from zenml import pipeline, step
@@ -476,4 +476,4 @@ These advanced features provide powerful capabilities for building sophisticated
 
 See also:
 - [Steps & Pipelines](./steps_and_pipelines.md) - Core building blocks
-- [Configuration with YAML](./configuration_with_yaml.md) - YAML configuration 
+- [YAML Configuration](./yaml_configuration.md) - YAML configuration 

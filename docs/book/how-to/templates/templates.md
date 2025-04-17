@@ -80,9 +80,9 @@ To create a template through the ZenML dashboard:
 3. Enter a name for the template
 4. Click `Create`
 
-![Create Templates on the dashboard](../../../.gitbook/assets/run-templates-create-1.png)
+![Create Templates on the dashboard](../../.gitbook/assets/run-templates-create-1.png)
 
-![Template Details](../../../.gitbook/assets/run-templates-create-2.png)
+![Template Details](../../.gitbook/assets/run-templates-create-2.png)
 
 ## Running Pipeline Templates
 
@@ -118,7 +118,7 @@ To run a template from the dashboard:
    * Modify the configuration using the built-in editor
 3. Click `Run` to execute the template
 
-![Run Details](../../../.gitbook/assets/run-templates-run-1.png)
+![Run Details](../../.gitbook/assets/run-templates-run-1.png)
 
 Once you run the template, a new run will be executed on the same stack as the original run.
 
