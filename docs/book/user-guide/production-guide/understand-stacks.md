@@ -57,6 +57,38 @@ As you can see a stack can be **active** on your **client**. This simply means t
 
 As you can see in the section above, a stack consists of multiple components. All stacks have at minimum an **orchestrator** and an **artifact store**.
 
+## Troubleshooting Stack Configuration Issues
+
+If you encounter issues related to stack configuration, such as missing metadata or validation errors, follow these troubleshooting steps:
+
+- **Verify Active Stack**: Use the ZenML CLI to list and describe your stacks to ensure the active stack is correctly configured.
+  ```bash
+  zenml stack list
+  zenml stack describe <STACK_NAME>
+  ```
+
+- **Set Active Stack**: If the active stack is incorrect, set the correct stack as active.
+  ```bash
+  zenml stack set <STACK_NAME>
+  ```
+
+- **Validate Stack Components**: Ensure all stack components are registered and configured correctly.
+
+- **Reset ZenML Configuration**: If necessary, reset the ZenML configuration.
+  ```bash
+  zenml config reset
+  ```
+
+- **Update ZenML**: Ensure you are using the latest version of ZenML.
+  ```bash
+  pip install --upgrade zenml
+  ```
+
+- **Increase Logging Verbosity**: For more detailed error context, increase the logging verbosity.
+  ```bash
+  export ZENML_LOGGING_VERBOSITY=DEBUG
+  ```
+
 ### Orchestrator
 
 The **orchestrator** is responsible for executing the pipeline code. In the simplest case, this will be a simple Python thread on your machine. Let's explore this default orchestrator.
