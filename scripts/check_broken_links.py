@@ -54,6 +54,11 @@ def extract_relative_links(content):
     img_matches = re.finditer(img_pattern, content)
     links.extend([(m.group(1), m.group(2), "image") for m in img_matches])
     
+    # Match [text](broken-reference) patterns
+    broken_ref_pattern = r"\[([^\]]+)\]\(broken-reference\)"
+    broken_ref_matches = re.finditer(broken_ref_pattern, content)
+    links.extend([(m.group(1), "broken-reference", "broken-reference") for m in broken_ref_matches])
+    
     return links
 
 
@@ -82,7 +87,17 @@ def check_markdown_links(directory):
             relative_links = extract_relative_links(content)
 
             for link_text, link_path, link_type in relative_links:
-                if not validate_link(file_path, link_path):
+                # Automatically consider broken-reference links as broken
+                if link_type == "broken-reference":
+                    broken_links.append(
+                        {
+                            "source_file": str(file_path),
+                            "link_text": link_text,
+                            "broken_path": link_path,
+                            "link_type": "markdown",  # Categorize as markdown for statistics
+                        }
+                    )
+                elif not validate_link(file_path, link_path):
                     broken_links.append(
                         {
                             "source_file": str(file_path),
@@ -104,8 +119,9 @@ def create_comment_body(broken_links):
     # Calculate statistics
     total_files = len({link["source_file"] for link in broken_links})
     total_broken = len(broken_links)
-    md_links = sum(1 for link in broken_links if link["link_type"] == "markdown")
+    md_links = sum(1 for link in broken_links if link["link_type"] == "markdown" and link["broken_path"] != "broken-reference")
     img_links = sum(1 for link in broken_links if link["link_type"] == "image")
+    broken_ref_links = sum(1 for link in broken_links if link["broken_path"] == "broken-reference")
 
     body = [
         "# 🔍 Broken Links Report",
@@ -115,6 +131,7 @@ def create_comment_body(broken_links):
         f"- 🔗 Total broken links: **{total_broken}**",
         f"- 📄 Broken markdown links: **{md_links}**",
         f"- 🖼️ Broken image links: **{img_links}**",
+        f"- ⚠️ Broken reference placeholders: **{broken_ref_links}**",
         "",
         "### Details",
         "| File | Link Type | Link Text | Broken Path |",
@@ -132,7 +149,10 @@ def create_comment_body(broken_links):
         )
         
         # Use emoji to indicate link type
-        link_type_icon = "📄" if link["link_type"] == "markdown" else "🖼️"
+        if link["broken_path"] == "broken-reference":
+            link_type_icon = "⚠️"  # Warning icon for broken-reference
+        else:
+            link_type_icon = "📄" if link["link_type"] == "markdown" else "🖼️"
 
         body.append(
             f'| `{display_name}` | {link_type_icon} | "{link["link_text"]}" | `{link["broken_path"]}` |'
@@ -209,7 +229,10 @@ def main():
     print("\n🔍 Broken links found:")
     for link in broken_links:
         relative_path = format_path_for_display(link["source_file"])
-        link_type = "Image" if link["link_type"] == "image" else "Markdown"
+        if link["broken_path"] == "broken-reference":
+            link_type = "Broken reference placeholder"
+        else:
+            link_type = "Image" if link["link_type"] == "image" else "Markdown"
         print(f"\n📄 File: {relative_path}")
         print(f"🔗 Type: {link_type}")
         print(f'📝 Link text: "{link["link_text"]}"')
