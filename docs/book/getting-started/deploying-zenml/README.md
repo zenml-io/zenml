@@ -3,7 +3,7 @@ description: Why do we need to deploy ZenML?
 icon: rocket-launch
 ---
 
-# Deploying ZenML
+# Deploy
 
 ![ZenML OSS server deployment architecture](../../.gitbook/assets/oss_simple_deployment.png)
 
@@ -31,19 +31,11 @@ This documentation page will focus on the components required to deploy ZenML OS
 
 <summary>Details on the ZenML Python Client</summary>
 
-The ZenML client is a Python package that you can install on your machine. It\
-is used to interact with the ZenML server. You can install it using the `pip`\
-command as outlined [here](../installation.md).
+The ZenML client is a Python package that you can install on your machine. It is used to interact with the ZenML server. You can install it using the `pip` command as outlined [here](../installation.md).
 
-This Python package gives you [the `zenml` command-line interface](https://sdkdocs.zenml.io/latest/cli.html) which\
-you can use to interact with the ZenML server for common tasks like managing\
-stacks, setting up secrets, and so on. It also gives you the general framework that lets you[author and deploy pipelines](https://docs.zenml.io/user-guides/starter-guide) and so forth.
+This Python package gives you [the `zenml` command-line interface](https://sdkdocs.zenml.io/latest/cli.html) which you can use to interact with the ZenML server for common tasks like managing stacks, setting up secrets, and so on. It also gives you the general framework that lets you [author and deploy pipelines](https://docs.zenml.io/user-guides/starter-guide) and so forth.
 
-If you want to have more fine-grained control and access to the metadata that\
-ZenML manages, you can use the Python SDK to access the API. This allows you to\
-create your own custom automations and scripts and is the most common way teams\
-access the metadata stored in the ZenML server. The full documentation for the\
-Python SDK can be found [here](https://sdkdocs.zenml.io/latest/). The full HTTP[API documentation](https://docs.zenml.io/api-reference) can also be found by adding the`/doc` suffix to the URL when accessing your deployed ZenML server.
+If you want to have more fine-grained control and access to the metadata that ZenML manages, you can use the Python SDK to access the API. This allows you to create your own custom automations and scripts and is the most common way teams access the metadata stored in the ZenML server. The full documentation for the Python SDK can be found [here](https://sdkdocs.zenml.io/latest/). The full HTTP [API documentation](https://docs.zenml.io/api-reference) can also be found by adding the`/doc` suffix to the URL when accessing your deployed ZenML server.
 
 </details>
 
@@ -53,8 +45,7 @@ When you first get started with ZenML, you have the following architecture on yo
 
 ![ZenML default local configuration](../../.gitbook/assets/Scenario1.png)
 
-The SQLite database that you can see in this diagram is used to store information about pipelines, pipeline runs, stacks, and other configurations. This default setup allows you to get started and try out the core features but you won't be able to use cloud-based components like serverless orchestrators\
-and so on.
+The SQLite database that you can see in this diagram is used to store information about pipelines, pipeline runs, stacks, and other configurations. This default setup allows you to get started and try out the core features, but you won't be able to use cloud-based components like serverless orchestrators and so on.
 
 Users can run the `zenml login --local` command to spin up a local ZenML OSS server to serve the dashboard. For the local OSS server option, the `zenml login --local` command implicitly connects the client to the server. The diagram for this looks as follows:
 
