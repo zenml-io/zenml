@@ -96,6 +96,25 @@ def trainer(...) -> ...:
 ZenML will build a Docker images which includes your code and use it to run your steps in Kubernetes. Check out [this page](https://docs.zenml.io/how-to/customize-docker-builds/) if you want to learn more about how ZenML builds these images and how you can customize them.
 {% endhint %}
 
+# Using Step Operators in Steps
+
+The `step_operator` parameter in the `@step` decorator allows you to specify the step operator for executing the step. This is particularly useful for executing steps in different environments, such as AWS SageMaker.
+
+Example:
+
+```python
+from zenml import step
+
+@step(step_operator="my_sagemaker_operator")
+def my_training_step(...) -> ...:
+    # Step logic here
+    pass
+```
+
+In this example, `my_sagemaker_operator` is the name of the step operator registered for AWS SageMaker. The step will be executed in the environment provided by the step operator.
+
+When running the pipeline, the specified step operator manages the execution environment for the step, leveraging specialized compute resources and capabilities.
+
 #### Interacting with pods via kubectl
 
 For debugging, it can sometimes be handy to interact with the Kubernetes pods directly via kubectl. To make this easier, we have added the following labels to all pods:
