@@ -232,7 +232,7 @@ def training_pipeline():
 
 Pipeline composition allows you to build complex workflows from simpler, well-tested components.
 
-### Fan-in and Fan-out
+### Fan-out and Fan-in
 
 The fan-out/fan-in pattern is a common pipeline architecture where a single step splits into multiple parallel operations (fan-out) and then consolidates the results back into a single step (fan-in). This pattern is particularly useful for parallel processing, distributed workloads, or when you need to process data through different transformations and then aggregate the results. For example, you might want to process different chunks of data in parallel and then aggregate the results:
 
@@ -448,7 +448,7 @@ def my_step(some_parameter: int = 1):
 
 ### Using Alerter in Hooks
 
-You can use the Alerter stack component to send notifications when steps fail or succeed:
+You can use the [Alerter stack component](https://docs.zenml.io/component-guide/alerters) to send notifications when steps fail or succeed:
 
 ```python
 from zenml import get_step_context
