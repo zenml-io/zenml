@@ -260,6 +260,50 @@ zenml stack register <STACK_NAME> \
     ...
 ```
 
+## Updating Stacks with Existing Components
+
+To update a ZenML stack with existing components, use the `zenml stack update` command. This command allows you to modify the components of an existing stack by adding or replacing them with registered components.
+
+### Syntax
+
+```shell
+zenml stack update <STACK_NAME> [OPTIONS]
+```
+
+### Options
+
+- `-o, --orchestrator <ORCHESTRATOR_NAME>`: Add or update the orchestrator component.
+- `-a, --artifact-store <ARTIFACT_STORE_NAME>`: Add or update the artifact store component.
+- `-c, --container-registry <CONTAINER_REGISTRY_NAME>`: Add or update the container registry component.
+
+### Examples
+
+1. **Add an Orchestrator**
+   ```shell
+   zenml stack update my_stack -o my_orchestrator
+   ```
+   This command updates the stack `my_stack` to include the orchestrator `my_orchestrator`.
+
+2. **Add an Artifact Store**
+   ```shell
+   zenml stack update my_stack -a my_artifact_store
+   ```
+   This command updates the stack `my_stack` to include the artifact store `my_artifact_store`.
+
+3. **Add a Container Registry**
+   ```shell
+   zenml stack update my_stack -c my_container_registry
+   ```
+   This command updates the stack `my_stack` to include the container registry `my_container_registry`.
+
+### Troubleshooting Tips
+
+- Ensure that all components you want to add are already registered.
+- Use `zenml stack update --help` to see all available options and flags.
+- If you encounter issues, check the component names and ensure they are correctly spelled and registered.
+
+This section helps users understand how to effectively manage and update their ZenML stacks, making the process more accessible and reducing potential confusion.
+
 ## Tips and best practices
 
 * ZenML resolves the flavor classes by taking the path where you initialized ZenML (via `zenml init`) as the starting point of resolution. Therefore, you and your team should remember to execute `zenml init` in a consistent manner (usually at the root of the repository where the `.git` folder lives). If the `zenml init` command was not executed, the current working directory is used to find implementation classes, which could lead to unexpected behavior.

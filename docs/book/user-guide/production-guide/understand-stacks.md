@@ -57,6 +57,51 @@ As you can see a stack can be **active** on your **client**. This simply means t
 
 As you can see in the section above, a stack consists of multiple components. All stacks have at minimum an **orchestrator** and an **artifact store**.
 
+## Updating Stacks with Existing Components
+
+To update a ZenML stack with existing components, you can use the `zenml stack update` command. This command allows you to add different types of components to an existing stack. Here is a breakdown of how to use this command:
+
+### `zenml stack update` Command
+
+The `zenml stack update` command is used to modify an existing stack by adding or updating its components. The general syntax is:
+
+```shell
+zenml stack update STACK_NAME [OPTIONS]
+```
+
+### Adding Components to a Stack
+
+To add a component to a stack, ensure the component is already registered. Then, use the appropriate flag to specify the component type and name. Here are examples for different component types:
+
+- **Orchestrator**: To add an orchestrator named `my_orchestrator` to a stack named `my_stack`, use:
+  ```shell
+  zenml stack update my_stack -o my_orchestrator
+  ```
+
+- **Artifact Store**: To add an artifact store named `my_artifact_store`, use:
+  ```shell
+  zenml stack update my_stack -a my_artifact_store
+  ```
+
+- **Container Registry**: To add a container registry named `my_container_registry`, use:
+  ```shell
+  zenml stack update my_stack -c my_container_registry
+  ```
+
+### Flags for `zenml stack update`
+
+- `-o`: Specifies the orchestrator to add or update.
+- `-a`: Specifies the artifact store to add or update.
+- `-c`: Specifies the container registry to add or update.
+
+### Troubleshooting Tips
+
+- Ensure all components are registered before updating the stack.
+- Use `zenml stack update --help` to see all available options and flags.
+- If you encounter issues, check the component names and ensure they are correctly spelled and registered.
+
+This section helps users understand how to effectively manage and update their ZenML stacks, making the process more accessible and reducing potential confusion.
+
 ### Orchestrator
 
 The **orchestrator** is responsible for executing the pipeline code. In the simplest case, this will be a simple Python thread on your machine. Let's explore this default orchestrator.

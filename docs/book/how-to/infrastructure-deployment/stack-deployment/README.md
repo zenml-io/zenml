@@ -74,6 +74,49 @@ All of these points make taking your pipelines to production a more difficult ta
 
 This docs section consists of information that makes it easier to provision, configure, and extend stacks and components in ZenML.
 
+# Updating Stacks with Existing Components
+
+To update a ZenML stack with existing components, follow these steps:
+
+## Purpose and Syntax of `zenml stack update`
+
+The `zenml stack update` command is used to modify an existing stack by adding or updating its components. The general syntax is:
+
+```bash
+zenml stack update STACK_NAME [OPTIONS]
+```
+
+## Adding Components to a Stack
+
+1. **Orchestrators**: To add an orchestrator, use the `-o` flag. Example:
+   ```bash
+   zenml stack update my_stack -o my_orchestrator
+   ```
+
+2. **Artifact Stores**: To add an artifact store, use the `-a` flag. Example:
+   ```bash
+   zenml stack update my_stack -a my_artifact_store
+   ```
+
+3. **Container Registries**: To add a container registry, use the `-c` flag. Example:
+   ```bash
+   zenml stack update my_stack -c my_container_registry
+   ```
+
+## Flags for `zenml stack update`
+
+- `-o`: Add or update an orchestrator.
+- `-a`: Add or update an artifact store.
+- `-c`: Add or update a container registry.
+
+## Troubleshooting Tips
+
+- Ensure all components are registered before updating the stack.
+- Use `zenml stack update --help` to see all available options and flags.
+- If an update fails, check for typos in component names and ensure compatibility between components.
+
+This section helps users understand how to effectively manage and update their ZenML stacks, making the process more accessible and reducing potential confusion.
+
 <table data-view="cards"><thead><tr><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><mark style="color:purple;"><strong>Deploy a cloud stack with ZenML</strong></mark></td><td>Deploy a cloud stack with ZenML</td><td><a href="deploy-a-cloud-stack.md">deploy-a-cloud-stack.md</a></td></tr><tr><td><mark style="color:purple;"><strong>Register a cloud stack</strong></mark></td><td>Register a cloud stack</td><td><a href="register-a-cloud-stack.md">register-a-cloud-stack.md</a></td></tr><tr><td><mark style="color:purple;"><strong>Deploy a cloud stack with Terraform</strong></mark></td><td>Deploy a cloud stack with Terraform</td><td><a href="deploy-a-cloud-stack-with-terraform.md">deploy-a-cloud-stack-with-terraform.md</a></td></tr><tr><td><mark style="color:purple;"><strong>Export and install stack requirements</strong></mark></td><td>Export and install stack requirements</td><td><a href="export-stack-requirements.md">export-stack-requirements.md</a></td></tr><tr><td><mark style="color:purple;"><strong>Reference secrets in stack configuration</strong></mark></td><td>Reference secrets in stack configuration</td><td><a href="reference-secrets-in-stack-configuration.md">reference-secrets-in-stack-configuration.md</a></td></tr><tr><td><mark style="color:purple;"><strong>Implement a custom stack component</strong></mark></td><td>Creating your custom stack component solutions.</td><td><a href="implement-a-custom-stack-component.md">implement-a-custom-stack-component.md</a></td></tr></tbody></table>
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
