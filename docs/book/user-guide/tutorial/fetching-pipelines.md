@@ -5,11 +5,13 @@ icon: rectangle-vertical-history
 
 # Inspecting past pipeline runs
 
-Once a pipeline run has been completed, we can access the corresponding information in code, which enables the following:
+Ever trained a model yesterday and forgotten where its artifacts are stored?  This hands‑on guide shows you how to:
 
-* Loading artifacts like models or datasets saved by previous runs
-* Accessing metadata or configurations of previous runs
-* Programmatically inspecting the lineage of pipeline runs and their artifacts
+* List pipelines and discover their runs in Python or via the CLI.
+* Drill down into an individual run to inspect steps, settings and metadata.
+* Load output artifacts such as models or datasets straight back into your code.
+
+We'll work our way down the ZenML object hierarchy—from pipelines → runs → steps → artifacts—so feel free to jump to the level you care about.
 
 The hierarchy of pipelines, runs, steps, and artifacts is as follows:
 
@@ -372,5 +374,3 @@ if __name__ == "__main__":
 ```
 
 </details>
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

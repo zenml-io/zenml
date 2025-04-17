@@ -5,7 +5,14 @@ icon: database
 
 # Handling big data
 
-As your machine learning projects grow, you'll often encounter datasets that challenge your existing data processing pipelines. This section explores strategies for scaling your ZenML pipelines to handle increasingly large datasets. For information on creating custom Dataset classes and managing complex data flows, refer to [custom dataset classes](datasets.md).
+As your datasets grow, a single‑machine pandas workflow eventually hits its limits.  This tutorial walks you through **progressively scaling** a ZenML pipeline:
+
+1. Optimizing in‑memory processing for small‑to‑medium data.
+2. Moving to chunked / out‑of‑core techniques when the data no longer fits comfortably in RAM.
+3. Offloading heavy aggregations to a cloud data warehouse like BigQuery.
+4. Plugging in distributed compute engines (Spark, Ray, Dask…) for truly massive workloads.
+
+Pick the section that matches your current bottleneck or read sequentially to see how the techniques build on one another.
 
 ## Understanding Dataset Size Thresholds
 
@@ -15,7 +22,7 @@ Before diving into specific strategies, it's important to understand the general
 2. **Medium datasets (up to tens of GB)**: Require chunking or out-of-core processing techniques.
 3. **Large datasets (hundreds of GB or more)**: Necessitate distributed processing frameworks.
 
-## Strategies for Datasets up to a Few Gigabytes
+## Optimize in‑memory workflows (up to a few GB)
 
 For datasets that can still fit in memory but are becoming unwieldy, consider these optimizations:
 
@@ -67,11 +74,11 @@ def optimize_processing(df: pd.DataFrame) -> pd.DataFrame:
     return df
 ```
 
-## Handling Datasets up to Tens of Gigabytes
+## Go out‑of‑core (tens of GB)
 
 When your data no longer fits comfortably in memory, consider these strategies:
 
-### Chunking for CSV Datasets
+### Chunk large CSV files
 
 Implement chunking in your Dataset classes to process large files in manageable pieces:
 
@@ -97,7 +104,7 @@ def process_chunk(chunk: pd.DataFrame) -> pd.DataFrame:
     return chunk
 ```
 
-### Leveraging Data Warehouses for Large Datasets
+### Push heavy SQL to your data warehouse
 
 You can utilize data warehouses like [Google BigQuery](https://cloud.google.com/bigquery) for its distributed processing capabilities:
 
@@ -122,11 +129,11 @@ def process_big_query_data(dataset: BigQueryDataset) -> BigQueryDataset:
     return BigQueryDataset(table_id=result_table_id)
 ```
 
-## Approaches for Very Large Datasets (Hundreds of Gigabytes or More): Using Distributed Computing Frameworks in ZenML
+## Distribute the workload (hundreds of GB+)
 
 When dealing with very large datasets, you may need to leverage distributed computing frameworks like Apache Spark or Ray. ZenML doesn't have built-in integrations for these frameworks, but you can use them directly within your pipeline steps. Here's how you can incorporate Spark and Ray into your ZenML pipelines:
 
-### Using Apache Spark in ZenML
+### Plug in Apache Spark
 
 To use Spark within a ZenML pipeline, you simply need to initialize and use Spark within your step function:
 
@@ -161,7 +168,7 @@ spark_pipeline(input_data="path/to/your/data.csv")
 
 Note that you'll need to have Spark installed in your environment and ensure that the necessary Spark dependencies are available when running your pipeline.
 
-### Using Ray in ZenML
+### Plug in Ray
 
 Similarly, to use Ray within a ZenML pipeline, you can initialize and use Ray directly within your step:
 
@@ -201,7 +208,7 @@ ray_pipeline(input_data="path/to/your/data.csv")
 
 As with Spark, you'll need to have Ray installed in your environment and ensure that the necessary Ray dependencies are available when running your pipeline.
 
-### Using Dask in ZenML
+### Plug in Dask
 
 [Dask](https://docs.dask.org/en/stable/) is a flexible library for parallel computing in Python. It can be integrated into ZenML pipelines to handle large datasets and parallelize computations. Here's how you can use Dask within a ZenML pipeline:
 
@@ -248,7 +255,7 @@ dask_pipeline()
 
 In this example, we've created a custom `DaskDataFrameMaterializer` to handle Dask DataFrames. The pipeline creates a Dask DataFrame, processes it using Dask's distributed computing capabilities, and then computes the final result.
 
-### Using Numba in ZenML
+### Speed up single‑node code with Numba
 
 [Numba](https://numba.pydata.org/) is a just-in-time compiler for Python that can significantly speed up numerical Python code. Here's how you can integrate Numba into a ZenML pipeline:
 

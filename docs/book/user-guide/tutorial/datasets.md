@@ -9,6 +9,13 @@ As machine learning projects grow in complexity, you often need to work with var
 
 ## Introduction to Custom Dataset Classes
 
+In this tutorial you will learn how to model complex and heterogeneous data sources in ZenML by
+
+1. Defining a **Dataset** base class;
+2. Implementing concrete subclasses for CSV files and BigQuery tables;
+3. Writing **Materializers** so ZenML can persist and reload those objects; and
+4. Wiring everything together inside a pipeline.
+
 Custom Dataset classes in ZenML provide a way to encapsulate data loading, processing, and saving logic for different data sources. They're particularly useful when:
 
 1. Working with multiple data sources (e.g., CSV files, databases, cloud storage)
@@ -238,4 +245,7 @@ def analyze_data(data: pd.DataFrame) -> pd.DataFrame:
 
 By following these practices, you can create ZenML pipelines that efficiently handle complex data flows and multiple data sources while remaining adaptable to changing requirements. This approach allows you to leverage the power of custom Dataset classes throughout your machine learning workflows, ensuring consistency and flexibility as your projects evolve.
 
-For strategies on scaling your data processing as your datasets grow larger, refer to [scaling strategies for big data](manage-big-data.md).
+## Next steps
+
+* Check out the [big‑data scaling strategies](manage-big-data.md) tutorial to see how to process datasets that no longer fit in memory.
+* Combine custom datasets with the [hyper‑parameter tuning](hyper-parameter-tuning.md) tutorial to experiment on multiple data sources at scale.

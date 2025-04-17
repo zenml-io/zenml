@@ -5,68 +5,118 @@ icon: itunes-note
 
 # Hyper-parameter tuning
 
-A basic iteration through a number of hyperparameters can be achieved with ZenML by using a simple pipeline. The following example showcases an implementation of a basic grid search (across a single dimension) that would allow for a different learning rate to be used across the same `train_step`. Once that step has been run for all the different learning rates, the `selection_step` finds which hyperparameters gave the best results or performance. It utilizes the [fan-in, fan-out method of building a pipeline.](../../how-to/pipeline-development/build-pipelines/fan-in-fan-out.md)
+## Introduction
+
+Hyper‑parameter tuning is the process of systematically searching for the best set of hyper‑parameters for your model.  In ZenML, you can express these experiments declaratively inside a pipeline so that every trial is tracked, reproducible and shareable.
+
+In this tutorial you will:
+
+1. Build a simple training `step` that takes a hyper‑parameter as input.
+2. Create a **fan‑out / fan‑in** pipeline that trains multiple models in parallel – one for each hyper‑parameter value.
+3. Select the best performing model.
+4. Run the pipeline and inspect the results in the ZenML dashboard or programmatically.
+
+{% hint style="info" %}
+This tutorial focuses on the mechanics of orchestrating a grid‑search with ZenML.  For more advanced approaches (random search, Bayesian optimisation, …) or a ready‑made example have a look at the [E2E example](https://github.com/zenml-io/zenml/tree/main/examples/e2e) mentioned at the end of the page.
+{% endhint %}
+
+### Prerequisites
+
+* ZenML installed and an active stack (the local default stack is fine)
+* `scikit‑learn` installed (`pip install scikit-learn`)
+* Basic familiarity with ZenML pipelines and steps
+
+---
+
+## Step 1 Define the training step
+
+Create a training step that accepts the learning‑rate as an input parameter and returns both the trained model and its training accuracy:
 
 ```python
 from typing import Annotated
-
 from sklearn.base import ClassifierMixin
+from zenml import step
 
-from zenml import step, pipeline, get_step_context
+MODEL_OUTPUT = "model"
+
+@step
+def train_step(learning_rate: float) -> Annotated[ClassifierMixin, MODEL_OUTPUT]:
+    """Train a model with the given learning‑rate."""
+    # <your training code goes here>
+    ...
+```
+
+---
+
+## Step 2 Create a fan‑out / fan‑in pipeline
+
+Next, wire several instances of the same `train_step` into a pipeline, each with a different hyper‑parameter.  Afterwards, use a *selection* step that takes all models as input and decides which one is best.
+
+```python
+from zenml import pipeline
+from zenml import get_step_context, step
 from zenml.client import Client
 
-model_output_name = "my_model"
-
-
 @step
-def train_step(
-    learning_rate: float
-) -> Annotated[ClassifierMixin, model_output_name]:
-    return ...  # Train a model with the learning rate and return it here. 
-
-
-@step
-def selection_step(step_prefix: str, output_name: str) -> None:
-    run_name = get_step_context().pipeline_run.name
-    run = Client().get_pipeline_run(run_name)
-
-    trained_models_by_lr = {}
+def selection_step(step_prefix: str, output_name: str):
+    """Pick the best model among all training steps."""
+    run = Client().get_pipeline_run(get_step_context().pipeline_run.name)
+    trained_models = {}
     for step_name, step_info in run.steps.items():
         if step_name.startswith(step_prefix):
             model = step_info.outputs[output_name][0].load()
             lr = step_info.config.parameters["learning_rate"]
-            trained_models_by_lr[lr] = model
+            trained_models[lr] = model
 
-    for lr, model in trained_models_by_lr.items():
-        ...  # Evaluate the models to find the best one
-
+    # <evaluate and select your favourite model here>
 
 @pipeline
-def my_pipeline(step_count: int) -> None:
+def hp_tuning_pipeline(step_count: int = 4):
     after = []
     for i in range(step_count):
         train_step(learning_rate=i * 0.0001, id=f"train_step_{i}")
         after.append(f"train_step_{i}")
 
-    selection_step(
-        step_prefix="train_step_",
-        output_name=model_output_name,
-        after=after
-    )
-
-
-my_pipeline(step_count=4)
+    selection_step(step_prefix="train_step_", output_name=MODEL_OUTPUT, after=after)
 ```
 
 {% hint style="warning" %}
-The main challenge of this implementation is that it is currently not possible to pass a variable number of artifacts into a step programmatically, so the `selection_step` needs to query all artifacts produced by the previous steps via the ZenML Client instead.
+Currently ZenML doesn't allow passing a *variable* number of inputs into a step.  The workaround shown above queries the artifacts after the fact via the `Client`.
 {% endhint %}
 
-{% hint style="info" %}
-You can also see this in action with the [E2E example](https://github.com/zenml-io/zenml/tree/main/examples/e2e).
+---
 
-In the `steps/hp_tuning` folder, you will find two step files, that can be used as a starting point for building your own hyperparameter search tailored specifically to your use case:
+## Step 3 Run the pipeline
 
-* [`hp_tuning_single_search(...)`](https://github.com/zenml-io/zenml/blob/main/examples/e2e/steps/hp_tuning/hp_tuning_single_search.py) is performing a randomized search for the best model hyperparameters in a configured space.
-* [`hp_tuning_select_best_model(...)`](https://github.com/zenml-io/zenml/blob/main/examples/e2e/steps/hp_tuning/hp_tuning_select_best_model.py) is searching for the best hyperparameters, looping other results of previous random searches to find the best model according to a defined metric.
-{% endhint %}
+```python
+if __name__ == "__main__":
+    hp_tuning_pipeline(step_count=4)()
+```
+
+While the pipeline is running you can:
+
+* follow the logs in your terminal
+* open the ZenML dashboard and watch the DAG execute
+
+---
+
+## Step 4 Inspect results
+
+Once the run is finished you can programmatically analyse which hyper‑parameter performed best or load the chosen model:
+
+```python
+from zenml.client import Client
+
+run = Client().get_pipeline("hp_tuning_pipeline").last_run
+best_model = run.steps["selection_step"].outputs["best_model"].load()
+```
+
+For a deeper exploration of how to query past pipeline runs, see the [Inspecting past pipeline runs](fetching-pipelines.md) tutorial.
+
+---
+
+## Next steps
+
+* Replace the simple grid‑search with a more sophisticated tuner (e.g. `sklearn.model_selection.GridSearchCV` or [Optuna](https://optuna.org/)).
+* Serve the winning model via a [Model Deployer](https://docs.zenml.io/stacks/model-deployers) to serve it right away.
+* Move the pipeline to a [remote orchestrator](https://docs.zenml.io/stacks/orchestrators) to scale out the search.

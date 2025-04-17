@@ -52,11 +52,8 @@
 * [Trigger pipelines from external systems](tutorial/trigger-pipelines-from-external-systems.md)
 * [Hyper-parameter tuning](tutorial/hyper-parameter-tuning.md)
 * [Inspecting past pipeline runs](tutorial/fetching-pipelines.md)
-* [Train with GPUs](tutorial/distributed-training/README.md)
-  * [Distributed training with Accelerate](tutorial/distributed-training/accelerate-distributed-training.md)
-* [Running notebooks remotely](tutorial/run-remote-notebooks/README.md)
-  * [Limitations of defining steps in notebook cells](tutorial/run-remote-notebooks/limitations-of-defining-steps-in-notebook-cells.md)
-  * [Run a single step from a notebook](tutorial/run-remote-notebooks/run-a-single-step-from-a-notebook.md)
+* [Train with GPUs](tutorial/distributed-training.md)
+* [Running notebooks remotely](tutorial/run-remote-notebooks.md)
 * [Managing machine learning datasets](tutorial/datasets.md)
 * [Handling big data](tutorial/manage-big-data.md)
 
