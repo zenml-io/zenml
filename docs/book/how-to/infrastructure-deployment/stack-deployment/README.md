@@ -70,6 +70,30 @@ Deploying and managing a MLOps stack is tricky.
 * All the components that you deploy must have the right permissions to be able to talk to each other. For example, your workloads running in a Kubernetes cluster might require access to the container registry or the code repository, and so on.
 * Cleaning up your resources after you're done with your experiments is super important yet very challenging. For example, if your Kubernetes cluster has made use of [Load Balancers](https://kubernetes.io/docs/concepts/services-networking/service/#loadbalancer), you might still have one lying around in your account even after deleting the cluster, costing you money and frustration.
 
+### Troubleshooting Stack Configuration Issues
+
+To efficiently diagnose and resolve stack configuration issues, consider the following steps:
+
+- **Verify and Set Active Stack**: Use ZenML CLI commands to list, describe, and set the active stack:
+  ```bash
+  zenml stack list
+  zenml stack describe <STACK_NAME>
+  zenml stack set <STACK_NAME>
+  ```
+- **Ensure Correct Registration and Configuration**: Check that all stack components are properly registered and configured.
+- **Reset ZenML Configuration**: If necessary, reset the ZenML configuration:
+  ```bash
+  zenml config reset
+  ```
+- **Update ZenML**: Keep ZenML updated to the latest version for bug fixes and improvements:
+  ```bash
+  pip install --upgrade zenml
+  ```
+- **Increase Logging Verbosity**: For detailed error context, adjust the logging verbosity:
+  ```bash
+  export ZENML_LOGGING_VERBOSITY=DEBUG
+  ```
+
 All of these points make taking your pipelines to production a more difficult task than it should be. We believe that the expertise in setting up these often-complex stacks shouldn't be a prerequisite to running your ML pipelines.
 
 This docs section consists of information that makes it easier to provision, configure, and extend stacks and components in ZenML.
