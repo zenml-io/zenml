@@ -8,7 +8,7 @@ A Jupyter notebook is often the fastest way to prototype an ML experiment, but s
 
 ---
 
-## 1 Why there are limitations
+## Why there are limitations
 
 When you call a step or pipeline from a notebook, ZenML needs to export the cell code into a standalone Python module that gets packaged into a Docker image.  Any magic commands, cross‑cell references or missing imports break that process.  Keep your cells **pure and self‑contained** and you are good to go.
 
@@ -20,7 +20,7 @@ When you call a step or pipeline from a notebook, ZenML needs to export the cell
 
 ---
 
-## 2 Run a single step remotely
+## Run a single step remotely
 
 You can treat a ZenML `@step` like a normal Python function call.  ZenML will automatically create a *temporary* pipeline with just this one step and run it on your active stack.
 
@@ -55,10 +55,8 @@ model, train_acc = svc_trainer(X_train=X_train, y_train=y_train)
 
 ---
 
-## 3 Next steps – from notebook to production
+## Next steps – from notebook to production
 
 Once your logic stabilises it usually makes sense to move code out of the notebook and into regular Python modules so that it can be version‑controlled and tested.  At that point just assemble the same steps inside a `@pipeline` function and trigger it from the CLI or a CI workflow.
 
 For a deeper dive into how ZenML packages notebook code have a look at the [Notebook Integration docs](https://docs.zenml.io/how-to/notebooks).
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure> 
