@@ -1,16 +1,17 @@
 ---
 description: Running a hyperparameter tuning trial with ZenML.
+icon: itunes-note
 ---
 
-# Hyperparameter tuning
+# Hyper-parameter tuning
 
-A basic iteration through a number of hyperparameters can be achieved with 
-ZenML by using a simple pipeline. The following example showcases an 
-implementation of a basic grid search (across a single dimension) 
-that would allow for a different learning rate to be used across the 
-same `train_step`. Once that step has been run for all the different 
-learning rates, the `selection_step` finds which hyperparameters gave the 
-best results or performance. It utilizes the [fan-in, fan-out method of 
+A basic iteration through a number of hyperparameters can be achieved with\
+ZenML by using a simple pipeline. The following example showcases an\
+implementation of a basic grid search (across a single dimension)\
+that would allow for a different learning rate to be used across the\
+same `train_step`. Once that step has been run for all the different\
+learning rates, the `selection_step` finds which hyperparameters gave the\
+best results or performance. It utilizes the [fan-in, fan-out method of\
 building a pipeline.](../../how-to/pipeline-development/build-pipelines/fan-in-fan-out.md)
 
 ```python
@@ -65,17 +66,17 @@ my_pipeline(step_count=4)
 ```
 
 {% hint style="warning" %}
-The main challenge of this implementation is that it is currently not 
-possible to pass a variable number of artifacts into a step programmatically, 
-so the `selection_step` needs to query all artifacts produced by the previous 
+The main challenge of this implementation is that it is currently not\
+possible to pass a variable number of artifacts into a step programmatically,\
+so the `selection_step` needs to query all artifacts produced by the previous\
 steps via the ZenML Client instead.
 {% endhint %}
 
 {% hint style="info" %}
 You can also see this in action with the [E2E example](https://github.com/zenml-io/zenml/tree/main/examples/e2e).
 
-In the `steps/hp_tuning` folder, you will find two step files, that can be 
-used as a starting point for building your own hyperparameter search tailored 
+In the `steps/hp_tuning` folder, you will find two step files, that can be\
+used as a starting point for building your own hyperparameter search tailored\
 specifically to your use case:
 
 * [`hp_tuning_single_search(...)`](https://github.com/zenml-io/zenml/blob/main/examples/e2e/steps/hp_tuning/hp_tuning_single_search.py) is performing a randomized search for the best model hyperparameters in a configured space.

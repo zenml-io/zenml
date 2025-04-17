@@ -1,26 +1,27 @@
 ---
 description: Learn how to keep your pipeline runs clean during development.
+icon: washing-machine
 ---
 
-# Keep your dashboard and server clean
+# Keep Your Dashboard Clean
 
-When developing pipelines, it's common to run and debug them multiple times. To
-avoid cluttering the server with these development runs, ZenML provides several
+When developing pipelines, it's common to run and debug them multiple times. To\
+avoid cluttering the server with these development runs, ZenML provides several\
 options:
 
 ## Run locally
 
-One of the easiest ways to avoid cluttering a shared server / dashboard is to
+One of the easiest ways to avoid cluttering a shared server / dashboard is to\
 disconnect your client from the remote server and simply spin up a local server:
 
 ```bash
 zenml login --local
 ```
 
-Note that there are some limitations to this approach, particularly if you want
-to use remote infrastructure, but if there are local runs that you can do
-without the need for remote infrastructure, this can be a quick and easy way to
-keep things clean. When you're ready to reconnect to the server to continue with
+Note that there are some limitations to this approach, particularly if you want\
+to use remote infrastructure, but if there are local runs that you can do\
+without the need for remote infrastructure, this can be a quick and easy way to\
+keep things clean. When you're ready to reconnect to the server to continue with\
 your shared runs, you can simply run `zenml login <remote-url>` again.
 
 ## Pipeline Runs
@@ -33,8 +34,8 @@ Pipeline runs can be created without being explicitly associated with a pipeline
 pipeline_instance.run(unlisted=True)
 ```
 
-Unlisted runs are not displayed on the pipeline's page in the dashboard (though
-they *are* displayed in the pipeline run section), keeping the pipeline's
+Unlisted runs are not displayed on the pipeline's page in the dashboard (though\
+they _are_ displayed in the pipeline run section), keeping the pipeline's\
 history clean and focused on the pipelines that matter most.
 
 ### Deleting Pipeline Runs
@@ -45,7 +46,7 @@ If you want to delete a specific pipeline run, you can use a script like this:
 zenml pipeline runs delete <PIPELINE_RUN_NAME_OR_ID>
 ```
 
-If you want to delete all pipeline runs in the last 24 hours, for example, you
+If you want to delete all pipeline runs in the last 24 hours, for example, you\
 could run a script like this:
 
 ```
@@ -90,15 +91,15 @@ Pipelines that are no longer needed can be deleted using the command:
 zenml pipeline delete <PIPELINE_ID_OR_NAME>
 ```
 
-This allows you to start fresh with a new pipeline, removing all previous runs
-associated with the deleted pipeline. This is a slightly more drastic approach,
+This allows you to start fresh with a new pipeline, removing all previous runs\
+associated with the deleted pipeline. This is a slightly more drastic approach,\
 but it can sometimes be useful to keep the development environment clean.
 
 ## Unique Pipeline Names
 
 Pipelines can be given unique names each time they are run to uniquely identify them. This helps differentiate between multiple iterations of the same pipeline during development.
 
-By default ZenML generates names automatically based on the current date and
+By default ZenML generates names automatically based on the current date and\
 time, but you can pass in a `run_name` when defining the pipeline:
 
 ```python
@@ -108,19 +109,18 @@ training_pipeline = training_pipeline.with_options(
 training_pipeline()
 ```
 
-Note that pipeline names must be unique. For more information on this feature,
-see the [documentation on naming pipeline runs](https://docs.zenml.io//how-to/pipeline-development/build-pipelines/name-your-pipeline-runs).
+Note that pipeline names must be unique. For more information on this feature,\
+see the [documentation on naming pipeline runs](https://docs.zenml.io/how-to/pipeline-development/build-pipelines/name-your-pipeline-runs).
 
 ## Models
 
-Models are something that you have to explicitly register or pass in as you
-define your pipeline, so to run a pipeline without it being attached to a model
-is fairly straightforward: simply don't do the things specified in our
-[documentation on registering
+Models are something that you have to explicitly register or pass in as you\
+define your pipeline, so to run a pipeline without it being attached to a model\
+is fairly straightforward: simply don't do the things specified in our[documentation on registering\
 models](../../how-to/model-management-metrics/model-control-plane/register-a-model.md).
 
-In order to delete a model or a specific model version, you can use the CLI or
-Python SDK to accomplish this. As an example, to delete all versions of a model,
+In order to delete a model or a specific model version, you can use the CLI or\
+Python SDK to accomplish this. As an example, to delete all versions of a model,\
 you can use:
 
 ```bash
@@ -133,7 +133,7 @@ See the full documentation on [how to delete models](https://docs.zenml.io/how-t
 
 ### Pruning artifacts
 
-If you want to delete artifacts that are no longer referenced by any pipeline
+If you want to delete artifacts that are no longer referenced by any pipeline\
 runs, you can use the following CLI command:
 
 ```bash
@@ -146,19 +146,17 @@ For more information, see the [documentation for this artifact pruning feature](
 
 ## Cleaning your environment
 
-As a more drastic measure, the `zenml clean` command can be used to start from
+As a more drastic measure, the `zenml clean` command can be used to start from\
 scratch on your local machine. This will:
 
-- delete all pipelines, pipeline runs and associated metadata
-- delete all artifacts
+* delete all pipelines, pipeline runs and associated metadata
+* delete all artifacts
 
-There is also a `--local` flag that you can set if you want to delete local
-files relating to the active stack. Note that `zenml clean` does not delete
+There is also a `--local` flag that you can set if you want to delete local\
+files relating to the active stack. Note that `zenml clean` does not delete\
 artifacts and pipelines on the server; it only deletes the local data and metadata.
 
-By utilizing these options, you can maintain a clean and organized pipeline
+By utilizing these options, you can maintain a clean and organized pipeline\
 dashboard, focusing on the runs that matter most for your project.
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
 
-
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

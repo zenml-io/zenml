@@ -1,13 +1,14 @@
 ---
 description: Use the ZenML VSCode extension to manage your ZenML server
+icon: computer-mouse
 ---
 
-# Use the ZenML VSCode extension to manage your ZenML server
+# Using VS Code extension
 
-The ZenML VSCode extension is a tool that allows you to manage your ZenML server
-from within VSCode. It provides features for stack management, pipeline
-visualization, and project management capabilities. You can use it in any IDE
-which allows the installation of extensions from the VSCode Marketplace, which
+The ZenML VSCode extension is a tool that allows you to manage your ZenML server\
+from within VSCode. It provides features for stack management, pipeline\
+visualization, and project management capabilities. You can use it in any IDE\
+which allows the installation of extensions from the VSCode Marketplace, which\
 means that Cursor also supports this extension.
 
 ![ZenML VSCode Extension](../../.gitbook/assets/vscode-extension.gif)
@@ -33,11 +34,11 @@ code --install-extension zenml.zenml-vscode
 
 The ZenML VSCode extension offers several powerful features:
 
-- **Project Management**: Create, manage, and navigate ZenML projects
-- **Stack Visualization**: View and manage your ZenML stacks and components
-- **DAG Visualization**: Visualize your pipeline DAGs for better understanding
-- **Pipeline Run Management**: Monitor and manage your pipeline runs
-- **Stack Registration**: Register new stacks directly from VSCode
+* **Project Management**: Create, manage, and navigate ZenML projects
+* **Stack Visualization**: View and manage your ZenML stacks and components
+* **DAG Visualization**: Visualize your pipeline DAGs for better understanding
+* **Pipeline Run Management**: Monitor and manage your pipeline runs
+* **Stack Registration**: Register new stacks directly from VSCode
 
 ## Version Compatibility
 
@@ -50,6 +51,7 @@ For a detailed compatibility table, refer to the [ZenML VSCode extension reposit
 If you need to work with an older ZenML version:
 
 #### Using VS Code UI:
+
 1. Go to the Extensions view (Ctrl+Shift+X)
 2. Search for "ZenML"
 3. Click the dropdown next to the Install button
@@ -57,6 +59,7 @@ If you need to work with an older ZenML version:
 5. Choose the version that matches your ZenML library version
 
 #### Using Command Line:
+
 ```bash
 # Example for installing version 0.0.11
 code --install-extension zenml.zenml-vscode@0.0.11
@@ -82,13 +85,11 @@ After installation:
 
 If you encounter issues with the extension:
 
-- Ensure your ZenML library and extension versions are compatible
-- Check your server connection settings
-- Verify that your authentication credentials are correct
-- Try restarting VSCode
+* Ensure your ZenML library and extension versions are compatible
+* Check your server connection settings
+* Verify that your authentication credentials are correct
+* Try restarting VSCode
 
-For more help, visit the [ZenML GitHub
-repository](https://github.com/zenml-io/vscode-zenml) or send us a message on
+For more help, visit the [ZenML GitHub\
+repository](https://github.com/zenml-io/vscode-zenml) or send us a message on\
 our [Slack community](https://zenml.io/slack).
-
-

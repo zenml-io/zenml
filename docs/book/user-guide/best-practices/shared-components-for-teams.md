@@ -1,8 +1,9 @@
 ---
 description: Sharing code and libraries within teams.
+icon: arrow-up-from-bracket
 ---
 
-# Shared Libraries and Logic for Teams
+# Shared Components for Teams
 
 Teams often need to collaborate on projects, share versioned logic, and implement cross-cutting functionality that benefits the entire organization. Sharing code libraries allows for incremental improvements, increased robustness, and standardization across projects.
 
@@ -49,11 +50,11 @@ Using shared private wheels is an effective approach to sharing code within a te
 
 #### Benefits of Using Shared Private Wheels
 
-- Packaged format: Easy to install using pip
-- Version management: Simplifies managing different code versions
-- Dependency management: Automatically installs specified dependencies
-- Privacy: Can be hosted on internal PyPI servers
-- Smooth integration: Imported like any other Python package
+* Packaged format: Easy to install using pip
+* Version management: Simplifies managing different code versions
+* Dependency management: Automatically installs specified dependencies
+* Privacy: Can be hosted on internal PyPI servers
+* Smooth integration: Imported like any other Python package
 
 #### Setting Up Shared Private Wheels
 
@@ -96,7 +97,7 @@ def my_pipeline(...):
     ...
 ```
 
-The `requirements.txt` file would specify the private index URL in the following
+The `requirements.txt` file would specify the private index URL in the following\
 way, for example:
 
 ```
@@ -104,35 +105,34 @@ way, for example:
 my-simple-package==0.1.0
 ```
 
-For information on using private PyPI repositories to share your code, see our [documentation on how to use a private PyPI repository](https://docs.zenml.io//how-to/customize-docker-builds/how-to-use-a-private-pypi-repository).
+For information on using private PyPI repositories to share your code, see our [documentation on how to use a private PyPI repository](https://docs.zenml.io/how-to/customize-docker-builds/how-to-use-a-private-pypi-repository).
 
 ## Best Practices
 
 Regardless of what you're sharing or how you're distributing it, consider these best practices:
 
-- Use version control for shared code repositories.
+* Use version control for shared code repositories.
 
 Version control systems like Git allow teams to collaborate on code effectively. They provide a central repository where all team members can access the latest version of the shared components and libraries.
 
-- Implement proper access controls for private PyPI servers or shared repositories.
+* Implement proper access controls for private PyPI servers or shared repositories.
 
 To ensure the security of proprietary code and libraries, it's crucial to set up appropriate access controls. This may involve using authentication mechanisms, managing user permissions, and regularly auditing access logs.
 
-- Maintain clear documentation for shared components and libraries.
+* Maintain clear documentation for shared components and libraries.
 
 Comprehensive and up-to-date documentation is essential for the smooth usage and maintenance of shared code. It should cover installation instructions, API references, usage examples, and any specific guidelines or best practices.
 
-- Regularly update shared libraries and communicate changes to the team.
+* Regularly update shared libraries and communicate changes to the team.
 
 As the project evolves, it's important to keep shared libraries updated with the latest bug fixes, performance improvements, and feature enhancements. Establish a process for regularly updating and communicating these changes to the team.
 
-- Consider setting up continuous integration for shared libraries to ensure quality and compatibility.
+* Consider setting up continuous integration for shared libraries to ensure quality and compatibility.
 
 Continuous integration (CI) helps maintain the stability and reliability of shared components. By automatically running tests and checks on each code change, CI can catch potential issues early and ensure compatibility across different environments and dependencies.
 
-By leveraging these methods for sharing code and libraries, teams can
-collaborate more effectively, maintain consistency across projects, and
+By leveraging these methods for sharing code and libraries, teams can\
+collaborate more effectively, maintain consistency across projects, and\
 accelerate development processes within the ZenML framework.
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

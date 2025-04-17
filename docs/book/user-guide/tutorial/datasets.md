@@ -1,8 +1,9 @@
 ---
 description: Model datasets using simple abstractions.
+icon: table
 ---
 
-# Custom Dataset Classes and Complex Data Flows in ZenML
+# Managing machine learning datasets
 
 As machine learning projects grow in complexity, you often need to work with various data sources and manage intricate data flows. This chapter explores how to use custom Dataset classes and Materializers in ZenML to handle these challenges efficiently. For strategies on scaling your data processing for larger datasets, refer to [scaling strategies for big data](manage-big-data.md).
 
@@ -64,7 +65,7 @@ class BigQueryDataset(Dataset):
 
 ## Creating Custom Materializers
 
-[Materializers](https://docs.zenml.io//how-to/data-artifact-management/handle-data-artifacts/handle-custom-data-types) in ZenML handle the serialization and deserialization of artifacts. Custom Materializers are essential for working with custom Dataset classes:
+[Materializers](https://docs.zenml.io/how-to/data-artifact-management/handle-data-artifacts/handle-custom-data-types) in ZenML handle the serialization and deserialization of artifacts. Custom Materializers are essential for working with custom Dataset classes:
 
 ```python
 from typing import Type
@@ -172,7 +173,7 @@ def etl_pipeline(mode: str = "develop"):
 
 ## Best Practices for Designing Flexible and Maintainable Pipelines
 
-When working with custom Dataset classes in ZenML pipelines, it's crucial to design your pipelines
+When working with custom Dataset classes in ZenML pipelines, it's crucial to design your pipelines\
 to accommodate various data sources and processing requirements.
 
 Here are some best practices to ensure your pipelines remain flexible and maintainable:

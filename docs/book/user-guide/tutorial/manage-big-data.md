@@ -1,8 +1,9 @@
 ---
 description: Learn about how to manage big data with ZenML.
+icon: database
 ---
 
-# Scaling Strategies for Big Data in ZenML
+# Handling big data
 
 As your machine learning projects grow, you'll often encounter datasets that challenge your existing data processing pipelines. This section explores strategies for scaling your ZenML pipelines to handle increasingly large datasets. For information on creating custom Dataset classes and managing complex data flows, refer to [custom dataset classes](datasets.md).
 
@@ -283,13 +284,9 @@ The pipeline creates a Numba-accelerated function, applies it to a large NumPy a
 ### Important Considerations
 
 1. **Environment Setup**: Ensure that your execution environment (local or remote) has the necessary frameworks (Spark or Ray) installed.
-
 2. **Resource Management**: When using these frameworks within ZenML steps, be mindful of resource allocation. The frameworks will manage their own resources, which needs to be coordinated with ZenML's orchestration.
-
 3. **Error Handling**: Implement proper error handling and cleanup, especially for shutting down Spark sessions or Ray runtime.
-
 4. **Data I/O**: Consider how data will be passed into and out of the distributed processing step. You might need to use intermediate storage (like cloud storage) for large datasets.
-
 5. **Scaling**: While these frameworks allow for distributed processing, you'll need to ensure your infrastructure can support the scale of computation you're attempting.
 
 By incorporating Spark or Ray directly into your ZenML steps, you can leverage the power of distributed computing for processing very large datasets while still benefiting from ZenML's pipeline management and versioning capabilities.
