@@ -74,6 +74,29 @@ steps:
 
 Check out [this page](../pipeline-development/use-configuration-files/configuration-hierarchy.md) for more information on the hierarchy and precedence of the various ways in which you can supply the settings.
 
+### DockerSettings Class Overview
+
+The `DockerSettings` class in ZenML is designed to configure Docker-related settings for ZenML pipelines. It allows users to specify various options for building and using Docker images, including setting a parent image, Dockerfile, and build configurations.
+
+#### Key Attributes
+- **parent_image**: This attribute specifies the full name of the Docker image to be used as the parent for the image that will be built. It is specific to the `DockerSettings` class and not available in `BaseSettings`. By default, it uses a ZenML image built for the active Python and ZenML version.
+
+#### Example Usage
+To correctly use `DockerSettings`, you can specify a parent image and other configurations as shown below:
+
+```python
+from zenml.config import DockerSettings
+
+docker_settings = DockerSettings(
+    parent_image="my_registry.io/image_name:tag",
+    skip_build=True
+)
+
+@pipeline(settings={"docker": docker_settings})
+def my_pipeline(...):
+    ...
+```
+
 ### Specifying Docker build options
 
 If you want to specify build options that get passed to the build method of the [image builder](../pipeline-development/configure-python-environments/README.md#image-builder-environment). For the default local image builder, these options get passed to the [`docker build` command](https://docker-py.readthedocs.io/en/stable/images.html#docker.models.images.ImageCollection.build).
