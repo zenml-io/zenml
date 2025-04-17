@@ -39,7 +39,7 @@ The Model Control Plane is ZenML's unified interface for managing models through
 * Manage model promotions through stages (staging, production, etc.)
 * Exchange data between pipelines using models
 
-![Model Control Plane Overview](../../.gitbook/assets/dcp_walkthrough.gif)
+![Model Control Plane Overview](<../../.gitbook/assets/dcp_walkthrough (1).gif>)
 
 ## Working with Models
 

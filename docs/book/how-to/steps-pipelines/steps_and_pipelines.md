@@ -54,9 +54,10 @@ def process_data(data: dict) -> dict:
 ```
 
 In this example:
-- The step takes a `dict` as input containing features and labels
-- It processes the features and computes some statistics
-- It returns a new `dict` as output with the processed data and additional information
+
+* The step takes a `dict` as input containing features and labels
+* It processes the features and computes some statistics
+* It returns a new `dict` as output with the processed data and additional information
 
 ## Basic Pipelines
 
@@ -137,14 +138,13 @@ if __name__ == "__main__":
 ZenML distinguishes between two types of inputs to steps:
 
 1. **Artifacts**: Outputs from other steps in the same pipeline
-   - These are tracked, versioned, and stored in the artifact store
-   - They are passed between steps and represent data flowing through your pipeline
-   - Examples: datasets, trained models, evaluation metrics
-
+   * These are tracked, versioned, and stored in the artifact store
+   * They are passed between steps and represent data flowing through your pipeline
+   * Examples: datasets, trained models, evaluation metrics
 2. **Parameters**: Direct values provided when invoking a step
-   - These are typically simple configuration values passed directly to the step
-   - They're not tracked as separate artifacts but are recorded with the pipeline run
-   - Examples: learning rates, batch sizes, model hyperparameters
+   * These are typically simple configuration values passed directly to the step
+   * They're not tracked as separate artifacts but are recorded with the pipeline run
+   * Examples: learning rates, batch sizes, model hyperparameters
 
 This example demonstrates the difference:
 
@@ -271,4 +271,4 @@ By default, step outputs are named `output` for single output steps and `output_
 
 Steps and Pipelines provide a flexible, powerful way to build machine learning workflows in ZenML. This guide covered the basic concepts of creating steps and pipelines, managing inputs and outputs, and working with parameters.
 
-For more advanced features, check out the [Advanced Features](advanced_features.md) guide. For configuration using YAML files, see [Configuration with YAML](configuration_with_yaml.md).
+For more advanced features, check out the [Advanced Features](advanced_features.md) guide. For configuration using YAML files, see [Configuration with YAML](yaml_configuration.md).
