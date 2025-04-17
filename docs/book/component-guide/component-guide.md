@@ -16,7 +16,50 @@ Each pipeline run that you execute with ZenML will require a **stack** and each 
 
 Here is a full list of all stack components currently supported in ZenML, with a description of the role of that component in the MLOps process:
 
-<table data-view="cards"><thead><tr><th></th><th></th><th data-hidden data-card-cover data-type="files"></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><strong>Orchestrator</strong></td><td>Orchestrating the runs of your pipeline</td><td><a href=".gitbook/assets/orchestrator.png">orchestrator.png</a></td><td><a href="orchestrators/">orchestrators</a></td></tr><tr><td><strong>Artifact Store</strong></td><td>Storage for the artifacts created by your pipelines</td><td><a href=".gitbook/assets/artifact-store.png">artifact-store.png</a></td><td><a href="artifact-stores/">artifact-stores</a></td></tr><tr><td><strong>Container Registry</strong></td><td>Store for your containers</td><td><a href=".gitbook/assets/container-registry.png">container-registry.png</a></td><td><a href="container-registries/">container-registries</a></td></tr><tr><td><strong>Data Validator</strong></td><td>Data and model validation</td><td><a href=".gitbook/assets/data-validator.png">data-validator.png</a></td><td><a href="data-validators/">data-validators</a></td></tr><tr><td><strong>Experiment Tracker</strong></td><td>Tracking your ML experiments</td><td><a href=".gitbook/assets/experiment-tracker.png">experiment-tracker.png</a></td><td><a href="experiment-trackers/">experiment-trackers</a></td></tr><tr><td><strong>Model Deployer</strong></td><td>Services/platforms responsible for online model serving</td><td><a href=".gitbook/assets/model-deployer.png">model-deployer.png</a></td><td><a href="model-deployers/">model-deployers</a></td></tr><tr><td><strong>Step Operator</strong></td><td>Execution of individual steps in specialized runtime environments</td><td><a href=".gitbook/assets/step-operator.png">step-operator.png</a></td><td><a href="step-operators/">step-operators</a></td></tr><tr><td><strong>Alerter</strong></td><td>Sending alerts through specified channels</td><td><a href=".gitbook/assets/alerter.png">alerter.png</a></td><td><a href="alerters/">alerters</a></td></tr><tr><td><strong>Image Builder</strong></td><td>Builds container images.</td><td><a href=".gitbook/assets/image-builder.png">image-builder.png</a></td><td><a href="image-builders/">image-builders</a></td></tr><tr><td><strong>Annotator</strong></td><td>Labeling and annotating data</td><td><a href=".gitbook/assets/annotator.png">annotator.png</a></td><td><a href="annotators/">annotators</a></td></tr><tr><td><strong>Model Registry</strong></td><td>Manage and interact with ML Models</td><td><a href=".gitbook/assets/model-registry.png">model-registry.png</a></td><td><a href="model-registries/">model-registries</a></td></tr><tr><td><strong>Feature Store</strong></td><td>Management of your data/features</td><td><a href=".gitbook/assets/feature-store.png">feature-store.png</a></td><td><a href="feature-stores/">feature-stores</a></td></tr></tbody></table>
+<table data-view="cards"><thead><tr><th></th><th></th><th data-hidden data-card-cover data-type="files"></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td><strong>Orchestrator</strong></td><td>Orchestrating the runs of your pipeline</td><td><a href=".gitbook/assets/orchestrator.png">orchestrator.png</a></td><td><a href="orchestrators/">orchestrators</a></td></tr><tr><td><strong>Artifact Store</strong></td><td>Storage for the artifacts created by your pipelines</td><td><a href=".gitbook/assets/artifact-store.png">artifact-store.png</a></td><td><a href="artifact-stores/">artifact-stores</a></td></tr><tr><td><strong>Container Registry</strong></td><td>Store for your containers</td><td><a href=".gitbook/assets/container-registry.png">container-registry.png</a></td><td><a href="container-registries/">container-registries</a></td></tr><tr><td><strong>Data Validator</strong></td><td>Data and model validation</td><td><a href=".gitbook/assets/data-validator.png">data-validator.png</a></td><td><a href="data-validators/">data-validators</a></td></tr><tr><td><strong>Experiment Tracker</strong></td><td>Tracking your ML experiments</td><td><a href=".gitbook/assets/experiment-tracker.png">experiment-tracker.png</a></td><td><a href="experiment-trackers/">experiment-trackers</a></td></tr><tr><td><strong>Model Deployer</strong></td><td>Services/platforms responsible for online model serving</td><td><a href=".gitbook/assets/model-deployer.png">model-deployer.png</a></td><td><a href="model-deployers/">model-deployers</a></td></tr><tr><td><strong>Step Operator</strong></td><td>Execution of individual steps in specialized runtime environments</td><td><a href=".gitbook/assets/step-operator.png">step-operator.png</a></td><td><a href="step-operators/">step-operators</a></td></tr><tr><td><strong>Alerter</strong></td><td>Sending alerts through specified channels</td><td><a href=".gitbook/assets/alerter.png">alerter.png</a></td><td><a href="alerters/">alerters</a></td></tr><tr><td><strong>Image Builder</strong></td><td>Builds container images.</td><td><a href=".gitbook/assets/image-builder.png">image-builder.png</a></td><td><a href="image-builders/">image-builders</a></td></tr><tr><td><strong>Annotator</strong></td><td>Labeling and annotating data</td><td><a href=".gitbook/assets/annotator.png">annotator.png</a></td><td><a href="annotators/">annotators</a></td></tr><tr><td><strong>Model Registry</strong></td><td>Manage and interact with ML Models</td><td><
+
+# Updating Stacks with Existing Components
+
+To update a ZenML stack with existing components, use the `zenml stack update` command. This command allows you to add or update components like orchestrators, artifact stores, and container registries in your stack.
+
+## Command Syntax
+
+```shell
+zenml stack update STACK_NAME [OPTIONS]
+```
+
+- `STACK_NAME`: The name of the stack you want to update.
+- `OPTIONS`: Flags to specify the components you want to update.
+
+## Adding Components
+
+To add a component to an existing stack, ensure the component is registered and use the appropriate flag:
+
+- **Orchestrator**: `-o` or `--orchestrator`
+- **Artifact Store**: `-a` or `--artifact-store`
+- **Container Registry**: `-c` or `--container-registry`
+
+### Example
+
+To add an orchestrator named `my_orchestrator` to a stack named `my_stack`:
+
+```shell
+zenml stack update my_stack -o my_orchestrator
+```
+
+## Available Flags
+
+- `-o`, `--orchestrator`: Add or update an orchestrator.
+- `-a`, `--artifact-store`: Add or update an artifact store.
+- `-c`, `--container-registry`: Add or update a container registry.
+
+## Troubleshooting Tips
+
+- Ensure all components are registered before updating the stack.
+- Use `zenml stack update --help` to see all available options and flags.
+- If you encounter issues, check the component names and ensure they are correctly spelled and registered.
+
+This section helps users understand how to effectively manage and update their ZenML stacks, making the process more accessible and reducing potential confusion.a href=".gitbook/assets/model-registry.png">model-registry.png</a></td><td><a href="model-registries/">model-registries</a></td></tr><tr><td><strong>Feature Store</strong></td><td>Management of your data/features</td><td><a href=".gitbook/assets/feature-store.png">feature-store.png</a></td><td><a href="feature-stores/">feature-stores</a></td></tr></tbody></table>
 
 ## Writing custom component flavors
 
