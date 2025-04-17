@@ -37,7 +37,40 @@ zenml step-operator flavor list
 
 ### How to use it
 
-You don't need to directly interact with any ZenML step operator in your code. As long as the step operator that you want to use is part of your active [ZenML stack](https://docs.zenml.io/user-guides/production-guide/understand-stacks), you can simply specify it in the `@step` decorator of your step.
+To register a step operator for AWS, follow these steps:
+
+1. **Prerequisites**: Ensure you have the necessary AWS configurations and permissions, including an IAM role with `AmazonSageMakerFullAccess` and `AmazonS3FullAccess` policies.
+
+2. **Install AWS Integration**: Use the ZenML CLI to install the AWS integration.
+
+   ```shell
+   zenml integration install aws
+   ```
+
+3. **Register the Step Operator**: Use the ZenML CLI to register a step operator with the AWS flavor, such as SageMaker. Specify the necessary AWS configurations like the IAM role and instance type.
+
+   ```shell
+   zenml step-operator register my_sagemaker_operator \
+       --flavor=sagemaker \
+       --role=<SAGEMAKER_ROLE> \
+       --instance_type=<INSTANCE_TYPE>
+   ```
+
+   Replace `<SAGEMAKER_ROLE>` with the IAM role that has the necessary permissions for SageMaker, and `<INSTANCE_TYPE>` with the desired instance type for running your steps.
+
+4. **Connect to a Service Connector**: If you are using a service connector for authentication, connect the step operator to the service connector.
+
+   ```shell
+   zenml step-operator connect my_sagemaker_operator --connector <CONNECTOR_NAME>
+   ```
+
+5. **Add to Stack**: Add the registered step operator to your ZenML stack.
+
+   ```shell
+   zenml stack update <STACK_NAME> -s my_sagemaker_operator
+   ```
+
+Once the step operator is part of your active [ZenML stack](https://docs.zenml.io/user-guides/production-guide/understand-stacks), you can specify it in the `@step` decorator of your step.
 
 ```python
 from zenml import step

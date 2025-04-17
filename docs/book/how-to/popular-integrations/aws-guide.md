@@ -262,6 +262,42 @@ By running these cleanup commands, you will delete the S3 bucket, SageMaker doma
 
 Remember to be cautious when deleting resources and ensure that you no longer require them before running the deletion commands.
 
+## Registering AWS Step Operator
+
+To register a step operator for AWS in ZenML, follow these steps:
+
+### Prerequisites
+
+- Ensure you have the necessary AWS configurations and permissions set up, including an IAM role with `AmazonSageMakerFullAccess` and `AmazonS3FullAccess` policies.
+- Install the ZenML AWS integration:
+  ```shell
+  zenml integration install aws
+  ```
+- Ensure Docker is installed and running.
+
+### Register the AWS Step Operator
+
+1. **Register the Step Operator**: Use the ZenML CLI to register a step operator with the AWS flavor, such as SageMaker. Specify the necessary AWS configurations like the IAM role and instance type.
+   ```shell
+   zenml step-operator register my_sagemaker_operator \
+       --flavor=sagemaker \
+       --role=<SAGEMAKER_ROLE> \
+       --instance_type=<INSTANCE_TYPE>
+   ```
+   Replace `<SAGEMAKER_ROLE>` with the IAM role that has the necessary permissions for SageMaker, and `<INSTANCE_TYPE>` with the desired instance type for running your steps.
+
+2. **Connect to a Service Connector**: If you are using a service connector for authentication, connect the step operator to the service connector.
+   ```shell
+   zenml step-operator connect my_sagemaker_operator --connector <CONNECTOR_NAME>
+   ```
+
+3. **Add to Stack**: Add the registered step operator to your ZenML stack.
+   ```shell
+   zenml stack update <STACK_NAME> -s my_sagemaker_operator
+   ```
+
+This process sets up a step operator that can execute individual steps of your pipeline on AWS services like SageMaker.
+
 ## Conclusion
 
 In this guide, we walked through the process of setting up an AWS stack with ZenML to run your machine learning pipelines in a scalable and production-ready environment. The key steps included:
