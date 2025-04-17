@@ -338,6 +338,31 @@ def step_on_spark(...) -> ...:
 ```
 {% endhint %}
 
+### Using Step Operators in Steps
+
+To use step operators within steps, you can specify the step operator in the `@step` decorator. This allows the step to be executed in the environment provided by the step operator, such as AWS SageMaker.
+
+#### Explanation of the `step_operator` Parameter
+
+The `step_operator` parameter in the `@step` decorator specifies which step operator to use for executing the step. This enhances the flexibility and scalability of your pipelines by allowing individual steps to leverage specialized compute resources and capabilities.
+
+#### Example Code Snippet
+
+```python
+from zenml import step
+
+@step(step_operator="my_sagemaker_operator")
+def my_training_step(...) -> ...:
+    # Step logic here
+    pass
+```
+
+In this example, `my_sagemaker_operator` is the name of the step operator registered for AWS SageMaker.
+
+#### Running the Pipeline
+
+Include the step in your pipeline and execute it. The specified step operator will handle the execution of the step in the designated environment.
+
 ### Additional configuration
 
 For additional configuration of the Spark step operator, you can pass `SparkStepOperatorSettings` when defining or running your pipeline. Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-spark.html#zenml.integrations.spark) for a full list of available attributes and [this docs page](https://docs.zenml.io/how-to/pipeline-development/use-configuration-files/runtime-configuration) for more information on how to specify settings.
