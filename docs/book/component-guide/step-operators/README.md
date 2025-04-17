@@ -39,6 +39,35 @@ zenml step-operator flavor list
 
 You don't need to directly interact with any ZenML step operator in your code. As long as the step operator that you want to use is part of your active [ZenML stack](https://docs.zenml.io/user-guides/production-guide/understand-stacks), you can simply specify it in the `@step` decorator of your step.
 
+#### Using Step Operators in Steps
+
+- **Step Operator Parameter**: The `step_operator` parameter in the `@step` decorator is used to specify the step operator for executing the step. This allows the step to be executed in the environment provided by the step operator, such as AWS SageMaker.
+
+- **Example**: Here is an example of how to define a step with a step operator:
+
+```python
+from zenml import step
+
+@step(step_operator="my_sagemaker_operator")
+def my_training_step(...) -> ...:
+    # Step logic here
+    pass
+```
+
+- **Running the Pipeline**: Include the step in your pipeline and execute it. The specified step operator will handle the execution of the step in the designated environment.
+
+```python
+from zenml import pipeline
+
+@pipeline
+def my_pipeline(step):
+    step()
+
+my_pipeline(my_training_step=my_training_step).run()
+```
+
+This approach allows you to leverage the specialized compute resources and capabilities of the step operator for specific steps in your pipeline.
+
 ```python
 from zenml import step
 
