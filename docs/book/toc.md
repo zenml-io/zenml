@@ -124,6 +124,7 @@
 * [Model Management and Metrics](how-to/model-management-metrics/README.md)
   * [Use the Model Control Plane](how-to/model-management-metrics/model-control-plane/README.md)
     * [Registering a Model](how-to/model-management-metrics/model-control-plane/register-a-model.md)
+    * [Manual Model Logging](how-to/model-management-metrics/model-control-plane/manual-model-logging.md)
     * [Deleting a Model](how-to/model-management-metrics/model-control-plane/delete-a-model.md)
     * [Associate a pipeline with a Model](how-to/model-management-metrics/model-control-plane/associate-a-pipeline-with-a-model.md)
     * [Connecting artifacts via a Model](how-to/model-management-metrics/model-control-plane/connecting-artifacts-via-a-model.md)
