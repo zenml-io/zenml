@@ -5,7 +5,7 @@ icon: cubes
 
 # Custom Integration
 
-![ZenML integrates with a number of tools from the MLOps landscape](../../../.gitbook/assets/sam-side-by-side-full-text.png)
+![ZenML integrates with a number of tools from the MLOps landscape](../../.gitbook/assets/sam-side-by-side-full-text.png)
 
 One of the main goals of ZenML is to find some semblance of order in the ever-growing MLOps landscape. ZenML already provides [numerous integrations](https://zenml.io/integrations) into many popular tools, and allows you to come up with ways to [implement your own stack component flavors](../infrastructure-deployment/stack-deployment/implement-a-custom-stack-component.md) in order to fill in any gaps that are remaining.
 

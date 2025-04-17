@@ -21,7 +21,7 @@ A clean and organized repository structure is essential for any ZenML project. T
 - Clear separation of concerns between different components
 - Consistent naming conventions
 
-Learn more about setting up your repository in the [Set up repository guide](./set-up-repository.md).
+Learn more about setting up your repository in the [Set up repository guide](../../../how-to/code-repositories/code-repositories.md).
 
 ### Version Control and Collaboration
 
@@ -31,7 +31,7 @@ Integrating your ZenML project with version control systems like Git is crucial 
 - Easy tracking of changes
 - Collaboration among team members
 
-Discover how to connect your Git repository in the [Set up a repository guide](./set-up-repository.md).
+Discover how to connect your Git repository in the [Set up a repository guide](../../../how-to/code-repositories/code-repositories.md).
 
 ### Stacks, Pipelines, Models, and Artifacts
 
@@ -42,7 +42,7 @@ Understanding the relationship between stacks, models, and pipelines is key to d
 - Pipelines: Encapsulate your ML workflows
 - Artifacts: Track your data and model outputs
 
-Learn about organizing these components in the [Organizing Stacks, Pipelines, Models, and Artifacts guide](../collaborate-with-team/stacks-pipelines-models.md).
+Learn about organizing these components in the [Organizing Stacks, Pipelines, Models, and Artifacts guide](../../../how-to/steps-pipelines/steps_and_pipelines.md).
 
 ### Access Management and Roles
 
@@ -53,7 +53,7 @@ Proper access management ensures that team members have the right permissions an
 - Establish processes for pipeline maintenance and server upgrades
 - Leverage [Teams in ZenML Pro](https://docs.zenml.io/pro/core-concepts/teams) to assign roles and permissions to a group of users, to mimic your real-world team roles.
 
-Explore access management strategies in the [Access Management and Roles guide](../../../user-guide/best-practices/access-management.md).
+Explore access management strategies in the [Access Management and Roles guide](../../../how-to/tags/tags.md).
 
 ### Shared Components and Libraries
 
@@ -63,7 +63,7 @@ Leverage shared components and libraries to promote code reuse and standardizati
 - Shared private wheels for internal distribution
 - Handling authentication for specific libraries
 
-Find out more about sharing code in the [Shared Libraries and Logic for Teams guide](../../../user-guide/best-practices/shared-components-for-teams.md).
+Find out more about sharing code in the [Shared Libraries and Logic for Teams guide](../../../how-to/stack-components/stack_components.md).
 
 ### Project Templates
 
@@ -72,7 +72,7 @@ Utilize project templates to kickstart your ZenML projects and ensure consistenc
 - Use pre-made templates for common use cases
 - Create custom templates tailored to your team's needs
 
-Learn about using and creating project templates in the [Project Templates guide](../collaborate-with-team/project-templates/README.md).
+Learn about using and creating project templates in the [Project Templates guide](../../../how-to/templates/templates.md).
 
 ### Migration and Maintenance
 
@@ -125,9 +125,9 @@ without the need so structure them in subfolders.
 {% hint style="info" %}
 It might also make sense to register your repository as a code repository. These
 enable ZenML to keep track of the code version that you use for your pipeline
-runs. Additionally, running a pipeline that is tracked in [a registered code repository](./connect-your-git-repository.md) can speed up the Docker image building for containerized stack
+runs. Additionally, running a pipeline that is tracked in [a registered code repository](../../../how-to/code-repositories/code-repositories.md) can speed up the Docker image building for containerized stack
 components by eliminating the need to rebuild Docker images each time you change
-one of your source code files. Learn more about these in [connecting your Git repository](https://docs.zenml.io/how-to/setting-up-a-project-repository/connect-your-git-repository).
+one of your source code files. Learn more about these in [connecting your Git repository](https://docs.zenml.io/how-to/code-repositories/code-repositories.md).
 {% endhint %}
 
 #### Steps

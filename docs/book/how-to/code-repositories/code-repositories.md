@@ -9,7 +9,7 @@ icon: code-compare
 
 A code repository in ZenML refers to a remote storage location for your code. Some commonly known code repository platforms include [GitHub](https://github.com/) and [GitLab](https://gitlab.com/).
 
-<figure><img src="../../../.gitbook/assets/Remote_with_code_repository.png" alt=""><figcaption><p>A visual representation of how the code repository fits into the general ZenML architecture.</p></figcaption></figure>
+<figure><img src="../../.gitbook/assets/Remote_with_code_repository.png" alt=""><figcaption><p>A visual representation of how the code repository fits into the general ZenML architecture.</p></figcaption></figure>
 
 Code repositories enable ZenML to keep track of the code version that you use for your pipeline runs. Additionally, running a pipeline that is tracked in a registered code repository can [speed up the Docker image building for containerized stack components](https://docs.zenml.io/how-to/customize-docker-builds/how-to-reuse-builds) by eliminating the need to rebuild Docker images each time you change one of your source code files.
 
@@ -82,15 +82,15 @@ After registering the GitHub code repository, ZenML will automatically detect if
 2. Select "Personal access tokens" and click on "Generate new token".
 3.  Give your token a name and a description.
 
-    ![](../../../.gitbook/assets/github-fine-grained-token-name.png)
+    ![](../../.gitbook/assets/github-fine-grained-token-name.png)
 4.  We recommend selecting the specific repository and then giving `contents` read-only access.
 
-    ![](../../../.gitbook/assets/github-token-set-permissions.png)
+    ![](../../.gitbook/assets/github-token-set-permissions.png)
 
-    ![](../../../.gitbook/assets/github-token-permissions-overview.png)
+    ![](../../.gitbook/assets/github-token-permissions-overview.png)
 5.  Click on "Generate token" and copy the token to a safe place.
 
-    ![](../../../.gitbook/assets/copy-github-fine-grained-token.png)
+    ![](../../.gitbook/assets/copy-github-fine-grained-token.png)
 
 </details>
 
@@ -140,10 +140,10 @@ After registering the GitLab code repository, ZenML will automatically detect if
 1. Go to your GitLab account settings and click on Access Tokens.
 2.  Name the token and select the scopes that you need (e.g. `read_repository`, `read_user`, `read_api`)
 
-    ![](../../../.gitbook/assets/gitlab-generate-access-token.png)
+    ![](../../.gitbook/assets/gitlab-generate-access-token.png)
 3.  Click on "Create personal access token" and copy the token to a safe place.
 
-    ![](../../../.gitbook/assets/gitlab-copy-access-token.png)
+    ![](../../.gitbook/assets/gitlab-copy-access-token.png)
 
 </details>
 
