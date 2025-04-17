@@ -6,6 +6,12 @@ description: You have the option to customize the Docker settings at a step leve
 
 By default every step of a pipeline uses the same Docker image that is defined at the [pipeline level](./docker-settings-on-a-pipeline.md). Sometimes your steps will have special requirements that make it necessary to define a different Docker image for one or many steps. This can easily be accomplished by adding the [DockerSettings](https://sdkdocs.zenml.io/latest/core_code_docs/core-config.html#zenml.config.docker_settings) to the step decorator directly.
 
+## DockerSettings Class
+
+The `DockerSettings` class is used to configure Docker-related settings for ZenML pipelines. It allows you to specify a parent Docker image and other configurations necessary for building Docker images to run ZenML pipelines. The `parent_image` attribute is specific to `DockerSettings` and not available in `BaseSettings`.
+
+### Example Usage
+
 ```python
 from zenml import step
 from zenml.config import DockerSettings
