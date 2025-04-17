@@ -180,6 +180,12 @@ class StackUpdate(BaseUpdate):
         default=None,
         title="The stack labels.",
     )
+    add_secrets: Optional[List[UUID]] = Field(
+        default=None, title="New secrets to add to the stack."
+    )
+    remove_secrets: Optional[List[UUID]] = Field(
+        default=None, title="Secrets to remove from the stack."
+    )
 
 
 # ------------------ Response Model ------------------

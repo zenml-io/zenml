@@ -169,6 +169,12 @@ class ComponentUpdate(BaseUpdate):
         title="The service connector linked to this stack component.",
         default=None,
     )
+    add_secrets: Optional[List[UUID]] = Field(
+        default=None, title="New secrets to add to the stack component."
+    )
+    remove_secrets: Optional[List[UUID]] = Field(
+        default=None, title="Secrets to remove from the stack component."
+    )
 
 
 # ------------------ Response Model ------------------
