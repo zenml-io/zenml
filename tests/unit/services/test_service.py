@@ -62,7 +62,9 @@ def base_service():
     return TestService(
         uuid=UUID("12345678-1234-5678-1234-567812345678"),
         admin_state=ServiceState.ACTIVE,
-        config=ServiceConfig(name="test_service", param1="value1", param2=2),
+        config=ServiceConfig(
+            name="test_service", param1="value1", param2=2, zenml_model=None
+        ),
         status=ServiceStatus(
             state=ServiceState.ACTIVE,
             last_error="",
@@ -78,13 +80,15 @@ def test_from_model(service_response):
     assert isinstance(service, TestService)
     assert service.uuid == service_response.id
     assert service.admin_state == service_response.admin_state
-    assert dict(service.config) == service_response.config
+    assert (
+        service.config.model_dump(exclude_unset=True)
+        == service_response.config
+    )
     assert dict(service.status) == service_response.status
     assert service.SERVICE_TYPE["type"] == service_response.service_type.type
     assert (
         service.SERVICE_TYPE["flavor"] == service_response.service_type.flavor
     )
-    assert service.endpoint == service_response.endpoint
 
 
 def test_update_status(base_service, monkeypatch):

@@ -36,6 +36,7 @@ from pydantic import ConfigDict
 from zenml.console import console
 from zenml.enums import ServiceState
 from zenml.logger import get_logger
+from zenml.model.model import Model
 from zenml.models.v2.misc.service import ServiceType
 from zenml.services.service_endpoint import BaseServiceEndpoint
 from zenml.services.service_monitor import HTTPEndpointHealthMonitor
@@ -110,6 +111,7 @@ class ServiceConfig(BaseTypedModel):
         pipeline_name: name of the pipeline that spun up the service
         pipeline_step_name: name of the pipeline step that spun up the service
         run_name: name of the pipeline run that spun up the service.
+        zenml_model: the ZenML model object to be deployed.
     """
 
     name: str = ""
@@ -119,6 +121,7 @@ class ServiceConfig(BaseTypedModel):
     model_name: str = ""
     model_version: str = ""
     service_name: str = ""
+    zenml_model: Optional[Model] = None
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
     #  fields defined under base models. If not handled, this raises a warning.
