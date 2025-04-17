@@ -210,17 +210,7 @@ extra:
 
 This allows you to easily adapt your pipelines to different environments without changing code.
 
-## Runtime Configuration of Pipelines
-
-You can configure a pipeline at runtime using the `with_options` method:
-
-```python
-# Configure specific step parameters
-my_pipeline.with_options(steps={"trainer": {"parameters": {"learning_rate": 0.01}}})()
-
-# Or using a YAML configuration file
-my_pipeline.with_options(config_file="path_to_yaml_file")()
-```
+## Advanced Pipeline Triggering
 
 For triggering pipelines from a client or another pipeline, you can use a `PipelineRunConfiguration` object. This approach is covered in the [advanced template usage documentation](https://docs.zenml.io/how-to/trigger-pipelines/use-templates-python#advanced-usage-run-a-template-from-another-pipeline).
 
