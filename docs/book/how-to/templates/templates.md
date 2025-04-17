@@ -11,7 +11,7 @@ In ZenML, pipeline templates (also known as "Run Templates") are pre-defined, pa
 Pipeline Templates are a [ZenML Pro](https://zenml.io/pro)-only feature. Please [sign up here](https://cloud.zenml.io) to get access.
 {% endhint %}
 
-![Working with Templates](../../../.gitbook/assets/run-templates.gif)
+![Working with Templates](../../.gitbook/assets/run-templates.gif)
 
 ## Understanding Pipeline Templates
 
