@@ -106,6 +106,30 @@ For instance, if you take a close look at the default local stack of ZenML, you 
 Keep in mind, that each one of these components is built on top of base abstractions and is completely extensible.
 {% endhint %}
 
+#### Troubleshooting Stack Configuration Issues
+
+If you encounter issues related to stack configuration, such as missing metadata or validation errors, consider the following troubleshooting steps:
+
+- Verify and set the active stack using ZenML CLI commands:
+  ```bash
+  zenml stack list
+  zenml stack describe <STACK_NAME>
+  zenml stack set <STACK_NAME>
+  ```
+- Ensure all stack components are correctly registered and configured.
+- Check and reset ZenML configuration if necessary:
+  ```bash
+  zenml config reset
+  ```
+- Update ZenML to the latest version to benefit from bug fixes and improvements:
+  ```bash
+  pip install --upgrade zenml
+  ```
+- Increase logging verbosity for detailed error context by setting the `ZENML_LOGGING_VERBOSITY` environment variable:
+  ```bash
+  export ZENML_LOGGING_VERBOSITY=DEBUG
+  ```
+
 #### Orchestrator
 
 An **Orchestrator** is a workhorse that coordinates all the steps to run in a pipeline. Since pipelines can be set up with complex combinations of steps with various asynchronous dependencies between them, the orchestrator acts as the component that decides what steps to run and when to run them.
