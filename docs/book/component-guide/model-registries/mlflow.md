@@ -100,17 +100,13 @@ You can find the path of the model in the MLflow UI. Go to the `Artifacts` tab o
 
 Sometimes adding a `mlflow_registry_training_pipeline` step to your pipeline might not be the best option for you, as it will register a model in the MLflow model registry every time you run the pipeline.
 
-If you want to register your models manually, you can use the `zenml model-registry models register-version` CLI command instead:
+If you want to register your models manually, you can use the `zenml model register` CLI command instead:
 
 ```shell
-zenml model-registry models register-version Tensorflow-model \
-    --description="A new version of the tensorflow model with accuracy 98.88%" \
-    -v 1 \
-    --model-uri="file:///.../mlruns/667102566783201219/3973eabc151c41e6ab98baeb20c5323b/artifacts/model" \
-    -m key1 value1 -m key2 value2 \
-    --zenml-pipeline-name="mlflow_training_pipeline" \
-    --zenml-step-name="trainer"
+zenml model register iris_logistic_regression --license=... --description=...
 ```
+
+You can view some of the options of what can be passed into this command by running `zenml model register --help` but since you are using the CLI outside a pipeline run the arguments you can pass in are limited to non-runtime items. You can also associate tags with models at this point, for example, using the `--tag` option.
 
 ### Deploy a registered model
 
@@ -132,7 +128,22 @@ $ zenml model-registry models list
 ┗━━━━━━━━━━━━━━━━━━━━━━━━┷━━━━━━━━━━━━━┷━━━━━━━━━━┛
 ```
 
-To list all versions of a specific model, you can use the `zenml model-registry models list-versions REGISTERED_MODEL_NAME` command:
+### Register models programmatically
+
+You can register a model using the Python SDK as follows:
+
+```python
+from zenml import Model
+from zenml.client import Client
+
+Client().create_model(
+    name="iris_logistic_regression",
+    license="Copyright (c) ZenML GmbH 2023",
+    description="Logistic regression model trained on the Iris dataset.",
+    tags=["regression", "sklearn", "iris"],
+)
+```
+ecific model, you can use the `zenml model-registry models list-versions REGISTERED_MODEL_NAME` command:
 
 ```shell
 $ zenml model-registry models list-versions tensorflow-mnist-model

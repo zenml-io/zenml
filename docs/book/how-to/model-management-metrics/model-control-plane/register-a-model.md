@@ -14,7 +14,7 @@ Registering models using the CLI is as straightforward as the following command:
 zenml model register iris_logistic_regression --license=... --description=...
 ```
 
-You can view some of the options of what can be passed into this command by running `zenml model register --help` but since you are using the CLI outside a pipeline run the arguments you can pass in are limited to non-runtime items. You can also associate tags with models at this point, for example, using the `--tag` option.
+You can view some of the options of what can be passed into this command by running `zenml model register --help`. Common options include specifying the model's name, license, and description. You can also associate tags with models at this point, for example, using the `--tag` option.
 
 ## Explicit dashboard registration
 
@@ -37,6 +37,8 @@ Client().create_model(
     tags=["regression", "sklearn", "iris"],
 )
 ```
+
+The `create_model` method requires parameters such as `name`, `license`, and `description`. Optional arguments include `tags` to categorize the model.
 
 ## Implicit registration by ZenML
 
