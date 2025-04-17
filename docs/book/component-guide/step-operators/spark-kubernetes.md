@@ -340,7 +340,7 @@ def step_on_spark(...) -> ...:
 
 ### Using Step Operators in Steps
 
-To use step operators within steps, you can specify the step operator in the `@step` decorator. This allows the step to be executed in the environment provided by the step operator, such as AWS SageMaker.
+To use step operators within steps, you can specify the step operator in the `@step` decorator. This allows the step to be executed in the environment provided by the step operator, such as Spark on Kubernetes.
 
 #### Explanation of the `step_operator` Parameter
 
@@ -351,7 +351,7 @@ The `step_operator` parameter in the `@step` decorator specifies which step oper
 ```python
 from zenml import step
 
-@step(step_operator="my_sagemaker_operator")
+@step(step_operator="spark_step_operator")
 def my_training_step(...) -> ...:
     # Step logic here
     pass
