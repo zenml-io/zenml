@@ -186,7 +186,7 @@ class GitLabCodeRepository(BaseCodeRepository):
         if parsed_url.scheme == "https" and parsed_url.hostname == host:
             # Remove .git suffix if present for comparison
             expected_path = f"/{owner}/{repo}"
-            actual_path = parsed_url.path.removesuffix('.git')
+            actual_path = parsed_url.path.removesuffix(".git")
             return actual_path == expected_path
 
         # Handle SSH URLs

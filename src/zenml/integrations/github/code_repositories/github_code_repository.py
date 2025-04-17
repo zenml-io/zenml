@@ -243,35 +243,32 @@ class GitHubCodeRepository(BaseCodeRepository):
         host = host.rstrip("/")
         owner = self.config.owner
         repo = self.config.repository
-         
+
         # Clean the input URL by removing any trailing slashes
-        url = url.rstrip('/')
-        
+        url = url.rstrip("/")
+
         # Handle HTTPS URLs using urlparse
         parsed_url = urlparse(url)
         if parsed_url.scheme == "https":
             expected_path = f"/{owner}/{repo}"
-            actual_path = parsed_url.path.removesuffix('.git')
+            actual_path = parsed_url.path.removesuffix(".git")
             return parsed_url.hostname == host and actual_path == expected_path
-        
+
         # Create regex patterns for non-HTTPS URL formats
         patterns = [
             # SSH format: git@github.com:owner/repo[.git]
             rf"^[^@]+@{re.escape(host)}:{re.escape(owner)}/{re.escape(repo)}(\.git)?$",
-            
             # Alternative SSH: ssh://git@github.com/owner/repo[.git]
             rf"^ssh://[^@]+@{re.escape(host)}/{re.escape(owner)}/{re.escape(repo)}(\.git)?$",
-            
             # Git protocol: git://github.com/owner/repo[.git]
             rf"^git://{re.escape(host)}/{re.escape(owner)}/{re.escape(repo)}(\.git)?$",
-            
             # GitHub CLI: gh:owner/repo
             rf"^gh:{re.escape(owner)}/{re.escape(repo)}$",
         ]
-        
+
         # Try matching against each pattern
         for pattern in patterns:
             if re.match(pattern, url):
                 return True
-                
+
         return False
