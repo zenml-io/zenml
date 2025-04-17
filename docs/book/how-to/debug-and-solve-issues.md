@@ -151,6 +151,36 @@ NewConnectionError('<urllib3.connection.HTTPConnection object at 0x7f9abb198550>
 
 If you restarted your machine after starting the local ZenML server with `zenml login --local`, then you have to run `zenml login --local` again after each restart. Local ZenML deployments don't survive machine restarts.
 
+### Handling Missing Stack Metadata
+
+If you encounter a `ValidationError` related to missing `metadata.workspace` in the `StackResponse` model, it indicates a problem with the stack configuration. Follow these steps to troubleshoot:
+
+- **Verify Active Stack**: Use the ZenML CLI to list and describe your stacks to ensure the active stack is correctly configured.
+  ```bash
+  zenml stack list
+  zenml stack describe <STACK_NAME>
+  ```
+- **Set Active Stack**: If the active stack is incorrect, set the correct stack as active.
+  ```bash
+  zenml stack set <STACK_NAME>
+  ```
+- **Validate Stack Components**: Ensure all stack components are registered and configured.
+  ```bash
+  zenml stack describe <STACK_NAME>
+  ```
+- **Reset ZenML Configuration**: If necessary, reset the ZenML configuration.
+  ```bash
+  zenml config reset
+  ```
+- **Update ZenML**: Ensure you are using the latest version of ZenML.
+  ```bash
+  pip install --upgrade zenml
+  ```
+- **Increase Logging Verbosity**: For more detailed error context, increase the logging verbosity.
+  ```bash
+  export ZENML_LOGGING_VERBOSITY=DEBUG
+  ```
+
 #### Column 'step\_configuration' cannot be null
 
 ```bash
