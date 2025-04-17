@@ -2,6 +2,32 @@
 description: Learn how to use the MLflow Experiment Tracker with ZenML.
 ---
 
+# Integrating Experiment Trackers with MCP
+
+## Overview of MCP
+
+The ZenML Model Control Plane (MCP) is designed to manage and track machine learning models independently, providing features like version control and metadata tracking. It acts as a model registry, allowing you to register, version, and manage models as first-class citizens in ZenML.
+
+## Enhancing MCP with Experiment Trackers
+
+While the MCP functions independently, integrating experiment trackers can enhance its capabilities by providing additional logging and visualization features for experiments and model performance. Experiment trackers offer extensive UIs that allow users to browse, visualize, and compare logged information, augmenting the MCP's functionalities.
+
+## Popular Experiment Trackers
+
+Some popular experiment trackers that can be integrated with ZenML include:
+- Comet
+- MLflow
+- Neptune
+- Weights & Biases
+
+## How to Integrate Experiment Trackers with MCP
+
+To integrate an experiment tracker with the MCP, follow these steps:
+1. Configure and add an Experiment Tracker to your ZenML stack.
+2. Enable the Experiment Tracker for individual steps in your pipeline by decorating them with the included decorator.
+3. Log information (e.g., models, metrics, data) to the Experiment Tracker as you would independently.
+4. Access the Experiment Tracker UI to browse and visualize the logged information.
+
 # MLflow Experiment Tracker
 
 The ZenML MLflow Experiment Tracker integration and stack component allows you to log and visualize information from your pipeline steps using MLflow, without having to write extra MLflow code.
