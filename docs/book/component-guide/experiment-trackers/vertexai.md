@@ -259,6 +259,28 @@ def tf_trainer(...):
 ```
 {% endhint %}
 
+### Integrating Experiment Trackers with MCP
+
+The ZenML Model Control Plane (MCP) is designed to manage and track machine learning models independently, providing features like version control and metadata tracking. However, integrating experiment trackers can enhance the MCP by providing additional logging and visualization features for experiments and model performance.
+
+#### Benefits of Integration
+- **Enhanced Logging and Visualization**: Experiment trackers offer extensive UIs that allow users to browse, visualize, and compare experiment data, complementing the MCP's capabilities.
+- **Popular Experiment Trackers**: ZenML supports integration with popular experiment trackers like Comet, MLflow, Neptune, and Weights & Biases.
+
+#### Integration Steps
+1. **Configure and Add an Experiment Tracker**: Add an experiment tracker to your ZenML stack.
+2. **Enable the Experiment Tracker**: Decorate individual pipeline steps to enable the experiment tracker.
+3. **Log Information**: Explicitly log models, metrics, and data to the experiment tracker.
+4. **Access the UI**: Use the experiment tracker UI to visualize logged information.
+
+```python
+from zenml.client import Client
+
+pipeline_run = Client().get_pipeline_run("<PIPELINE_RUN_NAME>")
+step = pipeline_run.steps["<STEP_NAME>"]
+experiment_tracker_url = step.run_metadata["experiment_tracker_url"].value
+```
+
 ### Experiment Tracker UI
 
 You can find the URL of the Vertex AI experiment linked to a specific ZenML run via the metadata of the step in which the experiment tracker was used:

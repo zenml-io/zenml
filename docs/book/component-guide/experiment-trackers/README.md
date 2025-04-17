@@ -50,10 +50,21 @@ zenml experiment-tracker flavor list
 
 Every Experiment Tracker has different capabilities and uses a different way of logging information from your pipeline steps, but it generally works as follows:
 
-* first, you have to configure and add an Experiment Tracker to your ZenML stack
-* next, you have to explicitly enable the Experiment Tracker for individual steps in your pipeline by decorating them with the included decorator
-* in your steps, you have to explicitly log information (e.g. models, metrics, data) to the Experiment Tracker same as you would if you were using the tool independently of ZenML
-* finally, you can access the Experiment Tracker UI to browse and visualize the information logged during your pipeline runs. You can use the following code snippet to get the URL of the experiment tracker UI for the experiment linked to a certain step of your pipeline run:
+* first, you have to configure and add an Experiment# Integrating Experiment Trackers with MCP
+
+The ZenML Model Control Plane (MCP) is designed to manage and track machine learning models independently, providing features like version control and metadata tracking. However, integrating an experiment tracker can enhance the MCP's capabilities by providing additional logging and visualization features for experiments and model performance.
+
+## Benefits of Integrating Experiment Trackers with MCP
+
+- **Enhanced Logging and Visualization**: Experiment trackers provide extensive UIs that allow users to browse, visualize, and compare experiment data, which complements the MCP's model management capabilities.
+- **Popular Experiment Trackers**: ZenML supports integration with popular experiment trackers such as Comet, MLflow, Neptune, and Weights & Biases.
+
+## How to Integrate Experiment Trackers with MCP
+
+1. **Add an Experiment Tracker to your ZenML Stack**: Configure and add an experiment tracker to your ZenML stack.
+2. **Enable the Experiment Tracker for Pipeline Steps**: Explicitly enable the experiment tracker for individual steps in your pipeline by decorating them with the included decorator.
+3. **Log Information to the Experiment Tracker**: In your steps, log information (e.g., models, metrics, data) to the experiment tracker as you would if using the tool independently of ZenML.
+4. **Access the Experiment Tracker UI**: Use the following code snippet to get the URL of the experiment tracker UI for the experiment linked to a certain step of your pipeline run:
 
 ```python
 from zenml.client import Client
