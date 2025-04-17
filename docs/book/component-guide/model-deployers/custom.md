@@ -125,7 +125,7 @@ This is a slimmed-down version of the base implementation which aims to highligh
 
 If you want to create your own custom flavor for a model deployer, you can follow the following steps:
 
-1. Create a class that inherits from the `BaseModelDeployer` class and implements the abstract methods.
+1. Create a class that inherits from the `BaseModelDeployer` class and implements the abstract methods. For example, implement `perform_deploy_model`, `perform_stop_model`, `perform_start_model`, and `perform_delete_model` with specific logic for AWS SageMaker.
 2. If you need to provide any configuration, create a class that inherits from the `BaseModelDeployerConfig` class and add your configuration parameters.
 3. Bring both the implementation and the configuration together by inheriting from the `BaseModelDeployerFlavor` class. Make sure that you give a `name` to the flavor through its abstract property.
 4. Create a service class that inherits from the `BaseService` class and implements the abstract methods. This class will be used to represent the deployed model server in ZenML.
@@ -140,6 +140,12 @@ For example, if your flavor class `MyModelDeployerFlavor` is defined in `flavors
 
 ```shell
 zenml model-deployer flavor register flavors.my_flavor.MyModelDeployerFlavor
+```
+
+To add the custom deployer to a ZenML stack and use it in pipelines, use the following command:
+
+```shell
+zenml stack update <STACK_NAME> -m <MODEL_DEPLOYER_NAME>
 ```
 
 {% hint style="warning" %}
