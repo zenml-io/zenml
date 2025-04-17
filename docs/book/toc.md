@@ -45,6 +45,7 @@
   * [Interact with secrets](how-to/project-setup-and-management/interact-with-secrets.md)
 * [Pipeline Development](how-to/pipeline-development/README.md)
   * [Build a pipeline](how-to/pipeline-development/build-pipelines/README.md)
+  * [Simulating Pipeline Runs](how-to/pipeline-development/simulating-pipeline-runs.md)
     * [Use pipeline/step parameters](how-to/pipeline-development/build-pipelines/use-pipeline-step-parameters.md)
     * [Configuring a pipeline at runtime](how-to/pipeline-development/build-pipelines/configuring-a-pipeline-at-runtime.md)
     * [Reference environment variables in configurations](how-to/pipeline-development/build-pipelines/reference-environment-variables-in-configurations.md)
