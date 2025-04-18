@@ -205,18 +205,19 @@ def check_relative_links(dir_path: str) -> bool:
 
         # Print details about broken links in this file
         if file_broken_links:
-            print(f"\n{file_path}:")
+            print(f"\n\033[1m{file_path}:\033[0m")
             for link, line_num, resolved_path, line in file_broken_links:
-                print(f"  Line {line_num}: {link}")
-                print(f"  Resolves to: {resolved_path}")
-                print(f"  Context: {line}")
+                print(f"  \033[91mLine {line_num}:\033[0m {link}")
+                print(f"  \033[93mResolves to:\033[0m {resolved_path}")
+                print(f"  \033[94mContext:\033[0m {line}")
+                print("  " + "-" * 50)  # Add separator between links
                 broken_links.append((file_path, line_num, link, resolved_path))
 
     # Summary
     total_links = valid_links_count + len(broken_links)
-    print(f"\nChecked {total_links} relative links:")
-    print(f"  ✅ {valid_links_count} valid links")
-    print(f"  ❌ {len(broken_links)} broken links")
+    print(f"\n\033[1mChecked {total_links} relative links:\033[0m")
+    print(f"  \033[92m✅ {valid_links_count} valid links\033[0m")
+    print(f"  \033[91m❌ {len(broken_links)} broken links\033[0m")
 
     return len(broken_links) == 0
 
