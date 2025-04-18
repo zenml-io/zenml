@@ -61,7 +61,7 @@ From there, each of the custom stack component types has a dedicated section abo
 
 #### How do I mitigate dependency clashes with ZenML?
 
-Check out [our dedicated documentation page](../how-to/pipeline-development/configure-python-environments/handling-dependencies.md) on some ways you can try to solve these dependency and versioning issues.
+Check out [our dedicated documentation page](https://docs.zenml.io/user-guides/best-practices/configure-python-environments) on some ways you can try to solve these dependency and versioning issues.
 
 #### How do I deploy cloud infrastructure and/or MLOps stacks?
 
