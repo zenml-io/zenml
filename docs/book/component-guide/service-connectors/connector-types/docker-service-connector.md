@@ -68,6 +68,34 @@ This Service Connector does not support generating short-lived credentials from 
 This Service Connector does not support auto-discovery and extraction of authentication credentials from local Docker clients. If this feature is useful to you or your organization, please let us know by messaging us in [Slack](https://zenml.io/slack) or [creating an issue on GitHub](https://github.com/zenml-io/zenml/issues).
 {% endhint %}
 
+# Docker Hub Service Connector Setup
+
+The Docker Hub Service Connector allows you to authenticate with Docker Hub using a personal access token, enabling secure management of Docker images and workflows.
+
+## Introduction
+
+Docker Hub Service Connectors are used to connect ZenML with Docker Hub, allowing for seamless management of Docker images and workflows. They provide pre-authenticated clients to Stack Components linked to them.
+
+## Setting Up Docker Hub Service Connector
+
+To set up a Docker Hub Service Connector using a personal access token, follow these steps:
+
+1. **Register the Service Connector**
+
+   Use the following command to register a Docker Hub Service Connector in ZenML:
+
+   ```sh
+   zenml service-connector register dockerhub --type docker --username=<USERNAME> --password=<PERSONAL_ACCESS_TOKEN>
+   ```
+
+   - `--username`: Your Docker Hub username.
+   - `--password`: Your personal access token for Docker Hub.
+
+2. **Best Practices**
+
+   - Store your personal access token securely and avoid hardcoding it in scripts.
+   - Use environment variables or secret management tools to manage your credentials.
+
 ## Local client provisioning
 
 This Service Connector allows configuring the local Docker client with credentials:
