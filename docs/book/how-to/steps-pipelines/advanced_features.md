@@ -307,6 +307,12 @@ The fan-in, fan-out method has the following limitations:
 
 When calling a ZenML step as part of your pipeline, it gets assigned a unique **invocation ID** that you can use to reference this step invocation when defining the execution order of your pipeline steps or use it to fetch information about the invocation after the pipeline has finished running.
 
+#### Purpose of Custom Step Run Names
+
+Setting custom names for step runs is particularly useful for users who utilize the same step multiple times within a single pipeline. It allows for assigning unique identifiers to each invocation for clarity and conflict avoidance.
+
+#### Code Example
+
 ```python
 from zenml import pipeline, step
 
@@ -327,7 +333,20 @@ def example_pipeline():
     # do so by passing it like this. If you pass a custom ID, it needs to be
     # unique for all the step invocations that happen as part of this pipeline.
     my_step(id="my_custom_invocation_id")
+    # Example of using custom step names
+    my_step(id="custom_step_name_1")
+    my_step(id="custom_step_name_2")
 ```
+
+#### Note on Uniqueness
+
+Ensure that all custom step names are unique within the pipeline to prevent conflicts.
+
+#### Additional Resources
+
+For more in-depth information or community support, refer to the following resources:
+- [Using a custom step invocation ID](https://github.com/zenml-io/zenml/blob/main/docs/book/how-to/pipeline-development/build-pipelines/using-a-custom-step-invocation-id.md)
+- [Slack Discussion](https://zenml.slack.com/archives/C01FWQ5D0TT/p1739499659.053539)
 
 ### Named Pipeline Runs
 
