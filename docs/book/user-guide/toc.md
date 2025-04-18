@@ -1,6 +1,6 @@
 # Table of contents
 
-* [Learn ZenML](README.md)
+* [Overview](README.md)
 * [Starter guide](starter-guide/README.md)
   * [Create an ML pipeline](starter-guide/create-an-ml-pipeline.md)
   * [Cache previous executions](starter-guide/cache-previous-executions.md)
