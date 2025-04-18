@@ -10,10 +10,7 @@ This page aims to quickly set up a minimal production stack on GCP. With just a 
 {% hint style="info" %}
 Would you like to skip ahead and deploy a full GCP ZenML cloud stack already?
 
-Check out the[in-browser stack deployment wizard](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack),\
-the [stack registration wizard](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack),\
-or [the ZenML GCP Terraform module](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform)\
-for a shortcut on how to deploy & register this stack.
+Check out the [in-browser stack deployment wizard](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack), the [stack registration wizard](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack), or [the ZenML GCP Terraform module](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform) for a shortcut on how to deploy & register this stack.
 {% endhint %}
 
 {% hint style="warning" %}
@@ -36,7 +33,7 @@ If you don't plan to keep the resources that you create in this procedure, creat
 
 ### 2) Enable GCloud APIs
 
-The [following APIs](https://console.cloud.google.com/flows/enableapi?apiid=cloudfunctions,cloudbuild.googleapis.com,artifactregistry.googleapis.com,run.googleapis.com,logging.googleapis.com\\\&redirect=https://cloud.google.com/functions/docs/create-deploy-gcloud&\\_ga=2.103703808.1862683951.1694002459-205697788.1651483076&\\_gac=1.161946062.1694011263.Cj0KCQjwxuCnBhDLARIsAB-cq1ouJZlVKAVPMsXnYrgQVF2t1Q2hUjgiHVpHXi2N0NlJvG3j3y-PPh8aAoSIEALw\\_wcB) will need to be enabled within your chosen GCP project.
+The [following APIs](https://console.cloud.google.com/flows/enableapi?apiid=cloudfunctions,cloudbuild.googleapis.com,artifactregistry.googleapis.com,run.googleapis.com,logging.googleapis.com&redirect=https://cloud.google.com/functions/docs/create-deploy-gcloud&_ga=2.103703808.1862683951.1694002459-205697788.1651483076&_gac=1.161946062.1694011263.Cj0KCQjwxuCnBhDLARIsAB-cq1ouJZlVKAVPMsXnYrgQVF2t1Q2hUjgiHVpHXi2N0NlJvG3j3y-PPh8aAoSIEALw_wcB) will need to be enabled within your chosen GCP project.
 
 * Cloud Functions API # For the vertex orchestrator
 * Cloud Run Admin API # For the vertex orchestrator
@@ -113,8 +110,7 @@ This guide will use Vertex AI as the orchestrator to run the pipelines. As a ser
 export ORCHESTRATOR_NAME=gcp_vertex_orchestrator
 
 # Register the GCS artifact-store and reference the target GCS bucket
-zenml orchestrator register ${ORCHESTRATOR_NAME} --flavor=vertex 
-  --project=<PROJECT_NAME> --location=europe-west2
+zenml orchestrator register ${ORCHESTRATOR_NAME} --flavor=vertex --project=<PROJECT_NAME> --location=europe-west2
 
 # Connect the GCS orchestrator to the target gcp project via a GCP Service Connector
 zenml orchestrator connect ${ORCHESTRATOR_NAME} -i

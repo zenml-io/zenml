@@ -21,8 +21,7 @@ To follow this guide, you need:
 
 ## 1. Set up proper credentials
 
-You can start by [creating a service principal by creating an app registration](https://github.com/Azure/MachineLearningNotebooks/blob/master/how-to-use-azureml/manage-azureml-service/authentication-in-azureml/authentication-in-azureml.ipynb)\
-on Azure:
+You can start by [creating a service principal by creating an app registration](https://github.com/Azure/MachineLearningNotebooks/blob/master/how-to-use-azureml/manage-azureml-service/authentication-in-azureml/authentication-in-azureml.ipynb) on Azure:
 
 1. Go to the App Registrations on the Azure portal.
 2. Click on `+ New registration`,
@@ -54,7 +53,7 @@ Select it, and you will start the process of creating an AzureML workspace. As y
 
 ## 3. Create the required role assignments
 
-Now, that you have your app registration and the resources, you have to create the corresponding role assignments. In order to do this, go to your resource group, open up `Access control (IAM)` on the left side and`+Add` a new role assignment.
+Now, that you have your app registration and the resources, you have to create the corresponding role assignments. In order to do this, go to your resource group, open up `Access control (IAM)` on the left side and `+Add` a new role assignment.
 
 ![Azure Resource Groups](../../.gitbook/assets/azure-role-assignment-1.png)
 
@@ -62,7 +61,7 @@ In the role assignment page, search for AzureML, which will show you a list of r
 
 ![Azure Resource Groups](../../.gitbook/assets/azure-role-assignment-2.png)
 
-One by one, you have to select `AzureML Compute Operator`,`AzureML Data Scientist`, and `AzureML Registry User` and click `Next`.
+One by one, you have to select `AzureML Compute Operator`, `AzureML Data Scientist`, and `AzureML Registry User` and click `Next`.
 
 ![Azure Resource Groups](../../.gitbook/assets/azure-role-assignment-3.png)
 
@@ -167,9 +166,7 @@ Save this code to run.py and execute it. The pipeline will use Azure Blob Storag
 python run.py
 ```
 
-Now that you have a functional Azure stack set up with ZenML, you can explore\
-more advanced features and capabilities offered by ZenML. Some next steps to\
-consider:
+Now that you have a functional Azure stack set up with ZenML, you can explore more advanced features and capabilities offered by ZenML. Some next steps to consider:
 
 * Dive deeper into ZenML's [production guide](https://docs.zenml.io/user-guides/production-guide) to learn best practices for deploying and managing production-ready pipelines.
 * Explore ZenML's [integrations](https://docs.zenml.io/stacks) with other popular tools and frameworks in the machine learning ecosystem.
