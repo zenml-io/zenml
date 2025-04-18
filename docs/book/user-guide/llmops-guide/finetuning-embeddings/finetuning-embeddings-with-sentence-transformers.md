@@ -15,8 +15,7 @@ Our pipeline for finetuning the embeddings is relatively simple. We'll do the fo
 * evaluate the base and finetuned embeddings
 * visualize the results of the evaluation
 
-![Embeddings finetuning pipeline with Sentence Transformers and
-ZenML](../../../.gitbook/assets/rag-finetuning-embeddings-pipeline.png)
+![Embeddings finetuning pipeline with Sentence Transformers and ZenML](../../../.gitbook/assets/rag-finetuning-embeddings-pipeline.png)
 
 ### Loading data
 
