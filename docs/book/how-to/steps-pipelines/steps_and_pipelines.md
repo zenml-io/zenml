@@ -74,6 +74,19 @@ def simple_ml_pipeline():
     train_model(dataset)
 ```
 
+### Custom Step Run Naming
+
+When using the same step multiple times within a pipeline, you can set custom names for each step run using the `id` parameter. This helps in distinguishing each step invocation and avoiding conflicts.
+
+```python
+@pipeline
+def example_pipeline():
+    my_step(id="custom_step_name_1")
+    my_step(id="custom_step_name_2")
+```
+
+Ensure that all custom step names are unique within the pipeline. For more details, refer to the [Using a custom step invocation ID](https://github.com/zenml-io/zenml/blob/main/docs/book/how-to/pipeline-development/build-pipelines/using-a-custom-step-invocation-id.md) documentation and join community discussions on platforms like [Slack](https://zenml.slack.com/archives/C01FWQ5D0TT/p1739499659.053539).
+
 ### Running Pipelines
 
 You can run a pipeline by simply calling the function:
