@@ -49,6 +49,34 @@ locally or remotely. See our documentation on this [here](https://docs.zenml.io/
 
 Check below for more advanced ways to build and interact with your pipeline.
 
+## Custom Step Run Naming
+
+When building pipelines, you might want to set custom names for step runs, especially if the same step is used multiple times within a single pipeline. This helps in distinguishing each step invocation and avoiding conflicts.
+
+### Purpose
+Setting custom step run names allows for clarity and conflict avoidance when the same step is invoked multiple times in a pipeline.
+
+### How to Set Custom Step Run Names
+You can pass a custom name when calling a step using the `id` parameter. Ensure that all custom step names are unique within the pipeline to prevent conflicts.
+
+```python
+from zenml import pipeline, step
+
+@step
+def my_step() -> None:
+    ...
+
+@pipeline
+def example_pipeline():
+    my_step(id="custom_step_name_1")
+    my_step(id="custom_step_name_2")
+```
+
+### Additional Resources
+- [Using a custom step invocation ID](https://github.com/zenml-io/zenml/blob/main/docs/book/how-to/pipeline-development/build-pipelines/using-a-custom-step-invocation-id.md)
+- [Slack Discussion](https://zenml.slack.com/archives/C01FWQ5D0TT/p1739499659.053539)
+
+
 <table data-view="cards"><thead><tr><th></th><th></th><th></th><th data-hidden data-card-target data-type="content-ref"></th></tr></thead><tbody><tr><td>Configure pipeline/step parameters</td><td></td><td></td><td><a href="use-pipeline-step-parameters.md">use-pipeline-step-parameters.md</a></td></tr><tr><td>Name and annotate step outputs</td><td></td><td></td><td><a href="step-output-typing-and-annotation.md">step-output-typing-and-annotation.md</a></td></tr><tr><td>Control caching behavior</td><td></td><td></td><td><a href="control-caching-behavior.md">control-caching-behavior.md</a></td></tr><tr><td>Customize the step invocation ids</td><td></td><td></td><td><a href="using-a-custom-step-invocation-id.md">using-a-custom-step-invocation-id.md</a></td></tr><tr><td>Name your pipeline runs</td><td></td><td></td><td><a href="name-your-pipeline-runs.md">name-your-pipeline-runs.md</a></td></tr><tr><td>Use failure/success hooks</td><td></td><td></td><td><a href="use-failure-success-hooks.md">use-failure-success-hooks.md</a></td></tr><tr><td>Hyperparameter tuning</td><td></td><td></td><td><a href="hyper-parameter-tuning.md">hyper-parameter-tuning.md</a></td></tr><tr><td>Attach metadata to a step</td><td></td><td></td><td><a href="https://docs.zenml.io/how-to/model-management-metrics/track-metrics-metadata/attach-metadata-to-a-step">attach-metadata-to-a-step.md</a></td></tr><tr><td>Fetch metadata within steps</td><td></td><td></td><td><a href="https://docs.zenml.io/how-to/model-management-metrics/track-metrics-metadata/fetch-metadata-within-steps">fetch-metadata-within-steps.md</a></td></tr><tr><td>Fetch metadata during pipeline composition</td><td></td><td></td><td><a href="https://docs.zenml.io/how-to/model-management-metrics/track-metrics-metadata/fetch-metadata-within-pipeline">fetch-metadata-within-pipeline.md</a></td></tr><tr><td>Enable or disable logs storing</td><td></td><td></td><td><a href="https://docs.zenml.io/how-to/control-logging/enable-or-disable-logs-storing">enable-or-disable-logs-storing.md</a></td></tr><tr><td>Special Metadata Types</td><td></td><td></td><td><a href="https://docs.zenml.io/how-to/model-management-metrics/track-metrics-metadata/logging-metadata">logging-metadata.md</a></td></tr><tr><td>Access secrets in a step</td><td></td><td></td><td><a href="access-secrets-in-a-step.md">access-secrets-in-a-step.md</a></td></tr></tbody></table>
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
