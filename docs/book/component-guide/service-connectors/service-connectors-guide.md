@@ -13,8 +13,32 @@ This documentation section contains everything that you need to use Service Conn
 * check out the section on [Service Connector Types](service-connectors-guide.md#cloud-provider-service-connector-types) to understand the different Service Connector implementations that are available and when to use them.
 * jumping straight to the sections on [Registering Service Connectors](service-connectors-guide.md#register-service-connectors) can get you set up quickly if you are only looking for a quick way to evaluate Service Connectors and their features.
 * if all you need to do is connect a ZenML Stack Component to an external resource or service like a Kubernetes cluster, a Docker container registry, or an object storage bucket, and you already have some Service Connectors available, the section on [connecting Stack Components to resources](service-connectors-guide.md#connect-stack-components-to-resources) is all you need.
+* for setting up a Docker Hub Service Connector using a personal access token, refer to the [Docker Hub Service Connector Setup](docker-hub-service-connector-setup.md) section.
 
 In addition to this guide, there is an entire section dedicated to [best security practices concerning the various authentication methods](best-security-practices.md) implemented by Service Connectors, such as which types of credentials to use in development or production and how to keep your security information safe. That section is particularly targeted at engineers with some knowledge of infrastructure, but it should be accessible to larger audiences.
+
+## Docker Hub Service Connector Setup
+
+### Introduction
+
+Docker Hub Service Connectors in ZenML are used to authenticate and manage Docker clients for Docker Hub registries. They are essential for managing Docker images and workflows securely and efficiently.
+
+### Step-by-Step Setup
+
+To register a Docker Hub Service Connector in ZenML, use the following command:
+
+```sh
+zenml service-connector register dockerhub --type docker --username=<USERNAME> --password=<PERSONAL_ACCESS_TOKEN>
+```
+
+#### Command Parameters
+- `--username`: Your Docker Hub username.
+- `--password`: Your Docker Hub personal access token. This should be used instead of a password for enhanced security.
+
+### Best Practices
+- Always use personal access tokens instead of passwords for authentication.
+- Store your personal access tokens securely and avoid hardcoding them in scripts.
+- Regularly rotate your personal access tokens to minimize security risks.
 
 ## Terminology
 

@@ -139,6 +139,32 @@ Successfully connected container registry `dockerhub` to the following resources
 ```
 {% endcode %}
 
+## Docker Hub Service Connector Setup
+
+### Introduction
+
+Docker Hub Service Connectors in ZenML are used to authenticate and manage Docker clients for Docker Hub registries. They are essential for managing Docker images and workflows securely.
+
+### Setup Instructions
+
+To register a Docker Hub Service Connector using a personal access token, use the following command:
+
+```sh
+zenml service-connector register dockerhub --type docker --username=<USERNAME> --password=<PERSONAL_ACCESS_TOKEN>
+```
+
+### Command Parameters
+
+- `--type docker`: Specifies the type of service connector.
+- `--username`: Your Docker Hub username.
+- `--password`: Your personal access token for Docker Hub. Note that this should be used instead of a password for enhanced security.
+
+### Best Practices
+
+- Always use personal access tokens instead of passwords for authentication.
+- Store your personal access tokens securely and avoid hardcoding them in scripts.
+- Regularly rotate your personal access tokens to minimize security risks.
+
 As a final step, you can use the Default Container Registry in a ZenML Stack:
 
 ```sh
