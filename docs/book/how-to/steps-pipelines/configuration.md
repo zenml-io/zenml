@@ -4,6 +4,25 @@ description: Configuring and customizing your pipeline runs.
 
 ZenML provides several approaches to configure your pipelines and steps:
 
+### Custom Step Run Naming
+
+Setting custom names for step runs in ZenML pipelines is useful for distinguishing multiple invocations of the same step within a single pipeline. This can be achieved using the `id` parameter when calling a step. Ensure that all custom step names are unique within the pipeline to prevent conflicts.
+
+```python
+from zenml import pipeline, step
+
+@step
+def my_step() -> None:
+    ...
+
+@pipeline
+def example_pipeline():
+    my_step(id="custom_step_name_1")
+    my_step(id="custom_step_name_2")
+```
+
+For more information, refer to the [Using a custom step invocation ID](https://github.com/zenml-io/zenml/blob/main/docs/book/how-to/pipeline-development/build-pipelines/using-a-custom-step-invocation-id.md) documentation and join community discussions on platforms like [Slack](https://zenml.slack.com/archives/C01FWQ5D0TT/p1739499659.053539).
+
 ### Pipeline Configuration with `configure`
 
 You can configure various aspects of a pipeline using the `configure` method:

@@ -195,6 +195,25 @@ if "orchestrator_url" in run_metadata:
 
 ## Step 4: Working with Steps
 
+### Custom Step Run Naming
+
+When using the same step multiple times within a single pipeline, you can set custom names for each step run to distinguish them. This is done using the `id` parameter when calling a step within a pipeline. Ensure that all custom step names are unique within the pipeline to prevent conflicts.
+
+```python
+from zenml import pipeline, step
+
+@step
+def my_step() -> None:
+    ...
+
+@pipeline
+def example_pipeline():
+    my_step(id="custom_step_name_1")
+    my_step(id="custom_step_name_2")
+```
+
+For more information, refer to the [Using a custom step invocation ID](https://github.com/zenml-io/zenml/blob/main/docs/book/how-to/pipeline-development/build-pipelines/using-a-custom-step-invocation-id.md) documentation and join community discussions on platforms like Slack.
+
 Within a given pipeline run you can further zoom in on individual steps using the `steps` attribute:
 
 ```python
