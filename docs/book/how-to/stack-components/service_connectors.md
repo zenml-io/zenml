@@ -102,6 +102,6 @@ zenml artifact-store register s3-store \
 
 ## Next Steps
 
-* Learn how to [deploy stacks](deployment.md) using service connectors
+* Learn how to [deploy stacks](https://docs.zenml.io/stacks/deployment) using service connectors
 * Explore [authentication methods](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/service-connectors-guide) for different cloud providers 
 * Understand how to [reference secrets in stack configuration](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/reference-secrets-in-stack-configuration)

@@ -92,6 +92,6 @@ When you start with ZenML, you're automatically using a local stack. As your ML 
 
 Now that you understand what stacks are, you might want to:
 
-* Learn about [deploying stacks](deployment.md) on cloud platforms
+* Learn about [deploying stacks](https://docs.zenml.io/stacks/deployment) on cloud platforms
 * Understand [Service Connectors](service_connectors.md) for authenticating with cloud services
 * Explore how to [register existing cloud resources](https://docs.zenml.io/how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack) as ZenML stack components

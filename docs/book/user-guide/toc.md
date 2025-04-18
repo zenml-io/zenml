@@ -1,6 +1,6 @@
 # Table of contents
 
-* [Learn ZenML](README.md)
+* [Overview](README.md)
 * [Starter guide](starter-guide/README.md)
   * [Create an ML pipeline](starter-guide/create-an-ml-pipeline.md)
   * [Cache previous executions](starter-guide/cache-previous-executions.md)
@@ -60,6 +60,7 @@
 ## Best practices
 
 * [Keep Your Dashboard Clean](best-practices/keep-your-dashboard-server-clean.md)
+* [Configure Python environments](best-practices/configure-python-environments.md)
 * [Shared Components for  Teams](best-practices/shared-components-for-teams.md)
 * [Organizing Stacks Pipelines Models](tutorial/organizing-pipelines-and-models.md)
 * [Access Management](best-practices/access-management.md)
