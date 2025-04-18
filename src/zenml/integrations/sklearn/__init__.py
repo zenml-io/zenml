@@ -21,12 +21,12 @@ class SklearnIntegration(Integration):
     """Definition of sklearn integration for ZenML."""
 
     NAME = SKLEARN
-    REQUIREMENTS = ["scikit-learn", "scikit-image"]
+    REQUIREMENTS = ["scikit-learn"]
 
     @classmethod
     def activate(cls) -> None:
         """Activates the integration."""
         from zenml.integrations.sklearn import materializers  # noqa
 
-SklearnIntegration.check_installation()
 
+SklearnIntegration.check_installation()
