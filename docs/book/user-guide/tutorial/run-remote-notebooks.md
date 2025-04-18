@@ -1,3 +1,8 @@
+---
+description: Leveraging Jupyter notebooks with ZenML.
+icon: notebook
+---
+
 # Running notebooks remotely
 
 A Jupyter notebook is often the fastest way to prototype an ML experiment, but sooner or later you will want to execute heavy‑weight **ZenML steps or pipelines on a remote stack**.  This tutorial shows how to
@@ -57,6 +62,6 @@ model, train_acc = svc_trainer(X_train=X_train, y_train=y_train)
 
 ## Next steps – from notebook to production
 
-Once your logic stabilises it usually makes sense to move code out of the notebook and into regular Python modules so that it can be version‑controlled and tested.  At that point just assemble the same steps inside a `@pipeline` function and trigger it from the CLI or a CI workflow.
+Once your logic stabilizes it usually makes sense to move code out of the notebook and into regular Python modules so that it can be version‑controlled and tested.  At that point just assemble the same steps inside a `@pipeline` function and trigger it from the CLI or a CI workflow.
 
 For a deeper dive into how ZenML packages notebook code have a look at the [Notebook Integration docs](https://docs.zenml.io/how-to/notebooks).

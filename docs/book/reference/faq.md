@@ -55,13 +55,13 @@ Please read [our Contribution Guide](https://github.com/zenml-io/zenml/blob/main
 
 #### How do I add custom components to ZenML?
 
-Please start by [reading the general documentation page](../how-to/infrastructure-deployment/stack-deployment/implement-a-custom-stack-component.md) on implementing a custom stack component, which offers some general advice on what you'll need to do.
+Please start by [reading the general documentation page](https://docs.zenml.io/stacks/contribute/custom-stack-component) on implementing a custom stack component, which offers some general advice on what you'll need to do.
 
 From there, each of the custom stack component types has a dedicated section about adding your own custom components. For example, to add a custom orchestrator, you would [visit this page](https://docs.zenml.io/stacks/orchestrators/custom).
 
 #### How do I mitigate dependency clashes with ZenML?
 
-Check out [our dedicated documentation page](../how-to/pipeline-development/configure-python-environments/handling-dependencies.md) on some ways you can try to solve these dependency and versioning issues.
+Check out [our dedicated documentation page](https://docs.zenml.io/user-guides/best-practices/configure-python-environments) on some ways you can try to solve these dependency and versioning issues.
 
 #### How do I deploy cloud infrastructure and/or MLOps stacks?
 
@@ -85,7 +85,7 @@ Please read our [general information on how to compose steps + pipelines togethe
 
 #### How do I use templates and starter code with ZenML?
 
-[Project templates](broken-reference) allow you to get going quickly with ZenML. We recommend the Starter template (`starter`) for most use cases, which gives you a basic scaffold and structure around which you can write your own code. You can also build templates for others inside a Git repository and use them with ZenML's templates functionality.
+[Project templates](https://docs.zenml.io/user-guides/best-practices/project-templates) allow you to get going quickly with ZenML. We recommend the Starter template (`starter`) for most use cases, which gives you a basic scaffold and structure around which you can write your own code. You can also build templates for others inside a Git repository and use them with ZenML's templates functionality.
 
 #### How do I upgrade my ZenML client and/or server?
 

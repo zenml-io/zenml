@@ -17,7 +17,7 @@ In this tutorial you will:
 4. Run the pipeline and inspect the results in the ZenML dashboard or programmatically.
 
 {% hint style="info" %}
-This tutorial focuses on the mechanics of orchestrating a grid‑search with ZenML.  For more advanced approaches (random search, Bayesian optimisation, …) or a ready‑made example have a look at the [E2E example](https://github.com/zenml-io/zenml/tree/main/examples/e2e) mentioned at the end of the page.
+This tutorial focuses on the mechanics of orchestrating a grid‑search with ZenML.  For more advanced approaches (random search, Bayesian optimization, …) or a ready‑made example have a look at the [E2E example](https://github.com/zenml-io/zenml/tree/main/examples/e2e) mentioned at the end of the page.
 {% endhint %}
 
 ### Prerequisites
@@ -68,7 +68,7 @@ def selection_step(step_prefix: str, output_name: str):
             lr = step_info.config.parameters["learning_rate"]
             trained_models[lr] = model
 
-    # <evaluate and select your favourite model here>
+    # <evaluate and select your favorite model here>
 
 @pipeline
 def hp_tuning_pipeline(step_count: int = 4):
@@ -102,7 +102,7 @@ While the pipeline is running you can:
 
 ## Step 4 Inspect results
 
-Once the run is finished you can programmatically analyse which hyper‑parameter performed best or load the chosen model:
+Once the run is finished you can programmatically analyze which hyper‑parameter performed best or load the chosen model:
 
 ```python
 from zenml.client import Client

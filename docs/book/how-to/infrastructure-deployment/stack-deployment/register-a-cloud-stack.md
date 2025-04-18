@@ -186,7 +186,7 @@ In order to register a remote stack over the CLI with the stack wizard, you can 
 zenml stack register <STACK_NAME> -p {aws|gcp|azure}
 ```
 
-To register the cloud stack, the first thing that the wizard needs is a [service connector](../auth-management/service-connectors-guide.md). You can either use an existing connector by providing its ID or name`-sc <SERVICE_CONNECTOR_ID_OR_NAME>` (CLI-Only), or the wizard will create one for you.
+To register the cloud stack, the first thing that the wizard needs is a [service connector](https://docs.zenml.io/stacks/service-connectors/auth-management). You can either use an existing connector by providing its ID or name`-sc <SERVICE_CONNECTOR_ID_OR_NAME>` (CLI-Only), or the wizard will create one for you.
 
 {% hint style="info" %}
 Similar to the service connector, if you use the CLI, you can also use existing\
