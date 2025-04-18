@@ -47,7 +47,7 @@ These are the main ZenML resources that you can interact with via the ZenML Clie
 * **Code Repositories**: The git code repositories that you have connected with your ZenML instance. See [here](https://docs.zenml.io/user-guides/production-guide/connect-code-repository) for more information.
 
 {% hint style="info" %}
-Checkout the [documentation on fetching runs](../user-guide/tutorial/fetching-pipelines.md) for more information on the various ways how you can fetch and use the pipeline, pipeline run, step run, and artifact resources in code.
+Checkout the [documentation on fetching runs](https://docs.zenml.io/user-guides/tutorial/fetching-pipelines) for more information on the various ways how you can fetch and use the pipeline, pipeline run, step run, and artifact resources in code.
 {% endhint %}
 
 #### Stacks, Infrastructure, Authentication
@@ -57,9 +57,9 @@ Checkout the [documentation on fetching runs](../user-guide/tutorial/fetching-pi
 * **Flavors**: The [stack component flavors](../getting-started/core-concepts.md#flavor) available to you, including:
   * Built-in flavors like the [local orchestrator](https://docs.zenml.io/stacks/orchestrators/local),
   * Integration-enabled flavors like the [Kubeflow orchestrator](https://docs.zenml.io/stacks/orchestrators/kubeflow),
-  * Custom flavors that you have [created yourself](../how-to/infrastructure-deployment/stack-deployment/implement-a-custom-stack-component.md).
+  * Custom flavors that you have [created yourself](https://docs.zenml.io/stacks/contribute/custom-stack-component).
 * **User**: The users registered in your ZenML instance. If you are running locally, there will only be a single `default` user.
-* **Secrets**: The infrastructure authentication secrets that you have registered in the [ZenML Secret Store](../how-to/project-setup-and-management/interact-with-secrets.md).
+* **Secrets**: The infrastructure authentication secrets that you have registered in the [ZenML Secret Store](https://docs.zenml.io/deploying-zenml/deploying-zenml/secret-management).
 * **Service Connectors**: The service connectors that you have set up to [connect ZenML to your infrastructure](https://docs.zenml.io/stacks/service-connectors/auth-management).
 
 ### Client Methods
