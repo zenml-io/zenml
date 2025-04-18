@@ -68,6 +68,10 @@ This Service Connector does not support generating short-lived credentials from 
 This Service Connector does not support auto-discovery and extraction of authentication credentials from local Docker clients. If this feature is useful to you or your organization, please let us know by messaging us in [Slack](https://zenml.io/slack) or [creating an issue on GitHub](https://github.com/zenml-io/zenml/issues).
 {% endhint %}
 
+## Credential Validation
+
+The `zenml service-connector register` command does not perform real-time validation of the credentials provided during the registration of a service connector. This means that invalid credentials may lead to authentication failures during pipeline execution or when accessing Docker/OCI registry services. It is recommended to manually verify access to Docker Hub with the provided credentials before registering the service connector.
+
 ## Local client provisioning
 
 This Service Connector allows configuring the local Docker client with credentials:
