@@ -1,5 +1,6 @@
 ---
 description: Learn how to deploy ZenML pipelines on a Kubernetes cluster.
+icon: kubernetes
 ---
 
 # Kubernetes

@@ -1,3 +1,8 @@
+---
+description: Leveraging Jupyter notebooks with ZenML.
+icon: notebook
+---
+
 # Running notebooks remotely
 
 A Jupyter notebook is often the fastest way to prototype an ML experiment, but sooner or later you will want to execute heavy‑weight **ZenML steps or pipelines on a remote stack**.  This tutorial shows how to
