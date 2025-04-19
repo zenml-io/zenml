@@ -40,6 +40,32 @@ def step_2(input_one: str, input_two: str) -> str:
     return combined_str
 ```
 
+#### Handling Output Data Types in ZenML Steps
+
+When defining steps, it is important to specify the expected output data types. This ensures that ZenML can correctly handle the data being passed between steps. If the actual output type differs from the expected type, it can lead to a `StepInterfaceError`.
+
+To specify expected output types, use type annotations in your step definitions. For example:
+
+```python
+@step
+def process_data() -> pd.DataFrame:
+    # processing logic
+    return processed_data
+```
+
+If your step outputs a different type than expected, you may need to convert it. For instance, converting a `scipy.sparse._csr.csr_matrix` to a `pandas.DataFrame` can be done as follows:
+
+```python
+import pandas as pd
+from scipy.sparse import csr_matrix
+
+@step
+def convert_sparse_to_df(sparse_matrix: csr_matrix) -> pd.DataFrame:
+    return pd.DataFrame.sparse.from_spmatrix(sparse_matrix)
+```
+
+Matching the actual output type with the expected type is crucial to avoid errors. For more information, refer to the [ZenML Documentation on Step Outputs](https://github.com/zenml-io/zenml/blob/main/docs/book/how-to/steps-pipelines/steps_and_pipelines.md) and relevant discussions on the ZenML Slack channel.
+
 #### Pipelines
 
 At its core, ZenML follows a pipeline-based workflow for your projects. A **pipeline** consists of a series of **steps**, organized in any order that makes sense for your use case.
