@@ -127,6 +127,11 @@ def square_root(number: int) -> float:
 @step
 def divide(a: int, b: int) -> Tuple[int, int]:
     return a // b, a % b
+
+# Handling output data types in ZenML steps
+@step
+def convert_sparse_to_dataframe(sparse_matrix: csr_matrix) -> pd.DataFrame:
+    return pd.DataFrame.sparse.from_spmatrix(sparse_matrix)
 ```
 
 If you want to make sure you get all the benefits of type annotating your steps, you can set the environment variable `ZENML_ENFORCE_TYPE_ANNOTATIONS` to `True`. ZenML will then raise an exception in case one of the steps you're trying to run is missing a type annotation.
@@ -180,6 +185,28 @@ def my_step() -> Tuple[int, ...]:
 ## Step output names
 
 By default, ZenML uses the output name `output` for single output steps and `output_0, output_1, ...` for steps with multiple outputs. These output names are used to display your outputs in the dashboard and [fetch them after your pipeline is finished](https://docs.zenml.io/user-guides/tutorial/fetching-pipelines).
+
+## Handling Output Data Types in ZenML Steps
+
+### Specifying Expected Output Types
+
+In ZenML, you can specify the expected output types in your step definitions using type annotations. This helps ZenML determine the appropriate materializer for storing and loading step outputs.
+
+### Converting Data Types
+
+If the actual output type differs from the expected type, you can convert the data within the step. For example, to convert a `scipy.sparse._csr.csr_matrix` to a `pandas.DataFrame`, you can use:
+
+```python
+@step
+def convert_sparse_to_dataframe(sparse_matrix: csr_matrix) -> pd.DataFrame:
+    return pd.DataFrame.sparse.from_spmatrix(sparse_matrix)
+```
+
+### Importance of Matching Output Types
+
+Matching the actual output type with the expected type is crucial to avoid `StepInterfaceError`. Ensure that your step's return type matches the type annotation.
+
+For more information, refer to the [ZenML Documentation on Step Outputs](https://github.com/zenml-io/zenml/blob/main/docs/book/how-to/steps-pipelines/steps_and_pipelines.md) and relevant discussions on the ZenML Slack channel.
 
 If you want to use custom output names for your steps, use the `Annotated` type annotation:
 
