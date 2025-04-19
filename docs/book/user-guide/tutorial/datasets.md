@@ -195,6 +195,25 @@ def process_data(dataset: Dataset) -> pd.DataFrame:
     return processed_data
 ```
 
+## Handling Output Data Types in ZenML Steps
+
+When defining ZenML steps, it is crucial to specify the expected output data types to ensure compatibility and avoid errors such as `StepInterfaceError`. Here are some guidelines:
+
+- **Specifying Expected Output Types**: Use type annotations in your step definitions to specify the expected output types. For example, if a step is expected to return a `pandas.DataFrame`, annotate the return type accordingly.
+
+- **Converting Data Types**: If the actual output type differs from the expected type, convert the data within the step. For instance, to convert a `scipy.sparse._csr.csr_matrix` to a `pandas.DataFrame`, you can use:
+  ```python
+  import pandas as pd
+  from scipy.sparse import csr_matrix
+
+  def convert_sparse_to_dataframe(sparse_matrix: csr_matrix) -> pd.DataFrame:
+      return pd.DataFrame.sparse.from_spmatrix(sparse_matrix)
+  ```
+
+- **Importance of Matching Types**: Ensuring that the actual output type matches the expected type is essential to avoid runtime errors. Mismatched types can lead to `StepInterfaceError` and disrupt the pipeline execution.
+
+- **Further Reading**: For more information, refer to the [ZenML Documentation on Step Outputs](https://github.com/zenml-io/zenml/blob/main/docs/book/how-to/steps-pipelines/steps_and_pipelines.md) and join discussions on the ZenML Slack channel.
+
 2. **Create specialized steps to load the right dataset**: Implement separate steps to load different datasets, while keeping underlying steps standardized.
 
 ```python
