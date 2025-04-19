@@ -136,6 +136,14 @@ ZenML supports many common data types out of the box:
 * Pandas DataFrames
 * Many ML model formats (through integrations)
 
+### Handling Output Data Types in ZenML Steps
+
+When defining ZenML steps, it is important to specify the expected output data types using type annotations. This helps ZenML determine the appropriate materializer for storing and loading step outputs. For example, a step returning a `pandas.DataFrame` should be annotated with `-> pd.DataFrame`.
+
+If the actual output type differs from the expected type, it can lead to a `StepInterfaceError`. To avoid this, ensure that the output type matches the expected type. If necessary, convert the data type within the step. For instance, convert a `scipy.sparse._csr.csr_matrix` to a `pandas.DataFrame` using `pd.DataFrame.sparse.from_spmatrix()` before returning it.
+
+Matching the actual output type with the expected type is crucial to prevent errors and ensure smooth execution of the pipeline. For more information, refer to the [ZenML Documentation on Step Outputs](https://github.com/zenml-io/zenml/blob/main/docs/book/how-to/steps-pipelines/steps_and_pipelines.md) and relevant discussions on the ZenML Slack channel.
+
 ### Returning Multiple Outputs
 
 Steps can return multiple artifacts using tuples:
