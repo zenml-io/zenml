@@ -7,7 +7,7 @@ description: How to migrate your ZenML pipelines and steps from version <=0.39.1
 ZenML versions 0.40.0 to 0.41.0 introduced a new and more flexible syntax to define ZenML steps and pipelines. This page contains code samples that show you how to upgrade your steps and pipelines to the new syntax.
 
 {% hint style="warning" %}
-Newer versions of ZenML still work with pipelines and steps defined using the old syntax, but the old syntax is deprecated and will be removed in the future.
+Newer versions of ZenML still work with pipelines and steps defined using the old syntax, but the old syntax is deprecated and will be removed in the future. The `BaseParameters` class has been deprecated and removed in favor of using `pydantic.BaseModel` for defining step parameters.
 {% endhint %}
 
 ## Overview
@@ -17,11 +17,12 @@ Newer versions of ZenML still work with pipelines and steps defined using the ol
 ```python
 from typing import Optional
 
-from zenml.steps import BaseParameters, Output, StepContext, step
+from pydantic import BaseModel
+from zenml.steps import Output, StepContext, step
 from zenml.pipelines import pipeline
 
 # Define a Step
-class MyStepParameters(BaseParameters):
+class MyStepParameters(BaseModel):
     param_1: int
     param_2: Optional[float] = None
 
@@ -95,11 +96,12 @@ int_output = last_run.steps["my_step"].outputs["int_output"].load()
 {% tabs %}
 {% tab title="Old Syntax" %}
 ```python
-from zenml.steps import step, BaseParameters
+from pydantic import BaseModel
+from zenml.steps import step
 from zenml.pipelines import pipeline
 
 # Old: Subclass `BaseParameters` to define parameters for a step
-class MyStepParameters(BaseParameters):
+class MyStepParameters(BaseModel):
     param_1: int
     param_2: Optional[float] = None
 
@@ -135,7 +137,7 @@ def my_pipeline():
 {% endtab %}
 {% endtabs %}
 
-Check out [this page](https://docs.zenml.io/how-to/pipeline-development/build-pipelines/use-pipeline-step-parameters) for more information on how to parameterize your steps.
+Check out [this page](https://docs.zenml.io/how-to/pipeline-development/build-pipelines/use-pipeline-step-parameters) for more information on how to parameterize your steps. For guidance on migrating from `BaseParameters` to `pydantic.BaseModel`, refer to the [migration guide](https://github.com/zenml-io/zenml/blob/main/docs/book/how-to/manage-zenml-server/migration-guide/migration-zero-forty.md).
 
 ## Calling a step outside of a pipeline
 
