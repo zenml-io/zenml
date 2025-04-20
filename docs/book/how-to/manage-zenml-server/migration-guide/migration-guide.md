@@ -20,6 +20,7 @@ The following guides contain detailed instructions on how to migrate between Zen
 * [Migration guide 0.23.0 → 0.30.0](migration-zero-thirty.md)
 * [Migration guide 0.39.1 → 0.41.0](migration-zero-forty.md)
 * [Migration guide 0.58.2 → 0.60.0](migration-zero-sixty.md)
+* [Migration guide for deprecation of BaseParameters](https://github.com/zenml-io/zenml/blob/main/docs/book/how-to/manage-zenml-server/migration-guide/migration-zero-forty.md)
 
 ## Release Notes
 
