@@ -6,6 +6,40 @@ description: How to migrate your ZenML pipelines and steps from version <=0.39.1
 
 ZenML versions 0.40.0 to 0.41.0 introduced a new and more flexible syntax to define ZenML steps and pipelines. This page contains code samples that show you how to upgrade your steps and pipelines to the new syntax.
 
+## Updating Step Parameters
+
+ZenML version 0.81.0 and later deprecates the use of `BaseParameters` in favor of `pydantic.BaseModel` for defining step parameters. This change is crucial for users migrating from older versions.
+
+### Deprecation of `BaseParameters`
+
+The `BaseParameters` class has been deprecated and removed in recent versions of ZenML. Users should transition to using `pydantic.BaseModel`.
+
+### Using `pydantic.BaseModel`
+
+To define step parameters, subclass `pydantic.BaseModel` and use it as an argument in your step function.
+
+### Example Transition
+
+Old Syntax:
+```python
+from zenml.steps import BaseParameters
+
+class MyStepParameters(BaseParameters):
+    param_1: int
+    param_2: Optional[float] = None
+```
+
+New Syntax:
+```python
+from pydantic import BaseModel
+
+class MyStepParameters(BaseModel):
+    param_1: int
+    param_2: Optional[float] = None
+```
+
+For more details, refer to the [migration guide](https://github.com/zenml-io/zenml/blob/main/docs/book/how-to/manage-zenml-server/migration-guide/migration-zero-forty.md).
+
 {% hint style="warning" %}
 Newer versions of ZenML still work with pipelines and steps defined using the old syntax, but the old syntax is deprecated and will be removed in the future.
 {% endhint %}
