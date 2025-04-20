@@ -38,6 +38,20 @@ using `pydantic` in your workflow and are interested in the new changes, you can
 check [the brilliant migration guide](https://docs.pydantic.dev/2.7/migration/)
 provided by the `pydantic` team to see the full list of changes.
 
+## Deprecation of `BaseParameters`
+
+The `BaseParameters` class has been deprecated and removed in favor of using `pydantic.BaseModel` for defining step parameters in ZenML. Users upgrading from older versions of ZenML may encounter `ImportError` due to this removal. To migrate existing code, replace `BaseParameters` with `pydantic.BaseModel`. For example:
+
+```python
+from pydantic import BaseModel
+
+class MyStepParameters(BaseModel):
+    param_1: int
+    param_2: Optional[float] = None
+```
+
+For more detailed migration scenarios and solutions, please refer to the [migration guide](https://github.com/zenml-io/zenml/blob/main/docs/book/how-to/manage-zenml-server/migration-guide/migration-zero-forty.md).
+
 ## Changes in our integrations changes
 
 Much like ZenML, `pydantic` is an important dependency in many other Python
