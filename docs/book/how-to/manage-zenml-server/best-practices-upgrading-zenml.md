@@ -44,6 +44,32 @@ ZenML Pro comes with multi-tenancy which makes it easy for you to have multiple 
 
 Sometimes, you might have to upgrade your code to work with a new version of ZenML. This is true especially when you are moving from a really old version to a new major version. The following tips might help, in addition to everything you've learned in this document so far.
 
+### Migration from BaseParameters to pydantic.BaseModel
+
+In recent versions of ZenML, the `BaseParameters` class has been deprecated and replaced with `pydantic.BaseModel` for defining step parameters. This change is crucial for users migrating from older versions of ZenML to newer ones. Here is an example of how to update your code:
+
+```python
+from pydantic import BaseModel
+
+class ModelNameConfig(BaseModel):
+    """Model Configurations"""
+
+    model_name: str = "lightgbm"
+    fine_tuning: bool = False
+```
+
+### Step Invocation with Required Inputs
+
+When calling steps in ZenML, it is important to pass all required arguments. For example, if a step requires a `data` argument, ensure it is provided when invoking the step:
+
+```python
+# Assuming `ingest_data()` returns the data needed for `clean_data`
+data = ingest_data()
+cleaned_data = clean_data(data=data)
+```
+
+These updates will help users in adapting their existing projects to the latest ZenML standards and practices, ensuring smoother transitions and reducing the likelihood of errors.
+
 ### Testing and Compatibility
 
 - **Local Testing**: It's a good idea to test it locally first after you upgrade (`pip install zenml --upgrade`) and run some old pipelines to check for compatibility issues between the old and new versions.
