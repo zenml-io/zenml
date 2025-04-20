@@ -308,13 +308,21 @@ The `Repository` object has been renamed to `Client` to better capture its funct
 
 **How to migrate**: Rename all references to `Repository` in your code to `Client`.
 
-### The `BaseStepConfig` class is now called `BaseParameters`
+### The `BaseStepConfig` class is now replaced by `pydantic.BaseModel`
 
-The `BaseStepConfig` object has been renamed to `BaseParameters` to better capture its functionality. You can NOT continue to use the `BaseStepConfig`.
+The `BaseStepConfig` object was previously renamed to `BaseParameters`, and now `BaseParameters` has been replaced by `pydantic.BaseModel` to leverage the full capabilities of Pydantic for defining step parameters. You can NOT continue to use the `BaseStepConfig` or `BaseParameters`.
 
-This is part of a broader configuration rehaul which is discussed next.
+**How to migrate**: Rename all references to `BaseStepConfig` or `BaseParameters` in your code to `pydantic.BaseModel`. Here is an example of how to define step parameters using `pydantic.BaseModel`:
 
-**How to migrate**: Rename all references to `BaseStepConfig` in your code to `BaseParameters`.
+```python
+from pydantic import BaseModel
+
+class ModelNameConfig(BaseModel):
+    """Model Configurations"""
+
+    model_name: str = "lightgbm"
+    fine_tuning: bool = False
+```
 
 ### Configuration Rework
 
