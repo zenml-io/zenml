@@ -61,6 +61,56 @@ if __name__ == "__main__":
     # You can now use the `run` object to see steps, outputs, etc.
 ```
 
+## Calling Steps in a Pipeline
+
+When structuring a pipeline, it is crucial to ensure that data flows correctly between steps. This involves passing the necessary inputs and outputs between steps to maintain the integrity of the data processing workflow.
+
+### Importance of Passing Inputs and Outputs
+
+Passing inputs and outputs between steps ensures that each step receives the data it needs to perform its function and that the results of each step are available for subsequent steps. This is essential for maintaining a coherent and functional pipeline.
+
+### Example of Modifying a Pipeline
+
+Here's an example of how to modify a pipeline to ensure data flows correctly between steps:
+
+```python
+from zenml import pipeline, step
+
+@step
+def ingest_data() -> dict:
+    """Simulates data ingestion."""
+    return {'data': [[1, 2], [3, 4], [5, 6]], 'labels': [0, 1, 0]}
+
+@step
+def clean_data(data: dict) -> dict:
+    """Cleans the ingested data."""
+    # Example cleaning process
+    cleaned_data = {'data': [[2, 4], [6, 8], [10, 12]], 'labels': data['labels']}
+    return cleaned_data
+
+@step
+def train_model(cleaned_data: dict) -> None:
+    """Trains a model using the cleaned data."""
+    print(f"Training model with data: {cleaned_data['data']}")
+
+@pipeline
+def data_pipeline():
+    raw_data = ingest_data()
+    cleaned_data = clean_data(data=raw_data)
+    train_model(cleaned_data=cleaned_data)
+
+if __name__ == "__main__":
+    data_pipeline()
+```
+
+### Common Mistakes and Troubleshooting
+
+- **Missing Inputs**: Ensure that each step is called with the necessary inputs. If a step requires data from a previous step, make sure to pass it explicitly.
+- **Incorrect Data Types**: Verify that the data types of inputs and outputs match the expected types in each step.
+- **Debugging Errors**: Use logging and error messages to identify where the data flow might be breaking down.
+
+This structured approach helps prevent common errors related to step inputs and outputs, ensuring a smooth and efficient pipeline execution.
+
 {% hint style="info" %}
 * **`@step`** is a decorator that converts its function into a step that can be used within a pipeline
 * **`@pipeline`** defines a function as a pipeline and within this function, the steps are called and their outputs link them together.
