@@ -122,10 +122,15 @@ pipeline_instance = my_pipeline(my_step=step_instance)
 # In case you still want to group your parameters in a separate class,
 # you can subclass `pydantic.BaseModel` and use that as an argument of your
 # step function
+from pydantic import BaseModel
 from zenml import pipeline, step
 
+class MyStepParameters(BaseModel):
+    param_1: int
+    param_2: Optional[float] = None
+
 @step
-def my_step(param_1: int, param_2: Optional[float] = None) -> None:
+def my_step(params: MyStepParameters) -> None:
     ...
 
 @pipeline
@@ -157,10 +162,10 @@ my_step.entrypoint()  # Old: Call `step.entrypoint(...)`
 from zenml import step
 
 @step
-def my_step() -> None:
+def my_step(param_1: int) -> None:
     ...
 
-my_step()  # New: Call the step directly `step(...)`
+my_step(param_1=17)  # New: Call the step directly with required parametersly `step(...)`
 ```
 {% endtab %}
 {% endtabs %}
