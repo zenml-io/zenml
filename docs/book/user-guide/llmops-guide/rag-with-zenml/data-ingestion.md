@@ -7,7 +7,7 @@ used to train and evaluate the retriever and generator models. This data can
 include a large corpus of documents, as well as any relevant metadata or
 annotations that can be used to train the retriever and generator.
 
-![](/docs/book/.gitbook/assets/rag-stage-1.png)
+![](../../../.gitbook/assets/rag-stage-1.png)
 
 In the interests of keeping things simple, we'll implement the bulk of what we
 need ourselves. However, it's worth noting that there are a number of tools and
@@ -61,7 +61,7 @@ be visible in the dashboard for extra visibility around the data that's being
 ingested. Of course, you can also add more complex logic to this step, such as
 filtering out certain URLs or adding more metadata.
 
-![Partial screenshot from the dashboard showing the metadata from the step](/docs/book/.gitbook/assets/llm-data-ingestion-metadata.png)
+![Partial screenshot from the dashboard showing the metadata from the step](../../../.gitbook/assets/llm-data-ingestion-metadata.png)
 
 Once we have our list of URLs, we use [the `unstructured`
 library](https://github.com/Unstructured-IO/unstructured) to load and parse the

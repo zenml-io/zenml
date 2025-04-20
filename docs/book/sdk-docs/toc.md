@@ -1,4 +1,5 @@
 # Table of contents
 
-* [ZenML SDK Docs](README.md)
+* [Overview](README.md)
 * [Client](client.md)
+* [Example usages](example-usages.md)

@@ -1,6 +1,5 @@
 ---
 description: Learn about the ZenML Pro features and deployment scenarios.
-icon: star
 cover: .gitbook/assets/pro-cover.png
 coverY: 0
 layout:
@@ -23,7 +22,7 @@ layout:
 
 The [Pro version of ZenML](https://zenml.io/pro) extends the Open Source product with advanced features for enterprise-grade MLOps.
 
-![Walkthrough of ZenML Model Control Plane](../../.gitbook/assets/mcp_walkthrough.gif)
+![Walkthrough of ZenML Model Control Plane](../../.gitbook/assets/mcp-walkthrough.gif)
 
 ## Key Features
 

@@ -4,7 +4,7 @@ description: Creating a full picture of a ML model using the Model Control Plane
 
 # Track ML models
 
-![Walkthrough of ZenML Model Control Plane (Dashboard available only on ZenML Pro)](../../.gitbook/assets/mcp_walkthrough.gif)
+![Walkthrough of ZenML Model Control Plane (Dashboard available only on ZenML Pro)](../../.gitbook/assets/mcp-walkthrough.gif)
 
 As discussed in the [Core Concepts](https://docs.zenml.io/getting-started/core-concepts), ZenML also contains the notion of a `Model`, which consists of many model versions (the iterations of the model). These concepts are exposed in the `Model Control Plane` (MCP for short).
 
@@ -259,7 +259,7 @@ zenml model version update <MODEL_NAME> <MODEL_VERSIONNAME> -s production
 {% tab title="Cloud (Dashboard)" %}
 The [ZenML Pro](https://zenml.io/pro) dashboard has additional capabilities, that include easily changing the stage:
 
-![ZenML Pro Transition Model Stages](../../.gitbook/assets/dcp\_transition\_stage.gif)
+![ZenML Pro Transition Model Stages](../../.gitbook/assets/dcp_transition_stage.gif)
 {% endtab %}
 {% endtabs %}
 

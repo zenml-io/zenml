@@ -67,7 +67,7 @@ from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
 
 if TYPE_CHECKING:
-    from zenml.models import PipelineDeploymentResponse
+    from zenml.models import PipelineDeploymentResponse, PipelineRunResponse
     from zenml.stack import Stack
 
 logger = get_logger(__name__)
@@ -393,6 +393,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         environment: Dict[str, str],
+        placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Any:
         """Runs the pipeline in Kubernetes.
 
@@ -401,6 +402,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             stack: The stack the pipeline will run on.
             environment: Environment variables to set in the orchestration
                 environment.
+            placeholder_run: An optional placeholder run for the deployment.
 
         Raises:
             RuntimeError: If the Kubernetes orchestrator is not configured.
@@ -450,6 +452,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             run_name=orchestrator_run_name,
             deployment_id=deployment.id,
             kubernetes_namespace=self.config.kubernetes_namespace,
+            run_id=placeholder_run.id if placeholder_run else None,
         )
 
         settings = cast(
@@ -540,14 +543,23 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 mount_local_stores=self.config.is_local,
             )
 
-            self._k8s_core_api.create_namespaced_pod(
+            kube_utils.create_and_wait_for_pod_to_start(
+                core_api=self._k8s_core_api,
+                pod_display_name="Kubernetes orchestrator pod",
+                pod_name=pod_name,
+                pod_manifest=pod_manifest,
                 namespace=self.config.kubernetes_namespace,
-                body=pod_manifest,
+                startup_max_retries=settings.pod_failure_max_retries,
+                startup_failure_delay=settings.pod_failure_retry_delay,
+                startup_failure_backoff=settings.pod_failure_backoff,
+                startup_timeout=settings.pod_startup_timeout,
             )
 
             # Wait for the orchestrator pod to finish and stream logs.
             if settings.synchronous:
-                logger.info("Waiting for Kubernetes orchestrator pod...")
+                logger.info(
+                    "Waiting for Kubernetes orchestrator pod to finish..."
+                )
                 kube_utils.wait_pod(
                     kube_client_fn=self.get_kube_client,
                     pod_name=pod_name,

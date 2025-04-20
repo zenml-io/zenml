@@ -40,6 +40,7 @@ class PipelineRunConfiguration(
     enable_artifact_metadata: Optional[bool] = None
     enable_artifact_visualization: Optional[bool] = None
     enable_step_logs: Optional[bool] = None
+    enable_pipeline_logs: Optional[bool] = None
     schedule: Optional[Schedule] = None
     build: Union[PipelineBuildBase, UUID, None] = Field(
         default=None, union_mode="left_to_right"

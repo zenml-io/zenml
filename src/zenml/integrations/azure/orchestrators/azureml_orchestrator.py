@@ -203,6 +203,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         environment: Dict[str, str],
+        placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Iterator[Dict[str, MetadataType]]:
         """Prepares or runs a pipeline on AzureML.
 
@@ -211,6 +212,7 @@ class AzureMLOrchestrator(ContainerizedOrchestrator):
             stack: The stack to run on.
             environment: Environment variables to set in the orchestration
                 environment.
+            placeholder_run: An optional placeholder run for the deployment.
 
         Raises:
             RuntimeError: If the creation of the schedule fails.

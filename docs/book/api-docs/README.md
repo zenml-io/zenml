@@ -4,9 +4,7 @@ description: >-
   available in the Python SDK.
 ---
 
-# API Reference
-
-## Overview
+# Overview
 
 Welcome to the ZenML API documentation. This guide provides information about both the open-source (OSS) and Pro API endpoints available in the ZenML platform.
 

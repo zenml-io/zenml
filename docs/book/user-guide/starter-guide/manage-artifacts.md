@@ -6,7 +6,7 @@ description: Understand and adjust how ZenML versions your data.
 
 Data sits at the heart of every machine learning workflow. Managing and versioning this data correctly is essential for reproducibility and traceability within your ML pipelines. ZenML takes a proactive approach to data versioning, ensuring that every artifact—be it data, models, or evaluations—is automatically tracked and versioned upon pipeline execution.
 
-![Walkthrough of ZenML Artifact Control Plane (Dashboard available only on ZenML Pro)](../../.gitbook/assets/dcp\_walkthrough.gif)
+![Walkthrough of ZenML Artifact Control Plane (Dashboard available only on ZenML Pro)](../../.gitbook/assets/dcp_walkthrough.gif)
 
 This guide will delve into artifact versioning and management, showing you how to efficiently name, organize, and utilize your data with the ZenML framework.
 
@@ -151,7 +151,7 @@ The tool offers two complementary views for analyzing your metadata:
 #### Table View
 The tabular view provides a structured comparison of metadata across runs:
 
-![Comparing metadata values across different pipeline runs in table view.](../../../book/.gitbook/assets/table-view.png)
+![Comparing metadata values across different pipeline runs in table view.](../../.gitbook/assets/table-view.png)
 
 This view automatically calculates changes between runs and allows you to:
 
@@ -162,7 +162,7 @@ This view automatically calculates changes between runs and allows you to:
 #### Parallel Coordinates View
 The parallel coordinates visualization helps identify relationships between different metadata parameters:
 
-![Comparing metadata values across different pipeline runs in parallel coordinates view.](../../../book/.gitbook/assets/coordinates-view.png)
+![Comparing metadata values across different pipeline runs in parallel coordinates view.](../../.gitbook/assets/coordinates-view.png)
 
 This view is particularly useful for:
 

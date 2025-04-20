@@ -1,7 +1,9 @@
 ---
+icons: users
 description: >-
   Learn about Teams in ZenML Pro and how they can be used to manage groups of
   users across your organization and workspaces.
+icon: people-group
 ---
 
 # Teams
@@ -24,7 +26,7 @@ To create a team:
 
 {% stepper %}
 {% step %}
-### Go to the Organization Settings
+#### Go to the Organization Settings
 
 Click on the **Settings** tab from your **Organization** page.
 
@@ -32,7 +34,7 @@ Click on the **Settings** tab from your **Organization** page.
 {% endstep %}
 
 {% step %}
-### Click on the Teams tab
+#### Click on the Teams tab
 
 Go to the **Members** section from the sidebar and select the **Teams** tab.
 
@@ -40,7 +42,7 @@ Go to the **Members** section from the sidebar and select the **Teams** tab.
 {% endstep %}
 
 {% step %}
-### Add a New Team
+#### Add a New Team
 
 Use the **Add team** button to add a new team.
 
@@ -61,20 +63,14 @@ To add users to an existing team:
 {% stepper %}
 {% step %}
 Go to the **Teams** tab in **Organization** settings
-
-
 {% endstep %}
 
 {% step %}
 Select the team you want to modify
-
-
 {% endstep %}
 
 {% step %}
 Click on **Add Members**
-
-
 {% endstep %}
 
 {% step %}
@@ -91,20 +87,14 @@ Teams can be assigned to workspaces just like individual users. To add a team to
 {% stepper %}
 {% step %}
 Go to the **Workspace Settings** page
-
-
 {% endstep %}
 
 {% step %}
 Click on **Members** tab and click on the **Teams** tab.
-
-
 {% endstep %}
 
 {% step %}
 Select **Add Team**
-
-
 {% endstep %}
 
 {% step %}

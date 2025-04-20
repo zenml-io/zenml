@@ -57,6 +57,11 @@ class RunTemplateSchema(NamedSchema, table=True):
         ),
     )
 
+    hidden: bool = Field(
+        default=False,
+        title="Whether the run template is hidden.",
+    )
+
     description: Optional[str] = Field(
         sa_column=Column(
             String(length=MEDIUMTEXT_MAX_LENGTH).with_variant(
@@ -166,6 +171,7 @@ class RunTemplateSchema(NamedSchema, table=True):
             project_id=request.project,
             name=request.name,
             description=request.description,
+            hidden=request.hidden,
             source_deployment_id=request.source_deployment_id,
         )
 
@@ -221,6 +227,7 @@ class RunTemplateSchema(NamedSchema, table=True):
             created=self.created,
             updated=self.updated,
             runnable=runnable,
+            hidden=self.hidden,
             latest_run_id=latest_run.id if latest_run else None,
             latest_run_status=latest_run.status if latest_run else None,
         )

@@ -1,0 +1,10 @@
+# This file defines the mapping between GitBook slugs and their 
+# corresponding .gitbook.yaml files
+# Format: slug_name: path/to/gitbook.yaml
+
+documentation: .gitbook.yaml
+user-guides: docs/book/user-guide/.gitbook.yaml
+pro: docs/book/getting-started/zenml-pro/.gitbook.yaml
+stacks: docs/book/component-guide/.gitbook.yaml
+api-reference: docs/book/api-docs/.gitbook.yaml
+sdk-reference: docs/book/sdk-docs/.gitbook.yaml

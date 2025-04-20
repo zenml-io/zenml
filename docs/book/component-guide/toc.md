@@ -2,6 +2,9 @@
 
 * [Overview](component-guide.md)
 * [Integrations](integrations.md)
+
+## Stack Components
+
 * [Orchestrators](orchestrators/README.md)
   * [Local Orchestrator](orchestrators/local.md)
   * [Local Docker Orchestrator](orchestrators/local-docker.md)
@@ -82,3 +85,37 @@
 * [Model Registries](model-registries/README.md)
   * [MLflow Model Registry](model-registries/mlflow.md)
   * [Develop a Custom Model Registry](model-registries/custom.md)
+
+## Service Connectors
+
+* [Introduction](service-connectors/auth-management.md)
+* [Complete guide](service-connectors/service-connectors-guide.md)
+* [Best practices](service-connectors/best-security-practices.md)
+* [Connector Types](service-connectors/connector-types/README.md)
+  * [Docker Service Connector](service-connectors/connector-types/docker-service-connector.md)
+  * [Kubernetes Service Connector](service-connectors/connector-types/kubernetes-service-connector.md)
+  * [AWS Service Connector](service-connectors/connector-types/aws-service-connector.md)
+  * [GCP Service Connector](service-connectors/connector-types/gcp-service-connector.md)
+  * [Azure Service Connector](service-connectors/connector-types/azure-service-connector.md)
+  * [HyperAI Service Connector](service-connectors/connector-types/hyperai-service-connector.md)
+
+## Popular Stacks
+
+* [AWS](../how-to/popular-integrations/aws-guide.md)
+* [Azure](../how-to/popular-integrations/azure-guide.md)
+* [GCP](../how-to/popular-integrations/gcp-guide.md)
+* [Kubernetes](../how-to/popular-integrations/kubernetes.md)
+
+## Deployment
+
+* [1-click Deployment](../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack.md)
+* [Terraform Modules](../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform.md)
+* [Register a cloud stack](../how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack.md)
+* [Infrastructure as code](../how-to/infrastructure-deployment/infrastructure-as-code/README.md)
+  * [Manage your stacks with Terraform](../how-to/infrastructure-deployment/infrastructure-as-code/terraform-stack-management.md)
+  * [ZenML & Terraform Best Practices](../how-to/infrastructure-deployment/infrastructure-as-code/best-practices.md)
+
+## Contribute
+
+* [Custom Stack Component](contribute/custom-stack-component.md)
+* [Custom Integration](../how-to/contribute-to-zenml/implement-a-custom-integration.md)

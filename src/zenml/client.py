@@ -1213,7 +1213,6 @@ class Client(metaclass=ClientMetaClass):
             name=name,
             components=stack_components,
             stack_spec_path=stack_spec_file,
-            project=self.active_project.id,
             labels=labels,
         )
 
@@ -1339,7 +1338,6 @@ class Client(metaclass=ClientMetaClass):
 
         # Create the update model
         update_model = StackUpdate(
-            project=self.active_project.id,
             stack_spec_path=stack_spec_file,
         )
 
@@ -2027,7 +2025,6 @@ class Client(metaclass=ClientMetaClass):
             type=component_type,
             flavor=flavor,
             configuration=configuration,
-            project=self.active_project.id,
             labels=labels,
         )
 
@@ -2075,9 +2072,7 @@ class Client(metaclass=ClientMetaClass):
             allow_name_prefix_match=False,
         )
 
-        update_model = ComponentUpdate(
-            project=self.active_project.id,
-        )
+        update_model = ComponentUpdate()
 
         if name is not None:
             existing_components = self.list_stack_components(
@@ -3579,6 +3574,7 @@ class Client(metaclass=ClientMetaClass):
         updated: Optional[Union[datetime, str]] = None,
         id: Optional[Union[UUID, str]] = None,
         name: Optional[str] = None,
+        hidden: Optional[bool] = False,
         tag: Optional[str] = None,
         project: Optional[Union[str, UUID]] = None,
         pipeline_id: Optional[Union[str, UUID]] = None,
@@ -3601,6 +3597,7 @@ class Client(metaclass=ClientMetaClass):
             updated: Filter by the last updated date.
             id: Filter by run template ID.
             name: Filter by run template name.
+            hidden: Filter by run template hidden status.
             tag: Filter by run template tags.
             project: Filter by project name/ID.
             pipeline_id: Filter by pipeline ID.
@@ -3625,6 +3622,7 @@ class Client(metaclass=ClientMetaClass):
             updated=updated,
             id=id,
             name=name,
+            hidden=hidden,
             tag=tag,
             project=project,
             pipeline_id=pipeline_id,
@@ -3645,6 +3643,7 @@ class Client(metaclass=ClientMetaClass):
         name_id_or_prefix: Union[str, UUID],
         name: Optional[str] = None,
         description: Optional[str] = None,
+        hidden: Optional[bool] = None,
         add_tags: Optional[List[str]] = None,
         remove_tags: Optional[List[str]] = None,
         project: Optional[Union[str, UUID]] = None,
@@ -3655,6 +3654,7 @@ class Client(metaclass=ClientMetaClass):
             name_id_or_prefix: Name/ID/ID prefix of the template to update.
             name: The new name of the run template.
             description: The new description of the run template.
+            hidden: The new hidden status of the run template.
             add_tags: Tags to add to the run template.
             remove_tags: Tags to remove from the run template.
             project: The project name/ID to filter by.
@@ -3680,6 +3680,7 @@ class Client(metaclass=ClientMetaClass):
             template_update=RunTemplateUpdate(
                 name=name,
                 description=description,
+                hidden=hidden,
                 add_tags=add_tags,
                 remove_tags=remove_tags,
             ),

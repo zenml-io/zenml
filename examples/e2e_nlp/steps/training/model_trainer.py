@@ -123,7 +123,7 @@ def model_trainer(
         per_device_eval_batch_size=eval_batch_size,
         num_train_epochs=num_epochs,
         weight_decay=weight_decay,
-        evaluation_strategy="steps",
+        eval_strategy="steps",
         save_strategy="steps",
         save_steps=1000,
         eval_steps=100,

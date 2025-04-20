@@ -1,5 +1,6 @@
 ---
-description: Learn how to use projects in ZenML Pro.
+description: Managing projects in ZenML
+icon: clipboard-list
 ---
 
 # Projects
@@ -24,6 +25,7 @@ Before you can work with projects, you need to be logged into your workspace. If
 ### Creating a project
 
 To create a new project using the CLI, run the following command:
+
 ```bash
 zenml project register <NAME>
 ```
@@ -44,10 +46,10 @@ Best practice is to set your active project right after running `zenml init`, ju
 
 ### Setting a default project
 
-The default project is something that each user can configure. This project will be automatically set as the active project when you connect
-your local Python client to a ZenML Pro workspace.
+The default project is something that each user can configure. This project will be automatically set as the active project when you connect your local Python client to a ZenML Pro workspace.
 
 You can set your default project either when creating a new project or when activating it:
+
 ```bash
 # Set default project during registration
 zenml project register <NAME> --set-default
@@ -62,68 +64,44 @@ To create a new project:
 
 {% stepper %}
 {% step %}
-### Navigate to Projects
+#### Navigate to Projects
 
 From your workspace dashboard, click on the **Projects** tab.
-
 {% endstep %}
 
 {% step %}
-### Click "Add a New Project"
+#### Click "Add a New Project"
 
 In the project creation form, you'll need to provide:
 
 * **Project Name**: A descriptive name for your project
 * **Project ID**: A unique identifier that enables you to access your project through both the API and CLI. Use only letters, numbers, and hyphens or underscores (no spaces).
 * **Description** (optional): A brief explanation of what your project is about
-
 {% endstep %}
 
 {% step %}
-### Configure Project Settings
+#### Configure Project Settings
 
 After creating the project, you can configure additional settings such as:
+
 * Adding team members and assigning roles
 * Setting up project-specific configurations
 * Configuring integrations
 {% endstep %}
 {% endstepper %}
 
-## Project-Level Roles
-
-Projects have their own role-based access control (RBAC) system, scoped to the project level. The default project roles include:
-
-1. **Project Admin**
-   * Full permissions to any project resource
-   * Can manage project members and their roles
-   * Can configure project settings
-   * Has complete control over all project resources
-
-2. **Project Developer**
-   * Permissions to create and view resources in the project
-   * Can work with pipelines, artifacts, and models
-   * Cannot modify project settings or member roles
-
-3. **Project Contributor**
-   * Permissions to create resources in the project
-   * Can add new pipelines, artifacts, and models
-   * Cannot modify existing resources or settings
-
-4. **Project Viewer**
-   * Permissions to view resources in the project
-   * Read-only access to all project resources
-   * Cannot create or modify any resources
-
 ## Managing Project Resources
 
 Projects provide isolation for various MLOps resources:
 
 ### Pipelines
+
 * Pipelines created within a project are only visible to project members
 * Pipeline runs and their artifacts are scoped to the project
 * Pipeline configurations and templates are project-specific
 
 ### Artifacts and Models
+
 * Artifacts and models are isolated within their respective projects
 * Version control and lineage tracking is project-specific
 * Sharing artifacts between projects requires explicit permissions
@@ -134,17 +112,14 @@ Projects provide isolation for various MLOps resources:
    * Create projects based on logical boundaries (e.g., use cases, teams, or products)
    * Use clear naming conventions for projects
    * Document project purposes and ownership
-
 2. **Access Control**
    * Start with default roles before creating custom ones
    * Regularly audit project access and permissions
    * Use teams for easier member management
-
 3. **Resource Management**
    * Monitor resource usage within projects
    * Set up appropriate quotas and limits
    * Clean up unused resources regularly
-
 4. **Documentation**
    * Maintain project-specific documentation
    * Document custom roles and their purposes
