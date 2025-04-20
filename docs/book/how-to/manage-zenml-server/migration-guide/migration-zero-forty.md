@@ -137,6 +137,54 @@ def my_pipeline():
 
 Check out [this page](https://docs.zenml.io/how-to/pipeline-development/build-pipelines/use-pipeline-step-parameters) for more information on how to parameterize your steps.
 
+## Step Calls in Pipelines
+
+### Importance of Passing Inputs and Outputs
+
+In ZenML, passing inputs and outputs between steps in a pipeline is crucial for ensuring that data flows correctly through the pipeline. Each step can produce outputs that are used as inputs for subsequent steps, allowing for a seamless and efficient workflow.
+
+### Example of Modifying a Pipeline
+
+Here's an example of how to modify a pipeline to ensure data flows correctly between steps:
+
+```python
+from pipelines.training_pipeline import train_pipeline
+from steps.clean_data import clean_data
+from steps.evaluation import evaluation
+from steps.ingest_data import ingest_data
+from steps.model_train import train_model
+from zenml.integrations.mlflow.mlflow_utils import get_tracking_uri
+
+if __name__ == "__main__":
+    # First, ingest the data
+    data = ingest_data()
+    
+    # Then, clean the data using the ingested data
+    x_train, x_test, y_train, y_test = clean_data(data=data)
+    
+    # Train the model using the cleaned data
+    model = train_model(x_train=x_train, y_train=y_train)
+    
+    # Evaluate the model
+    evaluation(model=model, x_test=x_test, y_test=y_test)
+
+    print(
+        "Now run \n "
+        f"    mlflow ui --backend-store-uri '{get_tracking_uri()}'\n"
+        "To inspect your experiment runs within the mlflow UI.\n"
+        "You can find your runs tracked within the `mlflow_example_pipeline`"
+        "experiment. Here you'll also be able to compare the two runs.)"
+    )
+```
+
+### Common Mistakes and Troubleshooting
+
+- **Not Passing Required Inputs**: Ensure that each step is called with the necessary inputs from previous steps. Missing inputs can lead to errors like `StepInterfaceError`.
+- **Incorrect Data Types**: Verify that the data types of inputs and outputs match the expected types defined in the step functions.
+- **Debugging Errors**: Use logging and exception handling within steps to capture and understand errors during pipeline execution.
+
+This section helps users understand how to effectively structure their pipelines and prevent common errors related to step inputs and outputs.
+
 ## Calling a step outside of a pipeline
 
 {% tabs %}
