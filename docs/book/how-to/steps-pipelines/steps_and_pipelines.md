@@ -267,6 +267,52 @@ def divide(a: int, b: int) -> Tuple[
 
 By default, step outputs are named `output` for single output steps and `output_0`, `output_1`, etc. for steps with multiple outputs.
 
+## Step Calls in Pipelines
+
+### Importance of Passing Inputs and Outputs
+
+In ZenML, passing inputs and outputs between steps in a pipeline is crucial for ensuring that data flows correctly through the pipeline. Each step can produce artifacts that are used as inputs for subsequent steps, allowing for a seamless data processing workflow.
+
+### Example of Modifying a Pipeline
+
+Here's an example of how to modify a pipeline to ensure data flows correctly between steps:
+
+```python
+from pipelines.training_pipeline import train_pipeline
+from steps.clean_data import clean_data
+from steps.evaluation import evaluation
+from steps.ingest_data import ingest_data
+from steps.model_train import train_model
+from zenml.integrations.mlflow.mlflow_utils import get_tracking_uri
+
+if __name__ == "__main__":
+    # First, ingest the data
+    data = ingest_data()
+    
+    # Then, clean the data using the ingested data
+    x_train, x_test, y_train, y_test = clean_data(data=data)
+    
+    # Train the model using the cleaned data
+    model = train_model(x_train=x_train, y_train=y_train)
+    
+    # Evaluate the model
+    evaluation(model=model, x_test=x_test, y_test=y_test)
+
+    print(
+        "Now run \n "
+        f"    mlflow ui --backend-store-uri '{get_tracking_uri()}'\n"
+        "To inspect your experiment runs within the mlflow UI.\n"
+        "You can find your runs tracked within the `mlflow_example_pipeline`"
+        "experiment. Here you'll also be able to compare the two runs.)"
+    )
+```
+
+### Common Mistakes and Troubleshooting
+
+- **Missing Inputs**: Ensure that each step is called with the necessary inputs from previous steps. For example, if a step requires data, make sure it is passed correctly from the output of a previous step.
+- **Incorrect Output Handling**: When a step returns multiple outputs, ensure that they are correctly unpacked and used in subsequent steps.
+- **Type Mismatches**: Use type annotations to help ZenML manage artifacts correctly and catch errors early.
+
 ## Conclusion
 
 Steps and Pipelines provide a flexible, powerful way to build machine learning workflows in ZenML. This guide covered the basic concepts of creating steps and pipelines, managing inputs and outputs, and working with parameters.
