@@ -38,6 +38,10 @@ using `pydantic` in your workflow and are interested in the new changes, you can
 check [the brilliant migration guide](https://docs.pydantic.dev/2.7/migration/)
 provided by the `pydantic` team to see the full list of changes.
 
+### Deprecation of `BaseParameters`
+
+The `BaseParameters` class has been deprecated and removed in favor of using `pydantic.BaseModel` for defining step parameters in ZenML pipelines. Users should update their parameter classes to inherit from `pydantic.BaseModel` to ensure compatibility with the latest ZenML version.
+
 ## Changes in our integrations changes
 
 Much like ZenML, `pydantic` is an important dependency in many other Python
@@ -46,6 +50,10 @@ several ZenML integration dependencies. Additionally, in some instances, we had
 to adapt the functionality of the integration to keep it compatible
 with `pydantic`. So, if you are using any of these integrations, please go
 through the changes.
+
+### Migration Guide for `BaseParameters`
+
+For users upgrading from older versions of ZenML that used `BaseParameters`, it is essential to replace all instances of `BaseParameters` with `pydantic.BaseModel`. This change is necessary to ensure that your ZenML pipelines continue to function correctly with the latest updates. Refer to the updated examples in the documentation for guidance on how to define step parameter classes using `pydantic.BaseModel`.
 
 ### Airflow
 
