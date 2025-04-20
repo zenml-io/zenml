@@ -21,6 +21,20 @@ The following guides contain detailed instructions on how to migrate between Zen
 * [Migration guide 0.39.1 → 0.41.0](migration-zero-forty.md)
 * [Migration guide 0.58.2 → 0.60.0](migration-zero-sixty.md)
 
+## Migration from BaseParameters to pydantic.BaseModel
+
+ZenML has transitioned from using `BaseParameters` to `pydantic.BaseModel` for defining step parameters. This change is crucial for users migrating from older versions of ZenML to newer ones. Here is an example of how to update your code:
+
+```python
+from pydantic import BaseModel
+
+class ModelNameConfig(BaseModel):
+    """Model Configurations"""
+
+    model_name: str = "lightgbm"
+    fine_tuning: bool = False
+```
+
 ## Release Notes
 
 For releases with minor breaking changes, e.g., `0.40.3` to `0.41.0`, check out the official [ZenML Release Notes](https://github.com/zenml-io/zenml/releases) to see which breaking changes were introduced.
