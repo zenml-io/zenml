@@ -243,5 +243,3 @@ disable_artifact_visualization = True
 Visualizing artifacts is a powerful way to gain insights from your ML pipelines. ZenML's built-in visualization capabilities make it easy to understand your data and model outputs, identify issues, and communicate results.
 
 By leveraging these visualization tools, you can better understand your ML workflows, debug problems more effectively, and make more informed decisions about your models.
-
-For more advanced artifact management patterns, see [Complex Use Cases](broken-reference).

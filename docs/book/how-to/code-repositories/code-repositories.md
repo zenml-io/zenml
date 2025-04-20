@@ -17,7 +17,7 @@ Learn more about how code repositories optimize Docker builds [here](https://doc
 
 ## Registering a code repository
 
-If you are planning to use one of the [available implementations of code repositories](connect-your-git-repository.md#available-implementations), first, you need to install the corresponding ZenML integration:
+If you are planning to use one of the available implementations of code repositories, first, you need to install the corresponding ZenML integration:
 
 ```
 zenml integration install <INTEGRATION_NAME>
@@ -29,11 +29,11 @@ Afterward, code repositories can be registered using the CLI:
 zenml code-repository register <NAME> --type=<TYPE> [--CODE_REPOSITORY_OPTIONS]
 ```
 
-For concrete options, check out the section on the [`GitHubCodeRepository`](connect-your-git-repository.md#github), the [`GitLabCodeRepository`](connect-your-git-repository.md#gitlab) or how to develop and register a [custom code repository implementation](connect-your-git-repository.md#developing-a-custom-code-repository).
+For concrete options, check out the section on the `GitHubCodeRepository`, the `GitLabCodeRepository` or how to develop and register a custom code repository implementation.
 
 ## Available implementations
 
-ZenML comes with builtin implementations of the code repository abstraction for the `GitHub` and `GitLab` platforms, but it's also possible to use a [custom code repository implementation](connect-your-git-repository.md#developing-a-custom-code-repository).
+ZenML comes with builtin implementations of the code repository abstraction for the `GitHub` and `GitLab` platforms, but it's also possible to use a custom code repository implementation.
 
 ### GitHub
 
@@ -197,5 +197,3 @@ After you're finished implementing this, you can register it as follows:
 zenml code-repository register <NAME> --type=custom --source=my_module.MyRepositoryClass \
     [--CODE_REPOSITORY_OPTIONS]
 ```
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

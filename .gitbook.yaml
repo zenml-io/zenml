@@ -51,7 +51,6 @@ redirects:
   how-to/build-pipelines/using-a-custom-step-invocation-id: how-to/steps-pipelines/steps_and_pipelines.md
   how-to/build-pipelines/tag-your-pipeline-runs: how-to/tags/tags.md
   how-to/build-pipelines/use-failure-success-hooks: how-to/steps-pipelines/advanced_features.md
-  how-to/build-pipelines/hyper-parameter-tuning: how-to/steps-pipelines/advanced_features.md
   how-to/build-pipelines/access-secrets-in-a-step: how-to/secrets/secrets.md
   how-to/build-pipelines/run-an-individual-step: how-to/steps-pipelines/steps_and_pipelines.md
   how-to/build-pipelines/fetching-pipelines: how-to/steps-pipelines/steps_and_pipelines.md
@@ -103,12 +102,6 @@ redirects:
   how-to/track-metrics-metadata/logging-metadata: how-to/metadata/metadata.md
   how-to/track-metrics-metadata/fetch-metadata-within-steps: how-to/metadata/metadata.md
   how-to/track-metrics-metadata/fetch-metadata-within-pipeline: how-to/metadata/metadata.md
-  # how-to/stack-deployment/: how-to/stack-components/stack_components.md # This section
-  # how-to/stack-deployment/deploy-a-cloud-stack: how-to/stack-components/stack_components.md # This section
-  # how-to/stack-deployment/deploy-a-cloud-stack-with-terraform: how-to/stack-components/stack_components.md # This section
-  # how-to/stack-deployment/register-a-cloud-stack: how-to/stack-components/stack_components.md # This section  
-  # how-to/stack-deployment/reference-secrets-in-stack-configuration: how-to/secrets/secrets.md # This section  
-  # how-to/stack-deployment/implement-a-custom-stack-component: how-to/stack-components/stack_components.md # This section
   how-to/customize-docker-builds/: how-to/containerization/containerization.md
   how-to/customize-docker-builds/docker-settings-on-a-pipeline: how-to/containerization/containerization.md
   how-to/customize-docker-builds/docker-settings-on-a-step: how-to/containerization/containerization.md
@@ -119,15 +112,6 @@ redirects:
   how-to/customize-docker-builds/which-files-are-built-into-the-image: how-to/containerization/containerization.md
   how-to/customize-docker-builds/how-to-reuse-builds: how-to/containerization/containerization.md
   how-to/customize-docker-builds/define-where-an-image-is-built: how-to/containerization/containerization.md
-  # how-to/auth-management/: how-to/stack-components/service_connectors.md # This section
-  # how-to/auth-management/service-connectors-guide: how-to/stack-components/service_connectors.md # This section
-  # how-to/auth-management/best-security-practices: how-to/stack-components/service_connectors.md # This section
-  # how-to/auth-management/docker-service-connector: how-to/stack-components/service_connectors.md # This section
-  # how-to/auth-management/kubernetes-service-connector: how-to/stack-components/service_connectors.md # This section
-  # how-to/auth-management/aws-service-connector: how-to/stack-components/service_connectors.md # This section  
-  # how-to/auth-management/gcp-service-connector: how-to/stack-components/service_connectors.md # This section  
-  # how-to/auth-management/azure-service-connector: how-to/stack-components/service_connectors.md # This section    
-  # how-to/auth-management/hyperai-service-connector: how-to/stack-components/service_connectors.md # This section
   how-to/configure-python-environments/: how-to/containerization/containerization.md
   how-to/configure-python-environments/handling-dependencies: how-to/containerization/containerization.md
   how-to/configure-python-environments/configure-the-server-environment: how-to/containerization/containerization.md
@@ -159,9 +143,6 @@ redirects:
   docs/getting-started/system-architectures: getting-started/system-architectures.md
   docs/getting-started/deploying-zenml/: getting-started/deploying-zenml/README.md
   docs/getting-started/zenml-pro/: getting-started/core-concepts.md
-  # docs/user-guide/starter-guide/: getting-started/hello-world.md # This section
-  # docs/user-guide/production-guide/: getting-started/system-architectures.md # This section
-  # docs/user-guide/llmops-guide/: reference/llms-txt.md # This section
   docs/how-to/interact-with-secrets: how-to/secrets/secrets.md 
   docs/how-to/debug-and-solve-issues: reference/faq.md
   docs/how-to/contribute-to-zenml/: reference/community-and-content.md
@@ -169,7 +150,6 @@ redirects:
   docs/reference/python-client: reference/environment-variables.md
   docs/reference/global-settings: reference/global-settings.md
   docs/reference/environment-variables: reference/environment-variables.md
-  # docs/reference/api-reference: reference/environment-variables.md # This section 
   docs/reference/how-do-i: reference/faq.md
   docs/reference/community-and-content: reference/community-and-content.md
   docs/reference/faq: reference/faq.md
@@ -186,20 +166,10 @@ redirects:
   how-to/advanced-topics/manage-zenml-server/migration-guide/migration-zero-thirty: how-to/manage-zenml-server/migration-guide/migration-zero-thirty.md
   how-to/advanced-topics/manage-zenml-server/migration-guide/migration-zero-forty: how-to/manage-zenml-server/migration-guide/migration-zero-forty.md
   how-to/advanced-topics/manage-zenml-server/migration-guide/migration-zero-sixty: how-to/manage-zenml-server/migration-guide/migration-zero-sixty.md
-  # how-to/project-setup-and-management/setting-up-a-project-repository/using-project-templates: how-to/templates/templates.md # This section
-  # how-to/project-setup-and-management/setting-up-a-project-repository/create-your-own-template: how-to/templates/templates.md # This section  
-  # how-to/project-setup-and-management/setting-up-a-project-repository/shared-components-for-teams: how-to/stack-components/stack_components.md # This section
-  # how-to/project-setup-and-management/setting-up-a-project-repository/stacks-pipelines-models: how-to/steps-pipelines/steps_and_pipelines.md # This section
   how-to/project-setup-and-management/setting-up-a-project-repository/access-management: how-to/tags/tags.md
   how-to/interact-with-secrets: how-to/secrets/secrets.md
   how-to/project-setup-and-management/develop-locally/: how-to/steps-pipelines/steps_and_pipelines.md
   how-to/project-setup-and-management/develop-locally/local-prod-pipeline-variants: how-to/steps-pipelines/steps_and_pipelines.md
-  # how-to/project-setup-and-management/develop-locally/keep-your-dashboard-server-clean: how-to/steps-pipelines/logging.md # This section
-  # how-to/advanced-topics/training-with-gpus/: how-to/containerization/containerization.md # This section
-  # how-to/advanced-topics/training-with-gpus/accelerate-distributed-training: how-to/containerization/containerization.md # This section
-  # how-to/advanced-topics/run-remote-notebooks/: how-to/steps-pipelines/steps_and_pipelines.md # This section
-  # how-to/advanced-topics/run-remote-notebooks/limitations-of-defining-steps-in-notebook-cells: how-to/steps-pipelines/steps_and_pipelines.md # This section
-  # how-to/advanced-topics/run-remote-notebooks/run-a-single-step-from-a-notebook: how-to/steps-pipelines/steps_and_pipelines.md # This section 
   how-to/infrastructure-deployment/configure-python-environments/: how-to/containerization/containerization.md
   how-to/infrastructure-deployment/configure-python-environments/handling-dependencies: how-to/containerization/containerization.md
   how-to/infrastructure-deployment/configure-python-environments/configure-the-server-environment: how-to/containerization/containerization.md
@@ -213,8 +183,6 @@ redirects:
   how-to/infrastructure-deployment/customize-docker-builds/which-files-are-built-into-the-image: how-to/containerization/containerization.md
   how-to/infrastructure-deployment/customize-docker-builds/how-to-reuse-builds: how-to/containerization/containerization.md
   how-to/infrastructure-deployment/customize-docker-builds/define-where-an-image-is-built: how-to/containerization/containerization.md
-  # how-to/data-artifact-management/handle-data-artifacts/datasets: how-to/artifacts/artifacts.md # This section
-  # how-to/data-artifact-management/handle-data-artifacts/manage-big-data: how-to/artifacts/artifacts.md # This section
   how-to/data-artifact-management/handle-data-artifacts/unmaterialized-artifacts: how-to/artifacts/materializers.md
   how-to/data-artifact-management/handle-data-artifacts/passing-artifacts-between-pipelines: how-to/artifacts/artifacts.md
   how-to/data-artifact-management/handle-data-artifacts/registering-existing-data: how-to/artifacts/artifacts.md
@@ -245,9 +213,6 @@ redirects:
   how-to/control-logging/set-logging-format: how-to/steps-pipelines/logging.md
   how-to/customize-docker-builds: how-to/containerization/containerization.md
   how-to/data-artifact-management: how-to/artifacts/artifacts.md
-  # how-to/data-artifact-management/complex-usecases: how-to/artifacts/artifacts.md # This section
-  # how-to/data-artifact-management/complex-usecases/datasets: how-to/artifacts/artifacts.md # This section
-  # how-to/data-artifact-management/complex-usecases/manage-big-data: how-to/artifacts/artifacts.md # This section
   how-to/data-artifact-management/complex-usecases/passing-artifacts-between-pipelines: how-to/artifacts/artifacts.md
   how-to/data-artifact-management/complex-usecases/registering-existing-data: how-to/artifacts/artifacts.md
   how-to/data-artifact-management/complex-usecases/unmaterialized-artifacts: how-to/artifacts/materializers.md
@@ -266,27 +231,6 @@ redirects:
   how-to/data-artifact-management/visualize-artifacts/disabling-visualizations: how-to/artifacts/visualizations.md
   how-to/data-artifact-management/visualize-artifacts/types-of-visualizations: how-to/artifacts/visualizations.md
   how-to/data-artifact-management/visualize-artifacts/visualizations-in-dashboard: how-to/artifacts/visualizations.md
-  # how-to/debug-and-solve-issues: reference/faq.md # This section
-  # how-to/infrastructure-deployment: how-to/stack-components/stack_components.md # This section
-  # how-to/infrastructure-deployment/auth-management: how-to/stack-components/service_connectors.md # This section
-  # how-to/infrastructure-deployment/auth-management/aws-service-connector: how-to/stack-components/service_connectors.md # This section
-  # how-to/infrastructure-deployment/auth-management/azure-service-connector: how-to/stack-components/service_connectors.md # This section
-  # how-to/infrastructure-deployment/auth-management/best-security-practices: how-to/stack-components/service_connectors.md # This section
-  # how-to/infrastructure-deployment/auth-management/docker-service-connector: how-to/stack-components/service_connectors.md # This section
-  # how-to/infrastructure-deployment/auth-management/gcp-service-connector: how-to/stack-components/service_connectors.md # This section  
-  # how-to/infrastructure-deployment/auth-management/hyperai-service-connector: how-to/stack-components/service_connectors.md # This section  
-  # how-to/infrastructure-deployment/auth-management/kubernetes-service-connector: how-to/stack-components/service_connectors.md # This section
-  # how-to/infrastructure-deployment/auth-management/service-connectors-guide: how-to/stack-components/service_connectors.md # This section
-  # how-to/infrastructure-deployment/infrastructure-as-code: how-to/stack-components/stack_components.md # This section
-  # how-to/infrastructure-deployment/infrastructure-as-code/best-practices: how-to/stack-components/stack_components.md # This section
-  # how-to/infrastructure-deployment/infrastructure-as-code/terraform-stack-management: how-to/stack-components/stack_components.md # This section
-  # how-to/infrastructure-deployment/stack-deployment: how-to/stack-components/stack_components.md # This section
-  # how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack: how-to/stack-components/stack_components.md # This section
-  # how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack-with-terraform: how-to/stack-components/stack_components.md # This section
-  # how-to/infrastructure-deployment/stack-deployment/export-stack-requirements: how-to/stack-components/stack_components.md # This section
-  # how-to/infrastructure-deployment/stack-deployment/implement-a-custom-stack-component: how-to/stack-components/stack_components.md # This section
-  # how-to/infrastructure-deployment/stack-deployment/reference-secrets-in-stack-configuration: how-to/secrets/secrets.md # This section
-  # how-to/infrastructure-deployment/stack-deployment/register-a-cloud-stack: how-to/stack-components/stack_components.md # This section
   how-to/manage-zenml-server: how-to/manage-zenml-server/upgrade-zenml-server.md
   how-to/manage-zenml-server/best-practices-upgrading-zenml: how-to/manage-zenml-server/best-practices-upgrading-zenml.md
   how-to/manage-zenml-server/connecting-to-zenml: how-to/manage-zenml-server/connecting-to-zenml/README.md
@@ -323,21 +267,9 @@ redirects:
   how-to/model-management-metrics/track-metrics-metadata/fetch-metadata-within-steps: how-to/metadata/metadata.md
   how-to/model-management-metrics/track-metrics-metadata/grouping-metadata: how-to/metadata/metadata.md
   how-to/model-management-metrics/track-metrics-metadata/logging-metadata: how-to/metadata/metadata.md
-  # how-to/popular-integrations: how-to/stack-components/stack_components.md # This section
-  # how-to/popular-integrations/aws-guide: how-to/stack-components/service_connectors.md # This section
-  # how-to/popular-integrations/azure-guide: how-to/stack-components/service_connectors.md # This section
-  # how-to/popular-integrations/gcp-guide: how-to/stack-components/service_connectors.md # This section
-  # how-to/popular-integrations/kubeflow: how-to/stack-components/stack_components.md # This section
-  # how-to/popular-integrations/kubernetes: how-to/stack-components/stack_components.md # This section
-  # how-to/popular-integrations/mlflow: how-to/stack-components/stack_components.md # This section
-  # how-to/popular-integrations/skypilot: how-to/stack-components/stack_components.md # This section
   how-to/project-setup-and-management: how-to/code-repositories/code-repositories.md
   how-to/project-setup-and-management/collaborate-with-team: how-to/code-repositories/code-repositories.md
   how-to/project-setup-and-management/collaborate-with-team/access-management: how-to/tags/tags.md
-  # how-to/project-setup-and-management/collaborate-with-team/project-templates: how-to/templates/templates.md # This section
-  # how-to/project-setup-and-management/collaborate-with-team/project-templates/create-your-own-template: how-to/templates/templates.md # This section
-  # how-to/project-setup-and-management/collaborate-with-team/shared-components-for-teams: how-to/stack-components/stack_components.md # This section
-  # how-to/project-setup-and-management/collaborate-with-team/stacks-pipelines-models: how-to/steps-pipelines/steps_and_pipelines.md # This section
   how-to/project-setup-and-management/interact-with-secrets: how-to/secrets/secrets.md
   how-to/project-setup-and-management/setting-up-a-project-repository: how-to/code-repositories/code-repositories.md
   how-to/project-setup-and-management/setting-up-a-project-repository/connect-your-git-repository: how-to/code-repositories/code-repositories.md
@@ -345,4 +277,3 @@ redirects:
   how-to/trigger-pipelines: how-to/templates/templates.md
   how-to/trigger-pipelines/use-templates-cli: how-to/templates/templates.md
   reference/how-do-i: reference/faq.md
-  # reference/python-client: reference/environment-variables.md # This section
