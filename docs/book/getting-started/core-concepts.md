@@ -66,6 +66,40 @@ if __name__ == "__main__":
     my_pipeline()
 ```
 
+## Migration Guide: From `BaseParameters` to `pydantic.BaseModel`
+
+In recent versions of ZenML, the `BaseParameters` class has been deprecated and replaced with `pydantic.BaseModel`. This change enhances the flexibility and validation capabilities of step parameters. Here is how you can migrate your code:
+
+### Old Code Example
+```python
+from zenml.steps import BaseParameters
+
+class ModelNameConfig(BaseParameters):
+    model_name: str = "lightgbm"
+    fine_tuning: bool = False
+```
+
+### New Code Example
+```python
+from pydantic import BaseModel
+
+class ModelNameConfig(BaseModel):
+    model_name: str = "lightgbm"
+    fine_tuning: bool = False
+```
+
+## Step Invocation with Required Inputs
+
+When calling steps, it is crucial to pass all required arguments. For example, if a step requires a data input, ensure it is provided:
+
+```python
+data = ingest_data()
+cleaned_data = clean_data(data=data)
+```
+
+This ensures that all necessary inputs are available for the step to execute correctly.
+```
+
 #### Artifacts
 
 Artifacts represent the data that goes through your steps as inputs and outputs, and they are automatically tracked and stored by ZenML in the artifact store. They are produced by and circulated among steps whenever your step returns an object or a value. This means the data is not passed between steps in memory. Rather, when the execution of a step is completed, they are written to storage, and when a new step gets executed, they are loaded from storage.
