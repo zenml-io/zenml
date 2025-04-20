@@ -4,6 +4,10 @@ metadata:
   name: {{ include "zenml.fullname" . }}
   labels:
     {{- include "zenml.labels" . | nindent 4 }}
+  {{- with .Values.zenml.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   type: {{ .Values.zenml.service.type }}
   ports:

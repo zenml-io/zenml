@@ -4,8 +4,7 @@ description: Sending automated alerts to a Discord channel.
 
 # Discord Alerter
 
-The `DiscordAlerter` enables you to send messages to a dedicated Discord channel 
-directly from within your ZenML pipelines.
+The `DiscordAlerter` enables you to send messages to a dedicated Discord channel directly from within your ZenML pipelines.
 
 ZenML provides generic alerter steps that work with any alerter flavor, including Discord:
 
@@ -32,28 +31,22 @@ zenml integration install discord -y
 ```
 
 {% hint style="info" %}
-See the [Integrations](../README.md) page for more details on ZenML integrations and how to install and
-use them.
+See the [Integrations](https://docs.zenml.io/component-guide) page for more details on ZenML integrations and how to install and use them.
 {% endhint %}
 
 ### Setting Up a Discord Bot
 
-In order to use the `DiscordAlerter`, you first need to have a Discord workspace set up with a channel that you want your
-pipelines to post to. This is the `<DISCORD_CHANNEL_ID>` you will need when registering the discord alerter component.
+In order to use the `DiscordAlerter`, you first need to have a Discord workspace set up with a channel that you want your pipelines to post to. This is the `<DISCORD_CHANNEL_ID>` you will need when registering the discord alerter component.
 
-Then, you need to [create a Discord App with a bot in your server](https://discordpy.readthedocs.io/en/latest/discord.html)
-.
+Then, you need to [create a Discord App with a bot in your server](https://discordpy.readthedocs.io/en/latest/discord.html) .
 
 {% hint style="info" %}
-Note in the bot token copy step, if you don't find the copy button then click on reset token to reset the bot 
-and you will get a new token which you can use. Also, make sure you give necessary permissions to the bot 
-required for sending and receiving messages.
+Note in the bot token copy step, if you don't find the copy button then click on reset token to reset the bot and you will get a new token which you can use. Also, make sure you give necessary permissions to the bot required for sending and receiving messages.
 {% endhint %}
 
 ### Registering a Discord Alerter in ZenML
 
-Next, you need to register a `discord` alerter in ZenML and link it to the bot you just created. You can do this with the
-following command:
+Next, you need to register a `discord` alerter in ZenML and link it to the bot you just created. You can do this with the following command:
 
 ```shell
 zenml alerter register discord_alerter \
@@ -70,23 +63,21 @@ zenml stack register ... -al discord_alerter
 
 Here is where you can find the required parameters:
 
-#### DISCORD_CHANNEL_ID
+#### DISCORD\_CHANNEL\_ID
 
-Open the discord server, then right-click on the text channel and click on the 
-'Copy Channel ID' option.
+Open the discord server, then right-click on the text channel and click on the 'Copy Channel ID' option.
 
 {% hint style="info" %}
 If you don't see any 'Copy Channel ID' option for your channel, go to "User Settings" > "Advanced" and make sure "Developer Mode" is active.
 {% endhint %}
 
-#### DISCORD_TOKEN
+#### DISCORD\_TOKEN
 
-This is the Discord token of your bot. You can find the instructions on how to set up a bot, invite it to your channel, and find its token
-[here](https://discordpy.readthedocs.io/en/latest/discord.html).
+This is the Discord token of your bot. You can find the instructions on how to set up a bot, invite it to your channel, and find its token[here](https://discordpy.readthedocs.io/en/latest/discord.html).
 
 {% hint style="warning" %}
-When inviting the bot to your channel, make sure it has at least the following
-permissions: 
+When inviting the bot to your channel, make sure it has at least the following permissions:
+
 * Read Messages/View Channels
 * Send Messages
 * Send Messages in Threads
@@ -209,9 +200,6 @@ if __name__ == "__main__":
     my_pipeline()
 ```
 
-For more information and a full list of configurable attributes of the Discord alerter, check out
-the [SDK Docs](https://sdkdocs.zenml.io/latest/integration\_code\_docs/integrations-discord/#zenml.integrations.discord.alerters.discord\_alerter.DiscordAlerter)
-.
+For more information and a full list of configurable attributes of the Discord alerter, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-discord.html#zenml.integrations.discord) .
 
-<!-- For scarf -->
-<figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
+<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

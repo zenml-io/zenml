@@ -21,7 +21,7 @@ pip install "zenml[templates,server]" notebook
 zenml integration install sklearn -y
 ```
 
-We will then use [ZenML templates](../../how-to/project-setup-and-management/collaborate-with-team/project-templates/README.md) to help us get the code we need for the project:
+We will then use [ZenML templates](https://docs.zenml.io/how-to/project-setup-and-management/collaborate-with-team/project-templates) to help us get the code we need for the project:
 
 ```bash
 mkdir zenml_starter

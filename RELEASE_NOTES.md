@@ -1,5 +1,198 @@
 <!-- markdown-link-check-disable -->
 
+# 0.81.0
+
+The `0.81.0` release focuses on significant improvements to artifact management, enhanced security features, and advanced resource sharing capabilities. Key highlights include a new Path materializer for directory and file uploads, artifact visualization enhancements, client-side pipeline run logs storage, and support for resource sharing between teams and external users. This release also improves logging, adds security protections, and enhances orchestration capabilities across multiple cloud platforms.
+
+## Features
+
+- Added a [Path materializer](https://docs.zenml.io/how-to/data-artifact-management/handle-data-artifacts/pass-files-through-steps.md) to upload directories and files
+- Added save_visualizations method to materializers
+- Implemented ZenML artifact store provisioning scripts for AWS/GCP/Azure
+- Added endpoint to download artifact data
+- Enabled resource sharing for teams and external users
+- Added support for custom job parameters in Vertex orchestrator
+- Added client-side pipeline run logs storage in the artifact store
+
+## Improvements
+
+- Improved logging with step ID instead of name and avoided extra newlines
+- Added tracking for stack creation and pipeline runs with remote artifact store
+- Implemented failure retries and pending timeouts for the k8s orchestrator pod
+- Added configurable workload token expiration leeway
+- Migrated onboarding state for better user experience
+
+## Fixes
+
+- Fixed artifact control plane vs model control plane GIF links in docs
+- Used step invocation ID in run template error message
+- Prevented path traversal attacks during file extraction
+- Fixed missing vertex orchestrator dependencies in server image
+- Resolved pydantic 2.11 deprecation warnings
+- Removed duplicate step name from logs
+
+## Documentation
+
+- Added [triggering pipelines mini-tutorial](https://docs.zenml.io/user-guides/tutorial/trigger-pipelines-from-external-systems)
+- Improved [SDK Client documentation](https://docs.zenml.io/sdk-reference/client) with thematic grouping
+- Added [Kubernetes schedule documentation](https://docs.zenml.io/stacks/orchestrators/kubernetes#running-scheduled-pipelines-with-kubernetes) and fixed heading hierarchy
+
+## What's Changed
+* Added a Path materializer to upload directories and files by @htahir1 in https://github.com/zenml-io/zenml/pull/3496
+* Avoid extra newlines in logs by @avishniakov in https://github.com/zenml-io/zenml/pull/3518
+* Use step ID instead of name in step logs by @schustmi in https://github.com/zenml-io/zenml/pull/3519
+* Fix artifact control plane vs model control plane GIF links in docs by @strickvl in https://github.com/zenml-io/zenml/pull/3508
+* Adding 0.80.1 to the legacy docs by @bcdurak in https://github.com/zenml-io/zenml/pull/3521
+* Adding 0.80.2 to the migration tests by @bcdurak in https://github.com/zenml-io/zenml/pull/3517
+* Enabling the `greatexpectations` test again by @bcdurak in https://github.com/zenml-io/zenml/pull/3516
+* Add save_visualizations method to materializers by @htahir1 in https://github.com/zenml-io/zenml/pull/3520
+* Add triggering pipelines mini-tutorial by @strickvl in https://github.com/zenml-io/zenml/pull/3495
+* ZenML artifact store provisioning scripts for AWS/GCP/Azure by @stefannica in https://github.com/zenml-io/zenml/pull/3514
+* Improve SDK Client documentation with thematic grouping by @strickvl in https://github.com/zenml-io/zenml/pull/3528
+* Track stack creation and pipeline run with remote artifact store for onboarding state by @schustmi in https://github.com/zenml-io/zenml/pull/3525
+* Add Kubernetes schedule documentation and fix heading hierarchy by @strickvl in https://github.com/zenml-io/zenml/pull/3530
+* Use step invocation ID in run template error message by @schustmi in https://github.com/zenml-io/zenml/pull/3534
+* Migrate onboarding state by @schustmi in https://github.com/zenml-io/zenml/pull/3533
+* Prevent path traversal attacks during file extraction by @htahir1 in https://github.com/zenml-io/zenml/pull/3535
+* Implement failure retries and pending timeouts for the k8s orchestrator pod by @stefannica in https://github.com/zenml-io/zenml/pull/3523
+* Add endpoint to download artifact data by @schustmi in https://github.com/zenml-io/zenml/pull/3507
+* Enable resource sharing for teams and external users by @schustmi in https://github.com/zenml-io/zenml/pull/3461
+* Add support for custom job parameters in Vertex orchestrator by @htahir1 in https://github.com/zenml-io/zenml/pull/3536
+* Add configurable workload token expiration leeway by @schustmi in https://github.com/zenml-io/zenml/pull/3526
+* Fix llms.txt docs by @strickvl in https://github.com/zenml-io/zenml/pull/3540
+* Store client-side pipeline run logs in the artifact store by @stefannica in https://github.com/zenml-io/zenml/pull/3498
+* Add missing vertex orchestrator dependencies to server image by @schustmi in https://github.com/zenml-io/zenml/pull/3541
+* Resolve pydantic 2.11 deprecation warnings by @schustmi in https://github.com/zenml-io/zenml/pull/3542
+* Remove duplicate step name from logs by @schustmi in https://github.com/zenml-io/zenml/pull/3543
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.80.2...0.81.0
+
+
+# 0.80.2
+
+ The `0.80.2` release focuses on several bug fixes, usability enhancements and documentation improvements. Key highlights include fixing the yanked fsspec pip resolution issue, adding sample visualization for Pandas materializer, and upgrading pydantic to 2.11 for improved performance. This release also adds new tutorials and guides, fixes several critical issues, and introduces new functionality for pipeline development.
+
+ ## Features
+
+ - Added poetry add support for CLI
+ - Added retry option on step.with_options
+ - Added service annotations to helm chart
+ - Added step name to console logs for better tracing
+
+ ## Improvements
+
+ - Added sample visualization for Pandas materializer
+ - Improved run templates with small enhancements and hidden option support
+ - Fixed service connector list-resources endpoint and CLI command
+
+ ## Fixes
+
+ - Fixed timestamps in logs
+ - Fixed yanked fsspec pip resolution issue
+ - Fixed Kubernetes Orchestrator step pod failure status updates
+ - Fixed CI failures and test issues
+ - Updated error message for setting pipeline parameters via API
+
+ ## Documentation
+
+ - Added new ZenML Tutorials section to user guide
+ - Added mini-tutorials for [pipeline scheduling](https://docs.zenml.io/user-guides/tutorial/managing-scheduled-pipelines) and [organization with tags/projects](https://docs.zenml.io/user-guides/tutorial/organizing-pipelines-and-models)
+ - Updated documentation for [MCP Server](https://docs.zenml.io/how-to/manage-zenml-server/mcp-chat-with-server) and [VSCode Extension](https://docs.zenml.io/how-to/manage-zenml-server/vscode-extension)
+ - Fixed various documentation issues
+
+## What's Changed
+
+* Updating the missing legacy docs by @bcdurak in https://github.com/zenml-io/zenml/pull/3473
+* add new version to the migration tests by @bcdurak in https://github.com/zenml-io/zenml/pull/3471
+* Add docs for MCP Server and VSCode Extension by @strickvl in https://github.com/zenml-io/zenml/pull/3475
+* Log job completion for Vertex orchestrator by @strickvl in https://github.com/zenml-io/zenml/pull/3478
+* Cleaning up the CI failures by @bcdurak in https://github.com/zenml-io/zenml/pull/3480
+* Remove remaining use of tj-actions/changed-files by @stefannica in https://github.com/zenml-io/zenml/pull/3481
+* Fixing the timestamps in logs by @bcdurak in https://github.com/zenml-io/zenml/pull/3479
+* Fix incorrect step access method in documentation by @marwan37 in https://github.com/zenml-io/zenml/pull/3483
+* Relaxing the `mlflow` dependency by @bcdurak in https://github.com/zenml-io/zenml/pull/3446
+* Add two mini-tutorials (pipeline scheduling and organization with tags/projects) by @strickvl in https://github.com/zenml-io/zenml/pull/3485
+* Add ZenML Tutorials section to user guide by @htahir1 in https://github.com/zenml-io/zenml/pull/3488
+* Add service annotations to helm chart by @jsybel in https://github.com/zenml-io/zenml/pull/3482
+* Adding step name to console logs by @bcdurak in https://github.com/zenml-io/zenml/pull/3486
+* Fix yanked fsspec pip resolution issue by @stefannica in https://github.com/zenml-io/zenml/pull/3493
+* Fixed some docs here and there by @htahir1 in https://github.com/zenml-io/zenml/pull/3484
+* Update error message for setting pipeline parameters via API by @htahir1 in https://github.com/zenml-io/zenml/pull/3491
+* Fix the service connector list-resources endpoint and CLI command by @stefannica in https://github.com/zenml-io/zenml/pull/3492
+* Restructure organization viewer role in ZenML Pro by @htahir1 in https://github.com/zenml-io/zenml/pull/3501
+* Add a sample visualization for Pandas materializer by @htahir1 in https://github.com/zenml-io/zenml/pull/3494
+* Add retry option on step.with_options by @schustmi in https://github.com/zenml-io/zenml/pull/3499
+* Fix tutorials + small improvements to docs by @htahir1 in https://github.com/zenml-io/zenml/pull/3489
+* CI fixes with `huggingface` and crud tests by @bcdurak in https://github.com/zenml-io/zenml/pull/3502
+* Upgrading pydantic to 2.11 by @bcdurak in https://github.com/zenml-io/zenml/pull/3472
+* Update step status if Kubernetes Orchestrator step pods fail by @stefannica in https://github.com/zenml-io/zenml/pull/3497
+* Add `poetry add` support for CLI by @avishniakov in https://github.com/zenml-io/zenml/pull/3470
+* Small run template improvements by @schustmi in https://github.com/zenml-io/zenml/pull/3503
+* Move uv env var to constants by @schustmi in https://github.com/zenml-io/zenml/pull/3504
+* Add hidden option for run templates by @schustmi in https://github.com/zenml-io/zenml/pull/3500
+* Fix security check for poetry by @bcdurak in https://github.com/zenml-io/zenml/pull/3509
+* Minor auth improvement by @schustmi in https://github.com/zenml-io/zenml/pull/3512
+
+## New Contributors
+
+* @marwan37 made their first contribution in https://github.com/zenml-io/zenml/pull/3483
+* @jsybel made their first contribution in https://github.com/zenml-io/zenml/pull/3482
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.80.1...0.80.2
+
+
+# 0.80.1
+
+The `0.80.1` release focuses on bug fixes and performance improvements following the major `0.80.0` update. This release addresses several critical issues, particularly improving the CLI functionality when used with the REST API through a deployed ZenML instance. Additionally, this version introduces [a restructured documentation architecture](https://docs.zenml.io) for improved user experience.
+
+## Improvements
+
+- Import integrations lazily for better performance
+- Added ability to store a default project for users
+
+## Fixes
+
+- Fixed CLI combined with RestZenStore and filters with multiple entries
+- Fixed stack validation for incluster Kubernetes orchestrator
+- Fixed stack and component URL when connected to a cloud workspace
+- Fixed code repository host fallback
+- Fixed version validation
+- Various other minor bugfixes
+
+## Documentation
+
+- Restructured entire documentation for better organization
+- Fixed broken links in API documentation
+- Refined logging to debug level for service connectors
+- Removed redundant log messages
+
+## What's Changed
+* Adding `0.80.0` to the migration tests by @bcdurak in https://github.com/zenml-io/zenml/pull/3442
+* Adding the disabled flavor test back by @bcdurak in https://github.com/zenml-io/zenml/pull/3431
+* Stop CLI profiler running so much by @strickvl in https://github.com/zenml-io/zenml/pull/3449
+* Add missing fallback host for code repositories by @schustmi in https://github.com/zenml-io/zenml/pull/3434
+* Fix stack and component URL when connected to a cloud workspace by @schustmi in https://github.com/zenml-io/zenml/pull/3451
+* Fix stack validation for incluster Kubernetes orchestrator by @schustmi in https://github.com/zenml-io/zenml/pull/3450
+* Bump `click` dependency by @strickvl in https://github.com/zenml-io/zenml/pull/3445
+* Fix 0.80.0 database migration by @stefannica in https://github.com/zenml-io/zenml/pull/3453
+* Pin the ZenML Terraform provider version by @stefannica in https://github.com/zenml-io/zenml/pull/3443
+* Import integrations lazily by @stefannica in https://github.com/zenml-io/zenml/pull/3419
+* Remove Segment analytics script and scarf image load. by @htahir1 in https://github.com/zenml-io/zenml/pull/3455
+* Restructure entire docs by @htahir1 in https://github.com/zenml-io/zenml/pull/3447
+* Refactor logging to debug level for service connectors by @htahir1 in https://github.com/zenml-io/zenml/pull/3456
+* Removing redundant log messages by @bcdurak in https://github.com/zenml-io/zenml/pull/3459
+* Fix broken link in API documentation table by @htahir1 in https://github.com/zenml-io/zenml/pull/3462
+* Add the ability to store a default project for a user by @schustmi in https://github.com/zenml-io/zenml/pull/3457
+* Fixing the CLI combined with RestZenStore and filters with multiple entries by @bcdurak in https://github.com/zenml-io/zenml/pull/3464
+* Don't ask for active project when listing projects by @stefannica in https://github.com/zenml-io/zenml/pull/3466
+* Use the build python version to collect stack requirements for run templates by @stefannica in https://github.com/zenml-io/zenml/pull/3465
+* Fix version validation by @bcdurak in https://github.com/zenml-io/zenml/pull/3467
+
+
+**Full Changelog**: https://github.com/zenml-io/zenml/compare/0.80.0...0.80.1
+
+
 # 0.80.0
 
 The 0.80.0 release is one of our biggest updates in a while! This version introduces a major refactoring of workspaces into projects, enhances tagging capabilities, and improves GitLab repository support. This release also features significant performance optimizations for Docker builds and CLI operations.
@@ -285,6 +478,32 @@ multi-domain ZenML Pro installations.
 
 ## What's Changed
 
+* Fix some docs by @htahir1 in https://github.com/zenml-io/zenml/pull/3302
+* Replace deprecated `datetime.utcnow()` with `datetime.now(timezone.utc)`  by @aiakide in https://github.com/zenml-io/zenml/pull/3265
+* Adding the missing VertexAI experiment tracker docs by @bcdurak in https://github.com/zenml-io/zenml/pull/3308
+* Create Sagemaker pipeline schedules if specified by @htahir1 in https://github.com/zenml-io/zenml/pull/3271
+* Formatting by @schustmi in https://github.com/zenml-io/zenml/pull/3307
+* Remove trailing slashes from zenml login URLs by @stefannica in https://github.com/zenml-io/zenml/pull/3312
+* Fix Kubernetes service connector by @stefannica in https://github.com/zenml-io/zenml/pull/3313
+* Add notes on missing features for on-prem ZenML Pro deployments by @stefannica in https://github.com/zenml-io/zenml/pull/3301
+* Fix wrong warning log when directly connecting to MySQL DB by @schustmi in https://github.com/zenml-io/zenml/pull/3311
+* Fix typo by @schustmi in https://github.com/zenml-io/zenml/pull/3316
+* Minor fix for Sagemaker by @bcdurak in https://github.com/zenml-io/zenml/pull/3318
+* Rework timestamp utilization for timezone consistency by @stefannica in https://github.com/zenml-io/zenml/pull/3314
+* Add broken links checker by @htahir1 in https://github.com/zenml-io/zenml/pull/3305
+* Schedule timezone fixes by @schustmi in https://github.com/zenml-io/zenml/pull/3315
+* Misc code repository improvements by @schustmi in https://github.com/zenml-io/zenml/pull/3306
+* Add core concepts video by @htahir1 in https://github.com/zenml-io/zenml/pull/3324
+* Fix code download for custom flavor components by @schustmi in https://github.com/zenml-io/zenml/pull/3323
+* Allow passing run configuration as dict when triggering pipelines by @schustmi in https://github.com/zenml-io/zenml/pull/3326
+* Fix sorting by columns with potentially empty values by @schustmi in https://github.com/zenml-io/zenml/pull/3325
+* Allow custom log formats by @schustmi in https://github.com/zenml-io/zenml/pull/3288
+* Add vertex persistent resource to settings for step operator by @htahir1 in https://github.com/zenml-io/zenml/pull/3304
+* Fix use of config file in vLLM pipelines by @wjayesh in https://github.com/zenml-io/zenml/pull/3322
+* Fixing the CI with the new `huggingface-hub` version by @bcdurak in https://github.com/zenml-io/zenml/pull/3329
+* Handling string values as SecretStrs in store configurations by @bcdurak in https://github.com/zenml-io/zenml/pull/3319
+* More code repository improvements by @schustmi in https://github.com/zenml-io/zenml/pull/3327
+* Fix materializer for new pytorch version by @schustmi in https://github.com/zenml-io/zenml/pull/3331
 * On-prem Pro tenants: secure enrollment, CSRF tokens and cross-domain authorization flow by @stefannica in https://github.com/zenml-io/zenml/pull/3264
 * Fix the misc release actions by @schustmi in https://github.com/zenml-io/zenml/pull/3286
 * Add 0.72.0 to the migration tests by @schustmi in https://github.com/zenml-io/zenml/pull/3285

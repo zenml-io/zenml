@@ -25,11 +25,13 @@ class TensorBoardIntegration(Integration):
     REQUIREMENTS = []
 
     @classmethod
-    def get_requirements(cls, target_os: Optional[str] = None) -> List[str]:
+    def get_requirements(cls, target_os: Optional[str] = None, python_version: Optional[str] = None
+    ) -> List[str]:
         """Defines platform specific requirements for the integration.
 
         Args:
             target_os: The target operating system.
+            python_version: The Python version to use for the requirements.
 
         Returns:
             A list of requirements.

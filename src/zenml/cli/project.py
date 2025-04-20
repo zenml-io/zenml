@@ -38,7 +38,7 @@ def project() -> None:
 @project.command("list")
 @list_options(ProjectFilter)
 @click.pass_context
-def list_projects(ctx: click.Context, **kwargs: Any) -> None:
+def list_projects(ctx: click.Context, /, **kwargs: Any) -> None:
     """List all projects.
 
     Args:
@@ -50,10 +50,14 @@ def list_projects(ctx: click.Context, **kwargs: Any) -> None:
     with console.status("Listing projects...\n"):
         projects = client.list_projects(**kwargs)
         if projects:
+            try:
+                active_project = [client.active_project]
+            except Exception:
+                active_project = []
             cli_utils.print_pydantic_models(
                 projects,
                 exclude_columns=["id", "created", "updated"],
-                active_models=[Client().active_project],
+                active_models=active_project,
                 show_active=not is_sorted_or_filtered(ctx),
             )
         else:
@@ -75,11 +79,18 @@ def list_projects(ctx: click.Context, **kwargs: Any) -> None:
     required=False,
     help="The display name of the project.",
 )
+@click.option(
+    "--set-default",
+    "set_default",
+    is_flag=True,
+    help="Set this project as the default project.",
+)
 @click.argument("project_name", type=str, required=True)
 def register_project(
     project_name: str,
     set_project: bool = False,
     display_name: Optional[str] = None,
+    set_default: bool = False,
 ) -> None:
     """Register a new project.
 
@@ -87,12 +98,13 @@ def register_project(
         project_name: The name of the project to register.
         set_project: Whether to set the project as active.
         display_name: The display name of the project.
+        set_default: Whether to set the project as the default project.
     """
     check_zenml_pro_project_availability()
     client = Client()
     with console.status("Creating project...\n"):
         try:
-            client.create_project(
+            project = client.create_project(
                 project_name,
                 description="",
                 display_name=display_name,
@@ -105,25 +117,50 @@ def register_project(
         client.set_active_project(project_name)
         cli_utils.declare(f"The active project has been set to {project_name}")
 
+    if set_default:
+        client.update_user(
+            name_id_or_prefix=client.active_user.id,
+            updated_default_project_id=project.id,
+        )
+        cli_utils.declare(
+            f"The default project has been set to {project.name}"
+        )
+
 
 @project.command("set")
 @click.argument("project_name_or_id", type=str, required=True)
-def set_project(project_name_or_id: str) -> None:
+@click.option(
+    "--default",
+    "default",
+    is_flag=True,
+    help="Set this project as the default project.",
+)
+def set_project(project_name_or_id: str, default: bool = False) -> None:
     """Set the active project.
 
     Args:
         project_name_or_id: The name or ID of the project to set as active.
+        default: Whether to set the project as the default project.
     """
     check_zenml_pro_project_availability()
     client = Client()
     with console.status("Setting project...\n"):
         try:
-            client.set_active_project(project_name_or_id)
+            project = client.set_active_project(project_name_or_id)
             cli_utils.declare(
                 f"The active project has been set to {project_name_or_id}"
             )
         except Exception as e:
             cli_utils.error(str(e))
+
+    if default:
+        client.update_user(
+            name_id_or_prefix=client.active_user.id,
+            updated_default_project_id=project.id,
+        )
+        cli_utils.declare(
+            f"The default project has been set to {project.name}"
+        )
 
 
 @project.command("describe")

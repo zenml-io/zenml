@@ -937,7 +937,7 @@ def rename_stack(
 @stack.command("list")
 @list_options(StackFilter)
 @click.pass_context
-def list_stacks(ctx: click.Context, **kwargs: Any) -> None:
+def list_stacks(ctx: click.Context, /, **kwargs: Any) -> None:
     """List all stacks that fulfill the filter requirements.
 
     Args:

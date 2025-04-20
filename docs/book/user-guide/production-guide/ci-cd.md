@@ -30,7 +30,7 @@ template: you can fork it and easily adapt it to your own MLOps stack, infrastru
 ### Configure an API Key in ZenML
 
 In order to facilitate machine-to-machine connection you need to create an API key within ZenML. Learn more about those
-[here](../../how-to/manage-zenml-server/connecting-to-zenml/connect-with-a-service-account.md).
+[here](https://docs.zenml.io/how-to/manage-zenml-server/connecting-to-zenml/connect-with-a-service-account).
 
 ```bash
 zenml service-account create github_action_api_key
@@ -67,10 +67,10 @@ You might not necessarily want to use the same stack with the same resources for
 
 This step is optional, all you'll need for certain is a stack that runs remotely (remote orchestration and artifact
 storage). The rest is up to you. You might for example want to parametrize your pipeline to use different data sources
-for the respective environments. You can also use different [configuration files](../../how-to/configuring-zenml/configuring-zenml.md)
-for the different environments to configure the [Model](../../how-to/model-management-metrics/model-control-plane/README.md), the 
-[DockerSettings](../../how-to/customize-docker-builds/docker-settings-on-a-pipeline.md), the [ResourceSettings like
-accelerators](../../how-to/pipeline-development/training-with-gpus/README.md) differently for the different environments.
+for the respective environments. You can also use different [configuration files](https://docs.zenml.io/how-to/pipeline-development/use-configuration-files)
+for the different environments to configure the [Model](https://docs.zenml.io/how-to/model-management-metrics/model-control-plane), the 
+[DockerSettings](https://docs.zenml.io/how-to/customize-docker-builds/docker-settings-on-a-pipeline), the 
+[ResourceSettings like accelerators](../tutorial/distributed-training.md) differently for the different environments.
 
 ### Trigger a pipeline on a Pull Request (Merge Request)
 
@@ -145,5 +145,3 @@ Finally you can configure your github action workflow to leave a report based on
 Check out the template for this [here](https://github.com/zenml-io/zenml-gitflow/blob/main/.github/workflows/pipeline_run.yaml#L87-L99).
 
 ![Comment left on Pull Request](../../.gitbook/assets/github-action-pr-comment.png)
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

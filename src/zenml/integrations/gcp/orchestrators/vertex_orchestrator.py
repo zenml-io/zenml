@@ -341,13 +341,55 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                 self.config.workload_service_account
             )
 
+        # Create a dictionary of explicit parameters
+        params = custom_job_parameters.model_dump(
+            exclude_none=True, exclude={"additional_training_job_args"}
+        )
+
+        # Remove None values to let defaults be set by the function
+        params = {k: v for k, v in params.items() if v is not None}
+
+        # Add environment variables
+        params["env"] = [
+            {"name": key, "value": value} for key, value in environment.items()
+        ]
+
+        # Check if any advanced parameters will override explicit parameters
+        if custom_job_parameters.additional_training_job_args:
+            overridden_params = set(params.keys()) & set(
+                custom_job_parameters.additional_training_job_args.keys()
+            )
+            if overridden_params:
+                logger.warning(
+                    f"The following explicit parameters are being overridden by values in "
+                    f"additional_training_job_args: {', '.join(overridden_params)}. "
+                    f"This may lead to unexpected behavior. Consider using either explicit "
+                    f"parameters or additional_training_job_args, but not both for the same parameters."
+                )
+
+        # Add any advanced parameters - these will override explicit parameters if provided
+        params.update(custom_job_parameters.additional_training_job_args)
+
+        # Add other parameters from orchestrator config if not already in params
+        if self.config.network and "network" not in params:
+            params["network"] = self.config.network
+
+        if (
+            self.config.encryption_spec_key_name
+            and "encryption_spec_key_name" not in params
+        ):
+            params["encryption_spec_key_name"] = (
+                self.config.encryption_spec_key_name
+            )
+        if (
+            self.config.workload_service_account
+            and "service_account" not in params
+        ):
+            params["service_account"] = self.config.workload_service_account
+
         custom_job_component = create_custom_training_job_from_component(
             component_spec=component,
-            env=[
-                {"name": key, "value": value}
-                for key, value in environment.items()
-            ],
-            **custom_job_parameters.model_dump(),
+            **params,
         )
 
         return custom_job_component
@@ -357,6 +399,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         environment: Dict[str, str],
+        placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Iterator[Dict[str, MetadataType]]:
         """Creates a KFP JSON pipeline.
 
@@ -390,6 +433,7 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
             stack: The stack the pipeline will run on.
             environment: Environment variables to set in the orchestration
                 environment.
+            placeholder_run: An optional placeholder run for the deployment.
 
         Raises:
             ValueError: If the attribute `pipeline_root` is not set, and it
@@ -736,6 +780,9 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                         "Waiting for the Vertex AI Pipelines job to finish..."
                     )
                     run.wait()
+                    logger.info(
+                        "Vertex AI Pipelines job completed successfully."
+                    )
 
         except google_exceptions.ClientError as e:
             logger.error("Failed to create the Vertex AI Pipelines job: %s", e)

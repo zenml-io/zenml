@@ -16,6 +16,7 @@
 The MLflow integrations currently enables you to use MLflow tracking as a
 convenient way to visualize your experiment runs within the MLflow UI.
 """
+from packaging import version
 from typing import List, Type, Optional
 
 from zenml.integrations.constants import MLFLOW
@@ -45,46 +46,29 @@ class MlflowIntegration(Integration):
     ]
 
     @classmethod
-    def get_requirements(cls, target_os: Optional[str] = None) -> List[str]:
+    def get_requirements(
+        cls, target_os: Optional[str] = None, python_version: Optional[str] = None
+    ) -> List[str]:
         """Method to get the requirements for the integration.
 
         Args:
             target_os: The target operating system to get the requirements for.
+            python_version: The Python version to use for the requirements.
 
         Returns:
             A list of requirements.
         """
         from zenml.integrations.numpy import NumpyIntegration
         from zenml.integrations.pandas import PandasIntegration
-
+        
         reqs = [
-            "mlflow>=2.1.1,<2.21.0",
+            "mlflow>=2.1.1,<3",
             # TODO: remove this requirement once rapidjson is fixed
             "python-rapidjson<1.15",
-            # When you do:
-            #       pip install zenml
-            # You get all our required dependencies. However, if you follow it
-            # with:
-            #       zenml integration install mlflow
-            # This downgrades pydantic to v1 even though mlflow does not have
-            # any issues with v2. This is why we have to pin it here so a
-            # downgrade will not happen.
-            "pydantic>=2.8.0,<2.9.0",
         ]
-        if sys.version_info.minor >= 12:
-            logger.debug(
-                "The MLflow integration on Python 3.12 and above is not yet "
-                "fully supported: The extra dependencies 'mlserver' and "
-                "'mlserver-mlflow' will be skipped."
-            )
-        else:
-            reqs.extend([
-                "mlserver>=1.3.3",
-                "mlserver-mlflow>=1.3.3",
-            ])
 
-        reqs.extend(NumpyIntegration.get_requirements(target_os=target_os))
-        reqs.extend(PandasIntegration.get_requirements(target_os=target_os))
+        reqs.extend(NumpyIntegration.get_requirements(target_os=target_os, python_version=python_version))
+        reqs.extend(PandasIntegration.get_requirements(target_os=target_os, python_version=python_version))
         return reqs
 
     @classmethod

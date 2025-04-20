@@ -67,7 +67,7 @@ from zenml.orchestrators.utils import get_orchestrator_run_name
 from zenml.stack import StackValidator
 
 if TYPE_CHECKING:
-    from zenml.models import PipelineDeploymentResponse
+    from zenml.models import PipelineDeploymentResponse, PipelineRunResponse
     from zenml.stack import Stack
 
 logger = get_logger(__name__)
@@ -223,45 +223,52 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             msg = f"'{self.name}' Kubernetes orchestrator error: "
 
             if not self.connector:
-                if not kubernetes_context:
+                if kubernetes_context:
+                    contexts, active_context = self.get_kubernetes_contexts()
+
+                    if kubernetes_context not in contexts:
+                        return False, (
+                            f"{msg}could not find a Kubernetes context named "
+                            f"'{kubernetes_context}' in the local "
+                            "Kubernetes configuration. Please make sure that "
+                            "the Kubernetes cluster is running and that the "
+                            "kubeconfig file is configured correctly. To list "
+                            "all configured contexts, run:\n\n"
+                            "  `kubectl config get-contexts`\n"
+                        )
+                    if kubernetes_context != active_context:
+                        logger.warning(
+                            f"{msg}the Kubernetes context "  # nosec
+                            f"'{kubernetes_context}' configured for the "
+                            f"Kubernetes orchestrator is not the same as the "
+                            f"active context in the local Kubernetes "
+                            f"configuration. If this is not deliberate, you "
+                            f"should update the orchestrator's "
+                            f"`kubernetes_context` field by running:\n\n"
+                            f"  `zenml orchestrator update {self.name} "
+                            f"--kubernetes_context={active_context}`\n"
+                            f"To list all configured contexts, run:\n\n"
+                            f"  `kubectl config get-contexts`\n"
+                            f"To set the active context to be the same as the "
+                            f"one configured in the Kubernetes orchestrator "
+                            f"and silence this warning, run:\n\n"
+                            f"  `kubectl config use-context "
+                            f"{kubernetes_context}`\n"
+                        )
+                elif self.config.incluster:
+                    # No service connector or kubernetes_context is needed when
+                    # the orchestrator is being used from within a Kubernetes
+                    # cluster.
+                    pass
+                else:
                     return False, (
-                        f"{msg}you must either link this stack component to a "
+                        f"{msg}you must either link this orchestrator to a "
                         "Kubernetes service connector (see the 'zenml "
-                        "orchestrator connect' CLI command) or explicitly set "
+                        "orchestrator connect' CLI command), explicitly set "
                         "the `kubernetes_context` attribute to the name of the "
                         "Kubernetes config context pointing to the cluster "
-                        "where you would like to run pipelines."
-                    )
-
-                contexts, active_context = self.get_kubernetes_contexts()
-
-                if kubernetes_context not in contexts:
-                    return False, (
-                        f"{msg}could not find a Kubernetes context named "
-                        f"'{kubernetes_context}' in the local "
-                        "Kubernetes configuration. Please make sure that the "
-                        "Kubernetes cluster is running and that the kubeconfig "
-                        "file is configured correctly. To list all configured "
-                        "contexts, run:\n\n"
-                        "  `kubectl config get-contexts`\n"
-                    )
-                if kubernetes_context != active_context:
-                    logger.warning(
-                        f"{msg}the Kubernetes context '{kubernetes_context}' "  # nosec
-                        f"configured for the Kubernetes orchestrator is not "
-                        f"the same as the active context in the local "
-                        f"Kubernetes configuration. If this is not deliberate,"
-                        f" you should update the orchestrator's "
-                        f"`kubernetes_context` field by running:\n\n"
-                        f"  `zenml orchestrator update {self.name} "
-                        f"--kubernetes_context={active_context}`\n"
-                        f"To list all configured contexts, run:\n\n"
-                        f"  `kubectl config get-contexts`\n"
-                        f"To set the active context to be the same as the one "
-                        f"configured in the Kubernetes orchestrator and "
-                        f"silence this warning, run:\n\n"
-                        f"  `kubectl config use-context "
-                        f"{kubernetes_context}`\n"
+                        "where you would like to run pipelines, or set the "
+                        "`incluster` attribute to `True`."
                     )
 
             silence_local_validations_msg = (
@@ -386,6 +393,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         environment: Dict[str, str],
+        placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Any:
         """Runs the pipeline in Kubernetes.
 
@@ -394,6 +402,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             stack: The stack the pipeline will run on.
             environment: Environment variables to set in the orchestration
                 environment.
+            placeholder_run: An optional placeholder run for the deployment.
 
         Raises:
             RuntimeError: If the Kubernetes orchestrator is not configured.
@@ -443,6 +452,7 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
             run_name=orchestrator_run_name,
             deployment_id=deployment.id,
             kubernetes_namespace=self.config.kubernetes_namespace,
+            run_id=placeholder_run.id if placeholder_run else None,
         )
 
         settings = cast(
@@ -533,14 +543,23 @@ class KubernetesOrchestrator(ContainerizedOrchestrator):
                 mount_local_stores=self.config.is_local,
             )
 
-            self._k8s_core_api.create_namespaced_pod(
+            kube_utils.create_and_wait_for_pod_to_start(
+                core_api=self._k8s_core_api,
+                pod_display_name="Kubernetes orchestrator pod",
+                pod_name=pod_name,
+                pod_manifest=pod_manifest,
                 namespace=self.config.kubernetes_namespace,
-                body=pod_manifest,
+                startup_max_retries=settings.pod_failure_max_retries,
+                startup_failure_delay=settings.pod_failure_retry_delay,
+                startup_failure_backoff=settings.pod_failure_backoff,
+                startup_timeout=settings.pod_startup_timeout,
             )
 
             # Wait for the orchestrator pod to finish and stream logs.
             if settings.synchronous:
-                logger.info("Waiting for Kubernetes orchestrator pod...")
+                logger.info(
+                    "Waiting for Kubernetes orchestrator pod to finish..."
+                )
                 kube_utils.wait_pod(
                     kube_client_fn=self.get_kube_client,
                     pod_name=pod_name,

@@ -18,6 +18,10 @@ from typing import ClassVar, Dict, List
 
 from zenml.enums import StackDeploymentProvider
 from zenml.models import StackDeploymentConfig
+from zenml.stack_deployments.constants import (
+    TERRAFORM_AZURE_MODULE_VERSION_SPEC,
+    TERRAFORM_PROVIDER_VERSION_SPEC,
+)
 from zenml.stack_deployments.stack_deployment import ZenMLCloudStackDeployment
 
 AZURE_DEPLOYMENT_TYPE = "azure-cloud-shell"
@@ -156,70 +160,70 @@ ZenML's access to your Azure subscription.
         """
         # Based on `az account list-locations -o table` on 16.07.2024
         return {
-            "(US) East US": "eastus",
-            "(US) South Central US": "southcentralus",
-            "(US) West US 2": "westus2",
-            "(US) West US 3": "westus3",
-            "(Asia Pacific) Australia East": "australiaeast",
-            "(Asia Pacific) Southeast Asia": "southeastasia",
-            "(Europe) North Europe": "northeurope",
-            "(Europe) Sweden Central": "swedencentral",
-            "(Europe) UK South": "uksouth",
-            "(Europe) West Europe": "westeurope",
-            "(US) Central US": "centralus",
             "(Africa) South Africa North": "southafricanorth",
-            "(Asia Pacific) Central India": "centralindia",
-            "(Asia Pacific) East Asia": "eastasia",
-            "(Asia Pacific) Japan East": "japaneast",
-            "(Asia Pacific) Korea Central": "koreacentral",
-            "(Canada) Canada Central": "canadacentral",
-            "(Europe) France Central": "francecentral",
-            "(Europe) Germany West Central": "germanywestcentral",
-            "(Europe) Italy North": "italynorth",
-            "(Europe) Norway East": "norwayeast",
-            "(Europe) Poland Central": "polandcentral",
-            "(Europe) Spain Central": "spaincentral",
-            "(Europe) Switzerland North": "switzerlandnorth",
-            "(Mexico) Mexico Central": "mexicocentral",
-            "(Middle East) UAE North": "uaenorth",
-            "(South America) Brazil South": "brazilsouth",
-            "(Middle East) Israel Central": "israelcentral",
-            "(Middle East) Qatar Central": "qatarcentral",
-            "(US) Central US (Stage)": "centralusstage",
-            "(US) East US (Stage)": "eastusstage",
-            "(US) East US 2 (Stage)": "eastus2stage",
-            "(US) North Central US (Stage)": "northcentralusstage",
-            "(US) South Central US (Stage)": "southcentralusstage",
-            "(US) West US (Stage)": "westusstage",
-            "(US) West US 2 (Stage)": "westus2stage",
-            "(Asia Pacific) East Asia (Stage)": "eastasiastage",
-            "(Asia Pacific) Southeast Asia (Stage)": "southeastasiastage",
-            "(South America) Brazil US": "brazilus",
-            "(US) East US 2": "eastus2",
-            "(US) East US STG": "eastusstg",
-            "(US) North Central US": "northcentralus",
-            "(US) West US": "westus",
-            "(Asia Pacific) Japan West": "japanwest",
-            "(Asia Pacific) Jio India West": "jioindiawest",
-            "(US) Central US EUAP": "centraluseuap",
-            "(US) East US 2 EUAP": "eastus2euap",
-            "(US) West Central US": "westcentralus",
             "(Africa) South Africa West": "southafricawest",
             "(Asia Pacific) Australia Central": "australiacentral",
             "(Asia Pacific) Australia Central 2": "australiacentral2",
+            "(Asia Pacific) Australia East": "australiaeast",
             "(Asia Pacific) Australia Southeast": "australiasoutheast",
+            "(Asia Pacific) Central India": "centralindia",
+            "(Asia Pacific) East Asia": "eastasia",
+            "(Asia Pacific) East Asia (Stage)": "eastasiastage",
+            "(Asia Pacific) Japan East": "japaneast",
+            "(Asia Pacific) Japan West": "japanwest",
             "(Asia Pacific) Jio India Central": "jioindiacentral",
+            "(Asia Pacific) Jio India West": "jioindiawest",
+            "(Asia Pacific) Korea Central": "koreacentral",
             "(Asia Pacific) Korea South": "koreasouth",
             "(Asia Pacific) South India": "southindia",
+            "(Asia Pacific) Southeast Asia": "southeastasia",
+            "(Asia Pacific) Southeast Asia (Stage)": "southeastasiastage",
             "(Asia Pacific) West India": "westindia",
+            "(Canada) Canada Central": "canadacentral",
             "(Canada) Canada East": "canadaeast",
+            "(Europe) France Central": "francecentral",
             "(Europe) France South": "francesouth",
             "(Europe) Germany North": "germanynorth",
+            "(Europe) Germany West Central": "germanywestcentral",
+            "(Europe) Italy North": "italynorth",
+            "(Europe) North Europe": "northeurope",
+            "(Europe) Norway East": "norwayeast",
             "(Europe) Norway West": "norwaywest",
+            "(Europe) Poland Central": "polandcentral",
+            "(Europe) Spain Central": "spaincentral",
+            "(Europe) Sweden Central": "swedencentral",
+            "(Europe) Switzerland North": "switzerlandnorth",
             "(Europe) Switzerland West": "switzerlandwest",
+            "(Europe) UK South": "uksouth",
             "(Europe) UK West": "ukwest",
+            "(Europe) West Europe": "westeurope",
+            "(Mexico) Mexico Central": "mexicocentral",
+            "(Middle East) Israel Central": "israelcentral",
+            "(Middle East) Qatar Central": "qatarcentral",
             "(Middle East) UAE Central": "uaecentral",
+            "(Middle East) UAE North": "uaenorth",
+            "(South America) Brazil South": "brazilsouth",
             "(South America) Brazil Southeast": "brazilsoutheast",
+            "(South America) Brazil US": "brazilus",
+            "(US) Central US": "centralus",
+            "(US) Central US (Stage)": "centralusstage",
+            "(US) Central US EUAP": "centraluseuap",
+            "(US) East US": "eastus",
+            "(US) East US (Stage)": "eastusstage",
+            "(US) East US 2": "eastus2",
+            "(US) East US 2 (Stage)": "eastus2stage",
+            "(US) East US 2 EUAP": "eastus2euap",
+            "(US) East US STG": "eastusstg",
+            "(US) North Central US": "northcentralus",
+            "(US) North Central US (Stage)": "northcentralusstage",
+            "(US) South Central US": "southcentralus",
+            "(US) South Central US (Stage)": "southcentralusstage",
+            "(US) West Central US": "westcentralus",
+            "(US) West US": "westus",
+            "(US) West US (Stage)": "westusstage",
+            "(US) West US 2": "westus2",
+            "(US) West US 2 (Stage)": "westus2stage",
+            "(US) West US 3": "westus3",
         }
 
     @classmethod
@@ -269,6 +273,7 @@ ZenML's access to your Azure subscription.
         }}
         zenml = {{
             source = "zenml-io/zenml"
+            version = "{TERRAFORM_PROVIDER_VERSION_SPEC}"
         }}
     }}
 }}
@@ -288,6 +293,7 @@ provider "zenml" {{
 
 module "zenml_stack" {{
     source  = "zenml-io/zenml-stack/azure"
+    version = "{TERRAFORM_AZURE_MODULE_VERSION_SPEC}"
 
     location = "{self.location or "eastus"}"
     zenml_stack_name = "{self.stack_name}"

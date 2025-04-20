@@ -1,0 +1,54 @@
+---
+name: GitBook Redirect Checks
+on:
+  pull_request:
+    types: [opened, synchronize]
+    paths: [docs/**, .gitbook.yaml]
+jobs:
+  check_gitbook:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      # Setup Python
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      # Install dependencies
+      - name: Install dependencies
+        run: pip install pyyaml
+
+      # Checkout target branch
+      - name: Checkout target branch
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.base_ref }}
+
+      # Setup temp folders for target branch
+      - name: Setup temp folders for target branch
+        run: |
+          # Create temp directories
+          mkdir -p $RUNNER_TEMP/gitbook_base
+
+          # Set up the directory from the target branch
+          python scripts/setup_gitbook_dirs.py . $RUNNER_TEMP/gitbook_base
+
+      # Checkout PR branch
+      - name: Checkout PR branch
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ github.head_ref }}
+
+      # Setup temp folders for PR branch
+      - name: Setup temp folders for PR branch
+        run: |
+          # Create temp directories
+          mkdir -p $RUNNER_TEMP/gitbook_head
+
+          # Set up the directory from the PR branch
+          python scripts/setup_gitbook_dirs.py . $RUNNER_TEMP/gitbook_head
+
+      # Run GitBook Redirect Check Script
+      - name: Run GitBook Redirect Check Script
+        run: |-
+          python scripts/gitbook_redirect_check.py $RUNNER_TEMP/gitbook_base $RUNNER_TEMP/gitbook_head --pr "${{ github.event.pull_request.number }}"

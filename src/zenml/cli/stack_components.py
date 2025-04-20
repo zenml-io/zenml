@@ -155,7 +155,7 @@ def generate_stack_component_list_command(
     @list_options(ComponentFilter)
     @click.pass_context
     def list_stack_components_command(
-        ctx: click.Context, **kwargs: Any
+        ctx: click.Context, /, **kwargs: Any
     ) -> None:
         """Prints a table of stack components.
 

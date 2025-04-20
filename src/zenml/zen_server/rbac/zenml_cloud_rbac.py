@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Cloud RBAC implementation."""
 
-from typing import TYPE_CHECKING, Dict, List, Set, Tuple
+from typing import TYPE_CHECKING, Dict, List, Optional, Set, Tuple
 
 from zenml.zen_server.cloud_utils import cloud_connection
 from zenml.zen_server.rbac.models import Action, Resource
@@ -117,22 +117,28 @@ class ZenMLCloudRBAC(RBACInterface):
         return full_resource_access, allowed_ids
 
     def update_resource_membership(
-        self, user: "UserResponse", resource: Resource, actions: List[Action]
+        self,
+        sharing_user: "UserResponse",
+        resource: Resource,
+        actions: List[Action],
+        user_id: Optional[str] = None,
+        team_id: Optional[str] = None,
     ) -> None:
         """Update the resource membership of a user.
 
         Args:
-            user: User for which the resource membership should be updated.
+            sharing_user: User that is sharing the resource.
             resource: The resource.
             actions: The actions that the user should be able to perform on the
                 resource.
+            user_id: ID of the user for which to update the membership.
+            team_id: ID of the team for which to update the membership.
         """
-        if user.is_service_account:
-            # Service accounts have full permissions for now
-            return
-
+        assert sharing_user.external_user_id
         data = {
-            "user_id": str(user.external_user_id),
+            "user_id": user_id,
+            "team_id": team_id,
+            "sharing_user_id": str(sharing_user.external_user_id),
             "resource": str(resource),
             "actions": [str(action) for action in actions],
         }

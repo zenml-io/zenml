@@ -109,6 +109,7 @@ class PipelineContext:
             pipeline_configuration.enable_artifact_visualization
         )
         self.enable_step_logs = pipeline_configuration.enable_step_logs
+        self.enable_pipeline_logs = pipeline_configuration.enable_pipeline_logs
         self.settings = pipeline_configuration.settings
         self.extra = pipeline_configuration.extra
         self.model = pipeline_configuration.model

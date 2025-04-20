@@ -35,11 +35,23 @@ class KubernetesStepOperatorSettings(BaseSettings):
         pod_settings: Pod settings to apply to pods executing the steps.
         service_account_name: Name of the service account to use for the pod.
         privileged: If the container should be run in privileged mode.
+        pod_startup_timeout: The maximum time to wait for a pending step pod to
+            start (in seconds).
+        pod_failure_max_retries: The maximum number of times to retry a step
+            pod if the step Kubernetes pod fails to start
+        pod_failure_retry_delay: The delay in seconds between pod
+            failure retries and pod startup retries (in seconds)
+        pod_failure_backoff: The backoff factor for pod failure retries and
+            pod startup retries.
     """
 
     pod_settings: Optional[KubernetesPodSettings] = None
     service_account_name: Optional[str] = None
     privileged: bool = False
+    pod_startup_timeout: int = 60 * 10  # Default 10 minutes
+    pod_failure_max_retries: int = 3
+    pod_failure_retry_delay: int = 10
+    pod_failure_backoff: float = 1.0
 
 
 class KubernetesStepOperatorConfig(

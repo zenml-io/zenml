@@ -140,6 +140,7 @@ class BaseOrchestrator(StackComponent, ABC):
         deployment: "PipelineDeploymentResponse",
         stack: "Stack",
         environment: Dict[str, str],
+        placeholder_run: Optional["PipelineRunResponse"] = None,
     ) -> Optional[Iterator[Dict[str, MetadataType]]]:
         """The method needs to be implemented by the respective orchestrator.
 
@@ -175,6 +176,7 @@ class BaseOrchestrator(StackComponent, ABC):
             stack: The stack the pipeline will run on.
             environment: Environment variables to set in the orchestration
                 environment. These don't need to be set if running locally.
+            placeholder_run: An optional placeholder run for the deployment.
 
         Yields:
             Metadata for the pipeline run.
@@ -250,6 +252,7 @@ class BaseOrchestrator(StackComponent, ABC):
                 deployment=deployment,
                 stack=stack,
                 environment=environment,
+                placeholder_run=placeholder_run,
             ):
                 for metadata_dict in metadata_iterator:
                     try:

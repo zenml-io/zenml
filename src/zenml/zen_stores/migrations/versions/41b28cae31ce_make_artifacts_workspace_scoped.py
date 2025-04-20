@@ -1,7 +1,7 @@
 """make artifacts workspace scoped [41b28cae31ce].
 
 Revision ID: 41b28cae31ce
-Revises: 288f4fb6e112
+Revises: 3b1776345020
 Create Date: 2025-02-19 23:23:08.133826
 
 """
@@ -21,7 +21,7 @@ from zenml.constants import (
 
 # revision identifiers, used by Alembic.
 revision = "41b28cae31ce"
-down_revision = "288f4fb6e112"
+down_revision = "3b1776345020"
 branch_labels = None
 depends_on = None
 
