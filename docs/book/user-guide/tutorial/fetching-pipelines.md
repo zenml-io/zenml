@@ -213,6 +213,48 @@ for step_name, step_info in steps.items():
     print("-" * 40)
 ```
 
+### Correctly Calling Steps in Pipelines
+
+When structuring pipelines, it is crucial to ensure that data flows correctly between steps. Here are some key points to consider:
+
+- **Importance of Passing Inputs and Outputs**: Each step in a pipeline can produce outputs that are used as inputs for subsequent steps. This flow of data is essential for the pipeline to function correctly.
+
+- **Example of Modifying a Pipeline**:
+  ```python
+  from pipelines.training_pipeline import train_pipeline
+  from steps.clean_data import clean_data
+  from steps.evaluation import evaluation
+  from steps.ingest_data import ingest_data
+  from steps.model_train import train_model
+  from zenml.integrations.mlflow.mlflow_utils import get_tracking_uri
+
+  if __name__ == "__main__":
+      # First, ingest the data
+      data = ingest_data()
+      
+      # Then, clean the data using the ingested data
+      x_train, x_test, y_train, y_test = clean_data(data=data)
+      
+      # Train the model using the cleaned data
+      model = train_model(x_train=x_train, y_train=y_train)
+      
+      # Evaluate the model
+      evaluation(model=model, x_test=x_test, y_test=y_test)
+
+      print(
+          "Now run \n "
+          f"    mlflow ui --backend-store-uri '{get_tracking_uri()}'\n"
+          "To inspect your experiment runs within the mlflow UI.\n"
+          "You can find your runs tracked within the `mlflow_example_pipeline`"
+          "experiment. Here you'll also be able to compare the two runs.)"
+      )
+  ```
+
+- **Common Mistakes and Troubleshooting**:
+  - Forgetting to pass required inputs to steps can lead to errors.
+  - Ensure that the outputs of one step are correctly used as inputs for the next step.
+  - Use type annotations to help ZenML manage data serialization and deserialization.
+
 {% hint style="info" %}
 If you're only calling each step once inside your pipeline, the **invocation ID** will be the same as the name of your step. For more complex pipelines, check out [this page](https://docs.zenml.io/how-to/pipeline-development/build-pipelines/using-a-custom-step-invocation-id) to learn more about the invocation ID.
 {% endhint %}
