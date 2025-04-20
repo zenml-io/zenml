@@ -21,6 +21,10 @@ The following guides contain detailed instructions on how to migrate between Zen
 * [Migration guide 0.39.1 → 0.41.0](migration-zero-forty.md)
 * [Migration guide 0.58.2 → 0.60.0](migration-zero-sixty.md)
 
+## Deprecation Notice
+
+The `BaseParameters` class has been deprecated and removed in favor of using `pydantic.BaseModel` for defining step parameters. Users upgrading from older versions of ZenML may encounter `ImportError` due to this removal. Please refer to the [Migration guide 0.39.1 → 0.41.0](https://github.com/zenml-io/zenml/blob/main/docs/book/how-to/manage-zenml-server/migration-guide/migration-zero-forty.md) for guidance on migrating existing code to use `pydantic.BaseModel` instead. This includes example code snippets and common migration scenarios.
+
 ## Release Notes
 
 For releases with minor breaking changes, e.g., `0.40.3` to `0.41.0`, check out the official [ZenML Release Notes](https://github.com/zenml-io/zenml/releases) to see which breaking changes were introduced.
