@@ -33,6 +33,58 @@ def load_data() -> dict:
     return {'features': training_data, 'labels': labels}
 ```
 
+### Converting Python Functions to ZenML Steps
+
+To convert existing Python functions into ZenML steps, use the `@step` decorator. This encapsulates the function as a step in a ZenML pipeline, allowing it to be part of a larger workflow. For example, a function performing data cleaning can be converted as follows:
+
+```python
+from zenml import step
+
+@step
+def clean_data(data: dict) -> dict:
+    # Perform data cleaning operations
+    cleaned_data = {k: v for k, v in data.items() if v is not None}
+    return cleaned_data
+```
+
+### Using ZenML Logging System
+
+Instead of the standard Python `logging` module, use ZenML's logging system to ensure consistent logging across your steps:
+
+```python
+from zenml.logger import get_logger
+
+logger = get_logger(__name__)
+
+@step
+def example_step():
+    logger.info("This is a log message from a ZenML step.")
+```
+
+### Handling Parallel Processing
+
+ZenML supports parallel processing within steps using Python's `concurrent.futures` module. For example, to process data chunks in parallel:
+
+```python
+import concurrent.futures
+from zenml import step
+
+@step
+def process_data_in_parallel(chunks: list) -> dict:
+    with concurrent.futures.ProcessPoolExecutor() as executor:
+        results = list(executor.map(process_chunk, chunks))
+    combined_results = {}
+    for result in results:
+        combined_results.update(result)
+    return combined_results
+```
+
+### Examples of Common Patterns
+
+- **Data Cleaning**: Convert functions that clean or preprocess data into ZenML steps.
+- **API Calls**: Encapsulate API interaction logic within steps to manage dependencies and outputs.
+- **JSON Processing**: Use steps to handle JSON data, ensuring outputs are correctly formatted and logged.
+
 ### Step Inputs and Outputs
 
 Steps can take inputs and produce outputs. These can be simple types, complex data structures, or custom objects.
@@ -73,6 +125,19 @@ def simple_ml_pipeline():
     dataset = load_data()
     train_model(dataset)
 ```
+
+### Customizing Step Names in Pipelines
+
+When running the same step multiple times within a pipeline, you can override the default step names by using the `id` parameter. This helps distinguish steps in the ZenML UI:
+
+```python
+@pipeline
+def custom_named_pipeline():
+    step1 = my_step(..., id="custom_step_1")
+    step2 = my_step(..., id="custom_step_2")
+```
+
+Ensure each step has a unique name to avoid conflicts.
 
 ### Running Pipelines
 
