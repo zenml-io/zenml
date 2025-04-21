@@ -250,6 +250,55 @@ Optionally, you can configure the `ExternalArtifact` to use a custom [materializ
 Using an `ExternalArtifact` for your step automatically disables caching for the step.
 {% endhint %}
 
+## Using Artifacts Across Runs
+
+Artifacts produced in previous ZenML pipeline runs can be utilized in current or future runs, enabling more efficient and iterative development processes. Here's how you can leverage these artifacts:
+
+### Introduction to Artifacts
+
+Artifacts in ZenML are outputs from pipeline steps that are automatically stored and can be reused in subsequent runs. They play a crucial role in maintaining data lineage, enabling reproducibility, and facilitating cross-pipeline data sharing.
+
+### Accessing Artifacts from Previous Runs
+
+To access artifacts from previous runs, you can use the ZenML `Client` API. Here are the steps:
+
+1. **Initialize the Client**: Start by initializing the ZenML client.
+
+   ```python
+   from zenml.client import Client
+   client = Client()
+   ```
+
+2. **Fetch Artifacts by Name or ID**: Use the client to fetch artifacts by specifying their name or ID.
+
+   ```python
+   # Fetch the latest version of an artifact by name
+   artifact = client.get_artifact_version(name_id_or_prefix="my_artifact_name")
+   
+   # Load the artifact into memory
+   data = artifact.load()
+   ```
+
+### Using Artifacts in Current Pipeline Steps
+
+Once loaded, these artifacts can be used as inputs in your current pipeline steps.
+
+```python
+from zenml import step
+
+@step
+def use_previous_artifact(data) -> None:
+    # Use the loaded artifact data
+    print(f"Using data from previous run: {data}")
+```
+
+### Best Practices for Managing Artifacts
+
+- **Versioning**: Keep track of different versions of artifacts to ensure reproducibility.
+- **Naming Conventions**: Use clear and consistent naming conventions to easily identify and retrieve artifacts.
+
+By following these practices, you can effectively leverage the outputs of your pipelines across different runs.
+
 ## Consuming artifacts produced by other pipelines
 
 It is also common to consume an artifact downstream after producing it in an upstream pipeline or step. As we have learned in the [previous section](https://docs.zenml.io/how-to/pipeline-development/build-pipelines/fetching-pipelines#fetching-artifacts-directly), the `Client` can be used to fetch artifacts directly inside the pipeline code:
