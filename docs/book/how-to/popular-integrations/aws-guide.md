@@ -85,6 +85,29 @@ aws iam attach-role-policy --role-name zenml-role --policy-arn arn:aws:iam::aws:
 zenml integration install aws s3 -y
 ```
 
+## Installation Guide
+
+To install the AWS integration for ZenML, ensure you have Python and ZenML already installed. Then, run the following command:
+
+```shell
+zenml integration install aws
+```
+
+## Configuration Guide
+
+After installation, configure the AWS CLI with valid credentials. This is crucial as the AWS service connector relies on these credentials for authentication. You can configure the AWS CLI by running:
+
+```shell
+aws configure
+```
+
+Follow the prompts to enter your AWS Access Key ID, Secret Access Key, region, and output format.
+
+## Troubleshooting Tips
+
+- If you encounter errors due to missing dependencies, ensure all prerequisites are installed and try reinstalling the integration.
+- For issues with AWS CLI configurations, verify that your credentials are correct and that the AWS CLI is properly configured.
+
 ## 2) Create a Service Connector within ZenML
 
 Create an AWS Service Connector within ZenML. The service connector will allow ZenML and other ZenML components to authenticate themselves with AWS using the IAM role.
