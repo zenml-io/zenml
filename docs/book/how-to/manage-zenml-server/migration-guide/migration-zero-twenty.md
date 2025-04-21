@@ -8,6 +8,26 @@ description: How to migrate from ZenML <=0.13.2 to 0.20.0.
 
 The ZenML 0.20.0 release brings a number of big changes to its architecture and its features, some of which are not backwards compatible with previous versions. This guide walks you through these changes and offers instructions on how to migrate your existing ZenML stacks and pipelines to the new version with minimal effort and disruption to your existing workloads.
 
+### Deprecation and Removal of `BaseParameters` and `BaseStepConfig`
+
+The `BaseParameters` and `BaseStepConfig` classes have been deprecated and removed. Users should now use `pydantic.BaseModel` for defining step parameters. This change is crucial as it affects the fundamental way parameters are defined in ZenML pipelines.
+
+**Migration Example:**
+
+```python
+from pydantic import BaseModel
+
+class DeploymentTriggerConfig(BaseModel):
+    """Parameters that are used to trigger the deployment"""
+    min_accuracy: float = 0.9
+```
+
+For further details, please refer to the [ZenML migration guide](https://github.com/zenml-io/zenml/blob/main/docs/book/how-to/manage-zenml-server/migration-guide/migration-zero-twenty.md).
+
+{% hint style="warning" %}
+Ensure version compatibility when upgrading ZenML or migrating existing projects to avoid potential issues.
+{% endhint %}
+
 {% hint style="warning" %}
 Updating to ZenML 0.20.0 needs to be followed by a migration of your existing ZenML Stacks and you may also need to make changes to your current ZenML pipeline code. Please read this guide carefully and follow the migration instructions to ensure a smooth transition.
 
