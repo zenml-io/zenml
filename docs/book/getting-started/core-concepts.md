@@ -40,6 +40,38 @@ def step_2(input_one: str, input_two: str) -> str:
     return combined_str
 ```
 
+To define a function as a step in a ZenML pipeline, use the `@step` decorator. This encapsulates the function as a ZenML step, allowing it to be part of a pipeline. Ensure that inputs and outputs are properly typed for ZenML to function correctly.
+
+ZenML also provides a logging system that should be used instead of the standard Python `logging` module. This can be accessed via `from zenml.logger import get_logger` and used to log messages within steps.
+
+For handling parallel processing and concurrency within ZenML steps, you can use Python's `concurrent.futures.ProcessPoolExecutor`. This allows you to execute steps concurrently, utilizing multiple CPU cores for efficiency.
+
+Here is an example of converting a common Python code pattern into a ZenML step:
+
+```python
+from zenml import step
+from zenml.logger import get_logger
+import concurrent.futures
+
+logger = get_logger(__name__)
+
+@step
+def process_data(data_chunk: str) -> dict:
+    logger.info("Processing data chunk")
+    # Process data here
+    return {}
+
+@step
+def parallel_processing(data_chunks: list) -> dict:
+    combined_results = {}
+    with concurrent.futures.ProcessPoolExecutor() as executor:
+        futures = {executor.submit(process_data, chunk): chunk for chunk in data_chunks}
+        for future in concurrent.futures.as_completed(futures):
+            result = future.result()
+            combined_results.update(result)
+    return combined_results
+```
+
 #### Pipelines
 
 At its core, ZenML follows a pipeline-based workflow for your projects. A **pipeline** consists of a series of **steps**, organized in any order that makes sense for your use case.
