@@ -253,6 +253,53 @@ dask_pipeline()
 
 ```
 
+### Handling Non-JSON Serializable Parameters
+
+When working with ZenML pipelines, certain objects like Pandas DataFrames cannot be passed as parameters due to JSON serialization limitations. Instead, these complex objects should be passed as artifacts between steps.
+
+#### Why Pandas DataFrames Cannot Be Passed as Parameters
+
+Pandas DataFrames are not JSON serializable, which means they cannot be directly passed as parameters in ZenML pipelines. This is because ZenML uses JSON serialization to pass parameters between steps, and complex objects like DataFrames do not conform to this format.
+
+#### Passing DataFrames as Artifacts
+
+To handle DataFrames, you should pass them as artifacts. Here’s how you can modify your pipeline:
+
+1. **Define a Materializer**: Create a custom materializer to handle the serialization and deserialization of DataFrames.
+
+2. **Modify the Pipeline**: Adjust your pipeline to pass DataFrames as artifacts using the materializer.
+
+3. **Example Code**:
+
+```python
+from zenml import step, pipeline
+import pandas as pd
+from zenml.materializers.pandas_materializer import PandasMaterializer
+
+@step(output_materializers=PandasMaterializer)
+def ingest_data() -> pd.DataFrame:
+    # Load your data into a DataFrame
+    return pd.DataFrame(...)
+
+@step
+def clean_data(df: pd.DataFrame) -> pd.DataFrame:
+    # Perform data cleaning
+    return df
+
+@pipeline
+def data_pipeline():
+    df = ingest_data()
+    cleaned_df = clean_data(df)
+
+# Run the pipeline
+data_pipeline()
+```
+
+#### Further Resources
+
+For more information on managing artifacts not produced by ZenML pipelines, refer to the [ZenML documentation](https://docs.zenml.io/user-guides/starter-guide/manage-artifacts#managing-artifacts-not-produced-by-zenml-pipelines).
+
+
 In this example, we've created a custom `DaskDataFrameMaterializer` to handle Dask DataFrames. The pipeline creates a Dask DataFrame, processes it using Dask's distributed computing capabilities, and then computes the final result.
 
 ### Speed up single‑node code with Numba
