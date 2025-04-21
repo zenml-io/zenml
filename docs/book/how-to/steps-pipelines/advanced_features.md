@@ -102,6 +102,32 @@ This is particularly useful for steps with side effects (like data loading or mo
 
 ## Data & Output Management
 
+### Handling Non-JSON Serializable Parameters
+
+When dealing with complex objects like Pandas DataFrames, which are not JSON serializable, it is recommended to pass them as artifacts between steps rather than as parameters. This is due to JSON serialization limitations that prevent such objects from being passed directly as parameters.
+
+To modify your pipeline to pass DataFrames as artifacts, follow these steps:
+
+1. Ensure that the step producing the DataFrame returns it as an output artifact.
+2. The step consuming the DataFrame should accept it as an input artifact.
+
+Example:
+
+```python
+@step
+def ingest_data() -> pd.DataFrame:
+    # Your data ingestion logic
+    return df
+
+@step
+def clean_data(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
+    # Your data cleaning logic
+    x_train, x_test, y_train, y_test = ...  # Split the data
+    return x_train, x_test, y_train, y_test
+```
+
+For more information on managing artifacts not produced by ZenML pipelines, refer to the [ZenML documentation](https://docs.zenml.io/user-guides/starter-guide/manage-artifacts#managing-artifacts-not-produced-by-zenml-pipelines).
+
 ## Type annotations
 
 Your functions will work as ZenML steps even if you don't provide any type annotations for their inputs and outputs. However, adding type annotations to your step functions gives you lots of additional benefits:
