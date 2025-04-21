@@ -2,6 +2,16 @@
 description: Advanced features and capabilities of ZenML pipelines and steps
 ---
 
+# ZenML Step Conversion Guide
+
+This guide provides a detailed walkthrough on converting existing Python code into ZenML steps, focusing on encapsulating functions as ZenML steps, using the ZenML logging system, and structuring code for parallel processing within ZenML pipelines. Key points covered include:
+- How to use the `@step` decorator to define functions as steps in a ZenML pipeline.
+- Guidelines for using ZenML's logging system instead of the standard Python `logging` module.
+- Best practices for handling parallel processing and concurrency within ZenML steps, including examples of using `concurrent.futures.ProcessPoolExecutor`.
+- Examples of converting common Python code patterns into ZenML steps, such as data cleaning, API calls, and JSON processing.
+
+This guide will help users familiarize themselves with ZenML's approach to pipeline development and ensure a smooth transition for those looking to migrate existing codebases to ZenML.
+
 # Advanced Features
 
 This guide covers advanced features and capabilities of ZenML pipelines and steps, allowing you to build more sophisticated machine learning workflows.
