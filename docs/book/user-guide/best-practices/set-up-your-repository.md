@@ -134,9 +134,14 @@ one of your source code files. Learn more about these in [connecting your Git re
 
 Keep your steps in separate Python files. This allows you to optionally keep their utils, dependencies, and Dockerfiles separate.
 
+- Use the `@step` decorator to define functions as steps in a ZenML pipeline.
+- Ensure each step has a unique name using the `id` parameter when calling a step to avoid conflicts in the ZenML UI.
+- Follow best practices for handling parallel processing and concurrency within ZenML steps, such as using `concurrent.futures.ProcessPoolExecutor` for parallel execution.
+- Convert common Python code patterns into ZenML steps, such as data cleaning, API calls, and JSON processing, to leverage ZenML's pipeline capabilities.
+
 #### Logging
 
-ZenML records the root python logging handler's output into the artifact store as a side-effect of running a step. Therefore, when writing steps, use the `logging` module to record logs, to ensure that these logs then show up in the ZenML dashboard.
+ZenML records the root python logging handler's output into the artifact store as a side-effect of running a step. Therefore, when writing steps, use the ZenML logging system by importing `get_logger` from `zenml.logger` to ensure that these logs then show up in the ZenML dashboard.
 
 ```python
 # Use ZenML handler
