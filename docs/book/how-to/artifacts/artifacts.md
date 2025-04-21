@@ -84,7 +84,7 @@ def training_pipeline():
     model = train_model(data=data, learning_rate=0.01)
 ```
 
-Parameters are limited to JSON-serializable values (numbers, strings, lists, dictionaries, etc.). More complex objects should be passed as artifacts.
+Parameters are limited to JSON-serializable values (numbers, strings, lists, dictionaries, etc.). More complex objects, such as Pandas DataFrames, should be passed as artifacts. If you need to pass a DataFrame between steps, convert it into an artifact and use ZenML's materializers to handle the serialization and deserialization process.
 
 ### Accessing Artifacts After Pipeline Runs
 
@@ -134,7 +134,20 @@ ZenML supports many common data types out of the box:
 * Container types (`dict`, `list`, `tuple`)
 * NumPy arrays
 * Pandas DataFrames
-* Many ML model formats (through integrations)
+
+### Handling Non-JSON Serializable Parameters
+
+When dealing with complex objects like Pandas DataFrames that cannot be directly passed as parameters between steps, convert these objects into a format that can be passed as an artifact. Here is an example of how to modify a step to accept a DataFrame as an input artifact and pass it to subsequent steps:
+
+```python
+@step
+def clean_data(data: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
+    # Your data cleaning logic here
+    x_train, x_test, y_train, y_test = ...  # Split the data
+    return x_train, x_test, y_train, y_test
+```
+
+It's important to log and handle exceptions during data transformation steps to aid in debugging and ensure smooth pipeline execution.l formats (through integrations)
 
 ### Returning Multiple Outputs
 
