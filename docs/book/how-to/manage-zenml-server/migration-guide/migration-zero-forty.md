@@ -137,6 +137,20 @@ def my_pipeline():
 
 Check out [this page](https://docs.zenml.io/how-to/pipeline-development/build-pipelines/use-pipeline-step-parameters) for more information on how to parameterize your steps.
 
+## Converting Python Code to ZenML Steps
+
+To convert existing Python code into ZenML steps, follow these guidelines:
+
+- **Encapsulate Functions as ZenML Steps**: Use the `@step` decorator to define functions as steps in a ZenML pipeline.
+
+- **Use ZenML's Logging System**: Replace the standard Python `logging` module with ZenML's logging system by importing `get_logger` from `zenml.logger` and using it to log messages.
+
+- **Parallel Processing**: For handling parallel processing and concurrency within ZenML steps, use `concurrent.futures.ProcessPoolExecutor`. This allows you to utilize CPU cores efficiently.
+
+- **Examples**: Convert common Python code patterns into ZenML steps, such as data cleaning, API calls, and JSON processing. For instance, encapsulate a data cleaning function as a ZenML step using the `@step` decorator.
+
+These practices will help you transition existing codebases to ZenML smoothly and leverage its pipeline development capabilities.
+
 ## Calling a step outside of a pipeline
 
 {% tabs %}
