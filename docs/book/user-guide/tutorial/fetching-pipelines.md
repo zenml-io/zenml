@@ -500,6 +500,49 @@ step = run.steps["step_name"]
 print(f"Available outputs: {list(step.outputs.keys())}")
 ```
 
+## Using Artifacts Across Runs
+
+ZenML allows you to leverage artifacts produced in previous pipeline runs in your current or future runs. This can enhance the efficiency and iterative nature of your development process.
+
+### Introduction to Artifacts
+
+Artifacts in ZenML are outputs from pipeline steps that are automatically stored and can be reused in subsequent runs. They play a crucial role in maintaining data lineage and enabling reproducibility.
+
+### Accessing Artifacts from Previous Runs
+
+To access artifacts from previous runs, you can use the ZenML `Client` API:
+
+```python
+from zenml.client import Client
+
+# Initialize the client
+client = Client()
+
+# Fetch the latest version of an artifact by name
+artifact = client.get_artifact_version(name_id_or_prefix="my_artifact_name")
+
+# Load the artifact into memory
+data = artifact.load()
+```
+
+### Using Artifacts in Current Pipeline Steps
+
+Once loaded, these artifacts can be used as inputs in your current pipeline steps:
+
+```python
+from zenml import step
+
+@step
+def use_previous_artifact(data) -> None:
+    # Use the loaded artifact data
+    print(f"Using data from previous run: {data}")
+```
+
+### Best Practices for Managing Artifacts
+
+- **Versioning**: Keep track of different versions of artifacts to ensure reproducibility.
+- **Naming Conventions**: Use clear and consistent naming conventions for artifacts to make them easily identifiable.
+
 ## Next Steps
 
 Now that you know how to inspect and retrieve information from past pipeline runs, you can:
