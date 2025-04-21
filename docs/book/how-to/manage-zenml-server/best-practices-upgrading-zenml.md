@@ -69,6 +69,12 @@ While ZenML strives for backward compatibility, be prepared for occasional break
 - **Changelog Review**: Always review the [changelog from new releases](https://github.com/zenml-io/zenml/releases) for new syntax, instructions, or breaking changes.
 - **Migration Scripts**: Use provided [migration scripts](migration-guide/migration-guide.md) when available to handle database schema changes.
 
+### Deprecation of `BaseParameters` and `BaseStepConfig`
+
+- **Deprecation Notice**: The `BaseParameters` and `BaseStepConfig` classes have been deprecated and removed. Use `pydantic.BaseModel` for defining step parameters.
+- **Migration Example**: Convert a class inheriting from `BaseParameters` to one inheriting from `pydantic.BaseModel`.
+- **Version Compatibility**: Check version compatibility when upgrading ZenML or migrating existing projects. Refer to the [ZenML migration guide](https://github.com/zenml-io/zenml/blob/main/docs/book/how-to/manage-zenml-server/migration-guide/migration-zero-twenty.md) for further details.
+
 By following these best practices, you can minimize risks and ensure a smoother upgrade process for your ZenML server. Remember that each environment is unique, so adapt these guidelines to your specific needs and infrastructure.
 <!-- For scarf -->
 <figure><img alt="ZenML Scarf" referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" /></figure>
