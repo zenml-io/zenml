@@ -1696,6 +1696,20 @@ Step 1/10 : FROM zenmldocker/zenml:0.39.1-py3.8
 Step 2/10 : WORKDIR /app
 Step 3/10 : COPY .zenml_user_requirements .
 Step 4/10 : RUN pip install --default-timeout=60 --no-cache-dir  -r .zenml_user_requirements
+
+# Handling Docker Build Failures
+
+## Troubleshooting Docker Build Failures
+
+When encountering issues during the Docker build process, particularly with installing user-defined requirements, consider the following troubleshooting steps:
+
+- **Checking Requirements File**: Ensure the `.zenml_user_requirements` file is correctly formatted with valid package names and versions.
+- **Local Testing**: Test package installations locally in a clean virtual environment to identify compatibility or availability issues.
+- **Dockerfile Review**: Review the Dockerfile or Docker build context for correct setup.
+- **Increasing Verbosity**: Modify Docker build commands to increase verbosity for more detailed error messages.
+- **Network and Permissions**: Ensure the Docker environment has internet access and necessary permissions.
+- **Reviewing Logs**: Examine detailed logs from the Docker build process.
+- **Credential Helper**: Configure a credential helper for Docker to securely manage credentials.
 Step 5/10 : COPY .zenml_integration_requirements .
 Step 6/10 : RUN pip install --default-timeout=60 --no-cache-dir  -r .zenml_integration_requirements
 Step 7/10 : ENV ZENML_ENABLE_REPO_INIT_WARNINGS=False
