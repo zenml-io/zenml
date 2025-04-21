@@ -17,11 +17,12 @@ Newer versions of ZenML still work with pipelines and steps defined using the ol
 ```python
 from typing import Optional
 
-from zenml.steps import BaseParameters, Output, StepContext, step
+from pydantic import BaseModel
+from zenml.steps import Output, StepContext, step
 from zenml.pipelines import pipeline
 
 # Define a Step
-class MyStepParameters(BaseParameters):
+class MyStepParameters(BaseModel):
     param_1: int
     param_2: Optional[float] = None
 
@@ -95,11 +96,12 @@ int_output = last_run.steps["my_step"].outputs["int_output"].load()
 {% tabs %}
 {% tab title="Old Syntax" %}
 ```python
-from zenml.steps import step, BaseParameters
+from pydantic import BaseModel
+from zenml.steps import step
 from zenml.pipelines import pipeline
 
 # Old: Subclass `BaseParameters` to define parameters for a step
-class MyStepParameters(BaseParameters):
+class MyStepParameters(BaseModel):
     param_1: int
     param_2: Optional[float] = None
 
@@ -122,6 +124,9 @@ pipeline_instance = my_pipeline(my_step=step_instance)
 # In case you still want to group your parameters in a separate class,
 # you can subclass `pydantic.BaseModel` and use that as an argument of your
 # step function
+
+# Note: The `BaseParameters` and `BaseStepConfig` classes have been deprecated and removed. Use `pydantic.BaseModel` instead.
+# Ensure version compatibility when upgrading ZenML or migrating existing projects. Refer to the ZenML migration guide for more details.
 from zenml import pipeline, step
 
 @step
