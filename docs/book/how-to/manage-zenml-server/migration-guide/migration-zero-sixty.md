@@ -38,6 +38,30 @@ using `pydantic` in your workflow and are interested in the new changes, you can
 check [the brilliant migration guide](https://docs.pydantic.dev/2.7/migration/)
 provided by the `pydantic` team to see the full list of changes.
 
+### Migration from `BaseParameters` to `pydantic.BaseModel`
+
+With the removal of the `BaseParameters` and `BaseStepConfig` classes in ZenML, it is recommended to use `pydantic.BaseModel` for defining step parameters. Here is a migration example:
+
+**Before:**
+```python
+from zenml.steps import BaseParameters
+
+class DeploymentTriggerConfig(BaseParameters):
+    min_accuracy: float = 0.9
+```
+
+**After:**
+```python
+from pydantic import BaseModel
+
+class DeploymentTriggerConfig(BaseModel):
+    min_accuracy: float = 0.9
+```
+
+For more details, refer to the [ZenML migration guide](https://github.com/zenml-io/zenml/blob/main/docs/book/how-to/manage-zenml-server/migration-guide/migration-zero-twenty.md).
+
+**Note:** Ensure version compatibility when upgrading ZenML or migrating existing projects.
+
 ## Changes in our integrations changes
 
 Much like ZenML, `pydantic` is an important dependency in many other Python
