@@ -134,6 +134,7 @@ ZenML supports many common data types out of the box:
 * Container types (`dict`, `list`, `tuple`)
 * NumPy arrays
 * Pandas DataFrames
+* Scipy sparse matrices
 * Many ML model formats (through integrations)
 
 ### Returning Multiple Outputs
@@ -216,6 +217,34 @@ ZenML supports these placeholders:
 * `{date}`: Current date (e.g., "2023_06_15")
 * `{time}`: Current time (e.g., "14_30_45_123456")
 * Custom placeholders can be defined using `substitutions`
+
+## Handling Step Output Type Mismatches
+
+### Common Scenarios for Type Mismatches
+Type mismatches in step outputs can occur when the expected output type does not match the actual output type, particularly with model outputs. For example, a model might output a `numpy.ndarray` when a `scipy.sparse.csr_matrix` is expected.
+
+### Converting Between Data Types
+Here are examples of how to convert between `numpy.ndarray` and `scipy.sparse.csr_matrix`:
+
+```python
+import numpy as np
+from scipy.sparse import csr_matrix
+
+# Convert numpy array to scipy sparse matrix
+numpy_array = np.array([[1, 2], [3, 4]])
+sparse_matrix = csr_matrix(numpy_array)
+
+# Convert scipy sparse matrix to numpy array
+numpy_array_converted = sparse_matrix.toarray()
+```
+
+### Best Practices for Defining Step Output Types
+- Always specify the expected output type using type annotations.
+- Ensure that the actual output matches the expected type before returning it from a step.
+
+### Troubleshooting Type Mismatch Errors
+- Check the type annotations in your step function to ensure they match the expected output types.
+- Use conversion functions to adjust the output type as needed.
 
 ## How Artifacts Work Under the Hood
 
