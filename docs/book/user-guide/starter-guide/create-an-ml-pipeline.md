@@ -28,6 +28,11 @@ Let's jump into an example that demonstrates how a simple pipeline can be set up
 
 ```python
 from zenml import pipeline, step
+from zenml.logger import get_logger
+import concurrent.futures
+
+# Setup ZenML logger
+logger = get_logger(__name__)
 
 @step
 def load_data() -> dict:
@@ -47,8 +52,21 @@ def train_model(data: dict) -> None:
     total_features = sum(map(sum, data['features']))
     total_labels = sum(data['labels'])
     
-    print(f"Trained model using {len(data['features'])} data points. "
-          f"Feature sum is {total_features}, label sum is {total_labels}")
+    logger.info(f"Trained model using {len(data['features'])} data points. "
+                f"Feature sum is {total_features}, label sum is {total_labels}")
+
+@step
+def process_data_concurrently(data_chunks: list) -> dict:
+    """
+    Processes data chunks concurrently using a ProcessPoolExecutor.
+    """
+    combined_results = {}
+    with concurrent.futures.ProcessPoolExecutor() as executor:
+        futures = {executor.submit(process_chunk, chunk): idx for idx, chunk in enumerate(data_chunks, start=1)}
+        for future in concurrent.futures.as_completed(futures):
+            result = future.result()
+            combined_results.update(result)
+    return combined_results
 
 @pipeline
 def simple_ml_pipeline():
@@ -64,6 +82,8 @@ if __name__ == "__main__":
 {% hint style="info" %}
 * **`@step`** is a decorator that converts its function into a step that can be used within a pipeline
 * **`@pipeline`** defines a function as a pipeline and within this function, the steps are called and their outputs link them together.
+* Use ZenML's logging system by importing `get_logger` from `zenml.logger` and setting up a logger for your steps.
+* For parallel processing, consider using `concurrent.futures.ProcessPoolExecutor` within a ZenML step to handle concurrency efficiently.
 {% endhint %}
 
 Copy this code into a new file and name it `run.py`. Then run it with your command line:
