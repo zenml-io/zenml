@@ -69,6 +69,35 @@ To use the SkyPilot VM Orchestrator, you need:
 * The appropriate permissions to provision VMs on your cloud provider of choice.
 * A [service connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/service-connectors-guide) configured to authenticate with your cloud provider of choice.
 
+## Installing and Configuring AWS Integration
+
+To install and configure the AWS integration for ZenML, follow these steps:
+
+### Installation Guide
+
+1. Ensure you have Python and ZenML installed on your system.
+2. Run the following command to install the AWS integration:
+
+    ```shell
+    zenml integration install aws
+    ```
+
+### Configuration Guide
+
+1. Configure the AWS CLI with valid credentials. This is crucial as the AWS service connector relies on these credentials for authentication. You can configure the AWS CLI by running:
+
+    ```shell
+    aws configure
+    ```
+
+2. Follow the prompts to enter your AWS Access Key ID, Secret Access Key, region, and output format.
+
+### Troubleshooting Tips
+
+- If you encounter errors related to missing dependencies, ensure that all prerequisites are installed.
+- For issues with AWS CLI configurations, verify that your credentials are correct and have the necessary permissions.
+- If the AWS service connector type is not available, ensure the AWS integration is installed correctly by re-running the installation command.
+
 {% tabs %}
 {% tab title="AWS" %}
 We need first to install the SkyPilot integration for AWS and the AWS connectors extra, using the following two commands:
