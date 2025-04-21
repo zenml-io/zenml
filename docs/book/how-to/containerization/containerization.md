@@ -429,7 +429,19 @@ If you want to ignore untracked files, you can set the `ZENML_CODE_REPOSITORY_IG
 
 By default, execution environments are created locally using the local Docker client. However, this requires Docker installation and permissions. ZenML offers [image builders](https://docs.zenml.io/stacks/image-builders), a special [stack component](https://docs.zenml.io/stacks), allowing users to build and push Docker images in a different specialized _image builder environment_.
 
-Note that even if you don't configure an image builder in your stack, ZenML still uses the [local image builder](https://docs.zenml.io/stacks/image-builders/local) to retain consistency across all builds. In this case, the image builder environment is the same as the [client environment](https://docs.zenml.io/how-to/pipeline-development/configure-python-environments/#client-environment-or-the-runner-environment).
+Note that even if you don't configure an image builder in your stack, ZenML still uses the [local image builder](htt
+
+## Handling Docker Build Failures
+
+When building Docker images, you may encounter failures, especially related to installing user-defined requirements. Here are some troubleshooting steps:
+
+- **Checking Requirements File**: Ensure the `.zenml_user_requirements` file is correctly formatted with valid package names and versions.
+- **Local Testing**: Test package installations locally in a clean virtual environment to identify compatibility or availability issues.
+- **Dockerfile Review**: Review the Dockerfile or Docker build context for correct setup.
+- **Increasing Verbosity**: Modify Docker build commands to increase verbosity for more detailed error messages.
+- **Network and Permissions**: Ensure the Docker environment has internet access and necessary permissions.
+- **Reviewing Logs**: Examine detailed logs from the Docker build process.
+- **Credential Helper**: Configure a credential helper for Docker to securely manage credentials.ps://docs.zenml.io/stacks/image-builders/local) to retain consistency across all builds. In this case, the image builder environment is the same as the [client environment](https://docs.zenml.io/how-to/pipeline-development/configure-python-environments/#client-environment-or-the-runner-environment).
 
 You don't need to directly interact with any image builder in your code. As long as the image builder that you want to use is part of your active [ZenML stack](https://docs.zenml.io/user-guides/production-guide/understand-stacks), it will be used automatically by any component that needs to build container images.
 
