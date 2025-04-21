@@ -220,6 +220,22 @@ def divide(a: int, b: int) -> Tuple[int, int]:
 
 When you specify a return type like `-> float` or `-> Tuple[int, int]`, ZenML uses this information to determine how to store the step's output in the artifact store. For instance, a step returning a pandas DataFrame with the annotation `-> pd.DataFrame` will use the pandas-specific materializer for efficient storage.
 
+### Handling Step Output Type Mismatches
+
+Type mismatches in step outputs can occur, especially when dealing with model outputs. Common scenarios include converting between `numpy.ndarray` and `scipy.sparse.csr_matrix`. Here are some guidelines:
+
+- **Common Scenarios**: Type mismatches often occur when the expected output type of a step does not match the actual output type, such as when a model returns a `numpy.ndarray` but a `scipy.sparse.csr_matrix` is expected.
+- **Code Examples**: To convert a `numpy.ndarray` to a `scipy.sparse.csr_matrix`, use:
+  ```python
+  import numpy as np
+  from scipy.sparse import csr_matrix
+
+  numpy_array = np.array([[1, 2], [3, 4]])
+  sparse_matrix = csr_matrix(numpy_array)
+  ```
+- **Best Practices**: Define step output types clearly using type annotations to prevent mismatches.
+- **Troubleshooting**: If a type mismatch error occurs, check the expected and actual output types and convert as necessary.
+
 {% hint style="info" %}
 If you want to enforce type annotations for all steps, set the environment variable `ZENML_ENFORCE_TYPE_ANNOTATIONS` to `True`.
 {% endhint %}
