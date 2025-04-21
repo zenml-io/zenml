@@ -22,6 +22,27 @@ Another easy way of seeing a list of integrations is to see the list of director
 
 ZenML provides a way to export the package requirements for both individual integrations and entire stacks, enabling you to install the necessary dependencies manually. This approach gives you full control over the versions and the installation process.
 
+### Installing and Configuring AWS Integration
+
+To install the AWS integration for ZenML, ensure you have Python and ZenML already installed. Then, run the following command:
+
+```bash
+zenml integration install aws
+```
+
+After installation, configure the AWS CLI with valid credentials, as the AWS service connector relies on these credentials for authentication. You can configure the AWS CLI by running:
+
+```bash
+aws configure
+```
+
+#### Troubleshooting Tips
+
+- If you encounter errors related to missing dependencies, ensure that all prerequisites are installed and try reinstalling the integration.
+- For issues with AWS CLI configurations, verify that your credentials are correct and that the AWS CLI is properly set up.
+
+This guide ensures you have all the necessary information to leverage AWS services within your ZenML pipelines.
+
 ### Exporting integration requirements
 
 You can export the requirements for a specific integration using the `zenml integration export-requirements` command. To write the requirements to a file and install them via pip, run:
