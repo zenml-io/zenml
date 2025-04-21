@@ -250,6 +250,49 @@ Optionally, you can configure the `ExternalArtifact` to use a custom [materializ
 Using an `ExternalArtifact` for your step automatically disables caching for the step.
 {% endhint %}
 
+## Handling Non-JSON Serializable Parameters
+
+When dealing with parameters that are not JSON serializable, such as Pandas DataFrames, it is recommended to pass these complex objects as artifacts between steps rather than as parameters. This is due to JSON serialization limitations.
+
+### Why Certain Objects Cannot Be Passed as Parameters
+
+Objects like Pandas DataFrames cannot be passed as parameters because they are not JSON serializable. JSON serialization is a requirement for parameters in ZenML pipelines.
+
+### Modifying the Pipeline to Pass DataFrames as Artifacts
+
+To handle non-JSON serializable objects, modify your pipeline to pass them as artifacts. Here is a step-by-step guide:
+
+1. **Define the Step to Produce the Artifact**: Ensure that the step producing the DataFrame returns it as an artifact.
+
+2. **Consume the Artifact in Subsequent Steps**: Use the artifact as input in subsequent steps.
+
+### Example Code Snippet
+
+```python
+from zenml import step, pipeline
+import pandas as pd
+
+@step
+def ingest_data() -> pd.DataFrame:
+    # Your data ingestion logic here
+    return pd.DataFrame(...)
+
+@step
+def clean_data(df: pd.DataFrame) -> pd.DataFrame:
+    # Your data cleaning logic here
+    return df
+
+@pipeline
+def data_pipeline():
+    df = ingest_data()
+    clean_df = clean_data(df)
+```
+
+### Further Resources
+
+For more information on managing artifacts not produced by ZenML pipelines, refer to the [ZenML documentation](https://docs.zenml.io/user-guides/starter-guide/manage-artifacts#managing-artifacts-not-produced-by-zenml-pipelines).
+
+
 ## Consuming artifacts produced by other pipelines
 
 It is also common to consume an artifact downstream after producing it in an upstream pipeline or step. As we have learned in the [previous section](https://docs.zenml.io/how-to/pipeline-development/build-pipelines/fetching-pipelines#fetching-artifacts-directly), the `Client` can be used to fetch artifacts directly inside the pipeline code:
