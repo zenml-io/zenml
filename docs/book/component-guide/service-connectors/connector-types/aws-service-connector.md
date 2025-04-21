@@ -1341,6 +1341,29 @@ The 'aws-session-token' AWS Service Connector connector was used to successfully
 ```
 {% endcode %}
 
+## Installing and Configuring AWS Integration
+
+### Installation Guide
+
+To install the AWS integration for ZenML, ensure you have Python and ZenML already installed. Then, run the following command:
+
+```sh
+zenml integration install aws
+```
+
+### Configuration Guide
+
+After installation, configure the AWS CLI with valid credentials. This is crucial as the AWS service connector relies on these credentials for authentication. You can configure the AWS CLI by running:
+
+```sh
+aws configure
+```
+
+### Troubleshooting Tips
+
+- If you encounter errors due to missing dependencies, ensure that all prerequisites are installed.
+- For issues with AWS CLI configurations, verify that your credentials are correct and that the AWS CLI is properly set up.
+
 A new profile is created in the local AWS CLI configuration holding the credentials. It can be used to access AWS resources and services, e.g.:
 
 ```sh
