@@ -272,21 +272,25 @@ def cached_pipeline():
 
 ## Advanced Artifact Usage
 
-### Accessing Artifacts from Previous Runs
+### Using Artifacts Across Runs
 
-You can access artifacts from any previous run by name or ID:
+Artifacts are a cornerstone of ZenML's ML pipeline management system. They enable the reuse of data and models across different pipeline runs, facilitating efficient and iterative development processes.
+
+#### Accessing Artifacts from Previous Runs
+
+You can access artifacts from any previous run by name or ID using the ZenML `Client` API:
 
 ```python
 from zenml.client import Client
 
-# Get a specific artifact version
-artifact = Client().get_artifact_version("my_model", "1.0")
+# Initialize the client
+client = Client()
 
-# Get the latest version of an artifact
-latest_artifact = Client().get_artifact_version("my_model")
+# Fetch the latest version of an artifact by name
+artifact = client.get_artifact_version(name_id_or_prefix="my_artifact_name")
 
-# Load it into memory
-model = latest_artifact.load()
+# Load the artifact into memory
+model = artifact.load()
 ```
 
 You can also access artifacts within steps:
@@ -310,7 +314,7 @@ def evaluate_against_previous(model, X_test, y_test) -> float:
     return current_accuracy - previous_accuracy
 ```
 
-### Cross-Pipeline Artifact Usage
+#### Cross-Pipeline Artifact Usage
 
 You can use artifacts produced by one pipeline in another pipeline:
 
@@ -336,6 +340,12 @@ def inference_pipeline():
 ```
 
 This allows you to build modular pipelines that can work together as part of a larger ML system.
+
+#### Best Practices for Managing Artifacts
+
+- **Versioning**: Use versioning to keep track of different iterations of your artifacts. This helps in maintaining a history and facilitates rollback if needed.
+- **Naming Conventions**: Adopt consistent naming conventions for your artifacts to make them easily identifiable and retrievable.
+- **Artifact Cleanup**: Regularly prune unused artifacts to manage storage efficiently and avoid clutter.
 
 ### Visualizing Artifacts
 
