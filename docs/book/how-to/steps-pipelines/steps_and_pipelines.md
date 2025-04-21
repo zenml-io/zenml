@@ -220,6 +220,21 @@ def divide(a: int, b: int) -> Tuple[int, int]:
 
 When you specify a return type like `-> float` or `-> Tuple[int, int]`, ZenML uses this information to determine how to store the step's output in the artifact store. For instance, a step returning a pandas DataFrame with the annotation `-> pd.DataFrame` will use the pandas-specific materializer for efficient storage.
 
+### Handling Non-JSON Serializable Parameters
+
+When working with complex objects like Pandas DataFrames, it's important to understand that these cannot be directly passed as parameters between steps due to their non-JSON serializable nature. Instead, these objects should be converted into a format that can be passed as an artifact.
+
+For example, you can modify a step to accept a DataFrame as an input artifact and pass it to subsequent steps:
+
+```python
+@step
+def clean_data(data: pd.DataFrame) -> Tuple[Annotated[pd.DataFrame, "x_train"], Annotated[pd.DataFrame, "x_test"], Annotated[pd.Series, "y_train"], Annotated[pd.Series, "y_test"]]:
+    # Data cleaning logic here
+    return x_train, x_test, y_train, y_test
+```
+
+It's also crucial to implement logging and exception handling in data transformation steps to aid in debugging.
+
 {% hint style="info" %}
 If you want to enforce type annotations for all steps, set the environment variable `ZENML_ENFORCE_TYPE_ANNOTATIONS` to `True`.
 {% endhint %}
