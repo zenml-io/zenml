@@ -209,7 +209,31 @@ def load_bigquery_data() -> BigQueryDataset:
     pass
 
 @step
-def common_processing_step(dataset: Dataset) -> pd.DataFrame:
+def common_proce
+
+## Handling Non-JSON Serializable Parameters
+
+When working with complex objects like Pandas DataFrames in ZenML pipelines, it's important to handle them as artifacts rather than parameters. Here's how you can manage non-JSON serializable parameters:
+
+- **Why Certain Objects Cannot Be Directly Passed**: Objects like `pd.DataFrame` cannot be directly passed as parameters between steps because they are not JSON serializable.
+
+- **Converting Objects to Artifacts**: Convert these objects into a format that can be passed as an artifact. Use ZenML's materializers to handle the serialization and deserialization of these objects.
+
+- **Example Code**:
+
+```python
+@step
+def clean_data(data: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
+    # Data cleaning logic
+    return x_train, x_test, y_train, y_test
+
+@pipeline
+def my_pipeline():
+    df = ingest_data()
+    x_train, x_test, y_train, y_test = clean_data(df)
+```
+
+- **Logging and Exception Handling**: Always log and handle exceptions during data transformation steps to aid in debugging and ensure smooth pipeline execution.ssing_step(dataset: Dataset) -> pd.DataFrame:
     # Loads the base dataset, does not know concrete type
     pass
 ```
