@@ -133,6 +133,31 @@ if __name__ == "__main__":
 
 ## Parameters and Artifacts
 
+### Handling Non-JSON Serializable Parameters
+
+When working with ZenML, it's important to understand how to handle parameters that are not JSON serializable, such as Pandas DataFrames. These objects cannot be passed as parameters due to JSON serialization limitations. Instead, they should be passed as artifacts between steps. Here’s how you can modify your pipeline to accommodate this practice:
+
+- **Why Certain Objects Cannot Be Passed as Parameters**: Objects like Pandas DataFrames are complex and cannot be serialized into JSON format, which is required for passing parameters in ZenML.
+
+- **Modifying the Pipeline to Pass DataFrames as Artifacts**: Instead of passing a DataFrame as a parameter, return it as an output from one step and accept it as an input artifact in the next step.
+
+- **Example Code Snippet**:
+  ```python
+  @step
+  def ingest_data() -> pd.DataFrame:
+      # Load your data into a DataFrame
+      df = pd.read_csv('data.csv')
+      return df
+
+  @step
+  def clean_data(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
+      # Clean and split your data
+      x_train, x_test, y_train, y_test = train_test_split(df.drop('target', axis=1), df['target'])
+      return x_train, x_test, y_train, y_test
+  ```
+
+- **Further Resources**: For more information on managing artifacts not produced by ZenML pipelines, refer to the [ZenML documentation](https://docs.zenml.io/user-guides/starter-guide/manage-artifacts#managing-artifacts-not-produced-by-zenml-pipelines).
+
 ### Understanding the Difference
 
 ZenML distinguishes between two types of inputs to steps:
