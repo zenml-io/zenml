@@ -27,6 +27,47 @@ ZenML includes built-in materializers for many common data types:
 
 <table data-full-width="true"><thead><tr><th>Materializer</th><th>Handled Data Types</th><th>Storage Format</th></tr></thead><tbody><tr><td><a href="https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers.html#zenml.materializers.built_in_materializer">BuiltInMaterializer</a></td><td><code>bool</code>, <code>float</code>, <code>int</code>, <code>str</code>, <code>None</code></td><td><code>.json</code></td></tr><tr><td><a href="https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers.html#zenml.materializers.built_in_materializer">BytesInMaterializer</a></td><td><code>bytes</code></td><td><code>.txt</code></td></tr><tr><td><a href="https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers.html#zenml.materializers.built_in_materializer">BuiltInContainerMaterializer</a></td><td><code>dict</code>, <code>list</code>, <code>set</code>, <code>tuple</code></td><td>Directory</td></tr><tr><td><a href="https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers.html#zenml.materializers.numpy_materializer">NumpyMaterializer</a></td><td><code>np.ndarray</code></td><td><code>.npy</code></td></tr><tr><td><a href="https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers.html#zenml.materializers.pandas_materializer">PandasMaterializer</a></td><td><code>pd.DataFrame</code>, <code>pd.Series</code></td><td><code>.csv</code> (or <code>.gzip</code> if <code>parquet</code> is installed)</td></tr><tr><td><a href="https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers.html#zenml.materializers.pydantic_materializer">PydanticMaterializer</a></td><td><code>pydantic.BaseModel</code></td><td><code>.json</code></td></tr><tr><td><a href="https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers.html#zenml.materializers.service_materializer">ServiceMaterializer</a></td><td><code>zenml.services.service.BaseService</code></td><td><code>.json</code></td></tr><tr><td><a href="https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers.html#zenml.materializers.structured_string_materializer">StructuredStringMaterializer</a></td><td><code>zenml.types.CSVString</code>, <code>zenml.types.HTMLString</code>, <code>zenml.types.MarkdownString</code></td><td><code>.csv</code> / <code>.html</code> / <code>.md</code> (depending on type)</td></tr></tbody></table>
 
+## Handling Non-JSON Serializable Parameters
+
+When working with ZenML pipelines, certain complex objects like Pandas DataFrames cannot be directly passed as parameters between steps because they are not JSON serializable. Instead, these objects should be converted into a format that can be passed as an artifact.
+
+### Converting Complex Objects to Artifacts
+
+To handle non-JSON serializable parameters, such as `pd.DataFrame`, you should:
+
+- Use ZenML's built-in materializers, like `PandasMaterializer`, to serialize and store these objects as artifacts.
+- Modify your steps to accept these objects as input artifacts and pass them to subsequent steps.
+
+### Example
+
+```python
+from zenml import step
+from typing import Tuple
+import pandas as pd
+
+@step
+def clean_data(data: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
+    # Your data cleaning logic here
+    x_train, x_test, y_train, y_test = ...  # Split the data
+    return x_train, x_test, y_train, y_test
+```
+
+### Logging and Exception Handling
+
+When dealing with data transformation steps, it is crucial to implement logging and exception handling to aid in debugging. This ensures that any issues during data processing are captured and can be addressed promptly.
+
+```python
+import logging
+
+try:
+    # Data processing logic
+except Exception as e:
+    logging.error(f"Error in data processing: {e}")
+    raise e
+```
+
+This approach helps users understand how to structure their pipelines when working with complex data types and improves the overall usability of the documentation.
+
 ZenML also provides a CloudpickleMaterializer that can handle any object by saving it with [cloudpickle](https://github.com/cloudpipe/cloudpickle). However, this is not production-ready because the resulting artifacts cannot be loaded when running with a different Python version. For production use, you should implement a custom materializer for your specific data types.
 
 ### Integration-Specific Materializers
