@@ -40,6 +40,20 @@ Custom materializers are common components that teams often need to share. To im
 2. Implement the custom materializer as described in the [ZenML documentation](https://docs.zenml.io/how-to/data-artifact-management/handle-data-artifacts/handle-custom-data-types).
 3. Team members can import and use the shared materializer in their projects.
 
+#### Creating a Custom Materializer for numpy.int64
+
+When dealing with specific data types like `numpy.int64`, a custom materializer can be beneficial, especially in production environments where the default Pickle materializer is not suitable. Here’s how to create one:
+
+- **Why Pickle is Not Suitable**: The default Pickle materializer is not production-ready as it may not work across different Python versions, making it unreliable for long-term storage.
+
+- **Step-by-Step Instructions**:
+  - **Load Method**: Implement the `load` method to correctly deserialize `numpy.int64` data.
+  - **Save Method**: Implement the `save` method to serialize `numpy.int64` data.
+
+- **Registering the Materializer**: Ensure the custom materializer is registered with ZenML to override the default behavior.
+
+- **Conversion Tips**: Convert `numpy.int64` to native Python types when possible to leverage built-in materializers.
+
 ## How to Distribute Shared Components
 
 There are several methods to distribute and use shared components within a team:
