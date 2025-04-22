@@ -82,6 +82,36 @@ Materializers define how artifacts live in between steps. More precisely, they d
 
 All materializers use the base abstraction called the `BaseMaterializer` class. While ZenML comes built-in with various implementations of materializers for different datatypes, if you are using a library or a tool that doesn't work with our built-in options, you can write [your own custom materializer](../how-to/artifacts/materializers.md) to ensure that your data can be passed from step to step.
 
+##### Custom Materializer for numpy.int64
+
+- **Why Default Pickle Materializer May Not Be Suitable**: The default Pickle materializer is not production-ready, especially for data types like `numpy.int64`, as it may not be reliable across different Python versions.
+- **Creating a Custom Materializer**: To handle `numpy.int64`, create a custom materializer by implementing the `load` and `save` methods. Here is a basic example:
+  ```python
+  from zenml.materializers.base_materializer import BaseMaterializer
+  import numpy as np
+
+  class NumpyInt64Materializer(BaseMaterializer):
+      ASSOCIATED_TYPES = (np.int64,)
+
+      def load(self, data_type):
+          # Implement loading logic for numpy.int64
+          pass
+
+      def save(self, data):
+          # Implement saving logic for numpy.int64
+          pass
+  ```
+- **Registering the Custom Materializer**: Ensure the custom materializer is registered with ZenML to be used instead of the default Pickle materializer.
+  ```python
+  from zenml.materializers.materializer_registry import materializer_registry
+
+  materializer_registry.register_and_overwrite_type(
+      key=np.int64,
+      type_=NumpyInt64Materializer
+  )
+  ```
+- **Tips for Conversion**: Convert `numpy.int64` to native Python types when possible to leverage built-in materializers.
+
 #### Parameters & Settings
 
 When we think about steps as functions, we know they receive input in the form of artifacts. We also know that they produce output (in the form of artifacts, stored in the artifact store). But steps also take parameters. The parameters that you pass into the steps are also (helpfully!) stored by ZenML. This helps freeze the iterations of your experimentation workflow in time, so you can return to them exactly as you run them. On top of the parameters that you provide for your steps, you can also use different `Setting`s to configure runtime configurations for your infrastructure and pipelines.
