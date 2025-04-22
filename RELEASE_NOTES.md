@@ -203,7 +203,7 @@ The 0.80.0 release is one of our biggest updates in a while! This version introd
 - [Enhanced tagging system](https://docs.zenml.io/how-to/data-artifact-management/handle-data-artifacts/tagging) with resource type filtering and exclusive tag behavior
 - [Added persistent resource support for the Vertex orchestrator](https://docs.zenml.io/stacks/orchestrators/vertex#using-persistent-resources-for-faster-development)
 - Store build duration information for better tracking
-- [Allow passing step artifacts to specify upstream steps](https://docs.zenml.io/how-to/pipeline-development/build-pipelines/control-execution-order-of-steps)
+- [Allow passing step artifacts to specify upstream steps](https://docs.zenml.io/concepts/steps_and_pipelines/advanced_features#step-execution-order)
 - Support for environment variables in KubernetesPodSettings
 
 ## Improvements

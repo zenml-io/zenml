@@ -429,11 +429,11 @@ All the aforementioned configurations as well as additional information required
 
 Once a pipeline has been executed, it is represented by a `PipelineSpec` that uniquely identifies it. Therefore, users are no longer able to edit a pipeline once it has been run once. There are now three options to get around this:
 
-* Pipeline runs can be created without being associated with a pipeline explicitly: We call these `unlisted` runs. Read more about unlisted runs [here](https://docs.zenml.io/how-to/pipeline-development/develop-locally/keep-your-dashboard-server-clean#unlisted-runs).
+* Pipeline runs can be created without being associated with a pipeline explicitly: We call these `unlisted` runs. Read more about unlisted runs [here](https://docs.zenml.io/user-guides/best-practices/keep-your-dashboard-server-clean#unlisted-runs).
 * Pipelines can be deleted and created again.
 * Pipelines can be given unique names each time they are run to uniquely identify them.
 
-**How to migrate**: No code changes, but rather keep in mind the behavior (e.g. in a notebook setting) when quickly [iterating over pipelines as experiments](https://docs.zenml.io//how-to/pipeline-development/build-pipelines/use-pipeline-step-parameters).
+**How to migrate**: No code changes, but rather keep in mind the behavior (e.g. in a notebook setting) when quickly [iterating over pipelines as experiments](https://docs.zenml.io/concepts/steps_and_pipelines#parameters-and-artifacts).
 
 ### New post-execution workflow
 
@@ -447,7 +447,7 @@ from zenml.post_execution import get_pipelines, get_pipeline
 
 * New methods to directly get a run have been introduced: `get_run` and `get_unlisted_runs` method has been introduced to get unlisted runs.
 
-Usage remains largely similar. Please read the [new docs for post-execution](https://docs.zenml.io//how-to/pipeline-development/build-pipelines/fetching-pipelines) to inform yourself of what further has changed.
+Usage remains largely similar. Please read the [new docs for post-execution](https://docs.zenml.io/user-guides/tutorial/fetching-pipelines) to inform yourself of what further has changed.
 
 **How to migrate**: Replace all post-execution workflows from the paradigm of `Repository.get_pipelines` or `Repository.get_pipeline_run` to the corresponding post\_execution methods.
 

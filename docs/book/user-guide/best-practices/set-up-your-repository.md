@@ -127,7 +127,7 @@ It might also make sense to register your repository as a code repository. These
 enable ZenML to keep track of the code version that you use for your pipeline
 runs. Additionally, running a pipeline that is tracked in [a registered code repository](https://docs.zenml.io/user-guides/production-guide/connect-code-repository) can speed up the Docker image building for containerized stack
 components by eliminating the need to rebuild Docker images each time you change
-one of your source code files. Learn more about these in [connecting your Git repository](https://docs.zenml.io/how-to/code-repositories/code-repositories.md).
+one of your source code files. Learn more about these in [connecting your Git repository](https://docs.zenml.io/concepts/code-repositories).
 {% endhint %}
 
 #### Steps
