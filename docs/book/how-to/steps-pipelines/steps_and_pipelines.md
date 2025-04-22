@@ -137,7 +137,53 @@ if __name__ == "__main__":
 
 ZenML distinguishes between two types of inputs to steps:
 
-1. **Artifacts**: Outputs from other steps in the same pipeline
+1. **Artifacts**
+
+## Handling Non-JSON Serializable Parameters in ZenML Pipelines
+
+When working with ZenML pipelines, you may encounter errors when trying to pass non-JSON serializable objects, such as `pandas.DataFrame`, as parameters between steps. This is because these complex objects cannot be serialized into JSON format, which is required for parameter passing.
+
+### Error Explanation
+
+Attempting to pass a non-JSON serializable object as a parameter will result in an error indicating that the argument type is not JSON serializable. This input must either be provided by the output of another step or as an external artifact.
+
+### Correctly Passing Complex Objects
+
+To handle complex objects like `pandas.DataFrame`, you should pass them as artifacts rather than parameters. This involves:
+
+- Ensuring the data is produced by a previous step in your pipeline or loaded as an external artifact.
+- Using the `@step` decorator to define steps that output these objects as artifacts.
+
+### Example
+
+Here is an example of how to structure a pipeline where data is loaded or generated in one step and then passed as an artifact to another step:
+
+```python
+from zenml import pipeline, step
+import pandas as pd
+
+@step
+def load_data() -> pd.DataFrame:
+    # Load or generate your data here
+    return pd.DataFrame({"feature": [1, 2, 3], "target": [0, 1, 0]})
+
+@step
+def clean_data(data: pd.DataFrame) -> pd.DataFrame:
+    # Implement data cleaning logic
+    return data
+
+@pipeline
+def data_pipeline():
+    data = load_data()
+    clean_data(data=data)
+
+if __name__ == "__main__":
+    data_pipeline()
+```
+
+### Further Reading
+
+For more information on managing artifacts and defining steps in ZenML pipelines, refer to the [ZenML Documentation](https://github.com/zenml-io/zenml/blob/main/docs/book/how-to/steps-pipelines/steps_and_pipelines.md).: Outputs from other steps in the same pipeline
    * These are tracked, versioned, and stored in the artifact store
    * They are passed between steps and represent data flowing through your pipeline
    * Examples: datasets, trained models, evaluation metrics
