@@ -109,6 +109,10 @@ Your functions will work as ZenML steps even if you don't provide any type annot
 * **Type validation of your step inputs**: ZenML makes sure that your step functions receive an object of the correct type from the upstream steps in your pipeline.
 * **Better serialization**: Without type annotations, ZenML uses [Cloudpickle](https://github.com/cloudpipe/cloudpickle) to serialize your step outputs. When provided with type annotations, ZenML can choose a [materializer](https://docs.zenml.io/getting-started/core-concepts#materializers) that is best suited for the output. In case none of the builtin materializers work, you can even [write a custom materializer](https://docs.zenml.io/how-to/data-artifact-management/handle-data-artifacts/handle-custom-data-types).
 
+### Custom Materializers
+
+ZenML allows you to create custom materializers for complex or third-party objects, such as BERTopic models. To define a custom materializer, inherit from `BaseMaterializer` and implement the `save` and `load` methods. Register the custom materializer with ZenML to associate it with specific data types. For example, a custom materializer for BERTopic models can be used to save to and load from an S3 artifact store. Ensure that S3 configurations and permissions are correctly set up to avoid common issues like artifacts not appearing in the expected location.
+
 {% hint style="warning" %}
 ZenML provides a built-in [CloudpickleMaterializer](https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers.html#zenml.materializers.cloudpickle_materializer) that can handle any object by saving it with [cloudpickle](https://github.com/cloudpipe/cloudpickle). However, this is not production-ready because the resulting artifacts cannot be loaded when running with a different Python version. In such cases, you should consider building a [custom Materializer](https://docs.zenml.io/how-to/data-artifact-management/handle-data-artifacts/handle-custom-data-types#custom-materializers) to save your objects in a more robust and efficient format.
 
