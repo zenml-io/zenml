@@ -124,6 +124,7 @@ def square_root(number: int) -> float:
     return number ** 0.5
 
 # To define a step with multiple outputs, use a `Tuple` type annotation
+# The `Output` class has been removed, use `Tuple` instead
 @step
 def divide(a: int, b: int) -> Tuple[int, int]:
     return a // b, a % b
@@ -132,6 +133,8 @@ def divide(a: int, b: int) -> Tuple[int, int]:
 If you want to make sure you get all the benefits of type annotating your steps, you can set the environment variable `ZENML_ENFORCE_TYPE_ANNOTATIONS` to `True`. ZenML will then raise an exception in case one of the steps you're trying to run is missing a type annotation.
 
 ### Tuple vs multiple outputs
+
+With the removal of the `Output` class, use Python's built-in `Tuple` type to define multiple outputs in your steps.
 
 It is impossible for ZenML to detect whether you want your step to have a single output artifact of type `Tuple` or multiple output artifacts just by looking at the type annotation.
 
