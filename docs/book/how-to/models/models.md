@@ -43,7 +43,7 @@ The Model Control Plane is ZenML's unified interface for managing models through
 While all Model Control Plane functionality is accessible programmatically through the Python SDK in both OSS and Pro versions, the visual dashboard shown below is only available in ZenML Pro.
 {% endhint %}
 
-![Model Control Plane Overview in ZenML Pro Dashboard](<../../.gitbook/assets/dcp_walkthrough (1).gif>)
+![Model Control Plane Overview in ZenML Pro Dashboard](<../../.gitbook/assets/dcp_walkthrough.gif>)
 
 ## Working with Models
 
