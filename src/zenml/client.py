@@ -6504,7 +6504,7 @@ class Client(metaclass=ClientMetaClass):
 
     def list_model_versions(
         self,
-        model_name_or_id: Optional[Union[str, UUID]] = None,
+        model_name_or_id: Union[str, UUID] = None,
         sort_by: str = "number",
         page: int = PAGINATION_STARTING_PAGE,
         size: int = PAGE_SIZE_DEFAULT,
