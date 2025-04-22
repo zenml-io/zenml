@@ -69,16 +69,26 @@ terraform {
 
 provider "zenml" {
   # Configuration options will be loaded from environment variables:
-  # ZENML_SERVER_URL
+  # ZENML_SERVER_URL (for Pro users, this should be your Workspace URL from the dashboard)
   # ZENML_API_KEY
 }
+
+{% hint style="info" %}
+**For ZenML Pro users:** The `ZENML_SERVER_URL` should be your Workspace URL, which can be found in your dashboard. It typically looks like: `https://1bfe8d94-zenml.cloudinfra.zenml.io`. Make sure you use the complete URL of your workspace, not just the domain.
+{% endhint %}
 ```
 
-To generate a API key, use the command:
+To generate an API key, use the command:
 
 ```bash
 zenml service-account create <SERVICE_ACCOUNT_NAME>
 ```
+
+This will create a service account and generate an API key that you can use to authenticate with the ZenML server.
+
+{% hint style="info" %}
+The API key is shown only once during creation. Make sure to save it securely, as you cannot retrieve it later. If you lose it, you'll need to create a new key.
+{% endhint %}
 
 You can learn more about how to generate a `ZENML_API_KEY` via service accounts
 [here](https://docs.zenml.io//how-to/manage-zenml-server/connecting-to-zenml/connect-with-a-service-account).
@@ -191,7 +201,7 @@ Let's see a complete example of registering an existing GCP infrastructure stack
 ```hcl
 # variables.tf
 variable "zenml_server_url" {
-  description = "URL of the ZenML server"
+  description = "URL of the ZenML server (for Pro users, this is your Workspace URL)"
   type        = string
 }
 
@@ -241,7 +251,7 @@ terraform {
 
 # Configure providers
 provider "zenml" {
-  server_url = var.zenml_server_url
+  server_url = var.zenml_server_url  # For Pro users, this is your Workspace URL
   api_key    = var.zenml_api_key
 }
 
@@ -379,7 +389,7 @@ output "container_registry_uri" {
 Create a `terraform.tfvars` file (remember to never commit this to version control):
 
 ```hcl
-zenml_server_url = "https://your-zenml-server.com"
+zenml_server_url = "https://your-zenml-server.com"  # For Pro users: your Workspace URL from dashboard
 project_id       = "your-gcp-project-id"
 region           = "us-central1"
 environment      = "dev"
