@@ -177,8 +177,8 @@ def extract_asset_references(md_file):
 
 def get_human_readable_size(size_bytes):
     """Convert bytes to a human-readable format (KB, MB, GB)."""
-    for unit in ['B', 'KB', 'MB', 'GB']:
-        if size_bytes < 1024.0 or unit == 'GB':
+    for unit in ["B", "KB", "MB", "GB"]:
+        if size_bytes < 1024.0 or unit == "GB":
             break
         size_bytes /= 1024.0
     return f"{size_bytes:.2f} {unit}"
@@ -232,8 +232,10 @@ def print_default_format(orphaned_assets, total_assets):
     """Print in the default format optimized for deletion."""
     total_size = calculate_total_size(orphaned_assets)
     human_readable_size = get_human_readable_size(total_size)
-    
-    print(f"Found {len(orphaned_assets)} orphaned assets out of {total_assets} total assets:")
+
+    print(
+        f"Found {len(orphaned_assets)} orphaned assets out of {total_assets} total assets:"
+    )
     print(f"Total space that would be saved: {human_readable_size}")
     print("\n# Orphaned Assets")
     print("# Format: Files separated by spaces")
@@ -295,7 +297,7 @@ def print_readable_format(orphaned_assets, total_assets):
     # Group orphaned assets by their .gitbook/assets directory
     by_assets_dir = defaultdict(list)
     sizes_by_dir = defaultdict(int)
-    
+
     for asset in orphaned_assets:
         # Find the .gitbook/assets part of the path
         path_parts = asset.split(os.path.sep)
@@ -324,36 +326,38 @@ def print_readable_format(orphaned_assets, total_assets):
             else assets_dir
         )
         dir_size = get_human_readable_size(sizes_by_dir[assets_dir])
-        print(f"📁  {rel_dir}/.gitbook/assets/ ({len(files)} files, {dir_size})")
+        print(
+            f"📁  {rel_dir}/.gitbook/assets/ ({len(files)} files, {dir_size})"
+        )
         print("─" * term_width)
 
         # Group by extension within each directory
         by_ext = defaultdict(list)
         sizes_by_ext = defaultdict(int)
-        
+
         for asset in files:
             ext = os.path.splitext(asset)[1].lower()
             by_ext[ext].append(asset)
             sizes_by_ext[ext] += os.path.getsize(asset)
-            
+
         for ext, ext_files in sorted(by_ext.items()):
             ext_size = get_human_readable_size(sizes_by_ext[ext])
             print(f"  {ext} files ({len(ext_files)}, {ext_size})")
-            
+
             for i, file in enumerate(sorted(ext_files), 1):
                 filename = os.path.basename(file)
                 abs_file_path = os.path.abspath(file)
                 file_size = os.path.getsize(file) / 1024  # Size in KB
-                
+
                 # Create a clickable link
                 clickable_link = f"file://{abs_file_path}"
-                
+
                 # Print file with its clickable link and size
                 print(f"    {i:2d}. {filename} ({file_size:.1f} KB)")
                 print(f"        👉 {clickable_link}")
-                
+
             print()  # Extra line between extensions
-        
+
         print()  # Extra line between directories
 
 
@@ -416,16 +420,20 @@ def main():
         total_files = len(orphaned_assets)
         total_size = calculate_total_size(orphaned_assets)
         human_readable_size = get_human_readable_size(total_size)
-        
+
         confirm = input(
             f"⚠️  WARNING: This will delete {total_files} image assets ({human_readable_size}). Type 'YES' to confirm: "
         )
 
         if confirm.strip() == "YES":
-            deleted_count, failed_count, deleted_size = delete_files(orphaned_assets)
+            deleted_count, failed_count, deleted_size = delete_files(
+                orphaned_assets
+            )
             deleted_size_str = get_human_readable_size(deleted_size)
 
-            print(f"\n✅ Deleted {deleted_count} assets successfully, freeing up {deleted_size_str}.")
+            print(
+                f"\n✅ Deleted {deleted_count} assets successfully, freeing up {deleted_size_str}."
+            )
             if failed_count > 0:
                 print(f"❌ Failed to delete {failed_count} assets.")
         else:
