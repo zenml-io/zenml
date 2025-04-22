@@ -5,7 +5,11 @@ icon: box
 
 # Self-hosted deployment
 
-This page provides instructions for installing ZenML Pro - the ZenML Pro Control Plane and one or more ZenML Pro Workspace servers - on-premise in a Kubernetes cluster.
+This page provides instructions for installing ZenML Pro - the ZenML Pro Control
+Plane and one or more ZenML Pro Workspace servers - on-premise in a Kubernetes
+cluster. For more general information on deploying ZenML, visit [our
+documentation](https://docs.zenml.io/getting-started/deploying-zenml) where we
+explain the different options you have.
 
 ## Overview
 
