@@ -106,6 +106,10 @@
 * [GCP](../how-to/popular-integrations/gcp-guide.md)
 * [Kubernetes](../how-to/popular-integrations/kubernetes.md)
 
+## Region Settings for Stack Components
+
+Learn how to update the region settings for your ZenML stack components, including artifact store, orchestrator, and container registry. This section provides step-by-step instructions and examples for popular cloud providers like AWS, GCP, and Azure.
+
 ## Deployment
 
 * [1-click Deployment](../how-to/infrastructure-deployment/stack-deployment/deploy-a-cloud-stack.md)
