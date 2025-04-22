@@ -178,6 +178,38 @@ def etl_pipeline(mode: str = "develop"):
     transformed_data = transform(raw_data)
 ```
 
+## Handling Non-JSON Serializable Parameters in ZenML Pipelines
+
+When working with ZenML pipelines, you may encounter errors when trying to pass non-JSON serializable objects, such as `pandas.DataFrame`, as parameters between steps. This section provides guidance on how to handle such scenarios effectively.
+
+- **Understanding the Error**: Attempting to pass non-JSON serializable objects as parameters will result in an error. These objects should be passed as artifacts instead.
+
+- **Passing Complex Objects as Artifacts**: To pass complex objects like `pandas.DataFrame`, ensure they are produced by a previous step or loaded as an external artifact. This allows the data to be treated as an artifact rather than a parameter.
+
+- **Example Pipeline Structure**:
+
+```python
+from zenml import pipeline, step
+import pandas as pd
+
+@step
+def load_data() -> pd.DataFrame:
+    # Load or generate your data here
+    return pd.DataFrame({"feature": [1, 2, 3], "target": [0, 1, 0]})
+
+@step
+def clean_data(data: pd.DataFrame) -> pd.DataFrame:
+    # Implement data cleaning logic
+    return data
+
+@pipeline
+def data_pipeline():
+    data = load_data()
+    clean_data(data=data)
+```
+
+- **Further Reading**: For more information on managing artifacts and defining steps in ZenML pipelines, refer to the [ZenML Documentation](https://github.com/zenml-io/zenml/blob/main/docs/book/how-to/steps-pipelines/steps_and_pipelines.md).
+
 ## Best Practices for Designing Flexible and Maintainable Pipelines
 
 When working with custom Dataset classes in ZenML pipelines, it's crucial to design your pipelines\
