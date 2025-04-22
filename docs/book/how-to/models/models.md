@@ -7,8 +7,8 @@ icon: rectangle-history
 
 Machine learning models are at the heart of any ML workflow. ZenML provides comprehensive model management capabilities through its Model Control Plane, allowing you to track, version, promote, and share models across your ML pipelines.
 
-{% hint style="success" %}
-Models are a [ZenML Pro](https://zenml.io/pro)-only feature. Please [sign up here](https://cloud.zenml.io) to get access.
+{% hint style="info" %}
+The ZenML Model Control Plane is a [ZenML Pro](https://zenml.io/pro) feature. While the Python SDK functions for creating and interacting with models are available in the open-source version, the visual dashboard for exploring and managing models is only available in ZenML Pro. Please [sign up here](https://cloud.zenml.io) to get access to the full model management experience.
 {% endhint %}
 
 This guide covers all aspects of working with models in ZenML, from basic concepts to advanced usage patterns.
@@ -39,7 +39,11 @@ The Model Control Plane is ZenML's unified interface for managing models through
 * Manage model promotions through stages (staging, production, etc.)
 * Exchange data between pipelines using models
 
-![Model Control Plane Overview](<../../.gitbook/assets/dcp_walkthrough (1).gif>)
+{% hint style="info" %}
+While all Model Control Plane functionality is accessible programmatically through the Python SDK in both OSS and Pro versions, the visual dashboard shown below is only available in ZenML Pro.
+{% endhint %}
+
+![Model Control Plane Overview in ZenML Pro Dashboard](<../../.gitbook/assets/dcp_walkthrough (1).gif>)
 
 ## Working with Models
 
@@ -226,6 +230,10 @@ This pattern enables clean separation between training and inference pipelines w
 
 ZenML allows you to attach metadata to models, which is crucial for tracking performance, understanding training conditions, and making promotion decisions.
 
+{% hint style="info" %}
+While metadata tracking is available in both OSS and Pro versions through the Python SDK, visualizing and exploring model metrics through a dashboard interface is only available in ZenML Pro.
+{% endhint %}
+
 ### Logging Model Metadata
 
 ```python
@@ -306,6 +314,12 @@ Client().delete_model_version("model_version_id")
 ## Conclusion
 
 The Model Control Plane in ZenML provides a comprehensive solution for managing models throughout their lifecycle. By properly registering, versioning, linking artifacts, and tracking metadata, you can create a transparent and reproducible workflow for your ML projects.
+
+{% hint style="info" %}
+**OSS vs Pro Feature Summary:**
+* **ZenML OSS:** Includes all the programmatic (Python SDK) model features described in this guide
+* **ZenML Pro:** Adds visual model dashboard, advanced model exploration, comprehensive metrics visualization, and integrated model lineage views
+{% endhint %}
 
 Whether you're working on a simple classification model or a complex production ML system, ZenML's model management capabilities help you organize your resources and maintain clarity in your ML processes.
 
