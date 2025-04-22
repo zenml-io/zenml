@@ -146,6 +146,7 @@ You can register a materializer globally to override the default materializer fo
 ```python
 from zenml.materializers.materializer_registry import materializer_registry
 import pandas as pd
+import numpy as np
 
 # Create a custom pandas materializer
 class FastPandasMaterializer(BaseMaterializer):
@@ -156,6 +157,24 @@ class FastPandasMaterializer(BaseMaterializer):
 materializer_registry.register_and_overwrite_type(
     key=pd.DataFrame, 
     type_=FastPandasMaterializer
+)
+
+# Create a custom materializer for numpy.int64
+class NumpyInt64Materializer(BaseMaterializer):
+    ASSOCIATED_TYPES = (np.int64,)
+
+    def load(self, data_type):
+        # Implement loading logic for numpy.int64
+        pass
+
+    def save(self, data):
+        # Implement saving logic for numpy.int64
+        pass
+
+# Register it for numpy.int64 globally
+materializer_registry.register_and_overwrite_type(
+    key=np.int64, 
+    type_=NumpyInt64Materializer
 )
 ```
 
