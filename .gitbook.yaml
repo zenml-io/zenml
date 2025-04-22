@@ -285,15 +285,15 @@ redirects:
   how-to/pipeline-development/build-pipelines/schedule-a-pipeline: how-to/steps-pipelines/scheduling.md
   how-to/pipeline-development/use-configuration-files: how-to/steps-pipelines/yaml_configuration.md
   how-to/pipeline-development/use-configuration-files/what-can-be-configured: how-to/steps-pipelines/yaml_configuration.md
-  how-to/pipeline-development/develop-locally/keep-your-dashboard-server-clean: how-to/steps-pipelines/logging.md
+  # how-to/pipeline-development/develop-locally/keep-your-dashboard-server-clean: how-to/steps-pipelines/logging.md
   how-to/pipeline-development/build-pipelines/use-pipeline-step-parameters: how-to/steps-pipelines/configuration.md
   how-to/pipeline-development/build-pipelines/control-execution-order-of-steps: how-to/steps-pipelines/steps_and_pipelines.md
   how-to/pipeline-development/build-pipelines/step-output-typing-and-annotation: how-to/steps-pipelines/steps_and_pipelines.md
   how-to/pipeline-development/use-configuration-files/configuration-hierarchy: how-to/steps-pipelines/yaml_configuration.md
-  how-to/pipeline-development/configure-python-environments: how-to/containerization/containerization.md
+  # how-to/pipeline-development/configure-python-environments: how-to/containerization/containerization.md
   how-to/pipeline-development/build-pipelines/using-a-custom-step-invocation-id: how-to/steps-pipelines/steps_and_pipelines.md
   how-to/pipeline-development/build-pipelines: how-to/steps-pipelines/steps_and_pipelines.md
-  how-to/pipeline-development/training-with-gpus/accelerate-distributed-training: how-to/containerization/containerization.md
+  # how-to/pipeline-development/training-with-gpus/accelerate-distributed-training: how-to/containerization/containerization.md
   how-to/pipeline-development/build-pipelines/name-your-pipeline-runs: how-to/steps-pipelines/steps_and_pipelines.md
   how-to/artifacts/complex_use_cases: how-to/artifacts/materializers.md
-  how-to/notebooks: how-to/steps-pipelines/steps_and_pipelines.md
+  # how-to/notebooks: how-to/steps-pipelines/steps_and_pipelines.md
