@@ -59,7 +59,37 @@ class MyClassMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = (MyClass,)
     
     # Define what type of artifact this is (usually DATA or MODEL)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
+    ASSOCIATED_ARTI
+
+### Debugging Custom Materializers
+
+Debugging custom materializers is crucial for ensuring they work as expected, especially in complex scenarios involving remote storage like S3. Here are some tips:
+
+- **Importance of Logging**: Logging is essential for tracking the execution flow and identifying issues. Use `logger.info` statements at critical points in your materializer code, such as before and after saving or loading models.
+
+- **Adding Logging**: Incorporate logging into your materializer class:
+  ```python
+  import logging
+  
+  logger = logging.getLogger(__name__)
+  
+  class MyClassMaterializer(BaseMaterializer):
+      def save(self, model: MyClass) -> None:
+          logger.info("Starting to save MyClass model.")
+          # Your save logic here
+          logger.info("Model saved successfully.")
+  
+      def load(self, data_type: type) -> MyClass:
+          logger.info("Starting to load MyClass model.")
+          # Your load logic here
+          logger.info("Model loaded successfully.")
+  ```
+
+- **Alternative Debugging Methods**: Use `print` statements or `breakpoint()` for interactive debugging sessions.
+
+- **Example Code Snippets**: Implement logging within your custom materializer class to assist in troubleshooting.
+
+These practices will help you effectively track the execution flow and identify issues within your custom materializer code.FACT_TYPE = ArtifactType.DATA
     
     def load(self, data_type: Type[Any]) -> MyClass:
         """Load MyClass from storage."""
