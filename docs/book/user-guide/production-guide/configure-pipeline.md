@@ -94,7 +94,7 @@ def training_pipeline(model_type: str):
     ...
 ```
 
-So you can see that the YAML config is fairly easy to use and is an important part of the codebase to control the execution of our pipeline. You can read more about how to configure a pipeline in the [how to section](https://docs.zenml.io/concepts/steps_and_pipelines/yaml_configuration/what-can-be-configured), but for now, we can move on to scaling our pipeline.
+So you can see that the YAML config is fairly easy to use and is an important part of the codebase to control the execution of our pipeline. You can read more about how to configure a pipeline in the [how to section](https://docs.zenml.io/concepts/steps_and_pipelines/configuration), but for now, we can move on to scaling our pipeline.
 
 ## Scaling compute on the cloud
 

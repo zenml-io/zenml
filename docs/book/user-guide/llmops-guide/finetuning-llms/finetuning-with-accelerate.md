@@ -186,7 +186,7 @@ def finetuning_pipeline(...):
 ```
 
 This configuration ensures that your training environment has all the necessary
-components for distributed training. For more details, see the [Accelerate documentation](https://docs.zenml.io/user-guides/tutorial/distributed-training/accelerate-distributed-training).
+components for distributed training. For more details, see the [Accelerate documentation](https://docs.zenml.io/user-guides/tutorial/distributed-training).
 
 ## Dataset iteration
 
