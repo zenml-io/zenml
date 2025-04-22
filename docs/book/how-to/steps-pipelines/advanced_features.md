@@ -109,6 +109,45 @@ Your functions will work as ZenML steps even if you don't provide any type annot
 * **Type validation of your step inputs**: ZenML makes sure that your step functions receive an object of the correct type from the upstream steps in your pipeline.
 * **Better serialization**: Without type annotations, ZenML uses [Cloudpickle](https://github.com/cloudpipe/cloudpickle) to serialize your step outputs. When provided with type annotations, ZenML can choose a [materializer](https://docs.zenml.io/getting-started/core-concepts#materializers) that is best suited for the output. In case none of the builtin materializers work, you can even [write a custom materializer](https://docs.zenml.io/how-to/data-artifact-management/handle-data-artifacts/handle-custom-data-types).
 
+### Custom Materializer for numpy.int64
+
+When working with specific data types like `numpy.int64`, the default Pickle materializer may not be suitable for production environments due to compatibility issues across different Python versions. To handle `numpy.int64` effectively, consider creating a custom materializer. Here’s how you can do it:
+
+- **Why Pickle is Not Suitable**: The default Pickle materializer is not production-ready because artifacts cannot be loaded when running with a different Python version. This is particularly problematic for data types like `numpy.int64` that are commonly used in machine learning workflows.
+
+- **Creating a Custom Materializer**: Implement a custom materializer by defining `load` and `save` methods to handle `numpy.int64`.
+
+  ```python
+  from zenml.materializers.base_materializer import BaseMaterializer
+  import numpy as np
+
+  class NumpyInt64Materializer(BaseMaterializer):
+      ASSOCIATED_TYPES = (np.int64,)
+
+      def load(self, data_type):
+          # Implement loading logic for numpy.int64
+          pass
+
+      def save(self, data):
+          # Implement saving logic for numpy.int64
+          pass
+  ```
+
+- **Registering the Materializer**: Ensure the custom materializer is registered with ZenML to be used instead of the default Pickle materializer.
+
+  ```python
+  from zenml.materializers.materializer_registry import materializer_registry
+
+  materializer_registry.register_and_overwrite_type(
+      key=np.int64,
+      type_=NumpyInt64Materializer
+  )
+  ```
+
+- **Converting to Native Python Types**: When possible, convert `numpy.int64` to native Python types to leverage built-in materializers.
+
+This approach will help you handle `numpy.int64` types more effectively in your pipelines, improving the robustness and portability of your machine learning models.
+
 {% hint style="warning" %}
 ZenML provides a built-in [CloudpickleMaterializer](https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers.html#zenml.materializers.cloudpickle_materializer) that can handle any object by saving it with [cloudpickle](https://github.com/cloudpipe/cloudpickle). However, this is not production-ready because the resulting artifacts cannot be loaded when running with a different Python version. In such cases, you should consider building a [custom Materializer](https://docs.zenml.io/how-to/data-artifact-management/handle-data-artifacts/handle-custom-data-types#custom-materializers) to save your objects in a more robust and efficient format.
 
