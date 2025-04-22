@@ -249,6 +249,26 @@ ZenML uses the following convention to differentiate between a single output of 
 * When the `return` statement is followed by a tuple literal (e.g., `return 1, 2` or `return (value_1, value_2)`), it's treated as a step with multiple outputs
 * All other cases are treated as a step with a single output of type `Tuple`
 
+### Version Update Notes
+
+In the latest version, the `Output` class has been removed from the `zenml.steps` module. Users should now use Python's built-in `Tuple` type to define multiple outputs in their steps.
+
+#### Example Update
+
+If you previously used the `Output` class, update your code as follows:
+
+```python
+from typing import Tuple
+
+@step
+def dynamic_importer() -> Tuple[str]:
+    """Downloads the latest data from a mock API and saves it as an artifact."""
+    data = get_data_for_test()
+    data_path = "data/batch_data.csv"
+    pd.DataFrame(data).to_csv(data_path, index=False)
+    return data_path,
+```
+
 ### Custom Output Names
 
 You can name your step outputs using the `Annotated` type:
