@@ -82,6 +82,18 @@ Materializers define how artifacts live in between steps. More precisely, they d
 
 All materializers use the base abstraction called the `BaseMaterializer` class. While ZenML comes built-in with various implementations of materializers for different datatypes, if you are using a library or a tool that doesn't work with our built-in options, you can write [your own custom materializer](../how-to/artifacts/materializers.md) to ensure that your data can be passed from step to step.
 
+##### Custom Materializers for Complex Objects
+
+To create a custom materializer for complex or third-party objects, such as BERTopic models, follow these steps:
+
+1. **Define a Custom Materializer**: Inherit from `BaseMaterializer` and implement the `save` and `load` methods to handle the serialization and deserialization of your object.
+
+2. **Register the Custom Materializer**: Register it with ZenML to associate it with specific data types.
+
+3. **Example**: For a BERTopic model, you can save to and load from an S3 artifact store using the custom materializer.
+
+4. **Troubleshooting**: Ensure S3 configurations and permissions are correctly set up to avoid issues with artifacts not appearing in the expected location.
+
 #### Parameters & Settings
 
 When we think about steps as functions, we know they receive input in the form of artifacts. We also know that they produce output (in the form of artifacts, stored in the artifact store). But steps also take parameters. The parameters that you pass into the steps are also (helpfully!) stored by ZenML. This helps freeze the iterations of your experimentation workflow in time, so you can return to them exactly as you run them. On top of the parameters that you provide for your steps, you can also use different `Setting`s to configure runtime configurations for your infrastructure and pipelines.
