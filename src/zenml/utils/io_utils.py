@@ -205,6 +205,29 @@ def resolve_relative_path(path: str) -> str:
     return str(Path(path).resolve())
 
 
+def is_path_within_directory(path: str, directory: str) -> bool:
+    """Checks if a path is contained within a given directory.
+
+    This utility function verifies that a path (absolute or relative) resolves
+    to a location that is within the specified directory. This is useful for
+    security checks such as preventing path traversal attacks when extracting
+    archives (CVE-2007-4559) or whenever path containment needs to be verified.
+
+    Args:
+        path: The path to check (can be relative or absolute).
+        directory: The directory that should contain the path.
+
+    Returns:
+        Boolean indicating whether the path is contained within the directory (True)
+        or not (False).
+    """
+    # Convert to absolute path, ensuring it's normalized
+    abs_path = os.path.abspath(os.path.join(directory, path))
+    # Check if the path is within the target directory
+    dir_abs = os.path.abspath(directory)
+    return abs_path.startswith(dir_abs + os.sep) or abs_path == dir_abs
+
+
 def move(source: str, destination: str, overwrite: bool = False) -> None:
     """Moves dir or file from source to destination. Can be used to rename.
 

@@ -46,7 +46,7 @@ def test_that_save_to_file_called_multiple_times_on_exceeding_limits():
         _STEP_LOGS_STORAGE_MAX_MESSAGES,
     ):
         with patch(
-            "zenml.logging.step_logging.StepLogsStorage.save_to_file"
+            "zenml.logging.step_logging.PipelineLogsStorage.save_to_file"
         ) as mock_save_to_file:
             run_1 = _inner_1()
             assert mock_save_to_file.call_count > 1
@@ -54,7 +54,7 @@ def test_that_save_to_file_called_multiple_times_on_exceeding_limits():
         Client().delete_pipeline(run_1.pipeline.id)
 
         with patch(
-            "zenml.logging.step_logging.StepLogsStorage.save_to_file"
+            "zenml.logging.step_logging.PipelineLogsStorage.save_to_file"
         ) as mock_save_to_file:
             with patch(
                 "zenml.logging.step_logging.STEP_LOGS_STORAGE_INTERVAL_SECONDS",

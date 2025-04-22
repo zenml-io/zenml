@@ -210,6 +210,7 @@ class Compiler:
                 enable_artifact_metadata=config.enable_artifact_metadata,
                 enable_artifact_visualization=config.enable_artifact_visualization,
                 enable_step_logs=config.enable_step_logs,
+                enable_pipeline_logs=config.enable_pipeline_logs,
                 settings=config.settings,
                 tags=config.tags,
                 extra=config.extra,

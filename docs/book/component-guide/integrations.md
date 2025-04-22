@@ -18,48 +18,57 @@ We have a [dedicated webpage](https://zenml.io/integrations) that indexes all su
 
 Another easy way of seeing a list of integrations is to see the list of directories in the [integrations directory](https://github.com/zenml-io/zenml/tree/main/src/zenml/integrations) on our GitHub.
 
-## Installing ZenML integrations
+## Installing dependencies for integrations and stacks
 
-Before you can use integrations, you first need to install them using `zenml integration install`, e.g., you can install [Kubeflow](orchestrators/kubeflow.md), [MLflow Tracking](experiment-trackers/mlflow.md), and [Seldon Core](model-deployers/seldon.md), using:
+ZenML provides a way to export the package requirements for both individual integrations and entire stacks, enabling you to install the necessary dependencies manually. This approach gives you full control over the versions and the installation process.
 
-```
-zenml integration install kubeflow mlflow seldon -y
-```
+### Exporting integration requirements
 
-Under the hood, this simply installs the preferred versions of all integrations using pip, i.e., it executes in a sub-process call:
-
-```
-pip install kubeflow==<PREFERRED_VERSION> mlflow==<PREFERRED_VERSION> seldon==<PREFERRED_VERSION>
-```
-
-{% hint style="info" %}
-* The `-y` flag confirms all `pip install` commands without asking you for
-
-You can run `zenml integration --help` to see a full list of CLI commands that ZenML provides for interacting with integrations.
-{% endhint %}
-
-Note, that you can also install your dependencies directly, but please note that there is no guarantee that ZenML internals with work with any arbitrary version of any external library.
-
-#### Use `uv` for package installation
-
-You can use [`uv`](https://github.com/astral-sh/uv) as a package manager if you want. Simply pass the `--uv` flag to the `zenml integration ...` command and it'll use `uv` for installation, upgrades and uninstalls. Note that `uv` must be installed for this to work. This is an experimental option that we've added for users wishing to use `uv` but given that it is relatively new as an option there might be certain packages that don't work well with `uv`.
-
-Full documentation for how it works with PyTorch can be found on Astral's docs website [here](https://docs.astral.sh/uv/guides/integration/pytorch/). It covers some of the particular gotchas and details you might need to know.
-
-## Upgrade ZenML integrations
-
-You can upgrade all integrations to their latest possible version using:
+You can export the requirements for a specific integration using the `zenml integration export-requirements` command. To write the requirements to a file and install them via pip, run:
 
 ```bash
-zenml integration upgrade mlflow pytorch -y
+zenml integration export-requirements <INTEGRATION_NAME> --output-file integration_requirements.txt
+pip install -r integration_requirements.txt
+```
+
+If you prefer to see the requirements without writing them to a file, omit the `--output-file` flag:
+
+```bash
+zenml integration export-requirements <INTEGRATION_NAME>
+```
+
+This will print the list of dependencies to the console, which you can then pipe to pip:
+
+```bash
+zenml integration export-requirements <INTEGRATION_NAME> | xargs pip install
+```
+
+### Exporting stack requirements
+
+To install all dependencies for a specific ZenML stack at once, you can export your stack's requirements:
+
+```bash
+zenml stack export-requirements <STACK_NAME> --output-file stack_requirements.txt
+pip install -r stack_requirements.txt
+```
+
+Omitting `--output-file` will print the requirements to the console:
+
+```bash
+zenml stack export-requirements <STACK_NAME>
+```
+
+You can also pipe the output directly to pip:
+
+```bash
+zenml stack export-requirements <STACK_NAME> | xargs pip install
 ```
 
 {% hint style="info" %}
-* The `-y` flag confirms all `pip install --upgrade` commands without asking you for confirmation.
-* If no integrations are specified, all installed integrations will be upgraded.
+If you use a different package manager such as [`uv`](https://github.com/astral-sh/uv), you can install the exported requirements by replacing `pip install -r …` with your package manager's equivalent command.
 {% endhint %}
 
-### Help us with integrations!
+## Help us with integrations!
 
 There are countless tools in the ML / MLOps field. We have made an initial prioritization of which tools to support with integrations that are visible on our public [roadmap](https://zenml.io/roadmap).
 

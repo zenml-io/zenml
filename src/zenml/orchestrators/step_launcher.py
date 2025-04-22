@@ -158,7 +158,7 @@ class StepLauncher:
                 step_name=self._step_name,
             )
 
-            logs_context = step_logging.StepLogsStorageContext(
+            logs_context = step_logging.PipelineLogsStorageContext(
                 logs_uri=logs_uri, artifact_store=self._stack.artifact_store
             )  # type: ignore[assignment]
 
@@ -240,7 +240,7 @@ class StepLauncher:
                             # the external jobs in step operators
                             if isinstance(
                                 logs_context,
-                                step_logging.StepLogsStorageContext,
+                                step_logging.PipelineLogsStorageContext,
                             ):
                                 force_write_logs = partial(
                                     logs_context.storage.save_to_file,
@@ -421,7 +421,6 @@ class StepLauncher:
         )
         environment = orchestrator_utils.get_config_environment_vars(
             pipeline_run_id=step_run_info.run_id,
-            step_run_id=step_run_info.step_run_id,
         )
         if last_retry:
             environment[ENV_ZENML_IGNORE_FAILURE_HOOK] = str(False)
