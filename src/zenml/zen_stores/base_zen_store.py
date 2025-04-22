@@ -333,8 +333,8 @@ class BaseZenStore(
                     active_project = self.get_project(user.default_project_id)
                 except (KeyError, IllegalOperationError):
                     logger.warning(
-                        "The default project %s for the active user is no longer "
-                        "available.",
+                        "The default project %s for the active user is no "
+                        "longer available.",
                         user.default_project_id,
                     )
                 else:
@@ -349,28 +349,13 @@ class BaseZenStore(
                     project_filter_model=ProjectFilter()
                 )
             except Exception:
-                # There was some failure, we force the user to set the active
-                # project manually
-                logger.warning(
-                    "An active project is not set. Please set the active "
-                    "project by running `zenml project set <NAME>`."
-                )
+                pass
             else:
-                if len(projects) == 0:
-                    logger.warning(
-                        "No available projects. Please create a project by "
-                        "running `zenml project register <NAME> --set`."
-                    )
-                elif len(projects) == 1:
+                if len(projects) == 1:
                     active_project = projects.items[0]
                     logger.info(
                         f"Setting the {config_name} active project "
                         f"to '{active_project.name}'."
-                    )
-                else:
-                    logger.warning(
-                        "Multiple projects are available. Please set the "
-                        "active project by running `zenml project set <NAME>`."
                     )
 
         active_stack: StackResponse
