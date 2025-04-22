@@ -59,6 +59,24 @@ In this example:
 * It processes the features and computes some statistics
 * It returns a new `dict` as output with the processed data and additional information
 
+### Custom Output Names
+
+You can name your step outputs using the `Annotated` type:
+
+```python
+from typing_extensions import Annotated  # or `from typing import Annotated` on Python 3.9+
+from typing import Tuple
+
+@step
+def divide(a: int, b: int) -> Tuple[
+    Annotated[int, "quotient"],
+    Annotated[int, "remainder"]
+]:
+    return a // b, a % b
+```
+
+By default, step outputs are named `output` for single output steps and `output_0`, `output_1`, etc. for steps with multiple outputs.
+
 ## Basic Pipelines
 
 ### Creating a Simple Pipeline
@@ -248,24 +266,6 @@ ZenML uses the following convention to differentiate between a single output of 
 
 * When the `return` statement is followed by a tuple literal (e.g., `return 1, 2` or `return (value_1, value_2)`), it's treated as a step with multiple outputs
 * All other cases are treated as a step with a single output of type `Tuple`
-
-### Custom Output Names
-
-You can name your step outputs using the `Annotated` type:
-
-```python
-from typing_extensions import Annotated  # or `from typing import Annotated` on Python 3.9+
-from typing import Tuple
-
-@step
-def divide(a: int, b: int) -> Tuple[
-    Annotated[int, "quotient"],
-    Annotated[int, "remainder"]
-]:
-    return a // b, a % b
-```
-
-By default, step outputs are named `output` for single output steps and `output_0`, `output_1`, etc. for steps with multiple outputs.
 
 ## Conclusion
 
