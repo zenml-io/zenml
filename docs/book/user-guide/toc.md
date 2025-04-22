@@ -1,6 +1,6 @@
 # Table of contents
 
-* [Learn ZenML](README.md)
+* [Overview](README.md)
 * [Starter guide](starter-guide/README.md)
   * [Create an ML pipeline](starter-guide/create-an-ml-pipeline.md)
   * [Cache previous executions](starter-guide/cache-previous-executions.md)
@@ -48,9 +48,27 @@
 
 ## Tutorials <a href="#tutorial" id="tutorial"></a>
 
-* [Organizing pipelines and models](tutorial/organizing-pipelines-and-models.md)
 * [Managing scheduled pipelines](tutorial/managing-scheduled-pipelines.md)
 * [Trigger pipelines from external systems](tutorial/trigger-pipelines-from-external-systems.md)
+* [Hyper-parameter tuning](tutorial/hyper-parameter-tuning.md)
+* [Inspecting past pipeline runs](tutorial/fetching-pipelines.md)
+* [Train with GPUs](tutorial/distributed-training.md)
+* [Running notebooks remotely](tutorial/run-remote-notebooks.md)
+* [Managing machine learning datasets](tutorial/datasets.md)
+* [Handling big data](tutorial/manage-big-data.md)
+
+## Best practices
+
+* [Keep Your Dashboard Clean](best-practices/keep-your-dashboard-server-clean.md)
+* [Configure Python environments](best-practices/configure-python-environments.md)
+* [Shared Components for  Teams](best-practices/shared-components-for-teams.md)
+* [Organizing Stacks Pipelines Models](tutorial/organizing-pipelines-and-models.md)
+* [Access Management](best-practices/access-management.md)
+* [Setting up a Project Repository](best-practices/set-up-your-repository.md)
+* [Creating Templates for ML Platform](best-practices/project-templates.md)
+* [Using VS Code extension](best-practices/vscode-extension.md)
+* [Leveraging MCP](best-practices/mcp-chat-with-server.md)
+* [Debugging and Solving Issues](best-practices/debug-and-solve-issues.md)
 
 ## Examples
 

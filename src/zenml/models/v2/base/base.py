@@ -134,7 +134,7 @@ class BaseResponse(BaseZenModel, Generic[AnyBody, AnyMetadata, AnyResources]):
             )
 
         # Check if the name has changed
-        if "name" in self.model_fields:
+        if "name" in type(self).model_fields:
             original_name = getattr(self, "name")
             hydrated_name = getattr(hydrated_model, "name")
 
@@ -172,7 +172,7 @@ class BaseResponse(BaseZenModel, Generic[AnyBody, AnyMetadata, AnyResources]):
                     )
 
         # Check all the fields in the body
-        for field in self.get_body().model_fields:
+        for field in type(self.get_body()).model_fields:
             original_value = getattr(self.get_body(), field)
             hydrated_value = getattr(hydrated_model.get_body(), field)
 
@@ -255,7 +255,9 @@ class BaseResponse(BaseZenModel, Generic[AnyBody, AnyMetadata, AnyResources]):
         """
         if self.metadata is None:
             # If the metadata is not there, check the class first.
-            metadata_annotation = self.model_fields["metadata"].annotation
+            metadata_annotation = (
+                type(self).model_fields["metadata"].annotation
+            )
             assert metadata_annotation is not None, (
                 "For each response model, an annotated metadata"
                 "field should exist."
@@ -293,7 +295,9 @@ class BaseResponse(BaseZenModel, Generic[AnyBody, AnyMetadata, AnyResources]):
         """
         if self.resources is None:
             # If the resources are not there, check the class first.
-            resources_annotation = self.model_fields["resources"].annotation
+            resources_annotation = (
+                type(self).model_fields["resources"].annotation
+            )
             assert resources_annotation is not None, (
                 "For each response model, an annotated resources"
                 "field should exist."

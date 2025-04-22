@@ -462,3 +462,95 @@ def delete_secret(
         name=secret_name,
         namespace=namespace,
     )
+
+
+def create_and_wait_for_pod_to_start(
+    core_api: k8s_client.CoreV1Api,
+    pod_display_name: str,
+    pod_name: str,
+    pod_manifest: k8s_client.V1Pod,
+    namespace: str,
+    startup_max_retries: int,
+    startup_failure_delay: float,
+    startup_failure_backoff: float,
+    startup_timeout: float,
+) -> None:
+    """Create a pod and wait for it to reach a desired state.
+
+    Args:
+        core_api: Client of Core V1 API of Kubernetes API.
+        pod_display_name: The display name of the pod to use in logs.
+        pod_name: The name of the pod to create.
+        pod_manifest: The manifest of the pod to create.
+        namespace: The namespace in which to create the pod.
+        startup_max_retries: The maximum number of retries for the pod startup.
+        startup_failure_delay: The delay between retries for the pod startup.
+        startup_failure_backoff: The backoff factor for the pod startup.
+        startup_timeout: The maximum time to wait for the pod to start.
+
+    Raises:
+        TimeoutError: If the pod is still in a pending state after the maximum
+            wait time has elapsed.
+        Exception: If the pod fails to start after the maximum number of
+            retries.
+    """
+    retries = 0
+
+    while retries < startup_max_retries:
+        try:
+            # Create and run pod.
+            core_api.create_namespaced_pod(
+                namespace=namespace,
+                body=pod_manifest,
+            )
+            break
+        except Exception as e:
+            retries += 1
+            if retries < startup_max_retries:
+                logger.debug(f"The {pod_display_name} failed to start: {e}")
+                logger.error(
+                    f"Failed to create {pod_display_name}. "
+                    f"Retrying in {startup_failure_delay} seconds..."
+                )
+                time.sleep(startup_failure_delay)
+                startup_failure_delay *= startup_failure_backoff
+            else:
+                logger.error(
+                    f"Failed to create {pod_display_name} after "
+                    f"{startup_max_retries} retries. Exiting."
+                )
+                raise
+
+    # Wait for pod to start
+    logger.info(f"Waiting for {pod_display_name} to start...")
+    max_wait = startup_timeout
+    total_wait: float = 0
+    delay = startup_failure_delay
+    while True:
+        pod = get_pod(
+            core_api=core_api,
+            pod_name=pod_name,
+            namespace=namespace,
+        )
+        if not pod or pod_is_not_pending(pod):
+            break
+        if total_wait >= max_wait:
+            # Have to delete the pending pod so it doesn't start running
+            # later on.
+            try:
+                core_api.delete_namespaced_pod(
+                    name=pod_name,
+                    namespace=namespace,
+                )
+            except Exception:
+                pass
+            raise TimeoutError(
+                f"The {pod_display_name} is still in a pending state "
+                f"after {total_wait} seconds. Exiting."
+            )
+
+        if total_wait + delay > max_wait:
+            delay = max_wait - total_wait
+        total_wait += delay
+        time.sleep(delay)
+        delay *= startup_failure_backoff

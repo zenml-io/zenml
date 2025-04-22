@@ -15,7 +15,6 @@
 
 import argparse
 import socket
-import time
 from typing import Any, Dict
 from uuid import UUID
 
@@ -103,8 +102,6 @@ def main() -> None:
 
         Raises:
             Exception: If the pod fails to start.
-            TimeoutError: If the pod is still in a pending state after the
-                maximum wait time has elapsed.
         """
         # Define Kubernetes pod name.
         pod_name = f"{orchestrator_run_id}-{step_name}"
@@ -176,68 +173,17 @@ def main() -> None:
             mount_local_stores=mount_local_stores,
         )
 
-        retries = 0
-        max_retries = settings.pod_failure_max_retries
-        delay: float = settings.pod_failure_retry_delay
-        backoff = settings.pod_failure_backoff
-
-        while retries < max_retries:
-            try:
-                # Create and run pod.
-                core_api.create_namespaced_pod(
-                    namespace=args.kubernetes_namespace,
-                    body=pod_manifest,
-                )
-                break
-            except Exception as e:
-                retries += 1
-                if retries < max_retries:
-                    logger.debug(
-                        f"Pod for step `{step_name}` failed to start: {e}"
-                    )
-                    logger.error(
-                        f"Failed to create pod for step `{step_name}`. "
-                        f"Retrying in {delay} seconds..."
-                    )
-                    time.sleep(delay)
-                    delay *= backoff
-                else:
-                    logger.error(
-                        f"Failed to create pod for step `{step_name}` after "
-                        f"{max_retries} retries. Exiting."
-                    )
-                    raise
-
-        # Wait for pod to start
-        max_wait = settings.pod_startup_timeout
-        total_wait: float = 0
-        delay = settings.pod_failure_retry_delay
-        while True:
-            pod = kube_utils.get_pod(
-                core_api, pod_name, args.kubernetes_namespace
-            )
-            if not pod or kube_utils.pod_is_not_pending(pod):
-                break
-            if total_wait >= max_wait:
-                # Have to delete the pending pod so it doesn't start running
-                # later on.
-                try:
-                    core_api.delete_namespaced_pod(
-                        name=pod_name,
-                        namespace=args.kubernetes_namespace,
-                    )
-                except Exception:
-                    pass
-                raise TimeoutError(
-                    f"Pod for step `{step_name}` is still in a pending state "
-                    f"after {total_wait} seconds. Exiting."
-                )
-
-            if total_wait + delay > max_wait:
-                delay = max_wait - total_wait
-            total_wait += delay
-            time.sleep(delay)
-            delay *= backoff
+        kube_utils.create_and_wait_for_pod_to_start(
+            core_api=core_api,
+            pod_display_name=f"pod for step `{step_name}`",
+            pod_name=pod_name,
+            pod_manifest=pod_manifest,
+            namespace=args.kubernetes_namespace,
+            startup_max_retries=settings.pod_failure_max_retries,
+            startup_failure_delay=settings.pod_failure_retry_delay,
+            startup_failure_backoff=settings.pod_failure_backoff,
+            startup_timeout=settings.pod_startup_timeout,
+        )
 
         # Wait for pod to finish.
         logger.info(f"Waiting for pod of step `{step_name}` to finish...")
