@@ -82,6 +82,56 @@ Materializers define how artifacts live in between steps. More precisely, they d
 
 All materializers use the base abstraction called the `BaseMaterializer` class. While ZenML comes built-in with various implementations of materializers for different datatypes, if you are using a library or a tool that doesn't work with our built-in options, you can write [your own custom materializer](../how-to/artifacts/materializers.md) to ensure that your data can be passed from step to step.
 
+##### Creating Custom Materializers
+
+To handle custom data types or models not natively supported by ZenML, such as `BERTopic` or `numpy.int64`, you can create custom materializers. Here’s a step-by-step guide:
+
+1. **Introduction to Materializers**: Materializers are crucial for managing how data is serialized and deserialized between steps in ZenML pipelines.
+
+2. **Defining a Custom Materializer**: Create a class inheriting from `BaseMaterializer` and implement the `save` and `load` methods.
+
+   ```python
+   import os
+   from zenml.materializers.base_materializer import BaseMaterializer
+   from bertopic import BERTopic
+
+   class BERTopicMaterializer(BaseMaterializer):
+       ASSOCIATED_TYPES = (BERTopic,)
+
+       def load(self, data_type):
+           model_path = os.path.join(self.uri, "bertopic_model")
+           return BERTopic.load(model_path)
+
+       def save(self, model):
+           model_path = os.path.join(self.uri, "bertopic_model")
+           model.save(model_path)
+   ```
+
+3. **Registering the Materializer**: Use the `materializer_registry` to register your custom materializer.
+
+   ```python
+   from zenml.materializers.materializer_registry import materializer_registry
+
+   materializer_registry.register_and_overwrite_type(
+       key=BERTopic,
+       type_=BERTopicMaterializer
+   )
+   ```
+
+4. **Using Custom Materializers**: Specify the custom materializer in the `@step` decorator for steps that output the custom type.
+
+   ```python
+   from zenml import step
+
+   @step(output_materializers={"model": BERTopicMaterializer})
+   def train_bertopic_model(data) -> BERTopic:
+       model = BERTopic()
+       model.fit(data)
+       return model
+   ```
+
+5. **Troubleshooting**: Common issues include artifacts not saving correctly to remote storage. Ensure your S3 configuration is correct and check logs for errors.
+
 #### Parameters & Settings
 
 When we think about steps as functions, we know they receive input in the form of artifacts. We also know that they produce output (in the form of artifacts, stored in the artifact store). But steps also take parameters. The parameters that you pass into the steps are also (helpfully!) stored by ZenML. This helps freeze the iterations of your experimentation workflow in time, so you can return to them exactly as you run them. On top of the parameters that you provide for your steps, you can also use different `Setting`s to configure runtime configurations for your infrastructure and pipelines.
