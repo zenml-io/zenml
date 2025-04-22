@@ -452,19 +452,6 @@ build: your-build-id-here
 Specifying a custom build when running a pipeline will **not run the code on your client machine** but will use the code **included in the Docker images of the build**. Even if you make local code changes, reusing a build will _always_ execute the code bundled in the Docker image, rather than the local code.
 {% endhint %}
 
-### Preventing Build Reuse
-
-There might be cases where you want to force a new build, even if a suitable existing build is available. You can do this by setting `prevent_build_reuse=True`:
-
-```python
-docker_settings = DockerSettings(prevent_build_reuse=True)
-```
-
-This is useful in scenarios like:
-- When you've made changes to your image building process that aren't tracked by ZenML
-- When troubleshooting issues in your Docker image
-- When you want to ensure your Docker image uses the most up-to-date base images
-
 ### Controlling Image Repository Names
 
 You can control where your Docker image is pushed by specifying a target repository name:
