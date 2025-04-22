@@ -918,7 +918,7 @@ However, this feature is currently supported with helper Python scripts, as desc
 
 The script will prompt you for the URL of your deployment, the admin account email and admin account password and finally the location of your `users.yml` file.
 
-![](../../.gitbook/assets/on-prem-01.png)
+![](.gitbook/assets/on-prem-01.png)
 
 ### Create an Organization
 
@@ -928,29 +928,29 @@ The ZenML Pro admin user should only be used for administrative operations: crea
 
 Head on over to your deployment in the browser and use one of the users you just created to log in.
 
-![](../../.gitbook/assets/on-prem-02.png)
+![](.gitbook/assets/on-prem-02.png)
 
 After logging in for the first time, you will need to create a new password. (Be aware: For the time being only the admin account will be able to reset this password)
 
-![](../../.gitbook/assets/on-prem-03.png)
+![](.gitbook/assets/on-prem-03.png)
 
 Finally you can create an Organization. This Organization will host all the workspaces you enroll at the next stage.
 
-![](../../.gitbook/assets/on-prem-04.png)
+![](.gitbook/assets/on-prem-04.png)
 
 ### Invite Other Users to the Organization
 
 Now you can invite your whole team to the org. For this open the drop-down in the top right and head over to the settings.
 
-![](../../.gitbook/assets/on-prem-05.png)
+![](.gitbook/assets/on-prem-05.png)
 
 Here in the members tab, add all the users you created in the previous step.
 
-![](../../.gitbook/assets/on-prem-06.png)
+![](.gitbook/assets/on-prem-06.png)
 
 For each user, finally head over to the Pending invited screen and copy the invite link for each user.
 
-![](../../.gitbook/assets/on-prem-07.png)
+![](.gitbook/assets/on-prem-07.png)
 
 Finally, send the invitation link, along with the account's email and initial password over to your team members.
 
@@ -1471,17 +1471,17 @@ If you use TLS certificates for the ZenML Pro control plane or workspace server 
 
 The newly enrolled workspace should be accessible in the ZenML Pro workspace dashboard and the CLI now. You need to login as an organization member and add yourself as a workspace member first):
 
-![](../../.gitbook/assets/on-prem-08.png)
+![](.gitbook/assets/on-prem-08.png)
 
-![](../../.gitbook/assets/on-prem-09.png)
+![](.gitbook/assets/on-prem-09.png)
 
-![](../../.gitbook/assets/on-prem-10.png)
+![](.gitbook/assets/on-prem-10.png)
 
 Then follow the instructions in the checklist to unlock the full dashboard:
 
-![](../../.gitbook/assets/on-prem-11.png)
+![](.gitbook/assets/on-prem-11.png)
 
-![](../../.gitbook/assets/on-prem-12.png)
+![](.gitbook/assets/on-prem-12.png)
 
 #### Accessing the Workspace from the ZenML CLI
 
