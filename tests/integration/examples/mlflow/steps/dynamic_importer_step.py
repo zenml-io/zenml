@@ -36,9 +36,10 @@ def get_data_from_api() -> Annotated[np.ndarray, "api_data"]:
     data = df["image"].map(lambda x: np.array(x)).values
     data = np.array(
         [
-            x.reshape(28, 28).astype("uint8")[
+            # Pad the image to 32x32 to enable downsampling to 8x8
+            np.pad(x.reshape(28, 28).astype("float64"), 2)[
                 ::4, ::4
-            ]  # Simple downsampling by taking every 4th pixel
+            ]  # Downsample to 8x8 by taking every 4th pixel
             for x in data
         ]
     )
