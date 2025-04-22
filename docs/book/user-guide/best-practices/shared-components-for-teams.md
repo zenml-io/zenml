@@ -40,6 +40,18 @@ Custom materializers are common components that teams often need to share. To im
 2. Implement the custom materializer as described in the [ZenML documentation](https://docs.zenml.io/how-to/data-artifact-management/handle-data-artifacts/handle-custom-data-types).
 3. Team members can import and use the shared materializer in their projects.
 
+#### Creating and Using Custom Materializers
+
+- **Introduction to Materializers**: Materializers in ZenML are responsible for serializing and deserializing data types that are not natively supported. They are crucial for handling custom data types or models, such as `BERTopic` and `numpy.int64`.
+
+- **Step-by-Step Instructions**: To create a custom materializer, define a class that inherits from `BaseMaterializer` and implement the `save` and `load` methods. For example, a `BERTopicMaterializer` can be created to handle `BERTopic` models.
+
+- **Examples**: Provide examples of custom materializers for handling machine learning models like `BERTopic` and specific data types like `numpy.int64`.
+
+- **Registering and Using Custom Materializers**: Register the custom materializer with ZenML and specify it in the `@step` decorator for steps that output the custom data type.
+
+- **Troubleshooting Tips**: Include tips for common issues, such as artifacts not being saved correctly to remote storage like S3.
+
 ## How to Distribute Shared Components
 
 There are several methods to distribute and use shared components within a team:
