@@ -244,6 +244,9 @@ def add_pod_settings(
     if settings.host_ipc:
         pod_spec.host_ipc = settings.host_ipc
 
+    if settings.scheduler_name:
+        pod_spec.scheduler_name = settings.scheduler_name
+
 
 def build_cron_job_manifest(
     cron_expression: str,
