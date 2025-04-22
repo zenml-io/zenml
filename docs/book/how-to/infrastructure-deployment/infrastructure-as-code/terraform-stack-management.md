@@ -151,6 +151,10 @@ resource "zenml_stack_component" "components" {
 }
 ```
 
+### Update Region Settings for Stack Components
+
+To change the region for a ZenML stack, update the configuration of each stack component to reflect the new region. This involves modifying the region settings for each cloud service used in your stack, such as the artifact store, orchestrator, and container registry. For example, if you're using AWS, update the region in your AWS Service Connector configuration. Refer to the [AWS Guide](https://github.com/zenml-io/zenml/blob/main/docs/book/how-to/popular-integrations/aws-guide.md) for detailed instructions.
+
 ### Assemble the stack
 
 Finally, assemble the components into a stack:
