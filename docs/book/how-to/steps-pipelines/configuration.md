@@ -132,7 +132,9 @@ When both pipeline and step resource settings are specified, they are merged wit
 # -> cpu_count: 2, gpu_count=1, memory="2GB"
 ```
 
-Note that ResourceSettings are not always applied by all orchestrators. The ability to enforce resource constraints depends on the specific orchestrator being used. Some orchestrators like Kubernetes fully support these settings, while others may ignore them.
+{% hint style="info" %}
+Note that `ResourceSettings` are not always applied by all orchestrators. The ability to enforce resource constraints depends on the specific orchestrator being used. Some orchestrators like Kubernetes fully support these settings, while others may ignore them. In order to learn more, read the [individual pages](https://docs.zenml.io/stacks/stack-components/orchestrators) of the orchestrator you are using.
+{% endhint %}
 
 ### Docker Settings
 
