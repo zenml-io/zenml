@@ -4,6 +4,17 @@ description: Configuring and customizing your pipeline runs.
 
 ZenML provides several approaches to configure your pipelines and steps:
 
+### Understanding `.configure()` vs `.with_options()`
+
+ZenML provides two primary methods to configure pipelines and steps: `.configure()` and `.with_options()`. While they accept the same parameters, they behave differently:
+
+- **`.configure()`**: Modifies the configuration **in-place** and returns the same object.
+- **`.with_options()`**: Creates a **new copy** with the applied configuration, leaving the original unchanged.
+
+When to use each:
+- Use `.with_options()` when you need to create multiple variants of a step/pipeline, especially for running a step with different parameters.
+- Use `.configure()` when applying a general configuration you'll only use once.
+
 ### Pipeline Configuration with `configure`
 
 You can configure various aspects of a pipeline using the `configure` method:
