@@ -268,6 +268,7 @@ def status() -> None:
         # Write about the active entities
         scope = "repository" if client.uses_local_configuration else "global"
         cli_utils.declare(f"  The active user is: '{client.active_user.name}'")
+        cli_utils.declare(f"  The active project is: '{client.active_project.name}'")
         cli_utils.declare(
             f"  The active stack is: '{client.active_stack_model.name}' ({scope})"
         )
