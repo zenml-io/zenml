@@ -22,7 +22,7 @@ When a pipeline is run with a remote orchestrator, a Dockerfile is dynamically g
 
 The process described above is automated by ZenML and covers most basic use cases. This page covers various ways to customize the Docker build process to fit your specific needs.
 
-For a full list of configuration options, check out [the DockerSettings object on the SDKDocs](https://sdkdocs.zenml.io/latest/core_code_docs/core-config.html#zenml.config.docker_settings).
+For a full list of configuration options, check out [the DockerSettings object on the SDKDocs](https://sdkdocs.zenml.io/latest/core_code_docs/core-config.html#zenml.config.DockerSettings).
 
 ## Configuring Docker Settings
 

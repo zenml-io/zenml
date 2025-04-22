@@ -64,19 +64,19 @@ provider "zenml" {
 }
 ```
 
-To generate a API key, use the command:
+To generate an API key, use the command:
 
 ```bash
 zenml service-account create <SERVICE_ACCOUNT_NAME>
 ```
 
 You can learn more about how to generate a `ZENML_API_KEY` via service accounts
-[here](https://docs.zenml.io//how-to/manage-zenml-server/connecting-to-zenml/connect-with-a-service-account).
+[here](https://docs.zenml.io/how-to/manage-zenml-server/connecting-to-zenml/connect-with-a-service-account).
 
 ### Create the service connectors
 
 The key to successful registration is proper authentication between the components.
-[Service connectors](https://docs.zenml.io//how-to/infrastructure-deployment/auth-management) are ZenML's way of managing this:
+[Service connectors](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management) are ZenML's way of managing this:
 
 ```hcl
 # First, create a service connector
@@ -329,7 +329,7 @@ resource "zenml_stack" "gcp_stack" {
   components = {
     artifact_store     = zenml_stack_component.artifact_store.id
     container_registry = zenml_stack_component.container_registry.id
-    orchestrator      = zenml_stack_component.orchestrator.id
+    orchestrator       = zenml_stack_component.orchestrator.id
   }
 
   labels = {
@@ -383,7 +383,7 @@ export TF_VAR_gcp_service_account_key=$(cat path/to/service-account-key.json)
 
 ### Usage Instructions
 
-1. Install required providers and initializing Terraform:
+1. Install required providers and initialize Terraform:
 ```bash
 terraform init
 ```
