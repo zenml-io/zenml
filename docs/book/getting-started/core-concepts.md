@@ -72,6 +72,27 @@ Artifacts represent the data that goes through your steps as inputs and outputs,
 
 The serialization and deserialization logic of artifacts is defined by [Materializers](../how-to/artifacts/materializers.md).
 
+#### Handling Non-JSON Serializable Parameters in ZenML Pipelines
+
+When attempting to pass non-JSON serializable objects, such as `pandas.DataFrame`, as parameters between steps in ZenML pipelines, you may encounter serialization errors. These complex objects should be passed as artifacts instead. To correctly pass such objects, ensure they are produced by a previous step or loaded as external artifacts. Here is an example of how to structure a pipeline to handle this:
+
+```python
+from zenml import pipeline, step
+import pandas as pd
+
+@step
+def load_data() -> pd.DataFrame:
+    # Load or generate your data here
+    return pd.DataFrame({"feature": [1, 2, 3], "target": [0, 1, 0]})
+
+@pipeline
+def data_pipeline():
+    data = load_data()
+    clean_data(data=data)
+```
+
+For more information on managing artifacts and defining steps, refer to the relevant sections in the ZenML documentation.
+
 #### Models
 
 Models are used to represent the outputs of a training process along with all metadata associated with that output. In other words: models in ZenML are more broadly defined as the weights as well as any associated information. Models are first-class citizens in ZenML and as such viewing and using them is unified and centralized in the ZenML API, client, as well as on the [ZenML Pro](https://zenml.io/pro) dashboard.
