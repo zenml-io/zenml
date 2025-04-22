@@ -58,6 +58,31 @@ def simple_pipeline():
     processed_data = process_data(data)  # Uses and produces artifacts
 ```
 
+### Handling Non-JSON Serializable Parameters in ZenML Pipelines
+
+When working with ZenML pipelines, you may encounter errors when trying to pass non-JSON serializable objects, such as `pandas.DataFrame`, as parameters. These objects should be passed as artifacts instead. Here is how you can structure a pipeline to handle such cases:
+
+```python
+from zenml import pipeline, step
+import pandas as pd
+
+@step
+def load_data() -> pd.DataFrame:
+    # Load or generate your data here
+    return pd.DataFrame({"feature": [1, 2, 3], "target": [0, 1, 0]})
+
+@step
+def clean_data(data: pd.DataFrame) -> pd.DataFrame:
+    # Process the data
+    return data
+
+@pipeline
+def data_pipeline():
+    data = load_data()
+    clean_data(data=data)
+```
+
+For more information on managing artifacts and defining steps, refer to the [ZenML documentation](https://github.com/zenml-io/zenml/blob/main/docs/book/how-to/steps-pipelines/steps_and_pipelines.md).
 ### Artifacts vs. Parameters
 
 When calling a step, inputs can be either artifacts or parameters:
@@ -84,7 +109,7 @@ def training_pipeline():
     model = train_model(data=data, learning_rate=0.01)
 ```
 
-Parameters are limited to JSON-serializable values (numbers, strings, lists, dictionaries, etc.). More complex objects should be passed as artifacts.
+Parameters are limited to JSON-serializable values (numbers, strings, lists, dictionaries, etc.). More complex objects, such as `pandas.DataFrame`, should be passed as artifacts. Attempting to pass non-JSON serializable objects as parameters will result in an error.
 
 ### Accessing Artifacts After Pipeline Runs
 
