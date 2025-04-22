@@ -634,22 +634,17 @@ class ModelVersionFilter(
         """
         query = super().apply_filter(query=query, table=table)
 
-        # The model scope must always be set and must be a UUID. If the
-        # client sets this to a string, the server will try to resolve it to a
-        # model ID.
-        #
-        # If not set by the client, the server will raise a ValueError.
+        # The model scope must always be a UUID. If the client sets this to a
+        # string, the server will try to resolve it to a model ID.
         #
         # See: SqlZenStore._set_filter_model_id
 
-        if not self.model:
-            raise ValueError("Model scope missing from the filter.")
+        if self.model:
+            if not isinstance(self.model, UUID):
+                raise ValueError(
+                    f"Model scope must be a UUID, got {type(self.model)}."
+                )
 
-        if not isinstance(self.model, UUID):
-            raise ValueError(
-                f"Model scope must be a UUID, got {type(self.model)}."
-            )
-
-        query = query.where(getattr(table, "model_id") == self.model)
+            query = query.where(getattr(table, "model_id") == self.model)
 
         return query

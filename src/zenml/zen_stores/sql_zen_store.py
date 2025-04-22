@@ -10767,7 +10767,7 @@ class SqlZenStore(BaseZenStore):
 
         Args:
             filter_model: The filter model to set the model ID on.
-            session: The DB session to use to use for queries.
+            session: The DB session to use for queries.
 
         Raises:
             ValueError: if the filter is not scoped to a model.
@@ -10779,10 +10779,7 @@ class SqlZenStore(BaseZenStore):
                 project_name_or_id=filter_model.project,
                 session=session,
             )
-        else:
-            raise ValueError("Model ID missing from the filter")
-
-        filter_model.model = model.id
+            filter_model.model = model.id
 
     def list_model_versions(
         self,
