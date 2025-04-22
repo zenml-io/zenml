@@ -181,6 +181,53 @@ ZENML_DISABLE_STEP_NAMES_IN_LOGS=true
 5. **Use structured logging** when appropriate
 6. **Configure appropriate verbosity** for different environments
 
+## Debugging Custom Materializers
+
+Debugging custom materializers is crucial for ensuring they function correctly, especially in complex scenarios involving remote storage like S3. Here are some key points to consider:
+
+- **Importance of Logging**: Logging is essential for tracking the execution flow and identifying issues within your custom materializer code.
+- **Adding `logger.info` Statements**: Insert `logger.info` statements at critical points in the materializer code, such as before and after saving or loading models, to monitor the process.
+- **Alternative Debugging Methods**: Use `print` statements or `breakpoint()` for interactive debugging sessions to gain insights into the execution flow.
+- **Example Code Snippets**: Implement logging within a custom materializer class to facilitate troubleshooting.
+
+Example:
+
+```python
+import logging
+from zenml.materializers.base_materializer import BaseMaterializer
+from bertopic import BERTopic
+import os
+from zenml.utils import io_utils
+
+# Set up logging
+logger = logging.getLogger(__name__)
+
+class BERTopicMaterializer(BaseMaterializer):
+    ASSOCIATED_TYPES = (BERTopic,)
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.MODEL
+
+    MODEL_DIR_NAME = "bertopic_model"
+
+    def save(self, model: BERTopic) -> None:
+        logger.info("Starting to save BERTopic model.")
+        with self.get_temporary_directory(delete_at_exit=True) as tmp_dir:
+            local_dir = os.path.join(tmp_dir, self.MODEL_DIR_NAME)
+            logger.info(f"Saving model locally at {local_dir}.")
+            model.save(local_dir)
+            logger.info(f"Copying model from {local_dir} to {self.uri}.")
+            io_utils.copy_dir(local_dir, self.uri, overwrite=True)
+        logger.info("Model saved successfully.")
+
+    def load(self, data_type: type) -> BERTopic:
+        logger.info("Starting to load BERTopic model.")
+        with self.get_temporary_directory(delete_at_exit=True) as tmp_dir:
+            logger.info(f"Copying model from {self.uri} to {tmp_dir}.")
+            io_utils.copy_dir(self.uri, tmp_dir, overwrite=True)
+            model = BERTopic.load(os.path.join(tmp_dir, self.MODEL_DIR_NAME))
+        logger.info("Model loaded successfully.")
+        return model
+```
+
 ## See Also
 - [Steps & Pipelines](./steps_and_pipelines.md)
 - [YAML Configuration](./yaml_configuration.md)
