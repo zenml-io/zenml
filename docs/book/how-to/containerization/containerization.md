@@ -22,6 +22,22 @@ When a pipeline is run with a remote orchestrator, a Dockerfile is dynamically g
 
 The process described above is automated by ZenML and covers most basic use cases. This page covers various ways to customize the Docker build process to fit your specific needs.
 
+### Docker Build Process
+
+ZenML uses the following process to decide how to build Docker images:
+
+* **No `dockerfile` specified**: If any of the options regarding requirements, environment variables, or copying files require us to build an image, ZenML will build this image. Otherwise, the `parent_image` will be used to run the pipeline.
+* **`dockerfile` specified**: ZenML will first build an image based on the specified Dockerfile. If any additional options regarding requirements, environment variables, or copying files require an image built on top of that, ZenML will build a second image. If not, the image built from the specified Dockerfile will be used to run the pipeline.
+
+### Requirements Installation Order
+
+Depending on the configuration of your Docker settings, requirements will be installed in the following order (each step is optional):
+
+1. The packages installed in your local Python environment (if enabled)
+2. The packages required by the stack (unless disabled by setting `install_stack_requirements=False`)
+3. The packages specified via the `required_integrations` 
+4. The packages specified via the `requirements` attribute
+
 For a full list of configuration options, check out [the DockerSettings object on the SDKDocs](https://sdkdocs.zenml.io/latest/core_code_docs/core-config.html#zenml.config.docker_settings).
 
 ## Configuring Docker Settings
@@ -167,6 +183,16 @@ def my_pipeline(...):
     ...
 ```
 
+When `skip_build` is enabled, the `parent_image` will be used directly to run the steps of your pipeline without any additional Docker builds on top of it. This means that **none** of the following will happen:
+
+- No installation of local Python environment packages
+- No installation of stack requirements
+- No installation of required integrations
+- No installation of specified requirements
+- No installation of apt packages
+- No inclusion of source files in the container
+- No setting of environment variables
+
 {% hint style="warning" %}
 This is an advanced feature and may cause unintended behavior when running your pipelines. If you use this, ensure your image contains everything necessary to run your pipeline:
 
@@ -177,6 +203,8 @@ This is an advanced feature and may cause unintended behavior when running your 
 5. Your project code files (unless a code repository is registered or `allow_download_from_artifact_store` is enabled)
 
 Make sure that Python, `pip` and `zenml` are installed in your image, and that your code is in the `/app` directory set as the active working directory.
+
+Also note that the Docker settings validator will raise an error if you set `skip_build=True` without specifying a `parent_image`. A parent image is required when skipping the build as it will be used directly to run your pipeline steps.
 {% endhint %}
 
 ### Custom Dockerfiles
@@ -202,6 +230,15 @@ Here is how the build process looks like with a custom Dockerfile:
 
 * **`Dockerfile` specified**: ZenML will first build an image based on the specified `Dockerfile`. If any options regarding requirements, environment variables, or copying files require an additional image built on top of that, ZenML will build a second image. Otherwise, the image built from the specified `Dockerfile` will be used to run the pipeline.
 
+{% hint style="info" %}
+Important notes about using a custom Dockerfile:
+
+* When you specify a custom `dockerfile`, the `parent_image` attribute will be ignored
+* The image built from your Dockerfile must have ZenML installed
+* If you set `build_context_root`, that directory will be used as the build context for the Docker build. If left empty, the build context will only contain the Dockerfile
+* You can configure the build options by setting `parent_image_build_config` with specific build options and dockerignore settings
+{% endhint %}
+
 ## Managing Dependencies
 
 ZenML offers several ways to specify dependencies for your Docker containers:
@@ -211,17 +248,28 @@ ZenML offers several ways to specify dependencies for your Docker containers:
 1.  **Replicate Local Environment**:
 
     ```python
-    # Use pip freeze
+    # Use pip freeze (outputs a requirements file with exact package versions)
+    from zenml.config import DockerSettings, PythonEnvironmentExportMethod
+    docker_settings = DockerSettings(
+        replicate_local_python_environment=PythonEnvironmentExportMethod.PIP_FREEZE
+    )
+    # Or as a string
     docker_settings = DockerSettings(replicate_local_python_environment="pip_freeze")
 
-    # Or use poetry
+    # Or use poetry (requires Poetry to be installed)
+    docker_settings = DockerSettings(
+        replicate_local_python_environment=PythonEnvironmentExportMethod.POETRY_EXPORT
+    )
+    # Or as a string
     docker_settings = DockerSettings(replicate_local_python_environment="poetry_export")
 
-    # Use custom command
+    # Use custom command (provide a list of command arguments)
     docker_settings = DockerSettings(replicate_local_python_environment=[
         "poetry", "export", "--extras=train", "--format=requirements.txt"
     ])
     ```
+
+    This feature allows you to easily replicate your local Python environment in the Docker container, ensuring that your pipeline runs with the same dependencies.
 2.  **Specify Requirements Directly**:
 
     ```python
@@ -274,8 +322,18 @@ Control how packages are installed:
 docker_settings = DockerSettings(python_package_installer_args={"timeout": 1000})
 
 # Use uv instead of pip (experimental)
+from zenml.config import DockerSettings, PythonPackageInstaller
+docker_settings = DockerSettings(python_package_installer=PythonPackageInstaller.UV)
+# Or as a string
 docker_settings = DockerSettings(python_package_installer="uv")
+
+# Use pip (default)
+docker_settings = DockerSettings(python_package_installer=PythonPackageInstaller.PIP)
 ```
+
+The available package installers are:
+- `pip`: The default Python package installer
+- `uv`: A faster alternative to pip (experimental)
 
 {% hint style="info" %}
 `uv` is a relatively new project and not as stable as `pip` yet, which might lead to errors during package installation. If this happens, try switching the installer back to `pip` and see if that solves the issue.
@@ -394,6 +452,31 @@ build: your-build-id-here
 Specifying a custom build when running a pipeline will **not run the code on your client machine** but will use the code **included in the Docker images of the build**. Even if you make local code changes, reusing a build will _always_ execute the code bundled in the Docker image, rather than the local code.
 {% endhint %}
 
+### Preventing Build Reuse
+
+There might be cases where you want to force a new build, even if a suitable existing build is available. You can do this by setting `prevent_build_reuse=True`:
+
+```python
+docker_settings = DockerSettings(prevent_build_reuse=True)
+```
+
+This is useful in scenarios like:
+- When you've made changes to your image building process that aren't tracked by ZenML
+- When troubleshooting issues in your Docker image
+- When you want to ensure your Docker image uses the most up-to-date base images
+
+### Controlling Image Repository Names
+
+You can control where your Docker image is pushed by specifying a target repository name:
+
+```python
+docker_settings = DockerSettings(target_repository="my-custom-repo-name")
+```
+
+The repository name will be appended to the registry URI of your container registry stack component. For example, if your container registry URI is `gcr.io/my-project` and you set `target_repository="zenml-pipelines"`, the full image name would be `gcr.io/my-project/zenml-pipelines`.
+
+If you don't specify a target repository, the default repository name configured in your container registry stack component settings will be used.
+
 ### Code Repositories for Faster Builds
 
 Registering a [code repository](https://docs.zenml.io/user-guides/production-guide/connect-code-repository) lets you avoid building images each time you run a pipeline **and** quickly iterate on your code. When running a pipeline that is part of a local code repository checkout, ZenML can instead build the Docker images without including any of your source files, and download the files inside the container before running your code.
@@ -433,6 +516,19 @@ Note that even if you don't configure an image builder in your stack, ZenML stil
 
 You don't need to directly interact with any image builder in your code. As long as the image builder that you want to use is part of your active [ZenML stack](https://docs.zenml.io/user-guides/production-guide/understand-stacks), it will be used automatically by any component that needs to build container images.
 
+## Container User Permissions
+
+By default, Docker containers often run as the `root` user, which can pose security risks. ZenML allows you to specify a different user to run your containers:
+
+```python
+docker_settings = DockerSettings(user="non-root-user")
+```
+
+When you set the `user` parameter:
+- The specified user will become the owner of the `/app` directory, which contains all your code
+- The container entrypoint will run as this user instead of root
+- This can help improve security by following the principle of least privilege
+
 ## Best Practices
 
 1. **Use code repositories** to speed up builds and enable team collaboration. This approach is highly recommended for production environments.
@@ -445,5 +541,6 @@ You don't need to directly interact with any image builder in your code. As long
 8. **Test your Docker builds locally** before using them in production pipelines.
 9. **Keep your repository clean** (no uncommitted changes) when running pipelines to ensure ZenML can correctly track code versions.
 10. **Use metadata and labels** to help identify and manage your Docker images.
+11. **Run containers as non-root users** when possible to improve security.
 
 By following these practices, you can optimize your Docker builds in ZenML and create a more efficient workflow.
