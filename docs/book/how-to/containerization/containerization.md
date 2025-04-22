@@ -360,9 +360,11 @@ Environment variables can reference other environment variables by using the `${
 
 ZenML automatically reuses Docker builds when possible to save time and resources:
 
-### Pipeline Builds
+### What is a Pipeline Build?
 
-A pipeline build encapsulates a pipeline and its stack, containing Docker images with all required dependencies. List all available builds:
+A pipeline build is an encapsulation of a pipeline and the stack it was run on. It contains the Docker images that were built for the pipeline with all required dependencies from the stack, integrations and the user. Optionally, it also contains the pipeline code.
+
+List all available builds for a pipeline:
 
 ```bash
 zenml pipeline builds list --pipeline_id='startswith:ab53ca'
@@ -378,7 +380,7 @@ You can use options to specify the configuration file and the stack to use for t
 
 ### Reusing Builds
 
-Force using a specific build by providing its ID:
+By default, when you run a pipeline, ZenML will check if a build with the same pipeline and stack exists. If it does, it will reuse that build automatically. However, you can also force using a specific build by providing its ID:
 
 ```python
 pipeline_instance.run(build="<build_id>")
@@ -394,9 +396,17 @@ build: your-build-id-here
 Specifying a custom build when running a pipeline will **not run the code on your client machine** but will use the code **included in the Docker images of the build**. Even if you make local code changes, reusing a build will _always_ execute the code bundled in the Docker image, rather than the local code.
 {% endhint %}
 
-### Code Repositories for Faster Builds
+### Decoupling Code from Builds
 
-Registering a [code repository](https://docs.zenml.io/user-guides/production-guide/connect-code-repository) lets you avoid building images each time you run a pipeline **and** quickly iterate on your code. When running a pipeline that is part of a local code repository checkout, ZenML can instead build the Docker images without including any of your source files, and download the files inside the container before running your code.
+To reuse Docker builds while still using your latest code changes, you need to decouple your code from the build. There are two main approaches:
+
+#### 1. Using the Artifact Store to Upload Code
+
+You can let ZenML use the artifact store to upload your code. This is the default behavior if no code repository is detected and the `allow_download_from_artifact_store` flag is not set to `False` in your `DockerSettings`.
+
+#### 2. Using Code Repositories for Faster Builds
+
+Registering a [code repository](../code-repositories/code-repositories.md) lets you avoid building images each time you run a pipeline **and** quickly iterate on your code. When running a pipeline that is part of a local code repository checkout, ZenML can instead build the Docker images without including any of your source files, and download the files inside the container before running your code.
 
 ZenML will **automatically figure out which builds match your pipeline and reuse the appropriate build id**. Therefore, you **do not** need to explicitly pass in the build id when you have a clean repository state and a connected git repository.
 
@@ -424,6 +434,26 @@ Note that this reference is only tracked if your local checkout is clean (i.e. i
 {% hint style="info" %}
 If you want to ignore untracked files, you can set the `ZENML_CODE_REPOSITORY_IGNORE_UNTRACKED_FILES` environment variable to `True`. When doing this, you're responsible that the files committed to the repository includes everything necessary to run your pipeline.
 {% endhint %}
+
+#### Preventing Build Reuse
+ 
+ There might be cases where you want to force a new build, even if a suitable existing build is available. You can do this by setting `prevent_build_reuse=True`:
+ 
+ ```python
+ docker_settings = DockerSettings(prevent_build_reuse=True)
+ ```
+ 
+ This is useful in scenarios like:
+ - When you've made changes to your image building process that aren't tracked by ZenML
+ - When troubleshooting issues in your Docker image
+ - When you want to ensure your Docker image uses the most up-to-date base images
+
+#### Tips and Best Practices for Build Reuse
+
+* **Clean Repository State**: The file download is only possible if the local checkout is clean (no untracked or uncommitted files) and the latest commit has been pushed to the remote repository.
+* **Configuration Options**: If you want to disable or enforce downloading of files, check the [DockerSettings](https://sdkdocs.zenml.io/latest/index.html#zenml.config.DockerSettings) for available options.
+* **Team Collaboration**: Using code repositories allows team members to reuse images that colleagues might have built for the same stack, enhancing collaboration efficiency.
+* **Build Selection**: ZenML automatically selects matching builds, but you can override this with explicit build IDs for special cases.
 
 ## Image Build Location
 
