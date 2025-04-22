@@ -64,6 +64,43 @@ You will probably need to interact with the [low-level Artifact Store API](./#th
 * if you implement custom [Materializers](https://docs.zenml.io/how-to/data-artifact-management/handle-data-artifacts/handle-custom-data-types) for your artifact data types
 * if you want to store custom objects in the Artifact Store
 
+### Custom Materializer for BERTopic Models
+
+To handle complex or third-party objects like BERTopic models, you can create a custom materializer by inheriting from `BaseMaterializer` and implementing the `save` and `load` methods. Register the custom materializer with ZenML to associate it with specific data types. Here is an example demonstrating the use of a custom materializer for BERTopic models, including saving to and loading from an S3 artifact store:
+
+```python
+import os
+from zenml.materializers.base_materializer import BaseMaterializer
+from bertopic import BERTopic
+
+class BERTopicMaterializer(BaseMaterializer):
+    ASSOCIATED_TYPES = (BERTopic,)
+
+    def load(self, data_type):
+        model_path = os.path.join(self.uri, "bertopic_model")
+        return BERTopic.load(model_path)
+
+    def save(self, model):
+        model_path = os.path.join(self.uri, "bertopic_model")
+        model.save(model_path)
+```
+
+Register the materializer:
+
+```python
+from zenml.materializers.materializer_registry import materializer_registry
+
+materializer_registry.register_and_overwrite_type(
+    key=BERTopic,
+    type_=BERTopicMaterializer
+)
+```
+
+Troubleshooting tips:
+- Ensure S3 configurations and permissions are correctly set up.
+- Verify that the `save` method is correctly copying the model directory to the S3 URI.
+- Check logs for any errors during the execution of the `save` method.
+
 #### The Artifact Store API
 
 All ZenML Artifact Stores implement [the same IO API](custom.md) that resembles a standard file system. This allows you to access and manipulate the objects stored in the Artifact Store in the same manner you would normally handle files on your computer and independently of the particular type of Artifact Store that is configured in your ZenML stack.
