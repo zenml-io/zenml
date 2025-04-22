@@ -158,7 +158,7 @@ curl -X 'POST' \
 ```
 
 {% hint style="info" %}
-Learn how to get a bearer token for the curl commands [here](https://docs.zenml.io/pro/deployments/pro-api#programmatic-access-with-api-tokens).
+Learn how to get a bearer token for the curl commands [here](https://docs.zenml.io/api-reference/pro-api/getting-started#programmatic-access-with-api-tokens).
 {% endhint %}
 
 ## Advanced Usage: Running Templates from Other Pipelines
@@ -218,7 +218,7 @@ Read more about:
 
 * [PipelineRunConfiguration](https://sdkdocs.zenml.io/latest/core_code_docs/core-config.html#zenml.config.pipeline_run_configuration)
 * [trigger\_pipeline API](https://sdkdocs.zenml.io/latest/core_code_docs/core-client.html#zenml.client.Client)
-* [Unmaterialized Artifacts](https://docs.zenml.io/how-to/artifacts/complex_use_cases#unmaterialized-artifacts)
+* [Unmaterialized Artifacts](https://docs.zenml.io/concepts/artifacts)
 
 ## Best Practices
 

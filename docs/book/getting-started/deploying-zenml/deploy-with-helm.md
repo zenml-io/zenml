@@ -307,7 +307,7 @@ openssl rand -hex 32
 {% tab title="AWS" %}
 **Using the AWS Secrets Manager as a secrets store backend**
 
-The AWS Secrets Store uses the ZenML AWS Service Connector under the hood to authenticate with the AWS Secrets Manager API. This means that you can use any of the [authentication methods supported by the AWS Service Connector](https://docs.zenml.io/how-to/stacks/service-connectors/connector-types/aws-service-connector#authentication-methods) to authenticate with the AWS Secrets Manager API.
+The AWS Secrets Store uses the ZenML AWS Service Connector under the hood to authenticate with the AWS Secrets Manager API. This means that you can use any of the [authentication methods supported by the AWS Service Connector](https://docs.zenml.io/stacks/service-connectors/connector-types/aws-service-connector#authentication-methods) to authenticate with the AWS Secrets Manager API.
 
 The minimum set of permissions that must be attached to the implicit or configured AWS credentials are: `secretsmanager:CreateSecret`, `secretsmanager:GetSecretValue`, `secretsmanager:DescribeSecret`, `secretsmanager:PutSecretValue`, `secretsmanager:TagResource` and `secretsmanager:DeleteSecret` and they must be associated with secrets that have a name starting with `zenml/` in the target region and account. The following IAM policy example can be used as a starting point:
 

@@ -67,7 +67,7 @@ You might not necessarily want to use the same stack with the same resources for
 
 This step is optional, all you'll need for certain is a stack that runs remotely (remote orchestration and artifact
 storage). The rest is up to you. You might for example want to parametrize your pipeline to use different data sources
-for the respective environments. You can also use different [configuration files](https://docs.zenml.io/how-to/pipeline-development/use-configuration-files)
+for the respective environments. You can also use different [configuration files](https://docs.zenml.io/concepts/steps_and_pipelines/yaml_configuration)
 for the different environments to configure the [Model](https://docs.zenml.io/how-to/model-management-metrics/model-control-plane), the 
 [DockerSettings](https://docs.zenml.io/how-to/customize-docker-builds/docker-settings-on-a-pipeline), the 
 [ResourceSettings like accelerators](../tutorial/distributed-training.md) differently for the different environments.
