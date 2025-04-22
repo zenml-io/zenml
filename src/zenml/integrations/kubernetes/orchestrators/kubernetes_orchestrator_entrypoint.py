@@ -41,7 +41,10 @@ from zenml.integrations.kubernetes.orchestrators.manifest_utils import (
 from zenml.logger import get_logger
 from zenml.orchestrators import publish_utils
 from zenml.orchestrators.dag_runner import NodeStatus, ThreadedDagRunner
-from zenml.orchestrators.utils import get_config_environment_vars
+from zenml.orchestrators.utils import (
+    get_config_environment_vars,
+    get_orchestrator_run_name,
+)
 
 logger = get_logger(__name__)
 
@@ -103,8 +106,25 @@ def main() -> None:
         Raises:
             Exception: If the pod fails to start.
         """
-        # Define Kubernetes pod name.
-        pod_name = f"{orchestrator_run_id}-{step_name}"
+        step_config = deployment_config.step_configurations[step_name].config
+        settings = step_config.settings.get("orchestrator.kubernetes", None)
+        settings = KubernetesOrchestratorSettings.model_validate(
+            settings.model_dump() if settings else {}
+        )
+
+        if settings.pod_name_prefix:
+            max_length = (
+                kube_utils.calculate_max_pod_name_length_for_namespace(
+                    namespace=args.kubernetes_namespace
+                )
+            )
+            pod_name_prefix = get_orchestrator_run_name(
+                settings.pod_name_prefix, max_length=max_length
+            )
+            pod_name = f"{pod_name_prefix}-{step_name}"
+        else:
+            pod_name = f"{orchestrator_run_id}-{step_name}"
+
         pod_name = kube_utils.sanitize_pod_name(
             pod_name, namespace=args.kubernetes_namespace
         )
@@ -114,20 +134,6 @@ def main() -> None:
         )
         step_args = StepEntrypointConfiguration.get_entrypoint_arguments(
             step_name=step_name, deployment_id=deployment_config.id
-        )
-
-        step_config = deployment_config.step_configurations[step_name].config
-
-        kubernetes_settings = step_config.settings.get(
-            "orchestrator.kubernetes", None
-        )
-
-        orchestrator_settings = {}
-        if kubernetes_settings is not None:
-            orchestrator_settings = kubernetes_settings.model_dump()
-
-        settings = KubernetesOrchestratorSettings.model_validate(
-            orchestrator_settings
         )
 
         # We set some default minimum memory resource requests for the step pod
