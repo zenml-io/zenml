@@ -12,8 +12,14 @@ ZenML provides two primary methods to configure pipelines and steps: `.configure
 - **`.with_options()`**: Creates a **new copy** with the applied configuration, leaving the original unchanged.
 
 When to use each:
-- Use `.with_options()` when you need to create multiple variants of a step/pipeline, especially for running a step with different parameters.
-- Use `.configure()` when applying a general configuration you'll only use once.
+- Use `.with_options()` in most cases, especially inside pipeline definitions:
+  ```python
+  @pipeline
+  def my_pipeline():
+      # This creates a new configuration just for this instance
+      my_step.with_options(parameters={"param": "value"})()
+  ```
+- Use `.configure()` only when you intentionally want to modify a step globally, and are aware that the change will affect all subsequent uses of that step.
 
 ### Pipeline Configuration with `configure`
 
