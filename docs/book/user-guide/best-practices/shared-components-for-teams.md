@@ -37,8 +37,22 @@ Custom steps can be created and shared via a separate repository. Team members c
 Custom materializers are common components that teams often need to share. To implement and share a custom materializer:
 
 1. Create the materializer in a shared repository.
-2. Implement the custom materializer as described in the [ZenML documentation](https://docs.zenml.io/how-to/data-artifact-management/handle-data-artifacts/handle-custom-data-types).
-3. Team members can import and use the shared materializer in their projects.
+2. Implement the custom materializer by inheriting from `BaseMaterializer` and implementing the `save` and `load` methods. For example, to handle complex or third-party objects like BERTopic models, you can define a custom materializer and register it with ZenML to associate it with specific data types.
+3. Register the custom materializer with ZenML to associate it with specific data types.
+4. Team members can import and use the shared materializer in their projects.
+
+#### Example: Custom Materializer for BERTopic Models
+
+To create a custom materializer for BERTopic models:
+
+- Define a class inheriting from `BaseMaterializer` and implement the `save` and `load` methods.
+- Register the materializer with ZenML.
+- Use the materializer in a ZenML step to save and load BERTopic models, including saving to and loading from an S3 artifact store.
+
+#### Troubleshooting Tips
+
+- Ensure that S3 configurations and permissions are correctly set up to avoid issues with artifacts not appearing in the expected location.
+- Check logs for any errors during the save/load process to diagnose issues.
 
 ## How to Distribute Shared Components
 
