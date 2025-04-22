@@ -109,6 +109,75 @@ Your functions will work as ZenML steps even if you don't provide any type annot
 * **Type validation of your step inputs**: ZenML makes sure that your step functions receive an object of the correct type from the upstream steps in your pipeline.
 * **Better serialization**: Without type annotations, ZenML uses [Cloudpickle](https://github.com/cloudpipe/cloudpickle) to serialize your step outputs. When provided with type annotations, ZenML can choose a [materializer](https://docs.zenml.io/getting-started/core-concepts#materializers) that is best suited for the output. In case none of the builtin materializers work, you can even [write a custom materializer](https://docs.zenml.io/how-to/data-artifact-management/handle-data-artifacts/handle-custom-data-types).
 
+## Custom Materializers
+
+### Introduction to Materializers
+Materializers in ZenML are responsible for serializing and deserializing data types and models between steps in a pipeline. They ensure that data is stored and retrieved efficiently, maintaining the integrity and usability of the data across different environments.
+
+### Creating a Custom Materializer
+To create a custom materializer, you need to define a class that inherits from `BaseMaterializer` and implement the `save` and `load` methods.
+
+#### Example: Custom Materializer for BERTopic
+```python
+import os
+from zenml.materializers.base_materializer import BaseMaterializer
+from bertopic import BERTopic
+
+class BERTopicMaterializer(BaseMaterializer):
+    ASSOCIATED_TYPES = (BERTopic,)
+
+    def load(self, data_type):
+        model_path = os.path.join(self.uri, "bertopic_model")
+        return BERTopic.load(model_path)
+
+    def save(self, model):
+        model_path = os.path.join(self.uri, "bertopic_model")
+        model.save(model_path)
+```
+
+### Registering and Using Custom Materializers
+To use a custom materializer, register it with ZenML and specify it in the `@step` decorator.
+
+```python
+from zenml.materializers.materializer_registry import materializer_registry
+
+materializer_registry.register_and_overwrite_type(
+    key=BERTopic,
+    type_=BERTopicMaterializer
+)
+
+@step(output_materializers={"model": BERTopicMaterializer})
+def train_bertopic_model(data) -> BERTopic:
+    model = BERTopic()
+    model.fit(data)
+    return model
+```
+
+### Troubleshooting Custom Materializers
+- Ensure the `save` and `load` methods are correctly implemented.
+- Verify that the artifact store is properly configured and accessible.
+- Check logs for errors during the save/load process.
+
+### Example: Custom Materializer for numpy.int64
+```python
+from zenml.materializers.base_materializer import BaseMaterializer
+import numpy as np
+
+class NumpyInt64Materializer(BaseMaterializer):
+    ASSOCIATED_TYPES = (np.int64,)
+
+    def load(self, data_type):
+        pass
+
+    def save(self, data):
+        pass
+```
+
+Register the materializer similarly to the BERTopic example.
+
+### Conclusion
+Custom materializers are essential for handling data types not natively supported by ZenML, ensuring efficient and reliable data management in your pipelines.
+
 {% hint style="warning" %}
 ZenML provides a built-in [CloudpickleMaterializer](https://sdkdocs.zenml.io/latest/core_code_docs/core-materializers.html#zenml.materializers.cloudpickle_materializer) that can handle any object by saving it with [cloudpickle](https://github.com/cloudpipe/cloudpickle). However, this is not production-ready because the resulting artifacts cannot be loaded when running with a different Python version. In such cases, you should consider building a [custom Materializer](https://docs.zenml.io/how-to/data-artifact-management/handle-data-artifacts/handle-custom-data-types#custom-materializers) to save your objects in a more robust and efficient format.
 
