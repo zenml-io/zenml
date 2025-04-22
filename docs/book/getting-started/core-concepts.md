@@ -82,6 +82,54 @@ Materializers define how artifacts live in between steps. More precisely, they d
 
 All materializers use the base abstraction called the `BaseMaterializer` class. While ZenML comes built-in with various implementations of materializers for different datatypes, if you are using a library or a tool that doesn't work with our built-in options, you can write [your own custom materializer](../how-to/artifacts/materializers.md) to ensure that your data can be passed from step to step.
 
+#### Debugging Custom Materializers
+
+When developing custom materializers, debugging is crucial to ensure they function correctly, especially in complex scenarios involving remote storage like S3. Here are some tips for debugging:
+
+- **Logging**: Use `logger.info` statements at critical points in your materializer code, such as before and after saving or loading models, to track the execution flow and identify issues.
+- **Print Statements**: As an alternative to logging, you can use `print` statements to output information to the console.
+- **Breakpoints**: Use `breakpoint()` for interactive debugging sessions to pause execution and inspect the state of your program.
+
+Example:
+
+```python
+import logging
+from zenml.materializers.base_materializer import BaseMaterializer
+from bertopic import BERTopic
+import os
+from zenml.utils import io_utils
+
+# Set up logging
+logger = logging.getLogger(__name__)
+
+class BERTopicMaterializer(BaseMaterializer):
+    ASSOCIATED_TYPES = (BERTopic,)
+    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.MODEL
+
+    MODEL_DIR_NAME = "bertopic_model"
+
+    def save(self, model: BERTopic) -> None:
+        logger.info("Starting to save BERTopic model.")
+        with self.get_temporary_directory(delete_at_exit=True) as tmp_dir:
+            local_dir = os.path.join(tmp_dir, self.MODEL_DIR_NAME)
+            logger.info(f"Saving model locally at {local_dir}.")
+            model.save(local_dir)
+            logger.info(f"Copying model from {local_dir} to {self.uri}.")
+            io_utils.copy_dir(local_dir, self.uri, overwrite=True)
+        logger.info("Model saved successfully.")
+
+    def load(self, data_type: type) -> BERTopic:
+        logger.info("Starting to load BERTopic model.")
+        with self.get_temporary_directory(delete_at_exit=True) as tmp_dir:
+            logger.info(f"Copying model from {self.uri} to {tmp_dir}.")
+            io_utils.copy_dir(self.uri, tmp_dir, overwrite=True)
+            model = BERTopic.load(os.path.join(tmp_dir, self.MODEL_DIR_NAME))
+        logger.info("Model loaded successfully.")
+        return model
+```
+
+This addition will assist users in troubleshooting and ensuring their custom materializers work as expected.
+
 #### Parameters & Settings
 
 When we think about steps as functions, we know they receive input in the form of artifacts. We also know that they produce output (in the form of artifacts, stored in the artifact store). But steps also take parameters. The parameters that you pass into the steps are also (helpfully!) stored by ZenML. This helps freeze the iterations of your experimentation workflow in time, so you can return to them exactly as you run them. On top of the parameters that you provide for your steps, you can also use different `Setting`s to configure runtime configurations for your infrastructure and pipelines.
