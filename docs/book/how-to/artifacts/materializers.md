@@ -59,7 +59,60 @@ class MyClassMaterializer(BaseMaterializer):
     ASSOCIATED_TYPES = (MyClass,)
     
     # Define what type of artifact this is (usually DATA or MODEL)
-    ASSOCIATED_ARTIFACT_TYPE = ArtifactType.DATA
+    ASSOCIATED_ARTI
+
+### Example: Custom Materializer for BERTopic Models
+
+To create a custom materializer for BERTopic models, follow these steps:
+
+```python
+import os
+from zenml.materializers.base_materializer import BaseMaterializer
+from bertopic import BERTopic
+
+class BERTopicMaterializer(BaseMaterializer):
+    ASSOCIATED_TYPES = (BERTopic,)
+
+    def load(self, data_type):
+        model_path = os.path.join(self.uri, "bertopic_model")
+        return BERTopic.load(model_path)
+
+    def save(self, model):
+        model_path = os.path.join(self.uri, "bertopic_model")
+        model.save(model_path)
+```
+
+### Registering the Custom Materializer
+
+Register the custom materializer with ZenML to associate it with specific data types:
+
+```python
+from zenml.materializers.materializer_registry import materializer_registry
+
+materializer_registry.register_and_overwrite_type(
+    key=BERTopic,
+    type_=BERTopicMaterializer
+)
+```
+
+### Using the Custom Materializer
+
+Specify the custom materializer in the `@step` decorator for the step that outputs the BERTopic model:
+
+```python
+from zenml import step
+
+@step(output_materializers={"model": BERTopicMaterializer})
+```
+
+### Troubleshooting Tips
+
+- Ensure S3 configurations and permissions are correctly set up.
+- Verify that the `save` method is correctly copying the model directory to the S3 URI.
+- Check logs for any errors or warnings during the execution of the `save` method.
+- Test the materializer logic locally to ensure it works as expected.
+
+This addition will help users understand how to extend ZenML's capabilities to handle custom data types and leverage external storage solutions effectively.FACT_TYPE = ArtifactType.DATA
     
     def load(self, data_type: Type[Any]) -> MyClass:
         """Load MyClass from storage."""
