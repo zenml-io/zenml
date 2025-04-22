@@ -120,6 +120,58 @@ def custom_pipeline():
     use_my_class(data)
 ```
 
+### 2.1 Creating Custom Materializers for Specific Types
+
+To handle custom data types or models not natively supported by ZenML, such as `BERTopic` or `numpy.int64`, you can create custom materializers. Here is a step-by-step guide:
+
+#### Step-by-Step Instructions
+
+1. **Define the Custom Materializer**: Create a new class inheriting from `BaseMaterializer` and implement the `load` and `save` methods.
+
+   ```python
+   import os
+   from zenml.materializers.base_materializer import BaseMaterializer
+   from bertopic import BERTopic
+
+   class BERTopicMaterializer(BaseMaterializer):
+       ASSOCIATED_TYPES = (BERTopic,)
+
+       def load(self, data_type):
+           model_path = os.path.join(self.uri, "bertopic_model")
+           return BERTopic.load(model_path)
+
+       def save(self, model):
+           model_path = os.path.join(self.uri, "bertopic_model")
+           model.save(model_path)
+   ```
+
+2. **Register the Materializer**: Register the custom materializer with ZenML.
+
+   ```python
+   from zenml.materializers.materializer_registry import materializer_registry
+
+   materializer_registry.register_and_overwrite_type(
+       key=BERTopic,
+       type_=BERTopicMaterializer
+   )
+   ```
+
+3. **Use the Custom Materializer in a Step**: Specify the custom materializer in the `@step` decorator.
+
+   ```python
+   from zenml import step
+
+   @step(output_materializers={"model": BERTopicMaterializer})
+   def train_bertopic_model(data) -> BERTopic:
+       model = BERTopic()
+       model.fit(data)
+       return model
+   ```
+
+4. **Troubleshooting Tips**: Ensure that the S3 configuration is correct and that the `save` method logic is properly implemented to handle remote storage.
+
+This approach ensures that your custom data types are correctly serialized and deserialized as artifacts within ZenML.
+
 ### 3. Multiple Outputs with Different Materializers
 
 When a step has multiple outputs that need different materializers:
