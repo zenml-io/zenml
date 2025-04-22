@@ -32,6 +32,8 @@ ML workflows typically interact with multiple cloud services (storage, compute, 
 * Implement proper security practices across all credential usage
 * Spend engineering time on authentication rather than ML development
 
+<figure><img src="../../.gitbook/assets/ConnectorsDiagram.png" alt=""><figcaption><p>Service Connectors abstract away complexity and implement security best practices</p></figcaption></figure>
+
 Service connectors solve these problems by providing a single point of authentication that can be reused across your stack components, decoupling credentials from code and configuration.
 
 ### Key Benefits
@@ -61,7 +63,12 @@ Each connector type supports authentication methods specific to that service.
 
 ### Creating and Managing Connectors
 
-Service connectors can be created with different authentication methods depending on your cloud provider and security requirements:
+Service connectors can be created with different authentication methods
+depending on your cloud provider and security requirements.
+
+![Authentication with Service Connectors](../../.gitbook/assets/authentication_with_connectors.png)
+
+Here is an example of how to register a new connector:
 
 ```bash
 # Register a new connector using AWS profile
