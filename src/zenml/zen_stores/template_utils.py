@@ -99,6 +99,7 @@ def generate_config_template(
         name: step.config.model_dump(
             include=set(StepConfigurationUpdate.model_fields),
             exclude={"name", "outputs"},
+            exclude_none=True,
         )
         for name, step in deployment_model.step_configurations.items()
     }
@@ -109,6 +110,7 @@ def generate_config_template(
     pipeline_config = deployment_model.pipeline_configuration.model_dump(
         include=set(PipelineRunConfiguration.model_fields),
         exclude={"schedule", "build", "parameters"},
+        exclude_none=True,
     )
 
     pipeline_config["settings"].pop("docker", None)
