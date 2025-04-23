@@ -65,6 +65,7 @@
 * [Organizing Stacks Pipelines Models](tutorial/organizing-pipelines-and-models.md)
 * [Access Management](best-practices/access-management.md)
 * [Setting up a Project Repository](best-practices/set-up-your-repository.md)
+* [Infrastructure as Code with Terraform](best-practices/iac.md)
 * [Creating Templates for ML Platform](best-practices/project-templates.md)
 * [Using VS Code extension](best-practices/vscode-extension.md)
 * [Leveraging MCP](best-practices/mcp-chat-with-server.md)
