@@ -297,3 +297,4 @@ redirects:
   how-to/pipeline-development/build-pipelines/name-your-pipeline-runs: how-to/steps-pipelines/steps_and_pipelines.md
   how-to/artifacts/complex_use_cases: how-to/artifacts/materializers.md
   # how-to/notebooks: how-to/steps-pipelines/steps_and_pipelines.md
+  how-to/infrastructure-deployment/infrastructure-as-code/best-practices: user-guide/best-practices/iac.md
