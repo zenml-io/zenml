@@ -121,7 +121,6 @@ class ServiceConfig(BaseTypedModel):
     model_name: str = ""
     model_version: str = ""
     service_name: str = ""
-    zenml_model: Optional[Model] = None
 
     # TODO: In Pydantic v2, the `model_` is a protected namespaces for all
     #  fields defined under base models. If not handled, this raises a warning.
