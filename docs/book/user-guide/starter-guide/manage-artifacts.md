@@ -458,7 +458,7 @@ def model_finetuner_step(
         # artifact_name="my_model", infer_artifact=True
 
         # A dictionary of dictionaries can also be passed to group metadata
-        # in the dashboard
+        #  in the dashboard
         # metadata = {"metrics": {"accuracy": accuracy}}
     )
     return model
