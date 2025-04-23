@@ -242,7 +242,6 @@ class VertexDeploymentService(BaseDeploymentService):
         logger.info(f"Model name: {model_name}")
         logger.info(f"Project ID: {self._project_id}")
         logger.info(f"Location: {self.config.location}")
-        logger.info(f"Credentials: {self._credentials}")
         model = aiplatform.Model(
             model_name=model_name,
             project=self._project_id,
