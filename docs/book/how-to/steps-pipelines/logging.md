@@ -29,6 +29,10 @@ All these logs are stored within the respective artifact store of your stack. Yo
 * Local ZenML server (`zenml login --local`): Both local and remote artifact stores may be accessible
 * Deployed ZenML server: Local artifact store logs won't be accessible; remote artifact store logs require [service connector](https://docs.zenml.io//how-to/infrastructure-deployment/auth-management/service-connectors-guide) configuration (see [remote storage guide](https://docs.zenml.io/user-guides/production-guide/remote-storage))
 
+{% hint style="warning" %}
+In order for logs to be visible in the dashboard with a deployed ZenML server, you must configure both a remote artifact store and the appropriate service connector to access it. Without this configuration, your logs won't be accessible through the dashboard.
+{% endhint %}
+
 ![Displaying pipeline run logs on the dashboard](../../.gitbook/assets/zenml_pipeline_run_logs.png)
 ![Displaying step logs on the dashboard](../../.gitbook/assets/zenml_step_logs.png)
 
