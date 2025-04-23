@@ -113,6 +113,7 @@ def get_placeholder_run(
         size=1,
         deployment_id=deployment_id,
         status=ExecutionStatus.INITIALIZING,
+        hydrate=True,
     )
     if len(runs.items) == 0:
         return None

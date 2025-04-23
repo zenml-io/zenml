@@ -101,7 +101,7 @@ def generate_config_template(
             exclude={"name", "outputs"},
             exclude_none=True,
         )
-        for name, step in deployment_model.step_configurations.items()
+        for name, step in deployment_model.raw_step_configurations.items()
     }
 
     for config in steps_configs.values():

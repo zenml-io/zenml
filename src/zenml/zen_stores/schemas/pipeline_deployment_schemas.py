@@ -197,7 +197,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
             run_name_template=request.run_name_template,
             pipeline_configuration=request.pipeline_configuration.model_dump_json(),
             step_configurations=json.dumps(
-                request.step_configurations,
+                request.raw_step_configurations,
                 sort_keys=False,
                 default=pydantic_encoder,
             ),
@@ -248,7 +248,17 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
                 project=self.project.to_model(),
                 run_name_template=self.run_name_template,
                 pipeline_configuration=pipeline_configuration,
-                step_configurations=step_configurations,
+                raw_step_configurations=step_configurations,
+                step_configurations={
+                    k: v.model_copy(
+                        update={
+                            "config": v.config.apply_pipeline_configuration(
+                                pipeline_configuration
+                            )
+                        }
+                    )
+                    for k, v in step_configurations.items()
+                },
                 client_environment=json.loads(self.client_environment),
                 client_version=self.client_version,
                 server_version=self.server_version,

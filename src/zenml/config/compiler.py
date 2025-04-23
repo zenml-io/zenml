@@ -149,7 +149,17 @@ class Compiler:
         deployment = PipelineDeploymentBase(
             run_name_template=run_name,
             pipeline_configuration=pipeline.configuration,
-            step_configurations=steps,
+            step_configurations={
+                k: v.model_copy(
+                    update={
+                        "config": v.config.apply_pipeline_configuration(
+                            pipeline.configuration
+                        )
+                    }
+                )
+                for k, v in steps.items()
+            },
+            raw_step_configurations=steps,
             client_environment=get_run_environment_dict(),
             client_version=client_version,
             server_version=server_version,
@@ -469,23 +479,23 @@ class Compiler:
             configuration_level=ConfigurationLevel.STEP,
             stack=stack,
         )
-        step_extra = step.configuration.extra
-        step_on_failure_hook_source = step.configuration.failure_hook_source
-        step_on_success_hook_source = step.configuration.success_hook_source
+        # step_extra = step.configuration.extra
+        # step_on_failure_hook_source = step.configuration.failure_hook_source
+        # step_on_success_hook_source = step.configuration.success_hook_source
 
-        step.configure(
-            settings=pipeline_settings,
-            extra=pipeline_extra,
-            on_failure=pipeline_failure_hook_source,
-            on_success=pipeline_success_hook_source,
-            merge=False,
-        )
+        # step.configure(
+        #     settings=pipeline_settings,
+        #     extra=pipeline_extra,
+        #     on_failure=pipeline_failure_hook_source,
+        #     on_success=pipeline_success_hook_source,
+        #     merge=False,
+        # )
         step.configure(
             settings=step_settings,
-            extra=step_extra,
-            on_failure=step_on_failure_hook_source,
-            on_success=step_on_success_hook_source,
-            merge=True,
+            # extra=step_extra,
+            # on_failure=step_on_failure_hook_source,
+            # on_success=step_on_success_hook_source,
+            merge=False,
         )
 
         parameters_to_ignore = (

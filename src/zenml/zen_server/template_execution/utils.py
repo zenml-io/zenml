@@ -1,6 +1,5 @@
 """Utility functions to run a pipeline from the server."""
 
-import copy
 import hashlib
 import sys
 from typing import Any, Dict, List, Optional
@@ -16,7 +15,7 @@ from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_run_configuration import (
     PipelineRunConfiguration,
 )
-from zenml.config.step_configurations import Step, StepConfiguration
+from zenml.config.step_configurations import Step, StepConfigurationUpdate
 from zenml.constants import (
     ENV_ZENML_ACTIVE_PROJECT_ID,
     ENV_ZENML_ACTIVE_STACK_ID,
@@ -43,7 +42,7 @@ from zenml.pipelines.run_utils import (
     validate_stack_is_runnable_from_server,
 )
 from zenml.stack.flavor import Flavor
-from zenml.utils import dict_utils, requirements_utils, settings_utils
+from zenml.utils import pydantic_utils, requirements_utils, settings_utils
 from zenml.zen_server.auth import AuthContext, generate_access_token
 from zenml.zen_server.template_execution.runner_entrypoint_configuration import (
     RunnerEntrypointConfiguration,
@@ -106,7 +105,6 @@ def run_template(
     deployment_request = deployment_request_from_template(
         template=template,
         config=run_config or PipelineRunConfiguration(),
-        user_id=auth_context.user.id,
     )
 
     ensure_async_orchestrator(deployment=deployment_request, stack=stack)
@@ -345,14 +343,12 @@ def generate_dockerfile(
 def deployment_request_from_template(
     template: RunTemplateResponse,
     config: PipelineRunConfiguration,
-    user_id: UUID,
 ) -> "PipelineDeploymentRequest":
     """Generate a deployment request from a template.
 
     Args:
         template: The template from which to create the deployment request.
         config: The run configuration.
-        user_id: ID of the user that is trying to run the template.
 
     Raises:
         ValueError: If there are missing/extra step parameters in the run
@@ -363,49 +359,34 @@ def deployment_request_from_template(
     """
     deployment = template.source_deployment
     assert deployment
-    pipeline_configuration = PipelineConfiguration(
-        **config.model_dump(
-            include=set(PipelineConfiguration.model_fields),
-            exclude={"name", "parameters"},
-        ),
-        name=deployment.pipeline_configuration.name,
-        parameters=deployment.pipeline_configuration.parameters,
+
+    pipeline_update = config.model_dump(
+        include=set(PipelineConfiguration.model_fields),
+        exclude={"name", "parameters"},
+        # TODO: Make sure all unset values are actually passed as unset
+        exclude_unset=True,
+    )
+    pipeline_configuration = pydantic_utils.update_model(
+        deployment.pipeline_configuration, pipeline_update
     )
 
-    step_config_dict_base = pipeline_configuration.model_dump(
-        exclude={"name", "parameters", "tags", "enable_pipeline_logs"}
-    )
     steps = {}
-    for invocation_id, step in deployment.step_configurations.items():
-        step_config_dict = {
-            **copy.deepcopy(step_config_dict_base),
-            **step.config.model_dump(
-                # TODO: Maybe we need to make some of these configurable via
-                # yaml as well, e.g. the lazy loaders?
-                include={
-                    "name",
-                    "caching_parameters",
-                    "external_input_artifacts",
-                    "model_artifacts_or_metadata",
-                    "client_lazy_loaders",
-                    "substitutions",
-                    "outputs",
-                }
-            ),
-        }
-
-        required_parameters = set(step.config.parameters)
-        configured_parameters = set()
-
-        if update := config.steps.get(invocation_id):
-            update_dict = update.model_dump()
+    for invocation_id, step in deployment.raw_step_configurations.items():
+        step_update = config.steps.get(
+            invocation_id, StepConfigurationUpdate()
+        ).model_dump(
             # Get rid of deprecated name to prevent overriding the step name
             # with `None`.
-            update_dict.pop("name", None)
-            configured_parameters = set(update.parameters)
-            step_config_dict = dict_utils.recursive_update(
-                step_config_dict, update=update_dict
-            )
+            exclude={"name"},
+            exclude_unset=True,
+        )
+        step_config = pydantic_utils.update_model(step.config, step_update)
+        # step_config = step_config.apply_pipeline_configuration(
+        #     pipeline_configuration
+        # )
+
+        required_parameters = set(step.config.parameters)
+        configured_parameters = set(step_config.parameters)
 
         unknown_parameters = configured_parameters - required_parameters
         if unknown_parameters:
@@ -421,7 +402,6 @@ def deployment_request_from_template(
                 f"parameters for step {invocation_id}: {missing_parameters}."
             )
 
-        step_config = StepConfiguration.model_validate(step_config_dict)
         steps[invocation_id] = Step(spec=step.spec, config=step_config)
 
     code_reference_request = None
@@ -440,7 +420,8 @@ def deployment_request_from_template(
         run_name_template=config.run_name
         or get_default_run_name(pipeline_name=pipeline_configuration.name),
         pipeline_configuration=pipeline_configuration,
-        step_configurations=steps,
+        # step_configurations=steps,
+        raw_step_configurations=steps,
         client_environment={},
         client_version=zenml_version,
         server_version=zenml_version,

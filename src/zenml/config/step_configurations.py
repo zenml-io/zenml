@@ -46,7 +46,7 @@ from zenml.logger import get_logger
 from zenml.model.lazy_load import ModelVersionDataLazyLoader
 from zenml.model.model import Model
 from zenml.utils import deprecation_utils
-from zenml.utils.pydantic_utils import before_validator_handler
+from zenml.utils.pydantic_utils import before_validator_handler, update_model
 
 if TYPE_CHECKING:
     from zenml.config import DockerSettings, ResourceSettings
@@ -258,6 +258,39 @@ class StepConfiguration(PartialStepConfiguration):
         ret = pipeline_config._get_full_substitutions(start_time)
         ret.update(self.substitutions)
         return ret
+
+    def apply_pipeline_configuration(
+        self, pipeline_configuration: "PipelineConfiguration"
+    ) -> "StepConfiguration":
+        """Apply the pipeline configuration to this step configuration.
+
+        Args:
+            pipeline_configuration: The pipeline configuration to apply.
+        """
+        pipeline_values = pipeline_configuration.model_dump(
+            include={
+                "settings",
+                "extra",
+                "failure_hook_source",
+                "success_hook_source",
+            },
+            exclude_none=True,
+        )
+        if pipeline_values:
+            original_values = self.model_dump(
+                include={
+                    "settings",
+                    "extra",
+                    "failure_hook_source",
+                    "success_hook_source",
+                },
+                exclude_none=True,
+            )
+
+            updated_config = self.model_copy(update=pipeline_values, deep=True)
+            return update_model(updated_config, original_values)
+        else:
+            return self.model_copy(deep=True)
 
 
 class InputSpec(StrictBaseModel):
