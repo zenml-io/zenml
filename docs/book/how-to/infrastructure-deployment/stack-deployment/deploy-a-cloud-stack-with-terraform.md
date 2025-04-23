@@ -62,7 +62,10 @@ export ZENML_API_KEY="<your-api-key>"
 ```
 
 {% hint style="info" %}
+
 **For ZenML Pro users:** The `ZENML_SERVER_URL` should be your Workspace URL, which can be found in your dashboard. It typically looks like: `https://1bfe8d94-zenml.cloudinfra.zenml.io`. Make sure you use the complete URL of your workspace, not just the domain.
+
+![Finding your workspace URL](../../../.gitbook/assets/workspace_url.png)
 {% endhint %}
 
 2. Create a new Terraform configuration file (e.g., `main.tf`), preferably in a new directory, with the content that looks like this (`<cloud provider>` can be`aws`, `gcp`, or `azure`):
