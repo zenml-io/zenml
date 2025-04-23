@@ -13,7 +13,7 @@
 #  permissions and limitations under the License.
 """Kubernetes pod settings."""
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from pydantic import field_validator
 
@@ -38,6 +38,8 @@ class KubernetesPodSettings(BaseSettings):
         labels: Labels to apply to the pod.
         env: Environment variables to apply to the container.
         env_from: Environment variables to apply to the container.
+        additional_pod_spec_args: Additional arguments to pass to the pod. These
+            will be applied to the pod spec.
     """
 
     node_selectors: Dict[str, str] = {}
@@ -53,6 +55,7 @@ class KubernetesPodSettings(BaseSettings):
     labels: Dict[str, str] = {}
     env: List[Dict[str, Any]] = []
     env_from: List[Dict[str, Any]] = []
+    additional_pod_spec_args: Dict[str, Any] = {}
 
     @field_validator("volumes", mode="before")
     @classmethod
