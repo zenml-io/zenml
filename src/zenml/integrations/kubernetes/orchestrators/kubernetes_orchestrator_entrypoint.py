@@ -112,7 +112,9 @@ def main() -> None:
             settings.model_dump() if settings else {}
         )
 
-        if settings.pod_name_prefix:
+        if settings.pod_name_prefix and not orchestrator_run_id.startswith(
+            settings.pod_name_prefix
+        ):
             max_length = (
                 kube_utils.calculate_max_pod_name_length_for_namespace(
                     namespace=args.kubernetes_namespace
