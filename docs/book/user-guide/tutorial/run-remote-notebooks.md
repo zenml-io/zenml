@@ -64,4 +64,4 @@ model, train_acc = svc_trainer(X_train=X_train, y_train=y_train)
 
 Once your logic stabilizes it usually makes sense to move code out of the notebook and into regular Python modules so that it can be version‑controlled and tested.  At that point just assemble the same steps inside a `@pipeline` function and trigger it from the CLI or a CI workflow.
 
-For a deeper dive into how ZenML packages notebook code have a look at the [Notebook Integration docs](https://docs.zenml.io/how-to/notebooks).
+For a deeper dive into how ZenML packages notebook code have a look at the [Notebook Integration docs](https://docs.zenml.io/user-guides/tutorial/run-remote-notebooks).

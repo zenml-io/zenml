@@ -252,7 +252,7 @@ Using an `ExternalArtifact` for your step automatically disables caching for the
 
 ## Consuming artifacts produced by other pipelines
 
-It is also common to consume an artifact downstream after producing it in an upstream pipeline or step. As we have learned in the [previous section](https://docs.zenml.io/how-to/pipeline-development/build-pipelines/fetching-pipelines#fetching-artifacts-directly), the `Client` can be used to fetch artifacts directly inside the pipeline code:
+It is also common to consume an artifact downstream after producing it in an upstream pipeline or step. As we have learned in the [previous section](https://docs.zenml.io/user-guides/tutorial/fetching-pipelines#fetching-artifacts-directly), the `Client` can be used to fetch artifacts directly inside the pipeline code:
 
 ```python
 from uuid import UUID
@@ -398,7 +398,7 @@ For more details and use-cases check-out detailed docs page [Register Existing D
 
 ## Logging metadata for an artifact
 
-One of the most useful ways of interacting with artifacts in ZenML is the ability to associate metadata with them. [As mentioned before](https://docs.zenml.io/how-to/pipeline-development/build-pipelines/fetching-pipelines#artifact-information), artifact metadata is an arbitrary dictionary of key-value pairs that are useful for understanding the nature of the data.
+One of the most useful ways of interacting with artifacts in ZenML is the ability to associate metadata with them. [As mentioned before](https://docs.zenml.io/user-guides/tutorial/fetching-pipelines#artifact-information), artifact metadata is an arbitrary dictionary of key-value pairs that are useful for understanding the nature of the data.
 
 As an example, one can associate the results of a model training alongside a model artifact, the shape of a table alongside a `pandas` dataframe, or the size of an image alongside a PNG file.
 

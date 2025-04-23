@@ -458,7 +458,7 @@ These practices help maintain a clean, scalable, and maintainable infrastructure
 - Document all required configuration fields
 - Consider component dependencies when organizing stacks
 - Separate infrastructure and ZenML registration state
-- Use [Terraform workspaces](https://www.terraform.io/docs/language/state/workspaces.html) for different environments
+- Use [Terraform workspaces](https://developer.hashicorp.com/terraform/language/state/workspaces) for different environments
 - Ensure that the ML operations team manages the registration state to maintain control over the ZenML stack components and their configurations. This helps in keeping the infrastructure and ML operations aligned and allows for better tracking and auditing of changes.
 
 ## Conclusion

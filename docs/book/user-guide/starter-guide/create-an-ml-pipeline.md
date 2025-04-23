@@ -271,7 +271,7 @@ If you are unsure how to format this config file, you can generate a template co
 training_pipeline.write_run_configuration_template(path='/local/path/to/config.yaml')
 ```
 
-Check out [this section](https://docs.zenml.io/how-to/pipeline-development/use-configuration-files) for advanced configuration options.
+Check out [this section](https://docs.zenml.io/concepts/steps_and_pipelines/yaml_configuration) for advanced configuration options.
 
 {% hint style="info" %}
 If you ever want to learn more about individual ZenML functions or classes, check out the [SDK Docs](https://sdkdocs.zenml.io/)

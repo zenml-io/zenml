@@ -98,7 +98,7 @@ training_pipeline = training_pipeline.with_options(
 training_pipeline()
 ```
 
-Note that pipeline names must be unique. For more information on this feature, see the [documentation on naming pipeline runs](https://docs.zenml.io/how-to/pipeline-development/build-pipelines/name-your-pipeline-runs).
+Note that pipeline names must be unique. For more information on this feature, see the [documentation on naming pipeline runs](https://docs.zenml.io/user-guides/best-practices/keep-your-dashboard-server-clean).
 
 ## Models
 
