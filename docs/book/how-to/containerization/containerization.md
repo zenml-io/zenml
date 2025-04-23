@@ -454,7 +454,6 @@ build: your-build-id-here
 Specifying a custom build when running a pipeline will **not run the code on your client machine** but will use the code **included in the Docker images of the build**. Even if you make local code changes, reusing a build will _always_ execute the code bundled in the Docker image, rather than the local code.
 {% endhint %}
 
-<<<<<<< HEAD
 ### Controlling Image Repository Names
 
 You can control where your Docker image is pushed by specifying a target repository name:
@@ -467,12 +466,7 @@ The repository name will be appended to the registry URI of your container regis
 
 If you don't specify a target repository, the default repository name configured in your container registry stack component settings will be used.
 
-### Code Repositories for Faster Builds
-||||||| 1e1c5eea8
-### Code Repositories for Faster Builds
-=======
 ### Decoupling Code from Builds
->>>>>>> origin/develop
 
 To reuse Docker builds while still using your latest code changes, you need to decouple your code from the build. There are two main approaches:
 
