@@ -267,4 +267,8 @@ Read more about:
 6. **Implement access controls** to manage who can run specific templates
 7. **Monitor template usage** to understand how your team is using them
 
+{% hint style="warning" %}
+**Important:** You need to recreate your run templates after upgrading your ZenML server. Templates are tied to specific server versions and may not work correctly after an upgrade.
+{% endhint %}
+
 By using pipeline templates effectively, you can standardize ML workflows, improve team collaboration, and simplify the process of running pipelines in production environments.
