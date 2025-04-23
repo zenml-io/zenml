@@ -101,46 +101,6 @@ class VertexAIModelRegistry(BaseModelRegistry, GoogleCredentialsMixin):
             raise ValueError("VertexModelDeployer is not active in the stack.")
         return str(model_deployer.id)
 
-    def _encode_name_version(self, name: str, version: str) -> str:
-        """Encode model name and version into a Vertex AI compatible format.
-
-        Args:
-            name: Model name
-            version: Model version
-
-        Returns:
-            Encoded string suitable for Vertex AI
-        """
-        # Base64 encode to handle special characters while preserving uniqueness
-        encoded = base64.b64encode(f"{name}:{version}".encode()).decode()
-        # Make it URL and label safe
-        encoded = encoded.replace("+", "-").replace("/", "_").replace("=", "")
-        return encoded[:MAX_DISPLAY_NAME_LENGTH]
-
-    def _decode_name_version(self, encoded: str) -> Tuple[str, str]:
-        """Decode model name and version from encoded format.
-
-        Args:
-            encoded: The encoded string
-
-        Returns:
-            Tuple of (name, version)
-        """
-        # Add back padding
-        padding = 4 - (len(encoded) % 4)
-        if padding != 4:
-            encoded += "=" * padding
-        # Restore special chars
-        encoded = encoded.replace("-", "+").replace("_", "/")
-        try:
-            decoded = base64.b64decode(encoded).decode()
-            name, version = decoded.split(":", 1)
-            return name, version
-        except Exception as e:
-            logger.warning(
-                f"Failed to decode name/version from {encoded}: {e}"
-            )
-            return encoded, "unknown"
 
     def _prepare_labels(
         self,
