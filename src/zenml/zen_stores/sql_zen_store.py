@@ -10768,9 +10768,6 @@ class SqlZenStore(BaseZenStore):
         Args:
             filter_model: The filter model to set the model ID on.
             session: The DB session to use for queries.
-
-        Raises:
-            ValueError: if the filter is not scoped to a model.
         """
         if filter_model.model:
             model = self._get_schema_by_name_or_id(
