@@ -254,6 +254,9 @@ def add_pod_settings(
         if not hasattr(pod_spec, key):
             logger.warning(f"Ignoring invalid Pod Spec argument `{key}`.")
         else:
+            if value is None:
+                continue
+
             existing_value = getattr(pod_spec, key)
             if isinstance(existing_value, list):
                 existing_value.extend(value)
