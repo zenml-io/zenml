@@ -238,7 +238,7 @@ kubernetes_settings = KubernetesOrchestratorSettings(
             "environment": "production",
             "team": "data-science"
         },
-        # Pass values for any additionaly PodSpec attribute here, e.g.
+        # Pass values for any additional PodSpec attribute here, e.g.
         # a deadline after which the pod should be killed
         "additional_pod_spec_args": {
             "active_deadline_seconds": 30
