@@ -60,9 +60,6 @@ class PipelineDeploymentBase(BaseZenModel):
     step_configurations: Dict[str, Step] = Field(
         default={}, title="The step configurations for this deployment."
     )
-    raw_step_configurations: Dict[str, Step] = Field(
-        default={}, title="The raw step configurations for this deployment."
-    )
     client_environment: Dict[str, str] = Field(
         default={}, title="The client environment for this deployment."
     )
@@ -145,9 +142,6 @@ class PipelineDeploymentResponseMetadata(ProjectScopedResponseMetadata):
     )
     step_configurations: Dict[str, Step] = Field(
         default={}, title="The step configurations for this deployment."
-    )
-    raw_step_configurations: Dict[str, Step] = Field(
-        default={}, title="The raw step configurations for this deployment."
     )
     client_environment: Dict[str, str] = Field(
         default={}, title="The client environment for this deployment."
@@ -246,15 +240,6 @@ class PipelineDeploymentResponse(
             the value of the property.
         """
         return self.get_metadata().step_configurations
-
-    @property
-    def raw_step_configurations(self) -> Dict[str, Step]:
-        """The `raw_step_configurations` property.
-
-        Returns:
-            the value of the property.
-        """
-        return self.get_metadata().raw_step_configurations
 
     @property
     def client_environment(self) -> Dict[str, str]:

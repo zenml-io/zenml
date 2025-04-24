@@ -344,3 +344,21 @@ class Step(StrictBaseModel):
 
     spec: StepSpec
     config: StepConfiguration
+    step_config_overrides: StepConfiguration
+
+    @model_validator(mode="before")
+    @classmethod
+    @before_validator_handler
+    def _autocomplete_step_config_overrides(cls, data: Any) -> Any:
+        """Autocompletes the step config overrides.
+
+        Args:
+            data: The values dict used to instantiate the model.
+
+        Returns:
+            The values dict with the step config overrides autocompleted.
+        """
+        if "step_config_overrides" not in data:
+            data["step_config_overrides"] = data["config"]
+
+        return data

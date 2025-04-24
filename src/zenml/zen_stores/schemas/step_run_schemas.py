@@ -254,9 +254,6 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
         full_step_config = None
         if self.deployment is not None:
-            pipeline_configuration = PipelineConfiguration.model_validate_json(
-                self.deployment.pipeline_configuration
-            )
             step_configuration = json.loads(
                 self.deployment.step_configurations
             )
@@ -272,14 +269,9 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                         self.pipeline_run.start_time,
                     )
                 )
-                merged_config = (
-                    full_step_config.config.apply_pipeline_configuration(
-                        pipeline_configuration
-                    )
-                )
                 full_step_config = full_step_config.model_copy(
                     update={
-                        "config": merged_config.model_copy(
+                        "config": full_step_config.config.model_copy(
                             update={"substitutions": new_substitutions}
                         )
                     }

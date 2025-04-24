@@ -371,7 +371,7 @@ def deployment_request_from_template(
     )
 
     steps = {}
-    for invocation_id, step in deployment.raw_step_configurations.items():
+    for invocation_id, step in deployment.step_configurations.items():
         step_update = config.steps.get(
             invocation_id, StepConfigurationUpdate()
         ).model_dump(
@@ -380,10 +380,12 @@ def deployment_request_from_template(
             exclude={"name"},
             exclude_unset=True,
         )
-        step_config = pydantic_utils.update_model(step.config, step_update)
-        # step_config = step_config.apply_pipeline_configuration(
-        #     pipeline_configuration
-        # )
+        step_config = pydantic_utils.update_model(
+            step.step_config_overrides, step_update
+        )
+        merged_step_config = step_config.apply_pipeline_configuration(
+            pipeline_configuration
+        )
 
         required_parameters = set(step.config.parameters)
         configured_parameters = set(step_config.parameters)
@@ -402,7 +404,11 @@ def deployment_request_from_template(
                 f"parameters for step {invocation_id}: {missing_parameters}."
             )
 
-        steps[invocation_id] = Step(spec=step.spec, config=step_config)
+        steps[invocation_id] = Step(
+            spec=step.spec,
+            config=merged_step_config,
+            step_config_overrides=step_config,
+        )
 
     code_reference_request = None
     if deployment.code_reference:
@@ -420,8 +426,7 @@ def deployment_request_from_template(
         run_name_template=config.run_name
         or get_default_run_name(pipeline_name=pipeline_configuration.name),
         pipeline_configuration=pipeline_configuration,
-        # step_configurations=steps,
-        raw_step_configurations=steps,
+        step_configurations=steps,
         client_environment={},
         client_version=zenml_version,
         server_version=zenml_version,

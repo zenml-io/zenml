@@ -96,12 +96,12 @@ def generate_config_template(
     deployment_model = deployment.to_model(include_metadata=True)
 
     steps_configs = {
-        name: step.config.model_dump(
+        name: step.step_config_overrides.model_dump(
             include=set(StepConfigurationUpdate.model_fields),
             exclude={"name", "outputs"},
             exclude_none=True,
         )
-        for name, step in deployment_model.raw_step_configurations.items()
+        for name, step in deployment_model.step_configurations.items()
     }
 
     for config in steps_configs.values():
