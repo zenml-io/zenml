@@ -363,8 +363,8 @@ def deployment_request_from_template(
     pipeline_update = config.model_dump(
         include=set(PipelineConfiguration.model_fields),
         exclude={"name", "parameters"},
-        # TODO: Make sure all unset values are actually passed as unset
         exclude_unset=True,
+        exclude_none=True,
     )
     pipeline_configuration = pydantic_utils.update_model(
         deployment.pipeline_configuration, pipeline_update
@@ -379,6 +379,7 @@ def deployment_request_from_template(
             # with `None`.
             exclude={"name"},
             exclude_unset=True,
+            exclude_none=True,
         )
         step_config = pydantic_utils.update_model(
             step.step_config_overrides, step_update
