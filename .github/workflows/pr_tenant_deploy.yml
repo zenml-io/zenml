@@ -1,0 +1,91 @@
+---
+name: PR Tenant Deploy
+on:
+  pull_request:
+    types: [opened, synchronize]
+env:
+  ZENML_ANALYTICS_OPT_IN: false
+  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+jobs:
+  check-label:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    steps:
+      # using this instead of contains(github.event.pull_request.labels.*.name, 'staging-tenant')
+      # to make it dynamic, otherwise github context is fixed at the moment of trigger event.
+      # With dynamic approach dev can set label and rerun this flow to make it running.
+      - name: Get PR labels
+        id: pr-labels
+        uses: actions/github-script@v7.0.1
+        with:
+          script: |
+            const prNumber = ${{ github.event.pull_request.number }};
+            const { data: labels } = await github.rest.issues.listLabelsOnIssue({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+            });
+            const labelNames = labels.map(label => label.name);
+            core.setOutput('all-labels', labelNames.join(','));
+      - name: Label not set
+        if: ${{ !contains(steps.pr-labels.outputs.all-labels, 'staging-tenant') }}
+        run: |
+          echo "Please add the 'staging-tenant' label if you want to deploy a staging tenant."
+          exit 1
+  build-images:
+    needs: check-label
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      new_image_tag: ${{ steps.set-image-tag.outputs.image_tag }}
+    steps:
+      # Check out the prepare-release branch
+      - name: Checkout code
+        uses: actions/checkout@v4.2.2
+
+      # Sign in to Google
+      - uses: google-github-actions/setup-gcloud@v0
+        with:
+          service_account_email: ${{ secrets.GCP_CLOUDBUILD_EMAIL }}
+          service_account_key: ${{ secrets.GCP_CLOUDBUILD_KEY }}
+          project_id: ${{ secrets.GCP_CLOUDBUILD_PROJECT }}
+
+      # Submit the Cloudbuild job
+      - name: Build docker images
+        run: |
+          gcloud builds submit \
+            --quiet \
+            --config=pull_request_cloudbuild.yaml \
+            --substitutions=ZENML_PR_TAG=${{ github.event.pull_request.number }}
+  manage-tenant:
+    needs: [check-label, build-images]
+    runs-on: ubuntu-latest
+    env:
+      ZENML_NEW_VERSION: ${{ needs.build-images.outputs.new_image_tag }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.2.2
+      - name: Set up Python
+        uses: actions/setup-python@v5.3.0
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+      - name: Manage workspace
+        env:
+          CLOUD_STAGING_CLIENT_ID: ${{ secrets.CLOUD_STAGING_CLIENT_ID }}
+          CLOUD_STAGING_CLIENT_SECRET: ${{ secrets.CLOUD_STAGING_CLIENT_SECRET }}
+          WORKSPACE_NAME_OR_ID: pr-${{ github.event.pull_request.number }}
+          ORGANIZATION_ID: ${{ secrets.PR_TENANT_ID }}
+          DOCKER_IMAGE: zenml/zenml-server:dev-${{ github.event.pull_request.number }}
+        run: python scripts/manage_workspace.py
+      - name: Set tenant URL
+        run: echo "TENANT_URL=https://pr-${{ github.event.pull_request.number }}.app.zenml.io" >> $GITHUB_ENV
+      - name: Add comment with tenant URL
+        if: github.event.action == 'opened'
+        run: |-
+          gh pr comment ${{ github.event.pull_request.number }} --body "✅ PR tenant has been deployed! Access it at: ${{ env.TENANT_URL }}"
