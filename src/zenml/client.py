@@ -6504,6 +6504,7 @@ class Client(metaclass=ClientMetaClass):
 
     def list_model_versions(
         self,
+        model: Optional[Union[str, UUID]] = None,
         model_name_or_id: Optional[Union[str, UUID]] = None,
         sort_by: str = "number",
         page: int = PAGINATION_STARTING_PAGE,
@@ -6525,6 +6526,7 @@ class Client(metaclass=ClientMetaClass):
         """Get model versions by filter from Model Control Plane.
 
         Args:
+            model: The model to filter by.
             model_name_or_id: name or id of the model containing the model
                 version.
             sort_by: The column to sort by
@@ -6548,6 +6550,19 @@ class Client(metaclass=ClientMetaClass):
         Returns:
             A page object with all model versions.
         """
+        if model_name_or_id:
+            logger.warning(
+                "The `model_name_or_id` argument is deprecated. "
+                "Please use the `model` argument instead."
+            )
+            if model is None:
+                model = model_name_or_id
+            else:
+                logger.warning(
+                    "Ignoring `model_name_or_id` argument as `model` argument "
+                    "was also provided."
+                )
+
         model_version_filter_model = ModelVersionFilter(
             page=page,
             size=size,
@@ -6563,7 +6578,7 @@ class Client(metaclass=ClientMetaClass):
             tag=tag,
             tags=tags,
             user=user,
-            model=model_name_or_id,
+            model=model,
             project=project or self.active_project.id,
         )
 
