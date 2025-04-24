@@ -7,8 +7,9 @@ description: >-
 
 By default, ZenML uses a logging handler to capture two types of logs:
 
-* the logs collected from your ZenML client while triggering and waiting for a pipeline to run. These logs cover everything that happens client-side: building and pushing container images, triggering the pipeline, waiting for it to start, and waiting for it to finish. Note that these logs are not available for scheduled pipelines and the logs might not be available for pipeline runs that fail while building or pushing the container images.
-* the logs collected from the execution of a step. These logs only cover what happens during the execution of a single step and originate mostly from the user-provided step code and the libraries it calls.
+* **Pipeline run logs**: Logs collected from your ZenML client while triggering and waiting for a pipeline to run. These logs cover everything that happens client-side: building and pushing container images, triggering the pipeline, waiting for it to start, and waiting for it to finish. These logs are now stored in the artifact store, making them accessible even after the client session ends.
+
+* **Step logs**: Logs collected from the execution of individual steps. These logs only cover what happens during the execution of a single step and originate mostly from the user-provided step code and the libraries it calls.
 
 For step logs, users are free to use the default python logging module or print statements, and ZenML's logging handler will catch these logs and store them.
 
@@ -27,6 +28,10 @@ All these logs are stored within the respective artifact store of your stack. Yo
 
 * Local ZenML server (`zenml login --local`): Both local and remote artifact stores may be accessible
 * Deployed ZenML server: Local artifact store logs won't be accessible; remote artifact store logs require [service connector](https://docs.zenml.io//how-to/infrastructure-deployment/auth-management/service-connectors-guide) configuration (see [remote storage guide](https://docs.zenml.io/user-guides/production-guide/remote-storage))
+
+{% hint style="warning" %}
+In order for logs to be visible in the dashboard with a deployed ZenML server, you must configure both a remote artifact store and the appropriate service connector to access it. Without this configuration, your logs won't be accessible through the dashboard.
+{% endhint %}
 
 ![Displaying pipeline run logs on the dashboard](../../.gitbook/assets/zenml_pipeline_run_logs.png)
 ![Displaying step logs on the dashboard](../../.gitbook/assets/zenml_step_logs.png)
@@ -58,19 +63,19 @@ my_pipeline = my_pipeline.with_options(
 
 ### Enabling or Disabling Logs Storage
 
-You can disable storing logs in your artifact store by:
+You can control log storage for both pipeline runs and steps:
 
-1. Using the `enable_step_logs` or the `enable_pipeline_logs` parameter with decorators:
+#### Step Logs
+
+To disable storing step logs in your artifact store:
+
+1. Using the `enable_step_logs` parameter with step decorator:
 
     ```python
-    from zenml import pipeline, step
+    from zenml import step
 
     @step(enable_step_logs=False)  # disables logging for this step
     def my_step() -> None:
-        ...
-
-    @pipeline(enable_pipeline_logs=False)  # disables logging for the entire pipeline
-    def my_pipeline():
         ...
     ```
 
@@ -93,7 +98,49 @@ You can disable storing logs in your artifact store by:
     )
     ```
 
-    This environmental variable takes precedence over the parameter mentioned above. 
+    This environment variable takes precedence over the parameter mentioned above.
+
+#### Pipeline Run Logs
+
+To disable storing client-side pipeline run logs in your artifact store:
+
+1. Using the `enable_pipeline_logs` parameter with pipeline decorator:
+
+    ```python
+    from zenml import pipeline
+
+    @pipeline(enable_pipeline_logs=False)  # disables client-side logging for this pipeline
+    def my_pipeline():
+        ...
+    ```
+
+2. Using the runtime configuration:
+
+    ```python
+    # Disable pipeline logs at runtime
+    my_pipeline.with_options(enable_pipeline_logs=False)
+    ```
+
+3. Setting the `ZENML_DISABLE_PIPELINE_LOGS_STORAGE=true` environment variable:
+
+    ```python
+    from zenml import pipeline
+    from zenml.config import DockerSettings
+
+    docker_settings = DockerSettings(environment={"ZENML_DISABLE_PIPELINE_LOGS_STORAGE": "true"})
+
+    # Either add it to the decorator
+    @pipeline(settings={"docker": docker_settings})
+    def my_pipeline() -> None:
+        my_step()
+
+    # Or configure the pipelines options
+    my_pipeline = my_pipeline.with_options(
+        settings={"docker": docker_settings}
+    )
+    ```
+
+    The environment variable takes precedence over parameters set in the decorator or runtime configuration.
 
 ### Setting Logging Verbosity
 
