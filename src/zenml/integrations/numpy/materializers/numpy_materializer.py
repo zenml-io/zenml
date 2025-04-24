@@ -244,7 +244,7 @@ class NumpyMaterializer(BaseMaterializer):
         """
         if np.issubdtype(arr.dtype, np.number):
             return self._extract_numeric_metadata(arr)
-        elif np.issubdtype(arr.dtype, np.unicode_) or np.issubdtype(
+        elif np.issubdtype(arr.dtype, np.str_) or np.issubdtype(
             arr.dtype, NUMPY_OBJECT_TYPE
         ):
             return self._extract_text_metadata(arr)
