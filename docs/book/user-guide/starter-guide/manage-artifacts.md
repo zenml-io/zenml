@@ -484,7 +484,7 @@ import numpy as np
 from sklearn.base import ClassifierMixin
 from sklearn.datasets import load_digits
 from sklearn.svm import SVC
-from zenml import ArtifactConfig, pipeline, step, log_artifact_metadata
+from zenml import ArtifactConfig, pipeline, step, log_metadata
 from zenml import save_artifact, load_artifact
 from zenml.client import Client
 
@@ -514,7 +514,7 @@ def model_finetuner_step(
     """Finetunes a given model on a given dataset."""
     model.fit(dataset[0], dataset[1])
     accuracy = model.score(dataset[0], dataset[1])
-    log_artifact_metadata(metadata={"accuracy": float(accuracy)})
+    log_metadata(metadata={"accuracy": float(accuracy)})
     return model
 
 
