@@ -63,7 +63,7 @@ orchestrator_url = pipeline_run.run_metadata["orchestrator_url"].value
 
 #### Specifying per-step resources
 
-If your steps require the orchestrator to execute them on specific hardware, you can specify them on your steps as described [here](https://docs.zenml.io/how-to/pipeline-development/use-configuration-files/runtime-configuration).
+If your steps require the orchestrator to execute them on specific hardware, you can specify them on your steps as described [here](https://docs.zenml.io/concepts/steps_and_pipelines/configuration).
 
 If your orchestrator of choice or the underlying hardware doesn't support this, you can also take a look at [step operators](https://docs.zenml.io/stacks/step-operators/).
 

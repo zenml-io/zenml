@@ -41,24 +41,29 @@ def find_markdown_files(directory):
 def extract_relative_links(content):
     """Extract all relative markdown links from content."""
     links = []
-    
+
     # Match [text](path.md) or [text](../path.md) patterns
     # Excluding URLs (http:// or https://)
     md_pattern = r"\[([^\]]+)\]\((?!http[s]?://)(.[^\)]+\.md)\)"
     md_matches = re.finditer(md_pattern, content)
     links.extend([(m.group(1), m.group(2), "markdown") for m in md_matches])
-    
+
     # Match ![text](path.png) or ![text](../path.jpg) patterns for images
     # Excluding URLs (http:// or https://)
     img_pattern = r"!\[([^\]]*)\]\((?!http[s]?://)(.[^\)]+\.(png|jpg|jpeg|gif|svg|webp))\)"
     img_matches = re.finditer(img_pattern, content)
     links.extend([(m.group(1), m.group(2), "image") for m in img_matches])
-    
+
     # Match [text](broken-reference) patterns
     broken_ref_pattern = r"\[([^\]]+)\]\(broken-reference\)"
     broken_ref_matches = re.finditer(broken_ref_pattern, content)
-    links.extend([(m.group(1), "broken-reference", "broken-reference") for m in broken_ref_matches])
-    
+    links.extend(
+        [
+            (m.group(1), "broken-reference", "broken-reference")
+            for m in broken_ref_matches
+        ]
+    )
+
     return links
 
 
@@ -119,9 +124,16 @@ def create_comment_body(broken_links):
     # Calculate statistics
     total_files = len({link["source_file"] for link in broken_links})
     total_broken = len(broken_links)
-    md_links = sum(1 for link in broken_links if link["link_type"] == "markdown" and link["broken_path"] != "broken-reference")
+    md_links = sum(
+        1
+        for link in broken_links
+        if link["link_type"] == "markdown"
+        and link["broken_path"] != "broken-reference"
+    )
     img_links = sum(1 for link in broken_links if link["link_type"] == "image")
-    broken_ref_links = sum(1 for link in broken_links if link["broken_path"] == "broken-reference")
+    broken_ref_links = sum(
+        1 for link in broken_links if link["broken_path"] == "broken-reference"
+    )
 
     body = [
         "# 🔍 Broken Links Report",
@@ -147,7 +159,7 @@ def create_comment_body(broken_links):
         display_name = (
             f"{parent}/{file_name}"  # Combine parent folder and filename
         )
-        
+
         # Use emoji to indicate link type
         if link["broken_path"] == "broken-reference":
             link_type_icon = "⚠️"  # Warning icon for broken-reference
