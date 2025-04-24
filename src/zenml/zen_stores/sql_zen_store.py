@@ -1155,19 +1155,7 @@ class SqlZenStore(BaseZenStore):
 
     def _initialize_database(self) -> None:
         """Initialize the database if not already initialized."""
-        # When running in a Pro ZenML server, the default project is not
-        # created on database initialization but on server onboarding.
-        create_default_project = True
-        if ENV_ZENML_SERVER in os.environ:
-            from zenml.config.server_config import ServerConfiguration
-
-            if (
-                ServerConfiguration.get_server_config().deployment_type
-                == ServerDeploymentType.CLOUD
-            ):
-                create_default_project = False
-
-        if create_default_project:
+        if self._default_project_enabled:
             # Make sure the default project exists
             self._get_or_create_default_project()
         # Make sure the default stack exists
@@ -9440,7 +9428,8 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
             if (
-                existing_project.name == self._default_project_name
+                self._default_project_enabled
+                and existing_project.name == self._default_project_name
                 and "name" in project_update.model_fields_set
                 and project_update.name != existing_project.name
             ):
@@ -9481,7 +9470,10 @@ class SqlZenStore(BaseZenStore):
                 schema_class=ProjectSchema,
                 session=session,
             )
-            if project.name == self._default_project_name:
+            if (
+                self._default_project_enabled
+                and project.name == self._default_project_name
+            ):
                 raise IllegalOperationError(
                     "The default project cannot be deleted."
                 )
@@ -9541,6 +9533,22 @@ class SqlZenStore(BaseZenStore):
             return self.create_project(
                 ProjectRequest(name=default_project_name)
             )
+
+    @property
+    def _default_project_enabled(self) -> bool:
+        # When running in a Pro ZenML server, the default project is not
+        # created on database initialization but on server onboarding.
+        default_project_enabled = True
+        if ENV_ZENML_SERVER in os.environ:
+            from zenml.config.server_config import ServerConfiguration
+
+            if (
+                ServerConfiguration.get_server_config().deployment_type
+                == ServerDeploymentType.CLOUD
+            ):
+                default_project_enabled = False
+
+        return default_project_enabled
 
     # =======================
     # Internal helper methods
@@ -9915,7 +9923,7 @@ class SqlZenStore(BaseZenStore):
                 session=session,
             )
             project_id = project.id
-        else:
+        elif self._default_project_enabled:
             # Use the default project as a last resort.
             try:
                 project = self._get_schema_by_name_or_id(
@@ -9926,6 +9934,8 @@ class SqlZenStore(BaseZenStore):
                 project_id = project.id
             except KeyError:
                 raise ValueError("Project scope missing from the filter")
+        else:
+            raise ValueError("Project scope missing from the filter")
 
         filter_model.project = project_id
 
