@@ -55,10 +55,10 @@ To generate a new API token for the ZenML Pro API:
 1. Navigate to the organization settings page in your ZenML Pro dashboard
 2.  Select "API Tokens" from the left sidebar
 
-    ![API Tokens](../../.gitbook/assets/zenml-pro-api-token-01.png)
+    ![API Tokens](../../../.gitbook/assets/zenml-pro-api-token-01.png)
 3.  Click the "Create new token" button. Once generated, you'll see a dialog showing your new API token.
 
-    ![API Tokens](../../.gitbook/assets/zenml-pro-api-token-02.png)
+    ![API Tokens](../../../.gitbook/assets/zenml-pro-api-token-02.png)
 4. Simply use the API token as the bearer token in your HTTP requests. For example, you can use the following command to check your current user:
    *   using curl:
 

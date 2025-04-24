@@ -373,7 +373,7 @@ def deployment_request_from_template(
     )
 
     step_config_dict_base = pipeline_configuration.model_dump(
-        exclude={"name", "parameters", "tags"}
+        exclude={"name", "parameters", "tags", "enable_pipeline_logs"}
     )
     steps = {}
     for invocation_id, step in deployment.step_configurations.items():

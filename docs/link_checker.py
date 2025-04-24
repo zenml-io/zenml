@@ -363,7 +363,7 @@ def transform_relative_link(
 
     Examples:
     - "../../how-to/pipeline-development/use-configuration-files/README.md" ->
-      "https://docs.zenml.io/how-to/pipeline-development/use-configuration-files"
+      "https://docs.zenml.io/concepts/steps_and_pipelines/yaml_configuration"
     - "../../how-to/model-management-metrics/track-metrics-metadata/fetch-metadata-within-pipeline.md" ->
       "https://docs.zenml.io/how-to/model-management-metrics/track-metrics-metadata/fetch-metadata-within-pipeline"
 

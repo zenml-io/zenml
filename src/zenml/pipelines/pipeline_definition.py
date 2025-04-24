@@ -16,7 +16,7 @@
 import copy
 import hashlib
 import inspect
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
@@ -56,8 +56,13 @@ from zenml.enums import StackComponentType
 from zenml.exceptions import EntityExistsError
 from zenml.hooks.hook_validators import resolve_and_validate_hook
 from zenml.logger import get_logger
+from zenml.logging.step_logging import (
+    PipelineLogsStorageContext,
+    prepare_logs_uri,
+)
 from zenml.models import (
     CodeReferenceRequest,
+    LogsRequest,
     PipelineBuildBase,
     PipelineBuildResponse,
     PipelineDeploymentBase,
@@ -130,6 +135,7 @@ class Pipeline:
         enable_artifact_metadata: Optional[bool] = None,
         enable_artifact_visualization: Optional[bool] = None,
         enable_step_logs: Optional[bool] = None,
+        enable_pipeline_logs: Optional[bool] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         tags: Optional[List[Union[str, "Tag"]]] = None,
         extra: Optional[Dict[str, Any]] = None,
@@ -149,6 +155,7 @@ class Pipeline:
             enable_artifact_visualization: If artifact visualization should be
                 enabled for this pipeline.
             enable_step_logs: If step logs should be enabled for this pipeline.
+            enable_pipeline_logs: If pipeline logs should be enabled for this pipeline.
             settings: Settings for this pipeline.
             tags: Tags to apply to runs of this pipeline.
             extra: Extra configurations for this pipeline.
@@ -174,6 +181,7 @@ class Pipeline:
                 enable_artifact_metadata=enable_artifact_metadata,
                 enable_artifact_visualization=enable_artifact_visualization,
                 enable_step_logs=enable_step_logs,
+                enable_pipeline_logs=enable_pipeline_logs,
                 settings=settings,
                 tags=tags,
                 extra=extra,
@@ -293,6 +301,7 @@ class Pipeline:
         enable_artifact_metadata: Optional[bool] = None,
         enable_artifact_visualization: Optional[bool] = None,
         enable_step_logs: Optional[bool] = None,
+        enable_pipeline_logs: Optional[bool] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
         tags: Optional[List[Union[str, "Tag"]]] = None,
         extra: Optional[Dict[str, Any]] = None,
@@ -322,6 +331,7 @@ class Pipeline:
             enable_artifact_visualization: If artifact visualization should be
                 enabled for this pipeline.
             enable_step_logs: If step logs should be enabled for this pipeline.
+            enable_pipeline_logs: If pipeline logs should be enabled for this pipeline.
             settings: settings for this pipeline.
             tags: Tags to apply to runs of this pipeline.
             extra: Extra configurations for this pipeline.
@@ -364,6 +374,7 @@ class Pipeline:
                 "enable_artifact_metadata": enable_artifact_metadata,
                 "enable_artifact_visualization": enable_artifact_visualization,
                 "enable_step_logs": enable_step_logs,
+                "enable_pipeline_logs": enable_pipeline_logs,
                 "settings": settings,
                 "tags": tags,
                 "extra": extra,
@@ -588,6 +599,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         enable_artifact_metadata: Optional[bool] = None,
         enable_artifact_visualization: Optional[bool] = None,
         enable_step_logs: Optional[bool] = None,
+        enable_pipeline_logs: Optional[bool] = None,
         schedule: Optional[Schedule] = None,
         build: Union[str, "UUID", "PipelineBuildBase", None] = None,
         settings: Optional[Mapping[str, "SettingsOrDict"]] = None,
@@ -610,6 +622,8 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             enable_artifact_visualization: If artifact visualization should be
                 enabled for this pipeline run.
             enable_step_logs: If step logs should be enabled for this pipeline.
+            enable_pipeline_logs: If pipeline logs should be enabled for this
+                pipeline run.
             schedule: Optional schedule to use for the run.
             build: Optional build to use for the run.
             settings: Settings for this pipeline run.
@@ -641,6 +655,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
             enable_artifact_metadata=enable_artifact_metadata,
             enable_artifact_visualization=enable_artifact_visualization,
             enable_step_logs=enable_step_logs,
+            enable_pipeline_logs=enable_pipeline_logs,
             steps=step_configurations,
             settings=settings,
             schedule=schedule,
@@ -723,7 +738,7 @@ To avoid this consider setting pipeline parameters only in one place (config or 
         if prevent_build_reuse:
             logger.warning(
                 "Passing `prevent_build_reuse=True` to "
-                "`pipeline.with_opitions(...)` is deprecated. Use "
+                "`pipeline.with_options(...)` is deprecated. Use "
                 "`DockerSettings.prevent_build_reuse` instead."
             )
 
@@ -806,31 +821,77 @@ To avoid this consider setting pipeline parameters only in one place (config or 
 
         with track_handler(AnalyticsEvent.RUN_PIPELINE) as analytics_handler:
             stack = Client().active_stack
-            deployment = self._create_deployment(**self._run_args)
 
-            self.log_pipeline_deployment_metadata(deployment)
-            run = create_placeholder_run(deployment=deployment)
+            # Enable or disable pipeline run logs storage
+            if self._run_args.get("schedule"):
+                # Pipeline runs scheduled to run in the future are not logged
+                # via the client.
+                logging_enabled = False
+            elif constants.handle_bool_env_var(
+                constants.ENV_ZENML_DISABLE_PIPELINE_LOGS_STORAGE, False
+            ):
+                logging_enabled = False
+            else:
+                logging_enabled = self._run_args.get(
+                    "enable_pipeline_logs",
+                    self.configuration.enable_pipeline_logs
+                    if self.configuration.enable_pipeline_logs is not None
+                    else True,
+                )
 
-            analytics_handler.metadata = self._get_pipeline_analytics_metadata(
-                deployment=deployment,
-                stack=stack,
-                run_id=run.id if run else None,
-            )
+            logs_context = nullcontext()
+            logs_model = None
 
-            if run:
-                run_url = dashboard_utils.get_run_url(run)
-                if run_url:
-                    logger.info(f"Dashboard URL for Pipeline Run: {run_url}")
-                else:
-                    logger.info(
-                        "You can visualize your pipeline runs in the `ZenML "
-                        "Dashboard`. In order to try it locally, please run "
-                        "`zenml login --local`."
+            if logging_enabled:
+                # Configure the logs
+                logs_uri = prepare_logs_uri(
+                    stack.artifact_store,
+                )
+
+                logs_context = PipelineLogsStorageContext(
+                    logs_uri=logs_uri,
+                    artifact_store=stack.artifact_store,
+                    prepend_step_name=False,
+                )  # type: ignore[assignment]
+
+                logs_model = LogsRequest(
+                    uri=logs_uri,
+                    artifact_store_id=stack.artifact_store.id,
+                )
+
+            with logs_context:
+                deployment = self._create_deployment(**self._run_args)
+
+                self.log_pipeline_deployment_metadata(deployment)
+                run = create_placeholder_run(
+                    deployment=deployment, logs=logs_model
+                )
+
+                analytics_handler.metadata = (
+                    self._get_pipeline_analytics_metadata(
+                        deployment=deployment,
+                        stack=stack,
+                        run_id=run.id if run else None,
                     )
+                )
 
-            deploy_pipeline(
-                deployment=deployment, stack=stack, placeholder_run=run
-            )
+                if run:
+                    run_url = dashboard_utils.get_run_url(run)
+                    if run_url:
+                        logger.info(
+                            f"Dashboard URL for Pipeline Run: {run_url}"
+                        )
+                    else:
+                        logger.info(
+                            "You can visualize your pipeline runs in the `ZenML "
+                            "Dashboard`. In order to try it locally, please run "
+                            "`zenml login --local`."
+                        )
+
+                deploy_pipeline(
+                    deployment=deployment, stack=stack, placeholder_run=run
+                )
+
             if run:
                 return Client().get_pipeline_run(run.id)
             return None

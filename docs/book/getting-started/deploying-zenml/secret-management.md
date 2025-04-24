@@ -2,7 +2,7 @@
 description: Configuring the secrets store.
 ---
 
-# Secret store configuration and management
+# Secret management
 
 ## Centralized secrets store
 
@@ -25,7 +25,7 @@ Currently, the ZenML server can be configured to use one of the following suppor
 
 Configuring the specific secrets store back-end that the ZenML server uses is done at deployment time. This involves deciding on one of the supported back-ends and authentication mechanisms and configuring the ZenML server with the necessary credentials to authenticate with the back-end.
 
-The ZenML secrets store reuses the [ZenML Service Connector](https://docs.zenml.io/how-to/infrastructure-deployment/auth-management/service-connectors-guide) authentication mechanisms to authenticate with the secrets store back-end. This means that the same authentication methods and configuration parameters that are supported by the available Service Connectors are also reflected in the ZenML secrets store configuration. It is recommended to practice the principle of least privilege when configuring the ZenML secrets store and to use credentials with the documented minimum required permissions to access the secrets store back-end.
+The ZenML secrets store reuses the [ZenML Service Connector](https://docs.zenml.io/stacks/service-connectors/auth-management) authentication mechanisms to authenticate with the secrets store back-end. This means that the same authentication methods and configuration parameters that are supported by the available Service Connectors are also reflected in the ZenML secrets store configuration. It is recommended to practice the principle of least privilege when configuring the ZenML secrets store and to use credentials with the documented minimum required permissions to access the secrets store back-end.
 
 The ZenML secrets store configured for the ZenML Server can be updated at any time by updating the ZenML Server configuration and redeploying the server. This allows you to easily switch between different secrets store back-ends and authentication mechanisms. However, it is recommended to follow [the documented secret store migration strategy](secret-management.md#secrets-migration-strategy) to minimize downtime and to ensure that existing secrets are also properly migrated, in case the location where secrets are stored in the back-end changes.
 
@@ -41,7 +41,7 @@ Always make sure that the backup Secrets Store is configured to use a different 
 Using the same location for both the primary and backup Secrets Store will not provide any additional benefits and may even result in unexpected behavior.
 {% endhint %}
 
-When a backup secrets store is in use, the ZenML Server will always attempt to read and write secret values from/to the primary Secrets Store first while ensuring to keep the backup Secrets Store in sync. If the primary Secrets Store is unreachable, if the secret values are not found there or any otherwise unexpected error occurs, the ZenML Server falls back to reading and writing from/to the backup Secrets Store. Only if the backup Secrets Store is also unavailable, the ZenML Server will return an error.
+When a backup secrets store is in use, the ZenML Server will always attempt to read and write secret values from/to the primary Secrets Store first while ensuring to keep the backup Secrets Store in sync. If the primary Secrets Store is unreachable, if the secret values are not found there, or any otherwise unexpected error occurs, the ZenML Server falls back to reading and writing from/to the backup Secrets Store. Only if the backup Secrets Store is also unavailable, the ZenML Server will return an error.
 
 In addition to the hidden backup operations, users can also explicitly trigger a backup operation by using the `zenml secret backup` CLI command. This command will attempt to read all secrets from the primary Secrets Store and write them to the backup Secrets Store. Similarly, the `zenml secret restore` CLI command can be used to restore secrets from the backup Secrets Store to the primary Secrets Store. These CLI commands are useful for migrating secrets from one Secrets Store to another.
 

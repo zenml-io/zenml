@@ -352,13 +352,154 @@ def my_pipeline():
 
 You can find available accelerator types [here](https://cloud.google.com/vertex-ai/docs/training/configure-compute#specifying_gpus).
 
-Check out the [SDK docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-gcp.html#zenml.integrations.gcp) for a full list of available attributes and [this docs page](https://docs.zenml.io/how-to/pipeline-development/use-configuration-files/runtime-configuration) for more information on how to specify settings.
+### Using Custom Job Parameters
 
-For more information and a full list of configurable attributes of the Vertex orchestrator, check out the [SDK Docs](https://sdkdocs.zenml.io/latest/integration_code_docs/integrations-gcp.html#zenml.integrations.gcp) .
+For more advanced hardware configuration, you can use `VertexCustomJobParameters` to customize each step's execution environment. This allows you to specify detailed requirements like boot disk size, accelerator type, machine type, and more without needing a separate step operator.
+
+```python
+from zenml.integrations.gcp.vertex_custom_job_parameters import (
+    VertexCustomJobParameters,
+)
+from zenml import step, pipeline
+from zenml.integrations.gcp.flavors.vertex_orchestrator_flavor import (
+    VertexOrchestratorSettings
+)
+
+# Create settings with a larger boot disk (1TB)
+large_disk_settings = VertexOrchestratorSettings(
+    custom_job_parameters=VertexCustomJobParameters(
+        boot_disk_size_gb=1000,  # 1TB disk
+        boot_disk_type="pd-standard",  # Standard persistent disk (cheaper)
+        machine_type="n1-standard-8"
+    )
+)
+
+# Create settings with GPU acceleration
+gpu_settings = VertexOrchestratorSettings(
+    custom_job_parameters=VertexCustomJobParameters(
+        accelerator_type="NVIDIA_TESLA_A100",
+        accelerator_count=1,
+        machine_type="n1-standard-8",
+        boot_disk_size_gb=200  # Larger disk for GPU workloads
+    )
+)
+
+# Step that needs a large disk but no GPU
+@step(settings={"orchestrator": large_disk_settings})
+def data_processing_step():
+    # Process large datasets that require a lot of disk space
+    ...
+
+# Step that needs GPU acceleration
+@step(settings={"orchestrator": gpu_settings})
+def training_step():
+    # Train ML model using GPU
+    ...
+
+# Define pipeline that uses both steps
+@pipeline()
+def my_pipeline():
+    data = data_processing_step()
+    model = training_step(data)
+    ...
+```
+
+You can also specify these parameters at pipeline level to apply them to all steps:
+
+```python
+@pipeline(
+    settings={
+        "orchestrator": VertexOrchestratorSettings(
+            custom_job_parameters=VertexCustomJobParameters(
+                boot_disk_size_gb=500,  # 500GB disk for all steps
+                machine_type="n1-standard-4"
+            )
+        )
+    }
+)
+def my_pipeline():
+    ...
+```
+
+The `VertexCustomJobParameters` supports the following common configuration options:
+
+| Parameter | Description |
+|-----------|-------------|
+| boot_disk_size_gb | Size of the boot disk in GB (default: 100) |
+| boot_disk_type | Type of disk ("pd-standard", "pd-ssd", etc.) |
+| machine_type | Machine type for computation (e.g., "n1-standard-4") |
+| accelerator_type | Type of accelerator (e.g., "NVIDIA_TESLA_T4", "NVIDIA_TESLA_A100") |
+| accelerator_count | Number of accelerators to attach |
+| service_account | Service account to use for the job |
+| persistent_resource_id | ID of persistent resource for faster job startup |
+
+#### Advanced Custom Job Parameters
+
+For advanced scenarios, you can use `additional_training_job_args` to pass additional parameters directly to the underlying Google Cloud Pipeline Components library:
+
+```python
+@step(
+    settings={
+        "orchestrator": VertexOrchestratorSettings(
+            custom_job_parameters=VertexCustomJobParameters(
+                machine_type="n1-standard-8",
+                # Advanced parameters passed directly to create_custom_training_job_from_component
+                additional_training_job_args={
+                    "timeout": "86400s",  # 24 hour timeout
+                    "network": "projects/12345/global/networks/my-vpc",
+                    "enable_web_access": True,
+                    "reserved_ip_ranges": ["192.168.0.0/16"],
+                    "base_output_directory": "gs://my-bucket/outputs",
+                    "labels": {"team": "ml-research", "project": "image-classification"}
+                }
+            )
+        )
+    }
+)
+def my_advanced_step():
+    ...
+```
+
+These advanced parameters are passed directly to the Google Cloud Pipeline Components library's [`create_custom_training_job_from_component`](https://google-cloud-pipeline-components.readthedocs.io/en/google-cloud-pipeline-components-2.19.0/api/v1/custom_job.html#v1.custom_job.create_custom_training_job_from_component) function. This approach lets you access new features of the Google API without requiring ZenML updates.
+
+{% hint style="warning" %}
+If you specify parameters in `additional_training_job_args` that are also defined as explicit attributes (like `machine_type` or `boot_disk_size_gb`), the values in `additional_training_job_args` will override the explicit values. For example:
+
+```python
+VertexCustomJobParameters(
+    machine_type="n1-standard-4",  # This will be overridden
+    additional_training_job_args={
+        "machine_type": "n1-standard-16"  # This takes precedence
+    }
+)
+```
+
+The resulting machine type will be "n1-standard-16". When this happens, ZenML will log a warning at runtime to alert you of the parameter override, which helps avoid confusion about which configuration values are actually being used.
+{% endhint %}
+
+{% hint style="info" %}
+When using `custom_job_parameters`, ZenML automatically applies certain configurations from your orchestrator:
+
+- **Network Configuration**: If you've set `network` in your Vertex orchestrator configuration, it will be automatically applied to all custom jobs unless you explicitly override it in `additional_training_job_args`.
+
+- **Encryption Specification**: If you've set `encryption_spec_key_name` in your orchestrator configuration, it will be applied to custom jobs for consistent encryption.
+
+- **Service Account**: For non-persistent resource jobs, if no service account is specified in the custom job parameters, the `workload_service_account` from the orchestrator configuration will be used.
+
+This inheritance mechanism ensures consistent configuration across your pipeline steps, maintaining connectivity to GCP resources (like databases), security settings, and compute resources without requiring manual specification for each step.
+{% endhint %}
+
+For a complete list of parameters supported by the underlying function, refer to the [Google Pipeline Components SDK V1 docs](https://google-cloud-pipeline-components.readthedocs.io/en/google-cloud-pipeline-components-2.19.0/api/v1/custom_job.html#v1.custom_job.create_custom_training_job_from_component).
+
+Note that when using custom job parameters with `persistent_resource_id`, you must always specify a `service_account` as well.
+
+{% hint style="info" %}
+The `additional_training_job_args` field provides future-proofing for your ZenML pipelines. If Google adds new parameters to their API, you can immediately use them without waiting for ZenML updates. This is especially useful for accessing new hardware configurations, networking features, or security settings as they become available.
+{% endhint %}
 
 ### Enabling CUDA for GPU-backed hardware
 
-Note that if you wish to use this orchestrator to run steps on a GPU, you will need to follow [the instructions on this page](https://docs.zenml.io/how-to/pipeline-development/training-with-gpus/) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
+Note that if you wish to use this orchestrator to run steps on a GPU, you will need to follow [the instructions on this page](https://docs.zenml.io/user-guides/tutorial/distributed-training/) to ensure that it works. It requires adding some extra settings customization and is essential to enable CUDA for the GPU to give its full acceleration.
 
 ### Using Persistent Resources for Faster Development
 
@@ -374,7 +515,7 @@ Note that a service account with permissions to access the persistent resource i
 
 ```bash
 # You can also use `zenml orchestrator update`
-zenml orchestrator register <NAME> -f vertex --custom_job_parameters='{"persistent_resource_id": <PERSISTENT_RESOURCE_ID>, "service_account": <SERVICE_ACCOUNT_NAME>, "machine_type": "n1-standard-4", "boot_disk_type": "pd-standard"}'
+zenml orchestrator register <NAME> -f vertex --custom_job_parameters='{"persistent_resource_id": "<PERSISTENT_RESOURCE_ID>", "service_account": "<SERVICE_ACCOUNT_NAME>", "machine_type": "n1-standard-4", "boot_disk_type": "pd-standard"}'
 ```
 
 #### Configure the orchestrator using the dashboard
@@ -384,16 +525,23 @@ Navigate to the `Stacks` section in your ZenML dashboard and either create a new
 #### Configure the orchestrator dynamically in code
 
 ```python
-from zenml.integrations.gcp.flavors.vertex_orchestrator_flavor import VertexOrchestratorSettings
+from zenml.integrations.gcp.vertex_custom_job_parameters import (
+    VertexCustomJobParameters,
+)
+from zenml.integrations.gcp.flavors.vertex_orchestrator_flavor import (
+    VertexOrchestratorSettings
+)
 
 # Configure for the pipeline which applies to all steps
 @pipeline(
     settings={
         "orchestrator": VertexOrchestratorSettings(
-            persistent_resource_id=<PERSISTENT_RESOURCE_ID>,
-            service_account=<SERVICE_ACCOUNT_NAME>,
-            machine_type="n1-standard-4",
-            boot_disk_type="pd-standard"
+            custom_job_parameters=VertexCustomJobParameters(
+                persistent_resource_id="<PERSISTENT_RESOURCE_ID>",
+                service_account="<SERVICE_ACCOUNT_NAME>",
+                machine_type="n1-standard-4",
+                boot_disk_type="pd-standard"
+            )
         )
     }
 )
@@ -405,22 +553,43 @@ def my_pipeline():
 @step(
     settings={
         "orchestrator": VertexOrchestratorSettings(
-            persistent_resource_id=<PERSISTENT_RESOURCE_ID>,
-            service_account=<SERVICE_ACCOUNT_NAME>,
-            machine_type="n1-standard-4",
-            boot_disk_type="pd-standard"
+            custom_job_parameters=VertexCustomJobParameters(
+                persistent_resource_id="<PERSISTENT_RESOURCE_ID>",
+                service_account="<SERVICE_ACCOUNT_NAME>",
+                machine_type="n1-standard-4",
+                boot_disk_type="pd-standard"
+            )
         )
     }
 )
 def my_step():
     ...
+```
 
+If you need to explicitly specify that no persistent resource should be used, set `persistent_resource_id` to an empty string:
+
+```python
+@step(
+    settings={
+        "orchestrator": VertexOrchestratorSettings(
+            custom_job_parameters=VertexCustomJobParameters(
+                persistent_resource_id="",  # Explicitly not using a persistent resource
+                boot_disk_size_gb=1000,  # Set a large disk
+                machine_type="n1-standard-8"
+            )
+        )
+    }
+)
+def my_step():
+    ...
 ```
 
 Using a persistent resource is particularly useful when you're developing locally and want to iterate quickly on steps that need cloud resources. The startup time of the job can be extremely quick.
 
 {% hint style="warning" %}
-Remember that persistent resources continue to incur costs as long as they're running, even when idle. Make sure to monitor your usage and configure appropriate idle timeout periods.
+When using persistent resources (`persistent_resource_id` specified), you **must** always include a `service_account`. Conversely, when explicitly setting `persistent_resource_id=""` to avoid using persistent resources, ZenML will automatically set the service account to an empty string to avoid Vertex API errors - so don't set the service account in this case.
 {% endhint %}
 
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
+{% hint style="warning" %}
+Remember that persistent resources continue to incur costs as long as they're running, even when idle. Make sure to monitor your usage and configure appropriate idle timeout periods.
+{% endhint %}

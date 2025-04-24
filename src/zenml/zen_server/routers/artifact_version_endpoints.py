@@ -13,13 +13,26 @@
 #  permissions and limitations under the License.
 """Endpoint definitions for artifact versions."""
 
+import os
 from typing import List, Union
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, Security
+from fastapi.responses import FileResponse
+from starlette.background import BackgroundTask
 
-from zenml.artifacts.utils import load_artifact_visualization
-from zenml.constants import API, ARTIFACT_VERSIONS, BATCH, VERSION_1, VISUALIZE
+from zenml.artifacts.utils import (
+    load_artifact_visualization,
+)
+from zenml.constants import (
+    API,
+    ARTIFACT_VERSIONS,
+    BATCH,
+    DATA,
+    DOWNLOAD_TOKEN,
+    VERSION_1,
+    VISUALIZE,
+)
 from zenml.models import (
     ArtifactVersionFilter,
     ArtifactVersionRequest,
@@ -28,7 +41,16 @@ from zenml.models import (
     LoadedVisualization,
     Page,
 )
-from zenml.zen_server.auth import AuthContext, authorize
+from zenml.zen_server.auth import (
+    AuthContext,
+    authorize,
+    generate_artifact_download_token,
+    verify_artifact_download_token,
+)
+from zenml.zen_server.download_utils import (
+    create_artifact_archive,
+    verify_artifact_is_downloadable,
+)
 from zenml.zen_server.exceptions import error_response
 from zenml.zen_server.rbac.endpoint_utils import (
     verify_permissions_and_batch_create_entity,
@@ -274,4 +296,65 @@ def get_artifact_visualization(
     )
     return load_artifact_visualization(
         artifact=artifact, index=index, zen_store=store, encode_image=True
+    )
+
+
+@artifact_version_router.get(
+    "/{artifact_version_id}" + DOWNLOAD_TOKEN,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def get_artifact_download_token(
+    artifact_version_id: UUID,
+    _: AuthContext = Security(authorize),
+) -> str:
+    """Get a download token for the artifact data.
+
+    Args:
+        artifact_version_id: ID of the artifact version for which to get the data.
+
+    Returns:
+        The download token for the artifact data.
+    """
+    artifact = verify_permissions_and_get_entity(
+        id=artifact_version_id, get_method=zen_store().get_artifact_version
+    )
+    verify_artifact_is_downloadable(artifact)
+
+    # The artifact download is handled in a separate tab by the browser. In this
+    # tab, we do not have the ability to set any headers and therefore cannot
+    # include the CSRF token in the request. To handle this, we instead generate
+    # a JWT token in this endpoint (which includes CSRF and RBAC checks) and
+    # then use that token to download the artifact data in a separate endpoint
+    # which only verifies this short-lived token.
+    return generate_artifact_download_token(artifact_version_id)
+
+
+@artifact_version_router.get(
+    "/{artifact_version_id}" + DATA,
+    responses={401: error_response, 404: error_response, 422: error_response},
+)
+@handle_exceptions
+def download_artifact_data(
+    artifact_version_id: UUID, token: str
+) -> FileResponse:
+    """Download the artifact data.
+
+    Args:
+        artifact_version_id: ID of the artifact version for which to get the data.
+        token: The token to authenticate the artifact download.
+
+    Returns:
+        The artifact data.
+    """
+    verify_artifact_download_token(token, artifact_version_id)
+
+    artifact = zen_store().get_artifact_version(artifact_version_id)
+    archive_path = create_artifact_archive(artifact)
+
+    return FileResponse(
+        archive_path,
+        media_type="application/gzip",
+        filename=f"{artifact.name}-{artifact.version}.tar.gz",
+        background=BackgroundTask(os.remove, archive_path),
     )

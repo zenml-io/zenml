@@ -37,11 +37,11 @@ All metadata is now stored, tracked, and managed by ZenML itself. The Metadata S
 
 The architecture changes for the local case are shown in the diagram below:
 
-![ZenML local metadata before 0.20.0](../../user-guide/assets/migration/local-metadata-pre-0.20.png) ![ZenML local metadata after 0.20.0](../../user-guide/assets/migration/local-metadata-post-0.20.png)
+![ZenML local metadata before 0.20.0](../../../.gitbook/assets/local-metadata-pre-0.20.png) ![ZenML local metadata after 0.20.0](../../../.gitbook/assets/local-metadata-post-0.20.png)
 
 The architecture changes for the remote case are shown in the diagram below:
 
-![ZenML remote metadata before 0.20.0](../../user-guide/assets/migration/remote-metadata-pre-0.20.png) ![ZenML remote metadata after 0.20.0](../../user-guide/assets/migration/remote-metadata-post-0.20.png)
+![ZenML remote metadata before 0.20.0](../../../.gitbook/assets/remote-metadata-pre-0.20.png) ![ZenML remote metadata after 0.20.0](../../../.gitbook/assets/remote-metadata-post-0.20.png)
 
 If you're already using ZenML, aside from the above limitation, this change will impact you differently, depending on the flavor of Metadata Stores you have in your stacks:
 
@@ -92,7 +92,7 @@ zenml pipeline runs migrate DATABASE_NAME \
 
 **Deploy the server**
 
-`zenml deploy --aws` (maybe don’t do this :) since it spins up infrastructure on AWS…)
+`zenml deploy --aws` (maybe don't do this :) since it spins up infrastructure on AWS…)
 
 **Spin up a local ZenML Server**
 
@@ -124,7 +124,7 @@ connect to it using the 'default' username and an empty password.
 
 The Dashboard will be available at `http://localhost:8237` by default:
 
-![ZenML Dashboard Preview](../../user-guide/assets/migration/zenml-dashboard.png)
+![ZenML Dashboard Preview](../../../.gitbook/assets/zenml-dashboard.png)
 
 For more details on other possible deployment options, see the [ZenML deployment documentation](https://docs.zenml.io/getting-started/deploying-zenml), and/or follow the [starter guide](https://docs.zenml.io/user-guides/starter-guide) to learn more.
 
@@ -339,7 +339,7 @@ With ZenML 0.20.0, we introduce the `BaseSettings` class, a broad class that ser
 
 Pipelines and steps now allow all configurations on their decorators as well as the `.configure(...)` method. This includes configurations for stack components that are not infrastructure-related which was previously done using the `@enable_xxx` decorators). The same configurations can also be defined in a YAML file.
 
-Read more about this paradigm in the [new docs section about settings](https://docs.zenml.io//how-to/pipeline-development/use-configuration-files/what-can-be-configured).
+Read more about this paradigm in the [new docs section about settings](https://docs.zenml.io/concepts/steps_and_pipelines/configuration).
 
 Here is a list of changes that are the most obvious in consequence of the above code. Please note that this list is not exhaustive, and if we have missed something let us know via [Slack](https://zenml.io/slack).
 
@@ -429,11 +429,11 @@ All the aforementioned configurations as well as additional information required
 
 Once a pipeline has been executed, it is represented by a `PipelineSpec` that uniquely identifies it. Therefore, users are no longer able to edit a pipeline once it has been run once. There are now three options to get around this:
 
-* Pipeline runs can be created without being associated with a pipeline explicitly: We call these `unlisted` runs. Read more about unlisted runs [here](https://docs.zenml.io/how-to/pipeline-development/develop-locally/keep-your-dashboard-server-clean#unlisted-runs).
+* Pipeline runs can be created without being associated with a pipeline explicitly: We call these `unlisted` runs. Read more about unlisted runs [here](https://docs.zenml.io/user-guides/best-practices/keep-your-dashboard-server-clean#unlisted-runs).
 * Pipelines can be deleted and created again.
 * Pipelines can be given unique names each time they are run to uniquely identify them.
 
-**How to migrate**: No code changes, but rather keep in mind the behavior (e.g. in a notebook setting) when quickly [iterating over pipelines as experiments](https://docs.zenml.io//how-to/pipeline-development/build-pipelines/use-pipeline-step-parameters).
+**How to migrate**: No code changes, but rather keep in mind the behavior (e.g. in a notebook setting) when quickly [iterating over pipelines as experiments](https://docs.zenml.io/concepts/steps_and_pipelines#parameters-and-artifacts).
 
 ### New post-execution workflow
 
@@ -447,7 +447,7 @@ from zenml.post_execution import get_pipelines, get_pipeline
 
 * New methods to directly get a run have been introduced: `get_run` and `get_unlisted_runs` method has been introduced to get unlisted runs.
 
-Usage remains largely similar. Please read the [new docs for post-execution](https://docs.zenml.io//how-to/pipeline-development/build-pipelines/fetching-pipelines) to inform yourself of what further has changed.
+Usage remains largely similar. Please read the [new docs for post-execution](https://docs.zenml.io/user-guides/tutorial/fetching-pipelines) to inform yourself of what further has changed.
 
 **How to migrate**: Replace all post-execution workflows from the paradigm of `Repository.get_pipelines` or `Repository.get_pipeline_run` to the corresponding post\_execution methods.
 

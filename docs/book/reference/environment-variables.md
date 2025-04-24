@@ -21,11 +21,11 @@ Choose from `INFO`, `WARN`, `ERROR`, `CRITICAL`, `DEBUG`.
 export ZENML_LOGGING_FORMAT='%(asctime)s %(message)s'
 ```
 
-See [this page](../how-to/control-logging/set-logging-format.md) for more information.
+See [this page](https://docs.zenml.io/concepts/steps_and_pipelines/logging) for more information.
 
 ## Disable step logs
 
-Usually, ZenML [stores step logs in the artifact store](../how-to/control-logging/enable-or-disable-logs-storing.md), but this can sometimes cause performance bottlenecks, especially if the code utilizes progress bars.
+Usually, ZenML [stores step logs in the artifact store](https://docs.zenml.io/concepts/steps_and_pipelines/logging), but this can sometimes cause performance bottlenecks, especially if the code utilizes progress bars.
 
 If you want to configure whether logged output from steps is stored or not, set the `ZENML_DISABLE_STEP_LOGS_STORAGE` environment variable to `true`. Note that this will mean that logs from your steps will no longer be stored and thus won't be visible on the dashboard anymore.
 
@@ -89,7 +89,7 @@ If you wish to disable colorful logging, set the following environment variable:
 ZENML_LOGGING_COLORS_DISABLED=true
 ```
 
-Note that setting this on the [client environment](../how-to/pipeline-development/configure-python-environments/README.md#client-environment-or-the-runner-environment) (e.g. your local machine which runs the pipeline) will automatically disable colorful logging on remote orchestrators. If you wish to disable it locally, but turn on for remote orchestrators, you can set the `ZENML_LOGGING_COLORS_DISABLED` environment variable in your orchestrator's environment as follows:
+Note that setting this on the client environment (e.g. your local machine which runs the pipeline) will automatically disable colorful logging on remote orchestrators. If you wish to disable it locally, but turn on for remote orchestrators, you can set the `ZENML_LOGGING_COLORS_DISABLED` environment variable in your orchestrator's environment as follows:
 
 ```python
 docker_settings = DockerSettings(environment={"ZENML_LOGGING_COLORS_DISABLED": "false"})
@@ -115,7 +115,7 @@ ZENML_SKIP_STACK_VALIDATION=true
 
 ## Ignore untracked code repository files
 
-When using [code repositories](../how-to/project-setup-and-management/setting-up-a-project-repository/connect-your-git-repository.md),
+When using [code repositories](https://docs.zenml.io/concepts/code-repositories),
 ZenML will by default require the local checkout to have no uncommitted or untracked files
 in order to use the code repository to track the commit and download files. If you want to ignore untracked files, you can set
 the `ZENML_CODE_REPOSITORY_IGNORE_UNTRACKED_FILES` environment variable to `True`. When doing this, you're responsible that

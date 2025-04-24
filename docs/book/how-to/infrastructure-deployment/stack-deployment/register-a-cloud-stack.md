@@ -1,34 +1,24 @@
 ---
 description: Seamlessly register a cloud stack by using existing infrastructure
+icon: cloud
 ---
 
 # Register a cloud stack
 
-In ZenML, the [stack](https://docs.zenml.io/user-guides/production-guide/understand-stacks)\
-is a fundamental concept that represents the configuration of your\
-infrastructure. In a normal workflow, creating a stack requires you to first\
-deploy the necessary pieces of infrastructure and then define them as stack\
-components in ZenML with proper authentication.
+In ZenML, the [stack](https://docs.zenml.io/user-guides/production-guide/understand-stacks) is a fundamental concept that represents the configuration of your\
+infrastructure. In a normal workflow, creating a stack requires you to first deploy the necessary pieces of infrastructure and then define them as stack components in ZenML with proper authentication.
 
-Especially in a remote setting, this process can be challenging and\
-time-consuming, and it may create multi-faceted problems. This is why we\
-implemented a feature called the stack wizard, that allows you to **browse**\
-**through your existing infrastructure and use it to register a ZenML cloud**\
-**stack**.
+Especially in a remote setting, this process can be challenging and time-consuming, and it may create multi-faceted problems. This is why we implemented a feature called the stack wizard, which allows you to **browse through your existing infrastructure and use it to register a ZenML cloud stack**.
 
 {% hint style="info" %}
-If you do not have the required infrastructure pieces already deployed\
-on your cloud, you can also use [the 1-click deployment tool to build your\
-cloud stack](deploy-a-cloud-stack.md).
+If you do not have the required infrastructure pieces already deployed on your cloud, you can also use [the 1-click deployment tool to build your cloud stack](deploy-a-cloud-stack.md).
 
-Alternatively, if you prefer to have more control over where and how resources\
-are provisioned in your cloud, you can [use one of our Terraform modules](deploy-a-cloud-stack-with-terraform.md)\
-to manage your infrastructure as code yourself.
+Alternatively, if you prefer to have more control over where and how resources are provisioned in your cloud, you can [use one of our Terraform modules](deploy-a-cloud-stack-with-terraform.md) to manage your infrastructure as code yourself.
 {% endhint %}
 
 ## How to use the Stack Wizard?
 
-The stack wizard is available to you by both our CLI and our dashboard.
+The stack wizard is available to you through both our CLI and our dashboard.
 
 {% tabs %}
 {% tab title="Dashboard" %}
@@ -45,8 +35,7 @@ Next, you have to select the cloud provider that you want to work with.
 
 ![Stack Wizard Cloud Selection](../../../.gitbook/assets/stack-wizard-cloud-selection.png)
 
-Choose one of the possible authentication methods based on your provider and\
-fill in the required fields.
+Choose one of the possible authentication methods based on your provider and fill in the required fields.
 
 ![Wizard Example](../../../.gitbook/assets/stack-wizard-example.png)
 
@@ -55,8 +44,7 @@ fill in the required fields.
 <summary>AWS: Authentication methods</summary>
 
 If you select `aws` as your cloud provider, and you haven't selected a connector\
-or declined auto-configuration, you will be prompted to select an authentication\
-method for your cloud connector.
+or declined auto-configuration, you will be prompted to select an authentication method for your cloud connector.
 
 {% code title="Available authentication methods for AWS" %}
 ```
@@ -188,24 +176,17 @@ authentication method for your cloud connector.
 
 </details>
 
-From this step forward, ZenML will show you different selections of resources\
-that you can use from your existing infrastructure so that you can create the\
-required stack components such as an artifact store, an orchestrator,\
-and a container registry.
+From this step forward, ZenML will show you different selections of resources that you can use from your existing infrastructure so that you can create the required stack components such as an artifact store, an orchestrator, and a container registry.
 {% endtab %}
 
 {% tab title="CLI" %}
-In order to register a remote stack over the CLI with the stack wizard,\
-you can use the following command:
+In order to register a remote stack over the CLI with the stack wizard, you can use the following command:
 
 ```shell
 zenml stack register <STACK_NAME> -p {aws|gcp|azure}
 ```
 
-To register the cloud stack, the first thing that the wizard needs is a [service\
-connector](../auth-management/service-connectors-guide.md). You can either use\
-an existing connector by providing its ID or name`-sc <SERVICE_CONNECTOR_ID_OR_NAME>` (CLI-Only) or the wizard will create one\
-for you.
+To register the cloud stack, the first thing that the wizard needs is a [service connector](https://docs.zenml.io/stacks/service-connectors/auth-management). You can either use an existing connector by providing its ID or name`-sc <SERVICE_CONNECTOR_ID_OR_NAME>` (CLI-Only), or the wizard will create one for you.
 
 {% hint style="info" %}
 Similar to the service connector, if you use the CLI, you can also use existing\
@@ -214,9 +195,9 @@ configured with the same service connector that you provided through the\
 parameter described above.
 {% endhint %}
 
-#### Define Service Connector
+**Define Service Connector**
 
-As the very first step the configuration wizard will check if the selected\
+As the very first step, the configuration wizard will check if the selected\
 cloud provider credentials can be acquired automatically from the local environment.\
 If the credentials are found, you will be offered to use them or proceed to\
 manual configuration.
@@ -230,8 +211,7 @@ configuration by providing connection details? [y/n] (y):
 ```
 {% endcode %}
 
-If you decline auto-configuration next you might be offered the list of already\
-created service connectors available on the server: pick one of them and proceed or pick`0` to create a new one.
+If you decline auto-configuration next you might be offered the list of already created service connectors available on the server: pick one of them and proceed, or pick`0` to create a new one.
 
 <details>
 
@@ -371,7 +351,7 @@ authentication method for your cloud connector.
 
 </details>
 
-#### Defining cloud components
+**Defining cloud components**
 
 Next, you will define three major components of your target stack:
 
@@ -379,8 +359,7 @@ Next, you will define three major components of your target stack:
 * orchestrator
 * container registry
 
-All three are crucial for a basic cloud stack. Extra components can be added later\
-if they are needed.
+All three are crucial for a basic cloud stack. Extra components can be added later if they are needed.
 
 For each component, you will be asked:
 
@@ -402,8 +381,7 @@ For each component, you will be asked:
 ```
 {% endcode %}
 
-* to create a new one from available to the service connector resources\
-  (if the existing not picked)
+* to create a new one from available to the service connector resources (if the existing not picked)
 
 {% code title="Example Command Output for Artifact Stores" %}
 ```
@@ -418,12 +396,10 @@ For each component, you will be asked:
 ```
 {% endcode %}
 
-Based on your selection, ZenML will create the stack component and ultimately\
-register the stack for you.
+Based on your selection, ZenML will create the stack component and ultimately register the stack for you.
 {% endtab %}
 {% endtabs %}
 
-There you have it! Through the wizard, you just registered a cloud stack\
-and, you can start running your pipelines on a remote setting.
+There you have it! Through the wizard, you just registered a cloud stack, and you can start running your pipelines on a remote setting.
 
 <figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>
