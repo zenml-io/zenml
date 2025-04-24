@@ -162,7 +162,9 @@ class PandasMaterializer(BaseMaterializer):
                     "For example, you might need to install libraries like 'geopandas' for "
                     "GeoPandas data types, 'pandas-gbq' for BigQuery data types, or "
                     "'pyarrow' for Arrow data types. Make sure to import these libraries "
-                    "in your step code as well as adding them to your step requirements. "
+                    "in your step code as well as adding them to your step requirements, "
+                    "even if you're not directly using them in your code. Pandas needs "
+                    "these libraries to be imported to properly load the custom data types. "
                     "Try installing any packages that were used in previous pipeline steps "
                     "but might not be available in the current environment."
                 )
@@ -289,7 +291,7 @@ class PandasMaterializer(BaseMaterializer):
                     custom_types[col_name] = dtype_str
                     # Try to get module information if available
                     try:
-                        module_name = dtype.type.__module__.split(".")[0]
+                        module_name = dtype.type.__module__
                         custom_types[f"{col_name}_module"] = module_name
                     except (AttributeError, TypeError):
                         pass
