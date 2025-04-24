@@ -52,7 +52,7 @@ Terraform:
 
 ## How to use the Terraform stack deployment modules
 
-If you are already knowledgeable about using Terraform and the cloud provider where you want to deploy the stack, this process will be straightforward. In a nutshell, you will need to:
+If you are already knowledgeable about using Terraform and the cloud provider where you want to deploy the stack, this process will be straightforward. The ZenML Terraform provider lets you manage your ZenML resources (stacks, stack components, etc.) as infrastructure-as-code. In a nutshell, you will need to:
 
 1. Set up the ZenML Terraform provider with your ZenML server URL and API key. It is recommended to use environment variables for this rather than hardcoding the values in your Terraform configuration file:
 
@@ -60,6 +60,12 @@ If you are already knowledgeable about using Terraform and the cloud provider wh
 export ZENML_SERVER_URL="https://your-zenml-server.com"
 export ZENML_API_KEY="<your-api-key>"
 ```
+
+![Finding your workspace URL](../../../.gitbook/assets/workspace_url.png)
+
+{% hint style="info" %}
+**For ZenML Pro users:** The `ZENML_SERVER_URL` should be your Workspace URL, which can be found in your dashboard. It typically looks like: `https://1bfe8d94-zenml.cloudinfra.zenml.io`. Make sure you use the complete URL of your workspace, not just the domain.
+{% endhint %}
 
 2. Create a new Terraform configuration file (e.g., `main.tf`), preferably in a new directory, with the content that looks like this (`<cloud provider>` can be`aws`, `gcp`, or `azure`):
 
@@ -77,6 +83,7 @@ terraform {
 
 provider "zenml" {
     # server_url = <taken from the ZENML_SERVER_URL environment variable if not set here>
+    # For ZenML Pro users, this should be your Workspace URL from the dashboard
     # api_key = <taken from the ZENML_API_KEY environment variable if not set here>
 }
 
@@ -159,6 +166,7 @@ terraform {
 
 provider "zenml" {
     # server_url = <taken from the ZENML_SERVER_URL environment variable if not set here>
+    # For ZenML Pro users, this should be your Workspace URL from the dashboard
     # api_key = <taken from the ZENML_API_KEY environment variable if not set here>
 }
 
@@ -236,6 +244,7 @@ terraform {
 
 provider "zenml" {
     # server_url = <taken from the ZENML_SERVER_URL environment variable if not set here>
+    # For ZenML Pro users, this should be your Workspace URL from the dashboard
     # api_key = <taken from the ZENML_API_KEY environment variable if not set here>
 }
 
@@ -324,6 +333,7 @@ terraform {{
 
 provider "zenml" {
     # server_url = <taken from the ZENML_SERVER_URL environment variable if not set here>
+    # For ZenML Pro users, this should be your Workspace URL from the dashboard
     # api_key = <taken from the ZENML_API_KEY environment variable if not set here>
 }
 
@@ -388,5 +398,3 @@ Cleaning up the resources provisioned by Terraform is as simple as running the`t
 ```shell
 terraform destroy
 ```
-
-<figure><img src="https://static.scarf.sh/a.png?x-pxid=f0b4f458-0a54-4fcd-aa95-d5ee424815bc" alt="ZenML Scarf"><figcaption></figcaption></figure>

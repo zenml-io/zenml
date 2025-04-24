@@ -11,6 +11,43 @@ In ZenML, pipeline templates (also known as "Run Templates") are pre-defined, pa
 Pipeline Templates are a [ZenML Pro](https://zenml.io/pro)-only feature. Please [sign up here](https://cloud.zenml.io) to get access.
 {% endhint %}
 
+## Real-world Use Case
+
+Imagine your team has built a robust training pipeline that needs to be run regularly with different parameters:
+
+- **Data Scientists** need to experiment with new datasets and hyperparameters
+- **MLOps Engineers** need to schedule regular retraining with production data
+- **Stakeholders** need to trigger model training through a simple UI without coding
+
+Without templates, each scenario would require:
+1. Direct access to the codebase 
+2. Knowledge of pipeline implementation details
+3. Manual pipeline configuration for each run
+
+**Pipeline templates solve this problem by creating a reusable configuration** that can be executed with different parameters from any interface:
+
+- **Through Python**: Data scientists can programmatically trigger templates with custom parameters
+  ```python
+  Client().trigger_pipeline(
+      template_id="daily-retraining",
+      run_configuration={
+          "steps": {
+              "data_loader": {"parameters": {"data_path": "s3://new-data/"}},
+              "model_trainer": {"parameters": {"learning_rate": 0.01}}
+          }
+      }
+  )
+  ```
+
+- **Through REST API**: Your CI/CD system can trigger templates via API calls
+  ```bash
+  curl -X POST 'https://your-zenml-server/api/v1/run_templates/daily-retraining/runs' -H 'Authorization: Bearer TOKEN' -d '{"steps": {...}}'
+  ```
+
+- **Through Browser** (Pro feature): Non-technical stakeholders can trigger runs directly from the ZenML dashboard by simply filling in a form with the required parameters - no coding required!
+
+This enables your team to standardize execution patterns while maintaining flexibility - perfect for production ML workflows that need to be triggered from various systems.
+
 ![Working with Templates](../../.gitbook/assets/run-templates.gif)
 
 ## Understanding Pipeline Templates
@@ -229,5 +266,9 @@ Read more about:
 5. **Use version control** for your template configurations when storing them as YAML files
 6. **Implement access controls** to manage who can run specific templates
 7. **Monitor template usage** to understand how your team is using them
+
+{% hint style="warning" %}
+**Important:** You need to recreate your run templates after upgrading your ZenML server. Templates are tied to specific server versions and may not work correctly after an upgrade.
+{% endhint %}
 
 By using pipeline templates effectively, you can standardize ML workflows, improve team collaboration, and simplify the process of running pipelines in production environments.
