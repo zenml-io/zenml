@@ -161,9 +161,10 @@ class PandasMaterializer(BaseMaterializer):
                     "missing libraries that were used when the data was originally created. "
                     "For example, you might need to install libraries like 'geopandas' for "
                     "GeoPandas data types, 'pandas-gbq' for BigQuery data types, or "
-                    "'pyarrow' for Arrow data types. Try installing any packages that were "
-                    "used in previous pipeline steps but might not be available in the "
-                    "current environment."
+                    "'pyarrow' for Arrow data types. Make sure to import these libraries "
+                    "in your step code as well as adding them to your step requirements. "
+                    "Try installing any packages that were used in previous pipeline steps "
+                    "but might not be available in the current environment."
                 )
                 raise zenml_type_error from e
             # We don't know how to handle this error, so re-raise the original error
