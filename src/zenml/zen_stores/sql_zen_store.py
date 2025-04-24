@@ -9536,8 +9536,13 @@ class SqlZenStore(BaseZenStore):
 
     @property
     def _default_project_enabled(self) -> bool:
-        # When running in a Pro ZenML server, the default project is not
-        # created on database initialization but on server onboarding.
+        """Check if the default project is enabled.
+
+        When running in a Pro ZenML server, the default project is not enabled.
+
+        Returns:
+            True if the default project is enabled, False otherwise.
+        """
         default_project_enabled = True
         if ENV_ZENML_SERVER in os.environ:
             from zenml.config.server_config import ServerConfiguration
