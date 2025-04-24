@@ -117,6 +117,8 @@ class PandasMaterializer(BaseMaterializer):
 
         Raises:
             ImportError: If pyarrow or fastparquet is not installed.
+            TypeError: Raised if there is an error when reading parquet files.
+            zenml_type_error: If the data type is a custom data type.
 
         Returns:
             The pandas dataframe or series.
@@ -140,20 +142,21 @@ class PandasMaterializer(BaseMaterializer):
             else:
                 with self.artifact_store.open(self.csv_path, mode="rb") as f:
                     df = pd.read_csv(f, index_col=0, parse_dates=True)
-        except Exception as e:
+        except TypeError as e:
             # Check for common data type error patterns
             error_str = str(e).lower()
-
             is_dtype_error = (
-                "type" in error_str
-                and "unknown" in error_str
+                "not understood" in error_str
                 or "no type" in error_str
                 or "cannot deserialize" in error_str
                 or "data type" in error_str
             )
 
             if is_dtype_error:
-                logger.warning(
+                # If the error is due to a custom data type, raise a ZenML TypeError
+                # This is to avoid the original error from being swallowed
+                # and to provide a more helpful error message
+                zenml_type_error = TypeError(
                     "Encountered an error with custom data types. This may be due to "
                     "missing libraries that were used when the data was originally created. "
                     "For example, you might need to install libraries like 'geopandas' for "
@@ -162,8 +165,9 @@ class PandasMaterializer(BaseMaterializer):
                     "used in previous pipeline steps but might not be available in the "
                     "current environment."
                 )
-            # Re-raise the original error
-            raise
+                raise zenml_type_error from e
+            # We don't know how to handle this error, so re-raise the original error
+            raise e
 
         # validate the type of the data.
         def is_dataframe_or_series(
@@ -194,30 +198,9 @@ class PandasMaterializer(BaseMaterializer):
         Args:
             df: The pandas dataframe or series to write.
         """
-        # Convert Series to DataFrame for consistent handling
         if isinstance(df, pd.Series):
             df = df.to_frame(name="series")
 
-        # Check for potential custom data types before saving
-        try:
-            custom_dtypes = []
-
-            for col, dtype in df.dtypes.items():
-                dtype_str = str(dtype)
-                if not is_standard_dtype(dtype_str):
-                    custom_dtypes.append(f"{col}: {dtype_str}")
-
-            if custom_dtypes:
-                logger.warning(
-                    f"Found non-standard data types: {', '.join(custom_dtypes)}. "
-                    f"Make sure any libraries needed for these custom types are installed "
-                    f"in all environments where this data will be used."
-                )
-        except Exception as e:
-            # Don't let dtype checking interfere with saving
-            logger.debug(f"Error checking for custom data types: {e}")
-
-        # Proceed with normal saving
         if self.pyarrow_exists:
             with self.artifact_store.open(self.parquet_path, mode="wb") as f:
                 df.to_parquet(f, compression=COMPRESSION_TYPE)
