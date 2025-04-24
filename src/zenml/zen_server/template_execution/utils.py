@@ -23,7 +23,7 @@ from zenml.constants import (
     ENV_ZENML_RUNNER_IMAGE_DISABLE_UV,
     ENV_ZENML_RUNNER_POD_TIMEOUT,
     handle_bool_env_var,
-    handle_int_env_var
+    handle_int_env_var,
 )
 from zenml.enums import ExecutionStatus, StackComponentType, StoreType
 from zenml.logger import get_logger
