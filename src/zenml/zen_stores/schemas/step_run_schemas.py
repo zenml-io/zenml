@@ -232,9 +232,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
             The created StepRunResponse.
 
         Raises:
-            ValueError: In case the step run configuration can not be loaded.
-            RuntimeError: If the step run schema does not have a deployment_id
-                or a step_configuration.
+            ValueError: In case the step run configuration is missing.
         """
         input_artifacts = {
             artifact.name: StepRunInputResponse(
@@ -252,7 +250,7 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 artifact.artifact_version.to_model()
             )
 
-        full_step_config = None
+        step = None
         if self.deployment is not None:
             step_configurations = json.loads(
                 self.deployment.step_configurations
@@ -263,41 +261,35 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                         self.deployment.pipeline_configuration
                     )
                 )
-                full_step_config = Step.from_dict(
-                    step_configurations[self.name], pipeline_configuration
+                step = Step.from_dict(
+                    step_configurations[self.name],
+                    pipeline_configuration=pipeline_configuration,
                 )
-                new_substitutions = (
-                    full_step_config.config._get_full_substitutions(
-                        pipeline_configuration,
-                        self.pipeline_run.start_time,
-                    )
+                new_substitutions = step.config._get_full_substitutions(
+                    pipeline_configuration,
+                    self.pipeline_run.start_time,
                 )
-                full_step_config = full_step_config.model_copy(
+                step = step.model_copy(
                     update={
-                        "config": full_step_config.config.model_copy(
+                        "config": step.config.model_copy(
                             update={"substitutions": new_substitutions}
                         )
                     }
                 )
-            elif not self.step_configuration:
-                raise ValueError(
-                    f"Unable to load the configuration for step `{self.name}` from the"
-                    f"database. To solve this please delete the pipeline run that this"
-                    f"step run belongs to. Pipeline Run ID: `{self.pipeline_run_id}`."
-                )
 
-        # the step configuration moved into the deployment - the following case is to ensure
-        # backwards compatibility
-        if full_step_config is None:
-            if self.step_configuration:
-                full_step_config = Step.model_validate_json(
-                    self.step_configuration
-                )
-            else:
-                raise RuntimeError(
-                    "Step run model creation has failed. Each step run entry "
-                    "should either have a deployment_id or step_configuration."
-                )
+        if not step and self.step_configuration:
+            # In this legacy case, we're guaranteed to have the merged
+            # config stored in the DB, which means we can instantiate the
+            # `Step` object directly without passing the pipeline
+            # configuration.
+            step = Step.model_validate_json(self.step_configuration)
+        elif not step:
+            raise ValueError(
+                f"Unable to load the configuration for step `{self.name}` from "
+                "the database. To solve this please delete the pipeline run "
+                "that this step run belongs to. Pipeline Run ID: "
+                f"`{self.pipeline_run_id}`."
+            )
 
         body = StepRunResponseBody(
             user=self.user.to_model() if self.user else None,
@@ -314,8 +306,8 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
         if include_metadata:
             metadata = StepRunResponseMetadata(
                 project=self.project.to_model(),
-                config=full_step_config.config,
-                spec=full_step_config.spec,
+                config=step.config,
+                spec=step.spec,
                 cache_key=self.cache_key,
                 code_hash=self.code_hash,
                 docstring=self.docstring,
