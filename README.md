@@ -208,7 +208,7 @@ def deploy_rag(index_id: str) -> str:
 **Build production-ready retrieval systems**  
 
 <div align="center">
-  <img src="/docs/book/.gitbook/assets/rag_zenml_home.png" width="800" alt="RAG Pipeline">
+  <img src="docs/book/.gitbook/assets/rag_zenml_home.png" width="800" alt="RAG Pipeline">
 </div>
 
 ZenML tracks document ingestion, embedding versions, and query patterns. Implement feedback loops and:
@@ -221,7 +221,7 @@ ZenML tracks document ingestion, embedding versions, and query patterns. Impleme
 **Confidence in model updates**
 
 <div align="center">
-  <img src="/docs/book/.gitbook/assets/finetune_zenml_home.png" width="800" alt="Finetuning Pipeline">
+  <img src="docs/book/.gitbook/assets/finetune_zenml_home.png" width="800" alt="Finetuning Pipeline">
 </div>
 
 Maintain full lineage of SLM/LLM training runs:
