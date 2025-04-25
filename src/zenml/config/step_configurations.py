@@ -354,7 +354,7 @@ class Step(StrictBaseModel):
         data: Dict[str, Any],
         pipeline_configuration: "PipelineConfiguration",
     ) -> "Step":
-        if "config" not in "data" and "step_config_overrides" not in data:
+        if "config" not in data and "step_config_overrides" not in data:
             raise ValueError(
                 "Either 'config' or 'step_config_overrides' must be present in the data"
             )
