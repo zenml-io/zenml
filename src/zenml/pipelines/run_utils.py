@@ -73,7 +73,7 @@ def create_placeholder_run(
         name=string_utils.format_name_template(
             name_template=deployment.run_name_template,
             substitutions=deployment.pipeline_configuration.finalize_substitutions(
-                start_time
+                start_time=start_time,
             ),
         ),
         # We set the start time on the placeholder run already to

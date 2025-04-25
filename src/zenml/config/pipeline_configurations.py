@@ -63,7 +63,7 @@ class PipelineConfigurationUpdate(StrictBaseModel):
         Returns:
             The full substitutions dict including date and time.
         """
-        if start_time is not None:
+        if start_time is None:
             start_time = utc_now()
 
         if inplace:
