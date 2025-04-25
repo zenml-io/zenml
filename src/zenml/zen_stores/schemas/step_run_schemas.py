@@ -261,22 +261,14 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
                         self.deployment.pipeline_configuration
                     )
                 )
+                pipeline_configuration.finalize_substitutions(
+                    start_time=self.pipeline_run.start_time,
+                    inplace=True,
+                )
                 step = Step.from_dict(
                     step_configurations[self.name],
                     pipeline_configuration=pipeline_configuration,
                 )
-                new_substitutions = step.config._get_full_substitutions(
-                    pipeline_configuration,
-                    self.pipeline_run.start_time,
-                )
-                step = step.model_copy(
-                    update={
-                        "config": step.config.model_copy(
-                            update={"substitutions": new_substitutions}
-                        )
-                    }
-                )
-
         if not step and self.step_configuration:
             # In this legacy case, we're guaranteed to have the merged
             # config stored in the DB, which means we can instantiate the

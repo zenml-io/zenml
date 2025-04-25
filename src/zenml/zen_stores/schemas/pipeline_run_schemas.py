@@ -302,10 +302,6 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             deployment = self.deployment.to_model(include_metadata=True)
 
             config = deployment.pipeline_configuration
-            new_substitutions = config._get_full_substitutions(self.start_time)
-            config = config.model_copy(
-                update={"substitutions": new_substitutions}
-            )
             client_environment = deployment.client_environment
 
             stack = deployment.stack
@@ -336,6 +332,8 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
                 "entry should either have a deployment_id or "
                 "pipeline_configuration."
             )
+
+        config.finalize_substitutions(start_time=self.start_time, inplace=True)
 
         body = PipelineRunResponseBody(
             user=self.user.to_model() if self.user else None,

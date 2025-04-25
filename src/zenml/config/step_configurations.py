@@ -13,7 +13,6 @@
 #  permissions and limitations under the License.
 """Pipeline configuration classes."""
 
-from datetime import datetime
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -240,24 +239,6 @@ class StepConfiguration(PartialStepConfiguration):
         if isinstance(model_or_dict, BaseSettings):
             model_or_dict = model_or_dict.model_dump()
         return DockerSettings.model_validate(model_or_dict)
-
-    def _get_full_substitutions(
-        self,
-        pipeline_config: "PipelineConfiguration",
-        start_time: Optional[datetime],
-    ) -> Dict[str, str]:
-        """Get the full set of substitutions for this step configuration.
-
-        Args:
-            pipeline_config: The pipeline configuration.
-            start_time: The start time of the pipeline run.
-
-        Returns:
-            The full set of substitutions for this step configuration.
-        """
-        ret = pipeline_config._get_full_substitutions(start_time)
-        ret.update(self.substitutions)
-        return ret
 
     def apply_pipeline_configuration(
         self, pipeline_configuration: "PipelineConfiguration"
