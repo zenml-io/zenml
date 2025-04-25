@@ -95,6 +95,10 @@ class BuildConfiguration(BaseModel):
         for _, requirements, _ in requirements_files:
             hash_.update(requirements.encode())
 
+        if self.settings.dockerfile:
+            with open(self.settings.dockerfile, "rb") as f:
+                hash_.update(f.read())
+
         return hash_.hexdigest()
 
     def should_include_files(
