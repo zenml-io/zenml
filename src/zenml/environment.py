@@ -15,9 +15,9 @@
 
 import os
 import platform
-from pathlib import Path
-from typing import Dict, List
 import subprocess
+from pathlib import Path
+from typing import Any, Dict, List
 
 import distro
 
@@ -30,7 +30,7 @@ from zenml.utils.singleton import SingletonMetaClass
 logger = get_logger(__name__)
 
 
-def get_run_environment_dict() -> Dict[str, str]:
+def get_run_environment_dict() -> Dict[str, Any]:
     """Returns a dictionary of the current run environment.
 
     Everything that is returned here will be saved in the DB as
@@ -374,7 +374,7 @@ class Environment(metaclass=SingletonMetaClass):
             "LIGHTNING_CLOUD_URL" in os.environ
             and "LIGHTNING_CLOUDSPACE_HOST" in os.environ
         )
-    
+
     @staticmethod
     def get_python_packages() -> List[str]:
         """Returns a list of installed Python packages.
@@ -390,4 +390,6 @@ class Environment(metaclass=SingletonMetaClass):
             output = subprocess.check_output(["pip", "freeze"]).decode()
             return output.strip().split("\n")
         except subprocess.CalledProcessError:
-            raise RuntimeError("Failed to get list of installed Python packages")
+            raise RuntimeError(
+                "Failed to get list of installed Python packages"
+            )
