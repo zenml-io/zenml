@@ -273,6 +273,7 @@ class StepConfiguration(PartialStepConfiguration):
                 "extra",
                 "failure_hook_source",
                 "success_hook_source",
+                "substitutions",
             },
             exclude_none=True,
         )
@@ -283,6 +284,7 @@ class StepConfiguration(PartialStepConfiguration):
                     "extra",
                     "failure_hook_source",
                     "success_hook_source",
+                    "substitutions",
                 },
                 exclude_none=True,
             )
