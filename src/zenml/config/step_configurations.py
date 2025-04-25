@@ -348,19 +348,27 @@ class Step(StrictBaseModel):
     config: StepConfiguration
     step_config_overrides: StepConfiguration
 
-    @model_validator(mode="before")
     @classmethod
-    @before_validator_handler
-    def _autocomplete_step_config_overrides(cls, data: Any) -> Any:
-        """Autocompletes the step config overrides.
+    def from_dict(
+        cls,
+        data: Dict[str, Any],
+        pipeline_configuration: "PipelineConfiguration",
+    ) -> "Step":
+        if "config" not in "data" and "step_config_overrides" not in data:
+            raise ValueError(
+                "Either 'config' or 'step_config_overrides' must be present in the data"
+            )
 
-        Args:
-            data: The values dict used to instantiate the model.
-
-        Returns:
-            The values dict with the step config overrides autocompleted.
-        """
         if "step_config_overrides" not in data:
+            # Handle legacy data in the database which only has the merged
+            # config stored. We use the merged config as the overrides.
             data["step_config_overrides"] = data["config"]
 
-        return data
+        if "config" not in data:
+            config = StepConfiguration.model_validate(
+                data["step_config_overrides"]
+            )
+            config.apply_pipeline_configuration(pipeline_configuration)
+            data["config"] = config
+
+        return cls.model_validate(data)

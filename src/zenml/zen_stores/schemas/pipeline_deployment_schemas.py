@@ -31,7 +31,6 @@ from zenml.models import (
     PipelineDeploymentResponseBody,
     PipelineDeploymentResponseMetadata,
 )
-from zenml.utils.json_utils import pydantic_encoder
 from zenml.zen_stores.schemas.base_schemas import BaseSchema
 from zenml.zen_stores.schemas.code_repository_schemas import (
     CodeReferenceSchema,
@@ -185,6 +184,11 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
         Returns:
             The created `PipelineDeploymentSchema`.
         """
+        step_configurations = {
+            invocation_id: step.model_dump(mode="json", exclude={"config"})
+            for invocation_id, step in request.step_configurations.items()
+        }
+
         return cls(
             stack_id=request.stack,
             project_id=request.project,
@@ -197,9 +201,8 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
             run_name_template=request.run_name_template,
             pipeline_configuration=request.pipeline_configuration.model_dump_json(),
             step_configurations=json.dumps(
-                request.step_configurations,
+                step_configurations,
                 sort_keys=False,
-                default=pydantic_encoder,
             ),
             client_environment=json.dumps(request.client_environment),
             client_version=request.client_version,
@@ -241,8 +244,10 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
                 self.pipeline_configuration
             )
             step_configurations = json.loads(self.step_configurations)
-            for s, c in step_configurations.items():
-                step_configurations[s] = Step.model_validate(c)
+            for invocation_id, step in step_configurations.items():
+                step_configurations[invocation_id] = Step.from_dict(
+                    step, pipeline_configuration
+                )
 
             metadata = PipelineDeploymentResponseMetadata(
                 project=self.project.to_model(),

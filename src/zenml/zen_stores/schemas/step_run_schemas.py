@@ -254,18 +254,21 @@ class StepRunSchema(NamedSchema, RunMetadataInterface, table=True):
 
         full_step_config = None
         if self.deployment is not None:
-            step_configuration = json.loads(
+            step_configurations = json.loads(
                 self.deployment.step_configurations
             )
-            if self.name in step_configuration:
-                full_step_config = Step.model_validate(
-                    step_configuration[self.name]
+            if self.name in step_configurations:
+                pipeline_configuration = (
+                    PipelineConfiguration.model_validate_json(
+                        self.deployment.pipeline_configuration
+                    )
+                )
+                full_step_config = Step.from_dict(
+                    step_configurations[self.name], pipeline_configuration
                 )
                 new_substitutions = (
                     full_step_config.config._get_full_substitutions(
-                        PipelineConfiguration.model_validate_json(
-                            self.deployment.pipeline_configuration
-                        ),
+                        pipeline_configuration,
                         self.pipeline_run.start_time,
                     )
                 )

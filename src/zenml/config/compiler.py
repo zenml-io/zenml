@@ -112,12 +112,6 @@ class Compiler:
         with pipeline.__suppress_configure_warnings__():
             pipeline.configure(settings=pipeline_settings, merge=False)
 
-        settings_to_passdown = {
-            key: settings
-            for key, settings in pipeline_settings.items()
-            if ConfigurationLevel.STEP in settings.LEVEL
-        }
-
         steps = {
             invocation_id: self._compile_step_invocation(
                 invocation=invocation,
