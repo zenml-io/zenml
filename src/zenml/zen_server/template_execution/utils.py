@@ -1,6 +1,7 @@
 """Utility functions to run a pipeline from the server."""
 
 import hashlib
+import os
 import sys
 from typing import Any, Dict, List, Optional
 from uuid import UUID
@@ -20,6 +21,7 @@ from zenml.constants import (
     ENV_ZENML_ACTIVE_PROJECT_ID,
     ENV_ZENML_ACTIVE_STACK_ID,
     ENV_ZENML_RUNNER_IMAGE_DISABLE_UV,
+    ENV_ZENML_RUNNER_PARENT_IMAGE,
     ENV_ZENML_RUNNER_POD_TIMEOUT,
     handle_bool_env_var,
     handle_int_env_var,
@@ -315,7 +317,10 @@ def generate_dockerfile(
     Returns:
         The Dockerfile.
     """
-    parent_image = f"zenmldocker/zenml:{zenml_version}-py{python_version}"
+    parent_image = os.environ.get(
+        ENV_ZENML_RUNNER_PARENT_IMAGE,
+        f"zenmldocker/zenml:{zenml_version}-py{python_version}",
+    )
 
     lines = [f"FROM {parent_image}"]
     if apt_packages:

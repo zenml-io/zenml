@@ -76,6 +76,7 @@ class PipelineConfigurationUpdate(StrictBaseModel):
 
         return dict_
 
+
 class PipelineConfiguration(PipelineConfigurationUpdate):
     """Pipeline configuration class."""
 
