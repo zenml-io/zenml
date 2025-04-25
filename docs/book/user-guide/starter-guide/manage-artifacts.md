@@ -431,10 +431,10 @@ The [ZenML Pro](https://zenml.io/pro) dashboard offers advanced visualization fe
 {% endtab %}
 {% endtabs %}
 
-A user can also add metadata to an artifact within a step directly using the `log_artifact_metadata` method:
+A user can also add metadata to an artifact directly within a step using the `log_metadata` method:
 
 ```python
-from zenml import step, log_artifact_metadata
+from zenml import step, log_metadata
 
 @step
 def model_finetuner_step(
@@ -447,13 +447,16 @@ def model_finetuner_step(
     accuracy = model.score(dataset[0], dataset[1])
 
     
-    log_artifact_metadata(
-        # Artifact name can be omitted if step returns only one output
-        artifact_name="my_model",
-        # Passing None or omitting this will use the `latest` version
-        version=None,
+    log_metadata(
         # Metadata should be a dictionary of JSON-serializable values
-        metadata={"accuracy": float(accuracy)}
+        metadata={"accuracy": float(accuracy)},
+        # Using infer_artifact=True automatically attaches metadata to the
+        # artifact produced by this step. Since this step has only one output,
+        # we don't need to specify the artifact_name
+        infer_artifact=True
+        # If the step had multiple outputs, we would need to specify which one:
+        # artifact_name="my_model", infer_artifact=True
+
         # A dictionary of dictionaries can also be passed to group metadata
         #  in the dashboard
         # metadata = {"metrics": {"accuracy": accuracy}}
@@ -481,7 +484,7 @@ import numpy as np
 from sklearn.base import ClassifierMixin
 from sklearn.datasets import load_digits
 from sklearn.svm import SVC
-from zenml import ArtifactConfig, pipeline, step, log_artifact_metadata
+from zenml import ArtifactConfig, pipeline, step, log_metadata
 from zenml import save_artifact, load_artifact
 from zenml.client import Client
 
@@ -511,7 +514,7 @@ def model_finetuner_step(
     """Finetunes a given model on a given dataset."""
     model.fit(dataset[0], dataset[1])
     accuracy = model.score(dataset[0], dataset[1])
-    log_artifact_metadata(metadata={"accuracy": float(accuracy)})
+    log_metadata(metadata={"accuracy": float(accuracy)})
     return model
 
 
