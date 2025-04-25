@@ -41,7 +41,7 @@ def get_run_environment_dict() -> Dict[str, Any]:
     Returns:
         A dictionary of the current run environment.
     """
-    env_dict = {
+    env_dict: Dict[str, Any] = {
         "environment": get_environment(),
         **Environment.get_system_info(),
         "python_version": Environment.python_version(),
