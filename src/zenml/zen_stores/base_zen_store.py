@@ -450,20 +450,6 @@ class BaseZenStore(
         """
         return os.getenv(ENV_ZENML_DEFAULT_PROJECT_NAME, DEFAULT_PROJECT_NAME)
 
-    def _get_default_project(self) -> ProjectResponse:
-        """Get the default project.
-
-        Raises:
-            KeyError: If the default project doesn't exist.
-
-        Returns:
-            The default project.
-        """
-        try:
-            return self.get_project(self._default_project_name)
-        except KeyError:
-            raise KeyError("Unable to find default project.")
-
     def _get_default_stack(
         self,
     ) -> StackResponse:
