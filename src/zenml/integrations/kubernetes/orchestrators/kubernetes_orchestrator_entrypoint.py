@@ -280,6 +280,7 @@ def main() -> None:
             run_fn=run_step_on_kubernetes,
             finalize_fn=finalize_run,
             parallel_node_startup_waiting_period=parallel_node_startup_waiting_period,
+            max_parallelism=orchestrator.config.max_parallelism,
         ).run()
         logger.info("Orchestration pod completed.")
     finally:

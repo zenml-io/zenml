@@ -15,6 +15,8 @@
 
 from typing import TYPE_CHECKING, Optional, Type
 
+from pydantic import PositiveInt
+
 from zenml.config.base_settings import BaseSettings
 from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
 from zenml.integrations.kubernetes import KUBERNETES_ORCHESTRATOR_FLAVOR
@@ -55,6 +57,7 @@ class KubernetesOrchestratorSettings(BaseSettings):
             failure retries and pod startup retries (in seconds)
         pod_failure_backoff: The backoff factor for pod failure retries and
             pod startup retries.
+        max_parallelism: Maximum number of steps to run in parallel.
     """
 
     synchronous: bool = True
@@ -68,6 +71,7 @@ class KubernetesOrchestratorSettings(BaseSettings):
     pod_failure_max_retries: int = 3
     pod_failure_retry_delay: int = 10
     pod_failure_backoff: float = 1.0
+    max_parallelism: Optional[PositiveInt] = None
 
 
 class KubernetesOrchestratorConfig(
