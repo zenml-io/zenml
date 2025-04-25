@@ -274,7 +274,7 @@ class BaseEntrypointConfiguration(ABC):
         download_dir = os.path.join(
             code_repo_root, code_reference.subdirectory
         )
-        os.makedirs(download_dir)
+        os.makedirs(download_dir, exist_ok=True)
         repo.download_files(
             commit=code_reference.commit,
             directory=download_dir,
