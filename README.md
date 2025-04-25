@@ -137,7 +137,7 @@ def rag_pipeline() -> str:
     index = index_generator(embeddings)
     return index
 ```
-![Running a ZenML pipeline](/docs/book/.gitbook/assets/readme_simple_pipeline.gif)
+![Running a ZenML pipeline](docs/book/.gitbook/assets/readme_simple_pipeline.gif)
 
 ### Easily provision an MLOps stack or reuse your existing infrastructure
 
@@ -145,7 +145,7 @@ The framework is a gentle entry point for practitioners to build complex ML pipe
 
 ZenML provides different features to aid people to get started quickly on a remote setting as well. If you want to deploy a remote stack from scratch on your selected cloud provider, you can use the 1-click deployment feature either through the dashboard:
 
-![Running a ZenML pipeline](/docs/book/.gitbook/assets/one-click-deployment.gif)
+![Running a ZenML pipeline](docs/book/.gitbook/assets/one-click-deployment.gif)
 
 Or, through our CLI command:
 
@@ -183,7 +183,7 @@ def training(...):
 	...
 ```
 
-![Workloads with ZenML](/docs/book/.gitbook/assets/readme_compute.gif)
+![Workloads with ZenML](docs/book/.gitbook/assets/readme_compute.gif)
 
 ### Track models, pipeline, and artifacts
 
@@ -200,7 +200,7 @@ def deploy_rag(index_id: str) -> str:
     return deployment_id
 ```
 
-![Exploring ZenML Models](/docs/book/.gitbook/assets/readme_mcp.gif)
+![Exploring ZenML Models](docs/book/.gitbook/assets/readme_mcp.gif)
 
 ## 🚀 Key LLMOps Capabilities
 
@@ -208,7 +208,7 @@ def deploy_rag(index_id: str) -> str:
 **Build production-ready retrieval systems**  
 
 <div align="center">
-  <img src="/docs/book/.gitbook/assets/rag_zenml_home.png" width="800" alt="RAG Pipeline">
+  <img src="docs/book/.gitbook/assets/rag_zenml_home.png" width="800" alt="RAG Pipeline">
 </div>
 
 ZenML tracks document ingestion, embedding versions, and query patterns. Implement feedback loops and:
@@ -221,7 +221,7 @@ ZenML tracks document ingestion, embedding versions, and query patterns. Impleme
 **Confidence in model updates**
 
 <div align="center">
-  <img src="/docs/book/.gitbook/assets/finetune_zenml_home.png" width="800" alt="Finetuning Pipeline">
+  <img src="docs/book/.gitbook/assets/finetune_zenml_home.png" width="800" alt="Finetuning Pipeline">
 </div>
 
 Maintain full lineage of SLM/LLM training runs:
@@ -244,7 +244,7 @@ def train_and_deploy(training_df: pd.DataFrame) -> bento.Bento
 	return bento
 ```
 
-![Exploring ZenML Integrations](/docs/book/.gitbook/assets/readme_integrations.gif)
+![Exploring ZenML Integrations](docs/book/.gitbook/assets/readme_integrations.gif)
 
 ## 🔄 Your LLM Framework Isn't Enough for Production
 
@@ -301,7 +301,7 @@ ZenML has a [VS Code extension](https://marketplace.visualstudio.com/items?itemN
 <details>
   <summary>🖥️ VS Code Extension in Action!</summary>
   <div align="center">
-  <img width="60%" src="/docs/book/.gitbook/assets/zenml-extension-shortened.gif" alt="ZenML Extension">
+  <img width="60%" src="docs/book/.gitbook/assets/zenml-extension-shortened.gif" alt="ZenML Extension">
 </div>
 </details>
 
