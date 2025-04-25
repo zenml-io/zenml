@@ -15,7 +15,7 @@
 
 import argparse
 import socket
-from typing import Any, Dict
+from typing import Any, Dict, cast
 from uuid import UUID
 
 from kubernetes import client as k8s_client
@@ -274,13 +274,17 @@ def main() -> None:
     parallel_node_startup_waiting_period = (
         orchestrator.config.parallel_step_startup_waiting_period or 0.0
     )
+    settings = cast(
+        KubernetesOrchestratorSettings,
+        orchestrator.get_settings(deployment_config),
+    )
     try:
         ThreadedDagRunner(
             dag=pipeline_dag,
             run_fn=run_step_on_kubernetes,
             finalize_fn=finalize_run,
             parallel_node_startup_waiting_period=parallel_node_startup_waiting_period,
-            max_parallelism=orchestrator.config.max_parallelism,
+            max_parallelism=settings.max_parallelism,
         ).run()
         logger.info("Orchestration pod completed.")
     finally:
