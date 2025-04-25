@@ -16,7 +16,8 @@
 import os
 import platform
 from pathlib import Path
-from typing import Dict
+from typing import Dict, List
+import subprocess
 
 import distro
 
@@ -40,11 +41,18 @@ def get_run_environment_dict() -> Dict[str, str]:
     Returns:
         A dictionary of the current run environment.
     """
-    return {
+    env_dict = {
         "environment": get_environment(),
         **Environment.get_system_info(),
         "python_version": Environment.python_version(),
     }
+
+    try:
+        env_dict["python_packages"] = Environment.get_python_packages()
+    except RuntimeError:
+        logger.warning("Failed to get list of installed Python packages")
+
+    return env_dict
 
 
 def get_environment() -> str:
@@ -366,3 +374,20 @@ class Environment(metaclass=SingletonMetaClass):
             "LIGHTNING_CLOUD_URL" in os.environ
             and "LIGHTNING_CLOUDSPACE_HOST" in os.environ
         )
+    
+    @staticmethod
+    def get_python_packages() -> List[str]:
+        """Returns a list of installed Python packages.
+
+        Raises:
+            RuntimeError: If the process to get the list of installed packages
+                fails.
+
+        Returns:
+            List of installed packages in pip freeze format.
+        """
+        try:
+            output = subprocess.check_output(["pip", "freeze"]).decode()
+            return output.strip().split("\n")
+        except subprocess.CalledProcessError:
+            raise RuntimeError("Failed to get list of installed Python packages")
