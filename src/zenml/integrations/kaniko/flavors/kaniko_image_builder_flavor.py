@@ -19,7 +19,8 @@ from pydantic import Field, PositiveInt
 
 from zenml.image_builders import BaseImageBuilderConfig, BaseImageBuilderFlavor
 from zenml.integrations.kaniko import KANIKO_IMAGE_BUILDER_FLAVOR
-
+from zenml.models import ServiceConnectorRequirements
+from zenml.constants import KUBERNETES_CLUSTER_RESOURCE_TYPE
 if TYPE_CHECKING:
     from zenml.integrations.kaniko.image_builders import KanikoImageBuilder
 
@@ -156,3 +157,11 @@ class KanikoImageBuilderFlavor(BaseImageBuilderFlavor):
         from zenml.integrations.kaniko.image_builders import KanikoImageBuilder
 
         return KanikoImageBuilder
+    @property
+    def service_connector_requirements(self) -> Optional[ServiceConnectorRequirements]:
+        """Service connector requirements.
+
+        Returns:
+            The service connector requirements.
+        """
+        return ServiceConnectorRequirements(resource_type=KUBERNETES_CLUSTER_RESOURCE_TYPE)

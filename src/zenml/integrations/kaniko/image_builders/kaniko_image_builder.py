@@ -26,6 +26,9 @@ from zenml.integrations.kaniko.flavors import KanikoImageBuilderConfig
 from zenml.logger import get_logger
 from zenml.stack import StackValidator
 from zenml.utils.archivable import ArchiveType
+from zenml.service_connectors.service_connector import ServiceConnector
+import kubernetes.client
+from kubernetes.client.rest import ApiException
 
 if TYPE_CHECKING:
     from zenml.container_registries import BaseContainerRegistry
@@ -202,9 +205,7 @@ class KanikoImageBuilder(BaseImageBuilder):
 
         optional_spec_args: Dict[str, Any] = {}
         if self.config.service_account_name:
-            optional_spec_args["serviceAccountName"] = (
-                self.config.service_account_name
-            )
+            optional_spec_args["serviceAccountName"] = self.config.service_account_name
 
         return {
             "apiVersion": "v1",
@@ -226,6 +227,42 @@ class KanikoImageBuilder(BaseImageBuilder):
             },
         }
 
+    def _run_kaniko_build_with_kubeconnect(
+        self,
+        pod_name: str,
+        spec_overrides: Dict[str, Any],
+        build_context: "BuildContext",
+    ) -> None:
+        """Runs the kaniko build in kubernetes with provided connectors.
+        Args:
+            pod_name: Name of the Pod that should be created to run the build.
+            spec_overrides: Pod spec override values.
+            build_context: The build context.
+        Raises:
+            RuntimeError: If the process running the Kaniko build failed.
+        """
+        connector = self.get_connector()
+        if connector:
+            logger.info("Using kubernetes connector to run the kaniko build.")
+            api_client = connector.connect()
+
+            if not isinstance(api_client, kubernetes.client.api_client.ApiClient):
+                raise RuntimeError(f"Expected ApiClient, got {type(api_client)}")
+            core_api = kubernetes.client.CoreV1Api(api_client)
+
+            # Second step define the kaniko pod spec
+            container = kubernetes.client.V1Container(
+                name=pod_name,
+                image=self.config.excutor_image,
+                args=[
+                    f"--destination={self.config.target_image}",
+                    "--container=tar://stdin",
+                    "--dockerfile=DockerFile",
+                    "--verbosity=info",
+                ],
+                vloume_mounts=self.config.volume_mounts,
+                env=self.config.env,
+            )
     def _run_kaniko_build(
         self,
         pod_name: str,
@@ -267,9 +304,7 @@ class KanikoImageBuilder(BaseImageBuilder):
             stdin=subprocess.PIPE,
         ) as p:
             if not self.config.store_context_in_artifact_store:
-                self._write_build_context(
-                    process=p, build_context=build_context
-                )
+                self._write_build_context(process=p, build_context=build_context)
 
             try:
                 return_code = p.wait()
@@ -284,9 +319,7 @@ class KanikoImageBuilder(BaseImageBuilder):
             )
 
     @staticmethod
-    def _write_build_context(
-        process: BytePopen, build_context: "BuildContext"
-    ) -> None:
+    def _write_build_context(process: BytePopen, build_context: "BuildContext") -> None:
         """Writes the build context to the process stdin.
 
         Args:
@@ -376,14 +409,10 @@ class KanikoImageBuilder(BaseImageBuilder):
             RuntimeError: If any of the prerequisites are not installed.
         """
         if not shutil.which("kubectl"):
-            raise RuntimeError(
-                "`kubectl` is required to run the Kaniko image builder."
-            )
+            raise RuntimeError("`kubectl` is required to run the Kaniko image builder.")
 
     @staticmethod
-    def _verify_image_name(
-        image_name_with_tag: str, image_name_with_sha: str
-    ) -> None:
+    def _verify_image_name(image_name_with_tag: str, image_name_with_sha: str) -> None:
         """Verifies the name/sha of the pushed image.
 
         Args:
