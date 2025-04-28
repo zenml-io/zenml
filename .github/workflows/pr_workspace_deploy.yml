@@ -16,6 +16,8 @@ jobs:
   check-label:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request' && github.event.pull_request.draft == false
+    outputs:
+      should_deploy: ${{ steps.check-label.outputs.has_label }}
     steps:
       # using this instead of contains(github.event.pull_request.labels.*.name, 'staging-workspace')
       # to make it dynamic, otherwise github context is fixed at the moment of trigger event.
@@ -33,13 +35,21 @@ jobs:
             });
             const labelNames = labels.map(label => label.name);
             core.setOutput('all-labels', labelNames.join(','));
-      - name: Label not set
-        if: ${{ !contains(steps.pr-labels.outputs.all-labels, 'staging-workspace') }}
+      
+      - name: Check if staging-workspace label is set
+        id: check-label
         run: |
-          echo "Please add the 'staging-workspace' label if you want to deploy a staging workspace."
-          exit 1
+          if [[ "${{ contains(steps.pr-labels.outputs.all-labels, 'staging-workspace') }}" == "true" ]]; then
+            echo "Label 'staging-workspace' found, will deploy workspace"
+            echo "has_label=true" >> $GITHUB_OUTPUT
+          else
+            echo "Label 'staging-workspace' not found, skipping workspace deployment"
+            echo "has_label=false" >> $GITHUB_OUTPUT
+          fi
   
   set-branch-info:
+    needs: check-label
+    if: github.event_name == 'workflow_dispatch' || needs.check-label.outputs.should_deploy == 'true'
     runs-on: ubuntu-latest
     outputs:
       branch_name: ${{ steps.slugify-branch.outputs.branch_slug }}  # Docker-compatible tag
@@ -109,12 +119,7 @@ jobs:
 
   build-images:
     needs: [set-branch-info, check-label]
-    if: |
-      always() && 
-      (
-        (github.event_name == 'pull_request' && needs.check-label.result == 'success') || 
-        (github.event_name == 'workflow_dispatch')
-      )
+    if: always() && (github.event_name == 'workflow_dispatch' || needs.check-label.outputs.should_deploy == 'true') && needs.set-branch-info.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       contents: read
