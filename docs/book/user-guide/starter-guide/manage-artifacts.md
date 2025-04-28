@@ -125,7 +125,7 @@ def annotation_approach() -> str:
     return "string"
 
 
-# There are other was to attach this information to different versions of your 
+# There are other ways to attach this information to different versions of your
 # artifacts as well. For instance, you will see a step with a single output below.
 # If you modify the call to include the `infer_artifact` flag, these functions
 # will attach this information to the artifact version instead.

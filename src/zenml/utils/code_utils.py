@@ -283,7 +283,7 @@ def download_code_from_artifact_store(
     artifact_store._register()
 
     extract_dir = os.path.abspath("code")
-    os.makedirs(extract_dir)
+    os.makedirs(extract_dir, exist_ok=True)
 
     download_and_extract_code(code_path=code_path, extract_dir=extract_dir)
 

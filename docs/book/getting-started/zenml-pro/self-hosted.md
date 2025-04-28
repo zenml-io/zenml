@@ -1553,6 +1553,7 @@ The Run Templates feature comes with some optional sub-features that can be turn
     * `ZENML_KUBERNETES_WORKLOAD_MANAGER_RUNNER_IMAGE` (optional): the "runner" container image to use. Only used if `ZENML_KUBERNETES_WORKLOAD_MANAGER_BUILD_RUNNER_IMAGE` is set to `false`, ignored otherwise.
     * `ZENML_KUBERNETES_WORKLOAD_MANAGER_ENABLE_EXTERNAL_LOGS` (optional): whether to store the logs of the "runner" jobs in an external location. Defaults to `false`. Currently only supported with the AWS implementation and requires the `ZENML_AWS_KUBERNETES_WORKLOAD_MANAGER_BUCKET` variable to be set as well.
     * `ZENML_KUBERNETES_WORKLOAD_MANAGER_NAMESPACE_POD_RESOURCES` (optional): the Kubernetes pod resources specification to use for the "runner" jobs, in JSON format. Example: `{"requests": {"cpu": "100m", "memory": "400Mi"}, "limits": {"memory": "700Mi"}}`.
+    * `ZENML_KUBERNETES_WORKLOAD_MANAGER_TTL_SECONDS_AFTER_FINISHED` (optional): the time in seconds after which to cleanup finished jobs and their pods. Defaults to 2 days.
 
     For the AWS implementation, the following additional variables are supported:
 
