@@ -55,7 +55,7 @@ def _compile_step(step: BaseStep) -> Step:
         invocation=invocation,
         stack=Client().active_stack,
         step_config=None,
-        pipeline_configuration=PipelineConfiguration(),
+        pipeline_configuration=PipelineConfiguration(name=""),
     )
 
 
