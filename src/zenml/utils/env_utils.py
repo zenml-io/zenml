@@ -16,10 +16,25 @@
 import contextlib
 import os
 import re
-from typing import Any, Dict, Iterator, List, Match, Optional, TypeVar, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Iterator,
+    List,
+    Match,
+    Optional,
+    TypeVar,
+    cast,
+)
 
+from zenml.client import Client
 from zenml.logger import get_logger
 from zenml.utils import string_utils
+
+if TYPE_CHECKING:
+    from zenml.config.step_configurations import StepConfiguration
+    from zenml.stack import Stack
 
 logger = get_logger(__name__)
 
@@ -188,13 +203,8 @@ def temporary_environment(environment: Dict[str, str]) -> Iterator[None]:
                     os.environ[key] = previous_value
 
 
-from zenml.client import Client
-from zenml.config.step_configurations import StepConfiguration
-from zenml.stack import Stack
-
-
 def gather_step_environment(
-    step_config: "StepConfiguration", stack: Stack
+    step_config: "StepConfiguration", stack: "Stack"
 ) -> Dict[str, str]:
     environment = {}
     secrets = []
