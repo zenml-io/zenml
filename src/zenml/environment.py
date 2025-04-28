@@ -15,12 +15,10 @@
 
 import os
 import platform
-from pathlib import Path
 from typing import Dict
 
 import distro
 
-from zenml import __version__
 from zenml.constants import INSIDE_ZENML_CONTAINER
 from zenml.enums import EnvironmentType
 from zenml.logger import get_logger
@@ -88,35 +86,8 @@ def get_environment() -> str:
         return EnvironmentType.NATIVE
 
 
-def get_system_details() -> str:
-    """Returns OS, python and ZenML information.
-
-    Returns:
-        str: OS, python and ZenML information
-    """
-    from zenml.integrations.registry import integration_registry
-
-    info = {
-        "ZenML version": __version__,
-        "Install path": Path(__file__).resolve().parent,
-        "Python version": Environment.python_version(),
-        "Platform information": Environment.get_system_info(),
-        "Environment": get_environment(),
-        "Integrations": integration_registry.get_installed_integrations(),
-    }
-    return "\n".join(
-        "{:>10} {}".format(k + ":", str(v).replace("\n", " "))
-        for k, v in info.items()
-    )
-
-
 class Environment(metaclass=SingletonMetaClass):
-    """Provides environment information.
-
-    Individual environment components can be registered separately to extend
-    the global Environment object with additional information (see
-    `BaseEnvironmentComponent`).
-    """
+    """Provides environment information."""
 
     def __init__(self) -> None:
         """Initializes an Environment instance.
