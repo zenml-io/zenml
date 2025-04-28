@@ -48,7 +48,15 @@ from uuid import UUID
 
 from google.api_core import exceptions as google_exceptions
 from google.cloud import aiplatform
+from google.cloud.aiplatform.compat.services import (
+    pipeline_service_client_v1beta1,
+)
+from google.cloud.aiplatform.compat.types import pipeline_job_v1beta1
 from google.cloud.aiplatform_v1.types import PipelineState
+from google.cloud.aiplatform_v1beta1.types.service_networking import (
+    PscInterfaceConfig,
+)
+from google.protobuf import json_format
 from google_cloud_pipeline_components.v1.custom_job.utils import (
     create_custom_training_job_from_component,
 )
@@ -495,36 +503,16 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                 )
                 pod_settings = step_settings.pod_settings
                 if pod_settings:
-                    if pod_settings.host_ipc:
+                    ignored_fields = pod_settings.model_fields_set - {
+                        "node_selectors"
+                    }
+                    if ignored_fields:
                         logger.warning(
-                            "Host IPC is set to `True` but not supported in "
-                            "this orchestrator. Ignoring..."
+                            f"The following pod settings are not supported in "
+                            f"Vertex with Vertex Pipelines 2.x and will be "
+                            f"ignored: {list(ignored_fields)}."
                         )
-                    if pod_settings.affinity:
-                        logger.warning(
-                            "Affinity is set but not supported in Vertex with "
-                            "Kubeflow Pipelines 2.x. Ignoring..."
-                        )
-                    if pod_settings.tolerations:
-                        logger.warning(
-                            "Tolerations are set but not supported in "
-                            "Vertex with Kubeflow Pipelines 2.x. Ignoring..."
-                        )
-                    if pod_settings.volumes:
-                        logger.warning(
-                            "Volumes are set but not supported in Vertex with "
-                            "Kubeflow Pipelines 2.x. Ignoring..."
-                        )
-                    if pod_settings.volume_mounts:
-                        logger.warning(
-                            "Volume mounts are set but not supported in "
-                            "Vertex with Kubeflow Pipelines 2.x. Ignoring..."
-                        )
-                    if pod_settings.env or pod_settings.env_from:
-                        logger.warning(
-                            "Environment variables are set but not supported "
-                            "in Vertex with Vertex Pipelines 2.x. Ignoring..."
-                        )
+
                     for key in pod_settings.node_selectors:
                         if (
                             key
@@ -735,6 +723,39 @@ class VertexOrchestrator(ContainerizedOrchestrator, GoogleCredentialsMixin):
                 "The Vertex AI Pipelines job will be peered with the `%s` "
                 "network.",
                 self.config.network,
+            )
+
+        if self.config.private_service_connect:
+            # The PSC setting isn't yet part of the stable v1 API. We need to
+            # temporarily hack the aiplatform.PipelineJob object in two places:
+            # * to use the v1beta1 PipelineJob primitive which supports the
+            #   psc_interface_config field instead of the v1 PipelineJob
+            #   primitive.
+            # * to use the v1beta1 PipelineServiceClient instead of the v1
+            #   PipelineServiceClient.
+            #
+            # We achieve the first by converting the v1 PipelineJob to a
+            # v1beta1 PipelineJob and the second by replacing the v1
+            # PipelineServiceClient with a v1beta1 PipelineServiceClient.
+            #
+            # TODO: Remove this once the v1 stable API is updated to support
+            # the PSC setting.
+            pipeline_job_dict = json_format.MessageToDict(
+                run._gca_resource._pb, preserving_proto_field_name=True
+            )
+            run._gca_resource = pipeline_job_v1beta1.PipelineJob(
+                **pipeline_job_dict,
+                psc_interface_config=PscInterfaceConfig(
+                    network_attachment=self.config.private_service_connect,
+                ),
+            )
+            run.api_client = (
+                pipeline_service_client_v1beta1.PipelineServiceClient(
+                    credentials=run.credentials,
+                    client_options={
+                        "api_endpoint": run.api_client.api_endpoint,
+                    },
+                )
             )
 
         try:
