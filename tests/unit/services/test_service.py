@@ -63,7 +63,7 @@ def base_service():
         uuid=UUID("12345678-1234-5678-1234-567812345678"),
         admin_state=ServiceState.ACTIVE,
         config=ServiceConfig(
-            name="test_service", param1="value1", param2=2, zenml_model=None
+            name="test_service", param1="value1", param2=2
         ),
         status=ServiceStatus(
             state=ServiceState.ACTIVE,
