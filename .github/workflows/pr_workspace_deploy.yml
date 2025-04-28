@@ -39,47 +39,73 @@ jobs:
           echo "Please add the 'staging-workspace' label if you want to deploy a staging workspace."
           exit 1
   
-  set-deployment-id:
+  set-branch-info:
     runs-on: ubuntu-latest
     outputs:
-      deployment_id: ${{ steps.set-id.outputs.deployment_id }}
-      zenml_version: ${{ steps.set-id.outputs.zenml_version }}
+      branch_name: ${{ steps.slugify-branch.outputs.branch_slug }}  # Docker-compatible tag
+      original_branch: ${{ steps.determine-branch.outputs.branch }}  # Original branch name
+      zenml_version: ${{ steps.get-version.outputs.zenml_version }}  # ZenML version
     steps:
-      - name: Checkout for branch info
-        uses: actions/checkout@v4.2.2
-        with:
-          fetch-depth: 0
-      
-      - name: Set deployment ID
-        id: set-id
+      - name: Determine branch to use
+        id: determine-branch
         run: |
-          # Function to slugify a branch name
-          slugify() {
-            echo "$1" | tr '/' '-' | tr ' ' '-' | tr '[:upper:]' '[:lower:]'
-          }
-          
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            # Get the branch name for PR
-            BRANCH_NAME="${{ github.head_ref }}"
+            # For PR use the head ref (PR branch)
+            echo "branch=${{ github.head_ref }}" >> $GITHUB_OUTPUT
           else
             # For manual trigger, use the provided branch
-            BRANCH_NAME="${{ github.event.inputs.branch }}"
+            echo "branch=${{ github.event.inputs.branch }}" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Checkout repository with correct branch
+        uses: actions/checkout@v4.2.2
+        with:
+          ref: ${{ steps.determine-branch.outputs.branch }}
+          fetch-depth: 0
+      
+      - name: Slugify branch name
+        id: slugify-branch
+        run: |
+          # Create a Docker-compatible tag from branch name
+          BRANCH_NAME="${{ steps.determine-branch.outputs.branch }}"
+          
+          # 1. Convert to lowercase
+          # 2. Replace invalid chars with dashes
+          # 3. Remove leading non-alphanumeric chars (Docker tags must start with a letter or number)
+          # 4. Replace multiple consecutive dashes with a single dash
+          # 5. Remove trailing dashes (Docker tags can't end with a dash)
+          # 6. Limit to 128 chars max (Docker's limit)
+          
+          BRANCH_SLUG=$(echo "$BRANCH_NAME" | \
+            tr '[:upper:]' '[:lower:]' | \
+            tr -c 'a-z0-9_.-' '-' | \
+            sed -E 's/^[^a-z0-9]*//' | \
+            sed -E 's/-+/-/g' | \
+            sed -E 's/-$//' | \
+            cut -c 1-128)
+          
+          # If we end up with an empty string (unlikely but possible), use "dev" as fallback
+          if [ -z "$BRANCH_SLUG" ]; then
+            BRANCH_SLUG="dev"
           fi
           
-          # Create a slug from the branch name
-          BRANCH_SLUG=$(slugify "$BRANCH_NAME")
-          echo "deployment_id=${BRANCH_SLUG}" >> $GITHUB_OUTPUT
-          
-          # Get ZenML version from pyproject.toml
+          echo "Created Docker-compatible tag: $BRANCH_SLUG"
+          echo "branch_slug=${BRANCH_SLUG}" >> $GITHUB_OUTPUT
+      
+      - name: Get ZenML version
+        id: get-version
+        run: |
+          # Get ZenML version from pyproject.toml in the checked out branch
           if [ -f "pyproject.toml" ]; then
             ZENML_VERSION=$(grep -o 'version = "[^"]*"' pyproject.toml | cut -d'"' -f2)
             echo "zenml_version=${ZENML_VERSION}" >> $GITHUB_OUTPUT
           else
+            echo "pyproject.toml not found, using 'dev' as version"
             echo "zenml_version=dev" >> $GITHUB_OUTPUT
           fi
 
   build-images:
-    needs: [set-deployment-id, check-label]
+    needs: [set-branch-info, check-label]
     if: |
       always() && 
       (
@@ -91,16 +117,10 @@ jobs:
       contents: read
       id-token: write
     steps:
-      # Check out the appropriate branch
-      - name: Checkout code (PR)
-        if: github.event_name == 'pull_request'
-        uses: actions/checkout@v4.2.2
-      
-      - name: Checkout code (Manual)
-        if: github.event_name == 'workflow_dispatch'
+      - name: Checkout code
         uses: actions/checkout@v4.2.2
         with:
-          ref: ${{ github.event.inputs.branch }}
+          ref: ${{ needs.set-branch-info.outputs.original_branch }}
 
       # Sign in to Google
       - uses: google-github-actions/setup-gcloud@v0
@@ -115,52 +135,42 @@ jobs:
           gcloud builds submit \
             --quiet \
             --config=pull_request_cloudbuild.yaml \
-            --substitutions=ZENML_PR_TAG=${{ needs.set-deployment-id.outputs.deployment_id }}
+            --substitutions=ZENML_BRANCH_NAME=${{ needs.set-branch-info.outputs.branch_name }}
   
   manage-tenant:
-    needs: [build-images, set-deployment-id]
+    needs: [build-images, set-branch-info]
     if: always() && needs.build-images.result == 'success'
     runs-on: ubuntu-latest
     env:
-      ZENML_VERSION: ${{ needs.set-deployment-id.outputs.zenml_version }}
+      ZENML_VERSION: ${{ needs.set-branch-info.outputs.zenml_version }}
     steps:
-      - name: Checkout code (PR)
-        if: github.event_name == 'pull_request'
-        uses: actions/checkout@v4.2.2
-      
-      - name: Checkout code (Manual)
-        if: github.event_name == 'workflow_dispatch'
+      - name: Checkout code
         uses: actions/checkout@v4.2.2
         with:
-          ref: ${{ github.event.inputs.branch }}
+          ref: ${{ needs.set-branch-info.outputs.original_branch }}
           
       - name: Set up Python
         uses: actions/setup-python@v5.3.0
         with:
-          python-version: '3.12'
+          python-version: '3.11'
       
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install requests
       
-      - name: Set workspace information
-        run: |
-          echo "WORKSPACE_ID=branch-${{ needs.set-deployment-id.outputs.deployment_id }}" >> $GITHUB_ENV
-          echo "DOCKER_TAG=dev-${{ needs.set-deployment-id.outputs.deployment_id }}" >> $GITHUB_ENV
-      
       - name: Manage workspace
         env:
           CLOUD_STAGING_CLIENT_ID: ${{ secrets.CLOUD_STAGING_CLIENT_ID }}
           CLOUD_STAGING_CLIENT_SECRET: ${{ secrets.CLOUD_STAGING_CLIENT_SECRET }}
-          WORKSPACE_NAME_OR_ID: ${{ env.WORKSPACE_ID }}
           ORGANIZATION_ID: ${{ secrets.STAGING_ORGANIZATION_ID }}
-          DOCKER_IMAGE: zenml/zenml-server:${{ env.DOCKER_TAG }}
+          WORKSPACE_NAME_OR_ID: ${{ needs.set-branch-info.outputs.branch_name }}
+          DOCKER_IMAGE: zenml/zenml-server:dev-${{ needs.set-branch-info.outputs.branch_name }}
           ZENML_VERSION: ${{ env.ZENML_VERSION }}
         run: python scripts/manage_workspace.py
       
       - name: Set tenant URL
-        run: echo "TENANT_URL=https://${{ env.WORKSPACE_ID }}.app.zenml.io" >> $GITHUB_ENV
+        run: echo "TENANT_URL=https://staging.cloud.zenml.io/workspaces/${{ needs.set-branch-info.outputs.branch_name }}/projects" >> $GITHUB_ENV
       
       - name: Add comment with tenant URL (PR)
         if: github.event_name == 'pull_request' && github.event.action == 'opened'

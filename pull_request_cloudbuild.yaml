@@ -18,7 +18,7 @@ steps:
         docker build . \
           --platform linux/amd64 \
           -f docker/zenml-dev.Dockerfile \
-          -t $$USERNAME/zenml:dev-${_ZENML_PR_TAG}
+          -t $$USERNAME/zenml:dev-${_ZENML_BRANCH_NAME}
 
     id: build-base
     waitFor: ['-']
@@ -30,7 +30,7 @@ steps:
   - name: gcr.io/cloud-builders/docker
     args:
       - '-c'
-      - docker push $$USERNAME/zenml:dev-${_ZENML_PR_TAG}
+      - docker push $$USERNAME/zenml:dev-${_ZENML_BRANCH_NAME}
     id: push-base
     waitFor:
       - docker-login
@@ -47,7 +47,7 @@ steps:
         docker build . \
           --platform linux/amd64 \
           -f docker/zenml-server-dev.Dockerfile \
-          -t $$USERNAME/zenml-server:dev-${_ZENML_PR_TAG}
+          -t $$USERNAME/zenml-server:dev-${_ZENML_BRANCH_NAME}
 
     id: build-server
     waitFor: ['-']
@@ -59,7 +59,7 @@ steps:
   - name: gcr.io/cloud-builders/docker
     args:
       - '-c'
-      - docker push $$USERNAME/zenml-server:dev-${_ZENML_PR_TAG}
+      - docker push $$USERNAME/zenml-server:dev-${_ZENML_BRANCH_NAME}
     id: push-server
     waitFor:
       - docker-login
