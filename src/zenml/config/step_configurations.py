@@ -332,14 +332,21 @@ class Step(StrictBaseModel):
     @model_validator(mode="before")
     @classmethod
     @before_validator_handler
-    def _autocomplete_step_config_overrides(cls, data: Any) -> Any:
-        """Autocompletes the step config overrides.
+    def _add_step_config_overrides_if_missing(cls, data: Any) -> Any:
+        """Add step config overrides if missing.
+
+        This is to ensure backwards compatibility with data stored in the DB
+        before the `step_config_overrides` field was added. In that case, only
+        the `config` field, which contains the merged pipeline and step configs,
+        existed. We have no way to figure out which of those values were defined
+        on the step vs the pipeline level, so we just use the entire `config`
+        object as the `step_config_overrides`.
 
         Args:
             data: The values dict used to instantiate the model.
 
         Returns:
-            The values dict with the step config overrides autocompleted.
+            The values dict with the step config overrides added if missing.
         """
         if "step_config_overrides" not in data:
             data["step_config_overrides"] = data["config"]
