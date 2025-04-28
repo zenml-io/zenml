@@ -23,11 +23,13 @@ from sqlalchemy import UniqueConstraint
 from sqlmodel import TEXT, Column, Field, Relationship
 
 from zenml.config.pipeline_configurations import PipelineConfiguration
+from zenml.constants import TEXT_FIELD_MAX_LENGTH
 from zenml.enums import (
     ExecutionStatus,
     MetadataResourceTypes,
     TaggableResourceTypes,
 )
+from zenml.logger import get_logger
 from zenml.models import (
     PipelineRunRequest,
     PipelineRunResponse,
@@ -63,6 +65,8 @@ if TYPE_CHECKING:
     from zenml.zen_stores.schemas.service_schemas import ServiceSchema
     from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
     from zenml.zen_stores.schemas.tag_schemas import TagSchema
+
+logger = get_logger(__name__)
 
 
 class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
@@ -239,6 +243,12 @@ class PipelineRunSchema(NamedSchema, RunMetadataInterface, table=True):
             The created `PipelineRunSchema`.
         """
         orchestrator_environment = json.dumps(request.orchestrator_environment)
+        if len(orchestrator_environment) > TEXT_FIELD_MAX_LENGTH:
+            logger.warning(
+                "Orchestrator environment is too large to be stored in the "
+                "database. Skipping."
+            )
+            orchestrator_environment = "{}"
 
         return cls(
             project_id=request.project,

@@ -24,7 +24,8 @@ from sqlmodel import Field, Relationship
 from zenml.config.pipeline_configurations import PipelineConfiguration
 from zenml.config.pipeline_spec import PipelineSpec
 from zenml.config.step_configurations import Step
-from zenml.constants import MEDIUMTEXT_MAX_LENGTH
+from zenml.constants import MEDIUMTEXT_MAX_LENGTH, TEXT_FIELD_MAX_LENGTH
+from zenml.logger import get_logger
 from zenml.models import (
     PipelineDeploymentRequest,
     PipelineDeploymentResponse,
@@ -47,6 +48,8 @@ from zenml.zen_stores.schemas.user_schemas import UserSchema
 if TYPE_CHECKING:
     from zenml.zen_stores.schemas.pipeline_run_schemas import PipelineRunSchema
     from zenml.zen_stores.schemas.step_run_schemas import StepRunSchema
+
+logger = get_logger(__name__)
 
 
 class PipelineDeploymentSchema(BaseSchema, table=True):
@@ -185,6 +188,14 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
         Returns:
             The created `PipelineDeploymentSchema`.
         """
+        client_env = json.dumps(request.client_environment)
+        if len(client_env) > TEXT_FIELD_MAX_LENGTH:
+            logger.warning(
+                "Client environment is too large to be stored in the database. "
+                "Skipping."
+            )
+            client_env = "{}"
+
         return cls(
             stack_id=request.stack,
             project_id=request.project,
@@ -201,7 +212,7 @@ class PipelineDeploymentSchema(BaseSchema, table=True):
                 sort_keys=False,
                 default=pydantic_encoder,
             ),
-            client_environment=json.dumps(request.client_environment),
+            client_environment=client_env,
             client_version=request.client_version,
             server_version=request.server_version,
             pipeline_version_hash=request.pipeline_version_hash,
