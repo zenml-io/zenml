@@ -206,6 +206,15 @@ def temporary_environment(environment: Dict[str, str]) -> Iterator[None]:
 def gather_step_environment(
     step_config: "StepConfiguration", stack: "Stack"
 ) -> Dict[str, str]:
+    """Gather the environment variables for a step.
+
+    Args:
+        step_config: The step configuration.
+        stack: The stack on which the step will run.
+
+    Returns:
+        A dictionary of environment variables.
+    """
     environment = {}
     secrets = []
     for component in stack.components.values():
